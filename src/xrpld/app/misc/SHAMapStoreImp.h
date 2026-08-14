@@ -131,6 +131,12 @@ public:
     }
 
     std::uint32_t
+    getDeleteInterval() const override
+    {
+        return deleteInterval_;
+    }
+
+    std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const override
     {
         return (deleteInterval_ != 0u) ? std::min(fetchDepth, deleteInterval_) : fetchDepth;

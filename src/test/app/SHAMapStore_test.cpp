@@ -705,9 +705,31 @@ public:
     }
 
     void
-    testRWDBRejectsMismatchedOnlineDelete()
+    testRWDBAcceptsLargerOnlineDelete()
     {
-        testcase("RWDB rejects online_delete that exceeds ledger_history");
+        testcase("RWDB accepts online_delete greater than ledger_history");
+        using namespace jtx;
+
+        constexpr std::uint32_t kHistory = 32;
+        constexpr std::uint32_t kDelete = 256;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = rwdb(std::move(cfg));
+            cfg->ledgerHistory = kHistory;
+            cfg->section(Sections::kNodeDatabase).set(Keys::kOnlineDelete, std::to_string(kDelete));
+            return cfg;
+        }));
+
+        auto& store = env.app().getSHAMapStore();
+        BEAST_EXPECT(store.isNullBackend());
+        BEAST_EXPECT(store.getDeleteInterval() == kDelete);
+        // Must not raise to the disk minimum or clamp down to ledger_history.
+        BEAST_EXPECT(store.clampFetchDepth(1000) == kDelete);
+    }
+
+    void
+    testRWDBRejectsSmallerOnlineDelete()
+    {
+        testcase("RWDB rejects online_delete below ledger_history");
         using namespace jtx;
 
         try
@@ -715,10 +737,10 @@ public:
             Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
                 cfg = rwdb(std::move(cfg));
                 cfg->ledgerHistory = 32;
-                cfg->section(Sections::kNodeDatabase).set(Keys::kOnlineDelete, "256");
+                cfg->section(Sections::kNodeDatabase).set(Keys::kOnlineDelete, "16");
                 return cfg;
             }));
-            fail("RWDB must reject online_delete > ledger_history");
+            fail("RWDB must reject online_delete < ledger_history");
         }
         catch (std::runtime_error const& e)
         {
@@ -779,7 +801,8 @@ public:
         testAutomaticRWDB();
         testStandaloneRWDBZeroHistory();
         testRWDBImplicitDeleteMatchesHistory();
-        testRWDBRejectsMismatchedOnlineDelete();
+        testRWDBAcceptsLargerOnlineDelete();
+        testRWDBRejectsSmallerOnlineDelete();
         testCanDeleteRWDB();
     }
 };

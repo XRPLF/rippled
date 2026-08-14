@@ -162,8 +162,8 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 
     // For RWDB, default online_delete to ledger_history. Do not raise it
-    // to the disk-backend minimum: only ledger_history SHAMaps are pinned,
-    // so a larger purge window would advertise ledgers that cannot be served.
+    // to the disk-backend minimum: LedgerMaster pins max(ledger_history,
+    // online_delete) SHAMaps, so the advertised purge window stays servable.
     if (isNullBackend_ && deleteInterval_ == 0)
         deleteInterval_ = config.ledgerHistory;
 
@@ -185,16 +185,9 @@ SHAMapStoreImp::SHAMapStoreImp(
 
         getIfExists(section, Keys::kAdvisoryDelete, advisoryDelete_);
 
-        if (isNullBackend_)
-        {
-            if (deleteInterval_ != config.ledgerHistory)
-            {
-                Throw<std::runtime_error>(
-                    "RWDB online_delete must equal ledger_history (currently " +
-                    std::to_string(config.ledgerHistory) + ")");
-            }
-        }
-        else
+        // Disk backends also require a platform minimum. RWDB does not:
+        // a smaller window is a valid way to bound memory.
+        if (!isNullBackend_)
         {
             auto const minInterval =
                 config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
@@ -203,14 +196,14 @@ SHAMapStoreImp::SHAMapStoreImp(
                 Throw<std::runtime_error>(
                     "online_delete must be at least " + std::to_string(minInterval));
             }
+        }
 
-            if (config.ledgerHistory > deleteInterval_)
-            {
-                Throw<std::runtime_error>(
-                    "online_delete must not be less than ledger_history "
-                    "(currently " +
-                    std::to_string(config.ledgerHistory) + ")");
-            }
+        if (config.ledgerHistory > deleteInterval_)
+        {
+            Throw<std::runtime_error>(
+                "online_delete must not be less than ledger_history "
+                "(currently " +
+                std::to_string(config.ledgerHistory) + ")");
         }
 
         stateDb_.init(config, dbName_);

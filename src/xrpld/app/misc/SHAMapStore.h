@@ -103,6 +103,14 @@ public:
      */
     [[nodiscard]] virtual bool
     isNullBackend() const = 0;
+
+    /**
+     * Configured online_delete interval, or the implicit RWDB default
+     * of ledger_history when the operator omitted it. Zero when
+     * online delete is disabled.
+     */
+    [[nodiscard]] virtual std::uint32_t
+    getDeleteInterval() const = 0;
 };
 
 //------------------------------------------------------------------------------

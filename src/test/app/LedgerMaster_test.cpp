@@ -217,6 +217,7 @@ public:
         }));
 
         BEAST_EXPECT(env.app().getSHAMapStore().isNullBackend());
+        BEAST_EXPECT(env.app().getSHAMapStore().getDeleteInterval() == kHistory);
 
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
@@ -233,7 +234,9 @@ public:
 
         auto const last = env.closed()->header().seq;
         // Within the configured history window: still resident and readable.
-        auto const kept = lm.getLedgerBySeq(last - (kHistory - 1));
+        auto const keptSeq = last - (kHistory - 1);
+        BEAST_EXPECT(lm.haveLedger(keptSeq));
+        auto const kept = lm.getLedgerBySeq(keptSeq);
         BEAST_EXPECT(kept);
         if (kept)
         {
@@ -241,11 +244,53 @@ public:
             BEAST_EXPECT(lm.getCloseTimeBySeq(kept->header().seq));
         }
 
-        // Just outside the window: must not crash; may be absent after
-        // the retain pop. The configured window is kHistory, not 256.
-        auto const dropped = lm.getLedgerBySeq(last - kHistory);
-        if (dropped)
-            BEAST_EXPECT(dropped->header().seq == last - kHistory);
+        // Just outside the pin window: stop advertising. The SHAMap may
+        // still sit in TaggedCache until sweep, so do not require
+        // getLedgerBySeq to fail.
+        BEAST_EXPECT(!lm.haveLedger(last - kHistory));
+    }
+
+    void
+    testRWDBRetainWindowFollowsOnlineDelete()
+    {
+        testcase("RWDB retain window follows the larger online_delete");
+
+        using namespace test::jtx;
+        constexpr std::uint32_t kHistory = 4;
+        constexpr std::uint32_t kDelete = 8;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            cfg->ledgerHistory = kHistory;
+            cfg->section(Sections::kNodeDatabase).set(Keys::kOnlineDelete, std::to_string(kDelete));
+            return cfg;
+        }));
+
+        BEAST_EXPECT(env.app().getSHAMapStore().isNullBackend());
+        BEAST_EXPECT(env.app().getSHAMapStore().getDeleteInterval() == kDelete);
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        auto& lm = env.app().getLedgerMaster();
+        for (std::uint32_t i = 0; i < kDelete + 4; ++i)
+        {
+            env(noop(alice));
+            env.close();
+        }
+
+        auto const last = env.closed()->header().seq;
+        // Past ledger_history, still inside online_delete: must stay
+        // advertised and readable. This is the gap the pin used to miss.
+        auto const keptSeq = last - (kDelete - 1);
+        BEAST_EXPECT(lm.haveLedger(keptSeq));
+        auto const kept = lm.getLedgerBySeq(keptSeq);
+        BEAST_EXPECT(kept);
+        if (kept)
+            BEAST_EXPECT(kept->exists(keylet::account(alice.id())));
+
+        BEAST_EXPECT(!lm.haveLedger(last - kDelete));
     }
 
     void
@@ -288,6 +333,7 @@ public:
         testCloseTimeDoesNotLoadLedger();
         testRWDBCloseTimeFromRelationalHeader();
         testRWDBRetainWindowFollowsHistory();
+        testRWDBRetainWindowFollowsOnlineDelete();
         testRWDBHistoryBackfillMarksComplete();
     }
 };

@@ -131,6 +131,10 @@ LedgerMaster::LedgerMaster(
     , standalone_(app_.config().standalone())
     , fetchDepth_(app_.getSHAMapStore().clampFetchDepth(app_.config().fetchDepth))
     , ledgerHistorySize_(app_.config().ledgerHistory)
+    , retainWindowSize_(
+          app_.getSHAMapStore().isNullBackend()
+              ? std::max(app_.config().ledgerHistory, app_.getSHAMapStore().getDeleteInterval())
+              : app_.config().ledgerHistory)
     , ledgerFetchSize_(app_.config().getValueFor(SizedItem::LedgerFetch))
     , fetchPacks_(
           "FetchPack",
@@ -848,23 +852,26 @@ LedgerMaster::setFullLedger(
 
     // Pin a sliding window of recently accepted ledgers so their SHAMap
     // state trees stay resident via shared_ptr. Only needed when the node
-    // store cannot re-fetch dropped objects. Size the window from
-    // ledger_history so advertised history stays readable. RWDB rejects
+    // store cannot re-fetch dropped objects. Size the window to
+    // max(ledger_history, online_delete) so the advertised complete range
+    // stays readable. History backfill (isCurrent=false) must be pinned
+    // too: otherwise fetchForHistory marks the sequence complete, the
+    // TaggedCache sweeps it, and nothing can reload it. RWDB rejects
     // ledger_history=full, so this cannot pin unbounded history.
-    // Standalone switchLCL passes isCurrent=false; still pin there or the
-    // window never fills and swept ledgers cannot be reloaded.
-    if ((isCurrent || standalone_) && app_.getSHAMapStore().isNullBackend() &&
-        ledgerHistorySize_ > 0)
+    std::vector<std::uint32_t> evicted;
+    if (app_.getSHAMapStore().isNullBackend() && retainWindowSize_ > 0)
     {
         // Pin only. Do not walk the state tree here: that walk is too
         // expensive to hold mutex_ (or to run at all on mainnet). Inbound
         // ledgers are primed via primeInboundLedgerForUse; genesis is
         // already fully wired.
         std::scoped_lock const ml(mutex_);
-        if (retainedLedgers_.empty() || retainedLedgers_.back() != ledger)
-            retainedLedgers_.push_back(ledger);
-        while (retainedLedgers_.size() > ledgerHistorySize_)
-            retainedLedgers_.pop_front();
+        retainedLedgers_[ledger->header().seq] = ledger;
+        while (retainedLedgers_.size() > retainWindowSize_)
+        {
+            evicted.push_back(retainedLedgers_.begin()->first);
+            retainedLedgers_.erase(retainedLedgers_.begin());
+        }
     }
 
     // Trusted-chain accept. Do not inherit this flag in the child
@@ -893,6 +900,12 @@ LedgerMaster::setFullLedger(
         // the tree, getLedgerBySeq/clearLedger drops the advertisement.
         completeLedgers_.insert(ledger->header().seq);
     }
+
+    // Drop advertisements for SHAMaps we just unpinned. Must run after
+    // the insert above so an old history ledger that does not fit the
+    // window is not left marked complete.
+    for (auto const seq : evicted)
+        clearLedger(seq);
 
     {
         std::scoped_lock const ml(mutex_);
@@ -1802,8 +1815,8 @@ LedgerMaster::getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& ta
     {
         std::scoped_lock const lock(mutex_);
         candidates.reserve(retainedLedgers_.size() + 3);
-        for (auto const& ledger : retainedLedgers_)
-            candidates.push_back(ledger);
+        for (auto const& entry : retainedLedgers_)
+            candidates.push_back(entry.second);
         if (auto const closed = closedLedger_.get())
             candidates.push_back(closed);
         if (auto const valid = validLedger_.get())
