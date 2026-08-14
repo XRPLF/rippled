@@ -118,8 +118,22 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
     if (forceClear)
     {
         lines_.clear();
-        sessionAccounts_.clear();
         totalLineCount_.store(0, std::memory_order_relaxed);
+        // Drop live pin sets (they will re-pin on next getRippleLines) but
+        // keep retired tombstones. Clearing those would let an in-flight
+        // doUpdate for a just-closed subscription recreate leaked pins.
+        for (auto it = sessions_.begin(); it != sessions_.end();)
+        {
+            if (it->second.retired)
+            {
+                it->second.accounts.clear();
+                ++it;
+            }
+            else
+            {
+                it = sessions_.erase(it);
+            }
+        }
         JLOG(journal_.info()) << "advanceLedger force-cleared cache for ledger " << newSeq;
         return;
     }
@@ -180,8 +194,15 @@ AssetCache::effectiveChunkSize() const
 void
 AssetCache::pinAccountUnlocked(int sessionId, AccountID const& accountID)
 {
+    auto sit = sessions_.find(sessionId);
+    if (sit != sessions_.end() && sit->second.retired)
+        return;  // close already ran; do not recreate pins under this id
+
+    if (sit == sessions_.end())
+        sit = sessions_.emplace(sessionId, SessionState{}).first;
+
     // First pin of this account by this session increments pinCount.
-    auto& held = sessionAccounts_[sessionId];
+    auto& held = sit->second.accounts;
     if (!held.insert(accountID).second)
         return;  // already pinned by this session
 
@@ -190,8 +211,8 @@ AssetCache::pinAccountUnlocked(int sessionId, AccountID const& accountID)
     {
         // Should not happen: pin only after load. Roll back session set entry.
         held.erase(accountID);
-        if (held.empty())
-            sessionAccounts_.erase(sessionId);
+        if (held.empty() && !sit->second.retired)
+            sessions_.erase(sit);
         return;
     }
     ++it->second.pinCount;
@@ -515,8 +536,12 @@ AssetCache::getRippleLines(AccountID const& accountID)
         bool alreadyPinned = false;
         {
             std::shared_lock const sl(lock_);
-            auto const sit = sessionAccounts_.find(tlsPinSessionId);
-            if (sit != sessionAccounts_.end() && sit->second.count(accountID) != 0)
+            auto const sit = sessions_.find(tlsPinSessionId);
+            // Retired: treat as pinned so we skip the unique_lock and refuse
+            // new bookkeeping. Live: skip lock when this account is already
+            // in the session set (hot Pathfinder hop).
+            if (sit != sessions_.end() &&
+                (sit->second.retired || sit->second.accounts.count(accountID) != 0))
                 alreadyPinned = true;
         }
         if (!alreadyPinned)
@@ -588,12 +613,12 @@ bool
 AssetCache::expandIncompleteLinesForSession(int sessionId)
 {
     std::unique_lock const sl(lock_);
-    auto sit = sessionAccounts_.find(sessionId);
-    if (sit == sessionAccounts_.end())
+    auto sit = sessions_.find(sessionId);
+    if (sit == sessions_.end() || sit->second.retired)
         return false;
 
     bool grew = false;
-    for (auto const& accountID : sit->second)
+    for (auto const& accountID : sit->second.accounts)
     {
         auto it = lines_.find(accountID);
         if (it == lines_.end() || it->second.cursor.complete)
@@ -634,10 +659,10 @@ bool
 AssetCache::hasIncompleteLinesForSession(int sessionId) const
 {
     std::shared_lock const sl(lock_);
-    auto sit = sessionAccounts_.find(sessionId);
-    if (sit == sessionAccounts_.end())
+    auto sit = sessions_.find(sessionId);
+    if (sit == sessions_.end() || sit->second.retired)
         return false;
-    for (auto const& accountID : sit->second)
+    for (auto const& accountID : sit->second.accounts)
     {
         auto it = lines_.find(accountID);
         if (it != lines_.end() && !it->second.cursor.complete)
@@ -650,12 +675,17 @@ std::size_t
 AssetCache::releaseSession(int sessionId)
 {
     std::unique_lock const sl(lock_);
-    auto sit = sessionAccounts_.find(sessionId);
-    if (sit == sessionAccounts_.end())
+    auto sit = sessions_.find(sessionId);
+    if (sit == sessions_.end())
+    {
+        // Never pinned: still plant a tombstone so a later SessionPin on this
+        // id (in-flight doUpdate after close) cannot create leaked pins.
+        sessions_[sessionId].retired = true;
         return 0;
+    }
 
     std::size_t freed = 0;
-    for (auto const& accountID : sit->second)
+    for (auto const& accountID : sit->second.accounts)
     {
         auto it = lines_.find(accountID);
         if (it == lines_.end())
@@ -672,7 +702,8 @@ AssetCache::releaseSession(int sessionId)
             lines_.erase(it);
         }
     }
-    sessionAccounts_.erase(sit);
+    sit->second.accounts.clear();
+    sit->second.retired = true;
 
     if (freed > 0)
     {
@@ -682,6 +713,16 @@ AssetCache::releaseSession(int sessionId)
                                << " remaining_accounts=" << lines_.size();
     }
     return freed;
+}
+
+void
+AssetCache::forgetSession(int sessionId)
+{
+    std::unique_lock const sl(lock_);
+    auto sit = sessions_.find(sessionId);
+    if (sit == sessions_.end() || !sit->second.retired)
+        return;
+    sessions_.erase(sit);
 }
 
 std::shared_ptr<std::vector<PathFindMPT>>

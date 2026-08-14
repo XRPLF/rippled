@@ -41,7 +41,9 @@ namespace xrpl {
  * - Per-session account pins: an entry is freed only when every path_find that
  *   used it has ended. Shared hubs stay warm for remaining sessions (no LRU
  *   thrash during ramp-down). When the last subscription ends the whole cache
- *   is dropped by PathRequestManager.
+ *   is dropped by PathRequestManager. releaseSession retires the session id
+ *   so a concurrent doUpdate cannot re-pin after close; forgetSession drops
+ *   that tombstone when the PathRequest is destroyed.
  */
 class AssetCache final : public CountedObject<AssetCache>
 {
@@ -113,7 +115,8 @@ public:
     /**
      * Full outgoing trust-line vector for an account (shared ownership).
      * When a SessionPin is active on this thread, the account is pinned to
-     * that session until releaseSession(sessionId).
+     * that session until releaseSession(sessionId). Pins are refused after
+     * that id has been released (retired), even if SessionPin is still live.
      *
      * First miss loads at most the thread LoadScope chunk (default
      * lineChunkSize_). Call expandIncompleteLines to append more.
@@ -177,14 +180,25 @@ public:
     getMPTs(AccountID const& account);
 
     /**
-     * Drop all account pins held by sessionId. Any line vector whose pin count
-     * reaches zero is erased (PathFindTrustLine memory reclaimed). Safe and
-     * idempotent if called more than once for the same session.
+     * Drop all account pins held by sessionId and retire the id. Any line
+     * vector whose pin count reaches zero is erased (PathFindTrustLine memory
+     * reclaimed). Subsequent pins for this id are refused until forgetSession
+     * (or forceClear / cache destruction). Safe and idempotent if called more
+     * than once for the same session — including when the session never
+     * pinned anything (still plants a tombstone).
      *
      * @return Number of PathFindTrustLine objects freed.
      */
     std::size_t
     releaseSession(int sessionId);
+
+    /**
+     * Drop a retired session tombstone. Call after the PathRequest that owned
+     * sessionId is destroyed so the retired-id map cannot grow without bound
+     * on a long-lived cache. No-op if the session is still live or unknown.
+     */
+    void
+    forgetSession(int sessionId);
 
     [[nodiscard]] std::size_t
     totalLineCount() const
@@ -321,9 +335,16 @@ private:
     hash_map<AccountID, std::shared_ptr<std::vector<PathFindMPT>>> mpts_;
 
     /**
-     * sessionId → accounts that session has pinned (for O(session) release).
+     * sessionId → pin set + retired flag. releaseSession clears accounts and
+     * marks retired so an in-flight doUpdate cannot recreate pins under the
+     * same id. forgetSession erases the tombstone once the PathRequest is gone.
      */
-    hash_map<int, hash_set<AccountID>> sessionAccounts_;
+    struct SessionState
+    {
+        bool retired{false};
+        hash_set<AccountID> accounts;
+    };
+    hash_map<int, SessionState> sessions_;
 
     std::atomic<std::uint64_t> cacheHits_{0};
     std::atomic<std::uint64_t> cacheMisses_{0};

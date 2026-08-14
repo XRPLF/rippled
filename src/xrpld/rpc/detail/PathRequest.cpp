@@ -142,14 +142,19 @@ PathRequest::~PathRequest()
 {
     // WS disconnect or last strong-ref drop: unhook from the manager so the
     // shared AssetCache can be released when no sessions remain. owner_ is
-    // null if ~PathRequestManager already detached this session. Even if
-    // owner_ is still set, CallOwner fails once the manager has nulled
-    // PathFindLifetime::manager — ~PathRequestManager waits inFlight==0
-    // before destroying members (use_count==0 so wr.lock() cannot detach us).
-    if (owner_.exchange(nullptr, std::memory_order_acq_rel))
+    // null if doClose / dropRequest already detached, or if ~PathRequestManager
+    // nulled PathFindLifetime::manager. CallOwner still reaches a live manager
+    // via the lifetime bag so we can forget the retired-session tombstone.
+    // ~PathRequestManager waits inFlight==0 before destroying members
+    // (use_count==0 so wr.lock() cannot detach us).
+    owner_.store(nullptr, std::memory_order_release);
+    if (CallOwner owner{*this})
     {
-        if (CallOwner owner{*this})
-            owner->removePathRequest(this);
+        // removePathRequest is idempotent (already closed / force-dropped).
+        owner->removePathRequest(this);
+        // Drop the AssetCache tombstone only here: doUpdate holds a shared_ptr
+        // so this destructor cannot run while SessionPin is still live.
+        owner->forgetCacheSession(iIdentifier_);
     }
 
     using namespace std::chrono;
@@ -187,9 +192,9 @@ PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 {
     std::scoped_lock const sl(indexLock_);
 
-    if (inProgress_)
+    if (closing_ || inProgress_)
     {
-        // Another thread is handling this
+        // Closed, or another thread is already handling this update.
         return false;
     }
 
@@ -575,6 +580,13 @@ json::Value
 PathRequest::doClose()
 {
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
+    {
+        std::scoped_lock const sl(indexLock_);
+        // Stop new needsUpdate claims. An in-flight doUpdate may still be
+        // pinning; AssetCache::releaseSession retires the session id so those
+        // loads cannot recreate pins after this close.
+        closing_ = true;
+    }
     // Detach immediately so AssetCache can reclaim if this was the last session
     // (do not wait for ~PathRequest / next updateAll scavenge). CallOwner
     // no-ops if ~PathRequestManager has already nulled the lifetime token.

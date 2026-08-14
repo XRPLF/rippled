@@ -739,6 +739,184 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->totalLineCount() == 0);
     }
 
+    /**
+     * Closing a session while its SessionPin is still live (in-flight doUpdate)
+     * must not let later getRippleLines re-increment pinCount. That leftover
+     * pin would keep a shared hub after every other session has released.
+     */
+    void
+    testReleaseSessionRefusesLaterPins()
+    {
+        testcase("releaseSession: in-flight SessionPin cannot re-pin after close");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env(pay(gw, alice, gw["USD"](5)));
+        env.close();
+
+        auto cache =
+            std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
+
+        // Keeper session — holds alice after the closing session is released.
+        {
+            AssetCache::SessionPin pinKeep{2};
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        }
+        BEAST_EXPECT(cache->totalLineCount() >= 1);
+
+        {
+            AssetCache::SessionPin pinClose{1};
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+            cache->releaseSession(1);
+            // In-flight update re-touches the same account after close.
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        }
+
+        // Keeper release must free alice. A leaked pinCount from session 1
+        // would leave the hub in the cache forever.
+        BEAST_EXPECT(cache->releaseSession(2) >= 1);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+        BEAST_EXPECT(cache->releaseSession(1) == 0);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+    }
+
+    /**
+     * doClose can run before the first getRippleLines. releaseSession must
+     * still plant a tombstone so the subsequent SessionPin cannot create a
+     * live session that nothing will ever release.
+     */
+    void
+    testReleaseSessionBeforeFirstPin()
+    {
+        testcase("releaseSession: tombstone before first pin refuses later pins");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env(pay(gw, alice, gw["USD"](5)));
+        env.close();
+
+        auto cache =
+            std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
+
+        BEAST_EXPECT(cache->releaseSession(1) == 0);
+
+        {
+            AssetCache::SessionPin pinClose{1};
+            // Loads lines but must not pin them to the retired session.
+            (void)cache->getRippleLines(alice.id());
+        }
+
+        {
+            AssetCache::SessionPin pinKeep{2};
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        }
+        BEAST_EXPECT(cache->releaseSession(2) >= 1);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+    }
+
+    void
+    testForgetSessionAllowsReuse()
+    {
+        testcase("forgetSession: retired id can be reused after PathRequest dies");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env(pay(gw, alice, gw["USD"](5)));
+        env.close();
+
+        auto cache =
+            std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
+
+        {
+            AssetCache::SessionPin pin{1};
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        }
+        BEAST_EXPECT(cache->releaseSession(1) >= 1);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+
+        // Still retired: a new SessionPin with id 1 must not re-pin.
+        {
+            AssetCache::SessionPin pin{1};
+            (void)cache->getRippleLines(alice.id());
+        }
+        // Unpinned complete leftover may remain; no session owns it.
+        cache->forgetSession(1);
+
+        {
+            AssetCache::SessionPin pin{1};
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        }
+        BEAST_EXPECT(cache->releaseSession(1) >= 1);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+    }
+
+    void
+    testReleaseSessionRacesInFlightPin()
+    {
+        testcase("releaseSession races in-flight getRippleLines (shared hub)");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env(pay(gw, alice, gw["USD"](5)));
+        env.close();
+
+        auto cache =
+            std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
+
+        {
+            AssetCache::SessionPin pinKeep{2};
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        }
+
+        std::atomic<bool> started{false};
+        std::atomic<bool> released{false};
+        std::atomic<int> errors{0};
+        std::thread worker([&] {
+            try
+            {
+                AssetCache::SessionPin pin{1};
+                if (!cache->getRippleLines(alice.id()))
+                    ++errors;
+                started.store(true, std::memory_order_release);
+                while (!released.load(std::memory_order_acquire))
+                    (void)cache->getRippleLines(alice.id());
+                // After releaseSession: more hops must not re-pin.
+                for (int i = 0; i < 32; ++i)
+                    (void)cache->getRippleLines(alice.id());
+            }
+            catch (...)
+            {
+                ++errors;
+            }
+        });
+
+        while (!started.load(std::memory_order_acquire))
+            std::this_thread::yield();
+        cache->releaseSession(1);
+        released.store(true, std::memory_order_release);
+        worker.join();
+
+        BEAST_EXPECT(errors == 0);
+        BEAST_EXPECT(cache->releaseSession(2) >= 1);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+    }
+
 public:
     void
     run() override
@@ -756,6 +934,10 @@ public:
         testGlobalBudgetBlocksNewLines();
         testLineEpochBumpsOnLoadAndExpand();
         testConcurrentReadersAndAdvance();
+        testReleaseSessionRefusesLaterPins();
+        testReleaseSessionBeforeFirstPin();
+        testForgetSessionAllowsReuse();
+        testReleaseSessionRacesInFlightPin();
     }
 };
 

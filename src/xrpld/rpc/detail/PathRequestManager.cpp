@@ -1078,6 +1078,14 @@ PathRequestManager::getCacheStats() const
 }
 
 void
+PathRequestManager::forgetCacheSession(int sessionId)
+{
+    std::scoped_lock const sl(lock_);
+    if (assetCache_)
+        assetCache_->forgetSession(sessionId);
+}
+
+void
 PathRequestManager::removePathRequest(PathRequest* request)
 {
     std::scoped_lock const sl(lock_);

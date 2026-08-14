@@ -93,6 +93,10 @@ public:
 
     bool
     isNew() const;
+    /**
+     * Claim an update slot. Returns false if this session is closing, another
+     * update is already in flight, or @a index is not newer than lastIndex_.
+     */
     bool
     needsUpdate(bool newOnly, LedgerIndex index);
 
@@ -301,6 +305,12 @@ private:
      */
     bool firstUpdateDone_{false};
     bool inProgress_;
+    /**
+     * Set by doClose under indexLock_. needsUpdate refuses new claims so a
+     * wave that already snapshotted this request cannot start doUpdate after
+     * releaseSession has retired the cache session.
+     */
+    bool closing_{false};
 
     int iLevel_;
     bool bLastSuccess_;

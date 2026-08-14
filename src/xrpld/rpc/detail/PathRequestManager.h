@@ -116,15 +116,24 @@ public:
     getCacheStats() const;
 
     /**
-     * Drop a finished/closed path_find session. When the last live session is
-     * gone, releases AssetCache so trust-line memory and get_counts cache
-     * counters reclaim (pathfind_cache_lines / pathfind_lines_loaded → 0).
+     * Drop a finished/closed path_find session. Retires the AssetCache session
+     * id so an in-flight doUpdate cannot re-pin after this returns. When the
+     * last live session is gone, releases AssetCache so trust-line memory and
+     * get_counts cache counters reclaim (pathfind_cache_lines → 0).
      */
     void
     removePathRequest(PathRequest* request);
 
 private:
     friend class PathRequest;
+
+    /**
+     * Drop the AssetCache retired-session tombstone. Only ~PathRequest calls
+     * this: an in-flight doUpdate may still need the tombstone to refuse
+     * re-pins after removePathRequest.
+     */
+    void
+    forgetCacheSession(int sessionId);
 
     [[nodiscard]] std::shared_ptr<PathFindLifetime>
     lifetime() const

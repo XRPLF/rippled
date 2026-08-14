@@ -1032,6 +1032,88 @@ class PathFindSub_test : public beast::unit_test::Suite
         BEAST_EXPECT(rebuilt->getLedger()->seq() == env.closed()->seq());
     }
 
+    /**
+     * Close one of two live subscriptions while a closed-ledger wave is
+     * running. The closing session must not leave leaked pins: after the
+     * remaining subscription ends, the shared cache must reclaim to 0.
+     */
+    void
+    testCloseDuringUpdateReclaimsPins()
+    {
+        testcase("close during updateAll: no leaked pins after last session");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env = makeEnv();
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dan{"dan"};
+        setupUsdCorridor(env, gw, alice, bob);
+        env.fund(XRP(100000), carol, dan);
+        env.close();
+        env.trust(gw["USD"](10000), carol);
+        env.trust(gw["USD"](10000), dan);
+        env(pay(gw, carol, gw["USD"](2000)));
+        env(pay(gw, dan, gw["USD"](50)));
+        env.close();
+
+        auto wscKeep = makeWSClient(env.app().config());
+        auto wscClose = makeWSClient(env.app().config());
+        auto jrKeep =
+            wscKeep->invoke("path_find", pfCreate(alice, bob, bob["USD"](5), "USD"))[jss::result];
+        auto jrClose =
+            wscClose->invoke("path_find", pfCreate(carol, dan, dan["USD"](5), "USD"))[jss::result];
+        BEAST_EXPECT(!jrKeep.isMember(jss::error));
+        BEAST_EXPECT(!jrClose.isMember(jss::error));
+
+        BEAST_EXPECT(runUpdateAll(env, env.closed()));
+        drainPathFind(*wscKeep);
+        drainPathFind(*wscClose);
+
+        auto gc = env.rpc("get_counts")[jss::result];
+        BEAST_EXPECT(gc["pathfind_cache_lines"].asDouble() > 0);
+
+        // Race a closed wave with close of one subscription.
+        env.close();
+        auto const closed = env.closed();
+        auto done = std::make_shared<std::atomic<bool>>(false);
+        bool const queued = env.app().getJobQueue().addJob(
+            JtClient, "PathFindSub-closeRace", [done, &env, closed]() {
+                env.app().getPathRequestManager().updateAll(closed);
+                done->store(true, std::memory_order_release);
+            });
+        json::Value closeReq;
+        closeReq[jss::subcommand] = "close";
+        (void)wscClose->invoke("path_find", closeReq);
+        wscClose.reset();
+        if (queued)
+        {
+            for (int i = 0; i < 200 && !done->load(std::memory_order_acquire); ++i)
+                std::this_thread::sleep_for(25ms);
+            BEAST_EXPECT(done->load(std::memory_order_acquire));
+        }
+        else
+        {
+            env.app().getPathRequestManager().updateAll(env.closed());
+        }
+
+        gc = env.rpc("get_counts")[jss::result];
+        BEAST_EXPECT(gc["pathfind_cache_lines"].asDouble() > 0);
+
+        (void)wscKeep->invoke("path_find", closeReq);
+        wscKeep.reset();
+
+        for (int i = 0; i < 40; ++i)
+        {
+            gc = env.rpc("get_counts")[jss::result];
+            if (gc["pathfind_cache_lines"].asDouble() == 0)
+                break;
+            std::this_thread::sleep_for(25ms);
+        }
+        BEAST_EXPECT(gc["pathfind_cache_lines"].asDouble() == 0);
+    }
+
 public:
     void
     run() override
@@ -1048,6 +1130,7 @@ public:
         testAutoSourceKeepsXrpUnderSoftCap();
         testCreateRebuildsStaleSharedCache();
         testMidCloseDoesNotForceClearOpenCache();
+        testCloseDuringUpdateReclaimsPins();
     }
 };
 
