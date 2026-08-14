@@ -61,6 +61,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -541,10 +542,6 @@ PeerImp::supportsFeature(ProtocolFeature f) const
 {
     switch (f)
     {
-        case ProtocolFeature::ValidatorListPropagation:
-            return protocol_ >= makeProtocol(2, 1);
-        case ProtocolFeature::ValidatorList2Propagation:
-            return protocol_ >= makeProtocol(2, 2);
         case ProtocolFeature::LedgerNodeDepth:
             return protocol_ >= makeProtocol(2, 3);
         case ProtocolFeature::LedgerReplay:
@@ -884,7 +881,7 @@ PeerImp::doProtocolStart()
     onReadMessage(error_code(), 0);
 
     // Send all the validator lists that have been loaded
-    if (inbound_ && supportsFeature(ProtocolFeature::ValidatorListPropagation))
+    if (inbound_)
     {
         app_.getValidators().forEachAvailable(
             [&](std::string const& manifest,
@@ -1107,6 +1104,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
     if (s > 100)
         fee_.update(resource::kFeeModerateBurdenPeer, "oversize");
 
+    // OverlayImpl::onManifests bounds the untrusted work and charges the fee
+    // if the untrusted count exceeds the per-message cap; trusted manifests
+    // are always processed and not counted against it.
     app_.getJobQueue().addJob(JtManifest, "RcvManifests", [this, that = shared_from_this(), m]() {
         overlay_.onManifests(m, that);
     });
@@ -1117,10 +1117,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
 {
     if (m->type() == protocol::TMPing::ptPING)
     {
-        // We have received a ping request, reply with a pong
+        // We have received a ping request, reply with a pong.
         fee_.update(resource::kFeeModerateBurdenPeer, "ping request");
-        m->set_type(protocol::TMPing::ptPONG);
-        send(std::make_shared<Message>(*m, protocol::mtPING));
+        protocol::TMPing pong;
+        pong.set_type(protocol::TMPing::ptPONG);
+        if (m->has_seq())
+            pong.set_seq(m->seq());
+        send(std::make_shared<Message>(pong, protocol::mtPING));
         return;
     }
 
@@ -1604,9 +1607,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
         return;
     }
 
-    if (!ledgerReplayMsgHandler_.processProofPathResponse(m))
+    switch (ledgerReplayMsgHandler_.processProofPathResponse(m))
     {
-        fee_.update(resource::kFeeInvalidData, "proof_path_response");
+        case ReplayMsgStatus::Ok:
+            break;
+        case ReplayMsgStatus::BadData:
+            fee_.update(resource::kFeeInvalidData, "proof_path_response");
+            break;
+        case ReplayMsgStatus::Malformed:
+            fee_.update(resource::kFeeMalformedData, "proof_path_response malformed");
+            break;
     }
 }
 
@@ -1654,9 +1664,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
         return;
     }
 
-    if (!ledgerReplayMsgHandler_.processReplayDeltaResponse(m))
+    switch (ledgerReplayMsgHandler_.processReplayDeltaResponse(m))
     {
-        fee_.update(resource::kFeeInvalidData, "replay_delta_response");
+        case ReplayMsgStatus::Ok:
+            break;
+        case ReplayMsgStatus::BadData:
+            fee_.update(resource::kFeeInvalidData, "replay_delta_response");
+            break;
+        case ReplayMsgStatus::Malformed:
+            fee_.update(resource::kFeeMalformedData, "replay_delta_response malformed");
+            break;
     }
 }
 
@@ -2402,42 +2419,10 @@ PeerImp::onValidatorListMessage(
 }
 
 void
-PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
-{
-    try
-    {
-        if (!supportsFeature(ProtocolFeature::ValidatorListPropagation))
-        {
-            JLOG(pJournal_.debug()) << "ValidatorList: received validator list from peer using "
-                                    << "protocol version " << to_string(protocol_)
-                                    << " which shouldn't support this feature.";
-            fee_.update(resource::kFeeUselessData, "unsupported peer");
-            return;
-        }
-        onValidatorListMessage(
-            "ValidatorList", m->manifest(), m->version(), ValidatorList::parseBlobs(*m));
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(pJournal_.warn()) << "ValidatorList: Exception, " << e.what();
-        using namespace std::string_literals;
-        fee_.update(resource::kFeeInvalidData, e.what());
-    }
-}
-
-void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m)
 {
     try
     {
-        if (!supportsFeature(ProtocolFeature::ValidatorList2Propagation))
-        {
-            JLOG(pJournal_.debug()) << "ValidatorListCollection: received validator list from peer "
-                                    << "using protocol version " << to_string(protocol_)
-                                    << " which shouldn't support this feature.";
-            fee_.update(resource::kFeeUselessData, "unsupported peer");
-            return;
-        }
         if (m->version() < 2)
         {
             JLOG(pJournal_.debug())
@@ -2475,12 +2460,22 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         std::shared_ptr<STValidation> val;
         {
             SerialIter sit(makeSlice(m->validation()));
-            val = std::make_shared<STValidation>(
-                std::ref(sit),
-                [this](PublicKey const& pk) {
-                    return calcNodeID(app_.getValidatorManifests().getMasterKey(pk));
-                },
-                false);
+            try
+            {
+                val = std::make_shared<STValidation>(
+                    std::ref(sit),
+                    [this](PublicKey const& pk) {
+                        return calcNodeID(app_.getValidatorManifests().getMasterKey(pk));
+                    },
+                    STValidation::DeserializeOptions{
+                        .checkSignature = false, .requireCanonicalOrder = true});
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(pJournal_.warn()) << "Validation: Exception, " << e.what();
+                fee_.update(resource::kFeeInvalidData, e.what());
+                return;
+            }
             val->setSeen(closeTime);
         }
 

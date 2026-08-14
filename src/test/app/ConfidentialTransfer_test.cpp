@@ -616,7 +616,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
             });
         }
 
@@ -637,7 +637,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
                 .issuerPubKey = mptAlice.getPubKey(alice),
                 .auditorPubKey = mptAlice.getPubKey(auditor),
             });
@@ -877,11 +877,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            // Create with tmfMPTCannotEnableCanHoldConfidentialBalance
+            // Create with tifMPTCanHoldConfidentialBalance
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer | tfMPTCanLock,
-                .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
+                .immutableFlags = tifMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -890,7 +890,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // because the issuance cannot mutate canConfidentialAmount
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
                 .issuerPubKey = mptAlice.getPubKey(alice),
                 .err = tecNO_PERMISSION,
             });
@@ -963,15 +963,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock,
-                .mutableFlags = tmfMPTCanMutateTransferFee,
-            });
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock});
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
                 .transferFee = 100,
                 .err = temBAD_TRANSFER_FEE,
             });
@@ -984,16 +980,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            mptAlice.create({
-                .transferFee = 100,
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock,
-                .mutableFlags = tmfMPTCanMutateTransferFee,
-            });
+            mptAlice.create(
+                {.transferFee = 100, .ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock});
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -1005,11 +997,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
-                .mutableFlags = tmfMPTCanMutateTransferFee,
-            });
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance});
 
             mptAlice.set({
                 .account = alice,
@@ -5085,7 +5075,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testcase("mutate lsfMPTCanHoldConfidentialBalance");
         using namespace test::jtx;
 
-        // can not create mpt issuance with tmfMPTCannotEnableCanHoldConfidentialBalance
+        // can not create mpt issuance with tifMPTCanHoldConfidentialBalance
         // when featureDynamicMPT is disabled
         {
             Env env{*this, features - featureDynamicMPT};
@@ -5095,12 +5085,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 0,
-                .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
+                .immutableFlags = tifMPTCanHoldConfidentialBalance,
                 .err = temDISABLED,
             });
         }
 
-        // can not create mpt issuance with tmfMPTCannotEnableCanHoldConfidentialBalance when
+        // can not create mpt issuance with tifMPTCanHoldConfidentialBalance when
         // featureConfidentialTransfer is disabled
         {
             Env env{*this, features - featureConfidentialTransfer};
@@ -5110,12 +5100,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 0,
-                .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
+                .immutableFlags = tifMPTCanHoldConfidentialBalance,
                 .err = temDISABLED,
             });
         }
 
-        // if lsmfMPTCannotEnableCanHoldConfidentialBalance is set, can not set/clear
+        // if lsifMPTCanHoldConfidentialBalance is set, can not set/clear
         // lsfMPTCanHoldConfidentialBalance
         {
             Env env{*this, features};
@@ -5126,12 +5116,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer,
-                .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
+                .immutableFlags = tifMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -5146,7 +5136,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
-                .mutableFlags = tmfMPTCanEnableCanLock,
+                .immutableFlags = tifMPTCanLock,
             });
 
             mptAlice.authorize({
@@ -5198,14 +5188,14 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // lsfMPTCanHoldConfidentialBalance was already set
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
             });
             verifyToggle(tesSUCCESS, 10);
 
-            // set tmfMPTSetCanHoldConfidentialBalance again
+            // set tfMPTSetCanHoldConfidentialBalance again
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
             });
             verifyToggle(tesSUCCESS, 30);
         }
@@ -5218,7 +5208,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            // lsmfMPTCannotEnableCanHoldConfidentialBalance is false by default,
+            // lsifMPTCanHoldConfidentialBalance is false by default,
             // so that lsfMPTCanHoldConfidentialBalance can be mutated
             mptAlice.create({
                 .ownerCount = 1,
@@ -5241,7 +5231,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // confidential outstanding balance
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                .flags = tfMPTSetCanHoldConfidentialBalance,
                 .err = tecNO_PERMISSION,
             });
         }
