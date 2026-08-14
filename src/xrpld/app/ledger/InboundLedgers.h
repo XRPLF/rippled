@@ -79,7 +79,7 @@ public:
      * Called when a complete history ledger is obtained.
      */
     virtual void
-    onLedgerFetched(std::shared_ptr<InboundLedger> const& inbound, bool countFetch = true) = 0;
+    onLedgerFetched(std::shared_ptr<InboundLedger> const& inbound, bool countFetch) = 0;
 
     virtual std::shared_ptr<Ledger const>
     getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger) = 0;

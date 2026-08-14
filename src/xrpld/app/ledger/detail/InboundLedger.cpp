@@ -217,9 +217,15 @@ InboundLedger::init(ScopedLockType& collectionLock)
     auto const baseLedger = findBestFullyWiredBase(app_, ledger_, journal_);
     if (!primeInboundLedgerForUse(ledger_, baseLedger, journal_, "InboundLedger::init"))
     {
-        // Header-only / cache hits are not a real acquire. Fall through
-        // to the network path instead of treating this as a hard fail.
+        // tryDB already set have* from a header/cache hit. Leave those
+        // flags set and trigger() requests nothing, then the acquire
+        // burns six timeouts. Drop the local ledger so the network
+        // path re-fetches.
         complete_ = false;
+        haveHeader_ = false;
+        haveTransactions_ = false;
+        haveState_ = false;
+        ledger_.reset();
         addPeers();
         queueJob(sl);
         return;
@@ -565,7 +571,7 @@ InboundLedger::done()
             switch (reason_)
             {
                 case Reason::HISTORY:
-                    app_.getInboundLedgers().onLedgerFetched(shared_from_this());
+                    app_.getInboundLedgers().onLedgerFetched(shared_from_this(), true);
                     break;
                 default:
                     app_.getLedgerMaster().storeLedger(ledger_);

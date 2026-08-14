@@ -695,9 +695,12 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
             if (it == ledgerHashes.end())
                 break;
 
-            if (!nodeStore.fetchNodeObject(
-                    ledgerHashes.begin()->second.ledgerHash, ledgerHashes.begin()->first) &&
-                !getLedgerByHash(ledgerHashes.begin()->second.ledgerHash))
+            auto const& probe = ledgerHashes.begin()->second;
+            // Resident cache only. getLedgerByHash() falls through to
+            // loadByHash(acquire=true) and can schedule a network fetch
+            // on every 500-seq batch.
+            if (!nodeStore.fetchNodeObject(probe.ledgerHash, ledgerHashes.begin()->first) &&
+                !ledgerHistory_.getCachedLedgerByHash(probe.ledgerHash))
             {
                 // Not in node store and not in memory — genuinely missing
                 // The ledger is not backed by the node store
