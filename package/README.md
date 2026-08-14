@@ -168,19 +168,6 @@ Because nightlies get a rising release number, the `develop` repositories
 accumulate a package per nightly and need a Nexus cleanup policy to stay bounded;
 tagged channels publish each version once.
 
-To publish by hand, for example after a repackage:
-
-```bash
-# From the repo root, with packages already built under build/.
-# Pick the channel from the table above.
-
-# Check what would be uploaded and where. No credentials needed for a dry run.
-DRY_RUN=1 ./package/publish_pkg.sh unstable build
-
-export NEXUS_USERNAME=... NEXUS_PASSWORD=...
-./package/publish_pkg.sh unstable build
-```
-
 ## How `build_pkg.sh` works
 
 `build_pkg.sh` derives the `xrpld` software version from
