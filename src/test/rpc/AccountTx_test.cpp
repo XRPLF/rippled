@@ -1701,6 +1701,50 @@ class AccountTx_test : public beast::unit_test::Suite
     }
 
     void
+    testRWDBAccountTxsHonorLimit()
+    {
+        testcase("RWDB account txs honor limit when unlimited");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        for (int i = 0; i < 5; ++i)
+        {
+            env(noop(a1));
+            env.close();
+        }
+
+        auto& db = env.app().getRelationalDatabase();
+        AccountID const account = a1.id();
+
+        auto const limited = [&](bool unlimited, std::uint32_t limit) {
+            return RelationalDatabase::AccountTxOptions{
+                .account = account,
+                .ledgerRange = {.min = 0, .max = 0},
+                .offset = 0,
+                .limit = limit,
+                .bUnlimited = unlimited};
+        };
+
+        BEAST_EXPECT(db.getOldestAccountTxs(limited(true, 2)).size() == 2);
+        BEAST_EXPECT(db.getNewestAccountTxs(limited(true, 2)).size() == 2);
+        BEAST_EXPECT(db.getOldestAccountTxsB(limited(true, 2)).size() == 2);
+        BEAST_EXPECT(db.getNewestAccountTxsB(limited(true, 2)).size() == 2);
+
+        auto const allOldest = db.getOldestAccountTxs(limited(true, 0));
+        BEAST_EXPECT(allOldest.size() >= 5);
+        BEAST_EXPECT(allOldest.size() <= 200);
+        BEAST_EXPECT(db.getNewestAccountTxs(limited(false, 2)).size() == 2);
+    }
+
+    void
     testRWDBAdminHugeLimit()
     {
         testcase("RWDB admin huge account_tx limit does not exhaust memory");
@@ -1888,6 +1932,7 @@ public:
         testRWDBAccountTxIdempotentSave();
         testRWDBDelegationFilter();
         testRWDBUnboundedLedgerRange();
+        testRWDBAccountTxsHonorLimit();
         testRWDBAdminHugeLimit();
         testRWDBTransactionMovesLedger();
         testRWDBHashLookupSurvivesOldSeqPrune();

@@ -843,19 +843,23 @@ LedgerMaster::setFullLedger(
     if (isCurrent)
         ledgerHistory_.insert(ledger, true);
 
-    // Pin a sliding window of recently validated current ledgers so their
-    // SHAMap state trees stay resident via shared_ptr. Only needed when the
-    // node store cannot re-fetch dropped objects. Size the window from
+    // Pin a sliding window of recently accepted ledgers so their SHAMap
+    // state trees stay resident via shared_ptr. Only needed when the node
+    // store cannot re-fetch dropped objects. Size the window from
     // ledger_history so advertised history stays readable. RWDB rejects
     // ledger_history=full, so this cannot pin unbounded history.
-    if (isCurrent && app_.getSHAMapStore().isNullBackend() && ledgerHistorySize_ > 0)
+    // Standalone switchLCL passes isCurrent=false; still pin there or the
+    // window never fills and swept ledgers cannot be reloaded.
+    if ((isCurrent || standalone_) && app_.getSHAMapStore().isNullBackend() &&
+        ledgerHistorySize_ > 0)
     {
         // Pin only. Do not walk the state tree here: that walk is too
         // expensive to hold mutex_ (or to run at all on mainnet). Inbound
         // ledgers are primed via primeInboundLedgerForUse; genesis is
         // already fully wired.
         std::scoped_lock const ml(mutex_);
-        retainedLedgers_.push_back(ledger);
+        if (retainedLedgers_.empty() || retainedLedgers_.back() != ledger)
+            retainedLedgers_.push_back(ledger);
         while (retainedLedgers_.size() > ledgerHistorySize_)
             retainedLedgers_.pop_front();
     }

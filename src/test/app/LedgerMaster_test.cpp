@@ -223,20 +223,12 @@ public:
         env.close();
 
         auto& lm = env.app().getLedgerMaster();
-        // standalone switchLCL passes isCurrent=false, so pin explicitly
-        // to exercise the retain window used on a validating node.
-        auto pinCurrent = [&]() {
-            auto ledger = std::dynamic_pointer_cast<Ledger const>(env.closed());
-            if (ledger)
-                lm.setFullLedger(ledger, true, true);
-        };
-        pinCurrent();
-
+        // env.close() goes through standalone switchLCL with isCurrent=false.
+        // The retain window must still pin RWDB ledgers.
         for (std::uint32_t i = 0; i < kHistory + 4; ++i)
         {
             env(noop(alice));
             env.close();
-            pinCurrent();
         }
 
         auto const last = env.closed()->header().seq;

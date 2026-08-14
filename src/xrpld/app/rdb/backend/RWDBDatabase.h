@@ -121,6 +121,23 @@ private:
         transactionMap_.erase(it);
     }
 
+    // Match SQLite transactionsSQL: bUnlimited means "do not clamp to the
+    // page length"; the requested limit still applies. limit 0 / UINT32_MAX
+    // fall back to the page length so a privileged caller cannot pull every
+    // stored transaction in one response.
+    static std::uint32_t
+    accountTxResultLimit(AccountTxOptions const& options, bool binary)
+    {
+        static constexpr std::uint32_t kNonbinaryPageLength = 200;
+        static constexpr std::uint32_t kBinaryPageLength = 500;
+        auto const pageLength = binary ? kBinaryPageLength : kNonbinaryPageLength;
+        if (options.limit == 0 || options.limit == std::numeric_limits<std::uint32_t>::max())
+            return pageLength;
+        if (!options.bUnlimited)
+            return std::min(pageLength, options.limit);
+        return options.limit;
+    }
+
     // A min/max of 0 is unbounded, matching AccountTxOptions.
     static auto
     ledgerTxBounds(
@@ -776,9 +793,10 @@ public:
         auto const& accountData = it->second;
         auto [txIt, txEnd] = ledgerTxBounds(
             accountData.ledgerTxMap, options.ledgerRange.min, options.ledgerRange.max);
+        auto const maxResults = accountTxResultLimit(options, false);
 
         std::size_t skipped = 0;
-        for (; txIt != txEnd && (options.bUnlimited || result.size() < options.limit); ++txIt)
+        for (; txIt != txEnd && result.size() < maxResults; ++txIt)
         {
             for (auto const& accountTx : txIt->second)
             {
@@ -788,7 +806,7 @@ public:
                     continue;
                 }
                 result.push_back(accountTx);
-                if (!options.bUnlimited && result.size() >= options.limit)
+                if (result.size() >= maxResults)
                     break;
             }
         }
@@ -811,11 +829,11 @@ public:
         auto const& accountData = it->second;
         auto [txIt, txEnd] = ledgerTxBounds(
             accountData.ledgerTxMap, options.ledgerRange.min, options.ledgerRange.max);
+        auto const maxResults = accountTxResultLimit(options, false);
 
         std::size_t skipped = 0;
         for (auto rIt = std::make_reverse_iterator(txEnd);
-             rIt != std::make_reverse_iterator(txIt) &&
-             (options.bUnlimited || result.size() < options.limit);
+             rIt != std::make_reverse_iterator(txIt) && result.size() < maxResults;
              ++rIt)
         {
             for (auto innerRIt = rIt->second.rbegin(); innerRIt != rIt->second.rend(); ++innerRIt)
@@ -827,7 +845,7 @@ public:
                 }
                 AccountTx const accountTx = *innerRIt;
                 result.push_back(accountTx);
-                if (!options.bUnlimited && result.size() >= options.limit)
+                if (result.size() >= maxResults)
                     break;
             }
         }
@@ -850,9 +868,10 @@ public:
         auto const& accountData = it->second;
         auto [txIt, txEnd] = ledgerTxBounds(
             accountData.ledgerTxMap, options.ledgerRange.min, options.ledgerRange.max);
+        auto const maxResults = accountTxResultLimit(options, true);
 
         std::size_t skipped = 0;
-        for (; txIt != txEnd && (options.bUnlimited || result.size() < options.limit); ++txIt)
+        for (; txIt != txEnd && result.size() < maxResults; ++txIt)
         {
             for (auto const& accountTx : txIt->second)
             {
@@ -866,7 +885,7 @@ public:
                     txn->getSTransaction()->getSerializer().peekData(),
                     txMeta->getAsObject().getSerializer().peekData(),
                     txIt->first);
-                if (!options.bUnlimited && result.size() >= options.limit)
+                if (result.size() >= maxResults)
                     break;
             }
         }
@@ -889,11 +908,11 @@ public:
         auto const& accountData = it->second;
         auto [txIt, txEnd] = ledgerTxBounds(
             accountData.ledgerTxMap, options.ledgerRange.min, options.ledgerRange.max);
+        auto const maxResults = accountTxResultLimit(options, true);
 
         std::size_t skipped = 0;
         for (auto rIt = std::make_reverse_iterator(txEnd);
-             rIt != std::make_reverse_iterator(txIt) &&
-             (options.bUnlimited || result.size() < options.limit);
+             rIt != std::make_reverse_iterator(txIt) && result.size() < maxResults;
              ++rIt)
         {
             for (auto innerRIt = rIt->second.rbegin(); innerRIt != rIt->second.rend(); ++innerRIt)
@@ -908,7 +927,7 @@ public:
                     txn->getSTransaction()->getSerializer().peekData(),
                     txMeta->getAsObject().getSerializer().peekData(),
                     rIt->first);
-                if (!options.bUnlimited && result.size() >= options.limit)
+                if (result.size() >= maxResults)
                     break;
             }
         }
