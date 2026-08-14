@@ -91,6 +91,8 @@ isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::ui
 
     if (sle.getType() == ltMPTOKEN)
     {
+        XRPL_ASSERT(sle[sfAccount] == account, "xrpl::isFrozen : valid MPToken holder");
+
         MPTID const mptID = sle[sfMPTokenIssuanceID];
         auto const issuanceSle = view.read(keylet::mptokenIssuance(mptID));
 
