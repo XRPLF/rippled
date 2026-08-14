@@ -66,6 +66,12 @@ namespace val {
 inline constexpr auto complete = makeStr("complete");
 inline constexpr auto failed = makeStr("failed");
 /**
+ * Set when the acquisition is abandoned before it finishes, i.e. the
+ * InboundLedger is destroyed while !isDone(). Distinct from `failed`, which
+ * means the fetch ran to its retry limit and gave up.
+ */
+inline constexpr auto aborted = makeStr("aborted");
+/**
  * ledger.acquire reason values (mirror InboundLedger::Reason).
  */
 inline constexpr auto history = makeStr("history");
