@@ -884,7 +884,11 @@ LedgerMaster::setFullLedger(
 
     {
         std::scoped_lock const ml(completeLock_);
-        completeLedgers_.insert(ledger->header().seq);
+        // Null-backend history backfill is not pinned (isCurrent=false
+        // and not standalone). Do not advertise sequences we cannot
+        // reload after LedgerHistory sweeps them.
+        if (!app_.getSHAMapStore().isNullBackend() || isCurrent || standalone_)
+            completeLedgers_.insert(ledger->header().seq);
     }
 
     {

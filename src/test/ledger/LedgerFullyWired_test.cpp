@@ -164,6 +164,14 @@ public:
 
         auto const info = env.rpc("account_info", alice.human());
         BEAST_EXPECT(info[jss::result][jss::status] == jss::success);
+
+        // saveValidatedLedger store()'s the header, but the RWDB node
+        // store must not serve it back from a DatabaseNodeImp cache.
+        if (ledger)
+        {
+            BEAST_EXPECT(!env.app().getNodeStore().fetchNodeObject(
+                ledger->header().hash, ledger->header().seq));
+        }
     }
 
     void

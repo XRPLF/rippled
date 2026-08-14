@@ -1923,6 +1923,74 @@ class AccountTx_test : public beast::unit_test::Suite
     }
 
     void
+    testRWDBHashLookupRepointsAfterOverwrite()
+    {
+        testcase("RWDB hash lookup re-points after sequence overwrite");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+
+        auto const src = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(src);
+        if (!src)
+            return;
+
+        auto const hashH = src->header().hash;
+        auto const seqA = src->header().seq;
+        auto& db = env.app().getRelationalDatabase();
+
+        LedgerHeader relocated = src->header();
+        relocated.seq += 10;
+        bool loaded = false;
+        auto atB = std::make_shared<Ledger>(
+            relocated,
+            loaded,
+            false,
+            src->rules(),
+            env.app().config().fees.toFees(),
+            env.app().getNodeFamily(),
+            env.app().getJournal("AccountTx"));
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(db.saveValidatedLedger(atB, false));
+
+        env(noop(a1));
+        env.close();
+        auto const src2 = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(src2);
+        if (!src2)
+            return;
+
+        LedgerHeader other = src2->header();
+        other.seq = relocated.seq;
+        loaded = false;
+        auto overwrite = std::make_shared<Ledger>(
+            other,
+            loaded,
+            false,
+            src2->rules(),
+            env.app().config().fees.toFees(),
+            env.app().getNodeFamily(),
+            env.app().getJournal("AccountTx"));
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(other.hash != hashH);
+        BEAST_EXPECT(db.saveValidatedLedger(overwrite, false));
+
+        BEAST_EXPECT(db.getLedgerInfoByIndex(seqA));
+        auto const byHash = db.getLedgerInfoByHash(hashH);
+        BEAST_EXPECT(byHash);
+        if (byHash)
+            BEAST_EXPECT(byHash->seq == seqA);
+    }
+
+    void
     testRWDBAccountTxPageStatusValidated()
     {
         testcase("RWDB account_tx pages report validated status");
@@ -2044,6 +2112,7 @@ public:
         testRWDBAdminHugeLimit();
         testRWDBTransactionMovesLedger();
         testRWDBHashLookupSurvivesOldSeqPrune();
+        testRWDBHashLookupRepointsAfterOverwrite();
         testRWDBAccountTxPageStatusValidated();
         testRWDBMarkerStaysInsideLedgerRange();
         testContents();

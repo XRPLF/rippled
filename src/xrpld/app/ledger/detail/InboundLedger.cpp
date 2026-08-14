@@ -36,7 +36,6 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
 
 #include <xrpl.pb.h>
@@ -110,7 +109,7 @@ primeInboundLedgerForUse(
                                  << " (sync-pinned state, " << txLeaves << " tx leaves)";
             return true;
         }
-        catch (SHAMapMissingNode const& e)
+        catch (std::exception const& e)
         {
             JLOG(journal.warn()) << context << ": incomplete ledger " << ledger->header().seq
                                  << ": " << e.what();
@@ -136,7 +135,7 @@ primeInboundLedgerForUse(
                              << baseLedger->header().seq << ", " << txLeaves << " tx leaves)";
         return true;
     }
-    catch (SHAMapMissingNode const& e)
+    catch (std::exception const& e)
     {
         JLOG(journal.warn()) << context << ": incomplete ledger " << ledger->header().seq << ": "
                              << e.what();
@@ -150,8 +149,7 @@ inboundLedgerJobLimit(Application& app)
     // RWDB acquires more ledgers concurrently because there is no disk
     // wait, but a 100x bump (500) can starve other JobQueue types. 50 is
     // enough to keep inbound catch-up moving without flooding JtLedgerData.
-    auto const type = get(app.config().section(xrpl::Sections::kNodeDatabase), "type", "");
-    return boost::iequals(type, "rwdb") ? 50u : 5u;
+    return app.getSHAMapStore().isNullBackend() ? 50u : 5u;
 }
 
 }  // namespace
@@ -219,9 +217,11 @@ InboundLedger::init(ScopedLockType& collectionLock)
     auto const baseLedger = findBestFullyWiredBase(app_, ledger_, journal_);
     if (!primeInboundLedgerForUse(ledger_, baseLedger, journal_, "InboundLedger::init"))
     {
+        // Header-only / cache hits are not a real acquire. Fall through
+        // to the network path instead of treating this as a hard fail.
         complete_ = false;
-        failed_ = true;
-        done();
+        addPeers();
+        queueJob(sl);
         return;
     }
 
@@ -548,8 +548,11 @@ InboundLedger::done()
         auto const baseLedger = findBestFullyWiredBase(app_, ledger_, journal_);
         if (!primeInboundLedgerForUse(ledger_, baseLedger, journal_, "InboundLedger::done"))
         {
+            // Incomplete data is retryable. Mark failed so acquire() can
+            // replace this object, but do not logFailure (5 minute poison).
             complete_ = false;
             failed_ = true;
+            skipFailureLog_ = true;
         }
 
         if (complete_ && !failed_)
@@ -578,7 +581,7 @@ InboundLedger::done()
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
             self->app_.getLedgerMaster().tryAdvance();
         }
-        else
+        else if (self->failed_ && !self->skipFailureLog_)
         {
             self->app_.getInboundLedgers().logFailure(self->hash_, self->seq_);
         }

@@ -99,13 +99,15 @@ public:
                 }
 
                 auto it = ledgers_.find(hash);
-                if (it != ledgers_.end())
+                if (it != ledgers_.end() && !it->second->isFailed())
                 {
                     isNew = false;
                     inbound = it->second;
                 }
                 else
                 {
+                    if (it != ledgers_.end())
+                        ledgers_.erase(it);
                     inbound = std::make_shared<InboundLedger>(
                         app_, hash, seq, reason, std::ref(clock_), peerSetBuilder_->build());
                     ledgers_.emplace(hash, inbound);

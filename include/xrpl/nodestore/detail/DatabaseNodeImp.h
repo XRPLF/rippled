@@ -56,7 +56,10 @@ public:
                 Throw<std::runtime_error>("Specified negative value for cache_age");
         }
 
-        if (cacheSize.has_value() || cacheAge.has_value())
+        // A zero-size, zero-age cache cannot serve objects. Skip creating
+        // one so null-backend (RWDB) nodes do not satisfy tryDB from a
+        // recently store()'d header that the backend cannot reload.
+        if ((cacheSize.value_or(0) > 0) || (cacheAge.value_or(0) > 0))
         {
             cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
                 "DatabaseNodeImp",

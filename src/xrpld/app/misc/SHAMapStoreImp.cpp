@@ -224,19 +224,31 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(Sections::kNodeDatabase);
 
-    // Provide default values.
-    if (!nscfg.exists(Keys::kCacheSize))
+    if (isNullBackend_)
     {
-        nscfg.set(
-            Keys::kCacheSize,
-            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+        // The backend cannot reload objects. A DatabaseNodeImp object
+        // cache would make tryDB treat a recently store()'d header as a
+        // local hit and primeInboundLedgerForUse would mark it fully
+        // wired without a real acquire.
+        nscfg.set(Keys::kCacheSize, "0");
+        nscfg.set(Keys::kCacheAge, "0");
     }
-
-    if (!nscfg.exists(Keys::kCacheAge))
+    else
     {
-        nscfg.set(
-            Keys::kCacheAge,
-            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+        // Provide default values.
+        if (!nscfg.exists(Keys::kCacheSize))
+        {
+            nscfg.set(
+                Keys::kCacheSize,
+                std::to_string(app_.config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+        }
+
+        if (!nscfg.exists(Keys::kCacheAge))
+        {
+            nscfg.set(
+                Keys::kCacheAge,
+                std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+        }
     }
 
     std::unique_ptr<node_store::Database> db;

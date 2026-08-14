@@ -182,6 +182,7 @@ private:
     bool haveTransactions_{false};
     bool signaled_{false};
     bool byHash_{true};
+    bool skipFailureLog_{false};
     std::uint32_t seq_;
     Reason const reason_;
 

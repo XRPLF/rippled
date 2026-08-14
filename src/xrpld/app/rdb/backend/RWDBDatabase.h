@@ -51,8 +51,19 @@ private:
     eraseHashMappingIfOwnedUnlocked(uint256 const& hash, LedgerIndex seq)
     {
         auto it = ledgerHashToSeq_.find(hash);
-        if (it != ledgerHashToSeq_.end() && it->second == seq)
-            ledgerHashToSeq_.erase(it);
+        if (it == ledgerHashToSeq_.end() || it->second != seq)
+            return;
+        ledgerHashToSeq_.erase(it);
+        // Re-point at a surviving row with the same hash (newest first)
+        // so a later overwrite of this sequence does not hide an older copy.
+        for (auto rit = ledgers_.rbegin(); rit != ledgers_.rend(); ++rit)
+        {
+            if (rit->first != seq && rit->second.info.hash == hash)
+            {
+                ledgerHashToSeq_[hash] = rit->first;
+                break;
+            }
+        }
     }
 
     // Drop any previous row for this sequence so a second save (validation
