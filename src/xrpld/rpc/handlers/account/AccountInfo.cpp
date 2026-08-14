@@ -24,10 +24,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/format/free_funcs.hpp>
-
 #include <array>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -62,7 +61,7 @@ injectSLE(json::Value& jv, SLE const& sle)
         md5 = toLower(md5);
         // VFALCO TODO Give a name to this constant and move it
         //             to a more visible location.
-        jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
+        jv[jss::urlgravatar] = std::format("https://www.gravatar.com/avatar/{}", md5);
     }
 }
 
