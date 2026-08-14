@@ -50,6 +50,9 @@ let
   # environment (the plain stdenv compiler in the dev shell, the custom-glibc
   # wrappers in ci-env.nix), so those callers pass their own `package`; the
   # clang tooling is environment-independent and is linked in commonPackages.
+  #
+  # Exec wrappers, not symlinks: the nixpkgs clang-tools wrapper dispatches on
+  # `$(basename $0)-unwrapped`, which a suffixed symlink turns into a dead path.
   mkVersionedToolLinks =
     {
       name,
@@ -57,12 +60,15 @@ let
       version,
       tools,
     }:
-    pkgs.linkFarm "${name}-${toString version}-versioned-links" (
-      map (tool: {
-        name = "bin/${tool}-${toString version}";
-        path = "${package}/bin/${tool}";
-      }) tools
-    );
+    pkgs.symlinkJoin {
+      name = "${name}-${toString version}-versioned-links";
+      paths = map (
+        tool:
+        pkgs.writeShellScriptBin "${tool}-${toString version}" ''
+          exec "${package}/bin/${tool}" "$@"
+        ''
+      ) tools;
+    };
 
   # The cc-wrapper doesn't re-export gcov, but coverage tooling (gcovr) needs a
   # gcov that exactly matches the compiler. Surface it from a gcc `cc` output.
