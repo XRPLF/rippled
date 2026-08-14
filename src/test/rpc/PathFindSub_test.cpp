@@ -31,6 +31,7 @@
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
@@ -715,6 +716,24 @@ class PathFindSub_test : public beast::unit_test::Suite
         BEAST_EXPECT(runUpdateAll(env, env.current(), /*midClose=*/true));
         auto mid = waitPathFindUpdate(*wsc, 5s, /*requireAlts=*/false);
         BEAST_EXPECT(mid);
+        if (mid)
+        {
+            // Open views inherit the parent hash and only bump seq. The
+            // reply must report the closed ledger identity, not (parent
+            // hash, open seq).
+            auto const closed = env.closed();
+            auto const open = env.current();
+            BEAST_EXPECT(mid->isMember(jss::ledger_hash));
+            BEAST_EXPECT(mid->isMember(jss::ledger_index));
+            if (mid->isMember(jss::ledger_hash) && mid->isMember(jss::ledger_index))
+            {
+                auto const hash = (*mid)[jss::ledger_hash].asString();
+                auto const idx = (*mid)[jss::ledger_index].asUInt();
+                BEAST_EXPECT(hash == to_string(closed->header().hash));
+                BEAST_EXPECT(idx == closed->seq());
+                BEAST_EXPECT(!(idx == open->seq() && hash == to_string(open->header().hash)));
+            }
+        }
         drainPathFind(*wsc);
 
         // Same-seq closed wave still runs (mid-close did not pin lastIndex_).

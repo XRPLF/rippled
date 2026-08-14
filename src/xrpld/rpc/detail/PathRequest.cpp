@@ -1078,10 +1078,17 @@ PathRequest::doUpdate(
     // Prefer calcLedger seq for rediscovery timing when mid-close passes open.
     auto const ledgerForSeq = calcLedger ? calcLedger : cache->getLedger();
     auto const ledgerSeq = ledgerForSeq->seq();
-    // Identify the view used for this reply. Creates (and closed waves) use
-    // the shared cache ledger; mid-close may pass the open view as calcLedger.
-    newStatus[jss::ledger_hash] = to_string(ledgerForSeq->header().hash);
-    newStatus[jss::ledger_index] = ledgerSeq;
+    // Identity must come from a closed view. An OpenView copies the parent
+    // header and only bumps seq, so header.hash is the previous ledger —
+    // pairing it with seq+1 is a mismatched (hash, index). Mid-close still
+    // prices against calcLedger; report the cache / closed ledger instead.
+    auto const identityLedger =
+        (ledgerForSeq && !ledgerForSeq->open()) ? ledgerForSeq : cache->getLedger();
+    if (identityLedger && !identityLedger->open())
+    {
+        newStatus[jss::ledger_hash] = to_string(identityLedger->header().hash);
+        newStatus[jss::ledger_index] = identityLedger->seq();
+    }
 
     // Full Pathfinder when: first/fast update, failed-search backoff elapsed, or
     // staggered rediscovery is due. Timed rediscovery is skipped while the
