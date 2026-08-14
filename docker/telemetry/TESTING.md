@@ -63,7 +63,7 @@ curl -sf http://localhost:3200/ready >/dev/null && echo "tempo ready"
 > The collector's `health_check` extension listens on **13133**, but
 > `docker-compose.yml` publishes only 4317, 4318 and 8889 — so 13133 is not
 > reachable from the host with the base stack. It is published only by the
-> Phase-10 workload stack (`docker-compose.workload.yaml`).
+> workload validation stack (`docker-compose.workload.yaml`).
 
 ### Step 2: Start xrpld in standalone mode
 
