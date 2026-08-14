@@ -13,6 +13,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -23,6 +24,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <optional>
 #include <stdexcept>
 
 namespace xrpl {
@@ -63,9 +65,23 @@ VaultDeposit::preflight(PreflightContext const& ctx)
 TER
 VaultDeposit::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(ctx.view, vault);
+        if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: vault deposit is not allowed in the investment "
+                                   "or redemption phase.";
+            return tecEXPIRED;
+        }
+    }
 
     auto const& account = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];
@@ -90,7 +106,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleShareIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleShareIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleShareIssuance)
     {
         // LCOV_EXCL_START
@@ -125,13 +141,21 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // Cannot deposit inside Vault an Asset frozen for the depositor
-    if (isFrozen(ctx.view, account, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    if (fix330Enabled)
+    {
+        if (auto const ret = checkDepositFreeze(ctx.view, account, vaultAccount, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        // Cannot deposit inside Vault an Asset frozen for the depositor
+        if (isFrozen(ctx.view, account, vaultAsset))
+            return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
-    // Cannot deposit if the shares of the vault are frozen
-    if (isFrozen(ctx.view, account, vaultShare))
-        return tecLOCKED;
+        // Cannot deposit if the shares of the vault are frozen
+        if (isFrozen(ctx.view, account, vaultShare))
+            return tecLOCKED;
+    }
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
@@ -159,7 +183,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const roundedAmount = fix320Enabled ? roundToVaultScale(amount, vault) : amount;
 
     if (fix320Enabled && roundedAmount == beast::kZero)
@@ -204,6 +227,7 @@ VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     auto const vaultAsset = vault->at(sfAsset);
@@ -224,7 +248,7 @@ VaultDeposit::doApply()
 
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -238,7 +262,7 @@ VaultDeposit::doApply()
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, accountID_, preFeeBalance_, j_);
+                applyViewContext, mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -248,7 +272,11 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(), preFeeBalance_, mptIssuanceID->value(), accountID_, ctx_.journal);
+                    applyViewContext,
+                    preFeeBalance_,
+                    mptIssuanceID->value(),
+                    accountID_,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -260,7 +288,7 @@ VaultDeposit::doApply()
             XRPL_ASSERT(
                 accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
-                    view(),
+                    applyViewContext,
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
@@ -327,7 +355,7 @@ VaultDeposit::doApply()
 
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(
-            view(), accountID_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
+            view(), accountID_, vaultAccount, assetsDeposited, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -354,8 +382,8 @@ VaultDeposit::doApply()
     }
 
     // Transfer shares from vault to depositor.
-    if (auto const ter =
-            accountSend(view(), vaultAccount, accountID_, sharesCreated, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), vaultAccount, accountID_, sharesCreated, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 

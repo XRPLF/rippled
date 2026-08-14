@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -24,10 +25,26 @@
 #include <algorithm>
 #include <cstdint>
 #include <optional>
+#include <utility>
 #include <variant>
 #include <vector>
 
 namespace xrpl {
+
+namespace {
+
+/*
+ * True iff the recorded sfVaultKind identifies a closed-ended vault.
+ * Centralizes the presence + enum-value check used by the phase-gate
+ * invariants below.
+ */
+[[nodiscard]] bool
+isClosedEnded(std::optional<std::uint8_t> const& vaultKind)
+{
+    return vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded);
+}
+
+}  // namespace
 
 ValidVault::Vault
 ValidVault::Vault::make(SLE const& from)
@@ -44,6 +61,9 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.vaultKind = from[~sfVaultKind];
+    self.subscriptionDate = from[~sfSubscriptionDate];
+    self.redemptionDate = from[~sfRedemptionDate];
     return self;
 }
 
@@ -199,7 +219,7 @@ ValidVault::deltaAssets(AccountID const& id) const
             {
                 if (isXRP(issue))
                     return lookup(keylet::account(id).key);
-                auto result = lookup(keylet::line(id, issue).key);
+                auto result = lookup(keylet::trustLine(id, issue).key);
                 // Trust-line balance is stored from the low-account's perspective;
                 // negate if id is the high account so the delta is in id's terms.
                 if (result && id > issue.getIssuer())
@@ -222,7 +242,10 @@ ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
     if (!ret.has_value() || !vaultAsset.native())
         return ret;
 
-    if (auto const delegate = tx[~sfDelegate]; delegate.has_value() && *delegate != tx[sfAccount])
+    // Only add the fee back if tx[sfAccount] actually paid it. When the fee is
+    // paid by someone else (a delegate or a fee sponsor), the
+    // account's XRP balance moved only by the vault amount.
+    if (tx.getFeePayerID() != tx[sfAccount])
         return ret;
 
     ret->delta += fee.drops();
@@ -238,7 +261,7 @@ ValidVault::deltaShares(AccountID const& id) const
     auto const& afterVault = afterVault_[0];
     auto const it = [&]() {
         if (id == afterVault.pseudoId)
-            return deltas_.find(keylet::mptIssuance(afterVault.shareMPTID).key);
+            return deltas_.find(keylet::mptokenIssuance(afterVault.shareMPTID).key);
         return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
     }();
 
@@ -249,6 +272,37 @@ bool
 ValidVault::isVaultEmpty(Vault const& vault)
 {
     return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+}
+
+bool
+ValidVault::finalizeLoanSet(ReadView const& view, beast::Journal const& j) const
+{
+    if (afterVault_.empty())
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::ValidVault::finalizeLoanSet : vault exists");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    auto const& afterVault = afterVault_[0];
+
+    // Loan origination against a closed-ended vault is only permitted while the vault is in the
+    // Investment phase - strictly past SubscriptionDate and before RedemptionDate. Open-ended
+    // vaults have NoPhase and are unaffected.
+    auto const phase = getVaultPhase(
+        view, afterVault.vaultKind, afterVault.subscriptionDate, afterVault.redemptionDate);
+    if (phase == VaultPhase::NoPhase)
+        return true;
+
+    if (phase != VaultPhase::Investment)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan origination only allowed in Investment phase";
+        return false;
+    }
+
+    return true;
 }
 
 std::int32_t
@@ -411,7 +465,7 @@ ValidVault::finalize(
                 return e;
         }
 
-        auto const sleShares = view.read(keylet::mptIssuance(afterVault.shareMPTID));
+        auto const sleShares = view.read(keylet::mptokenIssuance(afterVault.shareMPTID));
 
         return sleShares ? std::optional<Shares>(Shares::make(*sleShares)) : std::nullopt;
     }();
@@ -462,7 +516,7 @@ ValidVault::finalize(
 
     if (afterVault.assetsAvailable < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets available must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets available must not be negative";
         result = false;
     }
 
@@ -480,15 +534,21 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (view.rules().enabled(fixCleanup3_4_0) && afterVault.lossUnrealized < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loss unrealized must not be negative";
+        result = false;
+    }
+
     if (afterVault.assetsTotal < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets outstanding must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets outstanding must not be negative";
         result = false;
     }
 
     if (afterVault.assetsMaximum < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets maximum must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets maximum must not be negative";
         result = false;
     }
 
@@ -510,6 +570,9 @@ ValidVault::finalize(
             "unrealized";
         result = false;
     }
+
+    // Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced by
+    // NoModifiedUnmodifiableFields in InvariantCheck.cpp.
 
     auto const beforeShares = [&]() -> std::optional<Shares> {
         if (beforeVault_.empty())
@@ -597,6 +660,26 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                if (isClosedEnded(afterVault.vaultKind))
+                {
+                    if (!afterVault.subscriptionDate || !afterVault.redemptionDate)
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: closed-ended vault must have SubscriptionDate "
+                               "and RedemptionDate";
+                        result = false;
+                    }
+                    else if (!isValidClosedEndedGap(
+                                 *afterVault.subscriptionDate, *afterVault.redemptionDate))
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: closed-ended vault RedemptionDate - "
+                               "SubscriptionDate must be within [MIN_INVESTMENT_PERIOD, "
+                               "MAX_INVESTMENT_PERIOD)";
+                        result = false;
+                    }
+                }
+
                 return result;
             }
             case ttVAULT_SET: {
@@ -656,6 +739,21 @@ ValidVault::finalize(
                 XRPL_ASSERT(
                     !beforeVault_.empty(), "xrpl::ValidVault::finalize : deposit updated a vault");
                 auto const& beforeVault = beforeVault_[0];
+
+                // Deposit is only allowed while the vault is in NoPhase or
+                // Subscription.
+                auto const depositPhase = getVaultPhase(
+                    view,
+                    afterVault.vaultKind,
+                    afterVault.subscriptionDate,
+                    afterVault.redemptionDate);
+                if (depositPhase != VaultPhase::NoPhase && depositPhase != VaultPhase::Subscription)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: deposit only allowed in "
+                        "Subscription or NoPhase";
+                    result = false;
+                }
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
@@ -794,6 +892,20 @@ ValidVault::finalize(
                     !beforeVault_.empty(),
                     "xrpl::ValidVault::finalize : withdrawal updated a vault");
                 auto const& beforeVault = beforeVault_[0];
+
+                // Withdrawal from a closed-ended vault is not allowed during the Investment phase
+                // (strictly past SubscriptionDate, before RedemptionDate).
+                if (getVaultPhase(
+                        view,
+                        afterVault.vaultKind,
+                        afterVault.subscriptionDate,
+                        afterVault.redemptionDate) == VaultPhase::Investment)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: withdrawal not allowed during "
+                        "Investment phase";
+                    result = false;
+                }
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDeltaAssets)
@@ -1043,11 +1155,10 @@ ValidVault::finalize(
             }
 
             case ttLOAN_SET:
+                return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:
-            case ttLOAN_PAY: {
-                // TBD
+            case ttLOAN_PAY:
                 return true;
-            }
 
             default:
                 // LCOV_EXCL_START

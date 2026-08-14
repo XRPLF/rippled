@@ -2,6 +2,7 @@
 
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
@@ -136,7 +137,7 @@ LedgerMaster::LedgerMaster(
           std::chrono::seconds{45},
           stopwatch,
           app_.getJournal("TaggedCache"))
-    , stats_(std::bind(&LedgerMaster::collectMetrics, this), collector)
+    , stats_([this] { collectMetrics(); }, collector)
 {
 }
 
@@ -454,11 +455,12 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
     return ledgerHistory_.insert(ledger, validated);
 }
 
-/** Apply held transactions to the open ledger
-    This is normally called as we close the ledger.
-    The open ledger remains open to handle new transactions
-    until a new open ledger is built.
-*/
+/**
+ * Apply held transactions to the open ledger
+ * This is normally called as we close the ledger.
+ * The open ledger remains open to handle new transactions
+ * until a new open ledger is built.
+ */
 void
 LedgerMaster::applyHeldTransactions()
 {
@@ -651,7 +653,7 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     std::uint32_t minHas = seq;
     std::uint32_t maxHas = seq;
 
-    NodeStore::Database& nodeStore{app_.getNodeStore()};
+    node_store::Database& nodeStore{app_.getNodeStore()};
     while (!app_.getJobQueue().isStopping() && seq > 0)
     {
         {
@@ -709,7 +711,8 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     }
 }
 
-/** Request a fetch pack to get to the specified ledger
+/**
+ * Request a fetch pack to get to the specified ledger
  */
 void
 LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
@@ -755,7 +758,9 @@ LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
         JLOG(journal_.trace()) << "Requested fetch pack for " << missing;
     }
     else
+    {
         JLOG(journal_.debug()) << "No peer for fetch pack";
+    }
 }
 
 void
@@ -1037,8 +1042,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
                 if (v->isFieldPresent(sfServerVersion))
                 {
                     auto version = v->getFieldU64(sfServerVersion);
-                    higherVersionCount += BuildInfo::isNewerVersion(version) ? 1 : 0;
-                    xrpldCount += BuildInfo::isXrpldVersion(version) ? 1 : 0;
+                    higherVersionCount += build_info::isNewerVersion(version) ? 1 : 0;
+                    xrpldCount += build_info::isXrpldVersion(version) ? 1 : 0;
                 }
             }
             // We report only if (1) we have accumulated validation messages
@@ -1078,7 +1083,9 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     }
 }
 
-/** Report that the consensus process built a particular ledger */
+/**
+ * Report that the consensus process built a particular ledger
+ */
 void
 LedgerMaster::consensusBuilt(
     std::shared_ptr<Ledger const> const& ledger,
@@ -1508,7 +1515,8 @@ LedgerMaster::newOrderBookDB()
     return newPFWork("PthFindOBDB", ml);
 }
 
-/** A thread needs to be dispatched to handle pathfinding work of some kind.
+/**
+ * A thread needs to be dispatched to handle pathfinding work of some kind.
  */
 bool
 LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&)
@@ -1797,10 +1805,14 @@ LedgerMaster::fetchForHistory(
                     getFetchPack(missing, reason);
                 }
                 else
+                {
                     JLOG(journal_.trace()) << "fetchForHistory no fetch pack for " << missing;
+                }
             }
             else
+            {
                 JLOG(journal_.debug()) << "fetchForHistory found failed acquire";
+            }
         }
         if (ledger)
         {
@@ -1989,30 +2001,31 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
     }
 }
 
-/** Populate a fetch pack with data from the map the recipient wants.
-
-    A recipient may or may not have the map that they are asking for. If
-    they do, we can optimize the transfer by not including parts of the
-    map that they are already have.
-
-    @param have The map that the recipient already has (if any).
-    @param cnt The maximum number of nodes to return.
-    @param into The protocol object into which we add information.
-    @param seq The sequence number of the ledger the map is a part of.
-    @param withLeaves True if leaf nodes should be included.
-
-    @note: The withLeaves parameter is configurable even though the
-           code, so far, only ever sets the parameter to true.
-
-           The rationale is that for transaction trees, it may make
-           sense to not include the leaves if the fetch pack is being
-           constructed for someone attempting to get a recent ledger
-           for which they already have the transactions.
-
-           However, for historical ledgers, which is the only use we
-           have for fetch packs right now, it makes sense to include
-           the transactions because the caller is unlikely to have
-           them.
+/**
+ * Populate a fetch pack with data from the map the recipient wants.
+ *
+ * A recipient may or may not have the map that they are asking for. If
+ * they do, we can optimize the transfer by not including parts of the
+ * map that they are already have.
+ *
+ * @param have The map that the recipient already has (if any).
+ * @param cnt The maximum number of nodes to return.
+ * @param into The protocol object into which we add information.
+ * @param seq The sequence number of the ledger the map is a part of.
+ * @param withLeaves True if leaf nodes should be included.
+ *
+ * @note: The withLeaves parameter is configurable even though the
+ *        code, so far, only ever sets the parameter to true.
+ *
+ *        The rationale is that for transaction trees, it may make
+ *        sense to not include the leaves if the fetch pack is being
+ *        constructed for someone attempting to get a recent ledger
+ *        for which they already have the transactions.
+ *
+ *        However, for historical ledgers, which is the only use we
+ *        have for fetch packs right now, it makes sense to include
+ *        the transactions because the caller is unlikely to have
+ *        them.
  */
 static void
 populateFetchPack(
@@ -2075,21 +2088,21 @@ LedgerMaster::makeFetchPack(
     if (!have)
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger we don't have: " << have;
-        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger");
+        peer->charge(resource::kFeeRequestNoReply, "get_object ledger");
         return;
     }
 
     if (have->open())
     {
         JLOG(journal_.warn()) << "Peer requests fetch pack from open ledger: " << have;
-        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger open");
+        peer->charge(resource::kFeeMalformedRequest, "get_object ledger open");
         return;
     }
 
     if (have->header().seq < getEarliestFetch())
     {
         JLOG(journal_.debug()) << "Peer requests fetch pack that is too early";
-        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger early");
+        peer->charge(resource::kFeeMalformedRequest, "get_object ledger early");
         return;
     }
 
@@ -2099,7 +2112,7 @@ LedgerMaster::makeFetchPack(
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger whose predecessor we "
                               << "don't have: " << have;
-        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger no parent");
+        peer->charge(resource::kFeeRequestNoReply, "get_object ledger no parent");
         return;
     }
 

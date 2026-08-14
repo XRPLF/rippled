@@ -158,7 +158,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         {
             // Request a ledger with a very large (double) sequence.
             auto const ret = env.rpc("json", "ledger", "{ \"ledger_index\" : 2e15 }");
-            BEAST_EXPECT(RPC::containsError(ret));
+            BEAST_EXPECT(rpc::containsError(ret));
             BEAST_EXPECT(ret[jss::error_message] == "Invalid parameters.");
         }
 
@@ -258,10 +258,12 @@ class LedgerRPC_test : public beast::unit_test::Suite
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 3u);
     }
 
-    /// @brief ledger RPC requests as a way to drive
-    /// input options to lookupLedger. The point of this test is
-    /// coverage for lookupLedger, not so much the ledger
-    /// RPC request.
+    /**
+     * @brief ledger RPC requests as a way to drive
+     * input options to lookupLedger. The point of this test is
+     * coverage for lookupLedger, not so much the ledger
+     * RPC request.
+     */
     void
     testLookupLedger()
     {

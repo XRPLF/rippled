@@ -34,8 +34,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     // The sfMemoData field is an optional field used to record the deletion reason.
-    if (auto const data = ctx.tx[~sfMemoData];
-        data && !validDataLength(data, kMaxDataPayloadLength))
+    if (!validDataLength(ctx.tx[~sfMemoData], kMaxDataPayloadLength))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -67,7 +66,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
     if (!sleMPT)
     {
@@ -98,13 +97,15 @@ TER
 VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
 
-    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_); !isTesSuccess(ter))
+    if (auto ter = removeEmptyHolding(applyViewContext, vault->at(sfAccount), asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
@@ -120,7 +121,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
+    auto const mpt = view().peek(keylet::mptokenIssuance(shareMPTID));
     if (!mpt)
     {
         // LCOV_EXCL_START
@@ -132,7 +133,8 @@ VaultDelete::doApply()
     // Try to remove MPToken for vault shares for the vault owner if it exists.
     if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, MPTIssue(shareMPTID), j_);
+        if (auto const ter =
+                removeEmptyHolding(applyViewContext, accountID_, MPTIssue(shareMPTID), j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
@@ -153,7 +155,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), pseudoAcct, -1, j_);
+    decreaseOwnerCountForObject(view(), pseudoAcct, mpt, 1, j_);
 
     view().erase(mpt);
 
@@ -212,7 +214,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    adjustOwnerCount(view(), owner, -2, j_);
+    decreaseOwnerCountForObject(view(), owner, vault, 2, j_);
 
     // Destroy the vault.
     view().erase(vault);

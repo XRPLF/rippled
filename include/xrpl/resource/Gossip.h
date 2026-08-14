@@ -4,23 +4,27 @@
 
 #include <vector>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
-/** Data format for exchanging consumption information across peers. */
+/**
+ * Data format for exchanging consumption information across peers.
+ */
 struct Gossip
 {
     explicit Gossip() = default;
 
-    /** Describes a single consumer. */
+    /**
+     * Describes a single consumer.
+     */
     struct Item
     {
         explicit Item() = default;
 
         int balance{};
-        beast::IP::Endpoint address;
+        beast::ip::Endpoint address;
     };
 
     std::vector<Item> items;
 };
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

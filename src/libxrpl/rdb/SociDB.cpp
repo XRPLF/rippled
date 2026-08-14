@@ -5,19 +5,17 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <soci/blob.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <mutex>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
@@ -45,8 +43,8 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
         Throw<std::runtime_error>(
             "Sqlite databases must specify a dir and a name. Name: " + name + " Dir: " + dir);
     }
-    boost::filesystem::path file(dir);
-    if (is_directory(file))
+    std::filesystem::path file(dir);
+    if (std::filesystem::is_directory(file))
         file /= name + ext;
     return file.string();
 }
@@ -188,14 +186,15 @@ convert(std::string const& from, soci::blob& to)
 
 namespace {
 
-/** Run a thread to checkpoint the write ahead log (wal) for
-    the given soci::session every 1000 pages. This is only implemented
-    for sqlite databases.
-
-    Note: According to: https://www.sqlite.org/wal.html#ckpt this
-    is the default behavior of sqlite. We may be able to remove this
-    class.
-*/
+/**
+ * Run a thread to checkpoint the write ahead log (wal) for
+ * the given soci::session every 1000 pages. This is only implemented
+ * for sqlite databases.
+ *
+ * Note: According to: https://www.sqlite.org/wal.html#ckpt this
+ * is the default behavior of sqlite. We may be able to remove this
+ * class.
+ */
 
 class WALCheckpointer : public Checkpointer
 {
@@ -213,6 +212,12 @@ public:
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
             (void)keepAlive;
+            // The checkpointer is identified to the C callback by an integer id
+            // (resolved via checkpointerFromId) rather than a raw `this`, so it
+            // cannot dangle if the checkpointer is destroyed. Passing the id
+            // through sqlite's void* user-data requires an integer-to-pointer
+            // cast.
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             sqlite_api::sqlite3_wal_hook(conn, &sqliteWALHook, reinterpret_cast<void*>(id_));
         }
     }
@@ -335,6 +340,6 @@ makeCheckpointer(
 
 }  // namespace xrpl
 
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic pop
 #endif
