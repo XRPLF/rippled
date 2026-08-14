@@ -138,7 +138,10 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
         return;
     }
 
-    // Soft retain complete vectors (content reused within cacheReuseLedgers_).
+    // Soft retain *pinned* complete vectors (content reused within
+    // cacheReuseLedgers_). Unpinned complete entries are dead weight: a
+    // retired in-flight doUpdate reloads them with pinCount 0 and nothing
+    // else ever visits them, so they would pin the line budget until idle.
     //
     // Incomplete progressive fills cannot resume a DirCursor across ledgers
     // (owner-dir pages split/merge → dup/skip). Re-walking prevCount+chunk for
@@ -147,9 +150,18 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
     //   - pinned incomplete: drop line memory, keep pinCount + reloadMinLines
     //     progress hint; next getRippleLines / expandAccountUnlocked reloads
     //     from page 0 with that want (waves expand before any getRippleLines)
-    //   - unpinned incomplete: erase entirely (no work on advance)
+    //   - unpinned (complete or not): erase entirely (no work on advance)
     for (auto it = lines_.begin(); it != lines_.end();)
     {
+        if (it->second.pinCount == 0)
+        {
+            auto const size = it->second.storedLineCount();
+            if (size > 0)
+                totalLineCount_.fetch_sub(size, std::memory_order_relaxed);
+            it = lines_.erase(it);
+            continue;
+        }
+
         if (it->second.cursor.complete)
         {
             ++it;
@@ -159,12 +171,6 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
         auto const prevCount = it->second.storedLineCount();
         if (prevCount > 0)
             totalLineCount_.fetch_sub(prevCount, std::memory_order_relaxed);
-
-        if (it->second.pinCount == 0)
-        {
-            it = lines_.erase(it);
-            continue;
-        }
 
         // Pinned: cheap stub — no owner-dir walk under this lock.
         std::size_t hint = std::max(prevCount + lineChunkSize_, lineChunkSize_);
@@ -226,6 +232,33 @@ AssetCache::remainingBudgetUnlocked() const
     return maxTotalLines_ > total ? maxTotalLines_ - total : 0;
 }
 
+std::size_t
+AssetCache::reclaimUnpinnedUnlocked(AccountID const* skip)
+{
+    std::size_t freed = 0;
+    for (auto it = lines_.begin(); it != lines_.end();)
+    {
+        if (it->second.pinCount != 0 || (skip && it->first == *skip))
+        {
+            ++it;
+            continue;
+        }
+
+        auto const size = it->second.storedLineCount();
+        freed += size;
+        if (size > 0)
+            totalLineCount_.fetch_sub(size, std::memory_order_relaxed);
+        it = lines_.erase(it);
+    }
+    if (freed > 0)
+    {
+        JLOG(journal_.debug()) << "reclaimUnpinned freed=" << freed << " remaining_lines="
+                               << totalLineCount_.load(std::memory_order_relaxed)
+                               << " remaining_accounts=" << lines_.size();
+    }
+    return freed;
+}
+
 void
 AssetCache::coalescePendingUnlocked(LineEntry& entry)
 {
@@ -282,9 +315,15 @@ AssetCache::expandAccountUnlocked(AccountID const& accountID, LineEntry& entry)
         return 0;
     }
 
-    auto const remaining = remainingBudgetUnlocked();
+    auto remaining = remainingBudgetUnlocked();
     if (remaining == 0)
-        return 0;
+    {
+        if (reclaimUnpinnedUnlocked(&accountID) == 0)
+            return 0;
+        remaining = remainingBudgetUnlocked();
+        if (remaining == 0)
+            return 0;
+    }
 
     // Expand size follows LoadScope when set; otherwise configured lineChunkSize_
     // (WS slow load). One-shot sets a large LoadScope to finish in one pass.
@@ -412,7 +451,10 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
     entry.pending.clear();
     entry.reloadMinLines = 0;
 
-    auto const remaining = remainingBudgetUnlocked();
+    auto remaining = remainingBudgetUnlocked();
+    if (remaining == 0 && reclaimUnpinnedUnlocked(&accountID) > 0)
+        remaining = remainingBudgetUnlocked();
+
     // First-load want: LoadScope / lineChunkSize, or soft-advance progress hint
     // so multi-close progressive fill compounds without re-walking on advance.
     std::size_t want = std::max(effectiveChunkSize(), progressHint);

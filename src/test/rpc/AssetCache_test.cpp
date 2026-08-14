@@ -980,6 +980,79 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->totalLineCount() == 0);
     }
 
+    /**
+     * A retired in-flight doUpdate reloads accounts with pinCount 0. Those
+     * complete unpinned entries must not occupy the line budget until idle:
+     * drop them on the next soft advance.
+     */
+    void
+    testUnpinnedCompleteDroppedOnAdvance()
+    {
+        testcase("unpinned complete entries are dropped on soft advance");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env(pay(gw, alice, gw["USD"](5)));
+        env.close();
+
+        auto cache =
+            std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
+
+        // No SessionPin: same as a retired in-flight getRippleLines.
+        BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        BEAST_EXPECT(cache->totalLineCount() >= 1);
+        BEAST_EXPECT(!cache->hasIncompleteLines());
+
+        env.close();
+        cache->advanceLedger(env.closed(), /*forceClear=*/false);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+        BEAST_EXPECT(!cache->hasIncompleteLines());
+    }
+
+    /**
+     * When the global line budget is exhausted, a new load must reclaim
+     * unpinned complete leftovers so later accounts are not budget-blocked.
+     */
+    void
+    testUnpinnedCompleteReclaimedOnBudget()
+    {
+        testcase("unpinned entries reclaimed when budget is exhausted");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env.trust(gw["USD"](1000), bob);
+        env(pay(gw, alice, gw["USD"](5)));
+        env(pay(gw, bob, gw["USD"](5)));
+        env.close();
+
+        auto cache = std::make_shared<AssetCache>(
+            env.current(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/1,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/12,
+            /*lineChunkSize=*/64);
+
+        BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        BEAST_EXPECT(cache->totalLineCount() >= 1);
+        BEAST_EXPECT(cache->overBudget() || cache->totalLineCount() >= 1);
+
+        // Budget is full of unpinned alice. Bob must still load (reclaim).
+        auto bobLines = cache->getRippleLines(bob.id());
+        BEAST_EXPECT(bobLines && !bobLines->empty());
+        BEAST_EXPECT(cache->totalLineCount() >= 1);
+        BEAST_EXPECT(cache->totalLineCount() <= 1);
+    }
+
 public:
     void
     run() override
@@ -1002,6 +1075,8 @@ public:
         testReleaseSessionBeforeFirstPin();
         testForgetSessionAllowsReuse();
         testReleaseSessionRacesInFlightPin();
+        testUnpinnedCompleteDroppedOnAdvance();
+        testUnpinnedCompleteReclaimedOnBudget();
     }
 };
 

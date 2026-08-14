@@ -33,12 +33,14 @@ namespace xrpl {
  * - Global line budget bounds worst-case memory (hard stop when remaining == 0;
  *   no silent floor). Incomplete accounts grow on expandIncompleteLines.
  * - Hits use shared_lock; misses/expands load under unique lock (single-flight).
- * - Soft ledger advance keeps complete line vectors. Incomplete progressive
- *   fills never resume a DirCursor across ledgers (pages split/merge). Pinned
- *   incomplete entries keep a reloadMinLines hint and drop line memory; the
- *   next getRippleLines or expandIncompleteLines reloads from page 0 with
- *   that want. Unpinned incomplete entries are dropped (no unique-lock
- *   re-walk on every close).
+ * - Soft ledger advance keeps *pinned* complete line vectors. Incomplete
+ *   progressive fills never resume a DirCursor across ledgers (pages
+ *   split/merge). Pinned incomplete entries keep a reloadMinLines hint and
+ *   drop line memory; the next getRippleLines or expandIncompleteLines
+ *   reloads from page 0 with that want. Unpinned entries (complete or not)
+ *   are dropped on advance so a retired in-flight doUpdate cannot fill the
+ *   line budget forever. loadOutgoing also reclaims unpinned entries when
+ *   the global budget is exhausted.
  * - Per-session account pins: an entry is freed only when every path_find that
  *   used it has ended. Shared hubs stay warm for remaining sessions (no LRU
  *   thrash during ramp-down). When the last subscription ends the whole cache
@@ -319,6 +321,17 @@ private:
 
     [[nodiscard]] std::size_t
     remainingBudgetUnlocked() const;
+
+    /**
+     * Caller must hold lock_ exclusively. Erase entries with pinCount == 0
+     * (retired-session reloads, isValid without SessionPin). Includes
+     * budget-capped incomplete leftovers, which also occupy totalLineCount_.
+     * @param skip Account to leave in place (the load/expand currently
+     *        running). Null = reclaim every unpinned entry.
+     * @return Number of PathFindTrustLine objects freed.
+     */
+    std::size_t
+    reclaimUnpinnedUnlocked(AccountID const* skip = nullptr);
 
     /**
      * LoadScope override if set, otherwise configured lineChunkSize_.
