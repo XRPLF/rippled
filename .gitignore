@@ -89,4 +89,6 @@ target/
 
 # clangd cache
 /.cache
-.claude/
+
+# Env. file carrying environmental setup data for local or cloud runs.
+.env.*
