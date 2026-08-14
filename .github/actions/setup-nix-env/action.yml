@@ -37,8 +37,8 @@ runs:
         # XrplSanity.cmake otherwise rejects a Nix compiler as one that leaked.
         echo "XRPL_DEVSHELL=ci-env" >>"${GITHUB_ENV}"
 
-        # Deliberately no SSL_CERT_FILE: it would override the macOS keychain,
-        # breaking TLS to hosts whose CA lives there. Linux images need it.
+        # Unlike the Linux nix images, macOS needs no SSL_CERT_FILE: it has its
+        # own trust store, and pinning would break TLS to hosts relying on it.
 
         # The dev shell's Conan home: separate from this runner's system one.
         echo "CONAN_HOME=${HOME}/.conan2-nix" >>"${GITHUB_ENV}"
