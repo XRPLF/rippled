@@ -19,11 +19,14 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxSearched.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
 #include <algorithm>
@@ -383,6 +386,83 @@ class RWDBDatabase_test : public beast::unit_test::Suite
         BEAST_EXPECT(unique.size() == ids.size());
     }
 
+    void
+    testMarkerOutsideLedgerRange()
+    {
+        testcase("account_tx marker outside ledger range is empty");
+
+        using namespace test::jtx;
+        Env env = makeEnv(*this);
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+
+        std::vector<std::uint32_t> seqs;
+        for (int i = 0; i < 6; ++i)
+        {
+            env(noop(a1));
+            env.close();
+            seqs.push_back(env.closed()->header().seq);
+        }
+
+        auto& db = env.app().getRelationalDatabase();
+        auto const earlyMax = seqs[1];
+        auto const laterMin = seqs[seqs.size() - 2];
+        auto const laterMax = seqs.back();
+        BEAST_EXPECT(seqs.front() < laterMin);
+        BEAST_EXPECT(earlyMax < seqs.back());
+
+        RelationalDatabase::AccountTxMarker const lateMarker{.ledgerSeq = laterMax, .txnSeq = 0};
+        RelationalDatabase::AccountTxPageOptions forward{
+            .account = a1.id(),
+            .ledgerRange = {.min = 0, .max = earlyMax},
+            .marker = lateMarker,
+            .limit = 20,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        auto const oldest = db.oldestAccountTxPage(forward);
+        BEAST_EXPECT(oldest.first.empty());
+        BEAST_EXPECT(db.oldestAccountTxPageB(forward).first.empty());
+
+        RelationalDatabase::AccountTxMarker const earlyMarker{
+            .ledgerSeq = seqs.front(), .txnSeq = 0};
+        RelationalDatabase::AccountTxPageOptions reverse{
+            .account = a1.id(),
+            .ledgerRange = {.min = laterMin, .max = laterMax},
+            .marker = earlyMarker,
+            .limit = 20,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        auto const newest = db.newestAccountTxPage(reverse);
+        BEAST_EXPECT(newest.first.empty());
+        BEAST_EXPECT(db.newestAccountTxPageB(reverse).first.empty());
+
+        RelationalDatabase::AccountTxOptions const inverted{
+            .account = a1.id(),
+            .ledgerRange = {.min = laterMax, .max = seqs.front()},
+            .offset = 0,
+            .limit = 20,
+            .bUnlimited = false};
+        BEAST_EXPECT(db.getOldestAccountTxs(inverted).empty());
+        BEAST_EXPECT(db.getNewestAccountTxs(inverted).empty());
+        BEAST_EXPECT(db.getOldestAccountTxsB(inverted).empty());
+        BEAST_EXPECT(db.getNewestAccountTxsB(inverted).empty());
+
+        json::Value params;
+        params[jss::account] = a1.human();
+        params[jss::ledger_index_min] = static_cast<int>(seqs.front());
+        params[jss::ledger_index_max] = static_cast<int>(earlyMax);
+        params[jss::forward] = true;
+        params[jss::limit] = 20;
+        params[jss::marker][jss::ledger] = laterMax;
+        params[jss::marker][jss::seq] = 0;
+        auto const res = env.rpc("json", "account_tx", to_string(params));
+        BEAST_EXPECT(res.isMember(jss::result));
+        BEAST_EXPECT(res[jss::result][jss::status] == "success");
+        BEAST_EXPECT(res[jss::result][jss::transactions].size() == 0);
+    }
+
 public:
     void
     run() override
@@ -393,6 +473,7 @@ public:
         testDelegateFilterPaging();
         testGetTransactionRangeAndInverted();
         testIdempotentDoubleSave();
+        testMarkerOutsideLedgerRange();
     }
 };
 

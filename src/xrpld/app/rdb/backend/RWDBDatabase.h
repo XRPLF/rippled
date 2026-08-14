@@ -173,12 +173,18 @@ private:
     }
 
     // A min/max of 0 is unbounded, matching AccountTxOptions.
+    // clampMarkerToRange only intersects one edge, so a client marker
+    // past the other edge inverts [min, max]. Walking that increments
+    // past end().
     static auto
     ledgerTxBounds(
         std::map<uint32_t, std::vector<AccountTx>> const& ledgerTxMap,
         std::uint32_t minSeq,
         std::uint32_t maxSeq)
     {
+        if (minSeq != 0 && maxSeq != 0 && minSeq > maxSeq)
+            return std::pair{ledgerTxMap.end(), ledgerTxMap.end()};
+
         auto const first = (minSeq == 0) ? ledgerTxMap.begin() : ledgerTxMap.lower_bound(minSeq);
         auto const last = (maxSeq == 0) ? ledgerTxMap.end() : ledgerTxMap.upper_bound(maxSeq);
         return std::pair{first, last};
