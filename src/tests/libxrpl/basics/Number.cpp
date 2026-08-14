@@ -499,7 +499,7 @@ TEST(NumberTest, add_sub_extreme_exponents)
                         case Number::RoundingMode::TowardsZero:
                             if (scale < MantissaRange::MantissaScale::Large330)
                             {
-                                // Rounding TowardsZero was fixed in Large330.
+                                // Rounding TowardsZero was broken before Large330.
                                 EXPECT_EQ(result, x) << detail.str();
                                 break;
                             }
@@ -541,7 +541,7 @@ TEST(NumberTest, add_sub_extreme_exponents)
                         case Number::RoundingMode::TowardsZero:
                             if (scale < MantissaRange::MantissaScale::Large330)
                             {
-                                // Rounding TowardsZero was fixed in Large330.
+                                // Rounding TowardsZero was broken before Large330.
                                 EXPECT_EQ(result, -x) << detail.str();
                                 break;
                             }
@@ -550,7 +550,7 @@ TEST(NumberTest, add_sub_extreme_exponents)
                             // Rounding upward (or toward zero in Large330) will take that little
                             // x-bit and round result up to the next representable negative value.
                             EXPECT_NE(result, -x) << detail.str();
-                            EXPECT_EQ(result, (Number{-(x.mantissa() - 1), x.exponent()}))
+                            EXPECT_EQ(result, (Number{-x.mantissa() + 1, x.exponent()}))
                                 << detail.str();
                             break;
                         default:

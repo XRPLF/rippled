@@ -433,8 +433,8 @@ Number::Guard::doDropDigitWithTarget(T& mantissa, int& exponent, int const targe
     {
         if (mantissa == 0 && unrecoverable())
         {
-            // No number of dropped digits is going to change any of the operative parameters at
-            // this point.
+            // No number of dropped digits is going to change anything except the exponent at this
+            // point, so just jump to the result
             exponent = targetExponent;
             return;
         }
@@ -969,6 +969,7 @@ Number::operator+=(Number const& y)
     //  to match, if necessary.
     auto const adjust = [&g, &upperLimit](
                             uint128_t& expandM, int& expandE, uint128_t& shrinkM, int& shrinkE) {
+        XRPL_ASSERT(shrinkE < expandE, "xrpl::Number::operator+ : exponents match");
         // Adjust up and down until the exponents match
         if (g.cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330)
         {
@@ -1374,9 +1375,10 @@ operator rep() const
             g.setNegative();
             drops = -drops;
         }
-        while (offset < 0)
+        if (offset < 0)
         {
             g.doDropDigitWithTarget(drops, offset, 0);
+            XRPL_ASSERT(offset == 0, "xrpl::Number::operator+ : exponents match");
         }
         for (; offset > 0; --offset)
         {
