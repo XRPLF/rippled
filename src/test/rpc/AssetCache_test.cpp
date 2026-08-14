@@ -369,6 +369,69 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(!cache->hasIncompleteLines());
     }
 
+    /**
+     * Closed/create waves expand stubs before any getRippleLines. A single
+     * expandAccountUnlocked (ForSession without LoadScope, or the first
+     * iteration of a wave) must consume reloadMinLines. Otherwise want is
+     * one chunk, lines becomes non-null, and the hint is stranded — hubs
+     * restart at lineChunkSize every close and never pass the per-wave cap.
+     */
+    void
+    testSoftAdvanceExpandHonorsReloadHint()
+    {
+        testcase("soft advance: expand restores reloadMinLines, not one chunk");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        fundManyLines(env, alice, 10, "eh");
+
+        auto cache = std::make_shared<AssetCache>(
+            env.current(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/100000,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/12,
+            /*lineChunkSize=*/2);
+
+        {
+            AssetCache::SessionPin pin{1};
+            auto partial = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(partial && partial->size() == 2);
+        }
+        BEAST_EXPECT(cache->totalLineCount() == 2);
+        BEAST_EXPECT(cache->hasIncompleteLines());
+
+        env.close();
+        cache->advanceLedger(env.closed(), /*forceClear=*/false);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+        BEAST_EXPECT(cache->hasIncompleteLines());
+
+        // One expandAccountUnlocked (no LoadScope). Hint is prev(2)+chunk(2)=4.
+        // Without the fix this returns 2 and getRippleLines then hits that 2.
+        BEAST_EXPECT(cache->expandIncompleteLinesForSession(1));
+        BEAST_EXPECT(cache->totalLineCount() == 4);
+        {
+            AssetCache::SessionPin pin{1};
+            auto lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines && lines->size() == 4);
+        }
+        BEAST_EXPECT(cache->hasIncompleteLines());
+
+        // Next close compounds: hint becomes 4+2=6, not a restart at 2.
+        env.close();
+        cache->advanceLedger(env.closed(), /*forceClear=*/false);
+        BEAST_EXPECT(cache->expandIncompleteLinesForSession(1));
+        BEAST_EXPECT(cache->totalLineCount() == 6);
+        {
+            AssetCache::SessionPin pin{1};
+            auto lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines && lines->size() == 6);
+        }
+
+        cache->releaseSession(1);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+    }
+
     void
     testLoadScopeDrainsIncompleteSharedHit()
     {
@@ -927,6 +990,7 @@ public:
         testSessionPinsSharedHub();
         testAdvanceLedgerSoftRetainAndForceClear();
         testSoftAdvanceResetsIncompleteCursor();
+        testSoftAdvanceExpandHonorsReloadHint();
         testLoadScopeDrainsIncompleteSharedHit();
         testReuseWindowExpiryReloads();
         testReuseWindowExpiryKeepsCompleteLineCount();

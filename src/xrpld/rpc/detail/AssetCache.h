@@ -36,8 +36,9 @@ namespace xrpl {
  * - Soft ledger advance keeps complete line vectors. Incomplete progressive
  *   fills never resume a DirCursor across ledgers (pages split/merge). Pinned
  *   incomplete entries keep a reloadMinLines hint and drop line memory; the
- *   next getRippleLines reloads from page 0 with that want. Unpinned incomplete
- *   entries are dropped (no unique-lock re-walk on every close).
+ *   next getRippleLines or expandIncompleteLines reloads from page 0 with
+ *   that want. Unpinned incomplete entries are dropped (no unique-lock
+ *   re-walk on every close).
  * - Per-session account pins: an entry is freed only when every path_find that
  *   used it has ended. Shared hubs stay warm for remaining sessions (no LRU
  *   thrash during ramp-down). When the last subscription ends the whole cache
@@ -263,9 +264,10 @@ private:
         PathFindTrustLine::DirCursor cursor{};
 
         /**
-         * After soft advance of an incomplete pin: next loadOutgoing wants at
-         * least this many lines from page 0 (progress hint). 0 = normal chunk.
-         * Never used to resume a cross-ledger DirCursor.
+         * After soft advance of an incomplete pin: next loadOutgoing *or*
+         * expandAccountUnlocked wants at least this many lines from page 0
+         * (progress hint). 0 = normal chunk. Never used to resume a
+         * cross-ledger DirCursor.
          */
         std::size_t reloadMinLines{0};
 
@@ -292,7 +294,9 @@ private:
     loadOutgoingUnlocked(AccountID const& accountID);
 
     /**
-     * Caller must hold lock_ exclusively. Append at most one chunk.
+     * Caller must hold lock_ exclusively. Append one chunk, or the remaining
+     * reloadMinLines (soft-advance stub) so a wave expand restores prior
+     * progress instead of restarting at lineChunkSize_.
      * @return number of lines added.
      */
     std::size_t

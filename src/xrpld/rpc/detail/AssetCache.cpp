@@ -145,7 +145,8 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
     // every incomplete hub on every close destroyed 100-session path_find
     // throughput. Option A:
     //   - pinned incomplete: drop line memory, keep pinCount + reloadMinLines
-    //     progress hint; next getRippleLines reloads from page 0 with that want
+    //     progress hint; next getRippleLines / expandAccountUnlocked reloads
+    //     from page 0 with that want (waves expand before any getRippleLines)
     //   - unpinned incomplete: erase entirely (no work on advance)
     for (auto it = lines_.begin(); it != lines_.end();)
     {
@@ -287,7 +288,13 @@ AssetCache::expandAccountUnlocked(AccountID const& accountID, LineEntry& entry)
 
     // Expand size follows LoadScope when set; otherwise configured lineChunkSize_
     // (WS slow load). One-shot sets a large LoadScope to finish in one pass.
+    // Soft-advance stubs stash reloadMinLines as a from-page-0 total. Closed
+    // waves call expandIncompleteLines before any getRippleLines, so this
+    // path must consume that hint — otherwise want is one chunk, lines becomes
+    // non-null, and the hint is stranded (loadOutgoing never sees it).
     std::size_t want = effectiveChunkSize();
+    if (entry.reloadMinLines > have)
+        want = std::max(want, entry.reloadMinLines - have);
     want = std::min(want, remaining);
     want = std::min(want, maxLinesPerAccount_ - have);
     if (want == 0)
@@ -339,6 +346,9 @@ AssetCache::expandAccountUnlocked(AccountID const& accountID, LineEntry& entry)
 
     if (entry.storedLineCount() >= maxLinesPerAccount_)
         entry.cursor.complete = true;
+
+    if (entry.reloadMinLines > 0 && entry.storedLineCount() >= entry.reloadMinLines)
+        entry.reloadMinLines = 0;
 
     if (!entry.cursor.complete)
     {
