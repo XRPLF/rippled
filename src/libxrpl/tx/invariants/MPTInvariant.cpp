@@ -876,9 +876,6 @@ ValidMPTTransfer::finalize(
         return txnType == ttAMM_CREATE || txnType == ttAMM_DEPOSIT || txnType == ttOFFER_CREATE;
     }();
 
-    // Only enforce once MPTokensV2 or Cleanup3_4_0 are enabled to preserve consensus
-    // with nodes running an older version.
-    // Log invariant failure error even if the amendments are disabled.
     auto const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
     auto const invariantPasses = !view.rules().enabled(featureMPTokensV2) && !fix340Enabled;
 
