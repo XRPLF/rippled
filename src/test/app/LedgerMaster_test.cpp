@@ -226,10 +226,12 @@ public:
         auto& lm = env.app().getLedgerMaster();
         // env.close() goes through standalone switchLCL with isCurrent=false.
         // The retain window must still pin RWDB ledgers.
+        std::vector<std::shared_ptr<Ledger const>> closed;
         for (std::uint32_t i = 0; i < kHistory + 4; ++i)
         {
             env(noop(alice));
             env.close();
+            closed.push_back(std::dynamic_pointer_cast<Ledger const>(env.closed()));
         }
 
         auto const last = env.closed()->header().seq;
@@ -244,10 +246,25 @@ public:
             BEAST_EXPECT(lm.getCloseTimeBySeq(kept->header().seq));
         }
 
-        // Just outside the pin window: stop advertising. The SHAMap may
-        // still sit in TaggedCache until sweep, so do not require
-        // getLedgerBySeq to fail.
-        BEAST_EXPECT(!lm.haveLedger(last - kHistory));
+        // Just outside the pin window: stop advertising. shouldAcquire
+        // uses `<= ledger_history`, which is this sequence (distance N).
+        // If it stayed complete, fetchForHistory would re-acquire it,
+        // evict it, and spin. The SHAMap may still sit in TaggedCache
+        // until sweep, so do not require getLedgerBySeq to fail.
+        auto const outsideSeq = last - kHistory;
+        BEAST_EXPECT(!lm.haveLedger(outsideSeq));
+
+        // fetchForHistory shape: re-accept the evicted ledger. It must
+        // not remain advertised.
+        for (auto const& ledger : closed)
+        {
+            if (ledger && ledger->header().seq == outsideSeq)
+            {
+                lm.setFullLedger(ledger, false, false);
+                BEAST_EXPECT(!lm.haveLedger(outsideSeq));
+                break;
+            }
+        }
     }
 
     void

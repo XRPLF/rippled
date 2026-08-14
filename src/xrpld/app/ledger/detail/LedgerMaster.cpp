@@ -2008,13 +2008,21 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                 if (missing)
                 {
                     JLOG(journal_.trace()) << "tryAdvance discovered missing " << *missing;
+                    // RWDB cannot reload dropped SHAMaps. shouldAcquire's
+                    // `<= ledger_history` covers N+1 sequences, and
+                    // minimumOnline can sit well below the pin window, so
+                    // either check would re-fetch the ledger we just
+                    // evicted and spin doAdvance. Bound the fetch to the
+                    // N sequences we can pin (distance 0 .. N-1).
+                    auto const historyBound =
+                        app_.getSHAMapStore().isNullBackend() && retainWindowSize_ > 0
+                        ? retainWindowSize_ - 1
+                        : ledgerHistorySize_;
+                    auto const minOnline = app_.getSHAMapStore().isNullBackend()
+                        ? std::optional<LedgerIndex>{}
+                        : app_.getSHAMapStore().minimumOnline();
                     if ((fillInProgress_ == 0 || *missing > fillInProgress_) &&
-                        shouldAcquire(
-                            validLedgerSeq_,
-                            ledgerHistorySize_,
-                            app_.getSHAMapStore().minimumOnline(),
-                            *missing,
-                            journal_))
+                        shouldAcquire(validLedgerSeq_, historyBound, minOnline, *missing, journal_))
                     {
                         JLOG(journal_.trace()) << "advanceThread should acquire";
                     }
