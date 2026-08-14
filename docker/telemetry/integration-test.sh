@@ -562,7 +562,7 @@ check_span "peer.proposal.receive"
 check_span "peer.validation.receive"
 
 # ---------------------------------------------------------------------------
-# Step 9b: Verify log-trace correlation (Phase 8)
+# Step 9b: Verify log-trace correlation
 # ---------------------------------------------------------------------------
 log ""
 log "--- Log-Trace Correlation ---"

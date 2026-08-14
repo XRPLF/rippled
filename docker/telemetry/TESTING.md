@@ -472,9 +472,9 @@ Pre-configured datasources:
 
 ---
 
-## Test 3: Log-Trace Correlation (Phase 8)
+## Test 3: Log-Trace Correlation
 
-Phase 8 injects `trace_id` and `span_id` into xrpld's log output when
+xrpld injects `trace_id` and `span_id` into its log output when
 a log line is emitted within an active OTel span. This test verifies the
 end-to-end log-trace correlation pipeline.
 
@@ -591,7 +591,7 @@ Expected: > 0 results.
 2. Check submit response for error codes
 3. In standalone mode, remember to call `ledger_accept` after submitting
 
-### No trace_id in log output (Phase 8)
+### No trace_id in log output
 
 1. Verify xrpld was built with `telemetry=ON` (`-Dtelemetry=ON` in CMake)
 2. Verify `enabled=1` in the `[telemetry]` config section
@@ -600,7 +600,7 @@ Expected: > 0 results.
    `trace_id`/`span_id`.
 4. Ensure the trace category is enabled (e.g., `trace_rpc=1` for RPC logs)
 
-### No logs in Loki (Phase 8)
+### No logs in Loki
 
 1. Verify the log file mount in docker-compose.yml:
    ```yaml
@@ -621,7 +621,7 @@ Expected: > 0 results.
 4. Verify the filelog receiver glob pattern matches your log files:
    The default pattern is `/var/log/xrpld/*/debug.log`
 
-### Grafana trace-log links not working (Phase 8)
+### Grafana trace-log links not working
 
 1. Verify `tracesToLogs` is configured in the Tempo datasource provisioning
    (`docker/telemetry/grafana/provisioning/datasources/tempo.yaml`)

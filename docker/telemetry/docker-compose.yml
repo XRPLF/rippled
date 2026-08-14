@@ -8,7 +8,7 @@
 #   - tempo: Grafana Tempo tracing backend, queryable via Grafana Explore
 #     on port 3000. Recommended for production (S3/GCS storage, TraceQL).
 #   - loki: Grafana Loki log aggregation backend for centralized log
-#     ingestion and log-trace correlation (Phase 8).
+#     ingestion and log-trace correlation.
 #   - grafana: dashboards on port 3000, pre-configured with Tempo,
 #     Prometheus, and Loki datasources.
 #
