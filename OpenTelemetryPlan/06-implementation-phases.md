@@ -927,11 +927,13 @@ Alert Rules from External Dashboard**.
 Before the telemetry stack (Phases 1-9) can be considered production-ready, we need automated proof that all spans, attributes, metrics, Grafana dashboards, and log-trace correlation work correctly under realistic load. This phase establishes a reusable CI-integrated validation suite and performance benchmark baseline.
 
 > **Inventory note**: the "16 spans / 22 attributes / 10 dashboards" figures this
-> section used to quote are stale. As of this branch there are **15 dashboards on
-> disk** (`ls docker/telemetry/grafana/dashboards/*.json`), of which **14** are
-> asserted by the Phase 10 harness — `log-derived-insights` is provisioned but
-> unasserted. The span and attribute totals are computed dynamically by
-> `validate_telemetry.py` from `expected_spans.json`; see
+> section used to quote are stale. Do not re-quote fixed counts here — the
+> harness hard-codes none of them. `validate_telemetry.py` iterates
+> `expected_spans.json` and `expected_metrics.json`, so those two files are the
+> only authority, and `grafana_dashboards.uids` in `expected_metrics.json` is the
+> authority for dashboards. As of this branch all **15** dashboards on disk
+> (`ls docker/telemetry/grafana/dashboards/*.json`) are listed in `uids`,
+> `log-derived-insights` included. See
 > [Phase10_taskList.md](./Phase10_taskList.md) for the live figures.
 
 ### Architecture
@@ -1037,7 +1039,10 @@ categories are:
 - **Span duration bounds** — all spans > 0 and < 60 s
 - **Metric existence** — every entry in `expected_metrics.json`, queried through
   the Prometheus `/api/v1/series` endpoint
-- **Dashboard loads** — the 14 uids in `expected_metrics.json`
+- **Dashboard loads** — every uid in `expected_metrics.json` under
+  `grafana_dashboards.uids` (currently all 15 provisioned dashboards). Note this
+  only asks Grafana for the dashboard and its panel count; it does not run the
+  panel queries.
 - **Log-trace correlation** — `trace_id` present in Loki plus a Tempo reverse
   lookup (skipped in CI via `--skip-loki`, not absent from the suite)
 
@@ -1061,36 +1066,55 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for the per-task breakdown.
 ### CI Deliverable (Task 10.6)
 
 The Phase 10 CI entry point is `.github/workflows/telemetry-validation.yml`
-(348 lines, on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
+(367 lines, on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
 `build-xrpld`, `validate-telemetry` — and is triggered by `workflow_dispatch`
 plus `push` on `pratik/otel-phase*`, `feature/otel-*` and
 `feature/telemetry-*`. **There is no cron schedule**, so nothing runs this
 workflow on a timer.
 
-> **Caveat — the `push` trigger's `paths` filter excludes the C++ telemetry
-> sources.** The branch filter is only half the trigger; `push` also carries:
+> **Fixed — the `push` trigger's `paths` filter now covers the C++ telemetry
+> sources.** The branch filter is only half the trigger; `push` also carries a
+> `paths` filter, and it previously read:
 >
 > ```yaml
 > paths:
 >   - ".github/workflows/telemetry-validation.yml"
 >   - "docker/telemetry/**"
->   - "include/xrpl/basics/Telemetry*.h"
->   - "src/xrpld/app/misc/Telemetry*"
+>   - "include/xrpl/basics/Telemetry*.h" # 0 tracked paths
+>   - "src/xrpld/app/misc/Telemetry*" # 0 tracked paths
 > ```
 >
-> The last two globs match **nothing** on the Phase 10 branch — neither
-> `include/xrpl/basics/Telemetry*.h` nor `src/xrpld/app/misc/Telemetry*` exists
-> (0 tracked paths). The telemetry code actually lives in
-> `src/xrpld/telemetry/**` (9 files, including `MetricsRegistry.cpp`) and
-> `src/libxrpl/telemetry/**` (7 files), and **neither is listed**. Consequence: a
-> pure C++ telemetry change — new instrument, renamed metric, changed span
-> attribute — never triggers this workflow on push. Only edits under
-> `docker/telemetry/**` or to the workflow file itself do. Fix: replace the two
-> dead globs with `src/xrpld/telemetry/**`, `src/libxrpl/telemetry/**` and
-> `include/xrpl/telemetry/**`.
+> The last two globs matched **nothing** — neither
+> `include/xrpl/basics/Telemetry*.h` nor `src/xrpld/app/misc/Telemetry*` exists.
+> The telemetry code lives in `src/xrpld/telemetry/**` (9 files, including
+> `MetricsRegistry.cpp`), `src/libxrpl/telemetry/**` (7 files) and
+> `include/xrpl/telemetry/**` (10 files), none of which were listed.
+> Consequence at the time: a pure C++ telemetry change — new instrument,
+> renamed metric, changed span attribute — never triggered this workflow on
+> push; only edits under `docker/telemetry/**` or to the workflow file itself
+> did.
+>
+> The two dead globs have been replaced with the three real module directories,
+> so the filter now reads:
+>
+> ```yaml
+> paths:
+>   - ".github/workflows/telemetry-validation.yml"
+>   - "docker/telemetry/**"
+>   - "include/xrpl/telemetry/**"
+>   - "src/libxrpl/telemetry/**"
+>   - "src/libxrpl/beast/insight/**"
+>   - "src/xrpld/telemetry/**"
+> ```
+>
+> `src/libxrpl/beast/insight/**` is included because it holds `OTelCollector.cpp`,
+> the `beast::insight` OTLP export path the harness depends on. Residual gap: the
+> instrumented call sites scattered through `src/xrpld/app/` are not listed, so a
+> change that only adds or moves a span at a call site does not trigger the
+> workflow on push. Those are reachable by manual dispatch.
 
-> **Caveat — four inert inputs.** The workflow declares five
-> `workflow_dispatch` inputs, but only `run_benchmark` changes behaviour.
+> **Caveat — four inert inputs (documented, not wired).** The workflow declares
+> five `workflow_dispatch` inputs, but only `run_benchmark` changes behaviour.
 > `rpc_rate`, `rpc_duration`, `tx_tps` and `tx_duration` are forwarded as
 > `--rpc-rate` / `--rpc-duration` / `--tx-tps` / `--tx-duration` to
 > `run-full-validation.sh`, which parses them into shell variables and then
@@ -1098,6 +1122,16 @@ workflow on a timer.
 > `--profile` / `workload-profiles.json` (the orchestrator is invoked with
 > `--profile` only). Changing those four inputs has no effect on the generated
 > workload.
+>
+> Resolution taken: each of the four now carries
+> `description: "UNUSED — has no effect. Load shape comes from the workload
+profile."`, and a comment above the `inputs:` block plus one at the
+> ARGS-building step record why they are kept. They were **labelled, not
+> wired**, because wiring them would be a behaviour change: the orchestrator is
+> profile-driven, so honouring them means either synthesising a temporary
+> profile or reintroducing the pre-profile single-phase load path. That belongs
+> in its own change, not in a docs-accuracy pass. The alternative — deleting the
+> inputs — would break saved dispatch input sets for no gain.
 
 ### Exit Criteria
 
@@ -1108,8 +1142,9 @@ workflow on a timer.
 - [x] Validation suite confirms the full span / attribute / metric inventory
       (counts computed dynamically from `expected_spans.json` and
       `expected_metrics.json`)
-- [x] All 14 harness-asserted Grafana dashboards render data (15 on disk;
-      `log-derived-insights` is provisioned but unasserted)
+- [x] All 15 provisioned Grafana dashboards are asserted to load — every uid on
+      disk is now listed in `grafana_dashboards.uids`. Caveat: the check is
+      load-and-panel-count only, so it does not prove every panel returns data
 - [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead — needs a
       measured run
 - [x] CI workflow runs validation on telemetry branch changes

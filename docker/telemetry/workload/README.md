@@ -5,10 +5,14 @@ Synthetic workload generation and validation tools for xrpld's OpenTelemetry tel
 ## Quick Start
 
 ```bash
-# Build xrpld with telemetry enabled
-conan install . --build=missing -o telemetry=True
-cmake --preset default -Dtelemetry=ON
-cmake --build --preset default
+# Build xrpld with telemetry enabled (see BUILD.md for the full flow)
+mkdir -p .build && cd .build
+conan install .. --output-folder . --build missing \
+    --settings build_type=Release -o telemetry=True
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+    -DCMAKE_BUILD_TYPE=Release -Dtelemetry=ON ..
+cmake --build . --parallel "$(nproc)" --target xrpld
+cd ..
 
 # Run full validation (starts everything, runs load, validates)
 docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
@@ -27,16 +31,19 @@ spans (proposals, validations), and all metric pipelines.
 run-full-validation.sh (shell orchestrator)
   |
   |-- docker-compose.workload.yaml
-  |     |-- otel-collector (traces via OTLP + StatsD receiver)
+  |     |-- otel-collector (otlp receiver: traces + beast::insight metrics;
+  |     |                  filelog receiver: node debug.log -> Loki)
   |     |-- tempo (trace backend + TraceQL search API)
   |     |-- prometheus (metrics scraping)
+  |     |-- loki (log aggregation for log-trace correlation)
   |     |-- grafana (dashboards, provisioned automatically)
   |
   |-- generate-validator-keys.sh
   |     -> validator-keys.json, validators.txt
   |
   |-- Nx xrpld nodes (local processes, full telemetry)
-  |     - Each node: [telemetry] enabled=1, trace_rpc/consensus/transactions
+  |     - Each node: [telemetry] enabled=1, all 5 trace_* categories on
+  |     - [insight] server=otel (beast::insight metrics over OTLP, no StatsD)
   |     - [signing_support] true (server-side signing for tx_submitter)
   |     - Peer discovery via [ips] (not [ips_fixed]) for active peer counts
   |
@@ -60,22 +67,27 @@ each phase, the RPC generator and TX submitter run concurrently.
 
 ### Available Profiles
 
-| Profile           | Phases | Duration                     | Purpose                                                     |
-| ----------------- | ------ | ---------------------------- | ----------------------------------------------------------- |
-| `full-validation` | 6      | ~5 min + 1 min propagation   | Full 18-dashboard coverage with burst/idle/plateau patterns |
-| `quick-smoke`     | 1      | ~30s + 30s propagation       | Fast CI smoke test                                          |
-| `stress`          | 3      | ~3.5 min + 1 min propagation | Heavy sustained load for benchmarking                       |
+| Profile           | Phases | Duration                    | Purpose                                                                                          |
+| ----------------- | ------ | --------------------------- | ------------------------------------------------------------------------------------------------ |
+| `full-validation` | 7      | 4.5 min + 1 min propagation | Coverage for the full asserted span/metric/dashboard inventory, with burst/idle/plateau patterns |
+| `quick-smoke`     | 1      | 30s + 30s propagation       | Fast CI smoke test                                                                               |
+| `stress`          | 3      | 3.5 min + 1 min propagation | Heavy sustained load for benchmarking                                                            |
+
+Durations are the sum of the phase `duration_sec` values in
+`workload-profiles.json` plus that profile's `propagation_wait_sec`; they exclude
+cluster startup and the validation pass itself.
 
 ### full-validation Phases
 
-| Phase        | RPC Rate | TX TPS | Duration | Dashboard Coverage                              |
-| ------------ | -------- | ------ | -------- | ----------------------------------------------- |
-| warmup       | 5 RPS    | —      | 30s      | Node Health, Validator Health (baseline gauges) |
-| steady-state | 30 RPS   | 3 TPS  | 60s      | All dashboards (plateau data)                   |
-| rpc-burst    | 100 RPS  | —      | 30s      | Job Queue, RPC Performance (latency spikes)     |
-| tx-flood     | 5 RPS    | 20 TPS | 30s      | Fee Market & TxQ, Transaction Overview          |
-| mixed-peak   | 50 RPS   | 10 TPS | 60s      | Consensus Health, Ledger Operations             |
-| cooldown     | 5 RPS    | —      | 30s      | Recovery patterns, state transitions            |
+| Phase        | RPC Rate           | TX TPS | Duration | Dashboard Coverage                                                                                                                                                                               |
+| ------------ | ------------------ | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| warmup       | 5 RPS              | —      | 30s      | Node Health, Validator Health (baseline gauges)                                                                                                                                                  |
+| steady-state | 30 RPS             | 3 TPS  | 60s      | All dashboards (plateau data)                                                                                                                                                                    |
+| rpc-burst    | 100 RPS            | —      | 30s      | Job Queue, RPC Performance (latency spikes)                                                                                                                                                      |
+| tx-flood     | 5 RPS              | 20 TPS | 30s      | Fee Market & TxQ, Transaction Overview                                                                                                                                                           |
+| txq-burst    | 5 RPS (100% `fee`) | 60 TPS | 30s      | Fee Market & TxQ — single-type Payment burst that forces open-ledger fee escalation and TxQ queueing, exercising the `txq.*` spans (`txq.enqueue`, `txq.accept`, `txq.accept_tx`, `txq.cleanup`) |
+| mixed-peak   | 50 RPS             | 10 TPS | 60s      | Consensus Health, Ledger Operations                                                                                                                                                              |
+| cooldown     | 5 RPS              | —      | 30s      | Recovery patterns, state transitions                                                                                                                                                             |
 
 ### Custom Profiles
 
@@ -198,12 +210,12 @@ python3 tx_submitter.py --endpoint ws://localhost:6006 \
 
 ### validate_telemetry.py
 
-Automated validation that all expected telemetry data exists. Every metric and span is required — if it doesn't fire, the validation fails.
+Automated validation that all expected telemetry data exists. Every metric in `expected_metrics.json` is required — if it doesn't fire, the validation fails. Spans are required unless the entry carries `"optional": true`.
 
-- **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies
-- **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, StatsD gauges/counters/histograms, Phase 9 OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries) to avoid false negatives from stale gauges.
+- **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies. Entries marked `"optional": true` only fire under traffic the harness may not produce (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions); their absence is recorded as a passing skip, not a failure.
+- **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, `beast::insight` gauges/counters/histograms, Phase 9 OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries), polled until the metric appears or the poll window elapses, so a late-populating or quiet series is not a false negative.
 - **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki)
-- **Dashboard validation**: All 10 Grafana dashboards load with panels
+- **Dashboard validation**: Every dashboard uid listed under `grafana_dashboards.uids` in `expected_metrics.json` loads with panels. That list currently covers **all 15** dashboards provisioned in `docker/telemetry/grafana/dashboards/`. Note the scope of this check: it asks the Grafana API whether the dashboard exists and returns a panel count — it does **not** run the panels' queries, so a dashboard can pass here while individual panels render empty.
 
 ```bash
 # Run all validations
@@ -276,7 +288,9 @@ Thresholds (configurable via environment):
 
 ## Reading Validation Reports
 
-The validation report (`validation-report.json`) is structured as:
+The validation report (`validation-report.json`) is structured as follows. The
+counts below are illustrative — the real total is the sum of the span, metric,
+log, dashboard and parity checks for the run.
 
 ```json
 {
@@ -304,46 +318,77 @@ Categories:
 - **metric**: Prometheus metric existence
 - **log**: Log-trace correlation checks
 - **dashboard**: Grafana dashboard accessibility
+- **parity**: Span attributes required by the external-parity dashboard panels (validator-health, peer-quality, and friends)
 
 ## CI Integration
 
 The validation runs as a GitHub Actions workflow (`.github/workflows/telemetry-validation.yml`):
 
-- Triggered manually or on pushes to telemetry branches
+- Triggered manually (`workflow_dispatch`) or on pushes to telemetry branches. There is no cron schedule.
 - Builds xrpld, starts the full stack, runs load, validates
-- Uploads reports as artifacts
-- Posts summary to PR
+- Uploads reports as artifacts (and node logs when validation did not succeed)
+- Writes the validation summary and the regression-gate summary to the workflow **Step Summary** (`$GITHUB_STEP_SUMMARY`). It does **not** comment on the PR — the workflow declares no `permissions:` block and calls no GitHub API, so read the summary on the run page.
+
+Of the five `workflow_dispatch` inputs, only `run_benchmark` changes behaviour.
+`rpc_rate`, `rpc_duration`, `tx_tps` and `tx_duration` are forwarded to
+`run-full-validation.sh`, which parses them into shell variables and never reads
+them again — load shape comes entirely from `--profile` and
+`workload-profiles.json`. Their `description:` fields say so.
 
 ## Configuration Files
 
-| File                              | Purpose                                                       |
-| --------------------------------- | ------------------------------------------------------------- |
-| `workload-profiles.json`          | Named load profiles with phase definitions                    |
-| `expected_spans.json`             | Span inventory (names, attributes, hierarchies, config flags) |
-| `expected_metrics.json`           | Metric inventory — every listed metric must be present        |
-| `test_accounts.json`              | Test account roles (keys generated at runtime)                |
-| `regression-metrics.json`         | Metric surface for the OTel regression gate                   |
-| `regression-thresholds.json`      | Per-metric regression bounds (pct AND abs)                    |
-| `baselines/baseline-timings.json` | Committed baseline — populated from first CI run              |
-| `requirements.txt`                | Python dependencies                                           |
+| File                              | Purpose                                                                                                                       |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `workload-profiles.json`          | Named load profiles with phase definitions                                                                                    |
+| `expected_spans.json`             | Span inventory (names, attributes, hierarchies, config flags)                                                                 |
+| `expected_metrics.json`           | Metric inventory — every listed metric must be present — plus the `grafana_dashboards.uids` list the dashboard check iterates |
+| `test_accounts.json`              | Test account roles (keys generated at runtime)                                                                                |
+| `regression-metrics.json`         | Metric surface for the OTel regression gate                                                                                   |
+| `regression-thresholds.json`      | Per-metric regression bounds (pct AND abs)                                                                                    |
+| `baselines/baseline-timings.json` | Committed baseline — populated from first CI run                                                                              |
+| `requirements.txt`                | Python dependencies                                                                                                           |
 
 ### expected_metrics.json Format
 
 ```json
 {
+  "description": "Top-level doc string — skipped by the validator.",
   "category_name": {
     "description": "Human-readable description.",
     "metrics": ["metric_1", "metric_2"]
+  },
+  "grafana_dashboards": {
+    "uids": ["rpc-performance", "node-health"]
+  },
+  "not_asserted": {
+    "description": "Why these are excluded.",
+    "metrics_excluded": { "metric_3": "reason" }
   }
 }
 ```
 
-Every metric listed must produce > 0 Prometheus series during the validation run. If a metric doesn't fire, the workload generators need to produce enough load to trigger it.
+Every metric listed under a `metrics` array must produce > 0 Prometheus series during the validation run. If a metric doesn't fire, the workload generators need to produce enough load to trigger it.
+
+Three top-level keys are not metric categories:
+
+- `description` and `grafana_dashboards` are skipped explicitly by
+  `validate_metrics`. `grafana_dashboards.uids` drives the dashboard check, so
+  adding a dashboard to `docker/telemetry/grafana/dashboards/` does **not** put
+  it under the gate until its uid is added here too.
+- `not_asserted` is skipped structurally: the loop reads
+  `category_data.get("metrics", [])`, and this group deliberately has no
+  `metrics` key — its entries live under `metrics_excluded` as a name-to-reason
+  map. It documents metrics that are emitted and dashboarded but left unasserted
+  because they are workload-gated or defect-gated (a check that fails on a
+  healthy run is worse than no check). Promote an entry into an asserted group
+  only after the workload is changed to guarantee it fires.
 
 ### expected_spans.json Format
 
 Each span entry defines its name, category, parent (for hierarchy validation),
-required attributes, and the `config_flag` that must be enabled:
+required attributes, and the `config_flag` that must be enabled. A trailing `*`
+in `name` is a wildcard. The optional `"optional": true` field marks a span whose
+absence is a skip rather than a failure:
 
 ```json
 {
@@ -359,13 +404,47 @@ required attributes, and the `config_flag` that must be enabled:
 
 The orchestrator (`run-full-validation.sh`) generates node configs with:
 
-- `[telemetry] enabled=1` with all trace categories (`trace_rpc`, `trace_consensus`, `trace_transactions`)
+- `[telemetry] enabled=1` with all five trace categories: `trace_rpc`, `trace_transactions`, `trace_consensus`, `trace_peer`, `trace_ledger`
+- `[insight] server=otel` with `endpoint=http://localhost:4318/v1/metrics` and `prefix=xrpld` — `beast::insight` metrics reach Prometheus over OTLP, because the collector declares no `statsd` receiver
 - `[signing_support] true` — required for `tx_submitter.py` to submit signed transactions via WebSocket
-- `[ips]` (not `[ips_fixed]`) — ensures peer connections are counted in `Peer_Finder_Active_Inbound/Outbound_Peers` metrics (fixed peers are excluded from these counters by design)
+- `[ips]` (not `[ips_fixed]`) — ensures peer connections are counted in the PeerFinder active-peer gauges, exported as `peer_finder_active_inbound_peers` / `peer_finder_active_outbound_peers` (fixed peers are excluded from these counters by design). The `beast::insight` group/name pair is `Peer_Finder` / `Active_Inbound_Peers`; `formatName()` lowercases it for export.
 
-## StatsD Gauge Behaviour
+## Gauge Export Behaviour
 
-Beast::insight StatsD gauges only emit when their value _changes_ from the previous sample. This can cause two problems in the validation environment:
+The harness configures each node with `[insight] server=otel` (see the
+`[insight]` block generated by `run-full-validation.sh`), so `beast::insight`
+gauges go through `OTelGaugeImpl` in
+`src/libxrpl/beast/insight/OTelCollector.cpp`, not through the StatsD collector.
+That matters for how the validator queries Prometheus.
 
-1. **Initial-zero gauges** — if a gauge value is 0 from startup and never changes, the gauge would never emit. To address this, `StatsDGaugeImpl` initializes `m_dirty = true`, ensuring the first flush always emits the initial value.
-2. **Stale gauges** — once a gauge stabilizes (e.g., peer count stays at 1), it stops emitting new data points. Prometheus marks it stale after ~5 minutes. The validation script uses the Prometheus `/api/v1/series` endpoint instead of instant queries to catch such gauges.
+**How `OTelGaugeImpl` exports.** It wraps an OTel **observable** (asynchronous)
+gauge. `set()` and `increment()` only store into an `std::atomic<int64_t>`;
+nothing is exported at call time. The SDK's collection thread invokes
+`gaugeCallback`, which runs the collector's hooks and then `Observe()`s whatever
+the atomic currently holds. So the gauge reports **every collection cycle,
+whether or not the value changed** — including a gauge that sits at 0 from
+startup. There is no dirty flag on this path, and no first-flush special case is
+needed.
+
+**Why the validator still uses `/api/v1/series`.** Two reasons survive the move
+to OTLP:
+
+1. **Late-populating series.** A gauge or counter may not have completed the
+   export → collector → Prometheus-scrape pipeline by the time validation runs.
+   `_check_prometheus_metric` in `validate_telemetry.py` therefore polls
+   `/api/v1/series` (which returns anything that existed anywhere in the query
+   window) until the metric appears or the poll window elapses, instead of
+   racing a single instant query.
+2. **Staleness robustness.** `/api/v1/series` does not care whether the newest
+   sample is inside Prometheus's ~5-minute staleness horizon, so the check
+   cannot be defeated by a quiet series.
+
+> **Note — the StatsD path is still in the tree but unused here.** If a node is
+> configured with `server=statsd`, `StatsDGaugeImpl` (in
+> `src/libxrpl/beast/insight/StatsDCollector.cpp`) does gate emission on a
+> `dirty_` flag that is only set by `set()`/`increment()`, and it is
+> initialised to `true` so the initial value is emitted on the first flush. The
+> collector configs shipped in `docker/telemetry/` declare no `statsd` receiver
+> (the metrics pipeline is `[otlp, spanmetrics]`) and the base
+> `docker-compose.yml` keeps its StatsD UDP port commented out, so nothing in
+> this harness can receive StatsD.

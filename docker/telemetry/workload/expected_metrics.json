@@ -1,5 +1,5 @@
 {
-  "description": "Expected metric inventory for xrpld telemetry validation. Metric names have no prefix (the xrpld_ prefix was removed). beast::insight metrics are lowercased by formatName. Sourced from the live Grafana dashboards and MetricsRegistry.cpp.",
+  "description": "Expected metric inventory for xrpld telemetry validation. Metric names have no prefix (the xrpld_ prefix was removed). beast::insight metrics are lowercased by formatName. Every name here was verified against its declaration in MetricsRegistry.cpp or include/xrpl/telemetry/GetObjectMetricNames.h and against a panel query under docker/telemetry/grafana/dashboards/. IMPORTANT: validate_telemetry.py has no notion of an optional metric — validate_metrics() iterates every group that has a \"metrics\" key and hard-fails any name with 0 Prometheus series after a 45 s poll. A metric is therefore listed only when the harness workload guarantees it will appear: observable gauges/counters whose callbacks Observe unconditionally (series exist at value 0), or push counters/histograms on a path every run exercises. Workload-gated and defect-gated names are recorded in the \"not_asserted\" group, which intentionally has no \"metrics\" key so the validator skips it. Only series existence is checked, never a value, except for the four bounds checks hardcoded in PARITY_VALUE_SANITY.",
   "spanmetrics": {
     "description": "SpanMetrics-derived RED metrics from the OTel Collector spanmetrics connector.",
     "metrics": [
@@ -68,8 +68,22 @@
     "metrics": ["txq_metrics"]
   },
   "phase9_rpc_method": {
-    "description": "Phase 9 per-RPC-method counters (MetricsRegistry via OTLP).",
-    "metrics": ["rpc_method_started_total"]
+    "description": "Phase 9 per-RPC-method counters and duration histogram (MetricsRegistry.cpp:351-357). rpc_method_errored_total is deliberately absent — see not_asserted below.",
+    "metrics": [
+      "rpc_method_started_total",
+      "rpc_method_finished_total",
+      "rpc_method_us"
+    ]
+  },
+  "phase9_job_queue": {
+    "description": "Phase 9 job-queue counters and latency histograms (MetricsRegistry.cpp:360-366). Every xrpld job passes through these, so they populate under any workload.",
+    "metrics": [
+      "job_queued_total",
+      "job_started_total",
+      "job_finished_total",
+      "job_queued_us",
+      "job_running_us"
+    ]
   },
   "rpc_in_flight": {
     "description": "In-flight RPC gauge via the XRPL_METRIC_UPDOWN_ADD call-site macro (PerfLogImp.cpp, +1 rpcStart / -1 rpcEnd). UpDownCounter: no _total suffix.",
@@ -116,10 +130,11 @@
     "metrics": ["state_tracking{metric=\"state_value\"}"]
   },
   "parity_counters": {
-    "description": "External dashboard parity: monotonic counters (MetricsRegistry).",
+    "description": "External dashboard parity: monotonic counters (MetricsRegistry). validations_checked_total is incremented unconditionally at the top of NetworkOPsImp::recvValidation (NetworkOPs.cpp:2681), and run-full-validation.sh brings up a 5-node validator cluster, so inbound validations are guaranteed.",
     "metrics": [
       "ledgers_closed_total",
       "validations_sent_total",
+      "validations_checked_total",
       "state_changes_total"
     ]
   },
@@ -127,8 +142,38 @@
     "description": "External dashboard parity: storage detail metrics (MetricsRegistry).",
     "metrics": ["storage_detail{metric=\"stored_object_bytes\"}"]
   },
+  "node_health_gauges": {
+    "description": "Node-health observable gauges (MetricsRegistry.cpp:997, :1081, :1102, :1161). All four are registered with callbacks that fire on every periodic export and Observe unconditionally (build_info observes a literal 1; server_info and db_metrics read live services; complete_ledgers observes the parsed ledger range, which is non-empty once the cluster has closed a ledger), so their series exist regardless of workload shape.",
+    "metrics": ["server_info", "build_info", "complete_ledgers", "db_metrics"]
+  },
+  "overlay_reduce_relay": {
+    "description": "Transaction reduce-relay efficiency gauge (MetricsRegistry.cpp:1354, peer-network dashboard). Backed by Overlay::txMetrics(); TxMetrics::json() emits txr_selected_cnt / txr_suppressed_cnt / txr_not_enabled_cnt unconditionally (TxMetrics.cpp:121-127), so the gauge always reports at least the selected_peers series.",
+    "metrics": ["reduce_relay_metrics"]
+  },
+  "overlay_overflow": {
+    "description": "Job-queue transaction overflow total (MetricsRegistry.cpp:609, job-queue dashboard). An ObservableCounter that reads Overlay::getJqTransOverflow() and Observes unconditionally, so the series exists at value 0 even when no overflow occurs.",
+    "metrics": ["jq_trans_overflow_total"]
+  },
+  "validation_lifetime_counters": {
+    "description": "Lifetime validation agreement/miss ObservableCounters (MetricsRegistry.cpp:1636, :1658, validator-health dashboard). Both callbacks reconcile the tracker and Observe unconditionally, so the series exist even on a node that has not yet agreed or missed (value 0). Only existence is asserted, never the value — validation_missed_total legitimately dominates on a non-validating node.",
+    "metrics": ["validation_agreements_total", "validation_missed_total"]
+  },
+  "not_asserted": {
+    "description": "Emitted-and-dashboarded metrics deliberately left unasserted because they are workload-gated or defect-gated: the harness workload cannot guarantee they appear, and a check that fails on a healthy run is worse than no check. This group has no \"metrics\" key, so validate_telemetry.py skips it (validate_metrics iterates category_data.get(\"metrics\", [])). Promote an entry into an asserted group only after the workload is changed to guarantee it.",
+    "metrics_excluded": {
+      "rpc_method_errored_total": "MetricsRegistry.cpp:354, push counter — needs an RPC that returns an error. rpc_load_generator.py issues only well-formed server_info / fee / ledger / ripple_path_find calls, so no series may ever be created.",
+      "ledger_history_mismatch_total": "MetricsRegistry.cpp:377, incremented only from LedgerHistory.cpp:332 on a built-vs-validated ledger mismatch. On a healthy run it never fires — asserting it would mean asserting a defect.",
+      "txq_expired_total": "MetricsRegistry.cpp:379, incremented only at TxQ.cpp:1428 when a queued tx expires past its LastLedgerSequence. Requires sustained fee escalation plus expiry; the CI job drives rpc_load_generator/tx_submitter directly with --rpc-rate/--tx-tps and never runs the workload-profiles.json txq-burst phase, so this is not reachable in CI.",
+      "txq_dropped_total": "MetricsRegistry.cpp:381, incremented only at TxQ.cpp:1302 / :1347 on queue-full admission refusal. Same reason as txq_expired_total.",
+      "getobject_rejected_total": "GetObjectMetricNames.h:81, emitted from PeerImp.cpp:2725/:2743 only for a TMGetObjectByHash message refused as oversize or malformed_ledgerhash. A cooperating cluster never sends one.",
+      "getobject_request_objects": "GetObjectMetricNames.h:86, emitted from PeerImp.cpp:2926 only while serving an inbound TMGetObjectByHash. The XRPL_METRIC_* macros create their instrument lazily on first use (MetricMacros.h:174-285), so no series exists until a peer actually requests objects by hash — which a 5-node cluster started at genesis and already in sync may never do.",
+      "getobject_lookup_us": "GetObjectMetricNames.h:95, PeerImp.cpp:2929. Same lazy-creation and same inbound-request gate as getobject_request_objects.",
+      "getobject_lookups_total": "GetObjectMetricNames.h:100, PeerImp.cpp:2949/:2956. Same gate.",
+      "getobject_charge": "GetObjectMetricNames.h:105, PeerImp.cpp:2931. Same gate."
+    }
+  },
   "grafana_dashboards": {
-    "description": "All Grafana dashboards that must render data (UIDs as provisioned on disk under docker/telemetry/grafana/dashboards/).",
+    "description": "All 15 Grafana dashboards provisioned on disk under docker/telemetry/grafana/dashboards/ (UID == file stem for every one). validate_dashboards() checks that each UID resolves via GET /api/dashboards/uid/<uid> and reports its panel count — it verifies provisioning and loadability, not panel data. log-derived-insights is included on that basis even though its panels are Loki-backed and CI runs with --skip-loki: the dashboard itself must still provision cleanly. Its panel data is not asserted anywhere.",
     "uids": [
       "rpc-performance",
       "transaction-overview",
@@ -143,7 +188,8 @@
       "network-traffic",
       "rpc-pathfinding",
       "overlay-traffic-detail",
-      "ledger-data-sync"
+      "ledger-data-sync",
+      "log-derived-insights"
     ]
   }
 }

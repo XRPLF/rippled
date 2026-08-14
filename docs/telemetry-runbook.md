@@ -3344,16 +3344,44 @@ docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
 
 # Check the report:
 cat /tmp/xrpld-validation/reports/validation-report.json | jq '.summary'
+
+# Tear the stack and the node processes down:
+docker/telemetry/workload/run-full-validation.sh --cleanup
 ```
+
+Harness options (`run-full-validation.sh`):
+
+| Flag                | Default           | Effect                                                                                                                                    |
+| ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `--xrpld PATH`      | `.build/xrpld`    | Binary to run. Also settable via the `XRPLD` env var.                                                                                     |
+| `--nodes NUM`       | `5`               | Size of the local validator cluster.                                                                                                      |
+| `--profile NAME`    | `full-validation` | Load profile from `workload-profiles.json` (`full-validation`, `quick-smoke`, `stress`). This is the **only** thing that sets load shape. |
+| `--skip-loki`       | off               | Skip the log-trace correlation checks. CI always passes this.                                                                             |
+| `--skip-regression` | off               | Skip timing capture and the baseline comparison. Local exploration only.                                                                  |
+| `--with-benchmark`  | off               | Also run `benchmark.sh` (telemetry-off vs telemetry-on overhead) after validation.                                                        |
+| `--cleanup`         | —                 | Tear everything down and exit.                                                                                                            |
+
+`--rpc-rate`, `--rpc-duration`, `--tx-tps` and `--tx-duration` are accepted by the
+parser but **never read** — they predate profiles and have no effect. Use
+`--profile`, or add a profile to `workload-profiles.json`.
+
+Exit codes: `0` all checks and the regression gate passed; `1` a validation check
+failed or the gate detected a regression; `2` infrastructure error (stack or
+cluster did not come up, or timing capture failed).
 
 ### What Gets Validated
 
-| Category   | Checks         | Description                                             |
-| ---------- | -------------- | ------------------------------------------------------- |
-| Spans      | 16+ span types | All span names appear in Tempo with required attributes |
-| Metrics    | 30+ metrics    | SpanMetrics, StatsD gauges/counters, Phase 9 metrics    |
-| Logs       | 2 checks       | trace_id/span_id present in Loki, cross-reference works |
-| Dashboards | 15 dashboards  | All Grafana dashboards load without errors              |
+The counts are not hard-coded in the validator — it iterates the inventory files,
+so those files are authoritative. The figures below are the inventory as it
+stands today.
+
+| Category   | Checks                                                                                                                              | Description                                                                                                                                                                                                                                                                                                                                |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Spans      | Every **required** entry in `expected_spans.json` — 41 span types at the time of writing: 26 required, 15 marked `"optional": true` | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure — it needs traffic the harness may not generate (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions).                |
+| Metrics    | Every entry in every asserted category of `expected_metrics.json` — 52 metrics in 23 categories at the time of writing              | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the Phase 9 metrics. Each must have > 0 Prometheus series; none are optional. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has no `metrics` key, so the validator skips it. |
+| Logs       | 2 checks                                                                                                                            | `trace_id`/`span_id` present in Loki, and a Tempo trace id resolves in Loki. Skipped in CI, which runs `--skip-loki`.                                                                                                                                                                                                                      |
+| Parity     | 10 checks                                                                                                                           | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                            |
+| Dashboards | Every uid in `expected_metrics.json` under `grafana_dashboards.uids` — currently all 15 provisioned dashboards                      | Each listed dashboard loads and reports a panel count. This is a provisioning check only: it does **not** execute the panels' queries, so a dashboard can pass while individual panels render empty. `log-derived-insights` is Loki-backed, so under `--skip-loki` only its provisioning is meaningfully covered.                          |
 
 ### Running Individual Tools
 
@@ -3374,8 +3402,134 @@ python3 docker/telemetry/workload/validate_telemetry.py \
 ### Interpreting Failures
 
 - **Span failures**: Check that the relevant trace category is enabled in `[telemetry]` config (e.g., `trace_rpc=1`).
-- **Metric failures**: Verify the OTel Collector is running and Prometheus is scraping port 8889. Check `docker compose logs otel-collector`.
-- **Dashboard failures**: Ensure Grafana provisioning is mounted correctly. Check `docker compose logs grafana`.
+- **Metric failures**: Verify the OTel Collector is running and Prometheus is scraping port 8889.
+- **Dashboard failures**: Ensure Grafana provisioning is mounted correctly.
+
+`run-full-validation.sh` brings the stack up with
+`docker compose -f docker/telemetry/docker-compose.workload.yaml`, so a bare
+`docker compose logs` from the repository root finds no project. Pass the same
+compose file:
+
+```bash
+docker compose -f docker/telemetry/docker-compose.workload.yaml logs otel-collector
+docker compose -f docker/telemetry/docker-compose.workload.yaml logs grafana
+docker compose -f docker/telemetry/docker-compose.workload.yaml ps
+```
+
+### Regression Gate and CI
+
+The validation checks answer "is the telemetry there?". A second, independent
+gate answers "did xrpld get slower?" — it is the part of this harness that can
+fail CI on a performance change, so it is worth understanding before you push.
+
+It runs as step 6 of `run-full-validation.sh`, after validation, and is skipped
+only with `--skip-regression`:
+
+```mermaid
+flowchart TB
+    classDef stage fill:#1d4ed8,stroke:#1e3a8a,color:#fff;
+    classDef data  fill:#047857,stroke:#064e3b,color:#fff;
+    classDef gate  fill:#b45309,stroke:#7c2d12,color:#fff;
+    classDef out   fill:#334155,stroke:#0f172a,color:#fff;
+
+    PROM[("Prometheus<br/>localhost:9090")]:::data
+    MET["regression-metrics.json<br/>(spans + job_queue groups)"]:::data
+    CAP["capture_timings.py<br/>--window REGRESSION_WINDOW"]:::stage
+    TIM["reports/timings.json<br/>(key to value + unit)"]:::data
+    BASE["baselines/baseline-timings.json<br/>(committed)"]:::data
+    THR["regression-thresholds.json<br/>(pct AND abs bounds)"]:::data
+    CMP["compare_to_baseline.py"]:::stage
+    PH{"baseline is a placeholder<br/>or has no metrics?"}:::gate
+    PASTE["Print paste-me JSON<br/>exit 0 — gate does NOT run"]:::out
+    DIFF["Diff per metric<br/>regression = over BOTH bounds"]:::gate
+    REP["reports/regression-report.json<br/>exit 1 on any regression"]:::out
+
+    MET --> CAP
+    PROM --> CAP --> TIM --> CMP
+    BASE --> CMP
+    THR --> CMP
+    CMP --> PH
+    PH -->|yes| PASTE
+    PH -->|no| DIFF --> REP
+```
+
+Key properties:
+
+- **A metric regresses only when it exceeds BOTH the percentage and the absolute
+  bound.** The `AND` is deliberate: SpanMetrics latency histograms use explicit
+  buckets, so a quantile sitting near a low bucket boundary can jump a whole
+  bucket (1 ms to 5 ms) with no real change. Bounds live in
+  `regression-thresholds.json` — `defaults` per category and quantile, with
+  per-metric `overrides` (e.g. `span.consensus.ledger_close` is held to 5%).
+- **A metric with no configured threshold is captured but never gates.** It is
+  reported with a note instead. Today only `span.*` and `job.*` keys have
+  thresholds; `rpc.*` is not produced and would not gate if it were (see
+  `docker/telemetry/workload/baselines/README.md`).
+- **A metric missing from the current run is not a regression.**
+  `summary.missing_in_current` in `regression-report.json` is a count; the
+  identities are the `metrics[]` entries whose `note` is
+  `"not captured in current run"`.
+- **`REGRESSION_WINDOW`** (env var, default `3m`) is the window handed to
+  Prometheus `rate()` during capture. Keep it close to the workload duration —
+  a longer window dilutes a short-lived regression. `BASELINE_FILE`,
+  `THRESHOLDS_FILE` and `METRICS_FILE` are also env-overridable.
+
+```bash
+# Validation without the gate (fast local loop):
+docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld \
+    --profile quick-smoke --skip-loki --skip-regression
+
+# Narrow the rate window to a short profile:
+REGRESSION_WINDOW=1m docker/telemetry/workload/run-full-validation.sh \
+    --xrpld .build/xrpld --profile quick-smoke
+
+# Inspect the gate's own output:
+jq '.summary' /tmp/xrpld-validation/reports/regression-report.json
+jq -r '.metrics[] | select(.regressed) | "\(.key) \(.baseline) -> \(.current) \(.unit)"' \
+    /tmp/xrpld-validation/reports/regression-report.json
+```
+
+#### Refreshing the baseline
+
+The baseline is a committed file, and moving it is a reviewed change — that PR
+review is the audit point for "who moved the performance bar". There is no
+automatic promotion from `develop`.
+
+1. Run the `Telemetry Validation` workflow on the branch. It always captures
+   timings, so `timings.json` is uploaded as an artifact and the regression
+   summary is written to the run's Step Summary.
+2. If the baseline in the checkout is a placeholder (`"placeholder": true` or an
+   empty `metrics` object), the Step Summary contains a fenced JSON block under
+   **"Paste into `baselines/baseline-timings.json`"**, already formatted the way
+   the file expects (sorted keys, 2-space indent, trailing newline).
+3. Open a PR replacing the file contents with that block, dropping the
+   `placeholder` key. For a refresh of an already-populated baseline, take the
+   `timings.json` artifact instead and justify the delta in the PR description.
+
+Never hand-edit `baseline-timings.json` — every entry should trace back to a real
+CI run so its variance characteristics are preserved. Details in
+`docker/telemetry/workload/baselines/README.md`.
+
+#### CI workflow
+
+`.github/workflows/telemetry-validation.yml` runs three jobs — `linux-image-tag`
+(reads the CI image tag from the build matrix so this workflow cannot drift onto
+a different compiler than the main CI), `build-xrpld` (self-hosted runner, same
+container as the main CI, so Conan and ccache hit the shared caches), and
+`validate-telemetry` (`ubuntu-latest`, which has Docker).
+
+- **Triggers**: `workflow_dispatch`, and `push` on `pratik/otel-phase*`,
+  `feature/otel-*`, `feature/telemetry-*` limited to a `paths` filter covering
+  the workflow file, `docker/telemetry/**`, and the telemetry sources under
+  `include/xrpl/telemetry/**`, `src/libxrpl/telemetry/**` and
+  `src/xrpld/telemetry/**`. There is no cron schedule.
+- **Invocation**: `run-full-validation.sh --xrpld <binary> --skip-loki`, so the
+  default `full-validation` profile is used and the Loki checks are skipped.
+- **Inputs**: only `run_benchmark` changes behaviour. `rpc_rate`, `rpc_duration`,
+  `tx_tps` and `tx_duration` are inert, as noted in their descriptions.
+- **Results**: reports are uploaded as the `telemetry-validation-reports`
+  artifact and node logs as `xrpld-node-logs` when validation did not succeed.
+  Summaries go to the run's Step Summary; the workflow does not comment on PRs.
 
 ## Performance Benchmarking
 
@@ -3399,7 +3553,19 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 
 If benchmarks exceed thresholds:
 
-1. **Reduce sampling**: `sampling_ratio=0.01` (1% of traces)
+1. **Reduce trace volume with collector-side tail sampling.** There is no
+   `sampling_ratio` config key — xrpld's head sampling is a compile-time
+   constant fixed at 1.0
+   ([Telemetry.h:234](../include/xrpl/telemetry/Telemetry.h#L234)
+   `static constexpr double samplingRatio = 1.0;`), and
+   [TelemetryConfig.cpp:139](../src/libxrpl/telemetry/TelemetryConfig.cpp#L139)
+   explicitly parses nothing for it. Volume reduction is a collector decision.
+   The only policy shipped is a single 0.5% probabilistic `tail_sampling`
+   processor in `otel-collector-config.grafanacloud.yaml`; the base
+   `otel-collector-config.yaml` has **no** tail sampling, so a stock local
+   stack keeps every trace. Where the Cloud policy is in force it sits on the
+   trace-storage branch only — spanmetrics runs on a separate branch and still
+   sees 100% of spans, so the derived RED metrics stay exact.
 2. **Disable peer tracing**: `trace_peer=0` (highest volume category)
 3. **Increase batch delay**: `batch_delay_ms=10000` (less frequent exports)
 4. **Reduce queue size**: `max_queue_size=1024` (back-pressure earlier)

@@ -15,10 +15,10 @@ Output schema (stable — ``compare_to_baseline.py`` reads it verbatim)::
         "captured_at": "2026-04-24T17:30:00Z",
         "window": "3m",
         "git_sha": "<from $GITHUB_SHA or `git rev-parse HEAD`>",
-        "profile": "regression",
+        "profile": "full-validation",
         "metrics": {
             "span.tx.process.p99": {"value": 12.4, "unit": "ms"},
-            "rpc.server_info.p95": {"value": 850.0, "unit": "us"},
+            "job.transaction.queued.p95": {"value": 850.0, "unit": "us"},
             ...
         }
     }
@@ -128,8 +128,13 @@ def main() -> int:
     )
     parser.add_argument(
         "--profile",
-        default="regression",
-        help="Workload profile used during capture (metadata only)",
+        default="full-validation",
+        help=(
+            "Workload profile used during capture, recorded as metadata in the "
+            "timings file (default: full-validation). Must name a profile in "
+            "workload-profiles.json; run-full-validation.sh always passes this "
+            "explicitly."
+        ),
     )
     parser.add_argument(
         "--min-capture-ratio",

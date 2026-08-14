@@ -286,7 +286,6 @@ ${IPS_FIXED}
 enabled=1
 service_instance_id=validator-${i}
 endpoint=http://localhost:4318/v1/traces
-exporter=otlp_http
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048

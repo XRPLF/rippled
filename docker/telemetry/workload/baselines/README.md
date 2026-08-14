@@ -56,17 +56,49 @@ should trace back to a real CI run so variance characteristics are preserved.
   "profile": "<workload profile used>",
   "metrics": {
     "span.tx.process.p99": { "value": 12.4, "unit": "ms" },
-    "rpc.server_info.p95": { "value": 850.0, "unit": "us" },
     "job.transaction.queued.p95": { "value": 1500.0, "unit": "us" }
   }
 }
 ```
+
+Keys follow `{category}.{name}.p{quantile}`. Only two categories are actually
+produced today — `span.*` and `job.*` — because `build_query_plan()` in
+`prom_queries.py` reads the `spans` and `job_queue` groups of
+`regression-metrics.json`, and that file defines only those two.
 
 Placeholder baselines additionally include `"placeholder": true`. The comparator
 detects this field (or an empty `metrics` object) to switch into "populate" mode
 instead of enforcing thresholds. Remove the `placeholder` key when pasting real
 captured timings.
 
-Missing metrics (value `null`) in a captured run do not count as regressions — they
-are reported separately in `regression-report.json` under `missing_in_current`.
+Missing metrics (value `null`) in a captured run do not count as regressions. In
+`regression-report.json`, `summary.missing_in_current` is a **count** only; the
+identities are in the `metrics[]` array, as the entries whose `note` is
+`"not captured in current run"`. Filter for those to see which keys went missing:
+
+```bash
+jq -r '.metrics[] | select(.note == "not captured in current run") | .key' \
+    /tmp/xrpld-validation/reports/regression-report.json
+```
+
 This keeps the gate robust when a profile doesn't exercise every span on every run.
+
+## Known gap: no `rpc.*` metric can gate (FU-4)
+
+Per-RPC-method timings are **not** gated, and would not gate even if they were
+captured. Two independent blockers:
+
+1. **Nothing emits an `rpc.*` key.** `build_query_plan()` in `prom_queries.py`
+   builds `rpc.*` entries from `cfg.get("rpc_methods", {})`, and
+   `regression-metrics.json` has no `rpc_methods` block — so the group resolves
+   to empty and no `rpc.*` key ever reaches `timings.json` or this baseline.
+2. **Even a captured `rpc.*` key would silently not gate.** `resolve_thresholds()`
+   in `compare_to_baseline.py` maps the `rpc` category to the threshold group
+   `rpc_method`, but `regression-thresholds.json` defines only
+   `defaults.span` and `defaults.job_queue`. With no `rpc_method` block the
+   lookup returns `(None, None)`, which the comparator treats as "no threshold
+   configured" — the metric is reported but can never fail the build.
+
+Closing this needs **both** an `rpc_methods` group in `regression-metrics.json`
+and a `defaults.rpc_method` block in `regression-thresholds.json`. Adding only
+the first produces metrics that look gated in the report but are not.
