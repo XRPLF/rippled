@@ -249,12 +249,46 @@ public:
     }
 
     void
+    testRWDBHistoryBackfillMarksComplete()
+    {
+        testcase("RWDB history backfill marks sequence complete");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+        env(noop(alice));
+        env.close();
+
+        auto ledger = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(ledger);
+        if (!ledger)
+            return;
+
+        auto& lm = env.app().getLedgerMaster();
+        // fetchForHistory calls setFullLedger(..., false, false).
+        lm.setFullLedger(ledger, false, false);
+        BEAST_EXPECT(lm.haveLedger(ledger->header().seq));
+        auto const byHash = lm.getLedgerByHash(ledger->header().hash);
+        BEAST_EXPECT(byHash);
+        if (byHash)
+            BEAST_EXPECT(byHash->header().seq == ledger->header().seq);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testTxnIdFromIndex(features);
         testCloseTimeDoesNotLoadLedger();
         testRWDBCloseTimeFromRelationalHeader();
         testRWDBRetainWindowFollowsHistory();
+        testRWDBHistoryBackfillMarksComplete();
     }
 };
 

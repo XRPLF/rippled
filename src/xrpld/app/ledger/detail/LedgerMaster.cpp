@@ -840,7 +840,10 @@ LedgerMaster::setFullLedger(
     ledger->setValidated();
     ledger->setFull();
 
-    if (isCurrent)
+    // Disk history reloads from the node store. Null-backend history
+    // cannot, so it must sit in ledgerHistory_ or fetchForHistory will
+    // treat the same sequence as missing again.
+    if (isCurrent || app_.getSHAMapStore().isNullBackend())
         ledgerHistory_.insert(ledger, true);
 
     // Pin a sliding window of recently accepted ledgers so their SHAMap
@@ -884,11 +887,11 @@ LedgerMaster::setFullLedger(
 
     {
         std::scoped_lock const ml(completeLock_);
-        // Null-backend history backfill is not pinned (isCurrent=false
-        // and not standalone). Do not advertise sequences we cannot
-        // reload after LedgerHistory sweeps them.
-        if (!app_.getSHAMapStore().isNullBackend() || isCurrent || standalone_)
-            completeLedgers_.insert(ledger->header().seq);
+        // Always record the sequence. Skipping this for null-backend
+        // history made prevMissing() return the same hole forever and
+        // doAdvance spun on one ledger. If a later load cannot rebuild
+        // the tree, getLedgerBySeq/clearLedger drops the advertisement.
+        completeLedgers_.insert(ledger->header().seq);
     }
 
     {
