@@ -377,8 +377,9 @@ above is a `metric` label value, not a metric name of its own.
 > Tasks 9.11-9.13 add two more new dashboards (`validator-health`,
 > `peer-quality`), so Phase 9's total is **4 new + 2 updated**.
 
-**Key modified files** (filenames and uids after the `rippled-*` → bare rename
-in `145b1469d6` and `25868f2740` — the `rippled-*.json` paths no longer exist):
+**Key modified files** (filenames and uids after the `dashboards/rippled-*` →
+bare rename in `145b1469d6` and `25868f2740` — the
+`dashboards/rippled-*.json` paths no longer exist):
 
 - New: `docker/telemetry/grafana/dashboards/fee-market.json` (uid `fee-market`)
 - New: `docker/telemetry/grafana/dashboards/job-queue.json` (uid `job-queue`)
@@ -504,9 +505,10 @@ in `145b1469d6` and `25868f2740` — the `rippled-*.json` paths no longer exist)
 
 **Key new files**: `docker/telemetry/grafana/dashboards/validator-health.json`
 (uid `validator-health`). The name reached its current form in **two** renames:
-`rippled-validator-health.json` → `xrpld-validator-health.json` (`145b1469d6`,
-the `rippled-` → `xrpld-` pass), then `xrpld-validator-health.json` →
-`validator-health.json` (`25868f2740`, which dropped the `xrpld-` prefix).
+`dashboards/rippled-validator-health.json` → `xrpld-validator-health.json`
+(`145b1469d6`, the `dashboards/rippled-*` → `xrpld-*` pass), then
+`xrpld-validator-health.json` → `validator-health.json` (`25868f2740`, which
+dropped the `xrpld-` prefix).
 
 **Exit Criteria**:
 
@@ -549,8 +551,9 @@ the `rippled-` → `xrpld-` pass), then `xrpld-validator-health.json` →
 
 **Key new files**: `docker/telemetry/grafana/dashboards/peer-quality.json`
 (uid `peer-quality`). Two renames, same as Task 9.11:
-`rippled-peer-quality.json` → `xrpld-peer-quality.json` (`145b1469d6`), then
-`xrpld-peer-quality.json` → `peer-quality.json` (`25868f2740`).
+`dashboards/rippled-peer-quality.json` → `xrpld-peer-quality.json`
+(`145b1469d6`), then `xrpld-peer-quality.json` → `peer-quality.json`
+(`25868f2740`).
 
 **Exit Criteria**:
 

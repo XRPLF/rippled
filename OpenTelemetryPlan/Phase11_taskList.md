@@ -4,8 +4,8 @@
 > Tasks 11.1 through 11.13). Verified against the tree:
 > no `.go` files exist anywhere, `docker/telemetry/otel-rippled-receiver/` does
 > not exist, `docker/telemetry/prometheus/` does not exist (so no
-> `rippled-alerts.yml`), and no `network-topology` / `dex-amm` dashboards are
-> present under `docker/telemetry/grafana/dashboards/`. **No Phase 11 work has
+> `prometheus/rippled-alerts.yml`), and no `network-topology` / `dex-amm`
+> dashboards are present under `docker/telemetry/grafana/dashboards/`. **No Phase 11 work has
 > been done, so no task box below may be ticked.**
 >
 > One **prerequisite** box is ticked, and only one: Task 11.12's
@@ -445,9 +445,9 @@ exported by this receiver.
   (Phase 9 owns `fee-market.json` / uid `fee-market`)
 - New: `docker/telemetry/grafana/dashboards/dex-amm.json`
 
-> Filenames drop the `rippled-` prefix: `145b1469d6` and `25868f2740` renamed
-> every dashboard to bare names with bare uids, so no `rippled-*.json` path
-> exists in the tree.
+> Filenames drop the legacy `dashboards/rippled-*` prefix: `145b1469d6` and
+> `25868f2740` renamed every dashboard to bare names with bare uids, so no
+> `dashboards/rippled-*.json` path exists in the tree.
 
 ---
 
