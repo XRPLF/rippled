@@ -1922,6 +1922,114 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(byHash->seq == info.seq);
     }
 
+    void
+    testRWDBAccountTxPageStatusValidated()
+    {
+        testcase("RWDB account_tx pages report validated status");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        auto& db = env.app().getRelationalDatabase();
+        RelationalDatabase::AccountTxPageOptions const pageOptions{
+            .account = a1.id(),
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = 20,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+
+        auto const oldest = db.oldestAccountTxPage(pageOptions);
+        BEAST_EXPECT(!oldest.first.empty());
+        for (auto const& accountTx : oldest.first)
+        {
+            BEAST_EXPECT(accountTx.first);
+            if (accountTx.first)
+                BEAST_EXPECT(accountTx.first->getStatus() == TransStatus::COMMITTED);
+        }
+
+        auto const newest = db.newestAccountTxPage(pageOptions);
+        BEAST_EXPECT(!newest.first.empty());
+        for (auto const& accountTx : newest.first)
+        {
+            BEAST_EXPECT(accountTx.first);
+            if (accountTx.first)
+                BEAST_EXPECT(accountTx.first->getStatus() == TransStatus::COMMITTED);
+        }
+    }
+
+    void
+    testRWDBMarkerStaysInsideLedgerRange()
+    {
+        testcase("RWDB account_tx marker stays inside requested ledger range");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+
+        std::vector<std::uint32_t> seqs;
+        for (int i = 0; i < 6; ++i)
+        {
+            env(noop(a1));
+            env.close();
+            seqs.push_back(env.closed()->header().seq);
+        }
+
+        auto& db = env.app().getRelationalDatabase();
+        RelationalDatabase::AccountTxPageOptions firstPage{
+            .account = a1.id(),
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = 1,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        auto const first = db.oldestAccountTxPage(firstPage);
+        BEAST_EXPECT(first.second);
+        if (!first.second)
+            return;
+
+        auto const markerSeq = first.second->ledgerSeq;
+        auto const laterMin = seqs[seqs.size() - 2];
+        auto const laterMax = seqs.back();
+        BEAST_EXPECT(markerSeq < laterMin);
+
+        RelationalDatabase::AccountTxPageOptions ranged{
+            .account = a1.id(),
+            .ledgerRange = {.min = laterMin, .max = laterMax},
+            .marker = first.second,
+            .limit = 20,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        auto const page = db.oldestAccountTxPage(ranged);
+        BEAST_EXPECT(!page.first.empty());
+        for (auto const& accountTx : page.first)
+        {
+            BEAST_EXPECT(accountTx.first);
+            if (accountTx.first)
+            {
+                auto const seq = accountTx.first->getLedger();
+                BEAST_EXPECT(seq >= laterMin && seq <= laterMax);
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -1936,6 +2044,8 @@ public:
         testRWDBAdminHugeLimit();
         testRWDBTransactionMovesLedger();
         testRWDBHashLookupSurvivesOldSeqPrune();
+        testRWDBAccountTxPageStatusValidated();
+        testRWDBMarkerStaysInsideLedgerRange();
         testContents();
         testAccountDelete();
         testMPT();

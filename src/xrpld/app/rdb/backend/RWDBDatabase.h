@@ -150,6 +150,18 @@ private:
         return std::pair{first, last};
     }
 
+    // Intersect a marker ledger with a range bound. 0 on the range side
+    // means unbounded; takeMax is forward (lower bound), otherwise reverse.
+    static std::uint32_t
+    clampMarkerToRange(std::uint32_t markerLedger, std::uint32_t rangeBound, bool takeMax)
+    {
+        if (markerLedger == 0)
+            return rangeBound;
+        if (rangeBound == 0)
+            return markerLedger;
+        return takeMax ? std::max(markerLedger, rangeBound) : std::min(markerLedger, rangeBound);
+    }
+
     // Reader-preferring so Linux matches macOS and RPC readers are not
     // starved by saveValidatedLedger / deleteBeforeLedgerSeq writers.
     mutable ReaderPreferringSharedMutex mutex_;
@@ -1011,7 +1023,8 @@ public:
                 auto const& accountData = it->second;
                 auto [txIt, txEnd] = ledgerTxBounds(
                     accountData.ledgerTxMap,
-                    findLedger == 0 ? options.ledgerRange.min : findLedger,
+                    lookingForMarker ? clampMarkerToRange(findLedger, options.ledgerRange.min, true)
+                                     : options.ledgerRange.min,
                     options.ledgerRange.max);
                 for (; txIt != txEnd && !pageComplete; ++txIt)
                 {
@@ -1086,7 +1099,9 @@ public:
                 auto [txIt, txEnd] = ledgerTxBounds(
                     accountData.ledgerTxMap,
                     options.ledgerRange.min,
-                    findLedger == 0 ? options.ledgerRange.max : findLedger);
+                    lookingForMarker
+                        ? clampMarkerToRange(findLedger, options.ledgerRange.max, false)
+                        : options.ledgerRange.max);
                 auto rtxIt = std::make_reverse_iterator(txEnd);
                 auto rtxEnd = std::make_reverse_iterator(txIt);
                 for (; rtxIt != rtxEnd && !pageComplete; ++rtxIt)
@@ -1164,7 +1179,10 @@ public:
             if (row.rawMeta.empty())
                 onUnsavedLedger(row.ledgerSeq);
             onTransaction(
-                row.ledgerSeq, "COMMITTED", std::move(row.rawTxn), std::move(row.rawMeta));
+                row.ledgerSeq,
+                std::string(1, static_cast<char>(TxnSql::Validated)),
+                std::move(row.rawTxn),
+                std::move(row.rawMeta));
         }
         return {newmarker, total};
     }
