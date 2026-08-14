@@ -509,7 +509,7 @@ class RuleEAllowDottedMarkerEnforcement(unittest.TestCase):
         )
 
     def test_all_named_keys_exempt_on_a_table_row(self):
-        # The real shape in the plan docs: a "was -> is now" row naming two old
+        # The real-world shape: a "was -> is now" row naming two old
         # dotted keys, with both listed in the marker.
         tokens, _ = _run_rule_e_docs(
             {

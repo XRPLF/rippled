@@ -116,7 +116,7 @@ Metrics begin flowing as soon as the node connects to peers (`server_state`
 (`server_state` = `full`). Check progress with:
 
 ```bash
-curl -s http://localhost:5005 -d '{"method":"server_info"}' |
+curl -s http://localhost:5015 -d '{"method":"server_info"}' |
     jq '.result.info | {server_state, peers, complete_ledgers}'
 ```
 
@@ -228,9 +228,8 @@ to a datasource of the matching type — auto-selecting it when only one exists
 (the usual case: one Mimir, one Tempo). This is what makes the same files work
 unchanged on both the local stack and Cloud.
 
-> Dashboards are parameterized by `grafana/parameterize-datasources.py`. If you
-> add a dashboard exported with hardcoded UIDs, re-run that script (idempotent)
-> before committing so it stays portable.
+> If you add a dashboard exported with hardcoded datasource UIDs, replace them
+> with `${DS_PROMETHEUS}` / `${DS_TEMPO}` before committing.
 
 To import:
 
@@ -395,10 +394,35 @@ Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions 
 | `ledger.acquire`  | InboundLedger.cpp | `ledger_seq`, `acquire_reason`, `timeouts`, `peer_count`, `outcome`     | Fetch a missing ledger from peers (parent varies — see [known issues](#where-telemetry-parenting-differs-from-protocol-flow)) |
 
 `ledger.acquire` sets only `ledger_seq` and `acquire_reason` when the span opens
-in `init()`; `outcome`, `timeouts` and `peer_count` are written on the `done()`
-path. All three are therefore **absent** when `init()` satisfies the ledger
-straight from the local store and the acquire never runs — treat a missing
-`outcome` as "never went to the network", not as a lost span.
+in `init()`. `outcome` has three values, written on two different paths:
+
+| `outcome`  | Written where | Meaning                                                                                                                                                                                                                                                                             |
+| ---------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `complete` | `done()`      | The ledger was fetched.                                                                                                                                                                                                                                                             |
+| `failed`   | `done()`      | The acquisition ended on its own without the ledger. Usually it gave up after `timeouts_ > kLedgerTimeoutRetriesMax` (= 6), but `trigger()` also fails immediately on an unusable state or transaction map, so a `failed` span can carry `timeouts=0`. Carries span status `Error`. |
+| `aborted`  | destructor    | The acquisition was abandoned before finishing — the sweep evicted it a minute after anything last asked for it, or `ledgers_` was cleared wholesale by shutdown or by `clearFailures()`. Status is left `Unset`, because the shutdown case is benign.                              |
+
+`peer_count` is written only on the `done()` path, so it is absent on `aborted`
+spans: reading it would go through `Overlay`, which a destructor running at
+teardown cannot depend on still existing. `timeouts` is written on both paths.
+
+A missing `outcome` has two causes, and neither is a lost span. The common one is
+that `init()` satisfied the ledger straight from the local store, so the acquire
+never went to the network. The other is a hard failure inside `tryDB()`: a stored
+header that cannot be this ledger, or a zero account hash, sets `failed_` and
+`init()` returns without ever calling `done()`, so no outcome is written. The
+destructor does not fill the gap either — its `if (!isDone())` guard is already
+false once `failed_` is set, because `isDone()` is `complete_ || failed_`. Such a
+span carries `ledger_seq` and `acquire_reason` only. Since `aborted` exists, a
+missing `outcome` is no longer how an abandoned acquisition presents.
+
+When reading acquire **duration**, exclude or split out `outcome="aborted"`.
+Those spans stay open from `init()` until the object is destroyed, so they measure
+how long the acquisition stayed outstanding rather than fetch latency, and will
+skew a percentile that mixes them with `complete`. Only on the sweep path is that
+duration bounded below by the one-minute threshold. The shutdown and
+`clearFailures()` paths abort at whatever age the acquisition happened to have, so
+an `aborted` span can also be arbitrarily short.
 
 `ledger.build` does **not** carry `tx_count` / `tx_failed`. Those two live on its
 child `tx.apply` span, which is where the set is actually applied
@@ -1034,6 +1058,34 @@ Side-flow evidence:
 - **Acquire outcome fork**: `timeouts_ > kLedgerTimeoutRetriesMax` (= 6) sets
   `failed_` → terminal `logFailure`, no store/checkAccept
   ([InboundLedger.cpp:402](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L402)).
+  A third path never reaches `done()` at all: the destructor marks any acquisition
+  that is still neither `complete_` nor `failed_` as `outcome=aborted`
+  ([InboundLedgers.cpp:393](../src/xrpld/app/ledger/detail/InboundLedgers.cpp#L393)
+  sweep eviction; [InboundLedger.cpp:224](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L224)
+  abort branch). Give-up fires at roughly **18s**, not 21s: `init()` enters the
+  retry loop through `queueJob()` with no preceding `setTimer()`, so the first
+  `invokeOnTimer()` runs immediately with `progress_` still `false` and takes
+  `timeouts_` to 1 at t≈0. The test needs `timeouts_ > 6` — the seventh invocation
+  — and only six 3s intervals separate the seventh from the first, so 6 x 3s = 18s.
+  A live `aborted` rate does **not** by itself mean acquisitions are stalling.
+  Three unrelated paths produce it:
+  - **Sweep eviction** — the only cause that implies staleness, and it fires a
+    minute after anything last _asked for_ this ledger, not a minute after the
+    last byte arrived.
+  - **Shutdown** — `InboundLedgers::stop()` clears `ledgers_` wholesale, so every
+    clean stop aborts every acquisition still in flight.
+  - **`clearFailures()`** — also clears `ledgers_`, and is reachable at runtime
+    from the `fetch_info` admin RPC (`clear: true` →
+    `NetworkOPsImp::clearLedgerFetch()`), so an operator can produce aborts on a
+    perfectly healthy node.
+
+  The 18s-vs-60s gap does not settle it either: while the acquisition lane sits at
+  its job limit the timer body never runs, so `timeouts_` cannot advance and the
+  give-up path is disarmed exactly when aborts are likeliest — see
+  [The deferral/timeout pair](#the-deferraltimeout-pair). Rule out shutdown and
+  `clearFailures()` first, then read a sustained `aborted` rate against
+  `acquire_sweep_evictions`.
+
 - **done() reason branch (store side only)**: `HISTORY` → `onLedgerFetched`, **no**
   `storeLedger`; else → `storeLedger`. But `checkAccept` + `tryAdvance` run for
   **any** `complete_ && !failed_` acquire regardless of reason
@@ -1895,9 +1947,7 @@ line added to `addMicrosecondHistogramView()` in `MetricsRegistry.cpp` -- the
 only case that still touches a central file. There is no way to read a metric's
 current value back from application code -- OTel's API is write-only by design;
 keep your own state if your logic needs to both record and read a running value
-(see the Doxygen header in `MetricMacros.h` and "Use Case 4" in
-`tasks/metric-macro-plan.md` for the full explanation and the `prometheus-cpp`
-contrast rationale).
+(see the Doxygen header in `MetricMacros.h` for the full explanation).
 
 ## Deployment Tiers
 
@@ -2511,25 +2561,33 @@ docker compose -f docker/telemetry/docker-compose.yml exec renderer \
 #### Deploying alerts to Grafana Cloud
 
 Grafana Cloud has **no provisioning filesystem**, so these `apiVersion: 1` files
-cannot be loaded there. Cloud deployment goes through the REST API via
-`docker/telemetry/upload_alerts_to_grafana.py`, which reads the same tracked
-`rules.yaml` as the single source of truth (so local and Cloud cannot drift) and
-applies the Cloud-specific transforms: the local `prometheus` datasource uid is
-swapped for the Cloud one, the `folder:` _name_ becomes an existing `folderUID`,
-and `interval` becomes integer seconds.
+cannot be loaded there. Cloud deployment goes through the Grafana alerting **REST
+API**, driven from the same tracked `rules.yaml` — it stays the single source of
+truth, so local and Cloud cannot drift.
 
-```bash
-cd docker/telemetry
-python3 upload_alerts_to_grafana.py --dry-run # always dry-run first
-python3 upload_alerts_to_grafana.py           # create rules, paused
-python3 upload_alerts_to_grafana.py --verify  # read back what is deployed
-```
+Each rule needs three Cloud-specific transforms on the way out:
+
+| Field in `rules.yaml`             | Cloud form               |
+| --------------------------------- | ------------------------ |
+| local `prometheus` datasource uid | the Cloud datasource uid |
+| `folder:` _name_                  | an existing `folderUID`  |
+| `interval` (duration string)      | integer seconds          |
+
+Then, in order:
+
+1. **Dry-run first** — render what would be sent and review it before writing
+   anything to the Cloud stack.
+2. **Create the rules paused**, so nothing can fire on a threshold that has not
+   been reviewed against this fleet.
+3. **Read back** the deployed rules and verify they are what was sent.
+
+Land the rules with delivery disabled while no recipient has been chosen, and
+activate them only once the thresholds have been checked against the target
+fleet's baseline.
 
 Credentials come from `.env.grafanaserviceapi` (gitignored, a service-account
 token with `alert.rules:write`); the recipient address comes from `ALERT_EMAIL_TO`
-in `.env.alerting`. Neither is ever written to a tracked file. Use
-`--no-delivery` to land the rules before a recipient is chosen, and `--activate`
-only once the thresholds have been checked against the target fleet's baseline.
+in `.env.alerting`. Neither is ever written to a tracked file.
 
 > **The Cloud notification policy tree must not be pushed.** There is exactly one
 > policy tree per org and the PUT endpoint **replaces it wholesale**. On a shared

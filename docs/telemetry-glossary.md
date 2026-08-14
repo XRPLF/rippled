@@ -9,12 +9,12 @@ documentation.
 > **Related docs**:
 > [docs/telemetry-runbook.md](./telemetry-runbook.md) (operator runbook).
 
-<!-- This file was originally generated from tasks/telemetry_terms.py. That
-     generator is NOT in the repository (`tasks/` is gitignored) and no copy
-     survives, so this file is now maintained by hand. Follow the existing entry
-     shape: an `<a id="...">` anchor, a `###` term heading, one plain-language
-     paragraph, then `**Scope:**` and optionally `**What is observable:**` and
-     `**See also:**`. Terms are alphabetical within each category. -->
+<!-- This file was originally machine-generated. The generator is not part of
+     the repository and no copy survives, so this file is now maintained by
+     hand. Follow the existing entry shape: an `<a id="...">` anchor, a `###`
+     term heading, one plain-language paragraph, then `**Scope:**` and
+     optionally `**What is observable:**` and `**See also:**`. Terms are
+     alphabetical within each category. -->
 
 ## Contents
 
@@ -553,7 +553,7 @@ The rate at which the node fetches older ledgers to extend or repair its stored 
 
 ### Ledger acquire (inbound fetch)
 
-Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split into complete and failed; a rising failed rate means the node cannot fetch needed ledgers from its peers.
+Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split three ways: complete, failed (the acquisition ended on its own without the ledger, having run out of retries or hit unusable data), and aborted (it was abandoned before finishing, either swept away as stale or discarded wholesale at shutdown). A rising failed rate means the node cannot fetch needed ledgers from its peers.
 
 **Scope:** per node — measured on and specific to this individual server.
 

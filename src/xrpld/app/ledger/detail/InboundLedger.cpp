@@ -227,6 +227,27 @@ InboundLedger::~InboundLedger()
         // the whole acquisition has to start over. That is the expensive case,
         // so it is counted apart from a cheap abort that had nothing yet.
         app_.getAcquireStats().recordAbort(haveHeader_ || haveState_ || haveTransactions_);
+
+        // Mark the span so an abandoned acquisition is distinguishable from one
+        // that was still in flight when the trace was read. Without this the
+        // span still ends (the guard's destructor calls End()) but carries only
+        // the attributes set at construction, and the collector's spanmetrics
+        // `outcome` dimension has nothing to group these under.
+        //
+        // peer_count is deliberately NOT recorded here, unlike done(): reading
+        // it goes through getPeerCount() -> app_.getOverlay(), and a destructor
+        // must not depend on Overlay still existing. InboundLedgers::stop()
+        // normally clears the map while Overlay is alive, but a shared_ptr held
+        // past that point would destroy this object after Overlay is gone.
+        if (acquireSpan_ && *acquireSpan_)
+        {
+            using namespace telemetry;
+            acquireSpan_->setAttribute(
+                ledger_span::attr::outcome, std::string_view(ledger_span::val::aborted));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
+        }
+
         JLOG(journal_.debug()) << "Acquire " << hash_ << " abort "
                                << ((timeouts_ == 0) ? std::string()
                                                     : (std::string("timeouts:") +
@@ -513,6 +534,16 @@ InboundLedger::done()
                 ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
             acquireSpan_->setAttribute(
                 ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
+
+            // Only the failure path gets an Error status. Success is left Unset
+            // rather than Ok: per the OpenTelemetry spec, Ok is reserved for an
+            // application deliberately asserting verified success, and
+            // instrumentation should not set it. The abort path in the
+            // destructor is also left Unset, because a clean shutdown clears
+            // every in-flight acquisition and would otherwise report an error
+            // on every stop.
+            if (failed_)
+                acquireSpan_->setError("ledger acquisition gave up");
         }
 
         JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")

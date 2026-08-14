@@ -34,7 +34,8 @@
  *
  * @note Span names come from the canonical constants in
  *  ConsensusSpanNames.h (consensus::span::proposalReceive /
- *  validationReceive) so they stay in sync with the rest of Phase 4.
+ *  validationReceive) so they stay in sync with the rest of the
+ *  consensus tracing surface.
  */
 
 #include <xrpl/consensus/ConsensusSpanNames.h>

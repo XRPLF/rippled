@@ -277,9 +277,9 @@ TEST(MetricMacros, observable_gauge_register_reports_current_value)
     FakeApp app;
     wire(app, /*enabled=*/true);
 
-    // Own the state exactly as a real caller would (Use Case 5 in the
-    // design doc) -- the macro's callback reads through this atomic on
-    // every collection tick, it does not own the value itself.
+    // Own the state exactly as a real caller would -- the macro's callback
+    // reads through this atomic on every collection tick, it does not own
+    // the value itself.
     std::atomic<std::int64_t> queueDepth{0};
     XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER(
         app,
@@ -287,11 +287,11 @@ TEST(MetricMacros, observable_gauge_register_reports_current_value)
         "Test observable gauge for macro unit test",
         [&queueDepth] { return queueDepth.load(); });
 
-    // There is no application-level read-back API (Use Case 4) -- this
-    // test can only prove registration doesn't crash and that meter() was
-    // consulted to create the observable instrument. It does NOT assert the
-    // observed value reaches Prometheus; that is Task 3b's docker-harness
-    // job, not this hermetic unit test.
+    // There is no application-level read-back API -- this test can only
+    // prove registration doesn't crash and that meter() was consulted to
+    // create the observable instrument. It does NOT assert the observed
+    // value reaches Prometheus; that is the docker-harness integration
+    // test's job, not this hermetic unit test.
     queueDepth.store(42);
     EXPECT_EQ(app.registry().meterCalls(), 1);
 }

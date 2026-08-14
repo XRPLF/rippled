@@ -470,7 +470,7 @@ for attempt in $(seq 1 60); do
 done
 
 # ---------------------------------------------------------------------------
-# Step 7: Exercise RPC spans (Phase 2)
+# Step 7: Exercise RPC spans
 # ---------------------------------------------------------------------------
 log "Exercising RPC spans..."
 
@@ -485,7 +485,7 @@ log "RPC commands sent. Waiting 5s for batch export..."
 sleep 5
 
 # ---------------------------------------------------------------------------
-# Step 8: Submit transaction (Phase 3)
+# Step 8: Submit transaction
 # ---------------------------------------------------------------------------
 log "Submitting Payment transaction..."
 
@@ -538,7 +538,7 @@ else
 fi
 
 log ""
-log "--- Phase 2: RPC Spans ---"
+log "--- RPC Spans ---"
 check_span "rpc.request"
 check_span "rpc.process"
 check_span "rpc.command.server_info"
@@ -546,31 +546,31 @@ check_span "rpc.command.server_state"
 check_span "rpc.command.ledger"
 
 log ""
-log "--- Phase 3: Transaction Spans ---"
+log "--- Transaction Spans ---"
 check_span "tx.process"
 check_span "tx.receive"
 check_span "tx.apply"
 
 log ""
-log "--- Phase 4: Consensus Spans ---"
+log "--- Consensus Spans ---"
 check_span "consensus.proposal.send"
 check_span "consensus.ledger_close"
 check_span "consensus.accept"
 check_span "consensus.validation.send"
 
 log ""
-log "--- Phase 5: Ledger Spans ---"
+log "--- Ledger Spans ---"
 check_span "ledger.build"
 check_span "ledger.validate"
 check_span "ledger.store"
 
 log ""
-log "--- Phase 5: Peer Spans (trace_peer=1) ---"
+log "--- Peer Spans (trace_peer=1) ---"
 check_span "peer.proposal.receive"
 check_span "peer.validation.receive"
 
 # ---------------------------------------------------------------------------
-# Step 9b: Verify log-trace correlation (Phase 8)
+# Step 9b: Verify log-trace correlation
 # ---------------------------------------------------------------------------
 log ""
 log "--- Log-Trace Correlation ---"
@@ -580,7 +580,7 @@ check_log_correlation
 # Step 10: Verify Prometheus spanmetrics
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 5: Spanmetrics ---"
+log "--- Spanmetrics ---"
 log "Waiting 20s for Prometheus scrape cycle..."
 sleep 20
 
@@ -611,7 +611,7 @@ fi
 # Step 10b: Verify native OTel metrics in Prometheus (beast::insight)
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 7: Native OTel Metrics (beast::insight via OTLP) ---"
+log "--- Native OTel Metrics (beast::insight via OTLP) ---"
 log "Waiting 20s for OTLP metric export + Prometheus scrape..."
 sleep 20
 
@@ -660,10 +660,10 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 10c: Verify Phase 9 OTel SDK Metrics
+# Step 10c: Verify OTel SDK Metrics
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 9: OTel SDK Metrics (MetricsRegistry) ---"
+log "--- OTel SDK Metrics (MetricsRegistry) ---"
 log "Waiting 15s for OTel metric export + Prometheus scrape..."
 sleep 15
 
@@ -679,34 +679,34 @@ check_otel_metric() {
     fi
 }
 
-# Task 9.1: NodeStore I/O
+# NodeStore I/O
 check_otel_metric 'nodestore_state{metric="node_reads_total"}'
 check_otel_metric 'nodestore_state{metric="write_load"}'
 
-# Task 9.2: Cache hit rates
+# Cache hit rates
 check_otel_metric 'cache_metrics{metric="SLE_hit_rate"}'
 check_otel_metric 'cache_metrics{metric="treenode_cache_size"}'
 
-# Task 9.3: TxQ metrics
+# TxQ metrics
 check_otel_metric 'txq_metrics{metric="txq_count"}'
 check_otel_metric 'txq_metrics{metric="txq_reference_fee_level"}'
 
-# Task 9.4: Per-RPC metrics
+# Per-RPC metrics
 check_otel_metric "rpc_method_started_total"
 check_otel_metric "rpc_method_finished_total"
 
-# Task 9.5: Per-job metrics
+# Per-job metrics
 check_otel_metric "job_queued_total"
 check_otel_metric "job_finished_total"
 
-# Task 9.6: Counted object instances
+# Counted object instances
 check_otel_metric "object_count"
 
-# Task 9.7: Load factor breakdown
+# Load factor breakdown
 check_otel_metric 'load_factor_metrics{metric="load_factor"}'
 check_otel_metric 'load_factor_metrics{metric="load_factor_server"}'
 
-# Task 7.15 / Phase 9: ValidationTracker rolling-window agreement gauge.
+# ValidationTracker rolling-window agreement gauge.
 # MetricsRegistry::registerValidationAgreementGauge() publishes
 # validation_agreement with a `metric` label for each window
 # (1h / 24h / 7d) plus the matching agreement/miss counts. The 7-day

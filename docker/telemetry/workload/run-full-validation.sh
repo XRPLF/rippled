@@ -357,6 +357,8 @@ done
 log "Step 3: Waiting for consensus..."
 for attempt in $(seq 1 120); do
     ready=0
+    # Reset each attempt so a timeout reports the final state, not a history.
+    laggards=""
     for i in $(seq 1 "$NUM_NODES"); do
         port=$((RPC_PORT_BASE + i - 1))
         state=$(curl -sf "http://localhost:$port" \
@@ -364,6 +366,12 @@ for attempt in $(seq 1 120); do
             jq -r '.result.info.server_state' 2>/dev/null || echo "")
         if [ "$state" = "proposing" ]; then
             ready=$((ready + 1))
+        else
+            # Name the node and what it last reported. A bare count says a
+            # node is missing but not which one, which leaves nothing to grep
+            # for in the artifacts. An empty state means the RPC port did not
+            # answer at all, which usually means the process is gone.
+            laggards="$laggards node$i=${state:-unreachable}"
         fi
     done
     if [ "$ready" -ge "$NUM_NODES" ]; then
@@ -377,7 +385,7 @@ for attempt in $(seq 1 120); do
         # quorum are simply never emitted. One infrastructure error here is
         # worth more than a pile of misleading assertion failures later.
         echo ""
-        die "Consensus timeout — only $ready/$NUM_NODES nodes proposing after ${attempt}s. Check $WORKDIR/node*/debug.log, then '$0 --cleanup'."
+        die "Consensus timeout — only $ready/$NUM_NODES nodes proposing after ${attempt}s. Not proposing:${laggards}. Check $WORKDIR/node*/debug.log and $WORKDIR/node*/stdout.log (a node that died before its log sink opened writes only the latter), then '$0 --cleanup'."
     fi
     printf "\r  %d/%d nodes proposing..." "$ready" "$NUM_NODES"
     sleep 1

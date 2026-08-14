@@ -447,8 +447,8 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 
 > **`consensus.check` carries nine attributes, all set before the early
 > returns.** `Consensus<Adaptor>::haveConsensus()` sets them at
-> `include/xrpl/consensus/Consensus.h:1899-1912` and `consensus_result` at
-> `:1925`, deliberately ahead of the `No` / `Expired` branches, so the span is
+> `include/xrpl/consensus/Consensus.h:1899-1911` and `consensus_result` at
+> `:1926`, deliberately ahead of the `No` / `Expired` branches, so the span is
 > fully populated even on rounds that never reach consensus. In set order:
 > `agree_count`, `disagree_count`, `converge_percent`,
 > `have_close_time_consensus`, `threshold_percent`, `proposers_finished`,
@@ -477,14 +477,23 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 | `tx_count`            | int64   | `tx.apply`                                        | Transactions applied to the ledger               |
 | `tx_failed`           | int64   | `tx.apply`                                        | Failed transactions in the apply set             |
 | `validations`         | int64   | `ledger.validate`                                 | Number of validations received for this ledger   |
-| `acquire_reason`      | string  | `ledger.acquire`                                  | Why the ledger fetch was triggered               |
+| `acquire_reason`      | string  | `ledger.acquire`                                  | Fetch trigger (`history`/`consensus`/`generic`)  |
 | `timeouts`            | int64   | `ledger.acquire`                                  | Number of fetch timeouts                         |
 | `peer_count`          | int64   | `ledger.acquire`                                  | Peers queried during the fetch                   |
-| `outcome`             | string  | `ledger.acquire`                                  | Fetch outcome                                    |
+| `outcome`             | string  | `ledger.acquire`                                  | Fetch outcome (`complete`/`failed`/`aborted`)    |
 
 The apply-step span `tx.apply` (child of `ledger.build`) carries `tx_count`/`tx_failed`;
 the parent `ledger.build` carries `ledger_seq` and the close-time attributes.
 `ledger.acquire` (InboundLedger) also sets `ledger_seq`.
+
+`outcome` takes one of **three** values, not two. `complete` and `failed` are both set in
+`done()` (`InboundLedger.cpp:530-532`), where `failed` covers both giving up after the
+retry limit and hitting unusable ledger data, so a `failed` span can carry `timeouts=0`. `aborted` is set in `~InboundLedger()` when the object is destroyed while
+`!isDone()` (`InboundLedger.cpp:242-246`) — the acquisition was **abandoned** before it
+finished, rather than having run to its retry limit. The abort path records `timeouts` but
+deliberately **not** `peer_count`, because reading the peer count goes through `Overlay`, which
+a destructor must not depend on still existing. A query that only groups by
+`complete`/`failed` therefore silently loses every abandoned fetch.
 
 **Tempo query**: `{span.ledger_seq=12345}` to find all spans for a specific ledger.
 
@@ -626,7 +635,7 @@ prefix=xrpld
 > (`src/xrpld/app/misc/NetworkOPs.cpp:4884-4897`). Divide by `1e6` for seconds.
 > The `node-health` "State Duration Rate (All States)" panel already does
 > (`/ 1000000` on each `rate(...)`), and
-> `docker/telemetry/grafana/dashboards/validate_dashboards.py:43` lints the
+> `docker/telemetry/grafana/dashboards/validate_dashboards.py:44-45` lints the
 > family as "cumulative µs". Reading the raw value as seconds overstates time
 > in state by a factor of one million.
 
@@ -755,7 +764,7 @@ types where this bites are the ones with a low concurrency limit
 > **Sampling caveat.** These are sampled, not integrated. The values are read
 > when the SDK's periodic reader invokes the observable callbacks, which run the
 > collector hooks; the export interval is 1000 ms
-> (`export_interval_millis` in `src/libxrpl/telemetry/Telemetry.cpp:441`) and
+> (`export_interval_millis` in `src/libxrpl/telemetry/Telemetry.cpp:476`) and
 > hook invocation is debounced to at most once per 500 ms. A spike shorter than
 > the interval can be missed entirely, so read these as pressure indicators
 > rather than as exact peak depths.
@@ -1032,8 +1041,8 @@ async callbacks for new categories.
 > **Label values are case-sensitive and three cache values are not lowercase.**
 > The `metric` label carries the string literal passed to `Observe()`, verbatim:
 > `SLE_hit_rate`, `AL_hit_rate` and `AL_size` are upper-case
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:649`, `:665`, `:691`), while
-> `ledger_hit_rate` genuinely is lowercase (`:658`). A selector written as
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:666`, `:682`, `:708`), while
+> `ledger_hit_rate` genuinely is lowercase (`:675`). A selector written as
 > `cache_metrics{metric="sle_hit_rate"}` matches nothing.
 
 #### Server Info (via OTel MetricsRegistry)
@@ -1133,7 +1142,7 @@ Phase-7 parity set, see
 | Dashboard          | UID          | Data Source | Key Panels                                                        |
 | ------------------ | ------------ | ----------- | ----------------------------------------------------------------- |
 | Fee Market & TxQ   | `fee-market` | Prometheus  | TxQ depth/capacity, fee levels, load factor breakdown, escalation |
-| Job Queue Analysis | `job-queue`  | Prometheus  | Per-job rates, queue wait times, execution times, queue depth     |
+| Job Queue Analysis | `job-queue`  | Prometheus  | Per-job rates, queue wait times, execution times, overflow rate   |
 
 ---
 
@@ -1195,7 +1204,7 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 > (`nodestore_state`, `cache_metrics`, …) once.
 >
 > Note that `ledgers_closed_total` appears in **both** instrument rows: it is
-> created as a `MetricsRegistry` member (`MetricsRegistry.cpp:369-370`, whose
+> created as a `MetricsRegistry` member (`MetricsRegistry.cpp:386-387`, whose
 > `incrementLedgersClosed()` has no callers) and separately incremented at its
 > call site via `XRPL_METRIC_COUNTER_INC` (`RCLConsensus.cpp:749`). The distinct
 > name count across the two rows is therefore 41, not 42.
@@ -1320,7 +1329,7 @@ via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
 > **On NuDB, `write_load` and `nudb_writers_in_flight` are the same number.**
 > Both read the same atomic. `NuDBBackend::getWriteLoad()` returns
 > `concurrentWriters.load()`
-> (`src/libxrpl/nodestore/backend/NuDBFactory.cpp:355-361`), and
+> (`src/libxrpl/nodestore/backend/NuDBFactory.cpp:375-381`), and
 > `WriteStats::concurrentWriters` is that same counter. So the two series track
 > each other exactly, sampled microseconds apart in one callback. Do not read
 > their agreement as two signals confirming each other — it is one signal twice.
@@ -1337,7 +1346,7 @@ Further label values on the same instrument, added to separate the two
 bottlenecks that both present as the `ledgerData` job lane pinned at its
 concurrency cap. Observed in `MetricsRegistry::observeNodeStoreTotals()`,
 `observeWritePathDetail()`, and `observeAcquireStats()`
-(`src/xrpld/telemetry/MetricsRegistry.cpp:854-925`).
+(`src/xrpld/telemetry/MetricsRegistry.cpp:871-942`).
 
 | Prometheus Metric                                    | Type  | Labels   | Description                                             |
 | ---------------------------------------------------- | ----- | -------- | ------------------------------------------------------- |
@@ -1429,7 +1438,7 @@ data as uninformative unless the build is known to include the fix.
 #### TxQ Admission and Ledger Mismatch (Synchronous Counters)
 
 Three monotonic counters created alongside the Phase 7+ parity counters
-(`src/xrpld/telemetry/MetricsRegistry.cpp:377-382`). The gauges above answer
+(`src/xrpld/telemetry/MetricsRegistry.cpp:394-399`). The gauges above answer
 "how deep is the queue"; these answer "what did the queue refuse, and did the
 ledger we built match the one the network validated".
 
@@ -1475,7 +1484,7 @@ Rejections (Dropped)", "Queue Abandonment Rate (Expired)"; _Consensus Health_
 #### Reduce-Relay Efficiency (Observable Gauge — `reduce_relay_metrics`)
 
 Transaction reduce-relay effectiveness, read from `Overlay::txMetrics()` each
-collection cycle (`src/xrpld/telemetry/MetricsRegistry.cpp:1353-1385`). A high
+collection cycle (`src/xrpld/telemetry/MetricsRegistry.cpp:1370-1402`). A high
 `suppressed_peers` : `selected_peers` ratio proves the feature is saving
 bandwidth; a high `not_enabled_peers` means stale peers are forcing full relay.
 
@@ -1636,7 +1645,7 @@ not a lowercase word and not a friendly alias. The value is
 `beast::typeName<Object>()` (`include/xrpl/basics/CountedObject.h:115`), which
 demangles `typeid(T).name()` with `abi::__cxa_demangle`
 (`include/xrpl/beast/type_name.h:16-45`) and applies no stripping; the observer
-copies it through verbatim (`src/xrpld/telemetry/MetricsRegistry.cpp:764-770`).
+copies it through verbatim (`src/xrpld/telemetry/MetricsRegistry.cpp:781-787`).
 Values therefore keep their `xrpl::` namespace, nested `::`, and template
 arguments.
 
@@ -1771,7 +1780,7 @@ These metrics fill gaps identified by comparing xrpld's internal observability w
 Data source: `ValidationTracker` class with 8s grace period and 5m late repair window.
 
 > **Every value on this instrument is a double.** The family is one
-> `CreateDoubleObservableGauge` (`src/xrpld/telemetry/MetricsRegistry.cpp:1576`),
+> `CreateDoubleObservableGauge` (`src/xrpld/telemetry/MetricsRegistry.cpp:1593`),
 > so the integral counts are cast to `double` before `Observe()` — there is no
 > Int64 sub-series to filter on. The same holds for `validator_health`,
 > `peer_quality` and `state_tracking` below; an earlier revision of these four
@@ -1780,7 +1789,7 @@ Data source: `ValidationTracker` class with 8s grace period and 5m late repair w
 >
 > The 7-day window is `ValidationTracker::kWindow7d` = 168 hours
 > (`src/xrpld/telemetry/ValidationTracker.h:311`) and is observed alongside the 1h
-> and 24h windows at `MetricsRegistry.cpp:1606-1609`. Panels exist on _Validator
+> and 24h windows at `MetricsRegistry.cpp:1623-1626`. Panels exist on _Validator
 > Health_ (`validator-health`): "Agreement % (7d)" and "Agreements vs Missed
 > (7d)".
 
@@ -1793,7 +1802,7 @@ Data source: `ValidationTracker` class with 8s grace period and 5m late repair w
 | `validator_health{metric="unl_expiry_days"}`   | Double | `metric` | Days until UNL list expires    |
 | `validator_health{metric="validation_quorum"}` | Double | `metric` | Validation quorum threshold    |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1200`.
+Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1217`.
 
 #### Peer Quality (Observable Gauge — `peer_quality`)
 
@@ -1804,7 +1813,7 @@ Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1200`.
 | `peer_quality{metric="peers_higher_version_pct"}` | Double | `metric` | % of peers on newer xrpld version    |
 | `peer_quality{metric="upgrade_recommended"}`      | Double | `metric` | 1 if >60% of peers are newer version |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1249`.
+Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1266`.
 
 #### Ledger Economy (Observable Gauge — `ledger_economy`)
 
@@ -1823,9 +1832,9 @@ Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1249`.
 | `state_tracking{metric="state_value"}`                   | Double | `metric` | Numeric state 0-6 (see encoding below) |
 | `state_tracking{metric="time_in_current_state_seconds"}` | Double | `metric` | Duration in current state              |
 
-Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1466`.
+Single `CreateDoubleObservableGauge` at `MetricsRegistry.cpp:1483`.
 
-State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing). Values 0-4 are `OperatingMode` cast to double (`include/xrpl/server/NetworkOPs.h:60-66`); 5 and 6 are the FULL-only refinements at `MetricsRegistry.cpp:1483-1498`. **The range is 0-6, not 0-7** — there is no seventh state.
+State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing). Values 0-4 are `OperatingMode` cast to double (`include/xrpl/server/NetworkOPs.h:60-66`); 5 and 6 are the FULL-only refinements at `MetricsRegistry.cpp:1500-1515`. **The range is 0-6, not 0-7** — there is no seventh state.
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
@@ -1834,11 +1843,11 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | `storage_detail{metric="stored_object_bytes"}` | Int64 | `metric` | Cumulative object-payload bytes written (not on-disk size) |
 
 > **`stored_object_bytes` is not a file size.** It observes `getStoreSize()`
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:1557`), which sums the object payloads
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:1574`), which sums the object payloads
 > this process has written. It therefore excludes NuDB's keys, bucket padding and
 > log, and it resets when the process restarts while the files on disk do not.
 > `node_written_bytes` on the `nodestore_state` gauge calls the same accessor
-> (`MetricsRegistry.cpp:860`), so the two series are equal by construction and any
+> (`MetricsRegistry.cpp:877`), so the two series are equal by construction and any
 > write-amplification ratio built from the pair is a constant 1.0. To size the store
 > on disk, stat the backend's files; no metric reports it today.
 >
@@ -1859,9 +1868,9 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 > **Known issue — `ledgers_closed_total` has a dead second producer.** The
 > instrument is created twice. `MetricsRegistry::registerCounters()` eagerly
 > creates it as the member `ledgersClosedCounter_`
-> (`src/xrpld/telemetry/MetricsRegistry.cpp:369-370`), and its only mutator,
+> (`src/xrpld/telemetry/MetricsRegistry.cpp:386-387`), and its only mutator,
 > `MetricsRegistry::incrementLedgersClosed()`
-> (declared `MetricsRegistry.h:591`, defined `MetricsRegistry.cpp:1686`), has
+> (declared `MetricsRegistry.h:591`, defined `MetricsRegistry.cpp:1703`), has
 > **zero callers** — the header says so itself at `MetricsRegistry.h:584-588`.
 > The value operators actually see comes from the single live increment,
 > the `XRPL_METRIC_COUNTER_INC` call site in
@@ -1915,8 +1924,8 @@ What the code emits today, and where it is documented:
 | `xrpl.validation.ledger_hash`, `xrpl.peer.validation.ledger_hash` | one bare `ledger_hash` on both `consensus.validation.send` and `peer.validation.receive` <!-- otel-naming:allow-dotted: xrpl.validation.ledger_hash, xrpl.peer.validation.ledger_hash -->    |
 | `xrpl.validation.full`, `xrpl.peer.validation.full`               | one bare `full_validation` on both of those spans <!-- otel-naming:allow-dotted: xrpl.validation.full, xrpl.peer.validation.full -->                                                         |
 | `xrpl.consensus.validation_quorum`                                | `quorum`, on `consensus.accept` only <!-- otel-naming:allow-dotted: xrpl.consensus.validation_quorum -->                                                                                     |
-| `xrpl.node.amendment_blocked`                                     | **not a span attribute at all** — only the metric `validator_health{metric="amendment_blocked"}` (`MetricsRegistry.cpp:1216`) <!-- otel-naming:allow-dotted: xrpl.node.amendment_blocked --> |
-| `xrpl.node.server_state`                                          | **not a span attribute at all** — only the metric `server_info{metric="server_state"}` (`MetricsRegistry.cpp:1014`) <!-- otel-naming:allow-dotted: xrpl.node.server_state -->                |
+| `xrpl.node.amendment_blocked`                                     | **not a span attribute at all** — only the metric `validator_health{metric="amendment_blocked"}` (`MetricsRegistry.cpp:1233`) <!-- otel-naming:allow-dotted: xrpl.node.amendment_blocked --> |
+| `xrpl.node.server_state`                                          | **not a span attribute at all** — only the metric `server_info{metric="server_state"}` (`MetricsRegistry.cpp:1031`) <!-- otel-naming:allow-dotted: xrpl.node.server_state -->                |
 | `xrpl.consensus.proposers_validated`                              | **never implemented** in any form <!-- otel-naming:allow-dotted: xrpl.consensus.proposers_validated -->                                                                                      |
 
 The identical nine-row list was deleted from
@@ -1936,10 +1945,9 @@ query, an alert — matches nothing and should be pointed at the live keys above
 
 ### Updated Grafana Dashboards (Phase 9)
 
-| Dashboard            | UID                        | New Panels Added                                                     |
-| -------------------- | -------------------------- | -------------------------------------------------------------------- |
-| Node Health (StatsD) | `xrpld-statsd-node-health` | NodeStore I/O, cache hit rates, object instance counts               |
-| System Node Health   | `node-health`              | Ledger economy row: base fee, reserves, ledger age, transaction rate |
+| Dashboard   | UID           | New Panels Added                                                                                                                 |
+| ----------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Node Health | `node-health` | NodeStore I/O row, cache hit rates, object instance counts; Ledger Economy row: base fee, reserves, ledger age, transaction rate |
 
 ### New Grafana Dashboards (Phase 11)
 
@@ -2105,7 +2113,7 @@ discovery cache has any instrument at all.
 
 | Reading                                             | Source                 | Why it matters                                                                                                         |
 | --------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `attempts()`, `attemptsNeeded()`                    | `Counts.h:68,79`       | Outbound connection churn; distinguishes "not trying" from "trying and failing"                                        |
+| `attemptsNeeded()`, `attempts()`                    | `Counts.h:68,79`       | Outbound connection churn; distinguishes "not trying" from "trying and failing"                                        |
 | `outMax()`, `outActive()`, `outboundSlotsFree()`    | `Counts.h:88,98,205`   | Outbound slot saturation                                                                                               |
 | `inMax()`, `inboundActive()`, `inboundSlotsFree()`  | `Counts.h:165,174,193` | Inbound slot saturation — the two exported gauges give the actives but not the caps, so utilization cannot be computed |
 | `acceptCount()`, `connectCount()`, `closingCount()` | `Counts.h:138,147,156` | Handshake pipeline depth; `closingCount()` rising is teardown backpressure                                             |
