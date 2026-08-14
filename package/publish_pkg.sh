@@ -24,12 +24,12 @@ case "${channel}" in
         deb_repo="deb"
         rpm_repo="rpm"
         ;;
-    develop | unstable | private)
+    unstable | experimental | develop | private)
         deb_repo="deb-${channel}"
         rpm_repo="rpm-${channel}"
         ;;
     *)
-        echo "usage: publish_pkg.sh <stable|develop|unstable|private> [package-dir]" >&2
+        echo "usage: publish_pkg.sh <stable|unstable|experimental|develop|private> [package-dir]" >&2
         exit 2
         ;;
 esac

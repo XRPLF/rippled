@@ -16,6 +16,9 @@ Options (each can also be set via the env var shown):
                            xrpld and validator-keys
                            binaries                  [BUILD_DIR;         default: ${PWD}/build]
   --pkg-release N          package release iteration [PKG_RELEASE;       default: 1]
+  --channel NAME           channel recorded as the
+                           Debian changelog
+                           distribution              [PKG_CHANNEL;       default: unstable]
   --source-date-epoch SECS reproducibility timestamp [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
   -h, --help               show this help and exit
 EOF
@@ -32,6 +35,7 @@ need_arg() {
 SRC_DIR="${SRC_DIR:-}"
 BUILD_DIR="${BUILD_DIR:-}"
 PKG_RELEASE="${PKG_RELEASE:-1}"
+PKG_CHANNEL="${PKG_CHANNEL:-unstable}"
 SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-}"
 
 while [[ $# -gt 0 ]]; do
@@ -49,6 +53,11 @@ while [[ $# -gt 0 ]]; do
         --pkg-release)
             need_arg "$@"
             PKG_RELEASE="$2"
+            shift 2
+            ;;
+        --channel)
+            need_arg "$@"
+            PKG_CHANNEL="$2"
             shift 2
             ;;
         --source-date-epoch)
@@ -148,8 +157,11 @@ if [[ -z "${pre_release}" && "${xrpld_version}" == *+* ]]; then
     exit 1
 fi
 
-# Also validates the pre-release, for both package formats.
-release_channel="$("${SRC_DIR}/package/release_channel.sh" "${xrpld_version}")"
+if [[ -n "${pre_release}" && ! "${pre_release}" =~ ^(b0|b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
+    echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
+    echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2
+    exit 1
+fi
 
 if command -v apt-get >/dev/null 2>&1; then
     pkg_type=deb
@@ -222,7 +234,7 @@ build_deb() {
 
     # Debian version is <upstream>[~<pre>]-<pkg release>.
     cat >"${staging}/debian/changelog" <<EOF
-xrpld (${pkg_version}-${PKG_RELEASE}) ${release_channel}; urgency=medium
+xrpld (${pkg_version}-${PKG_RELEASE}) ${PKG_CHANNEL}; urgency=medium
   * Release ${xrpld_version}.
 
  -- XRPL Foundation <contact@xrplf.org>  ${CHANGELOG_DATE}

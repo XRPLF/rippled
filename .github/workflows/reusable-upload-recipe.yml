@@ -49,9 +49,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Generate build version number
+      - name: Determine release info
         id: version
-        uses: ./.github/actions/generate-version
+        uses: ./.github/actions/release-info
 
       - name: Set up Conan
         uses: ./.github/actions/setup-conan

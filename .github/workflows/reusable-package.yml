@@ -11,11 +11,6 @@ name: Package
 on:
   workflow_call:
     inputs:
-      pkg_release:
-        description: "Package release number. Increment when repackaging the same executable."
-        required: false
-        type: string
-        default: "1"
       publish:
         description: "Whether to publish the packages after building them."
         required: false
@@ -93,9 +88,14 @@ jobs:
       - name: Make binaries executable
         run: chmod +x "${BUILD_DIR}/xrpld" "${BUILD_DIR}/validator-keys"
 
+      - name: Determine release info
+        id: release
+        uses: ./.github/actions/release-info
+
       - name: Build package
         env:
-          PKG_RELEASE: ${{ inputs.pkg_release }}
+          PKG_RELEASE: ${{ steps.release.outputs.pkg_release }}
+          PKG_CHANNEL: ${{ steps.release.outputs.channel }}
         run: ./package/build_pkg.sh
 
       - name: Upload package artifact
@@ -111,18 +111,8 @@ jobs:
       - name: Publish package
         if: ${{ inputs.publish }}
         env:
-          VISIBILITY: ${{ github.event.repository.visibility }}
+          CHANNEL: ${{ steps.release.outputs.channel }}
           NEXUS_URL: ${{ inputs.nexus_url }}
           NEXUS_USERNAME: ${{ secrets.remote_username }}
           NEXUS_PASSWORD: ${{ secrets.remote_password }}
-        # Visibility decides the channel for anything not public, since that does
-        # not follow from a version. Otherwise it comes from the binary that was
-        # just packaged, so the channel always matches the version in the package.
-        run: |
-          if [[ "${VISIBILITY}" == "public" ]]; then
-              version="$("${BUILD_DIR}/xrpld" --version | awk 'NR == 1 { print $3 }')"
-              channel="$(./package/release_channel.sh "${version}")"
-          else
-              channel=private
-          fi
-          ./package/publish_pkg.sh "${channel}" "${BUILD_DIR}"
+        run: ./package/publish_pkg.sh "${CHANNEL}" "${BUILD_DIR}"

@@ -10,7 +10,6 @@ a build configured with `-Dvalidator_keys=ON`.
 package/
   build_pkg.sh        Staging and build script (called by the CMake `package` target and CI)
   publish_pkg.sh      Uploads built packages to the XRPLF Nexus repositories (called by CI)
-  release_channel.sh  Maps an xrpld version to its release channel (used by both of the above)
   rpm/
     xrpld.spec      RPM spec
   debian/           Debian control files (control, rules, copyright, xrpld.docs, xrpld.links, source/format)
@@ -125,70 +124,62 @@ release defaults to 1 and is overridable with `-Dpkg_release=N`.
 ## Publishing packages
 
 Packages are published to the XRPLF repositories on Sonatype Nexus at
-`https://deb.xrplf.org`. `release_channel.sh` maps a version to its channel, and
-`publish_pkg.sh` maps that channel to a repository pair:
+`https://deb.xrplf.org`. The `release-info` action decides the channel from
+the event, and `publish_pkg.sh` maps that channel to a repository pair:
 
-| Version               | Channel    | DEB repository | RPM repository |
-| --------------------- | ---------- | -------------- | -------------- |
-| `3.4.0`               | `stable`   | `deb`          | `rpm`          |
-| `3.4.0-b0[+meta]`     | `develop`  | `deb-develop`  | `rpm-develop`  |
-| `3.4.0-b1`, `-rc1`    | `unstable` | `deb-unstable` | `rpm-unstable` |
-| _(not version-based)_ | `private`  | `deb-private`  | `rpm-private`  |
+| Event                    | Version           | Channel        | DEB repository     | RPM repository     |
+| ------------------------ | ----------------- | -------------- | ------------------ | ------------------ |
+| tag                      | `X.Y.Z`           | `stable`       | `deb`              | `rpm`              |
+| tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable`     |
+| tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental` |
+| push to `develop`        | `X.Y.Z-bN[+meta]` | `develop`      | `deb-develop`      | `rpm-develop`      |
+| any, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private`      |
 
-Both consumers call `release_channel.sh` with the version reported by the same
-`xrpld` binary: `build_pkg.sh` to write the Debian changelog distribution, and the
-packaging job to pick the repository, so a package always goes to the channel its
-own changelog names. `private` is the exception, since visibility does not follow
-from a version: the packaging job selects it for any repository that is not
-public, without consulting the version at all.
+Only a tag names a channel — do not extend that to `develop`, whose
+`versionString` moves through `-bN`, `-rcN` and even the final version during a
+release cycle, which would send nightlies into `stable`. Versions sort in row
+order, so moving to a more mature channel never downgrades.
+
+The action also decides the package release number, since it follows the same
+split: a tag's version is unique so its packages are release 1, while develop
+repeats one version and gets `github.run_number` to keep nightlies rising. Both
+values reach the packaging scripts as arguments — `build_pkg.sh` takes
+`--channel` and `--pkg-release`, `publish_pkg.sh` takes the channel as its first
+argument — so neither derives anything, and a local build gets the defaults
+`unstable` and `1`.
 
 Publishing is the last step of each packaging job, uploading from the container
 that built the packages. It runs when the caller passes `publish: true`:
-`on-trigger.yml` does so for pushes to develop, `on-tag.yml` always, `on-pr.yml`
-never. Both authenticate with the `NEXUS_REMOTE_USERNAME` /
-`NEXUS_REMOTE_PASSWORD` secrets already used for the Conan remote.
+`on-trigger.yml` for pushes to develop, `on-tag.yml` always, `on-pr.yml` never.
+Both authenticate with the `NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD`
+secrets already used for the Conan remote.
 
-The DEB repositories are apt-hosted and the RPM ones yum-hosted, so Nexus owns
-the `Packages` and `repodata` indexes; nothing here signs or indexes anything.
-Two consequences of that split of responsibility:
+Nexus owns the repository metadata; nothing here signs or indexes anything. Three
+things follow:
 
 - Each apt-hosted repository needs a distribution and a PGP signing keypair
-  configured in Nexus, which is what `dists/<distribution>/main` and the signed
-  `InRelease` come from. Nexus rejects an apt-hosted repository created without a
-  keypair. The changelog distribution `build_pkg.sh` writes only records the
-  channel; it does not route the upload.
-- yum metadata is rebuilt asynchronously, so `repodata/repomd.xml` lags an upload
-  by roughly a minute. A publish that succeeds is not immediately installable.
+  configured in Nexus, which rejects one created without a keypair.
+- yum metadata is rebuilt asynchronously, so a successful publish is not
+  immediately installable.
+- Each job uploads only what it built, and uploads are not transactional, so a
+  failure can leave one format published alone. Re-running is safe: both the apt
+  POST and the yum PUT replace an existing asset.
 
-Each job publishes only what it built and the matrix is `fail-fast: false`, so a
-failed distro leaves the other format published alone, and uploads are sequential
-rather than transactional. Recovery is a re-run: the package artifacts are
-uploaded before the publish step, and both the apt POST and the yum PUT replace
-an existing asset.
-
-The `develop` version comes from the binary rather than the commit, so it is the
-same `3.4.0-b0` on every nightly. `on-trigger.yml` therefore passes
-`pkg_release: ${{ github.run_number }}`, making each nightly `3.4.0~b0-<run>`;
-without that they would all be `3.4.0~b0-1` and `apt upgrade` would see nothing to
-do. The run number is also how you map a published nightly back to the workflow
-run, and so to a commit.
-
-That means the `develop` repositories accumulate one package per nightly rather
-than overwriting a single one, so they need a Nexus cleanup policy (both formats
-accept one) to stay bounded. The tagged channels do not: their versions come from
-the tag, so a given release publishes once.
+Because nightlies get a rising release number, the `develop` repositories
+accumulate a package per nightly and need a Nexus cleanup policy to stay bounded;
+tagged channels publish each version once.
 
 To publish by hand, for example after a repackage:
 
 ```bash
 # From the repo root, with packages already built under build/.
-CHANNEL=$(./package/release_channel.sh "$(build/xrpld --version | awk 'NR == 1 { print $3 }')")
+# Pick the channel from the table above.
 
 # Check what would be uploaded and where. No credentials needed for a dry run.
-DRY_RUN=1 ./package/publish_pkg.sh "${CHANNEL}" build
+DRY_RUN=1 ./package/publish_pkg.sh unstable build
 
 export NEXUS_USERNAME=... NEXUS_PASSWORD=...
-./package/publish_pkg.sh "${CHANNEL}" build
+./package/publish_pkg.sh unstable build
 ```
 
 ## How `build_pkg.sh` works
@@ -222,10 +213,9 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 | `3.2.0-b1`         | `3.2.0~b1-1%{?dist}`         | `3.2.0~b1-1`         |
 | `3.2.0-rc1`        | `3.2.0~rc1-1%{?dist}`        | `3.2.0~rc1-1`        |
 
-The Debian changelog entry carries the channel `release_channel.sh` derives from
-the version; that call also rejects an unsupported pre-release, for both package
-formats. Build metadata on a final release, such as `3.2.0+abc123`, is rejected
-separately.
+The Debian changelog entry carries the channel passed as `--channel`
+(`PKG_CHANNEL`), defaulting to `unstable`. An unsupported pre-release, and build
+metadata on a final release such as `3.2.0+abc123`, are both rejected.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like

@@ -15,7 +15,7 @@ on:
 
       # Keep the paths below in sync with those in `on-pr.yml`.
       - ".github/actions/build-deps/**"
-      - ".github/actions/generate-version/**"
+      - ".github/actions/release-info/**"
       - ".github/actions/setup-conan/**"
       - ".github/scripts/strategy-matrix/**"
       - ".github/workflows/reusable-build-test-config.yml"
@@ -112,8 +112,6 @@ jobs:
       # Packages are built on every trigger; only develop pushes publish them,
       # matching upload-recipe above.
       publish: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
-      # The develop version never changes, so apt needs a rising release number.
-      pkg_release: ${{ github.run_number }}
     secrets:
       remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
       remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
