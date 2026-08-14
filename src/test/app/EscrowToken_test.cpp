@@ -1774,7 +1774,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
         // rate, then finish it. The net delivered amount underflows to zero.
         // The legacy behavior rounds the net up to the smallest positive
         // value, delivering the full amount with no fee. With fixCleanup3_4_0
-        // the finish fails with tecPRECISION_LOSS instead.
+        // the fee consumes the whole amount: the destination receives nothing
+        // and the escrow still completes so funds are not stuck.
         Env env{*this, features};
         auto const baseFee = env.current()->fees().base;
         auto const alice = Account("alice");
@@ -1802,22 +1803,21 @@ struct EscrowToken_test : public beast::unit_test::Suite
             Fee(baseFee * 150));
         env.close();
 
+        env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq1))));
+        BEAST_EXPECT(env.balance(alice, usd) == preAlice - tiny);
         if (withV2)
         {
-            // The net delivered rounds to zero; the finish is rejected and
-            // the escrowed amount remains locked.
-            env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150), Ter(tecPRECISION_LOSS));
-            env.close();
-            BEAST_EXPECT(env.balance(alice, usd) == preAlice - tiny);
+            // The net delivered rounds to zero; bob receives nothing and the
+            // issuer keeps the escrowed amount as the transfer fee.
             BEAST_EXPECT(env.balance(bob, usd) == preBob);
         }
         else
         {
             // Legacy behavior: the net rounds up to the smallest positive
             // value, so bob receives the full amount with no fee.
-            env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150));
-            env.close();
-            BEAST_EXPECT(env.balance(alice, usd) == preAlice - tiny);
             BEAST_EXPECT(env.balance(bob, usd) == preBob + tiny);
         }
     }
@@ -3639,9 +3639,10 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(alice, mpt) == preAlice - delta);
             BEAST_EXPECT(env.balance(bob, mpt) == mpt(10'100));
 
-            auto const escrowedWithFix = env.current()->rules().enabled(fixTokenEscrowV1) ? 0 : 25;
-            auto const outstandingWithFix =
-                env.current()->rules().enabled(fixTokenEscrowV1) ? mpt(19'975) : mpt(20'000);
+            auto const releaseGross = env.current()->rules().enabled(fixTokenEscrowV1) ||
+                env.current()->rules().enabled(fixCleanup3_4_0);
+            auto const escrowedWithFix = releaseGross ? 0 : 25;
+            auto const outstandingWithFix = releaseGross ? mpt(19'975) : mpt(20'000);
             BEAST_EXPECT(mptEscrowed(env, alice, mpt) == escrowedWithFix);
             BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == escrowedWithFix);
             BEAST_EXPECT(env.balance(gw, mpt) == -outstandingWithFix);
@@ -3791,12 +3792,16 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 Fee(baseFee * 150));
             env.close();
 
-            // The fee is only burned from OutstandingAmount when the gross vs.
-            // net accounting fix (fixTokenEscrowV1) is active.
-            std::uint64_t const burn = features[fixTokenEscrowV1] ? 10 : 0;
+            // The fee is burned from OutstandingAmount when gross vs. net
+            // accounting is active (fixTokenEscrowV1, or fixCleanup3_4_0 which
+            // now charges a non-zero fee and must release the locked gross).
+            std::uint64_t const burn =
+                (features[fixTokenEscrowV1] || features[fixCleanup3_4_0]) ? 10 : 0;
             BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(110));
             BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(100));
             BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding + mpt(burn));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == (burn ? 0 : 10));
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == (burn ? 0 : 10));
         }
     }
 
@@ -3887,14 +3892,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
         {
             bool const mptV2 = testFeatures[featureMPTokensV2];
             bool const tokenEscrowV1 = testFeatures[fixTokenEscrowV1];
-            // The transfer-fee split in EscrowFinish only overflows on the
-            // legacy divideRound(amount, lockedRate, ...) path, which runs when
-            // fixCleanup3_4_0 is disabled. With fixCleanup3_4_0 the split uses
-            // mulRatio (128-bit intermediate), which cannot overflow. Without
-            // it, this large amount overflows unless the MPTokensV2 Number path
-            // is active. So the finish succeeds when either amendment is enabled.
+            // Both divideRound and divideRoundStrict use 64-bit muldivRound on
+            // the legacy MPT path, which overflows for this amount. The
+            // MPTokensV2 Number path does not overflow, so the finish succeeds
+            // only when that amendment is enabled. fixCleanup3_4_0 switches
+            // rounding mode but does not change the overflow boundary.
             bool const cleanup340 = testFeatures[fixCleanup3_4_0];
-            bool const noOverflow = cleanup340 || mptV2;
+            bool const noOverflow = mptV2;
             auto const expectedErr = noOverflow ? Ter(tesSUCCESS) : Ter(tefEXCEPTION);
 
             // Finish with a large MPT amount and non-zero transfer fee. When the
@@ -3943,7 +3947,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     BEAST_EXPECT(postBob.value() > preBob.value());
                     BEAST_EXPECT(postBob.value() < (preBob + mpt(escrowAmount)).value());
                     auto const xferFee = escrowAmount - (postBob.value() - preBob.value());
-                    auto const expectedEscrow = tokenEscrowV1 ? 0 : xferFee;
+                    auto const expectedEscrow = (tokenEscrowV1 || cleanup340) ? 0 : xferFee;
                     BEAST_EXPECT(mptEscrowed(env, alice, mpt) == expectedEscrow);
                     BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == expectedEscrow);
                 }
@@ -3999,7 +4003,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(postBob.value() > preBob.value());
                 BEAST_EXPECT(postBob.value() < (preBob + mpt(noOverflowEscrowAmount)).value());
                 auto const xferFee = noOverflowEscrowAmount - (postBob.value() - preBob.value());
-                auto const expectedEscrow = tokenEscrowV1 ? 0 : xferFee;
+                auto const expectedEscrow = (tokenEscrowV1 || cleanup340) ? 0 : xferFee;
                 BEAST_EXPECT(mptEscrowed(env, alice, mpt) == expectedEscrow);
                 BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == expectedEscrow);
             }
@@ -4142,13 +4146,18 @@ struct EscrowToken_test : public beast::unit_test::Suite
 
             std::uint64_t const fee = withV2 ? feeWithV2 : feeWithoutV2;
             std::uint64_t const net = amount - fee;
-            // The fee is only burned from OutstandingAmount when the gross vs.
-            // net accounting fix (fixTokenEscrowV1) is active.
-            std::uint64_t const burn = withV1 ? fee : 0;
+            // The fee is burned and sfLockedAmount is fully released when
+            // gross vs. net accounting is active (V1, or V2 which now charges
+            // a non-zero fee). Without either fix the fee stays locked.
+            bool const releaseGross = withV1 || withV2;
+            std::uint64_t const burn = releaseGross ? fee : 0;
+            std::uint64_t const lockedLeft = releaseGross ? 0 : fee;
 
             BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(amount));
             BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(net));
             BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding + mpt(burn));
+            BEAST_EXPECT(mptEscrowed(env, alice, mpt) == lockedLeft);
+            BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == lockedLeft);
         };
 
         // 25% fee, MPT(2): net 2/1.25 = 1.6. The bug (round up) delivers 2 with
@@ -4157,16 +4166,22 @@ struct EscrowToken_test : public beast::unit_test::Suite
         testChunk(25000, 2, 0, 1);
         // 25% fee, MPT(4): bug delivers 4 with zero fee; fix charges fee 1.
         testChunk(25000, 4, 0, 1);
-        // 1% fee, MPT(90): max zero-fee chunk under the bug; fix charges fee 1.
+        // 1% fee, MPT(90): 90/1.01 = 89.11. Round-up delivers 90 (fee 0);
+        // flooring the net charges fee 1.
         testChunk(1000, 90, 0, 1);
-        // 1% fee, MPT(91): boundary just above the window; fee 1 either way.
-        testChunk(1000, 91, 1, 1);
+        // 1% fee, MPT(91): 91/1.01 = 90.10. Round-up still delivers 91 (fee 0);
+        // flooring the net charges fee 1.
+        testChunk(1000, 91, 0, 1);
+        // 1% fee, MPT(101): 101/1.01 = 100 exactly, so fee 1 either way.
+        testChunk(1000, 101, 1, 1);
 
         // When the escrowed amount is so small that the net delivered rounds to
         // zero (the entire amount would be consumed by the fee), the legacy
         // behavior silently delivers the full amount to the receiver with no
-        // fee. With fixCleanup3_4_0 the finish fails with tecPRECISION_LOSS
-        // instead of delivering nothing to the receiver.
+        // fee. With fixCleanup3_4_0 the fee consumes the whole amount: the
+        // destination receives nothing, the fee is burned, and the escrow
+        // still completes so funds are not stuck (this escrow has no
+        // CancelAfter).
         {
             std::uint16_t const transferFee = 25000;  // 25%
             std::uint64_t const amount = 1;
@@ -4192,6 +4207,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
 
             auto const preAlice = env.balance(alice, mpt);
             auto const preBob = env.balance(bob, mpt);
+            auto const preOutstanding = env.balance(gw, mpt);
 
             auto const seq1 = env.seq(alice);
             env(escrow::create(alice, bob, mpt(amount)),
@@ -4199,24 +4215,28 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 Fee(baseFee * 150));
             env.close();
 
+            env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq1))));
+            BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(amount));
             if (withV2)
             {
-                // The net delivered rounds to zero; the finish is rejected and
-                // the escrowed amount remains locked (alice down by amount,
-                // bob unchanged).
-                env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150), Ter(tecPRECISION_LOSS));
-                env.close();
-                BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(amount));
+                // Net floors to zero: bob receives nothing, the locked amount
+                // is fully released, and the fee is burned.
                 BEAST_EXPECT(env.balance(bob, mpt) == preBob);
+                BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding + mpt(amount));
+                BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+                BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
             }
             else
             {
                 // Legacy behavior: the net rounds up to the full amount with a
                 // zero fee, so bob receives everything.
-                env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150));
-                env.close();
-                BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(amount));
                 BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(amount));
+                BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding);
+                BEAST_EXPECT(mptEscrowed(env, alice, mpt) == 0);
+                BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
             }
         }
     }

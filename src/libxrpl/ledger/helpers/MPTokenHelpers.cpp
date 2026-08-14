@@ -763,7 +763,7 @@ unlockEscrowMPT(
     beast::Journal j)
 {
     XRPL_ASSERT_IF(
-        !view.rules().enabled(fixTokenEscrowV1),
+        !view.rules().enabled(fixTokenEscrowV1) && !view.rules().enabled(fixCleanup3_4_0),
         netAmount == grossAmount,
         "xrpl::unlockEscrowMPT : netAmount == grossAmount");
 

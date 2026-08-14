@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -25,8 +24,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
-#include <expected>
-
 namespace xrpl {
 
 // Deduct the transfer fee (if any) from an escrowed amount, returning the net
@@ -43,9 +40,10 @@ namespace xrpl {
 // for integral assets (e.g. MPT) collapses the fee to zero for small amounts
 // and bypasses the transfer fee. Note that the legacy divideRound rounds to
 // nearest, so the strict variant is used to floor the net. If the net rounds
-// to zero the entire amount would be consumed by the fee, so tecPRECISION_LOSS
-// is returned rather than silently delivering nothing to the receiver.
-[[nodiscard]] inline std::expected<STAmount, TER>
+// to zero the entire amount is consumed as the fee: the destination receives
+// nothing, but the escrow still completes so the funds are not stuck (there
+// may be no CancelAfter, so finish is the only exit).
+[[nodiscard]] inline STAmount
 escrowDeductTransferFee(
     ReadView const& view,
     Rate const& lockedRate,
@@ -64,9 +62,6 @@ escrowDeductTransferFee(
     auto const xferFee = amount.value() - netAmt;
     // compute balance to transfer
     STAmount finalAmt = amount.value() - xferFee;
-
-    if (strictRounding && finalAmt <= beast::kZero)
-        return std::unexpected(tecPRECISION_LOSS);
 
     return finalAmt;
 }
@@ -171,11 +166,8 @@ escrowUnlockApplyHelper<Issue>(
         lockedRate = xferRate;
 
     // Deduct the transfer fee (if any) from the escrowed amount.
-    auto const netResult =
+    auto const finalAmt =
         escrowDeductTransferFee(ctx.view, lockedRate, amount, senderIssuer, receiverIssuer);
-    if (!netResult)
-        return netResult.error();
-    auto const finalAmt = *netResult;
 
     // validate the line limit if the account submitting txn is not the receiver
     // of the funds
@@ -264,19 +256,19 @@ escrowUnlockApplyHelper<MPTIssue>(
         lockedRate = xferRate;
 
     // Deduct the transfer fee (if any) from the escrowed amount.
-    auto const netResult =
+    auto const finalAmt =
         escrowDeductTransferFee(ctx.view, lockedRate, amount, senderIssuer, receiverIssuer);
-    if (!netResult)
-        return netResult.error();
-    auto const finalAmt = *netResult;
 
+    // Gross must be the originally locked amount so sfLockedAmount is fully
+    // released and the fee (gross - net) is burned. Passing net as gross
+    // unlocks only the delivered amount and leaves the fee stuck in
+    // sfLockedAmount. That was the pre-fixTokenEscrowV1 behavior; once
+    // fixCleanup3_4_0 charges a non-zero fee via divideRoundStrict, the
+    // gross must be released even if V1 is off.
+    bool const releaseGross =
+        ctx.view.rules().enabled(fixTokenEscrowV1) || ctx.view.rules().enabled(fixCleanup3_4_0);
     return unlockEscrowMPT(
-        ctx.view,
-        sender,
-        receiver,
-        finalAmt,
-        ctx.view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
-        journal);
+        ctx.view, sender, receiver, finalAmt, releaseGross ? amount : finalAmt, journal);
 }
 
 }  // namespace xrpl
