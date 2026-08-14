@@ -1,5 +1,6 @@
-# The darwin toolchain, counterpart to linux.nix. Split by consumer: a dev shell
-# already has the SDK variables, a bare buildEnv has neither.
+# The darwin toolchain, counterpart to linux.nix. The environment is split by
+# who needs it: a dev shell's stdenv already sets the SDK up, nothing sets
+# libresolv up.
 #
 # darwin only - `libresolv` does not exist on Linux.
 { pkgs }:
@@ -10,9 +11,10 @@ let
     mkVersionedToolLinks
     ;
 
-  # nixpkgs keeps libresolv out of the macOS SDK and ships it as a store dylib,
-  # so the `-lresolv` c-ares asks for either fails to resolve or pins a store
-  # path into xrpld. This copy carries the system install name instead.
+  # nixpkgs keeps libresolv out of the macOS SDK, so neither the `-lresolv`
+  # c-ares asks for nor grpc's <arpa/nameser.h> resolves. Headers can come from
+  # nixpkgs; the library cannot, or its store path is pinned into xrpld - hence
+  # this copy, carrying the system install name.
   libresolvSystemStub =
     pkgs.runCommand "libresolv-system-stub"
       {
@@ -30,10 +32,9 @@ in
   # For an environment that only puts binaries on PATH.
   toolchain = [
     llvmPackages.clang
-    # The wrappers re-export only some of cctools, and a dev shell gets the rest
-    # from its stdenv: without `dsymutil`, `clang -g` cannot link at all. Named
-    # one by one because buildEnv refuses any name a wrapper already carries,
-    # and the wrapped `ld` has to keep winning.
+    # The wrappers re-export only part of cctools; a bare env has no stdenv to
+    # supply the rest, and without `dsymutil` even `clang -g` cannot link. One
+    # by one, because buildEnv rejects any name a wrapper owns (notably `ld`).
     (pkgs.linkFarm "cctools-extra" (
       map
         (tool: {
@@ -67,15 +68,12 @@ in
     SDKROOT = "${pkgs.apple-sdk}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk";
   };
 
-  # libresolv is absent from the SDK entirely, so grpc finds neither
-  # <arpa/nameser.h> nor the library. The headers can come straight from
-  # nixpkgs; the library cannot, hence the stub.
+  # Salted names: the wrappers only read plain NIX_CFLAGS_COMPILE / NIX_LDFLAGS
+  # through role variables a Nix stdenv would set. The salt is the target
+  # platform, so this fits the gcc wrapper too.
   #
-  # The salted names are what the wrappers read - plain NIX_CFLAGS_COMPILE and
-  # NIX_LDFLAGS only reach them via role variables a Nix stdenv would set. The
-  # salt comes from the target platform, so this fits the gcc wrapper too.
-  # No space after -isystem: these values are written one per line as KEY=VALUE,
-  # and a shell sourcing that reads a space as the end of the assignment.
+  # No space after -isystem: these are written one per line as KEY=VALUE, and a
+  # shell sourcing that reads the space as the end of the assignment.
   libresolvEnv = {
     "NIX_CFLAGS_COMPILE_${llvmPackages.clang.suffixSalt}" =
       "-isystem${pkgs.darwin.libresolv.dev}/include";

@@ -14,7 +14,7 @@ let
   plainGccStdenv = pkgs."gcc${toString gccVersion}Stdenv";
   plainClangStdenv = llvmPackages.stdenv;
 
-  # Each forces something absent on the other platform, so every use is guarded.
+  # Each forces something absent on the other platform, so both stay lazy.
   linux = import ./linux.nix { inherit pkgs customGlibc; };
   darwin = import ./darwin.nix { inherit pkgs; };
 
@@ -51,7 +51,7 @@ let
 
   # Not sdkEnv: a shell's stdenv already sets that up. Prepended so the stub
   # beats the nixpkgs libresolv this shell's tooling drags in.
-  darwinLinkerHook = pkgs.lib.optionalString pkgs.stdenv.isDarwin (
+  darwinLibresolvHook = pkgs.lib.optionalString pkgs.stdenv.isDarwin (
     pkgs.lib.concatLines (
       pkgs.lib.mapAttrsToList (
         name: value: ''export ${name}="${value} ''${${name}:-}"''
@@ -116,7 +116,7 @@ let
         shellHook = ''
           echo "Welcome to xrpld development shell";
           ${compilerVersionHook}
-          ${darwinLinkerHook}
+          ${darwinLibresolvHook}
           ${conanHook}
           ${warningHook}
         '';

@@ -119,8 +119,7 @@ let
   };
 in
 {
-  # For an environment that only puts binaries on PATH; a dev shell takes the
-  # compiler from its stdenv instead.
+  # For an environment that only puts binaries on PATH.
   toolchain = [
     customGcc
     customGcov
