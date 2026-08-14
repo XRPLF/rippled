@@ -57,8 +57,12 @@ STNumber::associateAsset(Asset const& a)
 {
     STTakesAsset::associateAsset(a);
 
+    // The outer sweep in associateAsset(SLE&, Asset const&) fires on
+    // either kSmdNeedsAsset or kSmdAssetPreLend11 (the latter only
+    // pre-Lend11 — see STTakesAsset.cpp), so accept either bit here.
     XRPL_ASSERT_PARTS(
-        getFName().shouldMeta(SField::kSmdNeedsAsset),
+        getFName().shouldMeta(SField::kSmdNeedsAsset) ||
+            getFName().shouldMeta(SField::kSmdAssetPreLend11),
         "STNumber::associateAsset",
         "field needs asset");
 

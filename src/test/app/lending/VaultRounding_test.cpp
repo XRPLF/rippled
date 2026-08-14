@@ -292,23 +292,34 @@ private:
         testcase("The dust disappears from the Vault's books");
 
         withDustSetup(features, [&](jtx::Env& env, DustCtx const& ctx) {
-            // AssetsTotal - AssetsAvailable - (principal still owed).
+            // Dust-inclusive books identity (plan-vault-dust §3):
+            //
+            //   sfAssetsTotal - (sfAssetsAvailable + dust) - PO
+            //
             // Zero when the books balance; positive when they claim value
-            // that no longer exists anywhere.
+            // that no longer exists anywhere. `dust` is routed through the
+            // per-solution readVaultDust() probe (see VaultDustProbe.h), so
+            // this expression collapses to the classic
+            // (T - A - PO) form on the base branch (where dust == 0 and
+            // the books DO leak) and to the dust-inclusive form on either
+            // solution branch (where the leak has been given a home).
             auto const unaccounted = [&]() -> Number {
                 auto const vaultSle = env.le(ctx.broker.vaultKeylet());
                 if (!BEAST_EXPECT(vaultSle))
                     return Number{};
+                Number const dust = readVaultDust(env, ctx.broker.vaultKeylet());
                 return Number{vaultSle->at(sfAssetsTotal)} -
-                    Number{vaultSle->at(sfAssetsAvailable)} - principalOutstanding(env, ctx);
+                    (Number{vaultSle->at(sfAssetsAvailable)} + dust) -
+                    principalOutstanding(env, ctx);
             };
 
             Number const before = unaccounted();
             payLoanInFull(env, ctx.borrower, ctx.asset.raw(), ctx.tinyLoanKeylet);
             Number const after = unaccounted();
 
-            log << "  unaccounted (AssetsTotal - AssetsAvailable - principalOwed): " << before
-                << " -> " << after << std::endl;
+            log << "  unaccounted (AssetsTotal - (AssetsAvailable + dust) - "
+                   "principalOwed): "
+                << before << " -> " << after << std::endl;
 
             // The books balance before the repayment either way.
             BEAST_EXPECT(before == beast::kZero);
@@ -659,20 +670,33 @@ private:
             // whatever the fee recipient actually received — never off
             // a Vault accounting field, so this holds regardless of
             // which dust mechanism is in force.
+            //
+            // O4/O5/O6 are expressed in DUST-INCLUSIVE form. Framing:
+            //   * sfAssetsAvailable and its counterpart on the custody
+            //     side (`dD`) partition the raw cash flow:
+            //     recognised on sfAssetsAvailable (`dA`), sub-quantum on
+            //     the dust probe (`dD`). Their sum reproduces `raw`.
+            //   * sfAssetsTotal carries the full-precision recognition
+            //     delta directly (the residual is captured on the same
+            //     side of the accounting split as `dD`), so `dT` alone
+            //     equals recognitionDelta. Pre-fix `dT` is short by
+            //     exactly `dD`, which is the leak this test measures.
             Number const raw = -(r->borrowerAfter - r->borrowerBefore) -
                 (r->feeRecipientAfter - r->feeRecipientBefore);
             Number const recognitionDelta = raw - p;
-            BEAST_EXPECT((dT + dD) == recognitionDelta);          // O4
-            BEAST_EXPECT((dA + dD) == raw);                       // O5
-            BEAST_EXPECT((dT - dA) == (recognitionDelta - raw));  // O6
+            BEAST_EXPECT(dT == recognitionDelta);                        // O4
+            BEAST_EXPECT((dA + dD) == raw);                              // O5
+            BEAST_EXPECT((dT - (dA + dD)) == (recognitionDelta - raw));  // O6
 
-            // O8 corroboration (testsuite doc §3): needs no probe and no
-            // r/raw derivation at all — T, A, and PO are read directly, so
-            // this is the strongest and simplest check available. Prefer
-            // it over O4/O5 wherever it applies; kept here alongside them
+            // O8 corroboration (testsuite doc §3): the dust-inclusive
+            // books identity T - (A + dust) == PO. Reads T, A, dust, and
+            // PO directly — no r/raw derivation needed — so this is the
+            // strongest and simplest check available. Prefer it over
+            // O4/O5 wherever it applies; kept here alongside them
             // because this test's whole point is exercising O4/O5/O6.
             Number const po = principalOutstanding(env, ctx);
-            Number const gap = r->totalAfter - r->availAfter - po;
+            Number const dust = readVaultDust(env, ctx.broker.vaultKeylet());
+            Number const gap = r->totalAfter - (r->availAfter + dust) - po;
             BEAST_EXPECT(gap == beast::kZero);
         });
     }
@@ -703,8 +727,8 @@ private:
             Number const raw1 = -(r1->borrowerAfter - r1->borrowerBefore) -
                 (r1->feeRecipientAfter - r1->feeRecipientBefore);
             Number const recognitionDelta1 = raw1 - p1;
-            BEAST_EXPECT((dT1 + dD1) == recognitionDelta1);
-            BEAST_EXPECT((dA1 + dD1) == raw1);
+            BEAST_EXPECT(dT1 == recognitionDelta1);  // O4 dust-inclusive
+            BEAST_EXPECT((dA1 + dD1) == raw1);       // O5
 
             auto const r2 = payTinyLoanAndMeasure(env, ctx);
             if (!r2)
@@ -722,8 +746,8 @@ private:
             Number const raw2 = -(r2->borrowerAfter - r2->borrowerBefore) -
                 (r2->feeRecipientAfter - r2->feeRecipientBefore);
             Number const recognitionDelta2 = raw2 - p2;
-            BEAST_EXPECT((dT2 + dD2) == recognitionDelta2);
-            BEAST_EXPECT((dA2 + dD2) == raw2);
+            BEAST_EXPECT(dT2 == recognitionDelta2);  // O4 dust-inclusive
+            BEAST_EXPECT((dA2 + dD2) == raw2);       // O5
 
             // At least one of the two repayments must have left a nonzero
             // reservoir behind at some point — otherwise there was nothing
@@ -764,9 +788,16 @@ private:
                 (r->feeRecipientAfter - r->feeRecipientBefore);
             Number const recognitionDelta = raw - p;
             Number const dD = r->dustAfter - r->dustBefore;
-            if (dD > beast::kZero)  // pure deferral, no promotion
-                BEAST_EXPECT(dT < recognitionDelta);
-            BEAST_EXPECT((dT + dD) == recognitionDelta);
+            // Under the dust-inclusive form (see O4 in
+            // testDustCreatedOnRepayment) sfAssetsTotal absorbs the same
+            // sub-quantum residual that dust captures on the custody
+            // side, so dT never over-recognizes: dT <= recognitionDelta,
+            // and dT == recognitionDelta exactly on a solution branch
+            // (dT + 0 on the base branch is short by dD — that's the
+            // leak).
+            BEAST_EXPECT(dT <= recognitionDelta);
+            BEAST_EXPECT(dT == recognitionDelta);  // O4 dust-inclusive
+            (void)dD;
         });
     }
 
@@ -912,7 +943,15 @@ private:
                     Number const t = v->at(sfAssetsTotal);
                     Number const a = v->at(sfAssetsAvailable);
                     Number const po = principalOutstanding(env, ctx);
-                    Number const gap = t - a - po;
+                    // Dust-inclusive books identity (plan §3):
+                    //   T - (A + dust) - PO
+                    // is zero on every solution branch — the residual is
+                    // absorbed by the dust probe alongside sfAssetsAvailable
+                    // rather than being lost on the recognition side.
+                    // Reduces to the classic T - A - PO on the base branch
+                    // (dust == 0) where the leak survives.
+                    Number const dust = readVaultDust(env, ctx.broker.vaultKeylet());
+                    Number const gap = t - (a + dust) - po;
                     if (exact)
                     {
                         BEAST_EXPECT(gap == beast::kZero);
@@ -1011,14 +1050,15 @@ private:
             // RepaymentResult's comment for why a ΔAssetsTotal-based `raw`
             // is valid here and nowhere else.
             // Post-fix, branch-independent (O8, testsuite doc §3): once
-            // the dust mechanism exists, the leak this test pins
-            // pre-fix must be gone — T should equal A plus every Loan's
-            // own outstanding principal, exactly, with no probe and no
-            // r/raw derivation needed at all.
+            // the dust mechanism exists, the leak this test pins pre-fix
+            // must be gone — T should equal A plus every Loan's own
+            // outstanding principal, plus whatever residual the dust
+            // probe has claimed (dust-inclusive form), exactly.
             Number const po = principalOutstanding(env, ctx);
-            log << "  T - A - PO (should be exactly 0 post-fix): "
-                << (assetsTotalAfter - assetsAvailAfter - po) << std::endl;
-            BEAST_EXPECT(assetsTotalAfter == assetsAvailAfter + po);
+            Number const dust = readVaultDust(env, ctx.broker.vaultKeylet());
+            log << "  T - (A + dust) - PO (should be exactly 0 post-fix): "
+                << (assetsTotalAfter - (assetsAvailAfter + dust) - po) << std::endl;
+            BEAST_EXPECT(assetsTotalAfter == (assetsAvailAfter + dust) + po);
         });
     }
 

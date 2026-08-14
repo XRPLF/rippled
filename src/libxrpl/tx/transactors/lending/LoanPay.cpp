@@ -472,14 +472,15 @@ LoanPay::doApply()
     //
     // 1. Cash-basis IOU Vaults route the credit through the dust-aware
     //    addVaultAssets overload (via the xrpl:: dispatcher). We pass the
-    //    still-unrounded Number so that the STAmount truncation happens at
-    //    the outermost boundary inside vault_dust::addVaultAssets — the
-    //    sub-STAmount residual at that boundary is then captured by sfDust
-    //    via the receiver-leg Override policy. End-to-end 19-digit (Number)
-    //    fidelity is NOT preserved through this path: the value that lands
-    //    on the ledger is the STAmount projection plus whatever survives in
-    //    sfDust. Delegating to the overlay's own eligibility gate avoids a
-    //    manual-sync surface between the two.
+    //    still-unrounded Number so the sub-STAmount residual survives on
+    //    two ledger fields once it reaches the boundary inside
+    //    vault_dust::addVaultAssets: the custody line's sfDust (via the
+    //    receiver-leg Override policy) captures the residual on the
+    //    recognised-balance side, and sfAssetsTotal captures the identical
+    //    residual on the accounting side because it is exempt from the
+    //    associateAsset sweep post-Lend11 (see kSmdAssetPreLend11 in
+    //    STTakesAsset.cpp). Delegating to the overlay's own eligibility
+    //    gate avoids a manual-sync surface between the two.
     //
     // 2. Under fixCleanup3_4_0 (independent of the dust overlay), feed the
     //    same raw payment Number into both sfAssetsAvailable and the
@@ -645,28 +646,8 @@ LoanPay::doApply()
         !isTesSuccess(ret))
         return ret;
 
-    // associateAsset snaps every asset-typed STNumber present on the Vault
-    // SLE to STAmount's 16-significant-digit precision (via roundToAsset on
-    // each field's current value) — it operates on the whole SLE, with no
-    // way to select individual fields. For non-dust paths that whole-SLE
-    // sweep is the intended canonicalisation and matches base-branch
-    // behaviour verbatim. For the dust path it would silently erase the
-    // sub-quantum recognition adjustment that the dust-aware addVaultAssets
-    // just applied to sfAssetsTotal (Number carries 19 digits; STAmount
-    // only 16), which is what keeps the receivable
-    // (sfAssetsTotal - sfAssetsAvailable) aligned with principalOutstanding
-    // across the repayment. Skipping the sweep also leaves
-    // sfAssetsAvailable un-rounded, but that is consistent rather than
-    // risky: sfAssetsAvailable is incremented by a delta
-    // (split.receiver->balanceDelta) that directSendNoFeeIOU already
-    // rounded to the Vault's own posterior scale, so rounding it again here
-    // to a coarser, independently-derived STAmount scale could reintroduce
-    // the exact sfAssetsTotal/sfAssetsAvailable mismatch this skip exists
-    // to prevent. sfAssetsMaximum and sfLossUnrealized are untouched by
-    // LoanPay either way, so the sweep would be a no-op for them here
-    // regardless of useDust.
-    if (!useDust)
-        associateAsset(*vaultSle, asset);
+    // sfAssetsTotal is exempt from the sweep post-Lend11 via kSmdAssetPreLend11.
+    associateAsset(*vaultSle, asset);
 
     // Duplicate some checks after rounding. These re-read the Vault's fields
     // rather than reusing assetsAvailableAfterRaw/assetsTotalAfterRaw, since
@@ -690,7 +671,9 @@ LoanPay::doApply()
         // Dust path (useDust == true): assetsAvailable is incremented by
         // split.balanceDelta, which is the whole-quanta portion of the raw
         // repayment at the Vault's posterior scale. A repayment strictly
-        // below one quantum lands entirely in sfDust and produces
+        // below one quantum lands entirely in sfDust (with the value residual
+        // captured on sfAssetsTotal at full Number precision, exempt from
+        // the associateAsset sweep via kSmdAssetPreLend11) and produces
         // split.balanceDelta == 0. That is a legitimate (if unusual) outcome
         // — refuse it here because the invariants downstream and the
         // subsequent conservation checks all assume assetsAvailable moved.

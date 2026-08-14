@@ -892,9 +892,22 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // sfAssetsTotal now tracks the EXTENDED custody-line
+                // delta under featureLendingProtocolV1_1: it is exempt
+                // from the associateAsset sweep (kSmdAssetPreLend11)
+                // and absorbs the same sub-STAmount residual that the
+                // custody line's sfDust records. Compare against
+                // (delta + dustDelta) to keep the identity exact in
+                // both eras — dustDelta is zero pre-amendment (sfDust
+                // is absent), so this reduces to the classic form
+                // there.
+                Number const extendedVaultDelta =
+                    maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                auto const extendedVaultDeltaRounded =
+                    roundToAsset(vaultAsset, extendedVaultDelta, minScale);
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                if (assetTotalDelta != vaultDeltaAssets)
+                if (assetTotalDelta != extendedVaultDeltaRounded)
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: deposit and assets outstanding must add up";
@@ -1080,10 +1093,19 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // sfAssetsTotal tracks the EXTENDED custody-line delta
+                // under featureLendingProtocolV1_1 (see the deposit
+                // branch above for the design). dustDelta is zero
+                // pre-amendment (sfDust absent), so this reduces to the
+                // classic vaultPseudoDeltaAssets comparison there.
+                Number const extendedVaultDelta =
+                    maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                auto const extendedVaultDeltaRounded =
+                    roundToAsset(vaultAsset, extendedVaultDelta, minScale);
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 // Note, vaultBalance is negative (see check above)
-                if (assetTotalDelta != vaultPseudoDeltaAssets)
+                if (assetTotalDelta != extendedVaultDeltaRounded)
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: withdrawal and assets outstanding must add up";
@@ -1136,9 +1158,19 @@ ValidVault::finalize(
                         result = false;
                     }
 
+                    // sfAssetsTotal tracks the EXTENDED custody-line
+                    // delta under featureLendingProtocolV1_1 (see the
+                    // deposit branch for the design). dustDelta is
+                    // zero pre-amendment (sfDust absent), so this
+                    // reduces to the classic vaultDeltaAssets
+                    // comparison there.
+                    Number const extendedVaultDelta =
+                        maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                    auto const extendedVaultDeltaRounded =
+                        roundToAsset(vaultAsset, extendedVaultDelta, minScale);
                     auto const assetsTotalDelta = roundToAsset(
                         vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    if (assetsTotalDelta != vaultDeltaAssets)
+                    if (assetsTotalDelta != extendedVaultDeltaRounded)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets outstanding must add up";

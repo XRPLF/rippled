@@ -378,18 +378,13 @@ VaultDeposit::doApply()
         !isTesSuccess(ter))
         return ter;
 
-    // Deposit is safe to associate even on the dust path (unlike LoanPay).
-    // A deposit passes amount == valueDelta to addVaultAssets, so the
-    // dust-aware overload writes back
-    // sfAssetsAvailable += split.balanceDelta,
-    // sfAssetsTotal     += valueDelta - split.dustDelta
-    //                    = amount - split.dustDelta
-    //                    = split.balanceDelta,
-    // i.e. both fields land at the same posterior scale. Their STAmount
-    // representation is already exact, so associateAsset's roundToAsset
-    // is a no-op here. See LoanPay.cpp's `!useDust` branch for the case
-    // that IS unsafe (amount != valueDelta, so the sub-quantum residual
-    // lives on sfAssetsTotal alone).
+    // Canonicalise every asset-typed STNumber on the Vault SLE to the
+    // asset's precision. sfAssetsTotal is exempt from the sweep post
+    // -Lend11 via kSmdAssetPreLend11 (see STTakesAsset.cpp), so its
+    // full-precision extended value survives the call untouched — the
+    // sub-STAmount residual that vault_dust::addVaultAssets applied
+    // stays paired with the identical residual the custody line's
+    // sfDust captures.
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;

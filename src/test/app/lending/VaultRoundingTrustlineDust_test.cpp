@@ -378,23 +378,21 @@ private:
     // test output. Returns true iff all invariants held.
     //
     // NOTE ON EXTENDED BOOKKEEPING:
-    // sfAssetsTotal and sfAssetsAvailable are stored on the vault SLE at
-    // *ledger-recognised* precision; the sub-quantum residual living on
-    // the custody line's sfDust is not folded into either field. When
-    // reconciling against the loan book, however, we treat both fields
-    // as their *extended* forms — adding the vault-terms dust to BOTH T
-    // and A. The dust cancels in the subtraction (T + d) - (A + d) =
-    // T - A, so the numerical identity is unchanged, but the framing is
-    // now symmetric: the receivable is computed from extended totals on
-    // both sides. This makes the invariant robust against any future
-    // change that would fold dust into either field individually — the
-    // extended form always holds, regardless of which side of the
-    // dust/recognised split any given field lands on.
+    // Post-Lend11 sfAssetsTotal is EXEMPT from the associateAsset sweep
+    // (kSmdAssetPreLend11) and retains full Number precision. This lets
+    // it absorb the identical sub-STAmount residual that the custody
+    // line's sfDust records on the recognised-balance side, so:
     //
-    //   O8.1  Extended receivable identity:
-    //         (T + d) - (A + d) == Σ sfPrincipalOutstanding
-    //         ≡ T - A == Σ sfPrincipalOutstanding
-    //         (Number precision — exact equality).
+    //   sfAssetsTotal    ≡ recognised A  +  custody dust  +  Σ PO
+    //   sfAssetsAvailable≡ recognised A
+    //   custody sfDust   ≡ the sub-quantum residual on the custody line
+    //
+    // Thus the receivable identity is the dust-inclusive form
+    //   T - (A + d) == Σ PO   (Number precision — exact equality).
+    //
+    //   O8.1  Dust-inclusive receivable identity:
+    //         sfAssetsTotal - (sfAssetsAvailable + custody sfDust)
+    //             == Σ sfPrincipalOutstanding
     //
     //   O8.2  Dust bound at the *vault's own posterior scale*:
     //         |sfDust (vault terms)| < 1 quantum at vaultScale.
@@ -405,14 +403,12 @@ private:
     //         used elsewhere in this file
     //         (testSenderLegOverrideNonTerminalPromotes).
     //
-    //   O8.3  Custody-line mirror (extended): the vault's extended
-    //         available balance (A + d) must equal the vault
-    //         pseudo-account's extended custody-line balance
-    //         (accountHolds + d). Equivalent to
-    //         accountHolds == sfAssetsAvailable, since the same dust
-    //         reservoir appears on both sides — but expressed in
-    //         extended form so a regression that dips one side into
-    //         the reservoir without the other still surfaces.
+    //   O8.3  Custody-line mirror: the vault's sfAssetsAvailable must
+    //         equal the vault pseudo-account's recognised custody-line
+    //         sfBalance (accountHolds). Both sides sit at the same
+    //         posterior scale; the sub-quantum reservoir lives
+    //         exclusively on the custody line's sfDust and does not
+    //         participate in this identity.
     bool
     assertO8Exact(jtx::Env const& env, MultiLoanDustFixture const& fx, std::string const& label)
     {
@@ -423,15 +419,15 @@ private:
         Number const T = vaultSle->at(sfAssetsTotal);
         Number const A = vaultSle->at(sfAssetsAvailable);
         Number const dust = readVaultDust(env, fx.broker.vaultKeylet());
-        Number const extT = T + dust;
-        Number const extA = A + dust;
         Number const poSum = sumPrincipalOutstanding(env, fx);
 
-        // Extended O8.1 — dust appears on both operands and cancels.
-        bool const o81 = ((extT - extA) == poSum);
+        // Dust-inclusive O8.1 receivable identity: T - (A + d) == Σ PO.
+        // Pre-amendment (dust == 0) this reduces to the classic
+        // T - A == Σ PO form.
+        bool const o81 = ((T - (A + dust)) == poSum);
         BEAST_EXPECTS(
             o81,
-            label + ": O8.1 (T+d) - (A+d) != Σ PO. T=" + to_string(T) + " A=" + to_string(A) +
+            label + ": O8.1 T - (A + d) != Σ PO. T=" + to_string(T) + " A=" + to_string(A) +
                 " d=" + to_string(dust) + " Σ PO=" + to_string(poSum));
 
         int const vaultScale = getVaultScale(vaultSle);
@@ -450,14 +446,11 @@ private:
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
             beast::Journal{beast::Journal::getNullSink()});
-        Number const extHolds = holds + dust;
-        bool const o83 = (extHolds == extA);
+        bool const o83 = (holds == A);
         BEAST_EXPECTS(
             o83,
-            label +
-                ": O8.3 extended accountHolds != extended sfAssetsAvailable. "
-                "holds+d=" +
-                to_string(extHolds) + " A+d=" + to_string(extA));
+            label + ": O8.3 accountHolds != sfAssetsAvailable. holds=" + to_string(holds) +
+                " A=" + to_string(A));
 
         return o81 && o82 && o83;
     }
@@ -595,15 +588,13 @@ private:
         MultiLoanSnap const& cur,
         MultiLoanSnap const* prev = nullptr)
     {
-        Number const extT = cur.T + cur.dust;
-        Number const extA = cur.A + cur.dust;
-        Number const extReceivable = extT - extA;  // == cur.T - cur.A
+        Number const dustAdjustedA = cur.A + cur.dust;
+        Number const receivable = cur.T - dustAdjustedA;
         Number const poSum = (cur.a.present ? cur.a.po : Number{}) +
             (cur.b.present ? cur.b.po : Number{}) + (cur.c.present ? cur.c.po : Number{});
-        Number const extResidual = extReceivable - poSum;  // Extended O8.1
+        Number const residual = receivable - poSum;  // O8.1 dust-inclusive form
 
-        Number const prevExtT = prev ? Number{prev->T + prev->dust} : Number{};
-        Number const prevExtA = prev ? Number{prev->A + prev->dust} : Number{};
+        Number const prevDustAdjustedA = prev ? Number{prev->A + prev->dust} : Number{};
 
         Number const* pT = prev ? &prev->T : nullptr;
         Number const* pA = prev ? &prev->A : nullptr;
@@ -611,24 +602,22 @@ private:
         Number const* pHolds = prev ? &prev->accountHoldsVal : nullptr;
         Number const* pCustody = prev ? &prev->custodyRaw : nullptr;
         Number const* pCustodyDust = prev ? &prev->custodyDustRaw : nullptr;
-        Number const* pExtT = prev ? &prevExtT : nullptr;
-        Number const* pExtA = prev ? &prevExtA : nullptr;
+        Number const* pDustAdjustedA = prev ? &prevDustAdjustedA : nullptr;
         int const* pScale = prev ? &prev->vaultScale : nullptr;
 
         log << "\n--- " << label << " ---\n"
             << "  Vault.sfAssetsTotal     T = " << fmtNum(cur.T, pT) << "\n"
             << "  Vault.sfAssetsAvailable A = " << fmtNum(cur.A, pA) << "\n"
             << "  Vault dust (vault terms)d = " << fmtNum(cur.dust, pDust) << "\n"
-            << "  Extended  T+d             = " << fmtNum(extT, pExtT) << "\n"
-            << "  Extended  A+d             = " << fmtNum(extA, pExtA) << "\n"
+            << "  Dust-adjusted A+d         = " << fmtNum(dustAdjustedA, pDustAdjustedA) << "\n"
             << "  Vault posterior scale     = " << fmtScale(cur.vaultScale, pScale)
             << " (quantum = 10^" << cur.vaultScale << ")\n"
             << "  Custody sfBalance (raw)   = " << fmtNum(cur.custodyRaw, pCustody) << "\n"
             << "  Custody sfDust    (raw)   = " << fmtNum(cur.custodyDustRaw, pCustodyDust) << "\n"
             << "  accountHolds(vault, USD)  = " << fmtNum(cur.accountHoldsVal, pHolds) << "\n"
-            << "  receivable (T+d) - (A+d)  = " << to_string(extReceivable) << "\n"
+            << "  receivable T - (A + d)    = " << to_string(receivable) << "\n"
             << "  Σ sfPrincipalOutstanding  = " << to_string(poSum) << "\n"
-            << "  O8.1 residual (ext-recv-ΣPO)= " << to_string(extResidual) << " (must be 0)\n"
+            << "  O8.1 residual (recv - ΣPO)= " << to_string(residual) << " (must be 0)\n"
             << "  Loan A: " << fmtLoan(cur.a, prev ? &prev->a : nullptr) << "\n"
             << "  Loan B: " << fmtLoan(cur.b, prev ? &prev->b : nullptr) << "\n"
             << "  Loan C: " << fmtLoan(cur.c, prev ? &prev->c : nullptr) << std::endl;
@@ -955,15 +944,21 @@ private:
 
         Number const availAfterWd = vaultSleAfterWithdraw->at(sfAssetsAvailable);
         Number const totalAfterWd = vaultSleAfterWithdraw->at(sfAssetsTotal);
+        Number const dustAfterWd = readVaultDust(env, fx->broker.vaultKeylet());
 
-        // Delta(sfAssetsTotal) must equal Delta(sfAssetsAvailable) —
-        // non-terminal removal subtracts `amount` from both, and any
-        // renormalisation adds the same movable delta to both.
-        BEAST_EXPECT((totalAfterWd - totalAfterRepay) == (availAfterWd - availAfterRepay));
+        // Delta(sfAssetsTotal) must equal Delta(sfAssetsAvailable + dust) —
+        // non-terminal removal subtracts `amount` from both fields
+        // (sfAssetsTotal at full Number precision post-Lend11) and any
+        // sender-leg renormalisation reshuffles the (sfAssetsAvailable,
+        // custody sfDust) split without disturbing sfAssetsTotal (see
+        // kSmdAssetPreLend11 in STTakesAsset.cpp), so the identity is
+        // expressed in dust-inclusive form.
+        BEAST_EXPECT(
+            (totalAfterWd - totalAfterRepay) ==
+            ((availAfterWd + dustAfterWd) - (availAfterRepay + dustAfterRepay)));
 
         // Dust must still be strictly less than one quantum at the new
         // scale (O2).
-        Number const dustAfterWd = readVaultDust(env, fx->broker.vaultKeylet());
         Number const q{1, getVaultScale(vaultSleAfterWithdraw)};
         BEAST_EXPECT(dustAfterWd >= beast::kZero);
         BEAST_EXPECT(dustAfterWd < q);
@@ -1083,14 +1078,20 @@ private:
         // The withdrawal was sized to refine the scale.
         BEAST_EXPECT(scaleAfter < scaleBefore);
 
-        // The Vault's T and A both moved by the SAME extended delta —
-        // exactly the invariant the sender-leg Override reconciliation
-        // preserves (both fields shift by `-amount` plus the promoted
-        // dust). If Override's reconciliation were miscoded, T and A
-        // would diverge.
+        // Dust-inclusive invariant: sfAssetsTotal must move by the
+        // SAME extended delta as (sfAssetsAvailable + custody dust).
+        // The withdrawal subtracts `amount` from sfAssetsTotal at full
+        // Number precision (kSmdAssetPreLend11 exempts it from the
+        // associateAsset sweep), and the sender-leg Override
+        // reconciliation reshuffles the (sfAssetsAvailable, custody
+        // sfDust) split without touching sfAssetsTotal. If any leg of
+        // that reshuffle were miscoded, the two extended deltas would
+        // diverge.
         Number const totalAfter = vaultSleAfterWd->at(sfAssetsTotal);
         Number const availAfter = vaultSleAfterWd->at(sfAssetsAvailable);
-        BEAST_EXPECT((totalAfter - totalBefore) == (availAfter - availBefore));
+        BEAST_EXPECT(
+            (totalAfter - totalBefore) ==
+            ((availAfter + dustAfterWd) - (availBefore + dustAfterRepay)));
 
         // The remaining dust on the custody line is bounded by one
         // quantum at the new posterior scale (up to a decade of
@@ -1357,14 +1358,11 @@ private:
     // that already includes it and fail on the one that stopped, making
     // the drift immediately localisable to a single field.
     //
-    // How to read this against O8.1 (extended (T+d) - (A+d) == Σ PO):
-    //   * O8.1 relates the extended totals through the OUTSTANDING
-    //     loan book.
-    //   * When Σ PO reaches 0, O8.1 collapses to (T+d) == (A+d), i.e.
-    //     T == A (dust cancels — it's the same reservoir on both
-    //     sides).
-    //   * So this test is simultaneously an extended-O8.1 check AND a
-    //     cash-out reconciliation check.
+    // How to read this against O8.1 (dust-inclusive T - (A + d) == Σ PO):
+    //   * O8.1 relates the vault fields to the OUTSTANDING loan book.
+    //   * When Σ PO reaches 0, O8.1 collapses to T == A + d.
+    //   * So this test is simultaneously an O8.1 check AND a cash-out
+    //     reconciliation check.
     //
     // If the terminal identity fails, the residual is a signed
     // quantity of stranded value that cannot be explained by either
@@ -1374,8 +1372,8 @@ private:
     testMultiLoanFullRepaymentReconciles(FeatureBitset features)
     {
         testcase(
-            "Full repayment of all fixture loans reconciles T = A + dust "
-            "(no stranded sub-quantum reservoir)");
+            "Full repayment of all fixture loans reconciles T == A + dust "
+            "(no stranded receivable)");
 
         using namespace jtx;
         Env env{*this, features | featureLendingProtocolV1_1};
@@ -1457,31 +1455,25 @@ private:
         Number const T = vaultSle->at(sfAssetsTotal);
         Number const A = vaultSle->at(sfAssetsAvailable);
         Number const dust = readVaultDust(env, fx->broker.vaultKeylet());
-        Number const extT = T + dust;
-        Number const extA = A + dust;
-        Number const residual = extT - extA;
+        Number const residual = T - (A + dust);
 
-        log << "\n--- terminal identity check ((T+d) == (A+d)) ---\n"
+        log << "\n--- terminal identity check (T == A + d) ---\n"
             << "  sfAssetsTotal          T = " << to_string(T) << "\n"
             << "  sfAssetsAvailable      A = " << to_string(A) << "\n"
             << "  dust (vault terms)     d = " << to_string(dust) << "\n"
-            << "  Extended T+d             = " << to_string(extT) << "\n"
-            << "  Extended A+d             = " << to_string(extA) << "\n"
-            << "  (T+d) - (A+d) (residual) = " << to_string(residual) << " (must be 0)"
+            << "  T - (A + d) (residual)   = " << to_string(residual) << " (must be 0)"
             << std::endl;
 
-        // Terminal identity in extended form: with no outstanding
-        // principal, the vault's extended total must equal its
-        // extended available. Since the same dust reservoir is added
-        // to both sides, this reduces mathematically to T == A — the
-        // extended form just ensures the symmetric framing is
-        // preserved even if a future change starts folding dust into
-        // one field but not the other.
+        // Terminal identity in dust-inclusive form: with no
+        // outstanding principal, the vault's sfAssetsTotal must
+        // exactly equal sfAssetsAvailable plus the custody line's
+        // dust reservoir. Any non-zero residual is stranded value on
+        // the total side that cannot be explained by either A or dust.
         BEAST_EXPECTS(
             residual == beast::kZero,
-            "(T+d) != (A+d) after full repayment; residual=" + to_string(residual) +
-                " — extended total and extended available diverged with "
-                "no outstanding principal left to explain the gap.");
+            "T != A + d after full repayment; residual=" + to_string(residual) +
+                " — sfAssetsTotal and (sfAssetsAvailable + custody sfDust) "
+                "diverged with no outstanding principal left to explain the gap.");
 
         if (dust != beast::kZero)
             ++dustObservations_;
@@ -1556,27 +1548,31 @@ private:
         Number const A1 = vaultSleAfter->at(sfAssetsAvailable);
         Number const poSumAfter = sumPrincipalOutstanding(env, *fx);
 
-        // Step 3: verify the O8 receivable identity is exact at Number
-        // precision after the cross-scale repayment. This is the digit-
-        // preservation claim: if any fine sub-quantum digit from T0 got
-        // truncated by the LoanC path, T1 would not equal A1 + Σ PO.
+        // Step 3: verify the O8 dust-inclusive receivable identity is
+        // exact at Number precision after the cross-scale repayment.
+        // This is the digit-preservation claim: if any fine sub-quantum
+        // digit from T0 got truncated by the LoanC path, T1 would not
+        // equal (A1 + dust) + Σ PO.
+        Number const dustAfter = readVaultDust(env, fx->broker.vaultKeylet());
         BEAST_EXPECTS(
-            (T1 - A1) == poSumAfter,
-            "O8.1 broken after cross-scale repayment: T1=" + to_string(T1) +
-                " A1=" + to_string(A1) + " Σ PO=" + to_string(poSumAfter) +
-                " residual=" + to_string(T1 - A1 - poSumAfter));
+            (T1 - (A1 + dustAfter)) == poSumAfter,
+            "O8.1 broken after cross-scale repayment: T1=" + to_string(T1) + " A1=" +
+                to_string(A1) + " dust=" + to_string(dustAfter) + " Σ PO=" + to_string(poSumAfter) +
+                " residual=" + to_string(T1 - (A1 + dustAfter) - poSumAfter));
 
-        // Total value delta and available delta must match to Number
-        // precision as well: the LoanC repayment credits the vault
-        // fully (no fee split in this fixture — managementFeeRate=0
-        // and serviceFee=0 by default), so both fields advance by the
-        // same amount and their delta cancels in the receivable.
+        // Total value delta and dust-adjusted available delta must
+        // match to Number precision as well: the LoanC repayment
+        // credits the vault fully (no fee split in this fixture —
+        // managementFeeRate=0 and serviceFee=0 by default), so
+        // sfAssetsTotal and (sfAssetsAvailable + custody sfDust) both
+        // advance by the same extended amount and their delta cancels
+        // in the dust-inclusive receivable.
         Number const deltaT = T1 - T0;
-        Number const deltaA = A1 - A0;
+        Number const deltaA = (A1 + dustAfter) - (A0 + dustBefore);
         Number const deltaPO = poSumAfter - poSumBefore;
         BEAST_EXPECTS(
             (deltaT - deltaA) == deltaPO,
-            "cross-scale delta mismatch: ΔT-ΔA=" + to_string(deltaT - deltaA) +
+            "cross-scale delta mismatch: ΔT-Δ(A+d)=" + to_string(deltaT - deltaA) +
                 " ΔPO=" + to_string(deltaPO));
 
         if (!BEAST_EXPECT(assertO8Exact(env, *fx, "post cross-scale")))

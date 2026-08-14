@@ -549,8 +549,15 @@ class VaultHelpers_test : public beast::unit_test::Suite
         custodyLine->at(sfDust) = vaultIsHigh ? -seededDustVaultTerms : seededDustVaultTerms;
         view.update(custodyLine);
 
+        auto const readCustodyDustVaultTerms = [&]() -> Number {
+            auto const line = view.peek(keylet::trustLine(vaultAccount, iouIssue));
+            Number const raw = line->at(sfDust);
+            return vaultIsHigh ? -raw : raw;
+        };
+
         Number const totalBefore = vault->at(sfAssetsTotal);
         Number const availableBefore = vault->at(sfAssetsAvailable);
+        Number const custodyDustBefore = readCustodyDustVaultTerms();
 
         MultiplePaymentDestinations const recipients{
             {borrower, Number{80}},
@@ -561,16 +568,21 @@ class VaultHelpers_test : public beast::unit_test::Suite
         auto const ter = moveVaultAssets(view, vault, recipients, zero, env.journal);
         BEAST_EXPECT(isTesSuccess(ter));
 
-        // Cash-out contract: the RECEIVABLE (sfAssetsTotal -
-        // sfAssetsAvailable) increases by exactly `amountMoved`.
-        // reconcileSenderDust may shift both fields by the same
-        // dustDelta from sender-leg Override renormalisation, but that
-        // shift cancels in the receivable and the receivable delta
-        // matches the whole-quanta cash-out to borrowers.
+        // Cash-out contract (dust-inclusive form): the receivable
+        //   sfAssetsTotal - (sfAssetsAvailable + custody sfDust)
+        // increases by exactly `amountMoved`. sfAssetsTotal is exempt
+        // from the associateAsset sweep under Lend11
+        // (kSmdAssetPreLend11), so a sender-leg Override that
+        // reshapes the custody line's sfBalance / sfDust split shifts
+        // sfAssetsAvailable in lockstep with sfBalance while leaving
+        // sfAssetsTotal at its full-precision extended value — the
+        // dust-inclusive receivable cleanly captures the whole-quanta
+        // cash-out to recipients.
         Number const totalAfter = vault->at(sfAssetsTotal);
         Number const availableAfter = vault->at(sfAssetsAvailable);
-        Number const receivableBefore = totalBefore - availableBefore;
-        Number const receivableAfter = totalAfter - availableAfter;
+        Number const custodyDustAfter = readCustodyDustVaultTerms();
+        Number const receivableBefore = totalBefore - (availableBefore + custodyDustBefore);
+        Number const receivableAfter = totalAfter - (availableAfter + custodyDustAfter);
         BEAST_EXPECT((receivableAfter - receivableBefore) == amountMoved);
 
         // Recipients: assert no receiver-leg dust was ever created on

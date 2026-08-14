@@ -472,16 +472,24 @@ makeSenderOverride(SLE::const_ref vault, Asset const& asset)
 // Reconcile Vault fields against a sender-leg dust report. `dustDelta` is
 // the change in the custody line's sfDust (sender-positive: positive when
 // dust was newly deferred, negative when previously-deferred dust was
-// promoted into sfBalance). Both Vault fields shift by that delta so the
-// receivable (sfAssetsTotal - sfAssetsAvailable) stays aligned with the
-// line's newDust exactly. No-op when no sender-leg policy ran.
+// promoted into sfBalance). Only sfAssetsAvailable is shifted: its value
+// tracks the whole-quanta sfBalance on the custody line, so when the
+// scale split reshuffles a residual between sfBalance and sfDust,
+// sfAssetsAvailable must move by the same amount as sfBalance
+// (i.e. -dustDelta).
+//
+// sfAssetsTotal is deliberately NOT adjusted here. Post-Lend11
+// sfAssetsTotal is exempt from the associateAsset sweep (see the
+// kSmdAssetPreLend11 gate in STTakesAsset.cpp) and carries full Number
+// precision, so the extended value (sfBalance + sfDust) it tracks is
+// unchanged by a scale-refining reshuffle — only the split between the
+// two custody-line fields moves. No-op when no sender-leg policy ran.
 void
 reconcileSenderDust(ApplyView& view, SLE::ref vault, DustSplit const& split)
 {
     if (!split.sender)
         return;
     vault->at(sfAssetsAvailable) -= split.sender->dustDelta;
-    vault->at(sfAssetsTotal) -= split.sender->dustDelta;
     view.update(vault);
 }
 
@@ -547,22 +555,30 @@ addVaultAssets(
         !isTesSuccess(ter))
         return ter;
 
-    // Apply the accounting correction so the receivable
-    // (sfAssetsTotal - sfAssetsAvailable) matches what a dust-unaware
-    // call would produce: sfAssetsAvailable moves by the aligned
-    // balanceDelta, and sfAssetsTotal absorbs the sub-quantum residual so
-    // (valueDelta - dustDelta) - balanceDelta == valueDelta - amount.
+    // Apply the accounting mutation for the receiver-leg credit:
+    //   sfAssetsAvailable += whole-quanta balanceDelta (recognised)
+    //   sfAssetsTotal     += full valueDelta (Number precision)
+    //
+    // sfAssetsTotal is exempt from the associateAsset sweep post-Lend11
+    // (see kSmdAssetPreLend11 in STTakesAsset.cpp), so it retains the
+    // full-precision valueDelta and absorbs the same sub-quantum
+    // residual that the custody line's sfDust records. This preserves
+    // the dust-inclusive receivable identity
+    //   sfAssetsTotal - (sfAssetsAvailable + custodyLine.sfDust)
+    //       == Σ sfPrincipalOutstanding
+    // exactly across arbitrarily long dust-bearing sequences.
+    //
     // receiver-leg deltas are receiver-positive, so we ADD them
     // directly to the Vault's fields (the Vault IS the receiver here).
     //
     // Any dust stranded on the custody line by a scale-refining prior
     // operation is renormalised by the credit-path re-split itself
-    // (`directSendNoFeeIOU` truncates the extended balance +
-    // credit at the Override target scale, so a decade-boundary crossing
+    // (`directSendNoFeeIOU` truncates the extended balance + credit at
+    // the Override target scale, so a decade-boundary crossing
     // automatically promotes freed whole-quanta into sfBalance). No
     // separate renormaliseStrandedDust pass is needed here.
     vault->at(sfAssetsAvailable) += split.receiver->balanceDelta;
-    vault->at(sfAssetsTotal) += Number{valueDelta} - split.receiver->dustDelta;
+    vault->at(sfAssetsTotal) += Number{valueDelta};
     view.update(vault);
 
     return tesSUCCESS;
@@ -603,6 +619,10 @@ clawbackVaultAssets(
     // Override policy targeting the Vault's posterior scale; the trust
     // -line layer re-splits (sfBalance, sfDust) at that scale and
     // reports any dust promotion or newly-deferred residual.
+    // reconcileSenderDust below only shifts sfAssetsAvailable — post
+    // -Lend11 sfAssetsTotal already carries the extended value, so a
+    // pure sfBalance ⇄ sfDust reshuffle on the custody line does not
+    // move it.
     DustSplit split = makeSenderOverride(vault, asset);
 
     if (auto const ter = accountSend(
@@ -697,8 +717,11 @@ removeVaultAssets(
     // sender-leg Override policy targeting the Vault's posterior
     // scale. The trust-line layer re-splits (sfBalance, sfDust) on the
     // custody line at the new scale and reports back any promoted /
-    // newly-deferred sub-quantum residual so the Vault's fields stay
-    // aligned.
+    // newly-deferred sub-quantum residual so sfAssetsAvailable stays
+    // aligned. sfAssetsTotal is left untouched by the reconciliation:
+    // under Lend11 it carries the extended value at full Number
+    // precision, so a pure sfBalance ⇄ sfDust reshuffle does not
+    // affect it.
     applyRemoveVaultAssets(ctx.view, vault, amount, FinalRemoval::No);
 
     if (amount != beast::kZero)
@@ -757,6 +780,10 @@ moveVaultAssets(
     // policy on the single shared sender-line debit; the multiple
     // receiver-line credits are dust-unaware (the trust-line layer
     // has no receiver-leg policy plumbed through the multi path).
+    // reconcileSenderDust below only shifts sfAssetsAvailable — under
+    // Lend11 sfAssetsTotal carries the extended value at full Number
+    // precision and is not affected by an sfBalance ⇄ sfDust reshuffle
+    // on the custody line.
     vault->at(sfAssetsTotal) += valueDelta;
     vault->at(sfAssetsAvailable) -= amount;
     view.update(vault);
