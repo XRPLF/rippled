@@ -133,7 +133,7 @@ the event, and `publish_pkg.sh` maps that channel to a repository pair:
 | tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable`     |
 | tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental` |
 | push to `develop`        | `X.Y.Z-bN[+meta]` | `develop`      | `deb-develop`      | `rpm-develop`      |
-| any, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private`      |
+| tag, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private`      |
 
 Only a tag names a channel — do not extend that to `develop`, whose
 `versionString` moves through `-bN`, `-rcN` and even the final version during a
