@@ -125,12 +125,15 @@ isAnyFrozen(
             return true;
     }
 
-    if (!issuanceSle)
-        return false;
+    // Pass the issuance SLE when we have it to avoid re-reading it per account;
+    // otherwise defer to the MPTIssue overload, which handles a missing issuance.
+    auto const anyVaultFrozen = [&](auto const& shareOrIssuance) {
+        return std::ranges::any_of(accounts, [&](auto const& account) {
+            return isVaultPseudoAccountFrozen(view, account, shareOrIssuance, depth);
+        });
+    };
 
-    return std::ranges::any_of(accounts, [&](auto const& account) {
-        return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
-    });
+    return issuanceSle ? anyVaultFrozen(*issuanceSle) : anyVaultFrozen(mptIssue);
 }
 
 Rate
