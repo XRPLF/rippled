@@ -745,7 +745,7 @@ RCLConsensus::Adaptor::doAccept(
 
     // Record ledger close for OTel dashboard parity counter. Uses the
     // call-site macro (see MetricMacros.h) rather than a MetricsRegistry
-    // member -- proof-of-concept for tasks/metric-macro-plan.md.
+    // member.
     XRPL_METRIC_COUNTER_INC(app_, "ledgers_closed_total", "Total ledgers closed by consensus");
 
     //-------------------------------------------------------------------------
