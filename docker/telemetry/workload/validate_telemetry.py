@@ -910,6 +910,32 @@ async def validate_log_trace_correlation(
 # ---------------------------------------------------------------------------
 
 
+def _leaf_panel_count(dashboard: dict[str, Any]) -> int:
+    """Count the panels a dashboard actually renders.
+
+    Grafana models a row as an entry of ``type: "row"`` in the top-level
+    ``panels`` list, and a collapsed row carries its children in its own
+    nested ``panels`` list. So ``len(dashboard["panels"])`` counts rows as
+    though they were panels and misses everything inside a collapsed one --
+    on ``node-health`` that reads 55 where the true figure is 51, and a
+    dashboard consisting only of collapsed rows would report a positive
+    count while rendering nothing.
+
+    Args:
+        dashboard: The ``dashboard`` object from the Grafana API response.
+
+    Returns:
+        The number of non-row panels, including those nested inside rows.
+    """
+    total = 0
+    for panel in dashboard.get("panels", []):
+        if panel.get("type") == "row":
+            total += len(panel.get("panels", []))
+        else:
+            total += 1
+    return total
+
+
 async def validate_dashboards(
     session: aiohttp.ClientSession,
     grafana_url: str,
@@ -938,13 +964,17 @@ async def validate_dashboards(
                 if resp.status == 200:
                     data = await resp.json()
                     dashboard = data.get("dashboard", {})
-                    panel_count = len(dashboard.get("panels", []))
+                    panel_count = _leaf_panel_count(dashboard)
                     report.add(
                         CheckResult(
                             name=f"dashboard.{uid}",
                             category="dashboard",
-                            passed=True,
-                            message=(f"{uid}: loaded ({panel_count} panels)"),
+                            passed=panel_count > 0,
+                            message=(
+                                f"{uid}: loaded ({panel_count} panels)"
+                                if panel_count
+                                else f"{uid}: loaded but renders no panels"
+                            ),
                             details={"panel_count": panel_count},
                         )
                     )

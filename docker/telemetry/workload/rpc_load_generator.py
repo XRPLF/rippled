@@ -175,8 +175,10 @@ class LoadStats:
         total_success:    Requests that returned a valid result.
         total_errors:     Requests that returned an error or timed out.
         total_cancelled:  Requests cancelled at teardown, never recorded.
-        latencies:        Per-command list of round-trip times in seconds.
-        command_counts:   Per-command request count.
+        latencies:        Per-command round-trip times in seconds, for the
+                          requests that got a reply. Requests that never got
+                          one contribute no sample -- see record().
+        command_counts:   Per-command request count, replied or not.
     """
 
     total_dispatched: int = 0
@@ -187,15 +189,27 @@ class LoadStats:
     latencies: dict[str, list[float]] = field(default_factory=dict)
     command_counts: dict[str, int] = field(default_factory=dict)
 
-    def record(self, command: str, latency: float, success: bool) -> None:
-        """Record the outcome of a single RPC call."""
+    def record(self, command: str, latency: float | None, success: bool) -> None:
+        """Record the outcome of a single RPC call.
+
+        Pass ``latency=None`` when no reply arrived, i.e. a timeout or a
+        transport failure. Such a request still counts as an error, but it
+        contributes no latency sample: time-to-failure is not a round-trip
+        time, and a timeout would inject RECV_TIMEOUT_S into the distribution
+        and dominate the percentiles.
+
+        A reply carrying ``status: error`` is the opposite case. The round
+        trip completed and was timely, so its latency is a real measurement
+        and is kept even though the request is counted as an error.
+        """
         self.total_sent += 1
         if success:
             self.total_success += 1
         else:
             self.total_errors += 1
-        self.latencies.setdefault(command, []).append(latency)
         self.command_counts[command] = self.command_counts.get(command, 0) + 1
+        if latency is not None:
+            self.latencies.setdefault(command, []).append(latency)
 
     def summary(self) -> dict[str, Any]:
         """Return a summary dict suitable for JSON serialization.
@@ -208,11 +222,15 @@ class LoadStats:
         its load, and reporting 100% for it would be the same blind spot the
         key exists to close.
         """
+        # Keyed off command_counts, not latencies: a command whose every
+        # request timed out has a count but no samples, and dropping it from
+        # the report would hide the command that failed worst.
         per_command: dict[str, Any] = {}
-        for cmd, lats in self.latencies.items():
-            sorted_lats = sorted(lats)
+        for cmd in sorted(self.command_counts):
+            sorted_lats = sorted(self.latencies.get(cmd, []))
             per_command[cmd] = {
-                "count": self.command_counts.get(cmd, 0),
+                "count": self.command_counts[cmd],
+                "latency_samples": len(sorted_lats),
                 "p50_ms": round(_percentile(sorted_lats, 0.50) * 1000, 2),
                 "p95_ms": round(_percentile(sorted_lats, 0.95) * 1000, 2),
                 "p99_ms": round(_percentile(sorted_lats, 0.99) * 1000, 2),
@@ -399,7 +417,8 @@ async def send_rpc(
             success = json.loads(raw).get("status") == "success"
         except REQUEST_FAILURES as exc:
             logger.debug("RPC %s failed: %s", command, exc)
-            stats.record(command, time.monotonic() - t0, False)
+            # No reply, so no latency sample -- see LoadStats.record().
+            stats.record(command, None, False)
             return
         stats.record(command, latency, success)
 
