@@ -37,11 +37,20 @@ llvm_version=22
 missing=()
 checked=0
 
+# tool_path <name>
+# Fully resolved path of a tool, so the snapshots record which derivation
+# provides it. Prints nothing when it isn't on PATH.
+tool_path() {
+    local path
+    path="$(command -v "$1" 2>/dev/null)" || return 0
+    readlink -f "${path}" 2>/dev/null || printf '%s' "${path}"
+}
+
 # check <name> [probe-command...]
 # Runs the probe (default: "<name> --version"), capturing both stdout and
-# stderr, and prints one aligned line: the status, the name, and the first
-# non-blank line of the probe output (its version). Records <name> as missing
-# if the command is not found or exits non-zero.
+# stderr, and prints three lines: the status and name, the first non-blank line
+# of the probe output (its version, or the error when it failed), and the tool's
+# resolved path. Records <name> as missing if it is not found or exits non-zero.
 check() {
     local name="$1"
     shift
@@ -51,14 +60,17 @@ check() {
     fi
 
     checked=$((checked + 1))
-    local output version
+    local output version path
+    path="$(tool_path "${name}")"
     if output="$("${probe[@]}" 2>&1)"; then
-        version="$(printf '%s\n' "${output}" | grep -m1 '[^[:space:]]' || true)"
-        printf '  [ ok ] %-20s %s\n' "${name}" "${version}"
+        printf '  ✅ %s\n' "${name}"
     else
-        printf '  [MISS] %s\n' "${name}"
+        printf '  ❌ %s\n' "${name}"
         missing+=("${name}")
     fi
+    version="$(printf '%s\n' "${output}" | grep -m1 '[^[:space:]]' || true)"
+    printf '     %s\n' "${version:-(no output)}"
+    printf '     %s\n' "${path:-(not found)}"
 }
 
 case "$(uname -s)" in
@@ -116,9 +128,9 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
         check clang-format
         check "clang-format-${llvm_version}"
         # clang-tidy leads --version with the LLVM banner, not the version.
-        check clang-tidy sh -c 'clang-tidy --version | grep -m1 -oE "LLVM version [0-9.]+"'
-        check "clang-tidy-${llvm_version}" sh -c \
-            "clang-tidy-${llvm_version} --version | grep -m1 -oE 'LLVM version [0-9.]+'"
+        tidy_probe="--version | grep -m1 -oE 'LLVM version [0-9.]+'"
+        check clang-tidy sh -c "clang-tidy ${tidy_probe}"
+        check "clang-tidy-${llvm_version}" sh -c "clang-tidy-${llvm_version} ${tidy_probe}"
         check dot
         check doxygen
         check gcovr
@@ -144,7 +156,7 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check cargo-audit cargo audit --version
     check cargo-llvm-cov cargo llvm-cov --version
     check cargo-nextest cargo nextest --version
-    check clippy clippy-driver --version
+    check clippy-driver
     check rust-analyzer
     check rustc
     check rustfmt
@@ -185,9 +197,9 @@ else
     checked=$((checked + 1))
     tmp_clone="$(mktemp -d)"
     if git clone --depth 1 https://github.com/XRPLF/actions.git "${tmp_clone}/actions" >/dev/null 2>&1; then
-        printf '  [ ok ] git clone over HTTPS\n'
+        printf '  ✅ git clone over HTTPS\n'
     else
-        printf '  [MISS] git clone over HTTPS\n'
+        printf '  ❌ git clone over HTTPS\n'
         missing+=("git-https-clone")
     fi
     rm -rf "${tmp_clone}"
@@ -195,9 +207,9 @@ fi
 
 echo
 if [ "${#missing[@]}" -eq 0 ]; then
-    echo "All ${checked} checked tools are present and runnable."
+    echo "✅ All ${checked} checked tools are present and runnable."
 else
-    echo "Missing or non-functional tools (${#missing[@]} of ${checked}):" >&2
+    echo "❌ Missing or non-functional tools (${#missing[@]} of ${checked}):" >&2
     for tool in "${missing[@]}"; do
         echo "  - ${tool}" >&2
     done
