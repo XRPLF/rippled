@@ -30,7 +30,6 @@
 #include <vector>
 
 namespace protocol {
-class TMValidatorList;
 class TMValidatorListCollection;
 }  // namespace protocol
 
@@ -372,9 +371,6 @@ public:
     parseBlobs(std::uint32_t version, json::Value const& body);
 
     static std::vector<ValidatorBlobInfo>
-    parseBlobs(protocol::TMValidatorList const& body);
-
-    static std::vector<ValidatorBlobInfo>
     parseBlobs(protocol::TMValidatorListCollection const& body);
 
     static void
@@ -391,7 +387,6 @@ public:
 
     [[nodiscard]] static std::pair<std::size_t, std::size_t>
     buildValidatorListMessages(
-        std::size_t messageVersion,
         std::uint64_t peerSequence,
         std::size_t maxSequence,
         std::uint32_t rawVersion,
@@ -986,14 +981,6 @@ hash_append(Hasher& h, std::map<std::size_t, ValidatorBlobInfo> const& blobs)
 }  // namespace xrpl
 
 namespace protocol {
-
-template <class Hasher>
-void
-hash_append(Hasher& h, TMValidatorList const& msg)
-{
-    using beast::hash_append;
-    hash_append(h, msg.manifest(), msg.blob(), msg.signature(), msg.version());
-}
 
 template <class Hasher>
 void
