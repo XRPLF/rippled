@@ -330,6 +330,7 @@ runParallel(
             std::mutex mutex;
             std::condition_variable cv;
             std::atomic<std::size_t> remaining{0};
+            std::exception_ptr error;
         };
         auto barrier = std::make_shared<BatchBarrier>();
         barrier->remaining.store(count, std::memory_order_relaxed);
@@ -343,7 +344,7 @@ runParallel(
         };
 
         auto runUnit =
-            [&runOne, pinIndex, revalidateOnly](PathRequest::pointer const& req) -> bool {
+            [&runOne, pinIndex, revalidateOnly, barrier](PathRequest::pointer const& req) -> bool {
             try
             {
                 return runOne(req, pinIndex, revalidateOnly);
@@ -355,9 +356,15 @@ runParallel(
                 //
                 // Return true (keep): a false result is treated as onDrop and
                 // would permanently remove an open path_find subscription after
-                // a transient ledger error (e.g. SHAMapMissingNode). Serial
-                // runOne rethrows to LedgerMaster instead; parallel must not
-                // convert the same failure into a silent unsubscribe.
+                // a transient ledger error (e.g. SHAMapMissingNode). Stash the
+                // exception and rethrow after the barrier so LedgerMaster /
+                // runPeriodicRevalidate can acquire the missing node — the
+                // serial path already rethrows out of runOne.
+                {
+                    std::lock_guard const lk(barrier->mutex);
+                    if (!barrier->error)
+                        barrier->error = std::current_exception();
+                }
                 return true;
             }
         };
@@ -389,10 +396,12 @@ runParallel(
             finishOne();
         }
 
+        std::exception_ptr batchError;
         {
             std::unique_lock lk(barrier->mutex);
             barrier->cv.wait(
                 lk, [&] { return barrier->remaining.load(std::memory_order_acquire) == 0; });
+            batchError = barrier->error;
         }
 
         for (std::size_t i = 0; i < count; ++i)
@@ -401,6 +410,9 @@ runParallel(
             if (!(*results)[i])
                 onDrop(work[batch + i]);
         }
+
+        if (batchError)
+            std::rethrow_exception(batchError);
     }
 }
 
@@ -866,7 +878,8 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
                 // Closed: pin lastIndex_. Mid-close: do not pin.
                 // revalidateOnly ONLY for mid-close so closed waves can rediscover
                 // / recover failed searches (staggered / backoff in doUpdate).
-                // runParallel's runUnit catches per-unit errors (no claim leak).
+                // runParallel's runUnit keeps the session, then rethrows after
+                // the barrier so SHAMapMissingNode still reaches LedgerMaster.
                 bool const pinSteady = closedLedger;
                 bool const revalidateOnly = processSteadyOnOpen;
                 runParallel(

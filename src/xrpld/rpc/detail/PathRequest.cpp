@@ -78,6 +78,24 @@ setClosedLedgerIdentity(json::Value& dest, std::shared_ptr<ReadView const> const
     }
 }
 
+/**
+ * Path notices go in both `warning` (streamed path_find updates) and
+ * `warnings` (array). ServerHandler overwrites result[warning] with "load"
+ * on the create/status RPC envelope when the connection is busy; the array
+ * survives that so clients still see a partial/stale/truncated notice.
+ */
+void
+setPathFindNotice(json::Value& dest, char const* code)
+{
+    if (!code || dest.isMember(jss::error) || dest.isMember(jss::warning))
+        return;
+
+    dest[jss::warning] = code;
+    if (!dest.isMember(jss::warnings) || !dest[jss::warnings].isArray())
+        dest[jss::warnings] = json::Value{json::ValueType::Array};
+    dest[jss::warnings].append(code);
+}
+
 }  // namespace
 
 PathRequest::PathRequest(
@@ -1233,7 +1251,7 @@ PathRequest::doUpdate(
         {
             bLastSuccess_ = false;
             newStatus[jss::full_reply] = false;
-            newStatus[jss::warning] = "path_revalidate_failed";
+            setPathFindNotice(newStatus, "path_revalidate_failed");
         }
         else
         {
@@ -1263,13 +1281,10 @@ PathRequest::doUpdate(
     // Do not overwrite path_revalidate_failed (stale restore takes precedence).
     // Soft auto-source truncation is also a warning (not an error): results are
     // still valid for the included currencies, just not exhaustive.
-    if (!newStatus.isMember(jss::error) && !newStatus.isMember(jss::warning))
-    {
-        if (sourceCurrenciesTruncated_)
-            newStatus[jss::warning] = "path_source_currencies_truncated";
-        else if (cache->hasIncompleteLinesForSession(iIdentifier_))
-            newStatus[jss::warning] = "path_lines_partial";
-    }
+    if (sourceCurrenciesTruncated_)
+        setPathFindNotice(newStatus, "path_source_currencies_truncated");
+    else if (cache->hasIncompleteLinesForSession(iIdentifier_))
+        setPathFindNotice(newStatus, "path_lines_partial");
 
     if (fast && quickReply_ == steady_clock::time_point{})
     {

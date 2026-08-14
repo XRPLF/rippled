@@ -873,9 +873,33 @@ class PathFindSub_test : public beast::unit_test::Suite
         // No source_currencies → auto set (soft-capped at 16).
         auto jr = wsc->invoke("path_find", pfCreate(alice, bob, gw["USD"](10)))[jss::result];
         BEAST_EXPECT(!jr.isMember(jss::error));
+        // Create reply: warning plus warnings[] so a later envelope
+        // `warning: load` cannot hide the truncation notice.
+        BEAST_EXPECT(jr.isMember(jss::warning));
+        if (jr.isMember(jss::warning))
+            BEAST_EXPECT(jr[jss::warning].asString() == "path_source_currencies_truncated");
+        BEAST_EXPECT(jr.isMember(jss::warnings) && jr[jss::warnings].isArray());
+        if (jr.isMember(jss::warnings) && jr[jss::warnings].isArray())
+        {
+            bool sawTrunc = false;
+            for (unsigned i = 0; i < jr[jss::warnings].size(); ++i)
+            {
+                auto const& w = jr[jss::warnings][i];
+                if (w.isString() && w.asString() == "path_source_currencies_truncated")
+                    sawTrunc = true;
+            }
+            BEAST_EXPECT(sawTrunc);
+        }
         BEAST_EXPECT(runUpdateAll(env, env.closed()));
         auto upd = waitPathFindUpdate(*wsc, 5s, true);
         BEAST_EXPECT(upd);
+        if (upd)
+        {
+            BEAST_EXPECT(upd->isMember(jss::warning));
+            if (upd->isMember(jss::warning))
+                BEAST_EXPECT((*upd)[jss::warning].asString() == "path_source_currencies_truncated");
+            BEAST_EXPECT(upd->isMember(jss::warnings) && (*upd)[jss::warnings].isArray());
+        }
 
         bool sawXrpSource = false;
         if (upd && upd->isMember(jss::alternatives) && (*upd)[jss::alternatives].isArray())
