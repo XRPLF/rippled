@@ -543,7 +543,7 @@ fi
 # Step 10b: Verify native OTel metrics in Prometheus (beast::insight)
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 7: Native OTel Metrics (beast::insight via OTLP) ---"
+log "--- Native OTel Metrics (beast::insight via OTLP) ---"
 log "Waiting 20s for OTLP metric export + Prometheus scrape..."
 sleep 20
 
