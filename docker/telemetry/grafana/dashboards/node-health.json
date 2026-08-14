@@ -3017,7 +3017,7 @@
               "refId": "A"
             }
           ],
-          "title": "FullBelowCache Hit Rate",
+          "title": "FullBelowCache Hit Rate [$xrpl_network_type]",
           "type": "gauge"
         }
       ],
