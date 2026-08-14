@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -24,6 +25,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -32,6 +34,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -639,6 +642,14 @@ canTransfer(
 // - Redeeming IOUs and/or sending sender's own IOUs.
 // - Create trust line if needed.
 // --> bCheckIssuer : normally require issuer to be involved.
+//
+// The optional `legPolicy` argument corresponds to the NON-ISSUER PARTY on
+// this specific trust line touch. For a direct payment (one party IS the
+// issuer) it is the non-issuer party's leg policy; for a transit leg it
+// is either the sender-leg or receiver-leg policy of the enclosing
+// two-legged send. `legPolicy` reports its `balanceDelta`/`dustDelta`
+// from THAT PARTY's perspective (party-positive: positive means the
+// non-issuer party's holdings grew).
 static TER
 directSendNoFeeIOU(
     ApplyView& view,
@@ -647,7 +658,9 @@ directSendNoFeeIOU(
     STAmount const& saAmount,
     bool bCheckIssuer,
     SLE::ref sponsorSle,
-    beast::Journal j)
+    beast::Journal j,
+    DustSplit::LegPolicy* legPolicy = nullptr,
+    bool legIsSender = false)
 {
     AccountID const& issuer = saAmount.getIssuer();
     Currency const& currency = saAmount.get<Issue>().currency;
@@ -671,6 +684,28 @@ directSendNoFeeIOU(
         !isXRP(uReceiverID) && uReceiverID != noAccount(),
         "xrpl::directSendNoFeeIOU : receiver is not XRP");
 
+    // sfDust is introduced by featureLendingProtocolV1_1. Every code path
+    // that reads or writes sfDust enforces the same rules().enabled(...) gate.
+    // In normal operation the gate is redundant — the transactor-level
+    // eligibility predicates already imply the amendment is on — but a
+    // hypothetical replay/testing path that ever presented a dust-aware
+    // request under a pre-amendment rules() must NOT touch sfDust: the
+    // field would then be neither SoeDefault(0) as expected pre-amendment
+    // nor part of the ledger's canonical encoding. Assert in debug, fall
+    // back to the pre-dust code path in release.
+    if (legPolicy != nullptr && !view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        UNREACHABLE(
+            "xrpl::directSendNoFeeIOU : DustSplit::LegPolicy requires "
+            "featureLendingProtocolV1_1");
+        legPolicy = nullptr;
+    }
+
+    // Drain mode is defined only for the sender's leg. There is no receiver-side dust to drain.
+    XRPL_ASSERT(
+        legPolicy == nullptr || legPolicy->mode != DustSplit::LegPolicy::Mode::Drain || legIsSender,
+        "xrpl::directSendNoFeeIOU : Drain mode is sender-leg only");
+
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
     {
@@ -683,7 +718,108 @@ directSendNoFeeIOU(
 
         STAmount const saBefore = saBalance;
 
-        saBalance -= saAmount;
+        // dustLedgerAfter holds the value that must be written to sfDust once the branch below
+        // decides bDelete, in the LINE'S OWN sign convention. Left unset when this call must not
+        // touch sfDust at all so a line that never carries dust is byte-identical to before.
+        std::optional<Number> dustLedgerAfter;
+
+        if (legPolicy != nullptr)
+        {
+            // sfBalance and sfDust together are one signed extended quantity, expressed in the
+            // trust line's own low/high sign convention.
+            // Convert sfDust to sender terms to line up with saBefore.
+            Number const lineDustLedger = Number{sleRippleState->at(sfDust)};
+            Number const lineDustSender = bSenderHigh ? -lineDustLedger : lineDustLedger;
+
+            // The rest of the math below tolerates negative dust, but under Drain we assert
+            // non-negativity because folding a negative reservoir into the outgoing transfer would
+            // silently INCREASE the amount sent — this must never happen in practice.
+            XRPL_ASSERT(
+                lineDustSender >= beast::kZero || !legIsSender ||
+                    legPolicy->mode != DustSplit::LegPolicy::Mode::Drain,
+                "xrpl::directSendNoFeeIOU : sender-line dust is non-negative under Drain");
+
+            Number newBalance{0};
+            Number newDust{0};
+
+            if (legPolicy->mode == DustSplit::LegPolicy::Mode::Drain)
+            {
+                // Drain: fold all of sfDust into sfBalance in place, then debit `saAmount` — which
+                // the caller   already inflated by `lineDustSender` so the outgoing transfer
+                // reaches the receiver as `amount + D_sender`.
+                // The end state on the sender's line is:
+                //     sfBalance_new = (saBefore + lineDustSender) - saAmount
+                //                   = saBefore - (saAmount - lineDustSender)
+                //                   = saBefore - amount_originally_requested
+                //     sfDust_new    = 0
+                // i.e. the sender's line loses exactly the caller's originally-requested `amount`
+                // in whole-quanta terms, and the sub-quantum reservoir has been forwarded.
+                newBalance = (Number{saBefore} + lineDustSender) - Number{saAmount};
+                newDust = Number{0};
+            }
+            else
+            {
+                // Override mode: keep sfBalance representable at
+                // `overrideScale`; park any sub-quantum remainder in
+                // sfDust. Truncate the SUM toward zero — never round
+                // the increment separately. This is what makes
+                // promotion of previously-deferred dust automatic: if
+                // the combined lineDustSender + credit clears a whole
+                // quantum, that quantum lands in newBalance with no
+                // separate fold step.
+                Number const exactBefore = Number{saBefore} + lineDustSender;
+                Number const exactAfter = exactBefore - Number{saAmount};
+
+                newBalance = roundToAsset(
+                    saAmount.asset(),
+                    exactAfter,
+                    legPolicy->overrideScale,
+                    Number::RoundingMode::TowardsZero);
+                newDust = exactAfter - newBalance;
+
+                XRPL_ASSERT(
+                    newDust == beast::kZero || abs(newDust) < Number(1, legPolicy->overrideScale),
+                    "xrpl::directSendNoFeeIOU : dust remainder bounded by one quantum");
+                XRPL_ASSERT(
+                    newDust == beast::kZero || exactAfter == beast::kZero ||
+                        (newDust < beast::kZero) == (exactAfter < beast::kZero),
+                    "xrpl::directSendNoFeeIOU : dust does not change sign of the extended "
+                    "quantity");
+            }
+
+            Number const balanceDeltaSender = newBalance - Number{saBefore};
+            Number const dustDeltaSender = newDust - lineDustSender;
+
+            // Report the deltas from the leg's non-issuer party's
+            // perspective. Sender-leg reports sender-positive; the
+            // internal computation is already in sender terms, so on
+            // the sender-leg pass we report the sender-space deltas as
+            // is. Receiver-leg reports receiver-positive, which is the
+            // sign-flip of sender-space deltas (since balance changes
+            // net to -saAmount).
+            if (legIsSender)
+            {
+                legPolicy->balanceDelta = balanceDeltaSender;
+                legPolicy->dustDelta = dustDeltaSender;
+            }
+            else
+            {
+                legPolicy->balanceDelta = -balanceDeltaSender;
+                legPolicy->dustDelta = -dustDeltaSender;
+            }
+
+            // newBalance is in SENDER terms (built from saBefore, which
+            // was put there by the negation above); the existing
+            // negate-back-to-ledger-terms code below applies to it
+            // exactly as it would to the non-dust subtraction result.
+            saBalance = STAmount{saAmount.asset(), newBalance};
+
+            dustLedgerAfter = bSenderHigh ? -newDust : newDust;
+        }
+        else
+        {
+            saBalance -= saAmount;
+        }
 
         JLOG(j.trace()) << "directSendNoFeeIOU: " << to_string(uSenderID) << " -> "
                         << to_string(uReceiverID) << " : before=" << saBefore.getFullText()
@@ -733,12 +869,39 @@ directSendNoFeeIOU(
             // Receiver reserve is clear.
         }
 
+        // Trust-line-level protocol invariant: never delete a line whose
+        // sfDust is non-zero — a deleted RIPPLE_STATE silently destroys
+        // any value still parked there. The guard applies to the
+        // dust-unaware branch too (legPolicy == nullptr), because the
+        // line may carry sfDust left by an earlier dust-aware credit.
+        // Only relevant when the line is actually a deletion candidate;
+        // skip the field-read entirely otherwise so the hot path (the
+        // overwhelming majority of calls, where bDelete is already
+        // false) stays byte-identical to the base branch.
+        if (bDelete)
+        {
+            if (dustLedgerAfter)
+            {
+                if (*dustLedgerAfter != beast::kZero)
+                    bDelete = false;
+            }
+            else if (
+                view.rules().enabled(featureLendingProtocolV1_1) &&
+                Number{sleRippleState->at(sfDust)} != beast::kZero)
+            {
+                bDelete = false;
+            }
+        }
+
         if (bSenderHigh)
             saBalance.negate();
 
         // Want to reflect balance to zero even if we are deleting line.
         sleRippleState->setFieldAmount(sfBalance, saBalance);
         // ONLY: Adjust balance.
+
+        if (dustLedgerAfter)
+            sleRippleState->at(sfDust) = *dustLedgerAfter;
 
         if (bDelete)
         {
@@ -752,6 +915,22 @@ directSendNoFeeIOU(
 
         view.update(sleRippleState);
         return tesSUCCESS;
+    }
+
+    // A LegPolicy implies the trust line already exists — the caller is
+    // supposed to arrange this (e.g. via addEmptyHolding) before any
+    // dust-aware credit reaches it. Treat reaching here with a policy
+    // as a caller error: assert in debug, and in release fall back to a
+    // plain no-split credit so no value is silently dropped.
+    XRPL_ASSERT(
+        legPolicy == nullptr,
+        "xrpl::directSendNoFeeIOU : dust split requires an existing trust line");
+    if (legPolicy != nullptr)
+    {
+        // LCOV_EXCL_START
+        legPolicy->balanceDelta = legIsSender ? -Number{saAmount} : Number{saAmount};
+        legPolicy->dustDelta = Number{0};
+        // LCOV_EXCL_STOP
     }
 
     STAmount const saReceiverLimit(Issue{currency, uReceiverID});
@@ -801,7 +980,8 @@ directSendNoLimitIOU(
     STAmount& saActual,
     beast::Journal j,
     SLE::ref sponsorSle,
-    WaiveTransferFee waiveFee)
+    WaiveTransferFee waiveFee,
+    DustSplit* dust = nullptr)
 {
     auto const& issuer = saAmount.getIssuer();
 
@@ -810,14 +990,96 @@ directSendNoLimitIOU(
         "xrpl::directSendNoLimitIOU : neither sender nor receiver is XRP");
     XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::directSendNoLimitIOU : sender is not receiver");
 
+    DustSplit::LegPolicy* receiverPolicy =
+        (dust != nullptr && dust->receiver.has_value()) ? &*dust->receiver : nullptr;
+    DustSplit::LegPolicy* senderPolicy =
+        (dust != nullptr && dust->sender.has_value()) ? &*dust->sender : nullptr;
+
+    // Drain sender-leg: inflate the outgoing amount by the sender-line's
+    // sfDust (in sender terms) so the receiver receives `amount + D_sender`.
+    // The sender's line ends with `sfBalance` reduced by the caller's
+    // originally-requested `amount` (whole-quanta portion) and `sfDust`
+    // zeroed. Drain is meaningless when the sender IS the issuer (no
+    // sender-side line exists on the issuer's side).
+    STAmount saAmountEffective = saAmount;
+    if (senderPolicy != nullptr && senderPolicy->mode == DustSplit::LegPolicy::Mode::Drain &&
+        uSenderID != issuer && view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        Currency const& currency = saAmount.get<Issue>().currency;
+        auto const senderLine = view.peek(keylet::trustLine(uSenderID, issuer, currency));
+        if (senderLine)
+        {
+            bool const senderIsHigh = uSenderID > issuer;
+            Number const dustLineTerms = Number{senderLine->at(sfDust)};
+            Number const dustSenderTerms = senderIsHigh ? -dustLineTerms : dustLineTerms;
+            XRPL_ASSERT(
+                dustSenderTerms >= beast::kZero,
+                "xrpl::directSendNoLimitIOU : sender-line dust non-negative under Drain");
+            if (dustSenderTerms != beast::kZero)
+            {
+                saAmountEffective = saAmount + STAmount{saAmount.asset(), dustSenderTerms};
+            }
+        }
+    }
+
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
-        // Direct send: redeeming IOUs and/or sending own IOUs.
-        auto const ter =
-            directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, false, sponsorSle, j);
+        // Direct send: redeeming IOUs and/or sending own IOUs. Only one
+        // trust line is touched; the corresponding non-issuer party's
+        // LegPolicy applies. The issuer-side policy must be absent —
+        // there is no line to keep aligned on the issuer's side.
+        DustSplit::LegPolicy* legPolicy = nullptr;
+        bool legIsSender = false;
+        if (dust != nullptr)
+        {
+            if (uSenderID == issuer)
+            {
+                XRPL_ASSERT(
+                    !dust->sender.has_value(),
+                    "xrpl::directSendNoLimitIOU : issuer-side sender policy must be absent");
+                if (dust->receiver.has_value())
+                {
+                    legPolicy = &*dust->receiver;
+                    legIsSender = false;
+                }
+            }
+            else if (uReceiverID == issuer)
+            {
+                XRPL_ASSERT(
+                    !dust->receiver.has_value(),
+                    "xrpl::directSendNoLimitIOU : issuer-side receiver policy must be absent");
+                if (dust->sender.has_value())
+                {
+                    legPolicy = &*dust->sender;
+                    legIsSender = true;
+                }
+            }
+            else
+            {
+                // issuer == noAccount(): treat as a receiver-leg-only
+                // credit (matches historical behaviour of the flat
+                // DustSplit passed through here).
+                if (dust->receiver.has_value())
+                {
+                    legPolicy = &*dust->receiver;
+                    legIsSender = false;
+                }
+            }
+        }
+
+        auto const ter = directSendNoFeeIOU(
+            view,
+            uSenderID,
+            uReceiverID,
+            saAmountEffective,
+            false,
+            sponsorSle,
+            j,
+            legPolicy,
+            legIsSender);
         if (!isTesSuccess(ter))
             return ter;
-        saActual = saAmount;
+        saActual = saAmountEffective;
         return tesSUCCESS;
     }
 
@@ -825,18 +1087,43 @@ directSendNoLimitIOU(
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
-    saActual = (waiveFee == WaiveTransferFee::Yes) ? saAmount
-                                                   : multiply(saAmount, transferRate(view, issuer));
+    saActual = (waiveFee == WaiveTransferFee::Yes)
+        ? saAmountEffective
+        : multiply(saAmountEffective, transferRate(view, issuer));
 
     JLOG(j.debug()) << "directSendNoLimitIOU> " << to_string(uSenderID) << " - > "
-                    << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
+                    << to_string(uReceiverID) << " : deliver=" << saAmountEffective.getFullText()
                     << " cost=" << saActual.getFullText();
 
-    TER terResult = directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, sponsorSle, j);
+    // Transit path: two trust-line touches. The receiver-leg policy
+    // applies to the (issuer -> receiver) credit; the sender-leg
+    // policy applies to the (sender -> issuer) debit. The effective
+    // `saAmountEffective` reaches both legs — inflated when Drain is
+    // active — so the receiver's inflow and the sender's outflow line
+    // up in extended-balance terms.
+    TER terResult = directSendNoFeeIOU(
+        view,
+        issuer,
+        uReceiverID,
+        saAmountEffective,
+        true,
+        sponsorSle,
+        j,
+        receiverPolicy,
+        /*legIsSender=*/false);
 
     if (tesSUCCESS == terResult)
     {
-        terResult = directSendNoFeeIOU(view, uSenderID, issuer, saActual, true, sponsorSle, j);
+        terResult = directSendNoFeeIOU(
+            view,
+            uSenderID,
+            issuer,
+            saActual,
+            true,
+            sponsorSle,
+            j,
+            senderPolicy,
+            /*legIsSender=*/true);
     }
 
     return terResult;
@@ -845,6 +1132,10 @@ directSendNoLimitIOU(
 // Send regardless of limits.
 // --> receivers: Amount/currency/issuer to deliver to receivers.
 // <-- saActual: Amount actually cost to sender.  Sender pays fees.
+//
+// The optional `dust` split applies only to the sender's leg (a single
+// trust line shared across all receivers). Only `dust->sender` is
+// consulted; `dust->receiver` must be nullopt.
 static TER
 directSendNoLimitMultiIOU(
     ApplyView& view,
@@ -853,11 +1144,18 @@ directSendNoLimitMultiIOU(
     MultiplePaymentDestinations const& receivers,
     STAmount& actual,
     beast::Journal j,
-    WaiveTransferFee waiveFee)
+    WaiveTransferFee waiveFee,
+    DustSplit* dust = nullptr)
 {
     auto const& issuer = issue.getIssuer();
 
     XRPL_ASSERT(!isXRP(senderID), "xrpl::directSendNoLimitMultiIOU : sender is not XRP");
+    XRPL_ASSERT(
+        dust == nullptr || !dust->receiver.has_value(),
+        "xrpl::directSendNoLimitMultiIOU : receiver-leg policy has no meaning in multi-send");
+
+    DustSplit::LegPolicy* senderPolicy =
+        (dust != nullptr && dust->sender.has_value()) ? &*dust->sender : nullptr;
 
     // These may diverge
     STAmount takeFromSender{issue};
@@ -880,8 +1178,15 @@ directSendNoLimitMultiIOU(
         if (senderID == issuer || receiverID == issuer || issuer == noAccount())
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
-            if (auto const ter =
-                    directSendNoFeeIOU(view, senderID, receiverID, amount, false, {}, j);
+            // The sender-leg policy is applied only on the final bulk
+            // sender-line debit below, not on any direct-to-issuer
+            // intermediate credits — a sender-leg policy that touched
+            // the sender's line multiple times would overwrite its own
+            // out fields. In the current Vault-only use of this path
+            // (loan disbursement), no recipient is the asset issuer, so
+            // this branch never runs alongside a non-null senderPolicy.
+            if (auto const ter = directSendNoFeeIOU(
+                    view, senderID, receiverID, amount, false, {}, j, nullptr, false);
                 !isTesSuccess(ter))
                 return ter;
             actual += amount;
@@ -905,14 +1210,29 @@ directSendNoLimitMultiIOU(
                         << to_string(receiverID) << " : deliver=" << amount.getFullText()
                         << " cost=" << actual.getFullText();
 
-        if (TER const terResult = directSendNoFeeIOU(view, issuer, receiverID, amount, true, {}, j))
+        // Receiver-leg policy is not defined for multi-send (there
+        // are multiple receiver lines). Pass nullptr here.
+        if (TER const terResult = directSendNoFeeIOU(
+                view, issuer, receiverID, amount, true, {}, j, nullptr, /*legIsSender=*/false))
             return terResult;
     }
 
     if (senderID != issuer && takeFromSender)
     {
-        if (TER const terResult =
-                directSendNoFeeIOU(view, senderID, issuer, takeFromSender, true, {}, j))
+        // Bulk sender-line debit for all transit legs — this is the
+        // single point where the sender's line changes for this
+        // multi-send, so it's the only place the sender-leg policy
+        // can apply.
+        if (TER const terResult = directSendNoFeeIOU(
+                view,
+                senderID,
+                issuer,
+                takeFromSender,
+                true,
+                {},
+                j,
+                senderPolicy,
+                /*legIsSender=*/true))
             return terResult;
     }
 
@@ -927,7 +1247,8 @@ accountSendIOU(
     STAmount const& saAmount,
     beast::Journal j,
     SLE::ref sponsorSle,
-    WaiveTransferFee waiveFee)
+    WaiveTransferFee waiveFee,
+    DustSplit* dust = nullptr)
 {
     if (view.rules().enabled(fixAMMv1_1))
     {
@@ -945,10 +1266,15 @@ accountSendIOU(
         // LCOV_EXCL_STOP
     }
 
-    /* If we aren't sending anything or if the sender is the same as the
-     * receiver then we don't need to do anything.
-     */
-    if (!saAmount || (uSenderID == uReceiverID))
+    // Drain sender-leg can legitimately request a zero-amount call: the
+    // caller (e.g. terminal Vault removal) may have amount==0 but still
+    // want to drain any residual sfDust on the sender's line. Route
+    // through in that case so directSendNoLimitIOU can peek the sender's
+    // line and inflate saAmount by the reservoir. All other zero-amount
+    // or self-sends short-circuit as before.
+    bool const drainRequested = dust != nullptr && dust->sender.has_value() &&
+        dust->sender->mode == DustSplit::LegPolicy::Mode::Drain;
+    if ((!saAmount && !drainRequested) || (uSenderID == uReceiverID))
         return tesSUCCESS;
 
     if (!saAmount.native())
@@ -959,8 +1285,10 @@ accountSendIOU(
                         << to_string(uReceiverID) << " : " << saAmount.getFullText();
 
         return directSendNoLimitIOU(
-            view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorSle, waiveFee);
+            view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorSle, waiveFee, dust);
     }
+
+    XRPL_ASSERT(dust == nullptr, "xrpl::accountSendIOU : dust split is IOU-only");
 
     /* XRP send which does not check reserve and can do pure adjustment.
      * Note that sender or receiver may be null and this not a mistake; this
@@ -1045,7 +1373,8 @@ accountSendMultiIOU(
     Issue const& issue,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    WaiveTransferFee waiveFee)
+    WaiveTransferFee waiveFee,
+    DustSplit* dust = nullptr)
 {
     XRPL_ASSERT_PARTS(
         receivers.size() > 1, "xrpl::accountSendMultiIOU", "multiple recipients provided");
@@ -1056,8 +1385,11 @@ accountSendMultiIOU(
         JLOG(j.trace()) << "accountSendMultiIOU: " << to_string(senderID) << " sending "
                         << receivers.size() << " IOUs";
 
-        return directSendNoLimitMultiIOU(view, senderID, issue, receivers, actual, j, waiveFee);
+        return directSendNoLimitMultiIOU(
+            view, senderID, issue, receivers, actual, j, waiveFee, dust);
     }
+
+    XRPL_ASSERT(dust == nullptr, "xrpl::accountSendMultiIOU : dust split is IOU-only");
 
     /* XRP send which does not check reserve and can do pure adjustment.
      * Note that sender or receiver may be null and this not a mistake; this
@@ -1488,7 +1820,16 @@ directSendNoFee(
 {
     return saAmount.asset().visit(
         [&](Issue const&) {
-            return directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, bCheckIssuer, {}, j);
+            return directSendNoFeeIOU(
+                view,
+                uSenderID,
+                uReceiverID,
+                saAmount,
+                bCheckIssuer,
+                {},
+                j,
+                /*legPolicy=*/nullptr,
+                /*legIsSender=*/false);
         },
         [&](MPTIssue const&) {
             XRPL_ASSERT(!bCheckIssuer, "xrpl::directSendNoFee : not checking issuer");
@@ -1505,13 +1846,16 @@ accountSend(
     beast::Journal j,
     SLE::ref sponsorSle,
     WaiveTransferFee waiveFee,
-    AllowMPTOverflow allowOverflow)
+    AllowMPTOverflow allowOverflow,
+    DustSplit* dust)
 {
     return saAmount.asset().visit(
         [&](Issue const&) {
-            return accountSendIOU(view, uSenderID, uReceiverID, saAmount, j, sponsorSle, waiveFee);
+            return accountSendIOU(
+                view, uSenderID, uReceiverID, saAmount, j, sponsorSle, waiveFee, dust);
         },
         [&](MPTIssue const&) {
+            XRPL_ASSERT(dust == nullptr, "xrpl::accountSend : dust split is IOU-only");
             return accountSendMPT(
                 view, uSenderID, uReceiverID, saAmount, j, waiveFee, allowOverflow);
         });
@@ -1524,15 +1868,17 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    WaiveTransferFee waiveFee)
+    WaiveTransferFee waiveFee,
+    DustSplit* dust)
 {
     XRPL_ASSERT_PARTS(
         receivers.size() > 1, "xrpl::accountSendMulti", "multiple recipients provided");
     return asset.visit(
         [&](Issue const& issue) {
-            return accountSendMultiIOU(view, senderID, issue, receivers, j, waiveFee);
+            return accountSendMultiIOU(view, senderID, issue, receivers, j, waiveFee, dust);
         },
         [&](MPTIssue const& issue) {
+            XRPL_ASSERT(dust == nullptr, "xrpl::accountSendMulti : dust split is IOU-only");
             return accountSendMultiMPT(view, senderID, issue, receivers, j, waiveFee);
         });
 }

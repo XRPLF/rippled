@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -66,6 +67,43 @@ creditBalance(
     AccountID const& issuer,
     Currency const& currency);
 /** @} */
+
+/**
+ * Read the trust-line balance from @p account's perspective at exact
+ * precision, folding in the trust line's sfDust reservoir so the returned
+ * Number represents the true unrounded holding.
+ *
+ * The scale of the returned Number is generally finer than sfBalance's
+ * canonical precision — callers who want the STAmount-representable part
+ * should keep using @ref creditBalance. This helper is the read side that
+ * complements @ref DustSplit's write side: together they let a caller keep
+ * an off-line total of a trust line without losing sub-quantum drift.
+ *
+ * Returns Number{0} when the trust line does not exist.
+ *
+ * Gated on featureLendingProtocolV1_1; see directSendNoFeeIOU for the
+ * canonical amendment-gate rationale.
+ *
+ * @param view the ledger to check against.
+ * @param account the account whose perspective determines the sign.
+ * @param issuer the counterparty of the trust line.
+ * @param currency the IOU to check.
+ */
+Number
+creditBalanceExact(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& issuer,
+    Currency const& currency);
+
+/**
+ * @overload
+ */
+inline Number
+creditBalanceExact(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return creditBalanceExact(view, account, issue.account, issue.currency);
+}
 
 //------------------------------------------------------------------------------
 //
