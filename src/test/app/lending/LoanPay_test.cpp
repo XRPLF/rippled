@@ -246,6 +246,93 @@ private:
                 " got: " + to_string(env.balance(lender) - loanBrokerBalanceBefore));
     }
 
+    // LoanPay pays the Vault's share and the LoanBroker's fee via two
+    // sequential accountSend-family calls that both debit the borrower's
+    // own (borrower, issuer) trust line (the Vault credit happens inside
+    // addVaultAssets; the broker fee is a separate accountSend right
+    // after). This regression test exercises that shared-line sequence
+    // with a real (non-pseudo) fee recipient and confirms the borrower's
+    // trust line survives unmodified — its limits are not reset to
+    // defaults, which is what would happen if the first debit ever
+    // triggered trustDelete's auto-removal ahead of the second. That
+    // auto-removal requires the debited party's OWN trust limit field to
+    // be zero (see the reserve-clearing check in directSendNoFeeIOU); the
+    // borrower must have set a nonzero limit via TrustSet to hold/pay the
+    // asset in the first place, and LoanPay never touches that limit, so
+    // the two-call split cannot hit that path for the borrower's line
+    // regardless of ordering or balance.
+    void
+    testLoanPayBrokerFeeSharesBorrowerTrustLine(FeatureBitset features)
+    {
+        testcase("LoanPay: broker fee debit shares the borrower's trust line with the vault debit");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        PrettyAsset const asset = issuer[iouCurrency_];
+        env(trust(lender, asset(100'000'000)));
+        env(trust(borrower, asset(100'000'000)));
+        env(pay(issuer, lender, asset(10'000'000)));
+        env(pay(issuer, borrower, asset(10'000)));
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, asset, lender)};
+
+        // Ensure the broker owner (lender) has enough cover so the service
+        // fee is routed straight to their own (real) trust line rather
+        // than the broker pseudo-account.
+        env(loan_broker::coverDeposit(lender, broker.brokerID, asset(50'000).value()));
+        env.close();
+
+        auto const loanKeylet = nextLoanKeylet(env, broker);
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kLoanServiceFee(asset(5).value()),
+            kPaymentInterval(86400),
+            kPaymentTotal(10),
+            loanSetFee);
+        env.close();
+
+        auto const borrowerLineKeylet =
+            keylet::trustLine(borrower, issuer, asset.raw().get<Issue>().currency);
+        auto const lineBefore = env.le(borrowerLineKeylet);
+        if (!BEAST_EXPECT(lineBefore))
+            return;
+        STAmount const lowLimitBefore = lineBefore->at(sfLowLimit);
+        STAmount const highLimitBefore = lineBefore->at(sfHighLimit);
+        std::uint32_t const flagsBefore = lineBefore->getFlags();
+
+        auto const lenderBalanceBefore = env.balance(lender, asset);
+
+        env(pay(borrower, loanKeylet.key, asset(200).value()), Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const lineAfter = env.le(borrowerLineKeylet);
+        if (!BEAST_EXPECTS(lineAfter, "borrower trust line was deleted"))
+            return;
+        BEAST_EXPECTS(
+            lineAfter->at(sfLowLimit) == lowLimitBefore, "borrower trust line low limit was reset");
+        BEAST_EXPECTS(
+            lineAfter->at(sfHighLimit) == highLimitBefore,
+            "borrower trust line high limit was reset");
+        BEAST_EXPECTS(lineAfter->getFlags() == flagsBefore, "borrower trust line flags were reset");
+
+        BEAST_EXPECTS(
+            env.balance(lender, asset) > lenderBalanceBefore,
+            "broker fee did not reach the broker owner's real trust line");
+    }
+
     void
     testDosLoanPay(FeatureBitset features)
     {
@@ -742,6 +829,7 @@ private:
         testLoanPayLateFullPaymentBypassesPenalties(features);
 #endif
         testOverpaymentManagementFee(features);
+        testLoanPayBrokerFeeSharesBorrowerTrustLine(features);
         testDosLoanPay(features);
         testLoanNextPaymentDueDateOverflow(features);
     }

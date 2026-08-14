@@ -136,6 +136,10 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // Trust Line balances are STAmounts, so we can use the exponent
                 // directly to get the scale.
                 balanceDelta.scale = amount.exponent();
+                // sfDust follows the same low/high convention as sfBalance.
+                // Pre-amendment sfDust is SoeDefault (0), so this is a no-
+                // op then.
+                balanceDelta.dustDelta = Number{before->at(sfDust)};
                 sign = -1;
                 break;
             }
@@ -181,6 +185,9 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // directly to get the scale.
                 if (amount.exponent() > balanceDelta.scale)
                     balanceDelta.scale = amount.exponent();
+                // Mirror the sfBalance accumulation so dustDelta ends up as
+                // "before - after" (later sign-flipped to "after - before").
+                balanceDelta.dustDelta -= Number{after->at(sfDust)};
                 sign = -1;
                 break;
             }
@@ -198,6 +205,10 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
     {
         XRPL_ASSERT_PARTS(balanceDelta.scale, "xrpl::ValidVault::visitEntry", "scale initialized");
         balanceDelta.delta *= sign;
+        // dustDelta was accumulated with the same "before - after" idiom;
+        // apply the same sign flip so it represents "after - before" in
+        // the trust line's low/high convention.
+        balanceDelta.dustDelta *= sign;
         deltas_[key] = balanceDelta;
     }
 }
@@ -222,8 +233,16 @@ ValidVault::deltaAssets(AccountID const& id) const
                 auto result = lookup(keylet::trustLine(id, issue).key);
                 // Trust-line balance is stored from the low-account's perspective;
                 // negate if id is the high account so the delta is in id's terms.
+                // dustDelta shares the same convention, so flip it in lockstep.
+                // This two-field lockstep is load-bearing — flipping only one
+                // component would silently break the extended-balance
+                // (delta + dustDelta) parity check in finalize() below.
+                // See docs/dust-mechanism.md #validvault-invariant-sign-handling.
                 if (result && id > issue.getIssuer())
+                {
                     result->delta = -result->delta;
+                    result->dustDelta = -result->dustDelta;
+                }
                 return result;
             }
             else if constexpr (std::is_same_v<TIss, MPTIssue>)
@@ -249,6 +268,13 @@ ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
         return ret;
 
     ret->delta += fee.drops();
+    // Intentionally not checking ret->dustDelta here: this branch is
+    // gated on vaultAsset.native() (XRP), and XRP has no trust lines,
+    // so ret->dustDelta is provably always Number{0} in this
+    // codepath. If a future refactor lifts the .native() gate to
+    // include IOU/MPT vault assets, this check MUST become
+    // `ret->delta == kZero && ret->dustDelta == kZero`, otherwise a
+    // pure sub-quantum sfDust delta would be silently discarded.
     if (ret->delta == kZero)
         return std::nullopt;
 
@@ -866,9 +892,22 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // sfAssetsTotal now tracks the EXTENDED custody-line
+                // delta under featureLendingProtocolV1_1: it is exempt
+                // from the associateAsset sweep (kSmdAssetPreLend11)
+                // and absorbs the same sub-STAmount residual that the
+                // custody line's sfDust records. Compare against
+                // (delta + dustDelta) to keep the identity exact in
+                // both eras — dustDelta is zero pre-amendment (sfDust
+                // is absent), so this reduces to the classic form
+                // there.
+                Number const extendedVaultDelta =
+                    maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                auto const extendedVaultDeltaRounded =
+                    roundToAsset(vaultAsset, extendedVaultDelta, minScale);
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                if (assetTotalDelta != vaultDeltaAssets)
+                if (assetTotalDelta != extendedVaultDeltaRounded)
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: deposit and assets outstanding must add up";
@@ -981,8 +1020,26 @@ ValidVault::finalize(
                         result = false;
                     }
 
+                    // Compare EXTENDED balances (sfBalance + sfDust) on
+                    // both sides for the cash-flow parity check. Under
+                    // featureLendingProtocolV1_1 a dust-aware withdrawal
+                    // may reshape the vault custody line's sfBalance /
+                    // sfDust split (Override promotes / defers; Drain
+                    // folds sfDust into the outgoing transfer) — all
+                    // internal recognition moves preserved by the
+                    // extended total. For non-dust callers dustDelta is
+                    // zero, so this reduces to the base sfBalance
+                    // comparison. See VaultRoundingTrustlineDust_test::
+                    // testNonTerminalWithdrawAfterDust for the case this
+                    // addresses.
+                    Number const extendedPseudoDelta =
+                        maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                    Number const extendedDestinationDelta =
+                        destinationDelta.delta + destinationDelta.dustDelta;
                     auto const localPseudoDeltaAssets =
-                        roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
+                        roundToAsset(vaultAsset, extendedPseudoDelta, localMinScale);
+                    auto const localDestinationDelta =
+                        roundToAsset(vaultAsset, extendedDestinationDelta, localMinScale);
                     // For IOU assets near a precision boundary the destination's STAmount
                     // exponent can shift, making part of the sent value unrepresentable at the
                     // receiver's new scale — that portion is irreversibly absorbed by the IOU
@@ -994,11 +1051,10 @@ ValidVault::finalize(
                     auto const destroyedIsSubUlp = tolerateZeroDelta &&
                         roundToAsset(
                             vaultAsset,
-                            maybeVaultDeltaAssets->delta * -1 - destinationDelta.delta,
+                            extendedPseudoDelta * -1 - extendedDestinationDelta,
                             destinationScale,
                             Number::RoundingMode::Downward) == kZero;
-                    if (!destroyedIsSubUlp &&
-                        localPseudoDeltaAssets * -1 != roundedDestinationDelta)
+                    if (!destroyedIsSubUlp && localPseudoDeltaAssets * -1 != localDestinationDelta)
                     {
                         JLOG(j.fatal()) << "Invariant failed: " <<  //
                             "withdrawal must change vault and destination balance by equal "
@@ -1037,10 +1093,19 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // sfAssetsTotal tracks the EXTENDED custody-line delta
+                // under featureLendingProtocolV1_1 (see the deposit
+                // branch above for the design). dustDelta is zero
+                // pre-amendment (sfDust absent), so this reduces to the
+                // classic vaultPseudoDeltaAssets comparison there.
+                Number const extendedVaultDelta =
+                    maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                auto const extendedVaultDeltaRounded =
+                    roundToAsset(vaultAsset, extendedVaultDelta, minScale);
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 // Note, vaultBalance is negative (see check above)
-                if (assetTotalDelta != vaultPseudoDeltaAssets)
+                if (assetTotalDelta != extendedVaultDeltaRounded)
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: withdrawal and assets outstanding must add up";
@@ -1093,9 +1158,19 @@ ValidVault::finalize(
                         result = false;
                     }
 
+                    // sfAssetsTotal tracks the EXTENDED custody-line
+                    // delta under featureLendingProtocolV1_1 (see the
+                    // deposit branch for the design). dustDelta is
+                    // zero pre-amendment (sfDust absent), so this
+                    // reduces to the classic vaultDeltaAssets
+                    // comparison there.
+                    Number const extendedVaultDelta =
+                        maybeVaultDeltaAssets->delta + maybeVaultDeltaAssets->dustDelta;
+                    auto const extendedVaultDeltaRounded =
+                        roundToAsset(vaultAsset, extendedVaultDelta, minScale);
                     auto const assetsTotalDelta = roundToAsset(
                         vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    if (assetsTotalDelta != vaultDeltaAssets)
+                    if (assetsTotalDelta != extendedVaultDeltaRounded)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets outstanding must add up";

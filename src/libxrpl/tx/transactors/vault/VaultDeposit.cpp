@@ -327,6 +327,19 @@ VaultDeposit::doApply()
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
     // A deposit must not push the vault over its limit.
+    //
+    // Note: the limit is checked against the pre-mutation `sfAssetsTotal`
+    // plus the full `assetsDeposited`, which is very slightly conservative
+    // on the dust-aware path. A dust-aware credit routes any sub-quantum
+    // remainder into the custody line's sfDust, and only the whole-quanta
+    // portion moves into sfBalance / sfAssetsAvailable. sfAssetsTotal in
+    // that case grows by `assetsDeposited - split.dustDelta`, i.e. by up
+    // to one quantum less than what this pre-check assumes, so a deposit
+    // that would sit exactly on the limit after dust deferral is rejected
+    // here. Reordering to check after addVaultAssets would require
+    // rolling back the credit on failure (a non-trivial refund path) and
+    // is not worth the extra complexity for a boundary of at most one
+    // quantum.
     auto const maximum = *vault->at(sfAssetsMaximum);
     if (maximum != 0 && *vault->at(sfAssetsTotal) + assetsDeposited > maximum)
         return tecLIMIT_EXCEEDED;
@@ -365,6 +378,13 @@ VaultDeposit::doApply()
         !isTesSuccess(ter))
         return ter;
 
+    // Canonicalise every asset-typed STNumber on the Vault SLE to the
+    // asset's precision. sfAssetsTotal is exempt from the sweep post
+    // -Lend11 via kSmdAssetPreLend11 (see STTakesAsset.cpp), so its
+    // full-precision extended value survives the call untouched — the
+    // sub-STAmount residual that vault_dust::addVaultAssets applied
+    // stays paired with the identical residual the custody line's
+    // sfDust captures.
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;

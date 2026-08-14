@@ -401,10 +401,20 @@ VaultWithdraw::doApply()
         !isTesSuccess(ter))
         return ter;
 
-    // Must run after the Vault's sfAssetsTotal/sfAssetsAvailable are mutated
-    // (above): it rounds every asset-typed field on the Vault SLE to the
-    // asset's canonical precision, which the mutation above does not do
-    // itself.
+    // Must run after the Vault's sfAssetsTotal/sfAssetsAvailable are
+    // mutated (above): it rounds every asset-typed field on the Vault
+    // SLE to the asset's canonical precision, which the mutation above
+    // does not do itself. sfAssetsTotal is exempt from the sweep post
+    // -Lend11 via kSmdAssetPreLend11 (see STTakesAsset.cpp), so its
+    // full-precision extended value survives the call untouched — the
+    // sub-STAmount residual stays paired with the identical residual
+    // that the custody line's sfDust captures on the recognised-balance
+    // side. Any stranded dust on the custody line from a scale-refining
+    // prior operation is renormalised implicitly by the credit-path
+    // re-split inside directSendNoFeeIOU (it truncates the extended
+    // balance at the Override target scale on every accountSend,
+    // promoting freed whole-quanta into sfBalance) — no separate pass
+    // is needed here, and it never touches the Vault's own fields.
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;

@@ -8,12 +8,16 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -480,6 +484,118 @@ class VaultHelpers_test : public beast::unit_test::Suite
         }
     }
 
+    // Multi-recipient move with sfDust already parked on the Vault's
+    // custody line. Documents and pins the semantics called out in
+    // docs/dust-mechanism.md and the vault_dust::moveVaultAssets comment
+    // block (VaultHelpers.cpp): the sender leg runs an Override policy
+    // targeting the Vault's post-mutation sfAssetsTotal scale, while the
+    // receiver-side credits are dust-UNAWARE — recipients never grow
+    // their own sfDust reservoir via a moveVaultAssets. This means a
+    // sub-quantum residual from an earlier scale-refining operation is
+    // renormalised on the Vault side, and recipients receive
+    // whole-quantum inflows only.
+    void
+    testMoveVaultAssetsWithDust()
+    {
+        testcase("moveVaultAssets: sender-leg Override renormalises, recipients dust-unaware");
+        using namespace jtx;
+
+        Env env(*this, testableAmendments() | featureLendingProtocolV1_1);
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const borrower{"borrower"};
+        Account const feeRecipient{"feeRecipient"};
+        env.fund(XRP(10'000), issuer, owner, depositor, borrower, feeRecipient);
+        env.close();
+
+        PrettyAsset const asset = issuer["USD"];
+        env(trust(owner, asset(1'000'000)));
+        env(trust(depositor, asset(1'000'000)));
+        env(trust(borrower, asset(1'000'000)));
+        env(trust(feeRecipient, asset(1'000'000)));
+        env(pay(issuer, depositor, asset(10'000)));
+        env.close();
+
+        auto const vaultKeylet = setupVault(env, asset, owner);
+        Vault const v{env};
+        env(v.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(1'000)}));
+        env.close();
+
+        auto const open = env.current();
+        ApplyViewImpl view(&*open, TapNone);
+        auto const vault = view.peek(vaultKeylet);
+        if (!BEAST_EXPECT(vault))
+            return;
+        Asset const vaultAsset = vault->at(sfAsset);
+
+        // Precondition: this must actually be a dust-eligible Vault, or
+        // the whole test is vacuous.
+        if (!BEAST_EXPECT(vault_dust::useVaultDust(view, vault)))
+            return;
+
+        // Surgically seed a sub-quantum residual on the Vault's custody
+        // line. Use a magnitude comfortably below one quantum at the
+        // Vault's scale so no promotion happens on the very next call —
+        // we want to isolate the "recipient dust-unaware" property.
+        AccountID const vaultAccount = vault->at(sfAccount);
+        Issue const iouIssue = vaultAsset.get<Issue>();
+        auto const custodyLine = view.peek(keylet::trustLine(vaultAccount, iouIssue));
+        if (!BEAST_EXPECT(custodyLine))
+            return;
+        bool const vaultIsHigh = vaultAccount > issuer.id();
+        Number const seededDustVaultTerms{3, -12};
+        // sfDust is stored in low-account-positive convention.
+        custodyLine->at(sfDust) = vaultIsHigh ? -seededDustVaultTerms : seededDustVaultTerms;
+        view.update(custodyLine);
+
+        auto const readCustodyDustVaultTerms = [&]() -> Number {
+            auto const line = view.peek(keylet::trustLine(vaultAccount, iouIssue));
+            Number const raw = line->at(sfDust);
+            return vaultIsHigh ? -raw : raw;
+        };
+
+        Number const totalBefore = vault->at(sfAssetsTotal);
+        Number const availableBefore = vault->at(sfAssetsAvailable);
+        Number const custodyDustBefore = readCustodyDustVaultTerms();
+
+        MultiplePaymentDestinations const recipients{
+            {borrower, Number{80}},
+            {feeRecipient, Number{20}},
+        };
+        Number const amountMoved{100};  // sum of recipient amounts
+        STAmount const zero{vaultAsset, 0};
+        auto const ter = moveVaultAssets(view, vault, recipients, zero, env.journal);
+        BEAST_EXPECT(isTesSuccess(ter));
+
+        // Cash-out contract (dust-inclusive form): the receivable
+        //   sfAssetsTotal - (sfAssetsAvailable + custody sfDust)
+        // increases by exactly `amountMoved`. sfAssetsTotal is exempt
+        // from the associateAsset sweep under Lend11
+        // (kSmdAssetPreLend11), so a sender-leg Override that
+        // reshapes the custody line's sfBalance / sfDust split shifts
+        // sfAssetsAvailable in lockstep with sfBalance while leaving
+        // sfAssetsTotal at its full-precision extended value — the
+        // dust-inclusive receivable cleanly captures the whole-quanta
+        // cash-out to recipients.
+        Number const totalAfter = vault->at(sfAssetsTotal);
+        Number const availableAfter = vault->at(sfAssetsAvailable);
+        Number const custodyDustAfter = readCustodyDustVaultTerms();
+        Number const receivableBefore = totalBefore - (availableBefore + custodyDustBefore);
+        Number const receivableAfter = totalAfter - (availableAfter + custodyDustAfter);
+        BEAST_EXPECT((receivableAfter - receivableBefore) == amountMoved);
+
+        // Recipients: assert no receiver-leg dust was ever created on
+        // their trust lines. The multi-destination path does not thread
+        // a receiver-leg policy; borrowers therefore never grow sfDust.
+        auto const borrowerLine = view.peek(keylet::trustLine(borrower.id(), iouIssue));
+        auto const feeRecipientLine = view.peek(keylet::trustLine(feeRecipient.id(), iouIssue));
+        if (BEAST_EXPECT(borrowerLine))
+            BEAST_EXPECT(Number{borrowerLine->at(sfDust)} == beast::kZero);
+        if (BEAST_EXPECT(feeRecipientLine))
+            BEAST_EXPECT(Number{feeRecipientLine->at(sfDust)} == beast::kZero);
+    }
+
 public:
     void
     run() override
@@ -488,6 +604,7 @@ public:
         testClawbackVaultAssets();
         testRemoveVaultAssets();
         testMoveVaultAssets();
+        testMoveVaultAssetsWithDust();
     }
 };
 

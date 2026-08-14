@@ -143,6 +143,16 @@ public:
     static constexpr auto kSmdNeedsAsset = 0x80;     // This field needs to be associated with an
                                                      // asset before it is serialized as a ledger
                                                      // object. Intended for STNumber.
+    // This field participates in associateAsset only when
+    // featureLendingProtocolV1_1 is NOT enabled. Intended for STNumber
+    // fields whose invariants require full Number precision under the
+    // new lending rules (currently sfAssetsTotal, which anchors the
+    // dust-inclusive receivable identity
+    // sfAssetsTotal - (sfAssetsAvailable + custodyLine.sfDust) ==
+    // Σ sfPrincipalOutstanding). Behaves identically to
+    // kSmdNeedsAsset when the amendment is off, so pre-amendment
+    // ledger encoding is byte-for-byte preserved.
+    static constexpr auto kSmdAssetPreLend11 = 0x100;
     static constexpr auto kSmdDefault =
         kSmdChangeOrig | kSmdChangeNew | kSmdDeleteFinal | kSmdCreate;
 
