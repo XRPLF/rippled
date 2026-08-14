@@ -3309,7 +3309,7 @@ Two more pairs from the same family:
   cumulative object-payload bytes this process has written — the same value as
   `node_written_bytes`, from the same accessor — so it excludes keys, padding and
   the log, and it resets with the process. A ratio of the two is a constant 1.0 and
-  measures nothing. This label value was called `nudb_bytes` before Phase 9; it
+  measures nothing. This label value was previously called `nudb_bytes`; it
   comes from `node_store::Database` rather than the NuDB backend, so it is not part
   of the `nudb_*` family above and reads the same on RocksDB.
 - These gauges are sampled on the `MetricsRegistry` reader's 10 s cadence, while

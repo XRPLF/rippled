@@ -41,10 +41,11 @@
 # GF_SMTP_ENABLED=true and the relay settings point somewhere real.
 #
 # Grafana Cloud does NOT use this file — Cloud has no provisioning filesystem.
-# Cloud delivery is created over the REST API by upload_alerts_to_grafana.py,
-# which builds a single email-only contact point and attaches it to each rule
-# via per-rule notification_settings. See that script's header for why the
-# notification policy tree must not be touched on a shared Cloud instance.
+# Cloud delivery is created over the REST API instead: a single email-only
+# contact point, attached to each rule via per-rule notification_settings.
+# The notification policy tree must never be pushed to a shared Cloud
+# instance -- there is exactly one tree per org and the PUT endpoint
+# replaces it wholesale.
 
 apiVersion: 1
 
