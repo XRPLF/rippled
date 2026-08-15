@@ -37,9 +37,9 @@
 #include <cstdint>
 #include <exception>
 #include <functional>
+#include <iterator>
 #include <map>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -535,29 +535,20 @@ Pathfinder::rankPaths(
     std::vector<PathRank>& rankedPaths,
     std::function<bool(void)> const& continueCallback)
 {
-    // Cap expensive getPathLiquidity work. completePaths_ may hold up to
-    // kPathfinderMaxCompletePaths; each candidate costs 1–2 RippleCalc.
+    // Cap the first pass of getPathLiquidity (1–2 RippleCalc each).
+    // completePaths_ may hold up to kPathfinderMaxCompletePaths. Length is
+    // not liquidity: do not pre-sort shortest-first and stop after one hit.
     auto const rankCap = static_cast<std::size_t>(
         app_.getFeeTrack().isLoadedLocal() ? rpc::tuning::kPathRankMaxCandidatesLoaded
                                            : rpc::tuning::kPathRankMaxCandidates);
-    auto toRank = std::min(paths.size(), rankCap);
+    auto const n = paths.size();
+    auto const firstPass = std::min(n, rankCap);
+    int const take = std::max(1, maxPaths);
 
-    // When truncating, do not rank pure insertion order (later gPathTable
-    // expansions would never be liquidity-tested). Pre-order by length — free
-    // and correlated with final rank — then take the first toRank indices.
-    // Equal lengths keep relative insertion order (stable_sort).
-    std::vector<std::size_t> order(paths.size());
-    std::ranges::iota(order, 0);
-    if (paths.size() > toRank)
-    {
-        std::ranges::stable_sort(
-            order, [&](std::size_t a, std::size_t b) { return paths[a].size() < paths[b].size(); });
-    }
-
-    JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates (ranking " << toRank
+    JLOG(j_.trace()) << "rankPaths with " << n << " candidates (first pass " << firstPass
                      << "), and " << maxPaths << " maximum";
     rankedPaths.clear();
-    rankedPaths.reserve(toRank);
+    rankedPaths.reserve(firstPass);
 
     auto const saMinDstAmount = [&]() -> STAmount {
         if (!convertAll_)
@@ -593,26 +584,65 @@ Pathfinder::rankPaths(
              .index = static_cast<int>(pathIndex)});
     };
 
-    for (std::size_t r = 0; r < toRank; ++r)
+    for (std::size_t i = 0; i < firstPass; ++i)
     {
         if (continueCallback && !continueCallback())
             return;
-        rankOne(order[r]);
+        rankOne(i);
     }
 
-    // Length-first truncation can skip the only liquid route (often longer).
-    // If the first pass found nothing and we truncated, rank the remainder so
-    // payment build_path / path_find do not silently return empty alternatives.
-    if (rankedPaths.empty() && paths.size() > toRank)
+    // Cover target is what getBestPaths still has to deliver after the
+    // default path. One short path above smallestUsefulAmount must not hide
+    // a longer path that actually fills remainingAmount_.
+    STAmount const coverTarget = remainingAmount_;
+
+    auto topKLiquidity = [&]() -> STAmount {
+        if (rankedPaths.empty())
+            return coverTarget.zeroed();
+        std::vector<STAmount> liq;
+        liq.reserve(rankedPaths.size());
+        for (auto const& r : rankedPaths)
+            liq.push_back(r.liquidity);
+        auto const k = std::min(liq.size(), static_cast<std::size_t>(take));
+        std::ranges::partial_sort(
+            liq.begin(),
+            std::next(liq.begin(), static_cast<std::ptrdiff_t>(k)),
+            liq.end(),
+            [](STAmount const& a, STAmount const& b) { return a > b; });
+        STAmount sum = liq.front().zeroed();
+        for (std::size_t i = 0; i < k; ++i)
+            sum += liq[i];
+        return sum;
+    };
+
+    auto needMore = [&]() {
+        if (n <= firstPass)
+            return false;
+        if (convertAll_)
+        {
+            // convertAll prices width. Keep looking for fatter paths unless
+            // we already have maxPaths successes and the node is loaded.
+            if (app_.getFeeTrack().isLoadedLocal() &&
+                rankedPaths.size() >= static_cast<std::size_t>(take))
+                return false;
+            return true;
+        }
+        return coverTarget > beast::kZero && topKLiquidity() < coverTarget;
+    };
+
+    if (needMore())
     {
-        JLOG(j_.debug()) << "rankPaths empty after truncating to " << toRank
-                         << "; ranking remaining " << (paths.size() - toRank) << " candidates";
-        rankedPaths.reserve(paths.size());
-        for (std::size_t r = toRank; r < paths.size(); ++r)
+        JLOG(j_.debug()) << "rankPaths first pass (" << firstPass << "/" << n
+                         << ") does not cover remaining " << coverTarget
+                         << "; ranking further candidates";
+        rankedPaths.reserve(n);
+        for (std::size_t i = firstPass; i < n; ++i)
         {
             if (continueCallback && !continueCallback())
                 return;
-            rankOne(order[r]);
+            if (!needMore())
+                break;
+            rankOne(i);
         }
     }
 

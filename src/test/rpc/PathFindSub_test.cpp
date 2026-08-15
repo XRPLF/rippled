@@ -635,6 +635,71 @@ class PathFindSub_test : public beast::unit_test::Suite
         }
     }
 
+    /**
+     * Short books with token liquidity must not hide a longer corridor that
+     * can actually deliver the destination. rankPaths used to stop after one
+     * short path passed smallestUsefulAmount.
+     */
+    void
+    testRankKeepsLookingForCoveringLiquidity()
+    {
+        testcase("rankPaths: keep pricing until top paths can cover dest");
+        using namespace jtx;
+        Env env = makeEnv();
+        Account const gUsd{"gUsd"};
+        Account const gHkd{"gHkd"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const thin{"thin"};
+        Account const fat{"fat"};
+
+        env.fund(XRP(1000000), alice, bob, gUsd, gHkd, thin, fat);
+        env.close();
+
+        env.trust(gUsd["USD"](100000), alice);
+        env.trust(gHkd["HKD"](100000), bob);
+        env.trust(gUsd["USD"](100000), thin);
+        env.trust(gHkd["HKD"](100000), thin);
+        env.trust(gUsd["USD"](100000), fat);
+        env.trust(gHkd["HKD"](100000), fat);
+        env(pay(gUsd, alice, gUsd["USD"](50000)));
+        env(pay(gUsd, thin, gUsd["USD"](10)));
+        env(pay(gHkd, thin, gHkd["HKD"](10)));
+        env(pay(gUsd, fat, gUsd["USD"](20000)));
+        env(pay(gHkd, fat, gHkd["HKD"](20000)));
+        env.close();
+
+        // Short: 5 HKD of USD/HKD book. Long: fat holds a 2000 book.
+        env(offer(thin, gUsd["USD"](5), gHkd["HKD"](5)));
+        env(offer(fat, gUsd["USD"](2000), gHkd["HKD"](2000)));
+        env.close();
+
+        json::Value params;
+        params[jss::source_account] = alice.human();
+        params[jss::destination_account] = bob.human();
+        params[jss::destination_amount] =
+            bob["HKD"](500).value().getJson(JsonOptions::Values::None);
+        {
+            auto& sc = (params[jss::source_currencies] = json::ValueType::Array);
+            json::Value c;
+            c[jss::currency] = "USD";
+            c[jss::issuer] = gUsd.human();
+            sc.append(c);
+        }
+
+        auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
+        auto const& result = resp[jss::result];
+        BEAST_EXPECT(!result.isMember(jss::error));
+        BEAST_EXPECT(result.isMember(jss::alternatives));
+        BEAST_EXPECT(result[jss::alternatives].isArray());
+        BEAST_EXPECT(result[jss::alternatives].size() >= 1);
+        if (result[jss::alternatives].size() >= 1)
+        {
+            BEAST_EXPECT(result[jss::alternatives][0u].isMember(jss::source_amount));
+            BEAST_EXPECT(result[jss::alternatives][0u].isMember(jss::paths_computed));
+        }
+    }
+
     void
     testStaggeredRediscoverySurvivesManyCloses()
     {
@@ -1244,6 +1309,7 @@ public:
         testTwoWorkerMultiSessionNoHang();
         testSixPathShape();
         testPartialLiquidityNoCoveringSpare();
+        testRankKeepsLookingForCoveringLiquidity();
         testStaggeredRediscoverySurvivesManyCloses();
         testMidCloseRevalidateOnly();
         testMidClosePreservesNewSubscriptionSignal();

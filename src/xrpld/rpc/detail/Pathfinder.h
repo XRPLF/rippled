@@ -71,7 +71,10 @@ public:
      *
      * Paths are filled by quality/liquidity only. There is no reserved
      * full-liquidity covering/spare path (see API-CHANGELOG covering-path
-     * note). Callers may inject previously found paths via extraPaths.
+     * note). rankPaths keeps pricing past the first-pass cap until the best
+     * maxPaths can cover the remaining destination (or convertAll has priced
+     * the wider candidates). Callers may inject previously found paths via
+     * extraPaths.
      */
     STPathSet
     getBestPaths(

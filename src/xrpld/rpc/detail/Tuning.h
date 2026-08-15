@@ -243,15 +243,17 @@ static constexpr std::chrono::milliseconds kPathMidCloseDelay{500};
 static constexpr std::uint32_t kPathFailedSearchInterval = 5;
 
 /**
- * Max complete paths to liquidity-rank per Pathfinder invocation.
- * Ranking is 1–2 RippleCalc per path; completePaths_ can hold up to 1000.
- * When more candidates exist, rankPaths pre-orders by path length (cheap) so
- * truncation is not pure insertion order from completePaths_.
+ * First-pass cap on complete paths to liquidity-rank per Pathfinder
+ * invocation. Ranking is 1–2 RippleCalc per path; completePaths_ can hold
+ * up to 1000. If the best maxPaths of that pass cannot cover the remaining
+ * destination amount, rankPaths keeps pricing later candidates (length is
+ * not used as a cut). convertAll also continues so a wider path can win.
  */
 static constexpr int kPathRankMaxCandidates = 200;
 
 /**
- * Tighter ranking cap when the server is locally loaded.
+ * Tighter first-pass ranking cap when the server is locally loaded.
+ * Continuation still runs when the first pass cannot cover the payment.
  */
 static constexpr int kPathRankMaxCandidatesLoaded = 80;
 
