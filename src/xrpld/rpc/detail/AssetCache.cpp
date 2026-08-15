@@ -606,11 +606,19 @@ AssetCache::getRippleLines(AccountID const& accountID)
         if (!alreadyPinned)
         {
             std::unique_lock const sl(lock_);
-            // Entry may have been evicted between load and pin (another
-            // session's releaseSession dropped pinCount to 0). Reload under
-            // this unique lock so pin bookkeeping is never silently lost.
-            if (!lines_.contains(accountID))
+            // Re-bind `full` to the live map entry. Between getOrLoadOutgoing
+            // and this lock, forceClear / last-pin release / another load can
+            // replace LineEntry so the previous snapshot is not what we pin.
+            auto it = lines_.find(accountID);
+            if (it == lines_.end() || !it->second.lines)
+            {
                 full = loadOutgoingUnlocked(accountID);
+            }
+            else
+            {
+                coalescePendingUnlocked(it->second);
+                full = it->second.lines;
+            }
             pinAccountUnlocked(gTlsPinSessionId, accountID);
         }
     }
