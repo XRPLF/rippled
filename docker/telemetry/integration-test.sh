@@ -382,11 +382,6 @@ endpoint=http://localhost:4318/v1/metrics
 prefix=rippled
 service_instance_id=Node-${i}
 
-[insight]
-server=statsd
-address=127.0.0.1:8125
-prefix=rippled
-
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
 

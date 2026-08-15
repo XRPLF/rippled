@@ -945,7 +945,7 @@ state_accounting_full_duration
 > **Plan details**: [06-implementation-phases.md §6.8.1](./06-implementation-phases.md) — motivation, architecture, Mermaid diagrams
 > **Task breakdown**: [Phase8_taskList.md](./Phase8_taskList.md) — per-task implementation details
 
-Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enabling log-trace correlation. When a log line is emitted within an active OTel span, the trace and span identifiers are automatically appended after the severity field:
+Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enabling log-trace correlation. When a log line is emitted within an active, sampled OTel span, the trace and span identifiers are automatically appended after the severity field:
 
 ### Log Format
 
@@ -961,7 +961,7 @@ Example:
 
 - **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo.
 - **`span_id=<hex16>`** — 16-character lowercase hex span identifier. Identifies the specific span within the trace.
-- **Only present** when the log is emitted within an active OTel span. Log lines outside of traced code paths have no trace context fields.
+- **Only present** when the log is emitted within an active OTel span whose context is sampled. Log lines outside of traced code paths, and lines inside a span the sampler dropped, have no trace context fields. A dropped span still carries its parent's identifiers, so emitting them would point at a trace that was never exported.
 
 ### Implementation
 
