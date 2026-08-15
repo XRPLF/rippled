@@ -52,9 +52,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
         // There is an edge case where all holders have zero balance, issuance
         // is legally destroyed, then outstanding MPT(s) are deleted afterwards.
-        // Thus, there is no need to check for the existence of the issuance if
-        // the MPT is being deleted with a zero balance. Check for unauthorize
-        // before fetching the MPTIssuance object.
+        // Thus, the unauthorize/delete path below does not require the issuance
+        // to exist when the MPT is being deleted with a zero balance.
 
         // if holder wants to delete/unauthorize a mpt
         if (ctx.tx.isFlag(tfMPTUnauthorize))
