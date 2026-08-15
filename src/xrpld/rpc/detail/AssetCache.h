@@ -240,13 +240,12 @@ public:
         return totalLineCount_.load(std::memory_order_relaxed) >= maxTotalLines_;
     }
 
-    /**
-     * Non-retired path_find sessions currently pinning this cache.
-     * Used so one-shot ripple_path_find does not 50k-drain a shared cache
-     * that WS workers are also reading.
-     */
     [[nodiscard]] std::size_t
-    liveSessionCount() const;
+    remainingBudget() const
+    {
+        auto const used = totalLineCount_.load(std::memory_order_relaxed);
+        return used >= maxTotalLines_ ? 0 : maxTotalLines_ - used;
+    }
 
     [[nodiscard]] std::uint64_t
     cacheHits() const

@@ -34,7 +34,7 @@ This section contains changes targeting a future version.
     - `"path_revalidate_failed"` (`id` 2006, `WarnRpcPathRevalidateFailed`) — incremental revalidate found no live paths; the server re-sent the previous `alternatives` for display only. `full_reply` is `false` in this case. Treat as best-effort / possibly stale; a later closed-ledger update may full-search again.
     - `"path_source_currencies_truncated"` (`id` 2007, `WarnRpcPathSourceCurrenciesTruncated`) — the auto source-currency set was cut at the subscription soft cap. Results are valid for the included currencies only, not exhaustive.
     - `"path_lines_budget"` (`id` 2008, `WarnRpcPathLinesBudget`) — the shared path cache hit `max_total_lines`. Some accounts used by this request have no (or incomplete) cached lines; empty `alternatives` does not mean no route exists.
-    - `full_reply` is `true` only when a Pathfinder graph search ran on that update. Mid-close revalidate-only ticks (and other re-price-only updates) send `full_reply: false`.
+    - `full_reply` is `true` only after a completed **non-fast** Pathfinder search. The `path_find` create reply (fast / `pathSearchFast`) stays `full_reply: false` so clients wait for the later closed-ledger update. Mid-close revalidate-only ticks also send `false`.
       Clients that ignore unknown fields are unaffected. Both fields are omitted when none of these conditions apply (or on errors).
 
 ### Additions

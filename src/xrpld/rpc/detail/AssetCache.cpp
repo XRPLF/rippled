@@ -100,19 +100,6 @@ AssetCache::getLedger() const
     return ledger_;
 }
 
-std::size_t
-AssetCache::liveSessionCount() const
-{
-    std::shared_lock const sl(lock_);
-    std::size_t n = 0;
-    for (auto const& entry : sessions_)
-    {
-        if (!entry.second.retired)
-            ++n;
-    }
-    return n;
-}
-
 void
 AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool forceClear)
 {

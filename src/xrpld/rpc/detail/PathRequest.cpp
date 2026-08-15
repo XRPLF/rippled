@@ -1087,15 +1087,21 @@ PathRequest::doUpdate(
     AssetCache::SessionPin const sessionPin{iIdentifier_};
 
     // One-shot ripple_path_find: load/expand up to the per-account cap so the
-    // single reply sees the full line set (budget permitting). Do that only
-    // when this cache has no other live sessions — otherwise a 50k-line
-    // unique_lock drain stalls every WS revalidate worker and can empty
-    // max_total_lines. Shared-cache one-shots use the default chunk instead.
+    // single reply sees the full line set (budget permitting), including hubs
+    // first visited during findPaths. Independent of other WS sessions.
+    // Cap the thread chunk by remaining global budget so a 50k LoadScope
+    // cannot pretend to drain when the cache is already full.
     // WebSocket path_find: default LoadScope (64-line chunks) and progressive
     // expand across later closed-ledger updates.
     std::optional<AssetCache::LoadScope> lineLoadScope;
-    if (hasCompletion() && cache->liveSessionCount() <= 1)
-        lineLoadScope.emplace(app_.config().pathFindMaxLinesPerAccount);
+    if (hasCompletion())
+    {
+        auto const room = cache->remainingBudget();
+        if (room > 0)
+        {
+            lineLoadScope.emplace(std::min(app_.config().pathFindMaxLinesPerAccount, room));
+        }
+    }
 
     {
         std::scoped_lock const sl(lock_);
@@ -1320,9 +1326,10 @@ PathRequest::doUpdate(
             }
         }
 
-        // full_reply means a Pathfinder graph search ran, not merely that
-        // this was a non-fast tick. Mid-close revalidate-only must stay false.
-        newStatus[jss::full_reply] = didFullSearch;
+        // full_reply is a completed non-fast Pathfinder search. Fast create
+        // is preliminary (pathSearchFast) even though it runs Pathfinder.
+        // Mid-close revalidate-only does not search.
+        newStatus[jss::full_reply] = didFullSearch && !fast;
 
         if (restoredStale)
         {
