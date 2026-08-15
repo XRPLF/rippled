@@ -374,9 +374,12 @@ private:
     std::uint32_t cacheReuseLedgers_;
     std::size_t lineChunkSize_;
 
-    hash_map<AccountID, LineEntry> lines_;
+    // AccountIDs are client-steerable (source/destination and graph walks).
+    // Use the per-process seeded hasher so lookups cannot be degraded by
+    // crafted keys (hash_map defaults to unseeded Uhash).
+    hardened_hash_map<AccountID, LineEntry> lines_;
     std::atomic<std::size_t> totalLineCount_{0};
-    hash_map<AccountID, std::shared_ptr<std::vector<PathFindMPT>>> mpts_;
+    hardened_hash_map<AccountID, std::shared_ptr<std::vector<PathFindMPT>>> mpts_;
 
     /**
      * sessionId → pin set + retired flag. releaseSession clears accounts and
@@ -386,7 +389,7 @@ private:
     struct SessionState
     {
         bool retired{false};
-        hash_set<AccountID> accounts;
+        hardened_hash_set<AccountID> accounts;
     };
     hash_map<int, SessionState> sessions_;
 
