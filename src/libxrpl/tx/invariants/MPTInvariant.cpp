@@ -516,14 +516,14 @@ ValidMPTBalanceChanges::finalize(
             // transaction that did not succeed must not have moved MPT value,
             // so OutstandingAmount must be unchanged. This catches a bug or
             // exploit that mutates issuance state on a code path that then
-            // reports failure. tecINCOMPLETE and tecKILLED are excluded because
-            // some transactors legitimately commit MPT changes while returning
-            // them (e.g. AMMWithdraw commits the pool on tecINCOMPLETE; lending
-            // and fill-or-kill OfferCreate can return tecKILLED after applying
-            // MPT changes). Any new transactor that persists MPT state on a
-            // non-tesSUCCESS result must be reviewed against this check.
-            bool const failed =
-                !isTesSuccess(result) && result != tecINCOMPLETE && result != tecKILLED;
+            // reports failure. No result code is exempt. Transactor::operator()
+            // routes every tec through processPersistentChanges, which discards
+            // the view and re-applies only deletions of the entry types listed
+            // in typesForResult: offers, trust lines, NFT offers and
+            // credentials. No MPToken or MPTokenIssuance is in that set, and
+            // none of those deletions moves MPT value, so whatever a transactor
+            // wrote before returning a tec cannot reach this check.
+            bool const failed = !isTesSuccess(result);
             if (failed && data.outstanding[kIAfter] != data.outstanding[kIBefore])
             {
                 JLOG(j.fatal()) << "Invariant failed: OutstandingAmount balance changed on failure "
@@ -946,12 +946,10 @@ ValidMPTTransfer::finalize(
         // buckets. (A change touching only sfLockedAmount is caught instead by
         // ValidMPTBalanceChanges, which tracks the holder total.) This catches a
         // bug or exploit that moves balances on a code path that then reports
-        // failure. tecINCOMPLETE and tecKILLED are excluded because some
-        // transactors legitimately commit MPT changes while returning them (e.g.
-        // AMMWithdraw on tecINCOMPLETE; lending and fill-or-kill OfferCreate on
-        // tecKILLED). Any new transactor that persists an MPT balance change on
-        // a non-tesSUCCESS result must be reviewed against this check.
-        bool const failed = !isTesSuccess(result) && result != tecINCOMPLETE && result != tecKILLED;
+        // failure. No result code is exempt — see the matching note in
+        // ValidMPTBalanceChanges::finalize for why a tec cannot carry an MPT
+        // change this far.
+        bool const failed = !isTesSuccess(result);
         if (fix340Enabled && failed && (senders > 0 || receivers > 0))
         {
             JLOG(j.fatal()) << "Invariant failed: MPToken balance changed on failure " << txnType
