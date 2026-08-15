@@ -277,8 +277,11 @@ private:
     {
         /**
          * Published line vector (may be held by concurrent Pathfinder readers).
-         * Non-null empty vector = complete scan found no lines (cacheable miss).
-         * Null = not yet published: soft-advance stub or budget-blocked load.
+         * Non-null empty vector is a cacheable miss:
+         *   - cursor.complete: directory scanned, no matching lines
+         *   - !cursor.complete: budget-blocked (or not yet filled); reuse hits,
+         *     expand can still admit rows when the budget frees
+         * Null = not yet published: soft-advance progress stub only.
          */
         std::shared_ptr<std::vector<PathFindTrustLine>> lines;
         /**

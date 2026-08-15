@@ -71,11 +71,21 @@ class AssetCache_test : public beast::unit_test::Suite
 
         {
             AssetCache::SessionPin const pin{1};
+            auto const misses0 = cache->cacheMisses();
+            auto const hits0 = cache->cacheHits();
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(!lines || lines->empty());
             BEAST_EXPECT(cache->hasIncompleteLinesForSession(1));
             BEAST_EXPECT(cache->totalLineCount() == 0);
             BEAST_EXPECT(cache->overBudget());
+            BEAST_EXPECT(cache->cacheMisses() == misses0 + 1);
+
+            // Reuse the empty incomplete stub. A null publish used to miss
+            // and re-walk the owner directory under unique_lock every hop.
+            auto again = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(!again || again->empty());
+            BEAST_EXPECT(cache->cacheMisses() == misses0 + 1);
+            BEAST_EXPECT(cache->cacheHits() >= hits0 + 1);
         }
 
         // New cache with budget: expand/load can admit lines.
@@ -92,6 +102,97 @@ class AssetCache_test : public beast::unit_test::Suite
             BEAST_EXPECT(lines && !lines->empty());
             BEAST_EXPECT(cache->totalLineCount() >= 1);
             BEAST_EXPECT(!cache->overBudget());
+        }
+        cache->releaseSession(2);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+    }
+
+    /**
+     * When the global line budget is already full of a pinned account, a
+     * later account must publish a reusable empty incomplete stub. Pathfinder
+     * calls getRippleLines once per hop; leaving lines==null re-scanned the
+     * owner directory under unique_lock on every lookup. After the occupying
+     * session releases, expand must still be able to fill the stub.
+     */
+    void
+    testBudgetBlockedCachedNotRescanned()
+    {
+        testcase("budget-blocked: incomplete miss is cached, then expandable");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        Account const gw2{"gw2"};
+        env.fund(XRP(10000), alice, bob, gw, gw2);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env.trust(gw2["USD"](1000), alice);
+        env.trust(gw["USD"](1000), bob);
+        env(pay(gw, alice, gw["USD"](5)));
+        env(pay(gw2, alice, gw2["USD"](5)));
+        env(pay(gw, bob, gw["USD"](5)));
+        env.close();
+
+        // Two alice lines fill the budget. After alice is released, remaining
+        // is 2 so bob's expand can walk past its single line and mark complete
+        // (an exact-N want of 1 stays incomplete).
+        auto cache = std::make_shared<AssetCache>(
+            env.current(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/2,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/12,
+            /*lineChunkSize=*/64);
+
+        {
+            AssetCache::SessionPin const pinA{1};
+            auto aLines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(aLines && !aLines->empty());
+            BEAST_EXPECT(cache->totalLineCount() >= 1);
+            BEAST_EXPECT(cache->remainingBudget() == 0);
+
+            {
+                AssetCache::SessionPin const pinB{2};
+                auto const misses0 = cache->cacheMisses();
+                auto const hits0 = cache->cacheHits();
+                auto const loaded0 = cache->linesLoaded();
+
+                auto b1 = cache->getRippleLines(bob.id());
+                BEAST_EXPECT(!b1 || b1->empty());
+                BEAST_EXPECT(cache->hasIncompleteLinesForSession(2));
+                BEAST_EXPECT(cache->cacheMisses() == misses0 + 1);
+
+                for (int i = 0; i < 8; ++i)
+                {
+                    auto b = cache->getRippleLines(bob.id());
+                    BEAST_EXPECT(!b || b->empty());
+                }
+                BEAST_EXPECT(cache->cacheMisses() == misses0 + 1);
+                BEAST_EXPECT(cache->cacheHits() >= hits0 + 8);
+                BEAST_EXPECT(cache->linesLoaded() == loaded0);
+
+                // One-shot must reuse too: remaining == 0 cannot expand, and
+                // must not unique_lock + reclaim-scan on every hop.
+                {
+                    AssetCache::LoadScope const oneShot{1000};
+                    auto b = cache->getRippleLines(bob.id());
+                    BEAST_EXPECT(!b || b->empty());
+                    BEAST_EXPECT(cache->cacheMisses() == misses0 + 1);
+                    BEAST_EXPECT(cache->linesLoaded() == loaded0);
+                }
+            }
+        }
+
+        // Alice's pin is the only occupant. Drop it so expand can admit bob.
+        cache->releaseSession(1);
+        BEAST_EXPECT(cache->remainingBudget() > 0);
+        {
+            AssetCache::SessionPin const pinB{2};
+            BEAST_EXPECT(cache->expandIncompleteLinesForSession(2));
+            auto bLines = cache->getRippleLines(bob.id());
+            BEAST_EXPECT(bLines && !bLines->empty());
+            BEAST_EXPECT(!cache->hasIncompleteLinesForSession(2));
         }
         cache->releaseSession(2);
         BEAST_EXPECT(cache->totalLineCount() == 0);
@@ -1208,6 +1309,7 @@ public:
     run() override
     {
         testBudgetZeroEmptyStubAndExpand();
+        testBudgetBlockedCachedNotRescanned();
         testEmptyAccountCachedNotRescanned();
         testPendingExpandWhileShared();
         testSessionPinsSharedHub();

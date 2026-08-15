@@ -423,9 +423,8 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
     {
         auto const age = curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
         // Reuse published results within the reuse window — including empty
-        // complete vectors (accounts with no trust lines). Soft-advance stubs
-        // keep lines==null and must refill; budget-blocked incomplete misses
-        // also leave lines null so a later load can admit rows.
+        // complete vectors (no trust lines) and empty incomplete stubs
+        // (budget-blocked). Soft-advance stubs keep lines==null and must refill.
         if (age <= cacheReuseLedgers_ && it->second.lines)
         {
             ++cacheHits_;
@@ -492,7 +491,14 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
             entry.lines = std::make_shared<std::vector<PathFindTrustLine>>();
         }
     }
-    // else: remaining == 0 → empty, incomplete (cursor still at start; lines null)
+    else
+    {
+        // Budget exhausted after reclaim: publish an empty vector (not null)
+        // so reuse hits and Pathfinder does not re-walk the owner directory
+        // under unique_lock on every hop. Keep cursor.complete == false so
+        // expand can still fill when the budget frees.
+        entry.lines = std::make_shared<std::vector<PathFindTrustLine>>();
+    }
 
     // Budget may satisfy only part of progressHint (or none). Keep the
     // from-page-0 target so expand / the next soft advance still aim at the
@@ -544,11 +550,14 @@ AssetCache::getOrLoadOutgoing(AccountID const& accountID)
         {
             auto const age =
                 curSeq >= it->second.loadedSeq ? curSeq - it->second.loadedSeq : curSeq;
-            // Fast path: fresh published results (including empty complete),
-            // no pending. Soft-advance stubs (lines==null) and one-shot
-            // incomplete hits fall through.
+            // Fast path: fresh published results (including empty complete and
+            // empty budget-blocked incomplete), no pending. Soft-advance stubs
+            // (lines==null) and one-shot incomplete hits with remaining budget
+            // fall through so LoadScope can expand. When remaining == 0 a
+            // one-shot incomplete hit must still reuse: expand cannot admit
+            // rows and would unique_lock + reclaim-scan on every hop.
             if (age <= cacheReuseLedgers_ && it->second.lines && it->second.pending.empty() &&
-                (it->second.cursor.complete || !oneShotFull))
+                (it->second.cursor.complete || !oneShotFull || remainingBudget() == 0))
             {
                 ++cacheHits_;
                 return it->second.lines;
@@ -569,7 +578,9 @@ AssetCache::getOrLoadOutgoing(AccountID const& accountID)
             // One-shot LoadScope: drain incomplete so destination_currencies /
             // Pathfinder see the full per-account set (budget permitting), even
             // when the shared cache only held a WS progressive partial.
-            if (oneShotFull && !it->second.cursor.complete)
+            // Skip when remaining == 0: expandAccountUnlocked would reclaim-
+            // scan lines_ and return 0 on every hop with no progress.
+            if (oneShotFull && !it->second.cursor.complete && remainingBudgetUnlocked() > 0)
             {
                 while (!it->second.cursor.complete)
                 {
