@@ -6,7 +6,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -17,6 +16,9 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <algorithm>
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -27,31 +29,31 @@ namespace xrpl {
 namespace {
 
 // Thread-local session id for automatic pin on getRippleLines (set by SessionPin).
-thread_local int tlsPinSessionId = 0;
+thread_local int gTlsPinSessionId = 0;
 
 // Thread-local chunk override from LoadScope. 0 = use AssetCache::lineChunkSize_.
-thread_local std::size_t tlsChunkOverride = 0;
+thread_local std::size_t gTlsChunkOverride = 0;
 
 }  // namespace
 
-AssetCache::SessionPin::SessionPin(int sessionId) noexcept : prev_(tlsPinSessionId)
+AssetCache::SessionPin::SessionPin(int sessionId) noexcept : prev_(gTlsPinSessionId)
 {
-    tlsPinSessionId = sessionId;
+    gTlsPinSessionId = sessionId;
 }
 
 AssetCache::SessionPin::~SessionPin() noexcept
 {
-    tlsPinSessionId = prev_;
+    gTlsPinSessionId = prev_;
 }
 
-AssetCache::LoadScope::LoadScope(std::size_t chunkLines) noexcept : prev_(tlsChunkOverride)
+AssetCache::LoadScope::LoadScope(std::size_t chunkLines) noexcept : prev_(gTlsChunkOverride)
 {
-    tlsChunkOverride = chunkLines == 0 ? 0 : chunkLines;
+    gTlsChunkOverride = chunkLines == 0 ? 0 : chunkLines;
 }
 
 AssetCache::LoadScope::~LoadScope() noexcept
 {
-    tlsChunkOverride = prev_;
+    gTlsChunkOverride = prev_;
 }
 
 AssetCache::AssetCache(
@@ -195,7 +197,7 @@ AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool fo
 std::size_t
 AssetCache::effectiveChunkSize() const
 {
-    return tlsChunkOverride != 0 ? tlsChunkOverride : lineChunkSize_;
+    return gTlsChunkOverride != 0 ? gTlsChunkOverride : lineChunkSize_;
 }
 
 void
@@ -238,7 +240,7 @@ AssetCache::reclaimUnpinnedUnlocked(AccountID const* skip)
     std::size_t freed = 0;
     for (auto it = lines_.begin(); it != lines_.end();)
     {
-        if (it->second.pinCount != 0 || (skip && it->first == *skip))
+        if (it->second.pinCount != 0 || ((skip != nullptr) && it->first == *skip))
         {
             ++it;
             continue;
@@ -459,8 +461,7 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
     // so multi-close progressive fill compounds without re-walking on advance.
     std::size_t want = std::max(effectiveChunkSize(), progressHint);
     want = std::min(want, maxLinesPerAccount_);
-    if (remaining < want)
-        want = remaining;
+    want = std::min(remaining, want);
 
     if (want > 0)
     {
@@ -526,7 +527,7 @@ AssetCache::getOrLoadOutgoing(AccountID const& accountID)
 {
     // LoadScope (one-shot) needs exclusive expand of incomplete hits — cannot
     // finish under shared_lock.
-    bool const oneShotFull = tlsChunkOverride != 0;
+    bool const oneShotFull = gTlsChunkOverride != 0;
 
     {
         std::shared_lock const sl(lock_);
@@ -589,17 +590,17 @@ AssetCache::getRippleLines(AccountID const& accountID)
     // here would serialize the steady-revalidate workers on every hop (up to
     // min(kPathSteadyUpdateParallelism, jobQueueWorkers - 1) concurrent units).
     // Escalate to unique only on the first pin of this account for the session.
-    if (tlsPinSessionId != 0)
+    if (gTlsPinSessionId != 0)
     {
         bool alreadyPinned = false;
         {
             std::shared_lock const sl(lock_);
-            auto const sit = sessions_.find(tlsPinSessionId);
+            auto const sit = sessions_.find(gTlsPinSessionId);
             // Retired: treat as pinned so we skip the unique_lock and refuse
             // new bookkeeping. Live: skip lock when this account is already
             // in the session set (hot Pathfinder hop).
             if (sit != sessions_.end() &&
-                (sit->second.retired || sit->second.accounts.count(accountID) != 0))
+                (sit->second.retired || sit->second.accounts.contains(accountID)))
                 alreadyPinned = true;
         }
         if (!alreadyPinned)
@@ -608,9 +609,9 @@ AssetCache::getRippleLines(AccountID const& accountID)
             // Entry may have been evicted between load and pin (another
             // session's releaseSession dropped pinCount to 0). Reload under
             // this unique lock so pin bookkeeping is never silently lost.
-            if (lines_.find(accountID) == lines_.end())
+            if (!lines_.contains(accountID))
                 full = loadOutgoingUnlocked(accountID);
-            pinAccountUnlocked(tlsPinSessionId, accountID);
+            pinAccountUnlocked(gTlsPinSessionId, accountID);
         }
     }
 
@@ -633,7 +634,7 @@ AssetCache::expandIncompleteLines()
         if (!entry.cursor.complete)
             work.emplace_back(entry.pinCount, accountID);
     }
-    std::sort(work.begin(), work.end(), [](auto const& a, auto const& b) {
+    std::ranges::sort(work, [](auto const& a, auto const& b) {
         if (a.first != b.first)
             return a.first > b.first;
         return a.second < b.second;
@@ -694,7 +695,7 @@ AssetCache::expandIncompleteLinesForSession(int sessionId)
             grew = true;
             // Without LoadScope, one chunk per outer call keeps WS expands light;
             // with LoadScope, keep going until complete (one-shot drain).
-            if (tlsChunkOverride == 0)
+            if (gTlsChunkOverride == 0)
                 break;
         }
     }
@@ -705,12 +706,7 @@ bool
 AssetCache::hasIncompleteLines() const
 {
     std::shared_lock const sl(lock_);
-    for (auto const& [_, entry] : lines_)
-    {
-        if (!entry.cursor.complete)
-            return true;
-    }
-    return false;
+    return std::ranges::any_of(lines_, [](auto const& kv) { return !kv.second.cursor.complete; });
 }
 
 bool
@@ -720,13 +716,10 @@ AssetCache::hasIncompleteLinesForSession(int sessionId) const
     auto sit = sessions_.find(sessionId);
     if (sit == sessions_.end() || sit->second.retired)
         return false;
-    for (auto const& accountID : sit->second.accounts)
-    {
+    return std::ranges::any_of(sit->second.accounts, [&](auto const& accountID) {
         auto it = lines_.find(accountID);
-        if (it != lines_.end() && !it->second.cursor.complete)
-            return true;
-    }
-    return false;
+        return it != lines_.end() && !it->second.cursor.complete;
+    });
 }
 
 std::size_t

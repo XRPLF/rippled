@@ -6,17 +6,14 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <mutex>
 #include <shared_mutex>
 #include <vector>
 
@@ -310,7 +307,7 @@ private:
      * when sole owner; only then may allocate a full replacement vector.
      * Caller must hold lock_ exclusively.
      */
-    void
+    static void
     coalescePendingUnlocked(LineEntry& entry);
 
     /**

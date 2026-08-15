@@ -17,6 +17,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -37,7 +38,10 @@
 #include <xrpl/tx/paths/RippleCalc.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -188,8 +192,8 @@ PathRequest::enterOwner() noexcept
     auto bag = ownerLifetime_;
     if (!bag)
         return nullptr;
-    std::lock_guard const lk(bag->mutex);
-    if (!bag->manager)
+    std::scoped_lock const lk(bag->mutex);
+    if (bag->manager == nullptr)
         return nullptr;
     ++bag->inFlight;
     return bag->manager;
@@ -201,7 +205,7 @@ PathRequest::leaveOwner() noexcept
     auto bag = ownerLifetime_;
     if (!bag)
         return;
-    std::lock_guard const lk(bag->mutex);
+    std::scoped_lock const lk(bag->mutex);
     --bag->inFlight;
     bag->idle.notify_all();
 }
@@ -212,7 +216,7 @@ PathRequest::CallOwner::CallOwner(PathRequest& req) noexcept : req_(req), owner_
 
 PathRequest::CallOwner::~CallOwner() noexcept
 {
-    if (owner_)
+    if (owner_ != nullptr)
         req_.leaveOwner();
 }
 
@@ -226,7 +230,7 @@ PathRequest::~PathRequest()
     // ~PathRequestManager waits inFlight==0 before destroying members
     // (use_count==0 so wr.lock() cannot detach us).
     owner_.store(nullptr, std::memory_order_release);
-    if (CallOwner owner{*this})
+    if (CallOwner const owner{*this})
     {
         // removePathRequest is idempotent (already closed / force-dropped).
         owner->removePathRequest(this);
@@ -667,9 +671,9 @@ PathRequest::doClose()
     // Detach immediately so AssetCache can reclaim if this was the last session
     // (do not wait for ~PathRequest / next updateAll scavenge). CallOwner
     // no-ops if ~PathRequestManager has already nulled the lifetime token.
-    if (owner_.load(std::memory_order_acquire))
+    if (owner_.load(std::memory_order_acquire) != nullptr)
     {
-        if (CallOwner owner{*this})
+        if (CallOwner const owner{*this})
             owner->removePathRequest(this);
     }
     std::scoped_lock const sl(lock_);
@@ -735,7 +739,7 @@ PathRequest::revalidatePaths(
     json::Value& jvArray,
     std::shared_ptr<ReadView const> const& calcLedger)
 {
-    if (paths.empty())
+    if (paths.empty() || !raSrcAccount_ || !raDstAccount_)
         return false;
 
     auto const& sourceAccount = [&] {
@@ -824,7 +828,7 @@ PathRequest::findPaths(
         // load — clients expect a complete auto source set (or a hard error).
         // Soft truncation is reported via path_source_currencies_truncated so
         // clients know the alternative set is incomplete, not empty-of-routes.
-        std::size_t const hardMax = static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCur);
+        auto const hardMax = static_cast<std::size_t>(rpc::tuning::kMaxAutoSrcCur);
         std::size_t softMax = hardMax;
         if (!hasCompletion())
         {
@@ -851,7 +855,7 @@ PathRequest::findPaths(
         ordered.reserve(assets.size());
         for (auto const& asset : assets)
             ordered.push_back(asset);
-        std::sort(ordered.begin(), ordered.end(), [](PathAsset const& a, PathAsset const& b) {
+        std::ranges::sort(ordered, [](PathAsset const& a, PathAsset const& b) {
             bool const aXrp = a.isXRP();
             bool const bXrp = b.isXRP();
             if (aXrp != bXrp)
@@ -929,7 +933,7 @@ PathRequest::findPaths(
         if (anyOk)
         {
             int const size = static_cast<int>(sourceAssets.size());
-            consumer_.charge({std::clamp((size * size) / 2 + 20, 25, 200), "path revalidate"});
+            consumer_.charge({std::clamp(((size * size) / 2) + 20, 25, 200), "path revalidate"});
             JLOG(journal_.debug()) << iIdentifier_ << " incremental revalidate ok ("
                                    << jvArray.size() << " alternatives)";
             return true;
@@ -1160,8 +1164,7 @@ PathRequest::doUpdate(
     if (isSubscription && !fast)
     {
         int const cap = loaded ? app_.config().pathSearchFast : app_.config().pathSearch;
-        if (iLevel_ > cap)
-            iLevel_ = cap;
+        iLevel_ = std::min(iLevel_, cap);
     }
 
     // Prefer calcLedger seq for rediscovery timing when mid-close passes open.
@@ -1200,10 +1203,14 @@ PathRequest::doUpdate(
     if (!revalidateOnly && !fast && !bLastSuccess_)
     {
         if (lastFullSearchIndex_ == 0)
+        {
             failedSearchDue = true;
+        }
         else
+        {
             failedSearchDue =
                 ledgerSeq >= lastFullSearchIndex_ + rpc::tuning::kPathFailedSearchInterval;
+        }
     }
 
     // One-shot ripple_path_find: drain incomplete fills for *this session's*
@@ -1244,12 +1251,27 @@ PathRequest::doUpdate(
     // progressive line growth). One-shot ripple_path_find may still escalate.
     bool const allowEscalate = !revalidateOnly && (!isSubscription || fullSearch);
 
-    JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_
-                           << (fullSearch ? (growthSearch          ? " full_search(lines_grew)"
-                                                 : rediscoveryDue  ? " full_search(rediscovery)"
-                                                 : failedSearchDue ? " full_search(failed_backoff)"
-                                                                   : " full_search")
-                                          : " revalidate");
+    char const* searchKind = " revalidate";
+    if (fullSearch)
+    {
+        if (growthSearch)
+        {
+            searchKind = " full_search(lines_grew)";
+        }
+        else if (rediscoveryDue)
+        {
+            searchKind = " full_search(rediscovery)";
+        }
+        else if (failedSearchDue)
+        {
+            searchKind = " full_search(failed_backoff)";
+        }
+        else
+        {
+            searchKind = " full_search";
+        }
+    }
+    JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_ << searchKind;
 
     json::Value jvArray = json::ValueType::Array;
     bool didFullSearch = false;
@@ -1314,20 +1336,24 @@ PathRequest::doUpdate(
     // Soft auto-source truncation is also a warning (not an error): results are
     // still valid for the included currencies, just not exhaustive.
     if (sourceCurrenciesTruncated_)
+    {
         setPathFindNotice(newStatus, WarnRpcPathSourceCurrenciesTruncated);
+    }
     else if (cache->hasIncompleteLinesForSession(iIdentifier_))
+    {
         setPathFindNotice(newStatus, WarnRpcPathLinesPartial);
+    }
 
     if (fast && quickReply_ == steady_clock::time_point{})
     {
         quickReply_ = steady_clock::now();
-        if (CallOwner owner{*this})
+        if (CallOwner const owner{*this})
             owner->reportFast(duration_cast<milliseconds>(quickReply_ - created_));
     }
     else if (!fast && fullReply_ == steady_clock::time_point{})
     {
         fullReply_ = steady_clock::now();
-        if (CallOwner owner{*this})
+        if (CallOwner const owner{*this})
             owner->reportFull(duration_cast<milliseconds>(fullReply_ - created_));
     }
 

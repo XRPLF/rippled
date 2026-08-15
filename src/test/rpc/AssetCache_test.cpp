@@ -2,16 +2,17 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/trust.h>
 
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/AccountID.h>
 
 #include <atomic>
+#include <cstddef>
 #include <memory>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -23,7 +24,7 @@ class AssetCache_test : public beast::unit_test::Suite
      * Give `holder` N distinct outgoing trust lines (holder → peer IOUs).
      * `tag` prefixes peer account names so multiple holders do not collide.
      */
-    void
+    static void
     fundManyLines(
         test::jtx::Env& env,
         test::jtx::Account const& holder,
@@ -35,7 +36,7 @@ class AssetCache_test : public beast::unit_test::Suite
         env.close();
         for (int i = 0; i < n; ++i)
         {
-            Account peer{tag + std::to_string(i)};
+            Account const peer{tag + std::to_string(i)};
             env.fund(XRP(1000), peer);
             // Distinct holder-peer IOU lines (holder issues USD to peer).
             env.trust(holder["USD"](1000), peer);
@@ -68,7 +69,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/64);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(!lines || lines->empty());
             BEAST_EXPECT(cache->hasIncompleteLinesForSession(1));
@@ -85,7 +86,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*cacheReuseLedgers=*/12,
             /*lineChunkSize=*/64);
         {
-            AssetCache::SessionPin pin{2};
+            AssetCache::SessionPin const pin{2};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines && !lines->empty());
             BEAST_EXPECT(cache->totalLineCount() >= 1);
@@ -127,7 +128,7 @@ class AssetCache_test : public beast::unit_test::Suite
         auto const hits0 = cache->cacheHits();
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto first = cache->getRippleLines(bare.id());
             // API still returns nullptr for empty (no lines to walk).
             BEAST_EXPECT(!first);
@@ -145,7 +146,7 @@ class AssetCache_test : public beast::unit_test::Suite
 
         // Non-empty account still loads normally after empty caching.
         {
-            AssetCache::SessionPin pin{2};
+            AssetCache::SessionPin const pin{2};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines && !lines->empty());
         }
@@ -169,7 +170,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*cacheReuseLedgers=*/12,
             /*lineChunkSize=*/1);
 
-        AssetCache::SessionPin pin{7};
+        AssetCache::SessionPin const pin{7};
         auto held = cache->getRippleLines(alice.id());
         BEAST_EXPECT(held);
         auto const firstSize = held->size();
@@ -177,7 +178,7 @@ class AssetCache_test : public beast::unit_test::Suite
 
         // External hold keeps use_count > 1; expand must not mutate `held`.
         auto const before = firstSize;
-        bool grew = cache->expandIncompleteLines();
+        bool const grew = cache->expandIncompleteLines();
         BEAST_EXPECT(held->size() == before);
         // New publish may include more lines after coalesce on next get.
         auto again = cache->getRippleLines(alice.id());
@@ -204,11 +205,11 @@ class AssetCache_test : public beast::unit_test::Suite
             std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
 
         {
-            AssetCache::SessionPin pinA{10};
+            AssetCache::SessionPin const pinA{10};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         {
-            AssetCache::SessionPin pinB{11};
+            AssetCache::SessionPin const pinB{11};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         BEAST_EXPECT(cache->totalLineCount() >= 1);
@@ -246,7 +247,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/64);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         auto const linesBefore = cache->totalLineCount();
@@ -268,7 +269,7 @@ class AssetCache_test : public beast::unit_test::Suite
 
         // Hit path: reuse within cacheReuseLedgers.
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         BEAST_EXPECT(cache->cacheHits() > hitsBefore);
@@ -282,7 +283,7 @@ class AssetCache_test : public beast::unit_test::Suite
         // After force-clear, next load is a miss that reloads.
         auto const missesBefore = cache->cacheMisses();
         {
-            AssetCache::SessionPin pin{2};
+            AssetCache::SessionPin const pin{2};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         BEAST_EXPECT(cache->cacheMisses() > missesBefore);
@@ -309,7 +310,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/2);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             // First load only (2 lines) — do not call expandIncompleteLines()
             // which would multi-chunk up to kPathExpandLinesPerWave and finish.
             auto partialLines = cache->getRippleLines(alice.id());
@@ -326,7 +327,7 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->hasIncompleteLines());  // stub still incomplete
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             // On-demand reload from page 0 with want = prev(2) + chunk(2) = 4.
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines && lines->size() == 4);
@@ -375,7 +376,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/2);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto partial = cache->getRippleLines(alice.id());
             BEAST_EXPECT(partial && partial->size() == 2);
         }
@@ -392,7 +393,7 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->expandIncompleteLinesForSession(1));
         BEAST_EXPECT(cache->totalLineCount() == 4);
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines && lines->size() == 4);
         }
@@ -404,7 +405,7 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->expandIncompleteLinesForSession(1));
         BEAST_EXPECT(cache->totalLineCount() == 6);
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines && lines->size() == 6);
         }
@@ -442,7 +443,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/kChunk);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines && lines->size() == kChunk);
             BEAST_EXPECT(cache->expandIncompleteLinesForSession(1));
@@ -450,7 +451,7 @@ class AssetCache_test : public beast::unit_test::Suite
             BEAST_EXPECT(lines && lines->size() == 4);
         }
         {
-            AssetCache::SessionPin pin{2};
+            AssetCache::SessionPin const pin{2};
             auto lines = cache->getRippleLines(bob.id());
             BEAST_EXPECT(lines && lines->size() == kChunk);
         }
@@ -463,12 +464,12 @@ class AssetCache_test : public beast::unit_test::Suite
 
         // Bob consumes most of the budget before alice reloads.
         {
-            AssetCache::SessionPin pin{2};
+            AssetCache::SessionPin const pin{2};
             auto lines = cache->getRippleLines(bob.id());
             BEAST_EXPECT(lines && lines->size() == 4);
         }
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             // Remaining budget is 2; snapshot shrinks. Hint must survive.
             BEAST_EXPECT(lines && lines->size() == kChunk);
@@ -487,7 +488,7 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->expandIncompleteLinesForSession(1));
         BEAST_EXPECT(cache->totalLineCount() == 6);
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines && lines->size() == 6);
         }
@@ -515,7 +516,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/2);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto partial = cache->getRippleLines(alice.id());
             BEAST_EXPECT(partial && partial->size() == 2);
             BEAST_EXPECT(cache->hasIncompleteLines());
@@ -523,8 +524,8 @@ class AssetCache_test : public beast::unit_test::Suite
 
         // One-shot LoadScope must finish the account on the same cache hit.
         {
-            AssetCache::LoadScope oneShot{1000};
-            AssetCache::SessionPin pin{2};
+            AssetCache::LoadScope const oneShot{1000};
+            AssetCache::SessionPin const pin{2};
             auto full = cache->getRippleLines(alice.id());
             BEAST_EXPECT(full);
             BEAST_EXPECT(full->size() == 8);
@@ -558,7 +559,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/64);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         auto const misses0 = cache->cacheMisses();
@@ -574,7 +575,7 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->getLedger()->seq() > loadedAt + 1);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         BEAST_EXPECT(cache->cacheMisses() > misses0);
@@ -608,7 +609,7 @@ class AssetCache_test : public beast::unit_test::Suite
 
         std::size_t completeCount = 0;
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines);
             BEAST_EXPECT(lines->size() == kChunk);
@@ -635,7 +636,7 @@ class AssetCache_test : public beast::unit_test::Suite
         // Reload happens inside getRippleLines, before any expand. Must not
         // collapse to kChunk.
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines);
             BEAST_EXPECT(lines->size() == completeCount);
@@ -663,7 +664,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/2);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines);
             BEAST_EXPECT(lines->size() <= 3);
@@ -691,12 +692,12 @@ class AssetCache_test : public beast::unit_test::Suite
             /*cacheReuseLedgers=*/12,
             /*lineChunkSize=*/1);
         {
-            AssetCache::LoadScope oneShot{5};
-            AssetCache::SessionPin pin{2};
+            AssetCache::LoadScope const oneShot{5};
+            AssetCache::SessionPin const pin{2};
             auto lines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(lines);
             BEAST_EXPECT(lines->size() <= 5);
-            BEAST_EXPECT(lines->size() >= 1);
+            BEAST_EXPECT(!lines->empty());
         }
         cache->releaseSession(2);
     }
@@ -722,7 +723,7 @@ class AssetCache_test : public beast::unit_test::Suite
             /*lineChunkSize=*/2);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             auto aLines = cache->getRippleLines(alice.id());
             BEAST_EXPECT(aLines);
             BEAST_EXPECT(cache->totalLineCount() <= 2);
@@ -759,7 +760,7 @@ class AssetCache_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(cache->lineEpoch() == 0);
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         auto const epoch1 = cache->lineEpoch();
@@ -805,7 +806,7 @@ class AssetCache_test : public beast::unit_test::Suite
             {
                 try
                 {
-                    AssetCache::SessionPin pin{sessionId};
+                    AssetCache::SessionPin const pin{sessionId};
                     auto lines = cache->getRippleLines(account);
                     if (lines && lines->empty())
                         ++errors;
@@ -890,13 +891,13 @@ class AssetCache_test : public beast::unit_test::Suite
 
         // Keeper session — holds alice after the closing session is released.
         {
-            AssetCache::SessionPin pinKeep{2};
+            AssetCache::SessionPin const pinKeep{2};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         BEAST_EXPECT(cache->totalLineCount() >= 1);
 
         {
-            AssetCache::SessionPin pinClose{1};
+            AssetCache::SessionPin const pinClose{1};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
             cache->releaseSession(1);
             // In-flight update re-touches the same account after close.
@@ -936,13 +937,13 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->releaseSession(1) == 0);
 
         {
-            AssetCache::SessionPin pinClose{1};
+            AssetCache::SessionPin const pinClose{1};
             // Loads lines but must not pin them to the retired session.
             (void)cache->getRippleLines(alice.id());
         }
 
         {
-            AssetCache::SessionPin pinKeep{2};
+            AssetCache::SessionPin const pinKeep{2};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         BEAST_EXPECT(cache->releaseSession(2) >= 1);
@@ -967,7 +968,7 @@ class AssetCache_test : public beast::unit_test::Suite
             std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         BEAST_EXPECT(cache->releaseSession(1) >= 1);
@@ -975,14 +976,14 @@ class AssetCache_test : public beast::unit_test::Suite
 
         // Still retired: a new SessionPin with id 1 must not re-pin.
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             (void)cache->getRippleLines(alice.id());
         }
         // Unpinned complete leftover may remain; no session owns it.
         cache->forgetSession(1);
 
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
         BEAST_EXPECT(cache->releaseSession(1) >= 1);
@@ -1007,7 +1008,7 @@ class AssetCache_test : public beast::unit_test::Suite
             std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
 
         {
-            AssetCache::SessionPin pinKeep{2};
+            AssetCache::SessionPin const pinKeep{2};
             BEAST_EXPECT(cache->getRippleLines(alice.id()));
         }
 
@@ -1017,7 +1018,7 @@ class AssetCache_test : public beast::unit_test::Suite
         std::thread worker([&] {
             try
             {
-                AssetCache::SessionPin pin{1};
+                AssetCache::SessionPin const pin{1};
                 if (!cache->getRippleLines(alice.id()))
                     ++errors;
                 started.store(true, std::memory_order_release);

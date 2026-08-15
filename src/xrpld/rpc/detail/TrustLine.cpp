@@ -10,8 +10,11 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -142,7 +145,7 @@ PathFindTrustLine::getItems(
     std::size_t maxLines)
 {
     // Compatibility wrapper: single walk (optionally capped).
-    DirCursor cursor;
+    DirCursor const cursor;
     auto const want = maxLines == 0 ? std::numeric_limits<std::size_t>::max() : maxLines;
     auto chunk = getItemsChunk(accountID, view, direction, cursor, want);
     return std::move(chunk.lines);

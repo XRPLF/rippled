@@ -547,12 +547,11 @@ Pathfinder::rankPaths(
     // and correlated with final rank — then take the first toRank indices.
     // Equal lengths keep relative insertion order (stable_sort).
     std::vector<std::size_t> order(paths.size());
-    std::iota(order.begin(), order.end(), 0);
+    std::ranges::iota(order, 0);
     if (paths.size() > toRank)
     {
-        std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) {
-            return paths[a].size() < paths[b].size();
-        });
+        std::ranges::stable_sort(
+            order, [&](std::size_t a, std::size_t b) { return paths[a].size() < paths[b].size(); });
     }
 
     JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates (ranking " << toRank

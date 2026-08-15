@@ -11,6 +11,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <vector>

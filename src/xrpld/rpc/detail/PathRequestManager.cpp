@@ -1,5 +1,6 @@
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
@@ -10,11 +11,14 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
@@ -24,12 +28,14 @@
 #include <algorithm>
 #include <atomic>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -66,7 +72,7 @@ PathRequestManager::~PathRequestManager()
     //    manager pointer. Nulling manager first makes enterOwner() fail for
     //    any callback that has not yet incremented inFlight.
     {
-        std::lock_guard const lk(midCloseBag_->mutex);
+        std::scoped_lock const lk(midCloseBag_->mutex);
         midCloseBag_->manager = nullptr;
         cancelMidCloseTimerUnlocked();
     }
@@ -115,8 +121,10 @@ PathRequestManager::publishCacheStats(AssetCache const& cache)
     if (loaded > lastLinesLoaded_)
         linesLoaded_ += static_cast<beast::insight::Counter::value_type>(loaded - lastLinesLoaded_);
     if (advances > lastLedgerAdvances_)
+    {
         cacheLedgerAdvances_ +=
             static_cast<beast::insight::Counter::value_type>(advances - lastLedgerAdvances_);
+    }
 
     lastCacheHits_ = hits;
     lastCacheMisses_ = misses;
@@ -362,7 +370,7 @@ runParallel(
         auto finishOne = [barrier]() {
             if (barrier->remaining.fetch_sub(1, std::memory_order_acq_rel) == 1)
             {
-                std::lock_guard const lk(barrier->mutex);
+                std::scoped_lock const lk(barrier->mutex);
                 barrier->cv.notify_one();
             }
         };
@@ -385,7 +393,7 @@ runParallel(
                 // runPeriodicRevalidate can acquire the missing node — the
                 // serial path already rethrows out of runOne.
                 {
-                    std::lock_guard const lk(barrier->mutex);
+                    std::scoped_lock const lk(barrier->mutex);
                     if (!barrier->error)
                         barrier->error = std::current_exception();
                 }
@@ -431,7 +439,7 @@ runParallel(
         for (std::size_t i = 0; i < count; ++i)
         {
             ++processed;
-            if (!(*results)[i])
+            if ((*results)[i] == 0)
                 onDrop(work[batch + i]);
         }
 
@@ -463,8 +471,8 @@ PathRequestManager::scheduleMidCloseRefresh()
     auto bag = midCloseBag_;
     std::uint64_t epoch = 0;
     {
-        std::lock_guard const lk(bag->mutex);
-        if (!bag->manager || bag->scheduled)
+        std::scoped_lock const lk(bag->mutex);
+        if ((bag->manager == nullptr) || bag->scheduled)
             return;
         bag->scheduled = true;
         epoch = ++bag->epoch;
@@ -475,7 +483,7 @@ PathRequestManager::scheduleMidCloseRefresh()
         midCloseTimer_.async_wait([bag, epoch](boost::system::error_code const& waitEc) {
             PathRequestManager* self = nullptr;
             {
-                std::lock_guard const lk(bag->mutex);
+                std::scoped_lock const lk(bag->mutex);
                 // Stale generation (cancelled or superseded) — ignore.
                 if (epoch != bag->epoch)
                     return;
@@ -490,7 +498,7 @@ PathRequestManager::scheduleMidCloseRefresh()
                 PathFindLifetime& bag;
                 ~InFlightGuard()
                 {
-                    std::lock_guard const lk(bag.mutex);
+                    std::scoped_lock const lk(bag.mutex);
                     --bag.inFlight;
                     bag.idle.notify_all();
                 }
@@ -520,7 +528,7 @@ PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
             // blocked for the whole wave waiting on bag->mutex.
             PathRequestManager* self = nullptr;
             {
-                std::lock_guard const lk(bag->mutex);
+                std::scoped_lock const lk(bag->mutex);
                 if (!bag->manager)
                     return;
                 self = bag->manager;
@@ -536,11 +544,11 @@ PathRequestManager::onMidCloseTimer(boost::system::error_code const& waitEc)
                     // stuck flag cannot permanently suppress mid-close ticks.
                     if (self)
                         self->revalidateJobPending_.store(false, std::memory_order_release);
-                    std::lock_guard const lk(bag.mutex);
+                    std::scoped_lock const lk(bag.mutex);
                     --bag.inFlight;
                     bag.idle.notify_all();
                 }
-            } const inFlightGuard{*bag, self};
+            } const inFlightGuard{.bag = *bag, .self = self};
 
             try
             {
@@ -727,9 +735,13 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
                 json::Value update =
                     request->doUpdate(cache, false, continueCallback, revalidateOnly, calcLedger);
                 if (pinIndex)
+                {
                     guard.pinTo(ledgerSeq);
+                }
                 else
+                {
                     guard.markCompleted();
+                }
                 update[jss::type] = "path_find";
                 ipSub = getSubscriber(request);
                 if (ipSub)
@@ -744,9 +756,13 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
             {
                 request->doUpdate(cache, false, {}, revalidateOnly, calcLedger);
                 if (pinIndex)
+                {
                     guard.pinTo(ledgerSeq);
+                }
                 else
+                {
                     guard.markCompleted();
+                }
                 return false;
             }
 
@@ -851,9 +867,13 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
             }
 
             if (isFirst)
+            {
                 firstUpdates.push_back(std::move(request));
+            }
             else if (closedLedger)
+            {
                 steadyUpdates.push_back(std::move(request));
+            }
             else
             {
                 // Open non-midClose: claimed a non-new request somehow — release.
@@ -1002,7 +1022,9 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, b
     // Keep the periodic revalidate timer armed while sessions are live.
     // (Also started from insertPathRequest; this re-arms after closed waves.)
     if (requestsPending() && !app_.isStopping())
+    {
         scheduleMidCloseRefresh();
+    }
     else if (!requestsPending())
     {
         // Drop any residual dead weaks and release cache if fully idle.
@@ -1020,12 +1042,7 @@ PathRequestManager::hasLiveRequestsUnlocked() const
     // Use expired() — do not promote weak_ptr to shared_ptr. A temporary
     // shared_ptr that is the last owner would run ~PathRequest → removePathRequest
     // and re-enter while callers iterate requests_.
-    for (auto const& w : requests_)
-    {
-        if (!w.expired())
-            return true;
-    }
-    return false;
+    return std::ranges::any_of(requests_, [](auto const& w) { return !w.expired(); });
 }
 
 std::size_t
@@ -1050,7 +1067,7 @@ PathRequestManager::rebuildRequestsUnlocked(PathRequest* request)
             continue;
         }
         keepAlive.push_back(r);
-        if (request && r.get() == request)
+        if ((request != nullptr) && r.get() == request)
         {
             ++removed;
             continue;
@@ -1083,7 +1100,7 @@ PathRequestManager::releaseCacheIfIdleUnlocked()
     {
         // Timer cancel must use the same mutex as scheduleMidCloseRefresh
         // (insert / timer / destructor threads).
-        std::lock_guard const lk(midCloseBag_->mutex);
+        std::scoped_lock const lk(midCloseBag_->mutex);
         cancelMidCloseTimerUnlocked();
     }
     revalidateJobPending_.store(false, std::memory_order_release);
@@ -1147,7 +1164,7 @@ PathRequestManager::removePathRequest(PathRequest* request)
 
     // Drop this session's account pins. Accounts still pinned by other live
     // path_finds are kept; only exclusively held (or last holder) entries free.
-    if (assetCache_ && request)
+    if (assetCache_ && (request != nullptr))
     {
         auto const freed = assetCache_->releaseSession(request->id());
         if (freed > 0)
@@ -1158,7 +1175,7 @@ PathRequestManager::removePathRequest(PathRequest* request)
     // does not re-enter after this manager is destroyed. Manager dtor only
     // detaches sessions still listed in requests_; closed/force-dropped ones
     // would otherwise keep a dangling owner_.
-    if (request)
+    if (request != nullptr)
         request->detachFromManager();
 
     releaseCacheIfIdleUnlocked();

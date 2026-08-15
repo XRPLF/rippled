@@ -5,7 +5,6 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/trust.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/core/Config.h>
@@ -18,14 +17,16 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <cstdint>
+#include <cstddef>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -34,8 +35,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Unit / integration coverage for concurrent path_find subscription machinery:
@@ -77,7 +77,7 @@ class PathFindSub_test : public beast::unit_test::Suite
         return req;
     }
 
-    std::optional<json::Value>
+    static std::optional<json::Value>
     waitPathFindUpdate(
         WSClient& wsc,
         std::chrono::milliseconds timeout = std::chrono::seconds{3},
@@ -93,7 +93,7 @@ class PathFindSub_test : public beast::unit_test::Suite
         });
     }
 
-    void
+    static void
     drainPathFind(WSClient& wsc)
     {
         using namespace std::chrono_literals;
@@ -110,7 +110,7 @@ class PathFindSub_test : public beast::unit_test::Suite
      * JtPathFindWork from that worker; with workers < 3 it stays serial.
      * Returns false if the job did not finish in time.
      */
-    bool
+    static bool
     runUpdateAll(
         jtx::Env& env,
         std::shared_ptr<ReadView const> const& ledger,
@@ -126,7 +126,7 @@ class PathFindSub_test : public beast::unit_test::Suite
             JtClient, "PathFindSub-updateAll", [done, mtx, cv, &env, ledger, midClose]() {
                 env.app().getPathRequestManager().updateAll(ledger, midClose);
                 {
-                    std::lock_guard const lk(*mtx);
+                    std::scoped_lock const lk(*mtx);
                     done->store(true, std::memory_order_release);
                 }
                 cv->notify_one();
@@ -179,7 +179,7 @@ class PathFindSub_test : public beast::unit_test::Suite
         }));
     }
 
-    void
+    static void
     setupUsdCorridor(
         jtx::Env& env,
         jtx::Account const& gw,
@@ -571,14 +571,12 @@ class PathFindSub_test : public beast::unit_test::Suite
         BEAST_EXPECT(alts.size() >= 1);
 
         unsigned maxPathsInAlt = 0;
-        for (unsigned i = 0; i < alts.size(); ++i)
+        for (auto const& alt : alts)
         {
-            auto const& alt = alts[i];
             if (!alt.isMember(jss::paths_computed))
                 continue;
             auto const n = alt[jss::paths_computed].size();
-            if (n > maxPathsInAlt)
-                maxPathsInAlt = n;
+            maxPathsInAlt = std::max(n, maxPathsInAlt);
             BEAST_EXPECT(n <= static_cast<unsigned>(rpc::tuning::kPathFindMaxPaths));
         }
         BEAST_EXPECT(maxPathsInAlt >= 1);
@@ -713,7 +711,7 @@ class PathFindSub_test : public beast::unit_test::Suite
                 auto const idx = (*mid)[jss::ledger_index].asUInt();
                 BEAST_EXPECT(hash == to_string(closed->header().hash));
                 BEAST_EXPECT(idx == closed->seq());
-                BEAST_EXPECT(!(idx == open->seq() && hash == to_string(open->header().hash)));
+                BEAST_EXPECT(idx != open->seq() || hash != to_string(open->header().hash));
             }
         }
         drainPathFind(*wsc);
@@ -864,9 +862,8 @@ class PathFindSub_test : public beast::unit_test::Suite
         if (jr.isMember(jss::warnings) && jr[jss::warnings].isArray())
         {
             bool sawTrunc = false;
-            for (unsigned i = 0; i < jr[jss::warnings].size(); ++i)
+            for (auto const& w : jr[jss::warnings])
             {
-                auto const& w = jr[jss::warnings][i];
                 BEAST_EXPECT(w.isObject() && w.isMember(jss::id) && w.isMember(jss::message));
                 if (w.isObject() && w.isMember(jss::id) &&
                     w[jss::id].asInt() == WarnRpcPathSourceCurrenciesTruncated)
@@ -1174,7 +1171,7 @@ class PathFindSub_test : public beast::unit_test::Suite
                 auto const idx = (*upd)[jss::ledger_index].asUInt();
                 BEAST_EXPECT(hash == to_string(closed->header().hash));
                 BEAST_EXPECT(idx == closed->seq());
-                BEAST_EXPECT(!(idx == open->seq() && hash == to_string(open->header().hash)));
+                BEAST_EXPECT(idx != open->seq() || hash != to_string(open->header().hash));
             }
         }
 
@@ -1215,7 +1212,7 @@ class PathFindSub_test : public beast::unit_test::Suite
         auto const firstClosed = env.closed();
         auto held = prm.getAssetCache(firstClosed, /*authoritative=*/true);
         {
-            AssetCache::SessionPin pin{1};
+            AssetCache::SessionPin const pin{1};
             BEAST_EXPECT(held->getRippleLines(alice.id()));
         }
         auto const heldSeq = held->getLedger()->seq();
@@ -1261,5 +1258,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PathFindSub, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
