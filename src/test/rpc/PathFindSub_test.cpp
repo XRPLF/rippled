@@ -21,6 +21,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <algorithm>
 #include <atomic>
@@ -792,6 +793,43 @@ class PathFindSub_test : public beast::unit_test::Suite
     }
 
     /**
+     * Mid-close must not stream while the node still needs the network ledger
+     * (same gate as LedgerMaster::updatePaths).
+     */
+    void
+    testMidCloseSkipsWhenNeedNetworkLedger()
+    {
+        testcase("mid-close: skip while need-network-ledger");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env = makeEnv();
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        setupUsdCorridor(env, gw, alice, bob);
+
+        auto wsc = makeWSClient(env.app().config());
+        auto jr =
+            wsc->invoke("path_find", pfCreate(alice, bob, bob["USD"](10), "USD"))[jss::result];
+        BEAST_EXPECT(!jr.isMember(jss::error));
+        BEAST_EXPECT(runUpdateAll(env, env.closed()));
+        BEAST_EXPECT(waitPathFindUpdate(*wsc, 5s, true));
+        drainPathFind(*wsc);
+
+        env.app().getOPs().setNeedNetworkLedger();
+        BEAST_EXPECT(runUpdateAll(env, env.current(), /*midClose=*/true));
+        BEAST_EXPECT(!waitPathFindUpdate(*wsc, 200ms, /*requireAlts=*/false));
+
+        env.app().getOPs().clearNeedNetworkLedger();
+        BEAST_EXPECT(runUpdateAll(env, env.current(), /*midClose=*/true));
+        BEAST_EXPECT(waitPathFindUpdate(*wsc, 5s, /*requireAlts=*/false));
+
+        json::Value closeReq;
+        closeReq[jss::subcommand] = "close";
+        (void)wsc->invoke("path_find", closeReq);
+    }
+
+    /**
      * Mid-close must not consume pathFindNewRequest_. If it did, LedgerMaster::
      * updatePaths can exit with "Nothing to do" and a brand-new path_find client
      * waits until the next closed ledger for its first full Pathfinder result.
@@ -1312,6 +1350,7 @@ public:
         testRankKeepsLookingForCoveringLiquidity();
         testStaggeredRediscoverySurvivesManyCloses();
         testMidCloseRevalidateOnly();
+        testMidCloseSkipsWhenNeedNetworkLedger();
         testMidClosePreservesNewSubscriptionSignal();
         testAutoSourceKeepsXrpUnderSoftCap();
         testCreateRebuildsStaleSharedCache();

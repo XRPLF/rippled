@@ -23,10 +23,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -40,6 +42,28 @@
 #include <vector>
 
 namespace xrpl {
+namespace {
+
+// Same gates as LedgerMaster::updatePaths. Mid-close used to skip them and
+// keep streaming path_find results from an open ledger built on a stale or
+// not-yet-network last-closed view.
+bool
+pathLedgerIsFresh(Application& app, ReadView const& ledger)
+{
+    if (app.getOPs().isNeedNetworkLedger())
+        return false;
+    if (!app.config().standalone())
+    {
+        using namespace std::chrono;
+        auto const age =
+            time_point_cast<seconds>(app.getTimeKeeper().closeTime()) - ledger.header().closeTime;
+        if (age > 1min)
+            return false;
+    }
+    return true;
+}
+
+}  // namespace
 
 static_assert(
     rpc::tuning::kPathSteadyUpdateParallelism == kPathFindWorkLimit,
@@ -590,6 +614,12 @@ PathRequestManager::runPeriodicRevalidate()
     auto const ledger = app_.getOpenLedger().current();
     if (!ledger)
         return;
+    if (!pathLedgerIsFresh(app_, *ledger))
+    {
+        JLOG(journal_.debug())
+            << "runPeriodicRevalidate skipped: need network ledger or close time > 60s";
+        return;
+    }
 
     try
     {
@@ -619,6 +649,15 @@ PathRequestManager::runPeriodicRevalidate()
 void
 PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger, bool midClose)
 {
+    // Closed/create waves are already gated by LedgerMaster::updatePaths.
+    // Mid-close is armed from the 500ms timer and must apply the same
+    // need-network-ledger / 60s close-time checks or it streams stale routes.
+    if (midClose && inLedger && !pathLedgerIsFresh(app_, *inLedger))
+    {
+        JLOG(journal_.debug()) << "mid-close skipped: need network ledger or close time > 60s";
+        return;
+    }
+
     auto event = app_.getJobQueue().makeLoadEvent(JtPathFind, "PathRequest::updateAll");
 
     // Mid-close must not block behind a closed wave (that re-created the
