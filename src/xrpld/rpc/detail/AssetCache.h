@@ -44,6 +44,11 @@ namespace xrpl {
  *   is dropped by PathRequestManager. releaseSession retires the session id
  *   so a concurrent doUpdate cannot re-pin after close; forgetSession drops
  *   that tombstone when the PathRequest is destroyed.
+ * - SearchPin holds the current ledger_ for one search (Pathfinder SLE reads,
+ *   getRippleLines loads, and rippleCalculate). advanceLedger waits until
+ *   every SearchPin is dropped so a closed wave cannot swap the view under
+ *   a concurrent create. Complete pinned vectors may still be reused across
+ *   a few closed ledgers (cacheReuseLedgers_); that is not a mid-search swap.
  */
 class AssetCache final : public CountedObject<AssetCache>
 {
@@ -56,6 +61,26 @@ public:
         std::uint32_t cacheReuseLedgers = rpc::tuning::kPathCacheReuseLedgers,
         std::size_t lineChunkSize = rpc::tuning::kPathFindLineChunkSize);
     ~AssetCache();
+
+    /**
+     * RAII: keep ledger_ stable for one path search.
+     * PathRequest::doUpdate holds this for the whole update so Pathfinder,
+     * getRippleLines, and rippleCalculate observe one ReadView. Shared: many
+     * searches may run together. advanceLedger takes the exclusive side.
+     * Lock order: searchMutex_ then lock_.
+     */
+    class SearchPin
+    {
+    public:
+        explicit SearchPin(AssetCache& cache);
+        ~SearchPin() = default;
+        SearchPin(SearchPin const&) = delete;
+        SearchPin&
+        operator=(SearchPin const&) = delete;
+
+    private:
+        std::shared_lock<std::shared_mutex> lock_;
+    };
 
     /**
      * RAII: pin account loads to a path_find session id for this thread.
@@ -108,6 +133,8 @@ public:
      * Point the cache at a newer ledger.
      * forceClear drops all entries and session pins; otherwise vectors are
      * retained and only reloaded on access once older than cacheReuseLedgers_.
+     * Waits for every SearchPin so an in-flight search cannot mix this view
+     * with the previous one.
      */
     void
     advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool forceClear = false);
@@ -337,6 +364,8 @@ private:
     effectiveChunkSize() const;
 
     mutable std::shared_mutex lock_;
+    // Exclusive: advanceLedger. Shared: SearchPin. Always acquired before lock_.
+    mutable std::shared_mutex searchMutex_;
 
     std::shared_ptr<ReadView const> ledger_;
     beast::Journal journal_;

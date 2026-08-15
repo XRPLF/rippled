@@ -129,7 +129,8 @@ public:
      *        never escalates a failed revalidate into a full graph search.
      *        Closed-ledger waves pass false so rediscovery / failed recovery work.
      * @param calcLedger Optional ledger for PaymentSandbox (open mid-close).
-     *        When null, uses cache->getLedger(). Line vectors still come from cache.
+     *        When null, uses cache->getLedger() under SearchPin so pricing
+     *        matches Pathfinder. Line vectors still come from cache.
      */
     json::Value
     doUpdate(

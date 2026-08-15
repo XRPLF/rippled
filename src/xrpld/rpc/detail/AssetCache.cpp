@@ -56,6 +56,10 @@ AssetCache::LoadScope::~LoadScope() noexcept
     gTlsChunkOverride = prev_;
 }
 
+AssetCache::SearchPin::SearchPin(AssetCache& cache) : lock_(cache.searchMutex_)
+{
+}
+
 AssetCache::AssetCache(
     std::shared_ptr<ReadView const> ledger,
     beast::Journal j,
@@ -99,6 +103,9 @@ AssetCache::getLedger() const
 void
 AssetCache::advanceLedger(std::shared_ptr<ReadView const> const& ledger, bool forceClear)
 {
+    // Wait for in-flight searches (SearchPin) before swapping ledger_.
+    // Lock order: searchMutex_ then lock_.
+    std::unique_lock const search(searchMutex_);
     std::unique_lock const sl(lock_);
     if (!ledger)
         return;

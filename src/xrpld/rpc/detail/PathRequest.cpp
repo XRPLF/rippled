@@ -1070,6 +1070,11 @@ PathRequest::doUpdate(
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal")
                            << (revalidateOnly ? " revalidate_only" : "");
 
+    // Hold ledger_ for this whole update. A closed wave's advanceLedger waits
+    // so Pathfinder, line loads, and rippleCalculate cannot mix two views.
+    // Create (client thread) is not under waveMutex_; this is the barrier.
+    AssetCache::SearchPin const searchPin{*cache};
+
     // Pin every account loaded via getRippleLines on this thread to this
     // session so shared hubs stay cached until *this* path_find ends.
     AssetCache::SessionPin const sessionPin{iIdentifier_};
@@ -1167,7 +1172,9 @@ PathRequest::doUpdate(
         iLevel_ = std::min(iLevel_, cap);
     }
 
-    // Prefer calcLedger seq for rediscovery timing when mid-close passes open.
+    // One view for seq, identity, Pathfinder, and pricing. Mid-close still
+    // prefers the open calcLedger for offers/balances; SearchPin keeps the
+    // cache's closed view from moving under this search.
     auto const ledgerForSeq = calcLedger ? calcLedger : cache->getLedger();
     auto const ledgerSeq = ledgerForSeq->seq();
     // Identity must describe a closed ledger. Prefer a closed calc/cache view;
@@ -1283,7 +1290,7 @@ PathRequest::doUpdate(
             fullSearch,
             allowEscalate,
             didFullSearch,
-            calcLedger))
+            ledgerForSeq))
     {
         // Non-escalating revalidate produced nothing (mid-close revalidateOnly,
         // or closed subscription revalidate without fullSearch): restore last

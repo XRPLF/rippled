@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <thread>
@@ -868,6 +869,90 @@ class AssetCache_test : public beast::unit_test::Suite
     }
 
     /**
+     * A create-thread doUpdate is not under waveMutex_. SearchPin must block
+     * advanceLedger so Pathfinder, getRippleLines, and rippleCalculate cannot
+     * observe two different ledger_ values in one search.
+     */
+    void
+    testSearchPinBlocksAdvance()
+    {
+        testcase("SearchPin: advanceLedger waits out an in-flight search");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(gw["USD"](1000), alice);
+        env(pay(gw, alice, gw["USD"](5)));
+        env.close();
+
+        auto cache = std::make_shared<AssetCache>(
+            env.closed(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/10000,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/12,
+            /*lineChunkSize=*/64);
+
+        auto const seq0 = cache->getLedger()->seq();
+        {
+            AssetCache::SessionPin const pin{1};
+            BEAST_EXPECT(cache->getRippleLines(alice.id()));
+        }
+
+        env.close();
+        auto const newer = env.closed();
+        BEAST_EXPECT(newer->seq() > seq0);
+
+        std::atomic<bool> inPin{false};
+        std::atomic<bool> releasePin{false};
+        std::atomic<bool> callingAdvance{false};
+        std::atomic<std::uint32_t> seqInside{0};
+        std::atomic<std::uint32_t> seqEnd{0};
+
+        std::thread searcher([&] {
+            AssetCache::SearchPin const searchPin{*cache};
+            AssetCache::SessionPin const sessionPin{2};
+            seqInside = cache->getLedger()->seq();
+            auto lines = cache->getRippleLines(alice.id());
+            (void)lines;
+            inPin.store(true, std::memory_order_release);
+            while (!releasePin.load(std::memory_order_acquire))
+                std::this_thread::yield();
+            seqEnd = cache->getLedger()->seq();
+        });
+
+        while (!inPin.load(std::memory_order_acquire))
+            std::this_thread::yield();
+
+        std::thread advancer([&] {
+            callingAdvance.store(true, std::memory_order_release);
+            cache->advanceLedger(newer, /*forceClear=*/false);
+        });
+
+        while (!callingAdvance.load(std::memory_order_acquire))
+            std::this_thread::yield();
+        // If advanceLedger did not wait for SearchPin it would finish quickly
+        // and publish `newer`. Yield so an unblocked advance can win.
+        for (int i = 0; i < 10000 && cache->getLedger()->seq() == seq0; ++i)
+            std::this_thread::yield();
+        auto const seqWhilePinned = cache->getLedger()->seq();
+
+        releasePin.store(true, std::memory_order_release);
+        searcher.join();
+        advancer.join();
+
+        BEAST_EXPECT(seqInside == seq0);
+        BEAST_EXPECT(seqEnd == seq0);
+        BEAST_EXPECT(seqWhilePinned == seq0);
+        BEAST_EXPECT(cache->getLedger()->seq() == newer->seq());
+        BEAST_EXPECT(cache->ledgerAdvances() >= 1);
+        cache->releaseSession(1);
+        cache->releaseSession(2);
+    }
+
+    /**
      * Closing a session while its SessionPin is still live (in-flight doUpdate)
      * must not let later getRippleLines re-increment pinCount. That leftover
      * pin would keep a shared hub after every other session has released.
@@ -1137,6 +1222,7 @@ public:
         testGlobalBudgetBlocksNewLines();
         testLineEpochBumpsOnLoadAndExpand();
         testConcurrentReadersAndAdvance();
+        testSearchPinBlocksAdvance();
         testReleaseSessionRefusesLaterPins();
         testReleaseSessionBeforeFirstPin();
         testForgetSessionAllowsReuse();

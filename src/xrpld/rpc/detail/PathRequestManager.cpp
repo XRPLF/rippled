@@ -233,6 +233,10 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
     // create / legacy doCreate / mid-close) share the live view — Pathfinder
     // snapshots cache->getLedger() at construct; a slightly older closed view
     // than the ledger passed in is the intentional reuse window.
+    //
+    // advanceLedger waits for AssetCache::SearchPin (held for each doUpdate).
+    // Creates are not under waveMutex_, so that pin is what keeps a create
+    // Pathfinder from mixing line loads / rippleCalculate with a wave advance.
     if (!authoritative)
         return assetCache_;
 
