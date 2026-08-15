@@ -84,7 +84,7 @@ always goes through `beast::insight` instead.
 
 ## 1. OpenTelemetry Spans
 
-### 1.1 Complete Span Inventory (35 spans)
+### 1.1 Complete Span Inventory (38 spans)
 
 > **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [04-code-samples.md §4.6](./04-code-samples.md#46-span-flow-visualization) for span flow diagrams.
 
@@ -254,11 +254,13 @@ under an unrelated transaction's trace.
 
 ---
 
-### 1.2 Complete Attribute Inventory (83 attributes)
+### 1.2 Complete Attribute Inventory (89 attribute rows, 78 unique keys)
 
 > **See also**: [02-design-decisions.md §2.4.2](./02-design-decisions.md#242-span-attributes-by-category) for attribute design rationale and privacy considerations.
 
 Every span can carry key-value attributes that provide context for filtering and aggregation.
+
+The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each. That is 89 rows over 78 distinct keys. The §6 per-header counts use the same row-based rule, so they sum to 89.
 
 #### RPC Attributes
 
@@ -374,7 +376,7 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 | `quorum`                    | int64   | `consensus.check`                                                                                                      | Required quorum for validation                                        |
 | `validation_count`          | int64   | `consensus.check`                                                                                                      | Number of validations received                                        |
 | `trace_strategy`            | string  | `consensus.round`                                                                                                      | Trace sampling strategy used for this round                           |
-| `consensus_round_id`        | string  | `consensus.round`                                                                                                      | Deterministic round identifier                                        |
+| `consensus_round_id`        | int64   | `consensus.round`                                                                                                      | Deterministic round identifier (previous ledger seq + 1)              |
 | `mode_old`                  | string  | `consensus.mode_change`                                                                                                | Previous consensus mode                                               |
 | `mode_new`                  | string  | `consensus.mode_change`                                                                                                | New consensus mode                                                    |
 | `tx_id`                     | string  | `consensus.update_positions`                                                                                           | Disputed transaction ID                                               |
@@ -474,26 +476,26 @@ prefix=xrpld
 
 ### 2.1 Gauges
 
-| Prometheus Metric                                 | Source File           | Description                              | Typical Range                   |
-| ------------------------------------------------- | --------------------- | ---------------------------------------- | ------------------------------- |
-| `xrpld_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger      | 0–10 (healthy), >30 (stale)     |
-| `xrpld_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger      | 0–10 (healthy)                  |
-| `xrpld_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state | Monotonic                       |
-| `xrpld_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state    | Monotonic                       |
-| `xrpld_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state      | Monotonic                       |
-| `xrpld_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state     | Monotonic                       |
-| `xrpld_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state         | Monotonic (should dominate)     |
-| `xrpld_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected     | Low                             |
-| `xrpld_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected        | Low                             |
-| `xrpld_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing          | Low                             |
-| `xrpld_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking         | Low                             |
-| `xrpld_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full             | Low (should be 1 after startup) |
-| `xrpld_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections          | 0–85                            |
-| `xrpld_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections         | 10–21                           |
-| `xrpld_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count      | Low growth                      |
-| `xrpld_jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (all types)      | 0–100 (healthy)                 |
-| `xrpld_Node_family_full_below_cache_size`         | TaggedCache.h         | FullBelowCache entry count               | Varies                          |
-| `xrpld_Node_family_full_below_cache_hit_rate`     | TaggedCache.h         | FullBelowCache hit rate percentage       | 0–100                           |
+| Prometheus Metric                                 | Source File           | Description                                   | Typical Range                   |
+| ------------------------------------------------- | --------------------- | --------------------------------------------- | ------------------------------- |
+| `xrpld_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger           | 0–10 (healthy), >30 (stale)     |
+| `xrpld_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger           | 0–10 (healthy)                  |
+| `xrpld_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative microseconds in Disconnected state | Monotonic                       |
+| `xrpld_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative microseconds in Connected state    | Monotonic                       |
+| `xrpld_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative microseconds in Syncing state      | Monotonic                       |
+| `xrpld_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative microseconds in Tracking state     | Monotonic                       |
+| `xrpld_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative microseconds in Full state         | Monotonic (should dominate)     |
+| `xrpld_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected          | Low                             |
+| `xrpld_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected             | Low                             |
+| `xrpld_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing               | Low                             |
+| `xrpld_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking              | Low                             |
+| `xrpld_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full                  | Low (should be 1 after startup) |
+| `xrpld_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections               | 0–85                            |
+| `xrpld_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections              | 10–21                           |
+| `xrpld_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count           | Low growth                      |
+| `xrpld_jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (all types)           | 0–100 (healthy)                 |
+| `xrpld_Node_family_full_below_cache_size`         | TaggedCache.h         | FullBelowCache entry count                    | Varies                          |
+| `xrpld_Node_family_full_below_cache_hit_rate`     | TaggedCache.h         | FullBelowCache hit rate percentage            | 0–100                           |
 
 **Grafana dashboard**: _Node Health (StatsD)_ (`xrpld-statsd-node-health`)
 
@@ -894,11 +896,14 @@ All span names and attributes are defined as compile-time constants in colocated
 | `src/xrpld/rpc/detail/RpcSpanNames.h`           | RPC (HTTP/WS) | 5          | 5               | Includes `rpc.ws_upgrade` error path        |
 | `src/xrpld/rpc/detail/PathFindSpanNames.h`      | PathFind      | 5          | 8               | Covers one-shot and subscription paths      |
 | `src/xrpld/app/main/GrpcSpanNames.h`            | gRPC          | 1          | 3               | Flat single-span structure per request      |
-| `src/xrpld/app/misc/TxSpanNames.h`              | Transaction   | 2          | 7               | Includes peer context attributes            |
-| `src/xrpld/app/misc/detail/TxQSpanNames.h`      | TxQ           | 6          | 11              | Queue lifecycle: enqueue through cleanup    |
-| `src/xrpld/app/consensus/ConsensusSpanNames.h`  | Consensus     | 10         | 35              | Deterministic trace IDs, close-time details |
+| `src/xrpld/telemetry/TxSpanNames.h`             | Transaction   | 2          | 7               | Includes peer context attributes            |
+| `include/xrpl/tx/detail/TxApplySpanNames.h`     | Tx Apply      | 3          | 6               | Apply pipeline: preflight, preclaim, apply  |
+| `src/xrpld/app/misc/detail/TxQSpanNames.h`      | TxQ           | 6          | 13              | Queue lifecycle: enqueue through cleanup    |
+| `include/xrpl/consensus/ConsensusSpanNames.h`   | Consensus     | 10         | 35              | Deterministic trace IDs, close-time details |
 | `src/xrpld/app/ledger/detail/LedgerSpanNames.h` | Ledger        | 4          | 7               | Build, store, validate, tx.apply            |
 | `src/xrpld/overlay/detail/PeerSpanNames.h`      | Peer Overlay  | 2          | 5               | Proposal and validation receive             |
+
+Column totals: **38 spans** and **89 attribute rows**, matching §1.1 and §1.2. `tx.apply` is counted under `LedgerSpanNames.h`, which defines it; §1.1 lists it with the transaction spans.
 
 > **Design convention**: SpanNames headers are colocated with their subsystem classes rather than centralized in `telemetry/`. See [memory/feedback_span-names-colocation.md](../.claude/memory/feedback_span-names-colocation.md) for rationale.
 

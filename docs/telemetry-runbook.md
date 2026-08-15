@@ -160,8 +160,9 @@ hash); `tx.preflight` is stateless and omits both.
 # Find specific ledger's consensus details
 {name="consensus.accept.apply"} | ledger_seq = 92345678
 
-# Find all spans in a consensus round (deterministic trace strategy)
-{name="consensus.round"} | consensus_round_id = <round_id>
+# Find all spans in a consensus round (deterministic trace strategy).
+# consensus_round_id is an int64 — the previous ledger sequence plus one.
+{name="consensus.round"} | consensus_round_id = 92345679
 
 # Find dispute resolutions
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
@@ -249,10 +250,14 @@ sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx
 > a rising `tx.transactor` failure rate points to apply-time problems. Alert per
 > stage rather than on a single aggregate so the failing stage is obvious.
 
-> **Sampling caveat**: these stage metrics are span-derived and inherit the
-> **tracer head-sampling** ratio (`sampling_ratio`). At `sampling_ratio < 1.0`
-> they undercount proportionally — treat them as relative trends, not absolute
-> transaction counts. Native StatsD metrics are unsampled.
+> **Sampling caveat**: these stage metrics are span-derived, so they count only
+> the spans the collector's spanmetrics connector sees. Head sampling at the node
+> is fixed at 1.0 and is not configurable (`Telemetry.h`), and the shipped
+> collector pipeline has no tail sampling, so today nothing is dropped and the
+> counts are absolute. Volume reduction is delegated to the collector: adding a
+> tail-sampling processor to the traces pipeline puts it ahead of the spanmetrics
+> connector, and these metrics would then undercount proportionally — treat them
+> as relative trends in that case. Native StatsD metrics are never sampled.
 
 ### Transaction Queue Health
 
@@ -452,7 +457,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 {name=~"tx\\..*"} | tx_hash = "<hash>"
 
 # Find all spans in a cross-node consensus trace
-{rootServiceName="xrpld"} | consensus_round_id = <round_id>
+{rootServiceName="xrpld"} | consensus_round_id = 92345679
 
 # Compare latency between sender and receiver for validations
 {name="consensus.validation.send" || name="consensus.validation.receive"}
@@ -656,7 +661,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                                     | `command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
-| Overall RPC Throughput      | timeseries | `rpc.request` + `rpc.process` rate                                                                                                        | —                        |
+| Overall RPC Throughput      | timeseries | `rpc.http_request` + `rpc.process` rate                                                                                                   | —                        |
 | RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                                         | `status_code`            |
 | Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                                              | `command`                |
 | WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                     | —                        |
