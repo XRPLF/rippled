@@ -88,11 +88,17 @@ services:
 
   grafana:
     image: grafana/grafana:13.1.2
+    # Anonymous Admin is deliberate, and matches the sibling stack in
+    # docker-compose.yml. This stack is an ephemeral local/CI backend that
+    # run-full-validation.sh brings up and tears down around a single run; it
+    # holds no durable data and is never exposed beyond the host. Admin rather
+    # than Viewer because the harness drives the Grafana API against it, and
+    # the dashboards and datasources are provisioned from the mounts below.
     environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true # No login required for local dev
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin # Full access without auth
     ports:
-      - "3000:3000"
+      - "3000:3000" # Grafana web UI
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
