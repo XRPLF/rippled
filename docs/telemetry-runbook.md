@@ -806,7 +806,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ## Log-Trace Correlation
 
-When xrpld is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
+When xrpld is built with `telemetry=ON`, log lines emitted within an active, sampled OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
 2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
@@ -827,19 +827,19 @@ The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. 
 
 ```logql
 # Find all logs for a specific trace
-{job="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
+{service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
 # Error logs with trace context (log lines with ERR severity that have a trace_id)
-{job="xrpld"} |= "ERR" |= "trace_id="
+{service_name="xrpld"} |= "ERR" |= "trace_id="
 
 # All logs from a specific partition that were emitted during a span
-{job="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+{service_name="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
 
 # Logs from the last hour containing trace context
-{job="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
+{service_name="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
 
 # Count of traced vs untraced log lines
-count_over_time({job="xrpld"} |= "trace_id=" [5m])
+count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 ```
 
 ### Verifying Log Correlation
@@ -847,7 +847,7 @@ count_over_time({job="xrpld"} |= "trace_id=" [5m])
 1. Start the observability stack and xrpld with telemetry enabled.
 2. Send an RPC request: `curl http://localhost:5005 -d '{"method":"server_info"}'`
 3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
-4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{job="xrpld"} |= "trace_id="`.
+4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{service_name="xrpld"} |= "trace_id="`.
 5. Click the TraceID link to navigate to the corresponding trace in Tempo.
 
 ## Troubleshooting

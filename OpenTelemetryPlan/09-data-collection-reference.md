@@ -919,7 +919,7 @@ state_accounting_full_duration
 > **Plan details**: [06-implementation-phases.md §6.8.1](./06-implementation-phases.md) — motivation, architecture, Mermaid diagrams
 > **Task breakdown**: [Phase8_taskList.md](./Phase8_taskList.md) — per-task implementation details
 
-Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enabling log-trace correlation. When a log line is emitted within an active OTel span, the trace and span identifiers are automatically appended after the severity field:
+Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enabling log-trace correlation. When a log line is emitted within an active, sampled OTel span, the trace and span identifiers are automatically appended after the severity field:
 
 ### Log Format
 
@@ -935,7 +935,7 @@ Example:
 
 - **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo/Jaeger.
 - **`span_id=<hex16>`** — 16-character lowercase hex span identifier. Identifies the specific span within the trace.
-- **Only present** when the log is emitted within an active OTel span. Log lines outside of traced code paths have no trace context fields.
+- **Only present** when the log is emitted within an active OTel span whose context is sampled. Log lines outside of traced code paths, and lines inside a span the sampler dropped, have no trace context fields. A dropped span still carries its parent's identifiers, so emitting them would point at a trace that was never exported.
 
 ### Implementation
 
@@ -973,16 +973,16 @@ Grafana Loki (v3.4.2) serves as the log storage backend. It receives log entries
 
 ```logql
 # Find all logs for a specific trace
-{job="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
+{service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
 # Error logs with trace context
-{job="xrpld"} |= "ERR" |= "trace_id="
+{service_name="xrpld"} |= "ERR" |= "trace_id="
 
 # Logs from a specific partition with trace context
-{job="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+{service_name="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
 
 # Count traced log lines over time
-count_over_time({job="xrpld"} |= "trace_id=" [5m])
+count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 ```
 
 ---

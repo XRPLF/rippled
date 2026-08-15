@@ -23,6 +23,18 @@
 extensions:
   health_check:
     endpoint: 0.0.0.0:13133
+  # Persists filelog read offsets so a collector restart resumes where it
+  # stopped instead of re-reading each debug.log from the top. Without this
+  # the receiver keeps offsets in memory only.
+  #
+  # The directory must be writable by the user the collector runs as. The
+  # image ships no writable directory (no /var/lib, no /tmp), so this path
+  # comes from a mounted volume; see the otel-collector service in
+  # docker-compose.yml. Point `directory` somewhere else if a deployment
+  # mounts its state elsewhere.
+  file_storage/filelog:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
 
 receivers:
   otlp:
@@ -37,6 +49,14 @@ receivers:
   # optional — only present when the log was emitted within an active span.
   filelog:
     include: [/var/log/xrpld/*/debug.log]
+    # Read each file from the start. The upstream default is `end`, which
+    # skips everything written before the receiver's first poll — so any log
+    # line a node emitted before the collector got to it would be lost, and
+    # nothing is read at all from a file that has stopped being written to.
+    # Paired with the file_storage extension above so restarting the
+    # collector resumes at the last offset rather than re-ingesting the file.
+    start_at: beginning
+    storage: file_storage/filelog
     operators:
       # Log format emitted by Logs::format() is:
       #   YYYY-Mmm-DD HH:MM:SS.ffffff UTC <partition>:<severity> [trace_id=... span_id=...] <message>
@@ -56,16 +76,22 @@ processors:
     send_batch_size: 100
   resource/logs:
     attributes:
+      # Loki 3.x OTLP ingestion promotes only its own allow-list of resource
+      # attributes to stream (index) labels; `service.name` is on that list
+      # and arrives as the label `service_name`, which is what the LogQL
+      # examples in the runbook and TESTING.md select on.
+      #
+      # A custom `job` attribute is NOT on that list. Verified against
+      # grafana/loki:3.4.2 with the default config: after ingesting through
+      # this pipeline, /loki/api/v1/labels returned only `service_name` and
+      # `deployment_environment`, `{job="xrpld"}` matched 0 streams, and
+      # `job` appeared as structured metadata instead — which a `{...}`
+      # stream selector cannot match. Promoting it would mean mounting a Loki
+      # config and adding it to limits_config.otlp_config.resource_attributes
+      # (additive to Loki's defaults unless ignore_defaults is set), which is
+      # not worth a constant value — especially as Loki caps index labels at
+      # 15 and already promotes ~17 by default. Select on `service_name`.
       - key: service.name
-        value: xrpld
-        action: upsert
-      # Loki 3.x OTLP ingestion converts `service.name` to the label
-      # `service_name`. The runbook and integration-test queries use the
-      # canonical Loki label `job` so operators can paste `{job="xrpld"}`
-      # without guessing the otel-to-loki naming convention. Upsert the
-      # `job` resource attribute here so it round-trips through OTLP
-      # into Loki as the `job` label.
-      - key: job
         value: xrpld
         action: upsert
   # Deployment-tier tagging. Each collector serves ONE environment and ONE
@@ -175,7 +201,7 @@ exporters:
       enabled: true
 
 service:
-  extensions: [health_check]
+  extensions: [health_check, file_storage/filelog]
   pipelines:
     traces:
       receivers: [otlp]

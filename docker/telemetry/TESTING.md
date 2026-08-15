@@ -517,7 +517,7 @@ exports parsed entries to Loki. Verify Loki has received entries:
 ```bash
 # Query Loki for any xrpld logs
 curl -sG "http://localhost:3100/loki/api/v1/query" \
-    --data-urlencode 'query={job="xrpld"}' \
+    --data-urlencode 'query={service_name="xrpld"}' \
     --data-urlencode 'limit=5' | jq '.data.result | length'
 ```
 
@@ -534,7 +534,7 @@ Expected: > 0 results.
 ### Step 5: Verify Grafana Loki-to-Tempo correlation
 
 1. In Grafana **Explore**, select **Loki** datasource
-2. Query: `{job="xrpld"} |= "trace_id="`
+2. Query: `{service_name="xrpld"} |= "trace_id="`
 3. In the log results, click the **TraceID** derived field link
 4. Verify it navigates to the full trace in Tempo
 

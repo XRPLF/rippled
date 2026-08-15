@@ -21,6 +21,25 @@
 #   endpoint=http://localhost:4318/v1/traces
 
 services:
+  # One-shot init for the collector's offset store. Docker creates a fresh
+  # named volume owned by root, but the collector image runs as 10001:10001
+  # and ships no writable directory, so the file_storage extension could not
+  # create its database and the collector would fail to start. Chown the
+  # volume once, then exit; the collector waits for this to complete.
+  #
+  # Reuses the Prometheus image purely because the stack already pulls it and
+  # it has a shell — this adds no new image dependency. The entrypoint is
+  # overridden since that image normally starts the Prometheus server.
+  otelcol-storage-init:
+    image: prom/prometheus:v3.13.2
+    user: "0:0"
+    entrypoint: ["sh", "-c"]
+    command: ["mkdir -p /data/file_storage && chown -R 10001:10001 /data"]
+    volumes:
+      - otelcol-storage:/data
+    networks:
+      - xrpld-telemetry
+
   # OpenTelemetry Collector: receives spans from xrpld via OTLP protocol,
   # batches them for efficiency, and forwards to Tempo for storage.
   otel-collector:
@@ -43,9 +62,16 @@ services:
       # XRPLD_LOG_DIR to point at another root (e.g. the integration test sets
       # it to its own workdir). Mounted read-only so the collector only tails.
       - ${XRPLD_LOG_DIR:-./data/logs}:/var/log/xrpld:ro
+      # Persisted filelog read offsets, so a collector restart resumes
+      # instead of re-reading every debug.log from the top.
+      - otelcol-storage:/var/lib/otelcol
     depends_on:
-      - tempo
-      - loki
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+      otelcol-storage-init:
+        condition: service_completed_successfully
     networks:
       - xrpld-telemetry
 
@@ -118,6 +144,7 @@ volumes:
   tempo-data:
   prometheus-data:
   loki-data:
+  otelcol-storage:
 
 # Isolated bridge network so services communicate by container name
 # (e.g., the collector reaches Tempo at http://tempo:4317).

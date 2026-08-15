@@ -568,11 +568,11 @@ See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
 
 ---
 
-## 6.9 Phase 8: Log-Trace Correlation and Centralized Log Ingestion (Week 13)
+## 6.8.1 Phase 8: Log-Trace Correlation and Centralized Log Ingestion (Week 13)
 
 ### Motivation
 
-xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Jaeger/Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
+xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Jaeger/Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active, sampled span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
 
 #### Gains
 
@@ -590,7 +590,7 @@ xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoin
 
 #### Decision
 
-The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a span is active), and the filelog receiver regex is straightforward to maintain.
+The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a sampled span is active), and the filelog receiver regex is straightforward to maintain.
 
 ### Architecture
 
