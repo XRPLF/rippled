@@ -282,7 +282,14 @@ LEDGER_ADVANCE=$((FINAL_SEQ - INITIAL_SEQ))
 if [ "$ELAPSED" -gt 0 ] && [ "$LEDGER_ADVANCE" -gt 0 ]; then
     # Rough TPS: assume ~avg_txs_per_ledger * ledgers / elapsed.
     # Without tx count, use ledger close rate as proxy.
-    TPS=$(echo "scale=2; $LEDGER_ADVANCE / $ELAPSED" | bc 2>/dev/null || echo "0")
+    #
+    # awk rather than bc, because bc omits the leading zero: `scale=2` prints
+    # ".25", not "0.25", and a bare ".25" is not valid JSON. A value below 1 is
+    # the normal case here, not an edge case — ledgers close every few seconds,
+    # so advance/elapsed is well under 1 for any realistic window. jq happens
+    # to accept the malformed form, which is why it survived earlier checks,
+    # but a strict parser rejects the whole file. awk's %.2f always pads.
+    TPS=$(awk -v a="$LEDGER_ADVANCE" -v b="$ELAPSED" 'BEGIN { printf "%.2f", a / b }')
 else
     TPS="0"
 fi

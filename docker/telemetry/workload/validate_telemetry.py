@@ -399,10 +399,9 @@ async def validate_spans(
 
             # Validate required attributes on first trace.
             if count > 0 and span_def.get("required_attributes"):
-                trace_id = traces[0].get("traceID", "")
-                if trace_id:
-                    spans = await _tempo_get_trace(session, tempo_url, trace_id)
-                    await _validate_span_attributes_otlp(spans, span_def, report)
+                await _check_attributes_on_first_trace(
+                    session, tempo_url, traces, span_def, report
+                )
         except Exception as exc:
             report.add(
                 CheckResult(
@@ -427,6 +426,47 @@ async def validate_spans(
             )
             continue
         await _validate_parent_child(session, tempo_url, rel, report)
+
+
+async def _check_attributes_on_first_trace(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    traces: list[dict[str, Any]],
+    span_def: dict[str, Any],
+    report: ValidationReport,
+) -> None:
+    """Fetch the first trace and check the span's required attributes.
+
+    Fetching the trace is a second network call, so it carries its own error
+    handling. Letting it fall through to the caller's handler would add a
+    second result under the span's own check name, which has already recorded
+    the trace as found -- one entry passing and one failing for the same name,
+    inflating the check total and blaming the trace-existence check for an
+    attribute-fetch failure.
+
+    Args:
+        session:    aiohttp client session.
+        tempo_url:  Base URL for the Tempo API.
+        traces:     Traces returned for this span, most recent first.
+        span_def:   The span's entry from expected_spans.json.
+        report:     ValidationReport to accumulate results.
+    """
+    span_name = span_def["name"]
+    try:
+        trace_id = traces[0].get("traceID", "")
+        if not trace_id:
+            return
+        spans = await _tempo_get_trace(session, tempo_url, trace_id)
+        await _validate_span_attributes_otlp(spans, span_def, report)
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name=f"span.attrs.{span_name}",
+                category="span",
+                passed=False,
+                message=f"{span_name}: attribute check failed ({exc})",
+            )
+        )
 
 
 async def _validate_span_attributes_otlp(
