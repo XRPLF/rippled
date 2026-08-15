@@ -77,7 +77,7 @@ public:
      * disk-backed Families are unaffected. Per-Family so two
      * Applications in one process can disagree.
      */
-    virtual bool
+    [[nodiscard]] [[nodiscard]] virtual bool
     isNullBackend() const
     {
         return false;

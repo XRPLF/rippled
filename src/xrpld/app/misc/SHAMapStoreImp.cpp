@@ -246,11 +246,11 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 
     std::unique_ptr<node_store::Database> db;
 
-    if (isNullBackend_)
+    if (isNullBackend_ || deleteInterval_ == 0u)
     {
-        // Null mode: create a plain (non-rotating) Database with a
-        // single NullBackend.  No DatabaseRotatingImp, no rotation
-        // thread artifacts.  dbRotating_ stays nullptr.
+        // Null mode (and non-rotating disk): create a plain Database.
+        // No DatabaseRotatingImp, no rotation thread. dbRotating_ stays
+        // nullptr. [node_db] type=rwdb uses NullBackend via RWDBFactory.
         db = node_store::Manager::instance().makeDatabase(
             megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler_,
@@ -259,7 +259,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             app_.getJournal(kNodeStoreName));
         fdRequired_ += db->fdRequired();
     }
-    else if (deleteInterval_ != 0u)
+    else
     {
         SavedState state = stateDb_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
@@ -283,16 +283,6 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<node_store::Database*>(dbr.release()));
-    }
-    else
-    {
-        db = node_store::Manager::instance().makeDatabase(
-            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
-            scheduler_,
-            readThreads,
-            nscfg,
-            app_.getJournal(kNodeStoreName));
-        fdRequired_ += db->fdRequired();
     }
     return db;
 }

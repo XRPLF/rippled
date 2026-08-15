@@ -18,7 +18,7 @@
 // The interface is identical to std::shared_mutex, so it works with
 // std::shared_lock and std::unique_lock.
 
-#if defined(__linux__)
+#ifdef __linux__
 
 #include <pthread.h>
 

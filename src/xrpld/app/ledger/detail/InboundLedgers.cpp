@@ -21,7 +21,6 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
@@ -36,7 +35,6 @@
 #include <deque>
 #include <exception>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <mutex>
 #include <set>

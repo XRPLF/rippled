@@ -8,20 +8,42 @@
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/ReaderPreferringSharedMutex.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iterator>
 #include <limits>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <shared_mutex>
+#include <string>
+#include <utility>
+#include <variant>
 #include <vector>
 
 namespace xrpl {
@@ -76,11 +98,11 @@ private:
         ledgerHashToSeq_.erase(it);
         // Re-point at a surviving row with the same hash (newest first)
         // so a later overwrite of this sequence does not hide an older copy.
-        for (auto rit = ledgers_.rbegin(); rit != ledgers_.rend(); ++rit)
+        for (auto& ledger : std::ranges::reverse_view(ledgers_))
         {
-            if (rit->first != seq && rit->second.info.hash == hash)
+            if (ledger.first != seq && ledger.second.info.hash == hash)
             {
-                ledgerHashToSeq_[hash] = rit->first;
+                ledgerHashToSeq_[hash] = ledger.first;
                 break;
             }
         }
@@ -102,9 +124,13 @@ private:
         {
             accountIt->second.ledgerTxMap.erase(seq);
             if (accountIt->second.ledgerTxMap.empty())
+            {
                 accountIt = accountTxMap_.erase(accountIt);
+            }
             else
+            {
                 ++accountIt;
+            }
         }
     }
 
@@ -292,9 +318,13 @@ public:
         {
             accountIt->second.ledgerTxMap.erase(ledgerSeq);
             if (accountIt->second.ledgerTxMap.empty())
+            {
                 accountIt = accountTxMap_.erase(accountIt);
+            }
             else
+            {
                 ++accountIt;
+            }
         }
     }
 
@@ -811,10 +841,10 @@ public:
         LedgerIndex skipped = 0;
         int collected = 0;
 
-        for (auto it = ledgers_.rbegin(); it != ledgers_.rend(); ++it)
+        for (auto& ledger : std::ranges::reverse_view(ledgers_))
         {
-            auto const& transactions = it->second.transactions;
-            for (auto const& txHash : it->second.txOrder)
+            auto const& transactions = ledger.second.transactions;
+            for (auto const& txHash : ledger.second.txOrder)
             {
                 auto const txIt = transactions.find(txHash);
                 if (txIt == transactions.end())
@@ -899,14 +929,14 @@ public:
              rIt != std::make_reverse_iterator(txIt) && result.size() < maxResults;
              ++rIt)
         {
-            for (auto innerRIt = rIt->second.rbegin(); innerRIt != rIt->second.rend(); ++innerRIt)
+            for (auto const& innerRIt : std::ranges::reverse_view(rIt->second))
             {
                 if (skipped < options.offset)
                 {
                     ++skipped;
                     continue;
                 }
-                result.push_back(detachAccountTx(*innerRIt));
+                result.push_back(detachAccountTx(innerRIt));
                 if (result.size() >= maxResults)
                     break;
             }
@@ -1160,8 +1190,7 @@ public:
                     if (rtxIt->second.empty())
                         continue;
                     std::uint32_t txnSeq = rtxIt->second.size() - 1;
-                    for (auto innerRIt = rtxIt->second.rbegin(); innerRIt != rtxIt->second.rend();
-                         ++innerRIt)
+                    for (auto const& accountTx : std::ranges::reverse_view(rtxIt->second))
                     {
                         if (lookingForMarker)
                         {
@@ -1184,7 +1213,6 @@ public:
                             }
                         }
 
-                        auto const& accountTx = *innerRIt;
                         if (!txPasses(accountTx))
                         {
                             if (txnSeq > 0)
@@ -1244,14 +1272,14 @@ public:
             return {};
 
         static std::uint32_t const kPageLength(200);
-        auto onUnsavedLedger = std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
+        auto onUnsavedLedger = [this](std::uint32_t seq) { saveLedgerAsync(app_, seq); };
         AccountTxs ret;
         Application& app = app_;
         auto onTransaction = [&ret, &app](
                                  std::uint32_t ledgerIndex,
                                  std::string const& status,
-                                 Blob&& rawTxn,
-                                 Blob&& rawMeta) {
+                                 Blob const& rawTxn,
+                                 Blob const& rawMeta) {
             convertBlobsToTxResult(ret, ledgerIndex, status, rawTxn, rawMeta, app);
         };
 
@@ -1267,14 +1295,14 @@ public:
             return {};
 
         static std::uint32_t const kPageLength(200);
-        auto onUnsavedLedger = std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
+        auto onUnsavedLedger = [this](std::uint32_t seq) { saveLedgerAsync(app_, seq); };
         AccountTxs ret;
         Application& app = app_;
         auto onTransaction = [&ret, &app](
                                  std::uint32_t ledgerIndex,
                                  std::string const& status,
-                                 Blob&& rawTxn,
-                                 Blob&& rawMeta) {
+                                 Blob const& rawTxn,
+                                 Blob const& rawMeta) {
             convertBlobsToTxResult(ret, ledgerIndex, status, rawTxn, rawMeta, app);
         };
 
@@ -1290,7 +1318,7 @@ public:
             return {};
 
         static std::uint32_t const kPageLength(500);
-        auto onUnsavedLedger = std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
+        auto onUnsavedLedger = [this](std::uint32_t seq) { saveLedgerAsync(app_, seq); };
         MetaTxsList ret;
         auto onTransaction = [&ret](
                                  std::uint32_t ledgerIndex,
@@ -1311,7 +1339,7 @@ public:
             return {};
 
         static std::uint32_t const kPageLength(500);
-        auto onUnsavedLedger = std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
+        auto onUnsavedLedger = [this](std::uint32_t seq) { saveLedgerAsync(app_, seq); };
         MetaTxsList ret;
         auto onTransaction = [&ret](
                                  std::uint32_t ledgerIndex,

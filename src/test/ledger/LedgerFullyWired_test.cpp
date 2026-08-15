@@ -3,6 +3,7 @@
  * @brief Tests for Ledger fullyWired functionality.
  */
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
@@ -10,13 +11,15 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/app/misc/SHAMapStore.h>
+#include <xrpld/core/Config.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/jss.h>
 
 #include <atomic>
+#include <memory>
 #include <thread>
 #include <vector>
 
@@ -88,7 +91,7 @@ public:
 
         // fullWireForUse on a wired ledger should return true
         // (without null backend, it always returns true)
-        bool result = ledger->fullWireForUse(journal, "test context");
+        bool const result = ledger->fullWireForUse(journal, "test context");
         BEAST_EXPECT(result);
     }
 
@@ -108,15 +111,20 @@ public:
         std::atomic<int> unwiredReads{0};
 
         std::vector<std::thread> readers;
+        readers.reserve(10);
         for (int i = 0; i < 10; ++i)
         {
             readers.emplace_back([&]() {
                 for (int j = 0; j < 20; ++j)
                 {
                     if (ledger->isFullyWired())
+                    {
                         ++wiredReads;
+                    }
                     else
+                    {
                         ++unwiredReads;
+                    }
                 }
             });
         }
@@ -198,11 +206,11 @@ public:
 
         // A header-only disk ledger must stay usable while an RWDB Env
         // is alive in the same process.
-        Ledger diskHeaderOnly(
+        Ledger const diskHeaderOnly(
             disk.closed()->header(), disk.closed()->rules(), disk.app().getNodeFamily());
         BEAST_EXPECT(diskHeaderOnly.fullWireForUse(journal, "disk header-only"));
 
-        Ledger rwdbHeaderOnly(
+        Ledger const rwdbHeaderOnly(
             rwdb.closed()->header(), rwdb.closed()->rules(), rwdb.app().getNodeFamily());
         BEAST_EXPECT(!rwdbHeaderOnly.isFullyWired());
         BEAST_EXPECT(!rwdbHeaderOnly.fullWireForUse(journal, "rwdb header-only"));

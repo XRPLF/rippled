@@ -6,8 +6,10 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
+#include <exception>
 #include <functional>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -112,7 +114,7 @@ public:
         close();
     }
 
-    int
+    [[nodiscard]] [[nodiscard]] int
     fdRequired() const override
     {
         return 0;

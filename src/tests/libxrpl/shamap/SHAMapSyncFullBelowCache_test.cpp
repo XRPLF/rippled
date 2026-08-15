@@ -22,13 +22,13 @@ TEST(SHAMapSyncFullBelowCache, nullModeDisablesSharedCache)
 
 TEST(SHAMapSyncFullBelowCache, normalModeEnablesSharedCache)
 {
-    TestNodeFamily family{beast::Journal{beast::Journal::getNullSink()}};
+    TestNodeFamily const family{beast::Journal{beast::Journal::getNullSink()}};
     EXPECT_FALSE(family.isNullBackend());
 }
 
 TEST(SHAMapSyncFullBelowCache, familiesAreIndependent)
 {
-    TestNodeFamily disk{beast::Journal{beast::Journal::getNullSink()}};
+    TestNodeFamily const disk{beast::Journal{beast::Journal::getNullSink()}};
     TestNodeFamily rwdb{beast::Journal{beast::Journal::getNullSink()}};
     rwdb.setNullBackend(true);
     EXPECT_FALSE(disk.isNullBackend());

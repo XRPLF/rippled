@@ -78,7 +78,7 @@ public:
         acquire(hash, seq);
     }
 
-    bool
+    [[nodiscard]] bool
     isNullBackend() const override
     {
         return isNullBackend_;

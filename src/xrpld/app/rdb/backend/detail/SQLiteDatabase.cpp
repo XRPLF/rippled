@@ -11,6 +11,7 @@
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/ErrorCodes.h>

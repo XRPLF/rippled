@@ -4,11 +4,16 @@
  */
 
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Types.h>
+
+#include <memory>
+#include <utility>
 
 namespace xrpl::test {
 

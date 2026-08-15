@@ -2,6 +2,7 @@
 
 #include <xrpl/peerfinder/detail/Store.h>
 
+#include <cstddef>
 #include <vector>
 
 namespace xrpl::peer_finder {

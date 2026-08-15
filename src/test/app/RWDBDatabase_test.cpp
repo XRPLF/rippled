@@ -17,7 +17,7 @@
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -30,9 +30,12 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -76,7 +79,7 @@ class RWDBDatabase_test : public beast::unit_test::Suite
             indexed.emplace_back(
                 item.second->getFieldU32(sfTransactionIndex), item.first->getTransactionID());
         }
-        std::sort(indexed.begin(), indexed.end());
+        std::ranges::sort(indexed);
         std::vector<uint256> ids;
         ids.reserve(indexed.size());
         for (auto const& [_, id] : indexed)
@@ -140,7 +143,7 @@ class RWDBDatabase_test : public beast::unit_test::Suite
             BEAST_EXPECT(history[i]->getID() == expected[i]);
 
         auto hashOrder = expected;
-        std::sort(hashOrder.begin(), hashOrder.end());
+        std::ranges::sort(hashOrder);
         if (hashOrder != expected)
         {
             std::vector<uint256> actual(expected.size());
@@ -381,8 +384,9 @@ class RWDBDatabase_test : public beast::unit_test::Suite
         for (auto const& tx : history)
             ids.push_back(tx->getID());
         auto unique = ids;
-        std::sort(unique.begin(), unique.end());
-        unique.erase(std::unique(unique.begin(), unique.end()), unique.end());
+        std::ranges::sort(unique);
+        auto const uniq = std::ranges::unique(unique);
+        unique.erase(uniq.begin(), unique.end());
         BEAST_EXPECT(unique.size() == ids.size());
     }
 
@@ -414,7 +418,7 @@ class RWDBDatabase_test : public beast::unit_test::Suite
         BEAST_EXPECT(earlyMax < seqs.back());
 
         RelationalDatabase::AccountTxMarker const lateMarker{.ledgerSeq = laterMax, .txnSeq = 0};
-        RelationalDatabase::AccountTxPageOptions forward{
+        RelationalDatabase::AccountTxPageOptions const forward{
             .account = a1.id(),
             .ledgerRange = {.min = 0, .max = earlyMax},
             .marker = lateMarker,
@@ -427,7 +431,7 @@ class RWDBDatabase_test : public beast::unit_test::Suite
 
         RelationalDatabase::AccountTxMarker const earlyMarker{
             .ledgerSeq = seqs.front(), .txnSeq = 0};
-        RelationalDatabase::AccountTxPageOptions reverse{
+        RelationalDatabase::AccountTxPageOptions const reverse{
             .account = a1.id(),
             .ledgerRange = {.min = laterMin, .max = laterMax},
             .marker = earlyMarker,

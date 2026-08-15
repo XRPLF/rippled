@@ -4,9 +4,12 @@
  */
 
 #include <xrpl/basics/ReaderPreferringSharedMutex.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <atomic>
+#include <chrono>
+#include <mutex>
+#include <shared_mutex>
 #include <thread>
 #include <vector>
 
@@ -42,6 +45,7 @@ public:
 
         // Barrier: start all readers, then release them simultaneously
         std::vector<std::thread> readers;
+        readers.reserve(10);
         for (int i = 0; i < 10; ++i)
         {
             readers.emplace_back([&]() {
@@ -49,8 +53,8 @@ public:
                     std::this_thread::yield();
                 for (int j = 0; j < 5; ++j)
                 {
-                    std::shared_lock lock(mutex);
-                    int current = ++readerCount;
+                    std::shared_lock const lock(mutex);
+                    int const current = ++readerCount;
                     // Small hold time to ensure overlap across threads
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
                     // Track maximum concurrent readers
@@ -83,12 +87,13 @@ public:
 
         // Start readers that will try to acquire shared lock
         std::vector<std::thread> readers;
+        readers.reserve(5);
         for (int i = 0; i < 5; ++i)
         {
             readers.emplace_back([&]() {
                 while (!go.load())
                     std::this_thread::yield();
-                std::shared_lock lock(mutex);
+                std::shared_lock const lock(mutex);
                 // While we hold the shared lock, writer should not hold exclusive
                 BEAST_EXPECT(!writerHoldsLock.load());
                 ++readersInside;
@@ -103,7 +108,7 @@ public:
 
         // Writer acquires exclusive lock (blocks until all readers release)
         {
-            std::unique_lock lock(mutex);
+            std::unique_lock const lock(mutex);
             writerHoldsLock.store(true);
             // By the time writer gets the lock, all readers should have finished
             // (they acquire, increment, then release in the lambda above)
@@ -178,12 +183,13 @@ public:
         std::vector<std::thread> threads;
 
         // 2 writers
+        threads.reserve(2);
         for (int i = 0; i < 2; ++i)
         {
             threads.emplace_back([&]() {
                 while (!stop.load())
                 {
-                    std::unique_lock lock(mutex);
+                    std::unique_lock const lock(mutex);
                     ++writerSuccesses;
                 }
             });
@@ -195,7 +201,7 @@ public:
             threads.emplace_back([&]() {
                 while (!stop.load())
                 {
-                    std::shared_lock lock(mutex);
+                    std::shared_lock const lock(mutex);
                     ++readerSuccesses;
                 }
             });
@@ -208,8 +214,8 @@ public:
         for (auto& t : threads)
             t.join();
 
-        int readers = readerSuccesses.load();
-        int writers = writerSuccesses.load();
+        int const readers = readerSuccesses.load();
+        int const writers = writerSuccesses.load();
 
         // Both readers and writers should have made progress
         BEAST_EXPECT(readers > 0);

@@ -17,12 +17,12 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -35,6 +35,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
@@ -46,7 +47,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <limits>
 #include <memory>
 #include <mutex>
 #include <random>
@@ -73,7 +73,7 @@ findBestFullyWiredBase(
     if (!app.getSHAMapStore().isNullBackend())
         return {};
 
-    std::array<std::shared_ptr<Ledger const>, 2> candidates{
+    std::array<std::shared_ptr<Ledger const>, 2> const candidates{
         app.getInboundLedgers().getClosestFullyWiredLedger(targetLedger),
         app.getLedgerMaster().getClosestFullyWiredLedger(targetLedger)};
     return closestFullyWiredLedger(targetLedger, candidates, journal);

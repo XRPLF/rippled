@@ -734,7 +734,7 @@ public:
 
         try
         {
-            Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            Env const env(*this, envconfig([](std::unique_ptr<Config> cfg) {
                 cfg = rwdb(std::move(cfg));
                 cfg->ledgerHistory = 32;
                 cfg->section(Sections::kNodeDatabase).set(Keys::kOnlineDelete, "16");

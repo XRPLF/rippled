@@ -1829,9 +1829,9 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             seq, closeTime, Rules{config_->features}, config_->fees.toFees(), nodeFamily_);
         loadLedger->setTotalDrops(totalDrops);
 
-        for (json::UInt index = 0; index < ledger.get().size(); ++index)
+        for (auto& index : ledger.get())
         {
-            json::Value& entry = ledger.get()[index];
+            json::Value& entry = index;
 
             if (!entry.isObjectOrNull())
             {
@@ -1849,7 +1849,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             entry.removeMember(jss::index);
 
-            STParsedJSONObject stp("sle", ledger.get()[index]);
+            STParsedJSONObject stp("sle", index);
 
             if (!stp.object || uIndex.isZero())
             {

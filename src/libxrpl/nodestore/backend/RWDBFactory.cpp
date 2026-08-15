@@ -1,15 +1,18 @@
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/NullBackend.h>
 
 #include <boost/core/ignore_unused.hpp>
 
+#include <cstddef>
 #include <memory>
 #include <string>
 
-namespace xrpl {
-namespace node_store {
+namespace xrpl::node_store {
 
 /**
  * [node_db] type=rwdb is a NullBackend. Ledger state is retained
@@ -23,7 +26,7 @@ public:
         manager.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "RWDB";
@@ -48,8 +51,7 @@ public:
 void
 registerRWDBFactory(Manager& manager)
 {
-    static RWDBFactory instance{manager};
+    static RWDBFactory const kInstance{manager};
 }
 
-}  // namespace node_store
-}  // namespace xrpl
+}  // namespace xrpl::node_store

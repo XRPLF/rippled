@@ -1558,11 +1558,17 @@ class AccountTx_test : public beast::unit_test::Suite
             for (auto const& tx : res[jss::result][jss::transactions])
             {
                 if (tx.isMember(jss::tx_json) && tx[jss::tx_json].isMember(jss::hash))
+                {
                     hashes.push_back(tx[jss::tx_json][jss::hash].asString());
+                }
                 else if (tx.isMember(jss::tx) && tx[jss::tx].isMember(jss::hash))
+                {
                     hashes.push_back(tx[jss::tx][jss::hash].asString());
+                }
                 else if (tx.isMember(jss::hash))
+                {
                     hashes.push_back(tx[jss::hash].asString());
+                }
             }
             return hashes;
         };
@@ -1575,7 +1581,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         auto const after = collectHashes();
         BEAST_EXPECT(after.size() == before.size());
-        std::set<std::string> unique(after.begin(), after.end());
+        std::set<std::string> const unique(after.begin(), after.end());
         BEAST_EXPECT(unique.size() == after.size());
     }
 
@@ -1819,7 +1825,7 @@ class AccountTx_test : public beast::unit_test::Suite
         auto found = db.getTransaction(txHash, std::nullopt, ec);
         auto const* original = std::get_if<RelationalDatabase::AccountTx>(&found);
         BEAST_EXPECT(original && original->first);
-        if (!original || !original->first)
+        if ((original == nullptr) || !original->first)
             return;
         auto const oldSeq = original->first->getLedger();
         BEAST_EXPECT(oldSeq == src->header().seq);
@@ -1845,7 +1851,7 @@ class AccountTx_test : public beast::unit_test::Suite
         auto relocated = db.getTransaction(txHash, std::nullopt, ec2);
         auto const* updated = std::get_if<RelationalDatabase::AccountTx>(&relocated);
         BEAST_EXPECT(updated && updated->first);
-        if (updated && updated->first)
+        if ((updated != nullptr) && updated->first)
             BEAST_EXPECT(updated->first->getLedger() == info.seq);
 
         // Unbounded page (not the validated RPC range, which would exclude
@@ -1891,7 +1897,7 @@ class AccountTx_test : public beast::unit_test::Suite
         auto found = db.getTransaction(txHash, std::nullopt, ec);
         auto const* original = std::get_if<RelationalDatabase::AccountTx>(&found);
         BEAST_EXPECT(original && original->first);
-        if (!original || !original->first)
+        if ((original == nullptr) || !original->first)
             return;
 
         auto const storedSeq = original->first->getLedger();
@@ -1902,7 +1908,7 @@ class AccountTx_test : public beast::unit_test::Suite
         auto again = db.getTransaction(txHash, std::nullopt, ec2);
         auto const* second = std::get_if<RelationalDatabase::AccountTx>(&again);
         BEAST_EXPECT(second && second->first);
-        if (second && second->first)
+        if ((second != nullptr) && second->first)
         {
             BEAST_EXPECT(second->first.get() != original->first.get());
             BEAST_EXPECT(second->first->getLedger() == storedSeq);
@@ -2104,7 +2110,7 @@ class AccountTx_test : public beast::unit_test::Suite
         }
 
         auto& db = env.app().getRelationalDatabase();
-        RelationalDatabase::AccountTxPageOptions firstPage{
+        RelationalDatabase::AccountTxPageOptions const firstPage{
             .account = a1.id(),
             .ledgerRange = {.min = 0, .max = 0},
             .marker = std::nullopt,
@@ -2121,7 +2127,7 @@ class AccountTx_test : public beast::unit_test::Suite
         auto const laterMax = seqs.back();
         BEAST_EXPECT(markerSeq < laterMin);
 
-        RelationalDatabase::AccountTxPageOptions ranged{
+        RelationalDatabase::AccountTxPageOptions const ranged{
             .account = a1.id(),
             .ledgerRange = {.min = laterMin, .max = laterMax},
             .marker = first.second,

@@ -43,9 +43,10 @@ namespace xrpl {
 
 namespace {
 
-std::atomic<std::uint64_t> canonicalInnerBranchesHarvested_{0};
+std::atomic<std::uint64_t> gCanonicalInnerBranchesHarvested{0};
 
-/** Join linked children from a discarded same-hash inner onto the cache winner.
+/**
+ * Join linked children from a discarded same-hash inner onto the cache winner.
  *
  * Same-hash inners have identical branch masks and child hashes. Installing a
  * child the winner lacks can only add linkage; it cannot change content.
@@ -61,13 +62,13 @@ mergeCanonicalInner(SHAMapTreeNodePtr const& canonical, SHAMapTreeNodePtr const&
 
     for (int branch = 0; branch < SHAMapInnerNode::kBranchFactor; ++branch)
     {
-        if (cached->isEmptyBranch(branch) || cached->getChildPointer(branch))
+        if (cached->isEmptyBranch(branch) || (cached->getChildPointer(branch) != nullptr))
             continue;
         auto child = other->getChild(branch);
         if (!child)
             continue;
         cached->canonicalizeChild(branch, std::move(child));
-        canonicalInnerBranchesHarvested_.fetch_add(1, std::memory_order_relaxed);
+        gCanonicalInnerBranchesHarvested.fetch_add(1, std::memory_order_relaxed);
     }
 }
 
@@ -1207,7 +1208,7 @@ SHAMap::canonicalize(SHAMapHash const& hash, SHAMapTreeNodePtr& node) const
 std::uint64_t
 SHAMap::canonicalInnerBranchesHarvested()
 {
-    return canonicalInnerBranchesHarvested_.load(std::memory_order_relaxed);
+    return gCanonicalInnerBranchesHarvested.load(std::memory_order_relaxed);
 }
 
 void

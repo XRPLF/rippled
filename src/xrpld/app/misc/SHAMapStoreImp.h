@@ -122,7 +122,7 @@ private:
 public:
     SHAMapStoreImp(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
 
-    ~SHAMapStoreImp() = default;
+    ~SHAMapStoreImp() override = default;
 
     bool
     isNullBackend() const override

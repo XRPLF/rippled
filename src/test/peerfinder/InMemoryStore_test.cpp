@@ -7,9 +7,11 @@
 
 #include <xrpld/peerfinder/detail/InMemoryStore.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <cstddef>
 #include <set>
+#include <vector>
 
 namespace xrpl::peer_finder::test {
 
@@ -54,7 +56,7 @@ public:
         store.save(inputs);
 
         std::vector<Store::Entry> loaded;
-        std::size_t count = store.load([&loaded](beast::ip::Endpoint endpoint, int valence) {
+        std::size_t const count = store.load([&loaded](beast::ip::Endpoint endpoint, int valence) {
             Store::Entry e;
             e.endpoint = endpoint;
             e.valence = valence;
@@ -79,7 +81,8 @@ public:
         InMemoryStore store;
 
         std::size_t callCount = 0;
-        std::size_t count = store.load([&callCount](beast::ip::Endpoint, int) { ++callCount; });
+        std::size_t const count =
+            store.load([&callCount](beast::ip::Endpoint, int) { ++callCount; });
 
         BEAST_EXPECT(count == 0);
         BEAST_EXPECT(callCount == 0);
@@ -96,7 +99,7 @@ public:
         e1.endpoint = beast::ip::randomEP(true);
         e1.valence = 100;
 
-        std::vector<Store::Entry> first = {e1};
+        std::vector<Store::Entry> const first = {e1};
 
         store.save(first);
 
@@ -113,7 +116,7 @@ public:
         store.save(second);
 
         std::vector<Store::Entry> loaded;
-        std::size_t count = store.load([&loaded](beast::ip::Endpoint endpoint, int valence) {
+        std::size_t const count = store.load([&loaded](beast::ip::Endpoint endpoint, int valence) {
             Store::Entry e;
             e.endpoint = endpoint;
             e.valence = valence;
@@ -138,8 +141,8 @@ public:
 
         InMemoryStore store;
 
-        beast::ip::Endpoint ep1 = beast::ip::randomEP(true);
-        beast::ip::Endpoint ep2 = beast::ip::randomEP(true);
+        beast::ip::Endpoint const ep1 = beast::ip::randomEP(true);
+        beast::ip::Endpoint const ep2 = beast::ip::randomEP(true);
 
         Store::Entry e1;
         e1.endpoint = ep1;
@@ -149,7 +152,7 @@ public:
         e2.endpoint = ep2;
         e2.valence = 200;
 
-        std::vector<Store::Entry> inputs = {e1, e2};
+        std::vector<Store::Entry> const inputs = {e1, e2};
 
         store.save(inputs);
 
@@ -157,7 +160,7 @@ public:
         for (int iter = 0; iter < 3; ++iter)
         {
             std::set<int> valences;
-            std::size_t count = store.load(
+            std::size_t const count = store.load(
                 [&valences](beast::ip::Endpoint, int valence) { valences.insert(valence); });
 
             BEAST_EXPECT(count == inputs.size());

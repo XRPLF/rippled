@@ -126,7 +126,7 @@ public:
         isNullBackend_ = enable;
     }
 
-    bool
+    [[nodiscard]] bool
     isNullBackend() const override
     {
         return isNullBackend_;

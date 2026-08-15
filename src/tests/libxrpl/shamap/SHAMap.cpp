@@ -393,7 +393,7 @@ protected:
         int n = 0;
         for (int b = 0; b < SHAMapInnerNode::kBranchFactor; ++b)
         {
-            if (!inner.isEmptyBranch(b) && inner.getChildPointer(b))
+            if (!inner.isEmptyBranch(b) && (inner.getChildPointer(b) != nullptr))
                 ++n;
         }
         return n;

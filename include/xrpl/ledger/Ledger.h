@@ -22,6 +22,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <memory>
