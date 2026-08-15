@@ -267,10 +267,10 @@ private:
         PathFindTrustLine::DirCursor cursor{};
 
         /**
-         * After soft advance of an incomplete pin: next loadOutgoing *or*
-         * expandAccountUnlocked wants at least this many lines from page 0
-         * (progress hint). 0 = normal chunk. Never used to resume a
-         * cross-ledger DirCursor.
+         * From-page-0 target for the next loadOutgoing / expandAccountUnlocked.
+         * Set when a soft-advance drops an incomplete pin, and when a reload
+         * is clamped below the remembered size by the global line budget.
+         * 0 = normal chunk. Never used to resume a cross-ledger DirCursor.
          */
         std::size_t reloadMinLines{0};
 

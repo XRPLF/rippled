@@ -486,6 +486,12 @@ AssetCache::loadOutgoingUnlocked(AccountID const& accountID)
     }
     // else: remaining == 0 → empty, incomplete (cursor still at start; lines null)
 
+    // Budget may satisfy only part of progressHint (or none). Keep the
+    // from-page-0 target so expand / the next soft advance still aim at the
+    // remembered size instead of one chunk from the shrunken snapshot.
+    if (!entry.cursor.complete && progressHint > entry.storedLineCount())
+        entry.reloadMinLines = std::min(progressHint, maxLinesPerAccount_);
+
     if (!entry.cursor.complete)
     {
         // Budget exhaustion is the surprising case; normal progressive chunks log at debug.

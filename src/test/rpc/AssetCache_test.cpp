@@ -432,6 +432,89 @@ class AssetCache_test : public beast::unit_test::Suite
         BEAST_EXPECT(cache->totalLineCount() == 0);
     }
 
+    /**
+     * Soft advance of an incomplete pin stashes reloadMinLines, then drops
+     * the lines (freeing budget). If another pinned hub consumes that
+     * budget before the first account reloads, loadOutgoing clamps `want`
+     * and used to publish a tiny snapshot with reloadMinLines = 0. The next
+     * advance then remembered only the small stored count, so a busy
+     * account grew one chunk per ledger after a brief budget squeeze.
+     */
+    void
+    testBudgetClampKeepsReloadHint()
+    {
+        testcase("budget-clamped reload keeps reloadMinLines for later expand");
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        fundManyLines(env, alice, 8, "ba");
+        fundManyLines(env, bob, 6, "bb");
+
+        constexpr std::size_t kChunk = 2;
+        auto cache = std::make_shared<AssetCache>(
+            env.current(),
+            env.app().getJournal("AssetCache"),
+            /*maxTotalLines=*/6,
+            /*maxLinesPerAccount=*/1000,
+            /*cacheReuseLedgers=*/12,
+            /*lineChunkSize=*/kChunk);
+
+        {
+            AssetCache::SessionPin pin{1};
+            auto lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines && lines->size() == kChunk);
+            BEAST_EXPECT(cache->expandIncompleteLinesForSession(1));
+            lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines && lines->size() == 4);
+        }
+        {
+            AssetCache::SessionPin pin{2};
+            auto lines = cache->getRippleLines(bob.id());
+            BEAST_EXPECT(lines && lines->size() == kChunk);
+        }
+        BEAST_EXPECT(cache->totalLineCount() == 6);
+
+        // Stubs: alice hint = 4+2=6, bob hint = 2+2=4. Line budget freed.
+        env.close();
+        cache->advanceLedger(env.closed(), /*forceClear=*/false);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+
+        // Bob consumes most of the budget before alice reloads.
+        {
+            AssetCache::SessionPin pin{2};
+            auto lines = cache->getRippleLines(bob.id());
+            BEAST_EXPECT(lines && lines->size() == 4);
+        }
+        {
+            AssetCache::SessionPin pin{1};
+            auto lines = cache->getRippleLines(alice.id());
+            // Remaining budget is 2; snapshot shrinks. Hint must survive.
+            BEAST_EXPECT(lines && lines->size() == kChunk);
+        }
+        BEAST_EXPECT(cache->totalLineCount() == 6);
+
+        // Another close must not rebase the hint on the shrunken snapshot.
+        // Both accounts are still incomplete, so both become 0-line stubs.
+        env.close();
+        cache->advanceLedger(env.closed(), /*forceClear=*/false);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+
+        cache->releaseSession(2);
+
+        // expand consumes preserved hint (6), not one chunk from 2.
+        BEAST_EXPECT(cache->expandIncompleteLinesForSession(1));
+        BEAST_EXPECT(cache->totalLineCount() == 6);
+        {
+            AssetCache::SessionPin pin{1};
+            auto lines = cache->getRippleLines(alice.id());
+            BEAST_EXPECT(lines && lines->size() == 6);
+        }
+
+        cache->releaseSession(1);
+        BEAST_EXPECT(cache->totalLineCount() == 0);
+    }
+
     void
     testLoadScopeDrainsIncompleteSharedHit()
     {
@@ -1064,6 +1147,7 @@ public:
         testAdvanceLedgerSoftRetainAndForceClear();
         testSoftAdvanceResetsIncompleteCursor();
         testSoftAdvanceExpandHonorsReloadHint();
+        testBudgetClampKeepsReloadHint();
         testLoadScopeDrainsIncompleteSharedHit();
         testReuseWindowExpiryReloads();
         testReuseWindowExpiryKeepsCompleteLineCount();
