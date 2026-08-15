@@ -161,6 +161,9 @@ enum WarningCodeI {
     // unused = 1004
     WarnRpcFieldsDeprecated = 2004,  // xrpld needs to maintain
                                      // compatibility with Clio on this code.
+    WarnRpcPathLinesPartial = 2005,
+    WarnRpcPathRevalidateFailed = 2006,
+    WarnRpcPathSourceCurrenciesTruncated = 2007,
 };
 
 //------------------------------------------------------------------------------

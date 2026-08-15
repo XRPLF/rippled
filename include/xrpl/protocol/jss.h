@@ -687,7 +687,7 @@ JSS(vote);                        // in: Feature
 JSS(vote_slots);                  // out: amm_info
 JSS(vote_weight);                 // out: amm_info
 JSS(warning);                     // rpc:
-JSS(warnings);                    // out: server_info, server_state
+JSS(warnings);                    // out: server_info, server_state, path_find
 JSS(workers);                     //
 JSS(write_load);                  // out: GetCounts
 

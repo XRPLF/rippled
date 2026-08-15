@@ -159,8 +159,8 @@ public:
 
     /**
      * True if any account pinned by sessionId still has an incomplete
-     * owner-dir cursor. Used for path_find `warning` / `warnings`
-     * `path_lines_partial`
+     * owner-dir cursor. Used for path_find `warning` /
+     * `warnings` (`path_lines_partial` / WarnRpcPathLinesPartial)
      * so unrelated sessions are not flagged for a shared-cache whale.
      */
     [[nodiscard]] bool

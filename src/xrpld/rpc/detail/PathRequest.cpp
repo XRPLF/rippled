@@ -79,21 +79,50 @@ setClosedLedgerIdentity(json::Value& dest, std::shared_ptr<ReadView const> const
 }
 
 /**
- * Path notices go in both `warning` (streamed path_find updates) and
- * `warnings` (array). ServerHandler overwrites result[warning] with "load"
- * on the create/status RPC envelope when the connection is busy; the array
- * survives that so clients still see a partial/stale/truncated notice.
+ * Path notices go in both `warning` (token string for streamed path_find
+ * updates) and `warnings` (the documented `{id, message}` array).
+ * ServerHandler overwrites result[warning] with "load" on the create/status
+ * RPC envelope when the connection is busy; the array survives that so
+ * clients still see a partial/stale/truncated notice.
  */
 void
-setPathFindNotice(json::Value& dest, char const* code)
+setPathFindNotice(json::Value& dest, WarningCodeI code)
 {
-    if (!code || dest.isMember(jss::error) || dest.isMember(jss::warning))
+    if (dest.isMember(jss::error) || dest.isMember(jss::warning))
         return;
 
-    dest[jss::warning] = code;
+    char const* token = nullptr;
+    char const* message = nullptr;
+    switch (code)
+    {
+        case WarnRpcPathLinesPartial:
+            token = "path_lines_partial";
+            message =
+                "Trust lines for accounts used by this path_find subscription "
+                "are still being filled. Results may be incomplete.";
+            break;
+        case WarnRpcPathRevalidateFailed:
+            token = "path_revalidate_failed";
+            message =
+                "Incremental revalidate found no live paths; the previous "
+                "alternatives were re-sent for display only and may be stale.";
+            break;
+        case WarnRpcPathSourceCurrenciesTruncated:
+            token = "path_source_currencies_truncated";
+            message =
+                "The auto source-currency set was cut at the subscription "
+                "soft cap. Results are valid for the included currencies only.";
+            break;
+        default:
+            return;
+    }
+
+    dest[jss::warning] = token;
     if (!dest.isMember(jss::warnings) || !dest[jss::warnings].isArray())
         dest[jss::warnings] = json::Value{json::ValueType::Array};
-    dest[jss::warnings].append(code);
+    json::Value& w = dest[jss::warnings].append(json::ValueType::Object);
+    w[jss::id] = code;
+    w[jss::message] = message;
 }
 
 }  // namespace
@@ -1254,7 +1283,7 @@ PathRequest::doUpdate(
         {
             bLastSuccess_ = false;
             newStatus[jss::full_reply] = false;
-            setPathFindNotice(newStatus, "path_revalidate_failed");
+            setPathFindNotice(newStatus, WarnRpcPathRevalidateFailed);
         }
         else
         {
@@ -1285,9 +1314,9 @@ PathRequest::doUpdate(
     // Soft auto-source truncation is also a warning (not an error): results are
     // still valid for the included currencies, just not exhaustive.
     if (sourceCurrenciesTruncated_)
-        setPathFindNotice(newStatus, "path_source_currencies_truncated");
+        setPathFindNotice(newStatus, WarnRpcPathSourceCurrenciesTruncated);
     else if (cache->hasIncompleteLinesForSession(iIdentifier_))
-        setPathFindNotice(newStatus, "path_lines_partial");
+        setPathFindNotice(newStatus, WarnRpcPathLinesPartial);
 
     if (fast && quickReply_ == steady_clock::time_point{})
     {

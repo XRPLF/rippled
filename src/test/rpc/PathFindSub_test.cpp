@@ -37,6 +37,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
@@ -885,7 +886,9 @@ class PathFindSub_test : public beast::unit_test::Suite
             for (unsigned i = 0; i < jr[jss::warnings].size(); ++i)
             {
                 auto const& w = jr[jss::warnings][i];
-                if (w.isString() && w.asString() == "path_source_currencies_truncated")
+                BEAST_EXPECT(w.isObject() && w.isMember(jss::id) && w.isMember(jss::message));
+                if (w.isObject() && w.isMember(jss::id) &&
+                    w[jss::id].asInt() == WarnRpcPathSourceCurrenciesTruncated)
                     sawTrunc = true;
             }
             BEAST_EXPECT(sawTrunc);
@@ -899,6 +902,14 @@ class PathFindSub_test : public beast::unit_test::Suite
             if (upd->isMember(jss::warning))
                 BEAST_EXPECT((*upd)[jss::warning].asString() == "path_source_currencies_truncated");
             BEAST_EXPECT(upd->isMember(jss::warnings) && (*upd)[jss::warnings].isArray());
+            if (upd->isMember(jss::warnings) && (*upd)[jss::warnings].isArray() &&
+                (*upd)[jss::warnings].size() > 0)
+            {
+                auto const& w = (*upd)[jss::warnings][0u];
+                BEAST_EXPECT(w.isObject() && w.isMember(jss::id) && w.isMember(jss::message));
+                if (w.isObject() && w.isMember(jss::id))
+                    BEAST_EXPECT(w[jss::id].asInt() == WarnRpcPathSourceCurrenciesTruncated);
+            }
         }
 
         bool sawXrpSource = false;
