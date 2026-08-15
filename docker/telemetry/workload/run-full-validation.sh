@@ -354,6 +354,50 @@ done
 # ---------------------------------------------------------------------------
 # Step 3: Wait for consensus
 # ---------------------------------------------------------------------------
+# Report whether a node process is still alive.
+#
+# A child that has exited but not yet been waited on still answers `kill -0`,
+# because the zombie keeps its pid until someone collects it. Checking only
+# `kill -0` therefore reads a dead node as alive for the whole readiness
+# window, which is how a crashed node came to look like a slow one.
+node_running() {
+    local pid="$1" state
+    kill -0 "$pid" 2>/dev/null || return 1
+    if [ -r "/proc/$pid/stat" ]; then
+        state=$(awk '{print $3}' "/proc/$pid/stat" 2>/dev/null || echo "?")
+        [ "$state" != "Z" ] || return 1
+    fi
+    return 0
+}
+
+# Print why each stopped node stopped: its wait status, then its last output.
+#
+# The status is the discriminator this harness was missing -- 137 is SIGKILL
+# (the kernel reclaiming memory), 139 a segfault, 134 an abort, anything under
+# 128 a deliberate exit. The nodes are direct children of this script, so their
+# status is still retrievable until something waits on them.
+#
+# stdout is printed inline rather than left to the artifact upload because a
+# node that dies before its debug log opens writes nothing else, and a
+# cancelled run uploads nothing at all.
+report_stopped_nodes() {
+    local i pid status
+    for i in $(seq 1 "$NUM_NODES"); do
+        pid=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null || echo "")
+        [ -n "$pid" ] || continue
+        node_running "$pid" && continue
+        status=0
+        wait "$pid" 2>/dev/null || status=$?
+        warn "node$i (pid $pid) is not running — wait status $status"
+        if [ -s "$WORKDIR/node$i/stdout.log" ]; then
+            warn "node$i last output:"
+            tail -n 15 "$WORKDIR/node$i/stdout.log" | sed 's/^/      /' >&2
+        else
+            warn "node$i wrote no stdout at all"
+        fi
+    done
+}
+
 log "Step 3: Waiting for consensus..."
 for attempt in $(seq 1 120); do
     ready=0
@@ -378,6 +422,21 @@ for attempt in $(seq 1 120); do
         ok "All $NUM_NODES nodes proposing (attempt $attempt)"
         break
     fi
+    # A stopped process will never reach proposing. Waiting out the rest of the
+    # window only delays the same failure and buries its cause under two
+    # minutes of progress output.
+    stopped=0
+    for n in $(seq 1 "$NUM_NODES"); do
+        p=$(cat "$WORKDIR/node$n/xrpld.pid" 2>/dev/null || echo "")
+        if [ -n "$p" ] && ! node_running "$p"; then
+            stopped=$((stopped + 1))
+        fi
+    done
+    if [ "$stopped" -gt 0 ]; then
+        echo ""
+        report_stopped_nodes
+        die "$stopped of $NUM_NODES node(s) stopped during startup; only $ready reached proposing. Not proposing:${laggards}. Per-node status is above, then '$0 --cleanup'."
+    fi
     if [ "$attempt" -eq 120 ]; then
         # Fatal, not a warning. A partial cluster still answers queries, so the
         # run would complete and report unrelated span/metric failures: series
@@ -385,6 +444,10 @@ for attempt in $(seq 1 120); do
         # quorum are simply never emitted. One infrastructure error here is
         # worth more than a pile of misleading assertion failures later.
         echo ""
+        # Every node is still running but not proposing, so this is a genuine
+        # convergence problem rather than a crash. Run the reporter anyway: it
+        # is a no-op when nothing stopped, and it costs nothing to be sure.
+        report_stopped_nodes
         die "Consensus timeout — only $ready/$NUM_NODES nodes proposing after ${attempt}s. Not proposing:${laggards}. Check $WORKDIR/node*/debug.log and $WORKDIR/node*/stdout.log (a node that died before its log sink opened writes only the latter), then '$0 --cleanup'."
     fi
     printf "\r  %d/%d nodes proposing..." "$ready" "$NUM_NODES"
