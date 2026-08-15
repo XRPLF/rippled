@@ -156,6 +156,13 @@ jobs:
           build_type: Release
           log_verbosity: verbose
 
+      # telemetry is passed explicitly even though the CMake option and the
+      # Conan recipe both default it on. The whole point of this workflow is to
+      # exercise telemetry, so it should not silently depend on a default it
+      # does not control: if that default ever flips, every span and metric
+      # assertion would fail for a reason no log names. Stated here, a build
+      # without the dependency fails loudly instead, because CMakeLists.txt
+      # does find_package(opentelemetry-cpp CONFIG REQUIRED) under this option.
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
@@ -163,6 +170,7 @@ jobs:
               -G Ninja \
               -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
               -DCMAKE_BUILD_TYPE=Release \
+              -Dtelemetry=ON \
               ..
 
       - name: Build xrpld
