@@ -285,9 +285,9 @@ namespace {
  * Matches project convention (no std::async): each unit is JtPathFindWork so
  * concurrency is visible to job accounting. Requested width is
  * kPathSteadyUpdateParallelism (== kPathFindWorkLimit); effective width is:
- *   workers < 3  → serial (no fork-join)
- *   workers >= 3 → min(requested, workers - 1) per batch
- *                  (1 unit inline + ≤ workers - 2 JtPathFindWork siblings)
+ *   workers < 4  → serial (no fork-join)
+ *   workers >= 4 → min(requested, workers - 2) per batch
+ *                  (1 unit inline + ≤ workers - 3 JtPathFindWork siblings)
  *
  * workerCount comes from JobQueue::getWorkerCount() (actual pool size), not a
  * re-derived Config estimate — the old floor of 2 forced serial revalidate on
@@ -302,9 +302,9 @@ namespace {
  *   - Thread B: second updateAll blocks on waveMutex_ (closed vs mid-close)
  *   - No free worker left for JtPathFindWork → both wait forever
  *
- * Mitigations (thresholds above): serial for workers < 3; batch ≤ workers - 1
- * reserves one pool thread for a concurrent waveMutex_ waiter. Safe with
- * mid-close try_lock (skips rather than blocking a third pool thread forever).
+ * Mitigations (thresholds above): serial for workers < 4; batch ≤ workers - 2
+ * so a 3-worker pool (parent + one waiter + one other job) cannot stall the
+ * barrier. Mid-close still uses try_lock.
  *
  * Completes the full work vector — do not abort mid-wave for new path_find
  * sessions (that stretched mean update gap under load).
@@ -343,18 +343,17 @@ runParallel(
     };
 
     // Need: this parent (doneCv) + ≥1 sibling runner + spare for a concurrent
-    // waveMutex_ waiter. With only 2 workers the spare is gone as soon as a
-    // second updateAll blocks on the wave lock — permanent freeze.
-    if (workerCount < 3 || parallelism <= 1)
+    // waveMutex_ waiter + slack so one unrelated job cannot freeze the
+    // barrier. workers==3 sits on that edge — run serial there.
+    if (workerCount < 4 || parallelism <= 1)
     {
         runSerial(0, work.size());
         return;
     }
 
-    // 1 unit inline on this thread; queue ≤ workerCount-2 siblings so that
-    // even if another JobQueue thread is blocked on waveMutex_, the remaining
-    // workers can still complete the barrier.
-    auto const maxBatch = static_cast<std::size_t>(workerCount - 1);
+    // 1 unit inline on this thread; queue ≤ workerCount-3 siblings
+    // (maxBatch = workers-2 includes the inline unit).
+    auto const maxBatch = static_cast<std::size_t>(workerCount - 2);
     auto const par = static_cast<std::size_t>(
         std::max(std::size_t{1}, std::min(static_cast<std::size_t>(parallelism), maxBatch)));
 

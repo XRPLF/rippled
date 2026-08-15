@@ -164,6 +164,7 @@ enum WarningCodeI {
     WarnRpcPathLinesPartial = 2005,
     WarnRpcPathRevalidateFailed = 2006,
     WarnRpcPathSourceCurrenciesTruncated = 2007,
+    WarnRpcPathLinesBudget = 2008,
 };
 
 //------------------------------------------------------------------------------

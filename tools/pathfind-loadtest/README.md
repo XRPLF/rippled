@@ -6,9 +6,10 @@ ledger close (~4s) with ~100 WebSocket sessions while consensus stays
 `FULL` / `load_factor` ≈ 1.
 
 This tree keeps **in-process unit coverage** for the new machinery
-(`xrpl.rpc.AssetCache`, `xrpl.rpc.PathFindSub`). Full multi-connection load
-testing needs a live node and a client pool, so the harness lives in a small
-companion repo and is linked here for review / CI reproducibility.
+(`xrpl.rpc.AssetCache`, `xrpl.rpc.PathFindSub`). Those suites are the
+required, reproducible evidence. Full multi-connection load testing needs a
+live node and a client pool; the companion repo below is optional operator
+tooling, not an XRPLF-owned artifact.
 
 ## Companion harness
 

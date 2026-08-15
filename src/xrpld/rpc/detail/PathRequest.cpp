@@ -117,6 +117,13 @@ setPathFindNotice(json::Value& dest, WarningCodeI code)
                 "The auto source-currency set was cut at the subscription "
                 "soft cap. Results are valid for the included currencies only.";
             break;
+        case WarnRpcPathLinesBudget:
+            token = "path_lines_budget";
+            message =
+                "The path cache line budget is exhausted. Accounts used by "
+                "this request may be missing trust lines; empty alternatives "
+                "do not mean no route exists.";
+            break;
         default:
             return;
     }
@@ -1080,11 +1087,14 @@ PathRequest::doUpdate(
     AssetCache::SessionPin const sessionPin{iIdentifier_};
 
     // One-shot ripple_path_find: load/expand up to the per-account cap so the
-    // single reply sees the full line set (budget permitting).
+    // single reply sees the full line set (budget permitting). Do that only
+    // when this cache has no other live sessions — otherwise a 50k-line
+    // unique_lock drain stalls every WS revalidate worker and can empty
+    // max_total_lines. Shared-cache one-shots use the default chunk instead.
     // WebSocket path_find: default LoadScope (64-line chunks) and progressive
     // expand across later closed-ledger updates.
     std::optional<AssetCache::LoadScope> lineLoadScope;
-    if (hasCompletion())
+    if (hasCompletion() && cache->liveSessionCount() <= 1)
         lineLoadScope.emplace(app_.config().pathFindMaxLinesPerAccount);
 
     {
@@ -1120,7 +1130,9 @@ PathRequest::doUpdate(
     newStatus[jss::destination_account] = toBase58(*raDstAccount_);
     // NOLINTEND(bugprone-unchecked-optional-access)
     newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::Values::None);
-    newStatus[jss::full_reply] = !fast;
+    // Provisional: overwritten after findPaths. Mid-close revalidateOnly
+    // is not a full search even though fast==false.
+    newStatus[jss::full_reply] = false;
 
     if (jvId_)
         newStatus[jss::id] = jvId_;
@@ -1308,6 +1320,10 @@ PathRequest::doUpdate(
             }
         }
 
+        // full_reply means a Pathfinder graph search ran, not merely that
+        // this was a non-fast tick. Mid-close revalidate-only must stay false.
+        newStatus[jss::full_reply] = didFullSearch;
+
         if (restoredStale)
         {
             bLastSuccess_ = false;
@@ -1345,6 +1361,10 @@ PathRequest::doUpdate(
     if (sourceCurrenciesTruncated_)
     {
         setPathFindNotice(newStatus, WarnRpcPathSourceCurrenciesTruncated);
+    }
+    else if (cache->overBudget() && cache->hasIncompleteLinesForSession(iIdentifier_))
+    {
+        setPathFindNotice(newStatus, WarnRpcPathLinesBudget);
     }
     else if (cache->hasIncompleteLinesForSession(iIdentifier_))
     {

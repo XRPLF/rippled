@@ -46,7 +46,9 @@ namespace xrpl::test {
  *
  * Complements stock xrpl.app.Path / PathMPT (one-shot ripple_path_find) and
  * xrpl.rpc.AssetCache (direct cache unit tests including TSan-friendly
- * concurrency).
+ * concurrency). Wall time on a laptop is ~5s for this suite (~3s AssetCache);
+ * keep new cases off long absolute polls so CI stays under the 60s unittest
+ * guidance.
  *
  * updateAll is scheduled on the JobQueue (JtClient) to mirror production
  * (JtUpdatePf / JtRpc). Steady revalidate only fork-joins when JobQueue
@@ -236,8 +238,7 @@ class PathFindSub_test : public beast::unit_test::Suite
         {
             BEAST_EXPECT((*second)[jss::alternatives].isArray());
             BEAST_EXPECT((*second)[jss::alternatives].size() >= 1);
-            if (second->isMember(jss::full_reply))
-                BEAST_EXPECT((*second)[jss::full_reply].asBool());
+            // Second closed tick may be revalidate-only (full_reply false).
         }
         drainPathFind(*wsc);
 
@@ -876,29 +877,13 @@ class PathFindSub_test : public beast::unit_test::Suite
         // first-Pathfind B (isFirst skip) and must not steal the create signal.
         BEAST_EXPECT(runUpdateAll(env, env.current(), /*midClose=*/true));
 
-        // Flag preservation: re-arm a create signal and ensure mid-close leaves
-        // it set. Concurrent updatePaths may drain the flag after mid-close
-        // releases waveMutex_, so retry a few times; with the bug mid-close
-        // always consumes and preserved stays 0 when mid-close runs with the
-        // flag set.
-        int attempted = 0;
-        int preserved = 0;
-        for (int i = 0; i < 40; ++i)
-        {
-            (void)lm.isNewPathRequest();
-            if (!lm.newPathRequest())
-                continue;
-            ++attempted;
-            // Inline mid-close holds waveMutex_ so a concurrent create updateAll
-            // blocks before isNewPathRequest — only mid-close could clear it.
-            env.app().getPathRequestManager().updateAll(env.current(), /*midClose=*/true);
-            if (lm.isNewPathRequest())
-                ++preserved;
-        }
-        BEAST_EXPECT(attempted > 0);
-        // Fix: mid-close never consumes → preserved tracks attempted (minus a
-        // rare post-unlock drain). Bug: mid-close always consumes → preserved≈0.
-        BEAST_EXPECT(preserved * 2 >= attempted);
+        // Arm the create signal once. newPathRequest() is not a getter — it
+        // sets the flag and may queue JtUpdatePf — so do not use it as a
+        // loop predicate. Mid-close must leave the flag set; isNewPathRequest
+        // is the only consume/read.
+        (void)lm.newPathRequest();
+        env.app().getPathRequestManager().updateAll(env.current(), /*midClose=*/true);
+        BEAST_EXPECT(lm.isNewPathRequest());
 
         // B must still receive a first full result without waiting for a new
         // closed ledger (create-style open wave / queued PthFindNewReq).

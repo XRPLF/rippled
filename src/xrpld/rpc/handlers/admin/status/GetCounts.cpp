@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 namespace xrpl {
@@ -114,7 +115,16 @@ getCountsJson(Application& app, int minObjectCount)
         // double preserves integers exactly through 2^53; pathfind counters stay well below that.
         obj[key] = static_cast<double>(v);
     };
-    auto const cacheStats = app.getPathRequestManager().getCacheStats();
+    PathRequestManager::CacheStats cacheStats{};
+    try
+    {
+        cacheStats = app.getPathRequestManager().getCacheStats();
+    }
+    catch (std::logic_error const&)
+    {
+        // TestServiceRegistry (and any registry without a path manager)
+        // throws; get_counts still returns the rest of the object counts.
+    }
     auto const hits = cacheStats.available ? cacheStats.hits : 0;
     auto const misses = cacheStats.available ? cacheStats.misses : 0;
     auto const loaded = cacheStats.available ? cacheStats.linesLoaded : 0;
