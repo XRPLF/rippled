@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -386,7 +387,7 @@ private:
             Sig(sfCounterpartySignature, lender),
             loanSetFee);
         env.close();
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
         BEAST_EXPECT(env.le(loanKeylet));
 
         // Repayment still works.
@@ -472,14 +473,21 @@ protected:
         TenthBips16 const managementFeeRate{managementFeeRateDist_(engine_)};
         auto const serviceFee = serviceFeeDist_(engine_);
         TenthBips32 interest{interestRateDist_(engine_)};
-        auto const payTotal = paymentTotalDist_(engine_);
+        auto payTotal = paymentTotalDist_(engine_);
         auto const payInterval = paymentIntervalDist_(engine_);
+        // The end of the last payment's grace period must fit in a 32-bit
+        // ripple-epoch timestamp, or LoanSet fails with tecKILLED. Cap the
+        // schedule well below that horizon (2e9 seconds is roughly 63 years,
+        // leaving ample headroom over the ledger start date).
+        constexpr std::uint32_t kMaxScheduleSeconds = 2'000'000'000;
+        payTotal = std::min(payTotal, static_cast<int>(kMaxScheduleSeconds / payInterval));
 
         BrokerParameters const brokerParams{
             .vaultDeposit = principalRequest * 10,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            .managementFeeRate = managementFeeRate};
+            .managementFeeRate = managementFeeRate,
+            .coverRateLiquidation = TenthBips32{0}};
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
