@@ -324,11 +324,13 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto amount2Withdraw = amount2Balance * frac;
 
     auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
-    if (lpTokensWithdraw >= holdLPtokens)
+    auto const& rules = sb.rules();
+    // Pre-fixCleanup3_4_0 only a strictly greater computed LP amount takes
+    // the withdraw-all path. Equality left the last holder unable to be
+    // fully clawed. The amendment treats equality as withdraw-all.
+    if (rules.enabled(fixCleanup3_4_0) ? lpTokensWithdraw >= holdLPtokens
+                                       : lpTokensWithdraw > holdLPtokens)
     {
-        // if lptoken balance less and equal to what the issuer intended to clawback,
-        // clawback all the tokens. Because we are doing a two-asset withdrawal,
-        // tfee is actually not used, so pass tfee as 0.
         return AMMWithdraw::equalWithdrawTokens(
             sb,
             ammSle,
@@ -348,7 +350,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             ctx_.journal);
     }
 
-    auto const& rules = sb.rules();
     if (rules.enabled(fixAMMClawbackRounding))
     {
         auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);

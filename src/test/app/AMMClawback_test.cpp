@@ -2481,9 +2481,21 @@ class AMMClawback_test : public beast::unit_test::Suite
             auto const unit = STAmount(usd, UINT64_C(1), -15);
             auto const amount = amountExceedsBalance ? amountBalance + unit : amountBalance;
 
-            env(amm::ammClawback(gw, alice, usd, XRP, amount), Ter(tesSUCCESS));
-            env.close();
-            BEAST_EXPECT(!amm.ammExists());
+            // Exceeding the holder's LP tokens already took withdraw-all
+            // pre-amendment. Exact equality does so only after
+            // fixCleanup3_4_0.
+            if (amountExceedsBalance || features[fixCleanup3_4_0])
+            {
+                env(amm::ammClawback(gw, alice, usd, XRP, amount), Ter(tesSUCCESS));
+                env.close();
+                BEAST_EXPECT(!amm.ammExists());
+            }
+            else
+            {
+                env(amm::ammClawback(gw, alice, usd, XRP, amount), Ter(tecAMM_BALANCE));
+                env.close();
+                BEAST_EXPECT(amm.ammExists());
+            }
         };
 
         // IOU/XRP pool. AMMClawback almost last holder's USD balance
