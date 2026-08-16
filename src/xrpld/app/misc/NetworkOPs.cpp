@@ -3409,12 +3409,14 @@ NetworkOPsImp::reportFeeChange()
     // duplicate JtClientFeeChange jobs (data race fix).
     // Also fixes the no-subscriber case where lastFeeSummary_ was
     // never updated by pubServer(), causing endless job queuing.
-    std::scoped_lock const sl(streamLock_);
-    if (f != lastFeeSummary_)
-    {
+    // Lock is released before addJob to avoid holding streamLock_
+    // across the job queue mutex (per nbougalis review suggestion).
+    if (std::scoped_lock const sl(streamLock_); f != lastFeeSummary_)
         lastFeeSummary_ = f;
-        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
-    }
+    else
+        return;
+
+    jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
 }
 
 void
