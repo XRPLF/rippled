@@ -29,6 +29,7 @@ class Xrpl(ConanFile):
 
     requires = [
         "ed25519/2015.03",
+        "fast_float/8.2.10",
         "grpc/1.81.1",
         "libarchive/3.8.7",
         "nudb/2.0.9",
@@ -138,7 +139,7 @@ class Xrpl(ConanFile):
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.1")
         self.requires("lz4/1.10.0", force=True)
-        self.requires("mpt-crypto/0.4.0-rc4", transitive_headers=True)
+        self.requires("mpt-crypto/1.0.2", transitive_headers=True)
         self.requires("protobuf/6.33.5", force=True)
         if self.options.rocksdb:
             self.requires("rocksdb/10.5.1")
@@ -211,6 +212,7 @@ class Xrpl(ConanFile):
             "boost::thread",
             "date::date",
             "ed25519::ed25519",
+            "fast_float::fast_float",
             "grpc::grpc++",
             "libarchive::libarchive",
             "lz4::lz4",

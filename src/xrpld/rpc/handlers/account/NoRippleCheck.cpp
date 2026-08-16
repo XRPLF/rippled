@@ -27,7 +27,7 @@ namespace xrpl {
 
 static void
 fillTransaction(
-    RPC::JsonContext& context,
+    rpc::JsonContext& context,
     json::Value& txArray,
     AccountID const& accountID,
     std::uint32_t& sequence,
@@ -50,17 +50,17 @@ fillTransaction(
 //   transactions: true             // optional, recommend transactions
 // }
 json::Value
-doNoRippleCheck(RPC::JsonContext& context)
+doNoRippleCheck(rpc::JsonContext& context)
 {
     auto const& params(context.params);
     if (!params.isMember(jss::account))
-        return RPC::missingFieldError("account");
+        return rpc::missingFieldError("account");
 
     if (!params.isMember("role"))
-        return RPC::missingFieldError("role");
+        return rpc::missingFieldError("role");
 
     if (!params[jss::account].isString())
-        return RPC::invalidFieldError(jss::account);
+        return rpc::invalidFieldError(jss::account);
 
     bool roleGateway = false;
     {
@@ -71,12 +71,12 @@ doNoRippleCheck(RPC::JsonContext& context)
         }
         else if (role != "user")
         {
-            return RPC::invalidFieldError("role");
+            return rpc::invalidFieldError("role");
         }
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kNoRippleCheck, context))
+    if (auto err = readLimitField(limit, rpc::tuning::kNoRippleCheck, context))
         return *err;
 
     bool transactions = false;
@@ -90,11 +90,11 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (context.apiVersion > 1u && params.isMember(jss::transactions) &&
         !params[jss::transactions].isBool())
     {
-        return RPC::invalidFieldError(jss::transactions);
+        return rpc::invalidFieldError(jss::transactions);
     }
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
@@ -105,7 +105,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::injectError(RpcActMalformed, result);
+        rpc::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};

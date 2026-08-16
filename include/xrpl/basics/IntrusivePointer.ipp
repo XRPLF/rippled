@@ -113,13 +113,6 @@ SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 
 template <class T>
 bool
-SharedIntrusive<T>::operator!=(std::nullptr_t) const
-{
-    return this->get() != nullptr;
-}
-
-template <class T>
-bool
 SharedIntrusive<T>::operator==(std::nullptr_t) const
 {
     return this->get() == nullptr;
