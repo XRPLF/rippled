@@ -58,9 +58,9 @@ isIndividualFrozen(SLE const& mptSle);
  * vault pseudo-account check (if @p mptIssue is a vault share, the underlying
  * asset is checked, and so on recursively up to @c maxAssetCheckDepth).
  *
- * The @c SLE overload takes an already-loaded MPToken ledger entry and skips
- * the individual-lock lookup. @ref isAnyFrozen answers the same question for
- * a set of accounts and returns true if the freeze applies to any of them.
+ * The @c SLE overload takes an already-loaded ltMPTOKEN or ltMPTOKEN_ISSUANCE
+ * ledger entry; for ltMPTOKEN it can skip the per-holder individual-lock lookup.
+ * @ref isAnyFrozen answers the same question for a set of accounts and returns true if the freeze applies to any of them.
  *
  * @param depth Current recursion depth for the vault-share walk. Callers
  * outside this module should leave it at the default.
