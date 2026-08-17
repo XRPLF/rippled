@@ -113,7 +113,6 @@ jobs:
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ matrix.sanitizers }}
 
-      # Before publishing, not just before consuming.
       - name: Check the Conan cache for Nix store references
         if: ${{ matrix.toolchain == 'nix' }}
         run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"

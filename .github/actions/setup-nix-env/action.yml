@@ -1,9 +1,9 @@
 name: Setup Nix environment
 description: "Build the flake's CI environment and put its tools on PATH."
 
-# The same `packages.default` the Linux CI images bake in (see nix/docker).
-# Tools on PATH and nothing else, so the composite actions - always plain
-# `bash` - pick them up.
+# The environment from nix/ci-env.nix, the same one the Linux CI images bake in
+# (see nix/docker). Exported onto PATH rather than entered with `nix develop`:
+# the composite actions below run plain `bash` and would escape a dev shell.
 
 runs:
   using: composite
@@ -43,7 +43,8 @@ runs:
         # The dev shell's Conan home: separate from this runner's system one.
         echo "CONAN_HOME=${HOME}/.conan2-nix" >>"${GITHUB_ENV}"
 
-    # What the dev shell runs on entry, so the two cannot drift.
+    # Config, profiles and remote, exactly as the dev shell sets them up on
+    # entry; the `setup-conan` action is skipped for this toolchain.
     - name: Setup Conan
       shell: bash
       run: ./conan/init.sh

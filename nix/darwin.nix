@@ -1,6 +1,5 @@
-# The darwin toolchain, counterpart to linux.nix. The environment is split by
-# who needs it: a dev shell's stdenv already sets the SDK up, nothing sets
-# libresolv up.
+# The darwin toolchain, counterpart to linux.nix. Split by consumer: a dev
+# shell's stdenv provides the SDK variables, nothing provides libresolv.
 #
 # darwin only - `libresolv` does not exist on Linux.
 { pkgs }:
@@ -11,10 +10,9 @@ let
     mkVersionedToolLinks
     ;
 
-  # nixpkgs keeps libresolv out of the macOS SDK, so neither the `-lresolv`
-  # c-ares asks for nor grpc's <arpa/nameser.h> resolves. Headers can come from
-  # nixpkgs; the library cannot, or its store path is pinned into xrpld - hence
-  # this copy, carrying the system install name.
+  # nixpkgs keeps libresolv out of the macOS SDK, so neither c-ares' `-lresolv`
+  # nor grpc's <arpa/nameser.h> resolves. Headers can come from nixpkgs; the
+  # library cannot, or its store path lands in xrpld - hence this copy.
   libresolvSystemStub =
     pkgs.runCommand "libresolv-system-stub"
       {

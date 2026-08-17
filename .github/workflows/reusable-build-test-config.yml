@@ -70,7 +70,7 @@ on:
         default: ""
 
       toolchain:
-        description: 'Where the toolchain comes from ("nix" to build the flake CI environment on the runner, empty for the system one). Linux always builds in a Nix image, so this is macOS/Windows only.'
+        description: 'Where the toolchain comes from ("nix" to build the flake CI environment on the runner, empty for the system one). macOS only: Linux always builds in a Nix image, and Nix has no Windows support.'
         required: false
         type: string
         default: ""

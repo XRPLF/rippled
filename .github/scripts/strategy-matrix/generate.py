@@ -89,7 +89,7 @@ class PlatformConfig:
     benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     extra_cmake_args: str = ""
     # "" is the runner's system compiler, "nix" the flake's CI environment.
-    # Linux always builds in a Nix image, so this is macOS/Windows only.
+    # macOS only: Linux always builds in a Nix image, Windows has no Nix.
     toolchain: str = ""
 
     def __post_init__(self) -> None:
@@ -140,8 +140,7 @@ class MatrixEntry:
     sanitizers: str
     image: str = ""  # container image; empty for macOS/Windows (runs natively)
     compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
-    # "nix" to build in the flake's CI environment; see PlatformConfig.
-    toolchain: str = ""
+    toolchain: str = ""  # "nix" for the flake's CI environment; see PlatformConfig
 
 
 @dataclasses.dataclass
