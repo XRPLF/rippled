@@ -23,12 +23,16 @@
 namespace xrpl {
 
 /**
- * Shared base for the Vault_test family under src/test/app/vault/.
+ * Shared base for the Vault*_test family under src/test/app/vault/.
  *
  * Owns the class-level helpers (type aliases, closed-ended vault
  * scaffolding, standard feature bitset, IOU currency string) that every
  * topical Vault*_test suite depends on. Mirrors
  * src/test/app/lending/LoanTestBase.h.
+ *
+ * Run all suites in this family with `xrpld -u Vault` (the "Vault" prefix
+ * is matched against every suite name via
+ * beast::unit_test::Selector::ModeT::Automatch).
  */
 class VaultTestBase : public beast::unit_test::Suite
 {
