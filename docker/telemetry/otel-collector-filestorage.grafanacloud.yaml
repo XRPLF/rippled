@@ -1,0 +1,26 @@
+# Filelog offset persistence for the Grafana Cloud stack.
+#
+# Same purpose as otel-collector-filestorage.yaml, and needed for the same
+# reason, but it cannot be reused as-is. The collector replaces lists on merge
+# rather than appending, so whichever config is passed last decides
+# service.extensions outright. The base variant repeats the base config's list,
+# [health_check, file_storage/filelog], which drops basicauth/grafanacloud and
+# leaves the cloud exporter unable to resolve its authenticator -- the collector
+# then exits at startup with "authenticator not found" rather than degrading.
+#
+# Applied by docker-compose.grafanacloud.yaml, which mounts it over the base
+# variant so the command line stays unchanged.
+
+extensions:
+  file_storage/filelog:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
+
+receivers:
+  filelog:
+    storage: file_storage/filelog
+
+# Must name every extension the cloud config needs, not just this file's own:
+# lists are replaced, so anything omitted here is omitted from the collector.
+service:
+  extensions: [health_check, file_storage/filelog, basicauth/grafanacloud]

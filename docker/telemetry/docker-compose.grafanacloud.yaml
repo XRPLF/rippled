@@ -22,6 +22,10 @@ services:
       # Mount the Grafana Cloud collector config over the default path
       # (replaces local-only config for this run; file on disk untouched).
       - ./otel-collector-config.grafanacloud.yaml:/etc/otel-collector-config.yaml:ro
+      # Override the base filelog-storage overlay with the cloud variant. The
+      # collector replaces service.extensions on merge, and the base variant
+      # omits basicauth/grafanacloud, which stops the cloud exporter starting.
+      - ./otel-collector-filestorage.grafanacloud.yaml:/etc/otel-collector-filestorage.yaml:ro
     # Secrets from the env file, injected as container env and
     # resolved by the collector via ${env:...}.
     env_file:
