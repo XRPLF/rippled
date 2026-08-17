@@ -240,14 +240,18 @@ canWithdraw(
  * Checks that can withdraw funds from an object to itself or a destination.
  *
  * The receiver may be either the submitting account (sfAccount) or a different
- * destination account (sfDestination).
+ * destination account (sfDestination). Credentials, if any, are taken from the
+ * transaction's sfCredentialIDs field.
  *
  *    - Checks that the receiver account exists.
  *    - If the receiver requires a destination tag, check that one exists, even
  *      if withdrawing to self.
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
- *      the sender has it.
+ *      the sender has it (account-based or credential-based).
+ *    - Expects any credentials in sfCredentialIDs to already exist in the
+ *      ledger, and returns an internal error otherwise. Validate them
+ *      beforehand with credentials::valid().
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */
