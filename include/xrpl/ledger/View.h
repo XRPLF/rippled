@@ -79,6 +79,13 @@ isVaultPseudoAccountFrozen(
     std::uint8_t depth);
 
 [[nodiscard]] bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth);
+
+[[nodiscard]] bool
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
