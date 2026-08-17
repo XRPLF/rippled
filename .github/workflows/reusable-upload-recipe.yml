@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Determine release info
-        id: version
+        id: release_info
         uses: ./.github/actions/release-info
 
       - name: Set up Conan
@@ -64,8 +64,8 @@ jobs:
 
       - name: Upload Conan recipe (version)
         run: |
-          conan export . --version=${{ steps.version.outputs.version }}
-          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.version.outputs.version }}
+          conan export . --version=${{ steps.release_info.outputs.version }}
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.release_info.outputs.version }}
 
       # When this workflow is triggered by a push event, it will always be when merging into the
       # 'develop' branch, see on-trigger.yml.
@@ -92,4 +92,4 @@ jobs:
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/release
 
     outputs:
-      ref: xrpl/${{ steps.version.outputs.version }}
+      ref: xrpl/${{ steps.release_info.outputs.version }}

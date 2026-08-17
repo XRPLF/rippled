@@ -89,13 +89,13 @@ jobs:
         run: chmod +x "${BUILD_DIR}/xrpld" "${BUILD_DIR}/validator-keys"
 
       - name: Determine release info
-        id: release
+        id: release_info
         uses: ./.github/actions/release-info
 
       - name: Build package
         env:
-          PKG_RELEASE: ${{ steps.release.outputs.pkg_release }}
-          PKG_CHANNEL: ${{ steps.release.outputs.channel }}
+          PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
+          PKG_CHANNEL: ${{ steps.release_info.outputs.channel }}
         run: ./package/build_pkg.sh
 
       - name: Upload package artifact
@@ -111,7 +111,7 @@ jobs:
       - name: Publish package
         if: ${{ inputs.publish }}
         env:
-          CHANNEL: ${{ steps.release.outputs.channel }}
+          CHANNEL: ${{ steps.release_info.outputs.channel }}
           NEXUS_URL: ${{ inputs.nexus_url }}
           NEXUS_USERNAME: ${{ secrets.remote_username }}
           NEXUS_PASSWORD: ${{ secrets.remote_password }}
