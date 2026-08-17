@@ -1073,6 +1073,66 @@ public:
     }
 
     void
+    testObjectEndReserve(FeatureBitset features)
+    {
+        // dissolve sponsor: ending an object sponsorship now(fixCleanup3_4_0) requires the
+        // sponsee to be able to self-fund the object's reserve.
+
+        testcase(
+            std::string("Object End reserve check ") +
+            (features[fixCleanup3_4_0] ? "(fixCleanup3_4_0 enabled)"
+                                       : "(fixCleanup3_4_0 disabled)"));
+        using namespace test::jtx;
+
+        // Ending an object sponsorship returns the reserve burden to the
+        // sponsee. With fixCleanup3_4_0 the sponsee must be able to self-fund
+        // the reclaimed object's reserve, so an under-funded End fails; without
+        // the fix the End succeeds regardless (legacy behavior).
+        bool const fix34 = features[fixCleanup3_4_0];
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, bob, sponsor);
+        env.close();
+
+        // Create a check owned by alice with a co-signed reserve sponsorship.
+        auto const seq = env.seq(alice);
+        env(check::create(alice, bob, XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+
+        auto const checkId = keylet::check(alice, SeqProxy::rawSequence(seq)).key;
+        BEAST_EXPECT(env.le(keylet::unchecked(checkId)) != nullptr);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // Put alice one drop below the reserve required to hold the reclaimed
+        // object on her own.
+        adjustAccountXRPBalance(env, alice, reserve(env, 1) - drops(1));
+
+        if (fix34)
+        {
+            // Under-funded: End is rejected until alice can self-fund.
+            env(sponsor::transfer(alice, tfSponsorshipEnd, checkId), Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            adjustAccountXRPBalance(env, alice, reserve(env, 1));
+        }
+
+        env(sponsor::transfer(alice, tfSponsorshipEnd, checkId));
+        env.close();
+
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(!env.le(keylet::account(sponsor))->isFieldPresent(sfSponsoringOwnerCount));
+        auto const sle = env.le(keylet::unchecked(checkId));
+        BEAST_EXPECT(!sle->isFieldPresent(sfSponsor));
+    }
+
+    void
     testTransferSponsor()
     {
         testcase("Transfer Sponsor");
@@ -1473,9 +1533,9 @@ public:
             BEAST_EXPECT(sle2->isFieldPresent(sfSponsor));
             BEAST_EXPECT(sle2->getAccountID(sfSponsor) == sponsor2.id());
 
-            // dissolve sponsor: ending an object sponsorship succeeds even
-            // when the sponsee lacks sufficient reserve to reclaim the object.
-            adjustAccountXRPBalance(env, alice, reserve(env, 1) - drops(1));
+            // dissolve sponsor: ending an object sponsorship now requires the
+            // sponsee to be able to self-fund the object's reserve.
+            adjustAccountXRPBalance(env, alice, reserve(env, 1));
 
             env(sponsor::transfer(alice, tfSponsorshipEnd, checkId));
             env.close();
@@ -5672,6 +5732,8 @@ protected:
         testSponsoredFreeTierReserve();
 
         testTransferSponsor();
+        testObjectEndReserve(jtx::testableAmendments());
+        testObjectEndReserve(jtx::testableAmendments() - fixCleanup3_4_0);
         testLegacySignerListReserve();
         testSponsorFee();
         testSponsorAccount();
