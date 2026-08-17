@@ -1088,7 +1088,6 @@ public:
         // sponsee. With fixCleanup3_4_0 the sponsee must be able to self-fund
         // the reclaimed object's reserve, so an under-funded End fails; without
         // the fix the End succeeds regardless (legacy behavior).
-        bool const fix34 = features[fixCleanup3_4_0];
 
         Env env{*this, features};
         Account const alice("alice");
@@ -1113,7 +1112,7 @@ public:
         // object on her own.
         adjustAccountXRPBalance(env, alice, reserve(env, 1) - drops(1));
 
-        if (fix34)
+        if (features[fixCleanup3_4_0])
         {
             // Under-funded: End is rejected until alice can self-fund.
             env(sponsor::transfer(alice, tfSponsorshipEnd, checkId), Ter(tecINSUFFICIENT_RESERVE));
