@@ -9,6 +9,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/proposal.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>
@@ -753,6 +754,55 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
     }
 
+    // The proposal's reserve can instead be sponsored: the reserve is charged
+    // to the sponsor's account, and the ledger object records the sponsor, the
+    // same as any other reserve-sponsorable object (TransactionProposalCreate
+    // is on the reserve-sponsorship allow-list).
+    void
+    testSponsoredReserve(FeatureBitset features)
+    {
+        testcase("proposer reserve sponsored");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};    // the proposer
+        Account const target{"target"};  // the account the proposal is for
+        Account const bob{"bob"};
+        Account const backer{"backer"};  // sponsors alice's proposal reserve
+
+        env.fund(XRP(10000), alice, target, bob, backer);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+        json::Value const proposedTx =
+            proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
+
+        env(proposal::create(alice, proposedTx, proposal::expiration(env, 100s)),
+            sponsor::As(backer, spfSponsorReserve),
+            Sig(sfSponsorSignature, backer));
+        env.close();
+
+        auto const sle = proposal::entry(env, target, targetTicketSeq);
+        if (!BEAST_EXPECT(sle))
+            return;
+
+        BEAST_EXPECT(sle->isFieldPresent(sfSponsor));
+        BEAST_EXPECT(sle->getAccountID(sfSponsor) == backer.id());
+
+        // alice still owns the proposal — her OwnerCount reflects that, same
+        // as an unsponsored proposal. What moves to the sponsor is the
+        // reserve requirement itself, tracked separately: alice's owner count
+        // is covered by backer's sponsorship rather than her own balance.
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, backer) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(sponsoringOwnerCount(env, backer) == proposal::kProposalOwnerCount);
+    }
+
     // A proposed Batch holds several inner transactions and the signatures of
     // every account they touch, so it reserves more than an ordinary proposal.
     void
@@ -863,6 +913,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testOtherTransactionTypes(all);
         testAuxiliaryCoSignatureTypes(all);
         testReserve(all);
+        testSponsoredReserve(all);
         testBatchReserve(all);
         testMultiAccountBatch(all);
     }

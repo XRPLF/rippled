@@ -56,6 +56,7 @@ isReserveSponsorAllowed(TxType txType)
         ttACCOUNT_SET,
         ttREGULAR_KEY_SET,
         ttSPONSORSHIP_TRANSFER,
+        ttTRANSACTION_PROPOSAL_CREATE,
     };
     return kReserveSponsorAllowed.contains(txType);
 }
@@ -278,6 +279,7 @@ isLedgerEntrySupportedBySponsorship(SLE const& sle)
         case ltSIGNER_LIST:
         case ltCREDENTIAL:
         case ltRIPPLE_STATE:
+        case ltTRANSACTION_PROPOSAL:
             return true;
         default:
             return false;
@@ -303,6 +305,14 @@ getLedgerEntryOwnerCount(SLE const& sle)
             if (sle.isFlag(lsfOneOwnerCount))
                 return 1;
             return 2 + static_cast<std::uint32_t>(sle.getFieldArray(sfSignerEntries).size());
+        }
+        case ltTRANSACTION_PROPOSAL: {
+            // Mirror TransactionProposalCreate's own reserve sizing (see
+            // xrpl::proposal::proposalOwnerCount) so that creation and
+            // sponsorship accounting agree: a proposed Batch reserves more
+            // than an ordinary proposal.
+            auto const proposedTx = sle.getFieldObject(sfProposedTransaction);
+            return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? 10u : 5u;
         }
         case ltACCOUNT_ROOT:
             // LCOV_EXCL_START
