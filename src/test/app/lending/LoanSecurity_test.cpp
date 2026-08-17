@@ -5,7 +5,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/noop.h>
-#include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
@@ -19,6 +18,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -540,7 +540,8 @@ private:
         auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return;
-        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
 
         Number const principalRequest{1, 3};
         env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),
@@ -622,7 +623,8 @@ private:
         auto createNewLoan = [&]() {
             auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
             BEAST_EXPECT(sleBroker);
-            auto const lk = keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+            auto const lk =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
             env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),
                 Sig(sfCounterpartySignature, lender),
                 kPaymentTotal(12),
@@ -755,7 +757,8 @@ private:
         auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return;
-        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
 
         // Loan with non-zero late-payment terms, so the late path carries a
         // real penalty that the exploit would otherwise avoid.
@@ -857,7 +860,8 @@ private:
         auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return;
-        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
 
         Number const principalRequest{1, 3};
         env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),
