@@ -1,0 +1,38 @@
+# xrpld-mainnet2 -- xrpld-mainnet2, RocksDB backend.
+#
+# TEMPLATE. The placeholders below are filled in by install-units.sh from an
+# untracked .env.devbox on the host, so no host-specific user or path is ever
+# committed. Do not replace them by hand in this file.
+#
+#   __RUN_USER__  the account xrpld runs as
+#   __REPO_DIR__  absolute path of the repository checkout
+#   __DATA_MOUNT__ mount the node's data directory lives on
+
+[Unit]
+Description=xrpld (xrpld-mainnet2, RocksDB) with OpenTelemetry
+After=network-online.target
+Wants=network-online.target
+# The nodestore normally lives on a separate mount whose fstab entry uses
+# 'nofail', so a missing disk does not block boot -- which also means it fails
+# silently. Without this the node would start anyway and write the nodestore to
+# the root filesystem until it filled. Requiring the mount fails the unit loudly
+# instead.
+RequiresMountsFor=__DATA_MOUNT__
+StartLimitIntervalSec=5min
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=__RUN_USER__
+Group=__RUN_USER__
+WorkingDirectory=__REPO_DIR__
+ExecStart=__REPO_DIR__/.build/xrpld --conf docker/telemetry/xrpld-telemetry-mainnet2.cfg
+Restart=on-failure
+RestartSec=5s
+# xrpld flushes its OpenTelemetry buffers on shutdown; killing it early loses the
+# final metrics export.
+TimeoutStopSec=5min
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

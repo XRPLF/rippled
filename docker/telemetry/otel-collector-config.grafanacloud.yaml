@@ -41,6 +41,9 @@ receivers:
   filelog:
     include:
       - /var/log/xrpld/*/debug.log
+    # Stamp each record with its source path so per-node identity can be derived
+    # from it below.
+    include_file_path: true
     operators:
       - type: regex_parser
         regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?:(?P<partition>\S+):)?(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
@@ -48,6 +51,21 @@ receivers:
           parse_from: attributes.timestamp
           layout: "%Y-%b-%d %H:%M:%S.%f"
           location: UTC
+      # Derive per-node identity from the log path. By convention the directory
+      # basename is the node's service_instance_id
+      # (/var/log/xrpld/xrpld-mainnet/debug.log), so promote it to the
+      # service.instance.id resource attribute. Without this the logs pipeline
+      # carries no service_instance_id label while the metrics pipeline does, so
+      # the dashboards' $node filter matches nothing for logs while still working
+      # for metrics -- a partial failure that reads as "no logs" rather than as a
+      # misconfiguration. Both node configs name their log directory after their
+      # service_instance_id for exactly this reason.
+      - type: regex_parser
+        parse_from: attributes["log.file.path"]
+        regex: '/xrpld/(?P<node_instance>[^/]+)/debug\.log$'
+      - type: move
+        from: attributes.node_instance
+        to: resource["service.instance.id"]
 
 processors:
   batch:

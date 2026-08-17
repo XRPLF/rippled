@@ -8,6 +8,7 @@ data/
 !.env.alerting.example
 !.env.grafanacloud.example
 !.env.grafanacloud-alloy.example
+!.env.devbox.example
 
 # Do not commit grafana cloud versions with default filters
 grafanacloud/*.json
