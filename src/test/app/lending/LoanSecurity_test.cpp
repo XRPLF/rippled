@@ -512,7 +512,7 @@ private:
             PaymentParameters{.showStepBalances = true});
     }
 
-    // Verify that with featureLendingProtocolV1_1:
+    // Verify that with fixCleanup3_4_0:
     // 1. A loan cannot be impaired before its payment is late.
     // 2. Impairing a late loan does not change sfNextPaymentDueDate.
     // 3. The unimpair operation does not change sfNextPaymentDueDate.
@@ -525,8 +525,8 @@ private:
 
         testcase("Impairment does not change payment due date");
 
-        Env env(*this, all_ | featureLendingProtocolV1_1);
-        BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
+        Env env(*this, all_ | fixCleanup3_4_0);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -590,7 +590,7 @@ private:
         }
     }
 
-    // Verify that without featureLendingProtocolV1_1, the pre-amendment
+    // Verify that without fixCleanup3_4_0, the pre-amendment
     // impair/unimpair behaviour is preserved:
     // 1. Impairing a loan before its payment is late moves
     //    sfNextPaymentDueDate to "now".
@@ -607,8 +607,8 @@ private:
 
         testcase("Pre-amendment impair/unimpair date restoration");
 
-        Env env(*this, all_ - featureLendingProtocolV1_1);
-        BEAST_EXPECT(!env.enabled(featureLendingProtocolV1_1));
+        Env env(*this, all_ - fixCleanup3_4_0);
+        BEAST_EXPECT(!env.enabled(fixCleanup3_4_0));
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -729,7 +729,7 @@ private:
 
     // FN-68: a borrower must not be able to bypass late-payment charges by
     // paying an impaired, overdue loan with a plain LoanPay. Under
-    // featureLendingProtocolV1_1 impairment no longer moves the due date, so
+    // fixCleanup3_4_0 impairment no longer moves the due date, so
     // the payment logic sees the real (overdue) date: a regular payment is
     // rejected with tecEXPIRED, and only a tfLoanLatePayment (which charges
     // the late fee + late interest) is accepted.
@@ -742,8 +742,8 @@ private:
 
         testcase("Impaired overdue LoanPay requires late-payment flag");
 
-        Env env(*this, all_ | featureLendingProtocolV1_1);
-        BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
+        Env env(*this, all_ | fixCleanup3_4_0);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -830,7 +830,7 @@ private:
     }
 
     // FN-68 (pre-amendment): documents the original vulnerability. Without
-    // featureLendingProtocolV1_1, impairing moves the due date and LoanPay
+    // fixCleanup3_4_0, impairing moves the due date and LoanPay
     // auto-unimpair pushes it into the future before the late check, so a
     // plain (Flags = 0) LoanPay on an impaired, overdue loan is accepted as
     // on-time (tesSUCCESS) and the borrower dodges the late-payment charges.
@@ -845,8 +845,8 @@ private:
 
         testcase("Impaired overdue LoanPay bypass (pre-amendment)");
 
-        Env env(*this, all_ - featureLendingProtocolV1_1);
-        BEAST_EXPECT(!env.enabled(featureLendingProtocolV1_1));
+        Env env(*this, all_ - fixCleanup3_4_0);
+        BEAST_EXPECT(!env.enabled(fixCleanup3_4_0));
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};

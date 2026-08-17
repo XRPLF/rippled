@@ -542,10 +542,10 @@ private:
             return std::make_tuple(broker, loanKeylet, lender, borrower);
         };
 
-        // Under featureLendingProtocolV1_1 impairment is only allowed once the
+        // Under fixCleanup3_4_0 impairment is only allowed once the
         // payment is late. Advance past the first due date before impairing.
         auto advancePastDueDate = [&](Env& env, Keylet const& loanKeylet) {
-            if (!env.current()->rules().enabled(featureLendingProtocolV1_1))
+            if (!env.current()->rules().enabled(fixCleanup3_4_0))
                 return;
             auto const loan = env.le(loanKeylet);
             BEAST_EXPECT(loan);
@@ -835,7 +835,7 @@ private:
         Number const managementFeeBeforeImpair = loanBeforeImpair->at(sfManagementFeeOutstanding);
         Number const expectedExposure = totalValueBeforeImpair - managementFeeBeforeImpair;
 
-        // With featureLendingProtocolV1_1, impairment is only allowed once the
+        // With fixCleanup3_4_0, impairment is only allowed once the
         // payment is late. After the earlier LoanPay the due date advanced by
         // one interval, so use the current due date rather than startDate.
         std::uint32_t const dueDateBeforeImpair = loanBeforeImpair->at(sfNextPaymentDueDate);
