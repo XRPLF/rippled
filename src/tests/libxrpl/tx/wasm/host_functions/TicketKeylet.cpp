@@ -5,11 +5,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
-#include <helpers/TxTest.h>
 #include <tx/wasm/RealHostFixture.h>
-
-#include <expected>
-#include <iterator>
 
 namespace xrpl::test {
 
@@ -19,21 +15,16 @@ struct TicketKeyletImpl : WasmImplTest
 
 TEST_F(TicketKeyletImpl, MatchesTicketFunction)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
+    auto const owner = fund("owner");
 
-    auto const expected = keylet::ticket(owner.id(), SeqProxy::rawTicket(1u));
-    auto const expectedBytes = Bytes{std::begin(expected.key), std::end(expected.key)};
-    auto const result = host().ticketKeylet(owner.id(), 1u);
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, expectedBytes);
+    expectKeyletMatches(
+        makeHost()->ticketKeylet(owner.id(), 1u),
+        keylet::ticket(owner.id(), SeqProxy::rawTicket(1u)));
 }
 
 TEST_F(TicketKeyletImpl, InvalidAccount)
 {
-    auto result = host().ticketKeylet(AccountID{}, 1u);
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidAccount);
+    expectError(makeHost()->ticketKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

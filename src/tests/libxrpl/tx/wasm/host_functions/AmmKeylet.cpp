@@ -5,11 +5,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
-#include <helpers/TxTest.h>
 #include <tx/wasm/RealHostFixture.h>
-
-#include <expected>
-#include <iterator>
 
 namespace xrpl::test {
 
@@ -19,35 +15,26 @@ struct AmmKeyletImpl : WasmImplTest
 
 TEST_F(AmmKeyletImpl, MatchesAmmKeyletFunction)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
+    auto const owner = fund("owner");
 
     auto usdIssue = Issue{toCurrency("USD"), owner.id()};
 
-    auto const expected = keylet::amm(xrpIssue(), usdIssue);
-    auto const expectedBytes = Bytes{std::begin(expected.key), std::end(expected.key)};
-    auto const result = host().ammKeylet(usdIssue, xrpIssue());
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, expectedBytes);
+    expectKeyletMatches(
+        makeHost()->ammKeylet(usdIssue, xrpIssue()), keylet::amm(xrpIssue(), usdIssue));
 }
 
 TEST_F(AmmKeyletImpl, InvalidIssue1)
 {
-    auto const result = host().ammKeylet(xrpIssue(), xrpIssue());
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidParams);
+    expectError(makeHost()->ammKeylet(xrpIssue(), xrpIssue()), HostFunctionError::InvalidParams);
 }
 
 TEST_F(AmmKeyletImpl, InvalidIssue2)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
+    auto const owner = fund("owner");
 
     auto baseMpt = makeMptID(1, owner.id());
 
-    auto const result = host().ammKeylet(baseMpt, xrpIssue());
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidParams);
+    expectError(makeHost()->ammKeylet(baseMpt, xrpIssue()), HostFunctionError::InvalidParams);
 }
 
 }  // namespace xrpl::test

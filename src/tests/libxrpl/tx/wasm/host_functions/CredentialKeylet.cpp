@@ -6,11 +6,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
-#include <helpers/TxTest.h>
 #include <tx/wasm/RealHostFixture.h>
-
-#include <expected>
-#include <iterator>
 
 namespace xrpl::test {
 
@@ -20,23 +16,19 @@ struct CredentialKeyletImpl : WasmImplTest
 
 TEST_F(CredentialKeyletImpl, MatchesCredentialKeyletFunction)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
+    auto const owner = fund("owner");
 
     auto const credTypeStr = std::string{"test"};
     auto const credType = Slice{credTypeStr.data(), credTypeStr.size()};
 
-    auto const expected = keylet::credential(owner.id(), owner.id(), credType);
-    auto const expectedBytes = Bytes{std::begin(expected.key), std::end(expected.key)};
-    auto const result = host().credentialKeylet(owner.id(), owner.id(), credType);
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, expectedBytes);
+    expectKeyletMatches(
+        makeHost()->credentialKeylet(owner.id(), owner.id(), credType),
+        keylet::credential(owner.id(), owner.id(), credType));
 }
 
 TEST_F(CredentialKeyletImpl, CredentialTypeStringTooLong)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
+    auto const owner = fund("owner");
 
     auto constexpr credTypeStr = std::string_view{
         "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
@@ -44,26 +36,25 @@ TEST_F(CredentialKeyletImpl, CredentialTypeStringTooLong)
     static_assert(credTypeStr.size() > kMaxCredentialTypeLength);
     auto const credType = Slice{credTypeStr.data(), credTypeStr.size()};
 
-    auto const result = host().credentialKeylet(owner.id(), owner.id(), credType);
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidParams);
+    expectError(
+        makeHost()->credentialKeylet(owner.id(), owner.id(), credType),
+        HostFunctionError::InvalidParams);
 }
 
 TEST_F(CredentialKeyletImpl, InvalidAccount)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
+    auto const owner = fund("owner");
 
     auto const credTypeStr = std::string{"test"};
     auto const credType = Slice{credTypeStr.data(), credTypeStr.size()};
 
-    auto result = host().credentialKeylet(AccountID{}, owner.id(), credType);
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidAccount);
+    expectError(
+        makeHost()->credentialKeylet(AccountID{}, owner.id(), credType),
+        HostFunctionError::InvalidAccount);
 
-    result = host().credentialKeylet(owner.id(), AccountID{}, credType);
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidAccount);
+    expectError(
+        makeHost()->credentialKeylet(owner.id(), AccountID{}, credType),
+        HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

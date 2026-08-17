@@ -1,0 +1,34 @@
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <gtest/gtest.h>
+#include <tx/wasm/FloatFixture.h>
+#include <tx/wasm/RealHostFixture.h>
+
+namespace xrpl::test {
+
+struct FloatFromIntImpl : FloatTest
+{
+};
+
+TEST_F(FloatFromIntImpl, BadModeIsMalformed)
+{
+    expectError(makeHost()->floatFromInt(kMin64, -1), HostFunctionError::FloatInputMalformed);
+    expectError(makeHost()->floatFromInt(kMin64, 4), HostFunctionError::FloatInputMalformed);
+}
+
+TEST_F(FloatFromIntImpl, MinInt)
+{
+    expectValue(makeHost()->floatFromInt(kMin64, 0), floats::kIntMin);
+}
+
+TEST_F(FloatFromIntImpl, Zero)
+{
+    expectValue(makeHost()->floatFromInt(0, 0), floats::kIntZero);
+}
+
+TEST_F(FloatFromIntImpl, MaxInt)
+{
+    expectValue(makeHost()->floatFromInt(kMax64, 0), floats::kIntMax);
+}
+
+}  // namespace xrpl::test

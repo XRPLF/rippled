@@ -4,11 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
-#include <helpers/TxTest.h>
 #include <tx/wasm/RealHostFixture.h>
-
-#include <expected>
-#include <iterator>
 
 namespace xrpl::test {
 
@@ -18,21 +14,17 @@ struct MptokenIssuanceKeyletImpl : WasmImplTest
 
 TEST_F(MptokenIssuanceKeyletImpl, MatchesMptokenIssuanceKeyletFunction)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
+    auto const owner = fund("owner");
 
-    auto const expected = keylet::mptokenIssuance(makeMptID(1u, owner.id()));
-    auto const expectedBytes = Bytes{std::begin(expected.key), std::end(expected.key)};
-    auto const result = host().mptokenIssuanceKeylet(owner.id(), 1u);
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, expectedBytes);
+    expectKeyletMatches(
+        makeHost()->mptokenIssuanceKeylet(owner.id(), 1u),
+        keylet::mptokenIssuance(makeMptID(1u, owner.id())));
 }
 
 TEST_F(MptokenIssuanceKeyletImpl, InvalidAccount)
 {
-    auto result = host().mptokenIssuanceKeylet(AccountID{}, 1u);
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidAccount);
+    expectError(
+        makeHost()->mptokenIssuanceKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

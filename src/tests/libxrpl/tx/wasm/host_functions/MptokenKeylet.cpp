@@ -4,11 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
-#include <helpers/TxTest.h>
 #include <tx/wasm/RealHostFixture.h>
-
-#include <expected>
-#include <iterator>
 
 namespace xrpl::test {
 
@@ -18,37 +14,27 @@ struct MptokenKeyletImpl : WasmImplTest
 
 TEST_F(MptokenKeyletImpl, MatchesMptokenKeyletFunction)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
-    auto const anotherAccount = Account{"account"};
-    ledger.createAccount(anotherAccount, XRP(1000));
+    auto const owner = fund("owner");
+    auto const anotherAccount = fund("account");
 
     auto const mpt = makeMptID(1u, owner.id());
-    auto const expected = keylet::mptoken(mpt, anotherAccount.id());
-    auto const expectedBytes = Bytes{std::begin(expected.key), std::end(expected.key)};
-    auto const result = host().mptokenKeylet(mpt, anotherAccount.id());
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, expectedBytes);
+    expectKeyletMatches(
+        makeHost()->mptokenKeylet(mpt, anotherAccount.id()),
+        keylet::mptoken(mpt, anotherAccount.id()));
 }
 
 TEST_F(MptokenKeyletImpl, InvalidMpt)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
-    auto result = host().mptokenKeylet(MPTID{}, owner.id());
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidParams);
+    auto const owner = fund("owner");
+    expectError(makeHost()->mptokenKeylet(MPTID{}, owner.id()), HostFunctionError::InvalidParams);
 }
 
 TEST_F(MptokenKeyletImpl, InvalidAccount)
 {
-    auto const owner = Account{"owner"};
-    ledger.createAccount(owner, XRP(1000));
+    auto const owner = fund("owner");
 
     auto const mpt = makeMptID(1u, owner.id());
-    auto result = host().mptokenKeylet(mpt, AccountID{});
-    ASSERT_TRUE(!result.has_value());
-    EXPECT_EQ(result.error(), HostFunctionError::InvalidAccount);
+    expectError(makeHost()->mptokenKeylet(mpt, AccountID{}), HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

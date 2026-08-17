@@ -12,9 +12,6 @@
 #include <helpers/TxTest.h>
 #include <tx/wasm/RealHostFixture.h>
 
-#include <expected>
-#include <iterator>
-
 namespace xrpl::test {
 
 struct CurrentLedgerObjFieldImpl : WasmImplTest
@@ -49,11 +46,7 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadsfAccount)
     auto const escrow = makeEscrow(owner, Account{"dest"});
     ASSERT_NE(ledger.getOpenLedger().read(escrow), nullptr) << "escrow object should exist";
 
-    auto const account = host(escrow).getCurrentLedgerObjField(sfAccount);
-
-    ASSERT_TRUE(account.has_value());
-    auto const ownerBytes = Bytes{std::begin(owner.id()), std::end(owner.id())};
-    EXPECT_EQ(*account, ownerBytes);
+    expectValue(makeHost(escrow)->getCurrentLedgerObjField(sfAccount), toBytes(owner.id()));
 }
 
 TEST_F(CurrentLedgerObjFieldImpl, ReadsfAccountDummyEscrow)
@@ -63,10 +56,9 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadsfAccountDummyEscrow)
     auto const ownerSeq = ledger.getAccountRoot(owner.id()).getSequence();
     auto const escrow = keylet::escrow(owner.id(), SeqProxy::rawSequence(ownerSeq));
 
-    auto const account = host(escrow).getCurrentLedgerObjField(sfAccount);
-
-    ASSERT_TRUE(!account.has_value());
-    ASSERT_TRUE(account.error() == HostFunctionError::LedgerObjNotFound);
+    expectError(
+        makeHost(escrow)->getCurrentLedgerObjField(sfAccount),
+        HostFunctionError::LedgerObjNotFound);
 }
 
 TEST_F(CurrentLedgerObjFieldImpl, ReadAmount)
@@ -75,9 +67,7 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadAmount)
     auto const escrow = makeEscrow(owner, Account{"dest"});
     ASSERT_NE(ledger.getOpenLedger().read(escrow), nullptr) << "escrow object should exist";
 
-    auto const amount = host(escrow).getCurrentLedgerObjField(sfAmount);
-    ASSERT_TRUE(amount.has_value());
-    EXPECT_EQ(*amount, toBytes(XRP(100)));
+    expectValue(makeHost(escrow)->getCurrentLedgerObjField(sfAmount), toBytes(XRP(100)));
 }
 
 TEST_F(CurrentLedgerObjFieldImpl, ReadPreviousTxnID)
@@ -87,10 +77,8 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadPreviousTxnID)
     auto const escrow = makeEscrow(owner, Account{"dest"}, &transactionId);
     ASSERT_NE(ledger.getOpenLedger().read(escrow), nullptr) << "escrow object should exist";
 
-    auto const previousTxnId = host(escrow).getCurrentLedgerObjField(sfPreviousTxnID);
-
-    ASSERT_TRUE(previousTxnId.has_value());
-    EXPECT_EQ(*previousTxnId, toBytes(transactionId));
+    expectValue(
+        makeHost(escrow)->getCurrentLedgerObjField(sfPreviousTxnID), toBytes(transactionId));
 }
 
 TEST_F(CurrentLedgerObjFieldImpl, ReadOwner)
@@ -99,10 +87,8 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadOwner)
     auto const escrow = makeEscrow(owner, Account{"dest"});
     ASSERT_NE(ledger.getOpenLedger().read(escrow), nullptr) << "escrow object should exist";
 
-    auto const ownerField = host(escrow).getCurrentLedgerObjField(sfOwner);
-
-    ASSERT_TRUE(!ownerField.has_value());
-    ASSERT_TRUE(ownerField.error() == HostFunctionError::FieldNotFound);
+    expectError(
+        makeHost(escrow)->getCurrentLedgerObjField(sfOwner), HostFunctionError::FieldNotFound);
 }
 
 }  // namespace xrpl::test
