@@ -127,38 +127,67 @@ Stop the nodes first if the binary is in use.
 
 ```sh
 sudo systemctl stop xrpld-mainnet xrpld-mainnet2
-
-conan install . --output-folder .build --build missing --settings build_type=Release
-
-cd .build
-cmake .. -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
-         -DCMAKE_BUILD_TYPE=Release
-cmake --build . --target xrpld --parallel "$(nproc)"
-cd ..
 ```
 
-Notes from experience:
+**The daemon is not built by default.** The Conan recipe defaults its `xrpld`
+option to off, so it has to be requested explicitly. Omit it and everything
+appears to succeed — Conan and CMake both report success — and then the build
+fails with `No rule to make target 'xrpld'`, because the target was never
+created.
+
+```sh
+conan install . --output-folder .build --build missing \
+      --settings build_type=Release -o '&:xrpld=True'
+
+cmake --preset conan-release
+
+cmake --build .build/build/Release --target xrpld --parallel "$(nproc)"
+```
+
+Three details that are easy to get wrong, each of which fails in a way that
+misdirects:
+
+- **Configure through the preset, not a hand-written toolchain path.** Conan
+  writes the preset and the toolchain, and the toolchain does not sit where the
+  single- versus multi-config layouts would suggest. Guessing the path yields
+  `Could not find toolchain file`, followed by `CMAKE_CXX_COMPILER not set`, which
+  reads as a broken compiler rather than a wrong path.
+- **The build directory is `.build/build/Release`, not `.build`.** Building the
+  wrong directory reports `Generator: execution of make failed`, which reads as a
+  toolchain problem.
+- **The CMake cache is sticky.** Changing a Conan option and re-running
+  `conan install` does not change an already-cached CMake variable, so the
+  daemon target stays absent even though the option was accepted. Confirm the
+  value, and clear the cache if it disagrees:
+
+  ```sh
+  grep -E '^(xrpld|tests|telemetry):' .build/build/Release/CMakeCache.txt
+  # if xrpld is not True:
+  rm -f .build/build/Release/CMakeCache.txt
+  rm -rf .build/build/Release/CMakeFiles
+  cmake --preset conan-release
+  ```
+
+Further notes from experience:
 
 - The first `conan install` on a fresh host compiles dependencies from source and
   takes far longer than later runs. Subsequent builds reuse the cache.
 - A full link peaks around 30 GB of RSS. On a memory-constrained host reduce
   `--parallel` rather than letting the OOM killer take the build — or worse, take
   a running node.
-- If `conan install` reports a missing default profile, the cache directory was
-  created by a different user than the one running Conan. Fix ownership, then
-  `conan profile detect`.
-- A dependency added upstream will fail `cmake` configure with a missing package
+- If Conan reports a missing default profile, its cache directory was created by a
+  different user than the one running it. Fix ownership, then `conan profile
+  detect`.
+- A dependency added upstream fails `cmake` configure with a missing package
   before any compilation starts. Re-run `conan install` rather than assuming the
   build itself broke.
 
 Confirm the binary is newer than the source you just pulled:
 
 ```sh
-ls -l .build/xrpld
+find .build -maxdepth 4 -name xrpld -type f -printf '%p %s bytes %TY-%Tm-%Td %TH:%TM\n'
 git log -1 --format='%h %s'
 ```
-
----
 
 ## 5. Run the collector
 
