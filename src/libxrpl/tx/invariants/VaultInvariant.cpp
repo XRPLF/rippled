@@ -44,6 +44,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.assetsReserved = from.at(sfAssetsReserved);
     return self;
 }
 
@@ -492,6 +493,19 @@ ValidVault::finalize(
     if (afterVault.assetsMaximum < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: assets maximum must be positive";
+        result = false;
+    }
+
+    if (afterVault.assetsReserved < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: assets reserved must be positive";
+        result = false;
+    }
+
+    if (afterVault.assetsAvailable + afterVault.assetsReserved > afterVault.assetsTotal)
+    {
+        JLOG(j.fatal()) << "Invariant failed: sum of assets available and "
+                           "reserved must not be greater than assets outstanding";
         result = false;
     }
 

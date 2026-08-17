@@ -7,6 +7,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -82,6 +83,15 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
 
     if (auto const ter = checkLoanFreeze(
             ctx.view, asset, vaultPseudo, brokerPseudo, account, brokerOwner, ctx.j))
+        return ter;
+
+    // Re-verify that the borrower and broker owner (the two accounts that
+    // receive funds at disbursement) are authorised to hold the vault asset.
+    // WeakAuth is used because the holdings need not exist yet; they are
+    // created at disbursement.
+    if (auto const ter = requireAuth(ctx.view, asset, account, AuthType::WeakAuth))
+        return ter;
+    if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
         return ter;
 
     return tesSUCCESS;
