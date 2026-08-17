@@ -7,11 +7,10 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <chrono>
