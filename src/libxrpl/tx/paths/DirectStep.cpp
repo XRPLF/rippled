@@ -852,14 +852,11 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
 
         // An LPToken redeemed against its AMM (dst_ is the LPToken issuer on
         // this hop) cannot move if a pool asset is an MPT that forbids
-        // transfers between these accounts. Map only that case (tecNO_AUTH) to
-        // terNO_LINE, so a non-transferable LPToken behaves like a frozen one.
-        // Any other error is a ledger inconsistency and propagates unchanged,
-        // as checkFreeze does above. A no-op unless dst_ is an AMM whose pool
-        // holds such an MPT (so it is implicitly gated by featureMPTokensV2).
+        // transfers between these accounts. A no-op unless dst_ is an AMM whose
+        // pool holds such an MPT (so it is implicitly gated by featureMPTokensV2).
         auto const lpTer = canTransferLPToken(ctx.view, src_, dst_, dst_);
         if (!isTesSuccess(lpTer))
-            return lpTer == tecNO_AUTH ? terNO_LINE : lpTer;
+            return lpTer;
     }
 
     // If previous step was a direct step then we need to check

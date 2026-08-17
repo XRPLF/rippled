@@ -481,15 +481,14 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
             // Transfer between two non-issuer holders is allowed only if the
             // pool MPT has CanTransfer set; otherwise the redeem step against
-            // the AMM account blocks it, behaving like a frozen pool asset
-            // (terNO_LINE -> tecPATH_DRY).
+            // the AMM account blocks it with tecNO_AUTH.
             if ((mptFlags & tfMPTCanTransfer) != 0u)
             {
                 env(pay(alice_, bob_, STAmount{lpIssue, 100}));
             }
             else
             {
-                env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecPATH_DRY));
+                env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_AUTH));
             }
             env.close();
         };
