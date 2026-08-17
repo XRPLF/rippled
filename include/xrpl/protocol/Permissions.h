@@ -61,7 +61,7 @@ private:
     struct TxDelegationEntry
     {
         uint256 amendment;
-        Delegation delegable{NotDelegable};
+        Delegation delegable{Delegation::NotDelegable};
     };
 
     std::unordered_set<TxType> granularTxTypes_;

@@ -2725,10 +2725,10 @@ class Delegate_test : public beast::unit_test::Suite
 #undef TRANSACTION
 
 #define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, settings, ...)                     \
-    if ((xrpl::TxSettings UNWRAP settings).delegable == xrpl::Delegable) \
-    {                                                                    \
-        delegableCount++;                                                \
+#define TRANSACTION(tag, value, name, settings, ...)                                 \
+    if ((xrpl::TxSettings UNWRAP settings).delegable == xrpl::Delegation::Delegable) \
+    {                                                                                \
+        delegableCount++;                                                            \
     }
 
 #include <xrpl/protocol/detail/transactions.macro>

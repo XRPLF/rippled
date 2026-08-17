@@ -60,7 +60,7 @@ def create_transaction_parser():
 SETTING_DEFAULTS = {
     "delegable": "Delegation::Delegable",
     "amendment": "uint256{}",
-    "privileges": "NoPriv",
+    "privileges": "Privilege::NoPriv",
 }
 
 
@@ -69,7 +69,7 @@ def parse_settings(settings_str):
 
     Args:
         settings_str: A string like '({.delegable = Delegation::NotDelegable,
-                      .privileges = CreateAcct | MayCreateMpt})', or '({})'.
+                      .privileges = Privilege::CreateAcct})', or '({})'.
 
     Returns:
         A dict with a value for every key in SETTING_DEFAULTS.
@@ -123,7 +123,7 @@ def parse_transaction_args(args_list):
     Args:
         args_list: A list of parsed arguments from pyparsing, e.g.,
                    ['ttPAYMENT', '0', 'Payment',
-                    '({.privileges = CreateAcct | MayCreateMpt})', '({...})']
+                    '({.privileges = Privilege::CreateAcct})', '({...})']
 
     Returns:
         A dict with parsed transaction information.

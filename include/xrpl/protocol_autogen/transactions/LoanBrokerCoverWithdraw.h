@@ -21,7 +21,7 @@ class LoanBrokerCoverWithdrawBuilder;
  * Type: ttLOAN_BROKER_COVER_WITHDRAW (77)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: MayAuthorizeMpt
+ * Privileges: Privilege::MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerCoverWithdrawBuilder to construct new transactions.

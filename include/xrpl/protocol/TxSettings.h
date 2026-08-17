@@ -3,14 +3,12 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 
+#include <cstdint>
 #include <type_traits>
 
 namespace xrpl {
 
-// Injected bare enumerators (xrpl::Delegable / xrpl::NotDelegable) are required by preprocessor
-// tricks in tests and macro-generated code; enum class would break that.
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum Delegation { Delegable, NotDelegable };
+enum class Delegation { Delegable, NotDelegable };
 
 /**
  * Operations a transaction is permitted to perform, as a bitfield.
@@ -18,9 +16,7 @@ enum Delegation { Delegable, NotDelegable };
  * These are declared per-transaction in transactions.macro (via
  * TxSettings::privileges) and enforced in InvariantCheck.cpp.
  */
-// Bitwise flags, used in macro files
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum Privilege {
+enum class Privilege : std::uint16_t {
     NoPriv = 0x0000,              // The transaction can not do any of the enumerated operations
     CreateAcct = 0x0001,          // The transaction can create a new ACCOUNT_ROOT object.
     CreatePseudoAcct = 0x0002,    // The transaction can create a pseudo account,
@@ -42,12 +38,24 @@ enum Privilege {
     MayCreateMpt = 0x2000,        // The transaction MAY create an MPT object, except for issuer.
 };
 
+// The inner static_cast is not redundant: the underlying type is narrower than
+// `int`, so the operands integer-promote and the result has to be narrowed back.
+// safeCast rejects that narrowing, but every input bit is a Privilege bit by
+// construction, so the result is always representable.
 constexpr Privilege
 operator|(Privilege lhs, Privilege rhs)
 {
-    return safeCast<Privilege>(
-        safeCast<std::underlying_type_t<Privilege>>(lhs) |
-        safeCast<std::underlying_type_t<Privilege>>(rhs));
+    using Underlying = std::underlying_type_t<Privilege>;
+    return static_cast<Privilege>(
+        static_cast<Underlying>(safeCast<Underlying>(lhs) | safeCast<Underlying>(rhs)));
+}
+
+constexpr Privilege
+operator&(Privilege lhs, Privilege rhs)
+{
+    using Underlying = std::underlying_type_t<Privilege>;
+    return static_cast<Privilege>(
+        static_cast<Underlying>(safeCast<Underlying>(lhs) & safeCast<Underlying>(rhs)));
 }
 
 /**
@@ -66,7 +74,7 @@ struct TxSettings
     /**
      * Whether an account may delegate this transaction to another account.
      */
-    Delegation delegable = Delegable;
+    Delegation delegable{Delegation::Delegable};
 
     /**
      * The amendment gating this transaction, or uint256{} if always available.
@@ -82,7 +90,7 @@ struct TxSettings
     /**
      * Operations this transaction is permitted to perform.
      */
-    Privilege privileges = NoPriv;
+    Privilege privileges{Privilege::NoPriv};
 };
 
 }  // namespace xrpl

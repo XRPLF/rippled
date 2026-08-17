@@ -21,7 +21,7 @@ class VaultWithdrawBuilder;
  * Type: ttVAULT_WITHDRAW (69)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: MayDeleteMpt | MayAuthorizeMpt | MustModifyVault
+ * Privileges: Privilege::MayDeleteMpt | Privilege::MayAuthorizeMpt | Privilege::MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultWithdrawBuilder to construct new transactions.

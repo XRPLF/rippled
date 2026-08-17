@@ -20,9 +20,9 @@
  *
  *     struct TxSettings
  *     {
- *         Delegation delegable = Delegable;
+ *         Delegation delegable{Delegation::Delegable};
  *         uint256 amendment{};
- *         Privilege privileges = NoPriv;
+ *         Privilege privileges{Privilege::NoPriv};
  *     };
  *
  * Name only the settings that differ from those defaults, in declaration
@@ -47,7 +47,7 @@
 #   include <xrpl/tx/transactors/payment/Payment.h>
 #endif
 TRANSACTION(ttPAYMENT, 0, Payment,
-    ({.privileges = CreateAcct | MayCreateMpt}),
+    ({.privileges = Privilege::CreateAcct | Privilege::MayCreateMpt}),
     ({
     {sfDestination, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
@@ -131,7 +131,7 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
 #   include <xrpl/tx/transactors/dex/OfferCreate.h>
 #endif
 TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
-    ({.privileges = MayCreateMpt}),
+    ({.privileges = Privilege::MayCreateMpt}),
     ({
     {sfTakerPays, SoeRequired, SoeMptSupported},
     {sfTakerGets, SoeRequired, SoeMptSupported},
@@ -226,7 +226,7 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, ({}), ({
 #   include <xrpl/tx/transactors/check/CheckCash.h>
 #endif
 TRANSACTION(ttCHECK_CASH, 17, CheckCash,
-    ({.privileges = MayCreateMpt}),
+    ({.privileges = Privilege::MayCreateMpt}),
     ({
     {sfCheckID, SoeRequired},
     {sfAmount, SoeOptional, SoeMptSupported},
@@ -269,7 +269,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet, ({}), ({
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     ({
         .delegable = Delegation::NotDelegable,
-        .privileges = MustDeleteAcct,
+        .privileges = Privilege::MustDeleteAcct,
     }),
     ({
     {sfDestination, SoeRequired},
@@ -284,7 +284,7 @@ TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
 #   include <xrpl/tx/transactors/nft/NFTokenMint.h>
 #endif
 TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
-    ({.privileges = ChangeNftCounts}),
+    ({.privileges = Privilege::ChangeNftCounts}),
     ({
     {sfNFTokenTaxon, SoeRequired},
     {sfTransferFee, SoeOptional},
@@ -300,7 +300,7 @@ TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
 #   include <xrpl/tx/transactors/nft/NFTokenBurn.h>
 #endif
 TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
-    ({.privileges = ChangeNftCounts}),
+    ({.privileges = Privilege::ChangeNftCounts}),
     ({
     {sfNFTokenID, SoeRequired},
     {sfOwner, SoeOptional},
@@ -352,7 +352,8 @@ TRANSACTION(ttCLAWBACK, 30, Clawback, ({}), ({
 TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
     ({
         .amendment = featureAMMClawback,
-        .privileges = MayDeleteAcct | OverrideFreeze | MayAuthorizeMpt,
+        .privileges = Privilege::MayDeleteAcct | Privilege::OverrideFreeze |
+            Privilege::MayAuthorizeMpt,
     }),
     ({
     {sfHolder, SoeRequired},
@@ -368,7 +369,7 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
 TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     ({
         .amendment = featureAMM,
-        .privileges = CreatePseudoAcct | MayCreateMpt,
+        .privileges = Privilege::CreatePseudoAcct | Privilege::MayCreateMpt,
     }),
     ({
     {sfAmount, SoeRequired, SoeMptSupported},
@@ -399,7 +400,7 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
 TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     ({
         .amendment = featureAMM,
-        .privileges = MayDeleteAcct | MayAuthorizeMpt,
+        .privileges = Privilege::MayDeleteAcct | Privilege::MayAuthorizeMpt,
     }),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -443,7 +444,7 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
 TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     ({
         .amendment = featureAMM,
-        .privileges = MustDeleteAcct | MayDeleteMpt,
+        .privileges = Privilege::MustDeleteAcct | Privilege::MayDeleteMpt,
     }),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -497,7 +498,7 @@ TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit,
 TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation,
     ({
         .amendment = featureXChainBridge,
-        .privileges = CreateAcct,
+        .privileges = Privilege::CreateAcct,
     }),
     ({
     {sfXChainBridge, SoeRequired},
@@ -518,7 +519,7 @@ TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation,
 TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateAttestation,
     ({
         .amendment = featureXChainBridge,
-        .privileges = CreateAcct,
+        .privileges = Privilege::CreateAcct,
     }),
     ({
     {sfXChainBridge, SoeRequired},
@@ -618,7 +619,7 @@ TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix,
 TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
     ({
         .amendment = featureMPTokensV1,
-        .privileges = CreateMptIssuance,
+        .privileges = Privilege::CreateMptIssuance,
     }),
     ({
     {sfAssetScale, SoeOptional},
@@ -636,7 +637,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
 TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy,
     ({
         .amendment = featureMPTokensV1,
-        .privileges = DestroyMptIssuance,
+        .privileges = Privilege::DestroyMptIssuance,
     }),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
@@ -666,7 +667,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
 TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
     ({
         .amendment = featureMPTokensV1,
-        .privileges = MustAuthorizeMpt,
+        .privileges = Privilege::MustAuthorizeMpt,
     }),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
@@ -764,7 +765,8 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureSingleAssetVault,
-        .privileges = CreatePseudoAcct | CreateMptIssuance | MustModifyVault,
+        .privileges = Privilege::CreatePseudoAcct | Privilege::CreateMptIssuance |
+            Privilege::MustModifyVault,
     }),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -787,7 +789,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureSingleAssetVault,
-        .privileges = MustModifyVault,
+        .privileges = Privilege::MustModifyVault,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -804,7 +806,8 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureSingleAssetVault,
-        .privileges = MustDeleteAcct | DestroyMptIssuance | MustModifyVault,
+        .privileges = Privilege::MustDeleteAcct | Privilege::DestroyMptIssuance |
+            Privilege::MustModifyVault,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -819,7 +822,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureSingleAssetVault,
-        .privileges = MayAuthorizeMpt | MustModifyVault,
+        .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -834,7 +837,8 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureSingleAssetVault,
-        .privileges = MayDeleteMpt | MayAuthorizeMpt | MustModifyVault,
+        .privileges = Privilege::MayDeleteMpt | Privilege::MayAuthorizeMpt |
+            Privilege::MustModifyVault,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -851,7 +855,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureSingleAssetVault,
-        .privileges = MayDeleteMpt | MustModifyVault,
+        .privileges = Privilege::MayDeleteMpt | Privilege::MustModifyVault,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -883,7 +887,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureLendingProtocol,
-        .privileges = CreatePseudoAcct | MayAuthorizeMpt,
+        .privileges = Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -903,7 +907,7 @@ TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureLendingProtocol,
-        .privileges = MustDeleteAcct | MayAuthorizeMpt,
+        .privileges = Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},
@@ -931,7 +935,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureLendingProtocol,
-        .privileges = MayAuthorizeMpt,
+        .privileges = Privilege::MayAuthorizeMpt,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},
@@ -963,7 +967,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureLendingProtocol,
-        .privileges = MayAuthorizeMpt | MustModifyVault,
+        .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},
@@ -1009,7 +1013,7 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
         // All of the LoanManage options will modify the vault, but the
         // transaction can succeed without options, essentially making it
         // a noop.
-        .privileges = MayModifyVault,
+        .privileges = Privilege::MayModifyVault,
     }),
     ({
     {sfLoanID, SoeRequired},
@@ -1023,7 +1027,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureLendingProtocol,
-        .privileges = MayAuthorizeMpt | MustModifyVault,
+        .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
     }),
     ({
     {sfLoanID, SoeRequired},

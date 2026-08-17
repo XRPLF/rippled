@@ -47,9 +47,9 @@ namespace xrpl {
 #undef TRANSACTION
 
 #define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, settings, ...)           \
-    case tag: {                                                \
-        return (TxSettings UNWRAP settings).privileges & priv; \
+#define TRANSACTION(tag, value, name, settings, ...)                                  \
+    case tag: {                                                                       \
+        return ((TxSettings UNWRAP settings).privileges & priv) != Privilege::NoPriv; \
     }
 
 bool
@@ -442,7 +442,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if (hasPrivilege(tx, MustDeleteAcct) && isTesSuccess(result))
+    if (hasPrivilege(tx, Privilege::MustDeleteAcct) && isTesSuccess(result))
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -463,7 +463,7 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (hasPrivilege(tx, MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
+    if (hasPrivilege(tx, Privilege::MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -766,14 +766,15 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (hasPrivilege(tx, CreateAcct | CreatePseudoAcct) && isTesSuccess(result))
+    if (hasPrivilege(tx, Privilege::CreateAcct | Privilege::CreatePseudoAcct) &&
+        isTesSuccess(result))
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&
              (view.rules().enabled(featureSingleAssetVault) ||
               view.rules().enabled(featureLendingProtocol)));
 
-        if (pseudoAccount && !hasPrivilege(tx, CreatePseudoAcct))
+        if (pseudoAccount && !hasPrivilege(tx, Privilege::CreatePseudoAcct))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";

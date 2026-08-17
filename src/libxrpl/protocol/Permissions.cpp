@@ -251,7 +251,7 @@ Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
 
     // Tx-level permissions require the transaction type itself to be delegable, and
     // the corresponding amendment enabled.
-    return txIt != txDelegationMap_.end() && txIt->second.delegable != NotDelegable &&
+    return txIt != txDelegationMap_.end() && txIt->second.delegable != Delegation::NotDelegable &&
         amendmentEnabled(txIt->second);
 }
 
