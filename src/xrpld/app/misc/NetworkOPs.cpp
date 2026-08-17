@@ -3410,11 +3410,15 @@ NetworkOPsImp::reportFeeChange()
     // Also fixes the no-subscriber case where lastFeeSummary_ was
     // never updated by pubServer(), causing endless job queuing.
     // Lock is released before addJob to avoid holding streamLock_
-    // across the job queue mutex (per nbougalis review suggestion).
+    // across the job queue mutex.
     if (std::scoped_lock const sl(streamLock_); f != lastFeeSummary_)
+    {
         lastFeeSummary_ = f;
+    }
     else
+    {
         return;
+    }
 
     jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
 }
