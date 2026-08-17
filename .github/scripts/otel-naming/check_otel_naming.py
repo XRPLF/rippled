@@ -818,6 +818,7 @@ def metric_label_names(root: Path) -> Set[str]:
 # repo's OTel code (never as a workaround for a dashboard querying a label
 # that nothing actually emits — that is a real Rule D violation).
 EXTERNAL_INFRA_LABELS = {
+    "xrpl_work_item",  # perf-iac: ticket/work-item id for the perf comparison run
     "xrpl_branch",  # perf-iac: git ref of the xrpld build under test
     "xrpl_node_role",  # perf-iac: validator/peer role in the perf cluster
 }
