@@ -846,17 +846,15 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     // pure issue/redeem can't be frozen
     if (!(ctx.isLast && ctx.isFirst))
     {
-        auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
-        if (!isTesSuccess(ter))
+        if (auto const ter = checkFreeze(ctx.view, src_, dst_, currency_); !isTesSuccess(ter))
             return ter;
 
         // An LPToken redeemed against its AMM (dst_ is the LPToken issuer on
         // this hop) cannot move if a pool asset is an MPT that forbids
         // transfers between these accounts. A no-op unless dst_ is an AMM whose
         // pool holds such an MPT (so it is implicitly gated by featureMPTokensV2).
-        auto const lpTer = canTransferLPToken(ctx.view, src_, dst_, dst_);
-        if (!isTesSuccess(lpTer))
-            return lpTer;
+        if (auto const ter = canTransferLPToken(ctx.view, src_, dst_, dst_); !isTesSuccess(ter))
+            return ter;
     }
 
     // If previous step was a direct step then we need to check
