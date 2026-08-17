@@ -23,18 +23,6 @@
 extensions:
   health_check:
     endpoint: 0.0.0.0:13133
-  # Persists filelog read offsets so a collector restart resumes where it
-  # stopped instead of re-reading each debug.log from the top. Without this
-  # the receiver keeps offsets in memory only.
-  #
-  # The directory must be writable by the user the collector runs as. The
-  # image ships no writable directory (no /var/lib, no /tmp), so this path
-  # comes from a mounted volume; see the otel-collector service in
-  # docker-compose.yml. Point `directory` somewhere else if a deployment
-  # mounts its state elsewhere.
-  file_storage/filelog:
-    directory: /var/lib/otelcol/file_storage
-    create_directory: true
 
 receivers:
   otlp:
@@ -53,10 +41,12 @@ receivers:
     # skips everything written before the receiver's first poll — so any log
     # line a node emitted before the collector got to it would be lost, and
     # nothing is read at all from a file that has stopped being written to.
-    # Paired with the file_storage extension above so restarting the
-    # collector resumes at the last offset rather than re-ingesting the file.
+    #
+    # Offsets are kept in memory here, so a restarted collector re-reads the
+    # file. Stacks that keep their logs across restarts layer
+    # otel-collector-filestorage.yaml on top to persist them; ephemeral
+    # stacks get a fresh log directory each run and need nothing.
     start_at: beginning
-    storage: file_storage/filelog
     operators:
       # Log format emitted by Logs::format() is:
       #   YYYY-Mmm-DD HH:MM:SS.ffffff UTC <partition>:<severity> [trace_id=... span_id=...] <message>
@@ -201,7 +191,7 @@ exporters:
       enabled: true
 
 service:
-  extensions: [health_check, file_storage/filelog]
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]

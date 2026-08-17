@@ -44,7 +44,14 @@ services:
   # batches them for efficiency, and forwards to Tempo for storage.
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.158.0
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    # Second --config layers filelog offset persistence on top of the shared
+    # base config; the collector deep-merges them. Only this stack keeps its
+    # logs across restarts, so only this stack needs it.
+    command:
+      [
+        "--config=/etc/otel-collector-config.yaml",
+        "--config=/etc/otel-collector-filestorage.yaml",
+      ]
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP (traces + native OTel metrics)
@@ -55,6 +62,8 @@ services:
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+      # Dev-only overlay: persist filelog read offsets across restarts
+      - ./otel-collector-filestorage.yaml:/etc/otel-collector-filestorage.yaml:ro
       # Mount the xrpld log root for the filelog receiver. The telemetry
       # configs write to docker/telemetry/data/logs/<network>/debug.log, so
       # the default source is the repo-relative ./data/logs — user-owned and
