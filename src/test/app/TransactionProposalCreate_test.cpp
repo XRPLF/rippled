@@ -766,6 +766,33 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::chrono_literals;
 
+        // Reserve sponsorship requires the Sponsor amendment, independent of
+        // Cosign: with Cosign enabled but Sponsor disabled, a proposal that
+        // tries to attach a sponsor is rejected before it ever reaches the
+        // reserve-sponsorship allow-list.
+        {
+            Env env{*this, features - featureSponsor};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            Account const backer{"backer"};
+            env.fund(XRP(10000), alice, target, bob, backer);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+            json::Value const proposedTx =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
+
+            env(proposal::create(alice, proposedTx, proposal::expiration(env, 100s)),
+                sponsor::As(backer, spfSponsorReserve),
+                Sig(sfSponsorSignature, backer),
+                Ter(temDISABLED));
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
+        }
+
         Env env{*this, features};
 
         Account const alice{"alice"};    // the proposer
