@@ -3,15 +3,6 @@
 // #define DEBUG_OUTPUT 1
 #endif
 
-// The wasm engine is now the Rust `xrpl-wasm-vm` crate, reached only through
-// `runEscrowWasm` / `preflightEscrowWasm`. The old C++ engine surface this suite used for
-// its lower-level cases -- `WasmEngine`, `createWasmImport` / `WasmImpFunc` /
-// `WASM_IMPORT_FUNC2` (arbitrary host imports), and `wasmParams` -- no longer exists, so the
-// tests built on it (raw `addTwo` module, ledger-sqn/host-function-cost engine runs, bad
-// alignment) were removed; that engine/ABI coverage now lives in the crate tests
-// (`crates/xrpl-wasm-vm/tests/budgets.rs`, `memory_policy.rs`). What remains here is the
-// app-tier escrow integration that still runs through `runEscrowWasm`.
-
 #include <test/app/TestHostFunctions.h>
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx/Env.h>

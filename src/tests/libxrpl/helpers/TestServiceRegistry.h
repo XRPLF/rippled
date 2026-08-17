@@ -55,13 +55,6 @@ public:
 
 /**
  * Minimal AmendmentTable for tests.
- *
- * The real table is built by `makeAmendmentTable`, which lives in the app (xrpld) tier and
- * so cannot link into a libxrpl-tier test binary. But the wasm host only ever calls
- * `find(name)` — a name -> amendment-id resolve — and whether an amendment is *enabled* is
- * read from the ledger's `Rules`, never from here. So `find` delegates to the feature
- * registry (the same source `makeAmendmentTable` would seed from) and every other method,
- * unused by these tests, throws if reached.
  */
 class TestAmendmentTable final : public AmendmentTable
 {
@@ -255,9 +248,6 @@ public:
     }
 
     // Protocol and validation services
-    // See `TestAmendmentTable`: the wasm host only resolves a name -> id here; enabled
-    // state is read from the ledger's `Rules`. The real factory (`makeAmendmentTable`) is
-    // app-tier and won't link into a libxrpl test binary, so a stub table is used.
     AmendmentTable&
     getAmendmentTable() override
     {
