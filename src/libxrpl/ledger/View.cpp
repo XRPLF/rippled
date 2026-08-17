@@ -138,6 +138,33 @@ isLPTokenFrozen(
     return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
 }
 
+TER
+canTransferLPToken(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    AccountID const& lpTokenIssuer)
+{
+    // Only AMM-issued LPTokens are subject to this check. The LPToken's issuer
+    // is the AMM account; if it is not an AMM, this is not an LPToken.
+    auto const sleIssuer = view.read(keylet::account(lpTokenIssuer));
+    if (!sleIssuer || !sleIssuer->isFieldPresent(sfAMMID))
+        return tesSUCCESS;
+
+    auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+    if (!sleAmm)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const transferable = [&](Asset const& a) -> TER {
+        if (!a.holds<MPTIssue>())
+            return tesSUCCESS;
+        return canTransfer(view, a.get<MPTIssue>(), from, to);
+    };
+    if (auto const err = transferable((*sleAmm)[sfAsset]); !isTesSuccess(err))
+        return err;
+    return transferable((*sleAmm)[sfAsset2]);
+}
+
 bool
 areCompatible(
     ReadView const& validLedger,
