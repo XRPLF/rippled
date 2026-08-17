@@ -274,7 +274,7 @@
     },
     {
       "title": "Operating Mode Transitions",
-      "description": "**What:** Count of transitions into each operating mode.\n**How it's computed:** Per-mode transition counters at their latest value per node.\n**Reading it:** Few transitions is good; a stable node rarely leaves Full.\n**Healthy range:** workload-dependent; low and infrequent transitions.\n**Watch for:** Frequent transitions out of Full, or any into Disconnected/Syncing (flapping).\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp NetworkOPsImp::Stats ctor",
+      "description": "**What:** Transitions into each operating mode, per interval.\n**How it's computed:** increase() over the per-mode transition counters, so each point is the number of transitions in that bucket and the series stays correct across an xrpld restart (the counters reset to 0).\n**Reading it:** Few transitions is good; a stable node rarely leaves Full. Brief flaps are visible here even when they are too short to appear on Operating Mode (State Timeline), which can only sample state once per scrape.\n**Healthy range:** workload-dependent; low and infrequent transitions.\n**Watch for:** Frequent transitions out of Full, or any into Disconnected/Syncing (flapping).\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp NetworkOPsImp::Stats ctor",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -294,35 +294,35 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_full_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "increase(state_accounting_full_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Full [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_tracking_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "increase(state_accounting_tracking_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Tracking [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_syncing_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "increase(state_accounting_syncing_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Syncing [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_connected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "increase(state_accounting_connected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Connected [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_disconnected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "increase(state_accounting_disconnected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Disconnected [{{service_instance_id}}]"
         }
       ],
