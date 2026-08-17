@@ -819,7 +819,7 @@ ValidMPTTransfer::isAuthorized(
     // auth.  Exempt them here rather than relying on requireAuth: the recursive
     // share -> underlying descent in requireAuth fails for a pseudo-account
     // that holds the share but not the underlying.
-    if (isPseudoAccount(view, holder, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
+    if (isPseudoAccount(view, holder))
         return true;
 
     auto const key = keylet::mptoken(mptid, holder);

@@ -332,8 +332,7 @@ requireAuth(
     // They are implicitly authorized for any MPT they hold, including vault shares whose
     // underlying asset would otherwise require auth.
     auto const isPseudoAccountExempt = [&] {
-        return (featureSAVEnabled || featureMPTV2Enabled) &&
-            isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID});
+        return (featureSAVEnabled || featureMPTV2Enabled) && isPseudoAccount(view, account);
     };
 
     auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
