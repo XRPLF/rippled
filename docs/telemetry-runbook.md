@@ -824,7 +824,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 2. Verify `server=otel` in the `[insight]` config section
 3. Verify the endpoint in `[insight]` points to the OTLP/HTTP port (default: `http://localhost:4318/v1/metrics`)
 4. Check that the `otlp` receiver is in the metrics pipeline receivers in `otel-collector-config.yaml`
-5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=job_count'`
+5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=jobq_job_count'`
 
 ### High memory usage
 
