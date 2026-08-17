@@ -7324,7 +7324,7 @@ class Vault_test : public beast::unit_test::Suite
                 .asString();
 
         // dest authorizes deposits from holders of credentials issued by credIssuer
-        env(deposit::authCredentials(dest, {{credIssuer, credType}}));
+        env(deposit::authCredentials(dest, {{.issuer = credIssuer, .credType = credType}}));
         env.close();
 
         // Withdraw without supplying credentials still fails
