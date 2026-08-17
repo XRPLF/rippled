@@ -1,0 +1,28 @@
+# Collector overlay that persists filelog read offsets. Applied ONLY by the
+# developer stack (docker/telemetry/docker-compose.yml), as a second --config
+# after otel-collector-config.yaml; the collector deep-merges the two.
+#
+# Why this is an overlay rather than part of the base config: the base config
+# is shared by every stack that runs the collector, including the ephemeral
+# workload-validation stack, which creates a fresh log directory per run and so
+# has nothing to resume from. The extension needs a writable directory, and the
+# collector image runs as 10001:10001 with no writable path of its own, so
+# requiring it in the base config would force every stack to mount a volume
+# just to start. Keeping it here means the base config stays self-sufficient.
+#
+# The developer stack benefits because its log directory and this volume both
+# survive `docker compose down`, so a restart resumes at the last offset
+# instead of re-reading debug.log from the top.
+
+extensions:
+  file_storage/filelog:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
+
+receivers:
+  filelog:
+    storage: file_storage/filelog
+
+# Lists are replaced rather than merged, so this must repeat the base entry.
+service:
+  extensions: [health_check, file_storage/filelog]

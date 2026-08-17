@@ -312,6 +312,8 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 >   it (both `consensus.validation.send` and `peer.validation.receive`) — there
 >   is no dotted span attribute.
 
+The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each. That is 89 rows over 78 distinct keys. The §6 per-header counts use the same row-based rule, so they sum to 89.
+
 #### RPC Attributes
 
 | Attribute              | Type    | Set On                            | Description                                      |

@@ -350,6 +350,7 @@
         "x": 0,
         "y": 41
       },
+
       "options": {
         "tooltip": {
           "mode": "multi",
@@ -855,7 +856,8 @@
             "pointSize": 5,
             "lineWidth": 1,
             "fillOpacity": 0,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "axisLabel": "NetClock Seconds (Ripple Epoch)"
           }
         },
         "overrides": []
@@ -897,8 +899,8 @@
         "overrides": [
           {
             "matcher": {
-              "id": "byName",
-              "options": "Vote Bins"
+              "id": "byRegexp",
+              "options": ".*vote_bins.*"
             },
             "properties": [
               {
@@ -913,8 +915,8 @@
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "Resolution"
+              "id": "byRegexp",
+              "options": ".*close_resolution_ms.*"
             },
             "properties": [
               {
