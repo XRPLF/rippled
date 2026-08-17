@@ -245,8 +245,8 @@ EOF
     (cd "${staging}" && dpkg-buildpackage -b --no-sign -d)
 }
 
-# Both trees, not just this run's format: a package left from another version
-# would otherwise be published under this version's channel.
+# Remove both build directories, because a package left from an earlier build
+# would otherwise be picked up and published alongside this one.
 rm -rf "${BUILD_DIR}/debbuild" "${BUILD_DIR}/rpmbuild"
 
 "build_${pkg_type}"
