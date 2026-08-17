@@ -285,6 +285,8 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 >   it (both `consensus.validation.send` and `peer.validation.receive`) — there
 >   is no dotted span attribute.
 
+The tables below list one row per attribute per subsystem, so a key shared by two subsystems (for example `ledger_seq`) appears once in each. That is 89 rows over 78 distinct keys. The §6 per-header counts use the same row-based rule, so they sum to 89.
+
 #### RPC Attributes
 
 | Attribute              | Type    | Set On                            | Description                                      |
@@ -546,25 +548,25 @@ prefix=xrpld
 
 ### 2.1 Gauges
 
-| Prometheus Metric                           | Source File           | Description                               | Typical Range                   |
-| ------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
-| `ledgermaster_validated_ledger_age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
-| `ledgermaster_published_ledger_age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
-| `state_accounting_disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
-| `state_accounting_connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
-| `state_accounting_syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
-| `state_accounting_tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
-| `state_accounting_full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
-| `state_accounting_disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
-| `state_accounting_connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
-| `state_accounting_syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
-| `state_accounting_tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
-| `state_accounting_full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
-| `peer_finder_active_inbound_peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
-| `peer_finder_active_outbound_peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
-| `overlay_peer_disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
-| `overlay_peer_disconnects_charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
-| `job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
+| Prometheus Metric                           | Source File           | Description                                   | Typical Range                   |
+| ------------------------------------------- | --------------------- | --------------------------------------------- | ------------------------------- |
+| `ledgermaster_validated_ledger_age`         | LedgerMaster.h        | Seconds since last validated ledger           | 0–10 (healthy), >30 (stale)     |
+| `ledgermaster_published_ledger_age`         | LedgerMaster.h        | Seconds since last published ledger           | 0–10 (healthy)                  |
+| `state_accounting_disconnected_duration`    | NetworkOPs.cpp        | Cumulative microseconds in Disconnected state | Monotonic                       |
+| `state_accounting_connected_duration`       | NetworkOPs.cpp        | Cumulative microseconds in Connected state    | Monotonic                       |
+| `state_accounting_syncing_duration`         | NetworkOPs.cpp        | Cumulative microseconds in Syncing state      | Monotonic                       |
+| `state_accounting_tracking_duration`        | NetworkOPs.cpp        | Cumulative microseconds in Tracking state     | Monotonic                       |
+| `state_accounting_full_duration`            | NetworkOPs.cpp        | Cumulative microseconds in Full state         | Monotonic (should dominate)     |
+| `state_accounting_disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected          | Low                             |
+| `state_accounting_connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected             | Low                             |
+| `state_accounting_syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing               | Low                             |
+| `state_accounting_tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking              | Low                             |
+| `state_accounting_full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full                  | Low (should be 1 after startup) |
+| `peer_finder_active_inbound_peers`          | PeerfinderManager.cpp | Active inbound peer connections               | 0–85                            |
+| `peer_finder_active_outbound_peers`         | PeerfinderManager.cpp | Active outbound peer connections              | 10–21                           |
+| `overlay_peer_disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count           | Low growth                      |
+| `overlay_peer_disconnects_charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges     | Low growth (subset of above)    |
+| `job_count`                                 | JobQueue.cpp          | Current job queue depth                       | 0–100 (healthy)                 |
 
 **Grafana dashboard**: _Node Health_ (`node-health`)
 

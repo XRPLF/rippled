@@ -282,7 +282,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (close_time_correct, service_instance_id) (rate(span_calls_total{span_name=\"consensus.accept.apply\", consensus_mode=~\"$consensus_mode\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
+          "expr": "sum by (close_time_correct, service_instance_id) (rate(span_calls_total{span_name=\"consensus.accept.apply\", close_time_correct=~\"$close_time_correct\", consensus_mode=~\"$consensus_mode\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "interval": "15s",
           "legendFormat": "Close Time Correct={{close_time_correct}} [{{service_instance_id}}]"
         }
@@ -530,7 +530,7 @@
     },
     {
       "title": "Close Time: Raw Proposals (Per Node)",
-      "description": "**What:** Each node's raw, unrounded proposed close time at the instant it closed its ledger.\n**How it's computed:** Latest raw close-time value per node, plotted per round.\n**Reading it:** Compare nodes at the same round; values should cluster tightly.\n**Healthy range:** All nodes within a few seconds of each other.\n**Watch for:** A node consistently offset from the pack indicates local clock drift.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
+      "description": "**What:** Each node's raw, unrounded proposed close time at the instant it closed its ledger.\n**How it's computed:** Latest raw close-time value per node, plotted per round. Values are NetClock seconds (Ripple epoch, 2000-01-01); add 946684800 for Unix time.\n**Reading it:** Compare nodes at the same round; values should cluster tightly.\n**Healthy range:** All nodes within a few seconds of each other.\n**Watch for:** A node consistently offset from the pack indicates local clock drift.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -540,7 +540,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "dateTimeFromNow",
+          "unit": "none",
           "custom": {
             "spanNulls": 1800000,
             "drawStyle": "points",
@@ -548,7 +548,8 @@
             "showPoints": "always",
             "lineWidth": 1,
             "fillOpacity": 0,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "axisLabel": "NetClock Seconds (Ripple Epoch)"
           }
         },
         "overrides": []
@@ -571,7 +572,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time_self)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | select(span.close_time_self)",
           "refId": "A"
         }
       ],
@@ -579,7 +580,7 @@
     },
     {
       "title": "Close Time: Effective / Quantized",
-      "description": "**What:** The consensus-agreed close time after rounding to the active resolution bin, i.e. the value written to the ledger header.\n**How it's computed:** Latest effective close-time value per node, plotted per round.\n**Reading it:** All in-agreement nodes should report the identical value each round.\n**Healthy range:** Identical across agreeing nodes.\n**Watch for:** Nodes reporting different effective values are not in close-time agreement for that round.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
+      "description": "**What:** The consensus-agreed close time after rounding to the active resolution bin, i.e. the value written to the ledger header.\n**How it's computed:** Latest effective close-time value per node, plotted per round. Values are NetClock seconds (Ripple epoch, 2000-01-01); add 946684800 for Unix time.\n**Reading it:** All in-agreement nodes should report the identical value each round.\n**Healthy range:** Identical across agreeing nodes.\n**Watch for:** Nodes reporting different effective values are not in close-time agreement for that round.\n**Source:** src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::doAccept",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -589,7 +590,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "dateTimeFromNow",
+          "unit": "none",
           "custom": {
             "spanNulls": 1800000,
             "drawStyle": "points",
@@ -597,7 +598,8 @@
             "showPoints": "always",
             "lineWidth": 1,
             "fillOpacity": 0,
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "axisLabel": "NetClock Seconds (Ripple Epoch)"
           }
         },
         "overrides": []
@@ -620,7 +622,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | select(span.close_time)",
           "refId": "A"
         }
       ],
@@ -652,8 +654,8 @@
         "overrides": [
           {
             "matcher": {
-              "id": "byName",
-              "options": "Vote Bins"
+              "id": "byRegexp",
+              "options": ".*vote_bins.*"
             },
             "properties": [
               {
@@ -668,8 +670,8 @@
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "Resolution"
+              "id": "byRegexp",
+              "options": ".*close_resolution_ms.*"
             },
             "properties": [
               {
@@ -702,7 +704,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | select(span.close_time_vote_bins)",
           "refId": "A"
         },
         {
@@ -710,7 +712,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_resolution_ms)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | select(span.close_resolution_ms)",
           "refId": "B"
         }
       ],
@@ -758,7 +760,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\" && span.resolution_direction=~\"$resolution_direction\"} | select(span.resolution_direction)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.resolution_direction=~\"$resolution_direction\"} | select(span.resolution_direction)",
           "refId": "A"
         }
       ],
@@ -805,7 +807,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time, span.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | select(span.close_time, span.close_time_vote_bins)",
           "refId": "A"
         }
       ],

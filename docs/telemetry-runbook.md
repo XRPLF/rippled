@@ -162,8 +162,9 @@ hash); `tx.preflight` is stateless and omits both.
 # Find specific ledger's consensus details
 {name="consensus.accept.apply"} | ledger_seq = 92345678
 
-# Find all spans in a consensus round (deterministic trace strategy)
-{name="consensus.round"} | consensus_round_id = <round_id>
+# Find all spans in a consensus round (deterministic trace strategy).
+# consensus_round_id is an int64 — the previous ledger sequence plus one.
+{name="consensus.round"} | consensus_round_id = 92345679
 
 # Find dispute resolutions
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
@@ -251,10 +252,14 @@ sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.tr
 > a rising `tx.transactor` failure rate points to apply-time problems. Alert per
 > stage rather than on a single aggregate so the failing stage is obvious.
 
-> **Sampling caveat**: these stage metrics are span-derived and inherit the
-> **tracer head-sampling** ratio (`sampling_ratio`). At `sampling_ratio < 1.0`
-> they undercount proportionally — treat them as relative trends, not absolute
-> transaction counts. Native StatsD metrics are unsampled.
+> **Sampling caveat**: these stage metrics are span-derived, so they count only
+> the spans the collector's spanmetrics connector sees. Head sampling at the node
+> is fixed at 1.0 and is not configurable (`Telemetry.h`), and the shipped
+> collector pipeline has no tail sampling, so today nothing is dropped and the
+> counts are absolute. Volume reduction is delegated to the collector: adding a
+> tail-sampling processor to the traces pipeline puts it ahead of the spanmetrics
+> connector, and these metrics would then undercount proportionally — treat them
+> as relative trends in that case. Native StatsD metrics are never sampled.
 
 ### Transaction Queue Health
 
@@ -454,7 +459,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 {name=~"tx\\..*"} | tx_hash = "<hash>"
 
 # Find all spans in a cross-node consensus trace
-{rootServiceName="xrpld"} | consensus_round_id = <round_id>
+{rootServiceName="xrpld"} | consensus_round_id = 92345679
 
 # Compare latency between sender and receiver for validations
 {name="consensus.validation.send" || name="consensus.validation.receive"}
@@ -540,7 +545,7 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 | `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
 | `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
 | `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
+| `jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth                                                    |
 | `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
 | `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
@@ -660,7 +665,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                      | `command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
-| Overall RPC Throughput      | timeseries | `rpc.request` + `rpc.process` rate                                                                                         | —                        |
+| Overall RPC Throughput      | timeseries | `rpc.http_request` + `rpc.process` rate                                                                                    | —                        |
 | RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                          | `status_code`            |
 | Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                               | `command`                |
 | WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                      | —                        |
@@ -727,7 +732,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Operating Mode (Time Share)            | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))`                        | —           |
 | Operating Mode Transitions             | timeseries | `state_accounting_*_transitions`                                                  | —           |
 | I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`                                    | —           |
-| Job Queue Depth                        | timeseries | `job_count`                                                                       | —           |
+| Job Queue Depth                        | timeseries | `jobq_job_count`                                                                  | —           |
 | Ledger Fetch Rate                      | stat       | `rate(ledger_fetches_total[$__rate_interval])`                                    | —           |
 | Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch_total[$__rate_interval])`                           | —           |
 | Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)                         | `quantile`  |
@@ -869,7 +874,7 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 2. Verify `server=otel` in the `[insight]` config section
 3. Verify the endpoint in `[insight]` points to the OTLP/HTTP port (default: `http://localhost:4318/v1/metrics`)
 4. Check that the `otlp` receiver is in the metrics pipeline receivers in `otel-collector-config.yaml`
-5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=job_count'`
+5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=jobq_job_count'`
 
 ### High memory usage
 
