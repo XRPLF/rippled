@@ -6,8 +6,8 @@ set -euo pipefail
 #
 # Usage: publish_pkg.sh <channel> [package-dir]
 #
-#   channel      release channel; 'stable' selects the unsuffixed repository
-#                pair, anything else the matching '-<channel>' pair
+#   channel      release channel, selecting the 'deb-<channel>' and
+#                'rpm-<channel>' repository pair
 #   package-dir  searched recursively for *.deb, *.ddeb and *.rpm ('build' by
 #                default)
 #
@@ -23,13 +23,8 @@ if [[ -z "${channel}" ]]; then
     exit 2
 fi
 
-if [[ "${channel}" == "stable" ]]; then
-    deb_repo="deb"
-    rpm_repo="rpm"
-else
-    deb_repo="deb-${channel}"
-    rpm_repo="rpm-${channel}"
-fi
+deb_repo="deb-${channel}"
+rpm_repo="rpm-${channel}"
 
 if [[ -z "${DRY_RUN:-}" ]]; then
     : "${NEXUS_USERNAME:?is required}" "${NEXUS_PASSWORD:?is required}"

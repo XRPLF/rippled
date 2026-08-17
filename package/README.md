@@ -129,7 +129,7 @@ the event, and `publish_pkg.sh` maps that channel to a repository pair:
 
 | Event                    | Version           | Channel        | DEB repository     | RPM repository     |
 | ------------------------ | ----------------- | -------------- | ------------------ | ------------------ |
-| tag                      | `X.Y.Z`           | `stable`       | `deb`              | `rpm`              |
+| tag                      | `X.Y.Z`           | `stable`       | `deb-stable`       | `rpm-stable`       |
 | tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable`     |
 | tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental` |
 | push to `develop`        | `xrpld --version` | `develop`      | `deb-develop`      | `rpm-develop`      |
