@@ -439,6 +439,16 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             BEAST_EXPECT(!proposal::entry(env, carol, 1));
             BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
         }
+
+        // The referenced ticket does not exist: the proposal would reserve a
+        // ticket that was never created (On-Chain Cosigner spec §5.3.2).
+        {
+            std::uint32_t const noSuchTicketSeq = firstTicketSeq + 100;
+            env(proposal::create(alice, payload(noSuchTicketSeq), expiration), Ter(tefNO_TICKET));
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, noSuchTicketSeq));
+            BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
+        }
     }
 
     // Only the target account itself, or an account on its SignerList, may

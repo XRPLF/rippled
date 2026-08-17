@@ -203,6 +203,16 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
 
+    // The proposal reserves the ticket for as long as it exists (On-Chain
+    // Cosigner spec §4.2.1, §5.3.2): a ticket that doesn't exist yet can't be
+    // reserved.
+    if (!ctx.view.exists(keylet::ticket(target, ticketSequence)))
+    {
+        JLOG(ctx.j.debug()) << "TransactionProposalCreate: target ticket "
+                               "does not exist.";
+        return tefNO_TICKET;
+    }
+
     if (ctx.view.exists(keylet::txProposal(target, ticketSequence)))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: duplicate proposal.";
