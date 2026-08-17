@@ -86,6 +86,26 @@ isLPTokenFrozen(
     Asset const& asset,
     Asset const& asset2);
 
+/**
+ * Check whether an AMM LPToken may be transferred between @p from and @p to.
+ *
+ * @p lpTokenIssuer is the issuer of the LPToken being moved. If it is not an
+ * AMM account the token is not an LPToken and the transfer is unconditionally
+ * permitted. Otherwise, for each MPT pool asset of that AMM, canTransfer() must
+ * permit the transfer (which exempts the MPT issuer). Non-MPT pool assets are
+ * always transferable by this check, so it is implicitly gated by
+ * featureMPTokensV2 (MPTs can only be AMM pool assets once V2 is enabled).
+ *
+ * @return tesSUCCESS if permitted, otherwise the canTransfer() failure code
+ * (e.g. tecNO_AUTH) of the first MPT pool asset that disallows it.
+ */
+[[nodiscard]] TER
+canTransferLPToken(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    AccountID const& lpTokenIssuer);
+
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
 getEnabledAmendments(ReadView const& view);
