@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
+    This file is part of xrpld: https://github.com/XRPLF/rippled
     Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
@@ -19,6 +19,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <cstdint>
 
 namespace xrpl {
 
