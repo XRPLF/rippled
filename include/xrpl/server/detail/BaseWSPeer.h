@@ -189,9 +189,9 @@ BaseWSPeer<Handler, Impl>::run()
     impl().ws_.set_option(port().pmdOptions);
     // Must manage the control callback memory outside of the `control_callback`
     // function
-    controlCallback_ = [this](
-                           boost::beast::websocket::frame_type kind,
-                           boost::beast::string_view payload) { onPingPong(kind, payload); };
+    controlCallback_ = [this](boost::beast::websocket::frame_type kind, std::string_view payload) {
+        onPingPong(kind, payload);
+    };
     impl().ws_.control_callback(controlCallback_);
     startTimer();
     closeOnTimer_ = true;
