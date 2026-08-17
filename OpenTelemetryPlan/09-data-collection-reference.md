@@ -599,7 +599,12 @@ endpoint=http://localhost:4318/v1/metrics
 prefix=xrpld
 ```
 
-Fallback (StatsD):
+Fallback (StatsD). `StatsDCollector` is still selected by this value, but the
+stack in `docker/telemetry/` no longer receives it: using this path also requires
+re-adding the `statsd` receiver to `otel-collector-config.yaml` and uncommenting
+port 8125 in `docker-compose.yml`, otherwise the metrics go to a port nothing
+listens on. Note also that `StatsDCollector` applies `prefix` to the metric name
+while `OTelCollector` does not, so switching transports renames every series.
 
 ```ini
 [insight]
@@ -1956,7 +1961,7 @@ query, an alert — matches nothing and should be pointed at the live keys above
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type    | Metrics silently dropped by OTel StatsD receiver                                                    | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp                                                                                               |
 | `jobq_job_count` may not emit in standalone mode                      | Missing from Prometheus in some test configs                                                        | Requires active job queue activity                                                                                                                                 |
-| `rpc_requests` depends on `[insight]` config                          | Zero series if StatsD not configured                                                                | Requires `[insight] server=statsd` in xrpld.cfg                                                                                                                    |
+| `rpc_requests` depends on `[insight]` config                          | Zero series if `[insight]` is absent or unset                                                       | Requires `[insight] server=otel` in xrpld.cfg                                                                                                                      |
 | Peer tracing enabled by default                                       | `peer.*` spans emit unless `trace_peer=0`                                                           | High volume — set `trace_peer=0` to opt out on busy mainnet nodes                                                                                                  |
 | `handler="other"` mixes several producers                             | Cannot separate `GetConsL1` from `GetConsL2`                                                        | By design — the cardinality bound; see [§Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram)                                                |
 | `overhead_cluster_*` is always zero                                   | 8 dashboard panel references are flatlines by construction; cluster traffic is counted as `unknown` | **NOT IMPLEMENTED** — see [§6.0](#60-mtcluster-is-counted-as-unknown-not-implemented)                                                                              |
@@ -2136,8 +2141,8 @@ The telemetry system is designed with privacy in mind:
 enabled=1
 
 [insight]
-server=statsd
-address=127.0.0.1:8125
+server=otel
+endpoint=http://localhost:4318/v1/metrics
 prefix=xrpld
 ```
 
@@ -2152,8 +2157,8 @@ batch_size=1024
 max_queue_size=4096
 
 [insight]
-server=statsd
-address=otel-collector:8125
+server=otel
+endpoint=http://otel-collector:4318/v1/metrics
 prefix=xrpld
 ```
 
