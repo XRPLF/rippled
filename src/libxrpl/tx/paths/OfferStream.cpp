@@ -262,12 +262,19 @@ TOfferStreamBase<TIn, TOut>::step()
 
         // Post-fixCleanup3_4_0 defensive check: an offer indexed in a domain
         // book must claim that same domain. This can only happen if the book
-        // directory is corrupt (i.e. a separate book indexing bug).
+        // directory is corrupt (i.e. a separate book indexing bug). An offer
+        // with no sfDomainID at all is just as wrong here: the domain
+        // membership check below is gated on that field being present, so
+        // such an offer would otherwise be consumed from a domain book
+        // without any credential check.
         if (view_.rules().enabled(fixCleanup3_4_0) && book_.domain.has_value() &&
-            entry->isFieldPresent(sfDomainID) && entry->getFieldH256(sfDomainID) != *book_.domain)
+            (!entry->isFieldPresent(sfDomainID) ||
+             entry->getFieldH256(sfDomainID) != *book_.domain))
         {
-            JLOG(j_.error()) << "Offer " << entry->key() << " domain does not match book domain";
-            Throw<FlowException>(tecINTERNAL, "Offer domain does not match book domain.");
+            JLOG(j_.error()) << "Offer " << entry->key()
+                             << " domain missing or does not match book domain";
+            Throw<FlowException>(
+                tecINTERNAL, "Offer domain missing or does not match book domain.");
         }
 
         // Pre-fixCleanup3_3_0: validate domain membership for any book.

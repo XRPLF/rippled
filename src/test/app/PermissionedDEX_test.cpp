@@ -2080,6 +2080,72 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     }
 
     void
+    testDomainBookOfferMissingDomain(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "Offer without a domain indexed in a domain book"
+                 << (fixEnabled ? " (fixCleanup3_4_0 enabled)" : " (fixCleanup3_4_0 disabled)");
+
+        // Same corruption as testDomainOfferInWrongBook, except the offer
+        // loses sfDomainID entirely instead of pointing at another domain
+        // while it stays indexed in domain A's book.
+        //
+        // - With fixCleanup3_4_0: OfferStream sees an offer that claims no
+        //   domain in a domain book and errors out -> tecPATH_PARTIAL.
+        // - Without it: neither the domain mismatch check nor the domain
+        //   membership check fires (both are gated on sfDomainID being
+        //   present), and the invariant does not catch it either because the
+        //   offer is fully consumed and deleted. The payment succeeds using an
+        //   offer that was never credential checked.
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        // Bob places a domain offer in domain A's book.
+        auto const bobOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+        env.close();
+        BEAST_EXPECT(checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, true));
+
+        // Corrupt the offer: drop sfDomainID while it stays indexed in domain
+        // A's book directory.
+        auto const offerKey = keylet::offer(bob.id(), SeqProxy::rawSequence(bobOfferSeq));
+        env.app().getOpenLedger().modify([&offerKey](OpenView& view, beast::Journal) {
+            auto const sle = view.read(offerKey);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            replacement->makeFieldAbsent(sfDomainID);
+            view.rawReplace(replacement);
+            return true;
+        });
+
+        auto const carolBefore = env.balance(carol, USD);
+
+        if (fixEnabled)
+        {
+            // With the fix: OfferStream rejects the domainless offer.
+            env(pay(alice, carol, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(tecPATH_PARTIAL));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(env.balance(carol, USD) - carolBefore == USD(0));
+        }
+        else
+        {
+            // Without the fix: the offer is silently usable in the domain
+            // book, and the payment goes through.
+            env(pay(alice, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
+            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(env.balance(carol, USD) - carolBefore == USD(10));
+        }
+    }
+
+    void
     testReplaceDomainOfferWithOtherDomainOffer(FeatureBitset features)
     {
         bool const fixEnabled = features[fixCleanup3_4_0];
@@ -2176,6 +2242,8 @@ public:
         // after fixCleanup3_4_0. (Not an existing bug, but defensive testing)
         testDomainOfferInWrongBook(all);
         testDomainOfferInWrongBook(all - fixCleanup3_4_0);
+        testDomainBookOfferMissingDomain(all);
+        testDomainBookOfferMissingDomain(all - fixCleanup3_4_0);
 
         testReplaceDomainOfferWithOtherDomainOffer(all);
         testReplaceDomainOfferWithOtherDomainOffer(all - fixCleanup3_4_0);
