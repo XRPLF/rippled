@@ -83,8 +83,9 @@ count=0
 while IFS= read -r -d '' file; do
     name="${file##*/}"
     case "${name}" in
-        # The apt distribution and component are configured on the repository, so
-        # packages POST to its root.
+        # A raw body with a multipart Content-Type, POSTed to the repository root,
+        # is the documented upload for a hosted apt repository:
+        # https://help.sonatype.com/en/apt-repositories.html#deploying-packages-to-hosted-apt-repositories
         *.deb | *.ddeb)
             echo "  ${name} -> ${deb_repo}"
             upload "${nexus_url}/repository/${deb_repo}/" \
