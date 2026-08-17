@@ -188,12 +188,6 @@ host_functions! {
 
     /// Verify `signature` over `message` under `pubkey`. Reads the three regions and
     /// answers `1` if the signature is valid, `0` if not, or a negative error.
-    ///
-    /// GAS DISCREPANCY: this 300 is the value the C-ABI fork registered
-    /// (`rippled-wasm-host-functions`, WasmVM.cpp), which this port follows. The
-    /// prior C++ integration in this tree charged 35000 for the same call — 100x
-    /// more, and closer to the real cost of signature verification. The value is
-    /// consensus-critical, so confirm which is intended before this ships.
     #[gas = 300]
     #[wasm_name = "check_sig"]
     fn check_signature(

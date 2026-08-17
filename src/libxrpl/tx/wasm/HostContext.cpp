@@ -50,6 +50,7 @@ answer(rust::Slice<std::uint8_t> out, std::uint8_t const* value, std::size_t siz
     {
         std::memcpy(out.data(), value, size);
     }
+    size = std::min(size, static_cast<std::size_t>(std::numeric_limits<std::int32_t>::max()));
     return static_cast<std::int32_t>(size);
 }
 

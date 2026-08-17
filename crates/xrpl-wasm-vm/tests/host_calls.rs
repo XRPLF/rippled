@@ -953,6 +953,30 @@ fn float_to_mant_exp_with_a_wrong_total_stops_the_run() {
     );
 }
 
+/// The two regions are one answer, so a call that cannot place all of it places none
+/// of it: an exponent region too small refuses the call with the mantissa's own region
+/// wide enough and untouched.
+#[test]
+fn float_to_mant_exp_with_a_short_exponent_region_writes_neither() {
+    let host =
+        FakeHost::new().answering_float_mant_exp(vec![1, 2, 3, 4, 5, 6, 7, 8], vec![9, 10, 11, 12]);
+
+    // Eight bytes for the mantissa at offset 64, but two for the exponent at 80.
+    let call = "(call $float_to_mant_exp (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 80) (i32.const 2))";
+
+    let wat = module(&[import::FLOAT_TO_MANT_EXP, ONE_PAGE], call);
+    assert_eq!(status(&wat, &host), code(HostError::BufferTooSmall));
+
+    let wat = module(
+        &[import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+        &format!(
+            "(drop {call})
+             (i32.or (i32.load8_u (i32.const 64)) (i32.load8_u (i32.const 80)))"
+        ),
+    );
+    assert_eq!(status(&wat, &host), 0, "neither region should be written");
+}
+
 /// A comparison that reads two float regions and returns a scalar verdict, no output
 /// region involved.
 #[test]

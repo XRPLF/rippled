@@ -1,5 +1,6 @@
 use crate::region::Region;
 use crate::vm::{MAX_FIELD_BYTES, VmState};
+use core::ops::Range;
 use wasmi::{Caller, Memory};
 use xrpl_host_functions::{HostError, HostFunctionSpec, HostFunctions, HostResult};
 
@@ -273,6 +274,16 @@ pub(crate) fn write_buffered(
 const MANTISSA_BYTES: usize = 8;
 const EXPONENT_BYTES: usize = 4;
 
+fn check_fits(data: &[u8], range: &Range<usize>, width: usize) -> HostResult<()> {
+    let region = data
+        .get(range.clone())
+        .ok_or(HostError::PointerOutOfBounds)?;
+    if region.len() < width {
+        return Err(HostError::BufferTooSmall);
+    }
+    Ok(())
+}
+
 /// Service `float_to_mant_exp`, the one call that writes two output regions: the host
 /// fills the run's output buffer with the mantissa followed by the exponent, and each
 /// is copied to its own guest region once every rule has passed.
@@ -313,28 +324,23 @@ pub(crate) fn write_mant_exp(
         return Err(HostError::InternalFatal.into());
     }
 
-    // Copy the mantissa, then the exponent, each only if its whole value fits its
-    // region — a region too small is `BufferTooSmall`, with nothing written.
     let mant_range = mantissa_out.range()?;
+    check_fits(data, &mant_range, MANTISSA_BYTES)?;
+    let exp_range = exponent_out.range()?;
+    check_fits(data, &exp_range, EXPONENT_BYTES)?;
+
+    charge_transfer(state, MANTISSA_BYTES + EXPONENT_BYTES)?;
+
     let mant_dst = data
         .get_mut(mant_range)
         .ok_or(HostError::PointerOutOfBounds)?;
-    if mant_dst.len() < MANTISSA_BYTES {
-        return Err(HostError::BufferTooSmall.into());
-    }
     mant_dst[..MANTISSA_BYTES].copy_from_slice(&state.out_buffer[..MANTISSA_BYTES]);
-
-    let exp_range = exponent_out.range()?;
     let exp_dst = data
         .get_mut(exp_range)
         .ok_or(HostError::PointerOutOfBounds)?;
-    if exp_dst.len() < EXPONENT_BYTES {
-        return Err(HostError::BufferTooSmall.into());
-    }
     exp_dst[..EXPONENT_BYTES]
         .copy_from_slice(&state.out_buffer[MANTISSA_BYTES..MANTISSA_BYTES + EXPONENT_BYTES]);
 
-    charge_transfer(state, MANTISSA_BYTES + EXPONENT_BYTES)?;
     #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,

@@ -658,6 +658,42 @@ fn a_modest_run_never_meets_the_budget() {
     assert_eq!(outcome.result, MAX_FIELD_BYTES as i32);
 }
 
+/// A write the budget refuses is a write that did not happen. `float_to_mant_exp` is
+/// the case worth pinning: its two regions are charged as one, so a call that cannot
+/// pay for both must leave both alone rather than place the mantissa and refuse.
+#[test]
+fn a_write_the_budget_refuses_reaches_guest_memory_in_no_part() {
+    let host = FakeHost::new()
+        .answering_field(1, Answer::filler(MAX_FIELD_BYTES))
+        .answering_float_mant_exp(vec![1, 2, 3, 4, 5, 6, 7, 8], vec![9, 10, 11, 12]);
+
+    // Spend the budget on 1 KiB fields at offset 0, then ask for a mantissa and an
+    // exponent at offsets well clear of them.
+    let call = "(call $float_to_mant_exp (i32.const 0) (i32.const 8) (i32.const 2048) (i32.const 8) (i32.const 2064) (i32.const 4))";
+    let spent = |tail: &str| {
+        module(
+            &[import::HOME_LE_FIELD, import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+            &format!(
+                "(local $r i32)
+                 (loop $l
+                   (local.set $r (call $home_le_field (i32.const 1) (i32.const 0) (i32.const {MAX_FIELD_BYTES})))
+                   (br_if $l {WHILE_POSITIVE}))
+                 {tail}"
+            ),
+        )
+    };
+
+    let refused = run(&spent(call), &host).expect("the module should run");
+    assert_eq!(refused.result, code(HostError::OutOfTransferLimit));
+
+    let wat = spent(&format!(
+        "(drop {call})
+         (i32.or (i32.load8_u (i32.const 2048)) (i32.load8_u (i32.const 2064)))"
+    ));
+    let outcome = run(&wat, &host).expect("the module should run");
+    assert_eq!(outcome.result, 0, "neither region should be written");
+}
+
 /// Reads leave the budget alone: `read_borrowed` hands the host a slice *aliasing*
 /// guest memory, so there are no copied bytes to charge. What bounds how many reads
 /// a run can make is gas, which every host call pays before its body runs.
