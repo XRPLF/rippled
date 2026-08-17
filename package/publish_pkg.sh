@@ -6,8 +6,8 @@ set -euo pipefail
 #
 # Usage: publish_pkg.sh <channel> [package-dir]
 #
-#   channel      'stable', 'unstable', 'experimental', 'develop' or 'private';
-#                selects the repository pair
+#   channel      release channel; 'stable' selects the unsuffixed repository
+#                pair, anything else the matching '-<channel>' pair
 #   package-dir  searched recursively for *.deb, *.ddeb and *.rpm ('build' by
 #                default)
 #
@@ -18,20 +18,18 @@ channel="${1:-}"
 pkg_dir="${2:-build}"
 nexus_url="${NEXUS_URL:-https://deb.xrplf.org}"
 
-case "${channel}" in
-    stable)
-        deb_repo="deb"
-        rpm_repo="rpm"
-        ;;
-    unstable | experimental | develop | private)
-        deb_repo="deb-${channel}"
-        rpm_repo="rpm-${channel}"
-        ;;
-    *)
-        echo "usage: publish_pkg.sh <stable|unstable|experimental|develop|private> [package-dir]" >&2
-        exit 2
-        ;;
-esac
+if [[ -z "${channel}" ]]; then
+    echo "usage: publish_pkg.sh <channel> [package-dir]" >&2
+    exit 2
+fi
+
+if [[ "${channel}" == "stable" ]]; then
+    deb_repo="deb"
+    rpm_repo="rpm"
+else
+    deb_repo="deb-${channel}"
+    rpm_repo="rpm-${channel}"
+fi
 
 if [[ -z "${DRY_RUN:-}" ]]; then
     : "${NEXUS_USERNAME:?is required}" "${NEXUS_PASSWORD:?is required}"
