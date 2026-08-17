@@ -541,7 +541,7 @@ The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and e
 | `xrpld_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
 | `xrpld_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
 | `xrpld_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `xrpld_job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
+| `xrpld_jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth                                                    |
 | `xrpld_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
 | `xrpld_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
@@ -728,7 +728,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Operating Mode Duration                | timeseries | `xrpld_State_Accounting_*_duration`                             | —           |
 | Operating Mode Transitions             | timeseries | `xrpld_State_Accounting_*_transitions`                          | —           |
 | I/O Latency                            | timeseries | `histogram_quantile(0.95, xrpld_ios_latency_bucket)`            | —           |
-| Job Queue Depth                        | timeseries | `xrpld_job_count`                                               | —           |
+| Job Queue Depth                        | timeseries | `xrpld_jobq_job_count`                                          | —           |
 | Ledger Fetch Rate                      | stat       | `rate(xrpld_ledger_fetches[5m])`                                | —           |
 | Ledger History Mismatches              | stat       | `rate(xrpld_ledger_history_mismatch[5m])`                       | —           |
 | Key Jobs Execution Time                | timeseries | `xrpld_acceptLedger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`  |

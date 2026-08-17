@@ -589,7 +589,7 @@ check_statsd_metric() {
 # Node health gauges
 check_statsd_metric "rippled_LedgerMaster_Validated_Ledger_Age"
 check_statsd_metric "rippled_LedgerMaster_Published_Ledger_Age"
-check_statsd_metric "rippled_job_count"
+check_statsd_metric "rippled_jobq_job_count"
 
 # State accounting
 check_statsd_metric "rippled_State_Accounting_Full_duration"
