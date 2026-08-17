@@ -208,7 +208,7 @@ The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, refe
 
 ## 9. Data Collection Reference
 
-A single-source-of-truth reference documenting every piece of telemetry data collected by xrpld. Covers all 16 OpenTelemetry spans with their 22 attributes, all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 10 Grafana dashboards. Includes Jaeger search guides and Prometheus query examples.
+A single-source-of-truth reference documenting every piece of telemetry data collected by xrpld. Covers all 38 OpenTelemetry spans with their 89 attribute rows (78 unique keys), all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 10 Grafana dashboards. Includes Tempo trace search guides and Prometheus query examples.
 
 ➡️ **[View Data Collection Reference](./09-data-collection-reference.md)**
 

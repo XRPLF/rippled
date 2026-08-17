@@ -62,7 +62,10 @@ die() {
 check_span() {
     local op="$1"
     local count
-    count=$(curl -sf "$TEMPO/api/search" \
+    # -G is required: it moves the urlencoded params into the query string.
+    # Without it curl POSTs them as a request body, and Tempo answers 200
+    # while ignoring the query — so every span name would look present.
+    count=$(curl -sfG "$TEMPO/api/search" \
         --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
         --data-urlencode "limit=5" |
         jq '.traces | length' 2>/dev/null || echo 0)
@@ -133,6 +136,23 @@ mkdir -p "$WORKDIR"
 # ---------------------------------------------------------------------------
 # Step 2: Start observability stack
 # ---------------------------------------------------------------------------
+
+# From here on the script owns the docker stack and the xrpld nodes, so an
+# abort must tear them down instead of leaving them behind. A run that
+# reaches the summary deliberately leaves everything up for inspection
+# (see the header comment), so the trap only fires before that point.
+RUN_COMPLETED=0
+on_exit() {
+    local status=$?
+    if [ "$RUN_COMPLETED" -eq 0 ]; then
+        log "Aborted with exit status $status — tearing down."
+        cleanup
+    fi
+}
+trap on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 log "Starting observability stack..."
 docker compose -f "$COMPOSE_FILE" up -d
 
@@ -358,12 +378,14 @@ log "Waiting for nodes to reach 'proposing' state (timeout: ${CONSENSUS_TIMEOUT}
 
 start_time=$(date +%s)
 nodes_ready=0
+consensus_timed_out=0
 
 while [ "$nodes_ready" -lt "$NUM_NODES" ]; do
     elapsed=$(($(date +%s) - start_time))
     if [ "$elapsed" -ge "$CONSENSUS_TIMEOUT" ]; then
         fail "Consensus timeout after ${CONSENSUS_TIMEOUT}s ($nodes_ready/$NUM_NODES nodes ready)"
         log "Continuing with partial consensus..."
+        consensus_timed_out=1
         break
     fi
 
@@ -386,7 +408,10 @@ echo ""
 
 if [ "$nodes_ready" -eq "$NUM_NODES" ]; then
     ok "All $NUM_NODES nodes reached 'proposing' state"
-else
+elif [ "$consensus_timed_out" -eq 0 ]; then
+    # The timeout branch above already called fail(), so reporting again here
+    # would count one timeout twice. Only reachable if the loop ever gains
+    # another early exit.
     fail "Only $nodes_ready/$NUM_NODES nodes reached 'proposing' state"
 fi
 
@@ -430,9 +455,11 @@ log "Submitting Payment transaction..."
 
 # Generate a destination wallet
 log "  Generating destination wallet..."
+# Guarded: under set -e an unguarded curl failure would abort the whole
+# script, so the fallback below could never run.
 wallet_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d '{"method":"wallet_propose"}')
-DEST_ACCOUNT=$(echo "$wallet_result" | jq -r '.result.account_id' 2>/dev/null)
+    -d '{"method":"wallet_propose"}') || wallet_result=""
+DEST_ACCOUNT=$(echo "$wallet_result" | jq -r '.result.account_id' 2>/dev/null || echo "")
 if [ -z "$DEST_ACCOUNT" ] || [ "$DEST_ACCOUNT" = "null" ]; then
     fail "Could not generate destination wallet"
     DEST_ACCOUNT="rrrrrrrrrrrrrrrrrrrrrhoLvTp" # ACCOUNT_ZERO fallback
@@ -441,13 +468,13 @@ log "  Destination: $DEST_ACCOUNT"
 
 # Get genesis account info
 acct_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d "{\"method\":\"account_info\",\"params\":[{\"account\":\"$GENESIS_ACCOUNT\"}]}")
+    -d "{\"method\":\"account_info\",\"params\":[{\"account\":\"$GENESIS_ACCOUNT\"}]}") || acct_result=""
 seq_num=$(echo "$acct_result" | jq -r '.result.account_data.Sequence' 2>/dev/null || echo "unknown")
 log "  Genesis account sequence: $seq_num"
 
 # Submit payment
 submit_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d "{\"method\":\"submit\",\"params\":[{\"secret\":\"$GENESIS_SEED\",\"tx_json\":{\"TransactionType\":\"Payment\",\"Account\":\"$GENESIS_ACCOUNT\",\"Destination\":\"$DEST_ACCOUNT\",\"Amount\":\"10000000\"}}]}")
+    -d "{\"method\":\"submit\",\"params\":[{\"secret\":\"$GENESIS_SEED\",\"tx_json\":{\"TransactionType\":\"Payment\",\"Account\":\"$GENESIS_ACCOUNT\",\"Destination\":\"$DEST_ACCOUNT\",\"Amount\":\"10000000\"}}]}") || submit_result=""
 
 engine_result=$(echo "$submit_result" | jq -r '.result.engine_result' 2>/dev/null || echo "unknown")
 tx_hash=$(echo "$submit_result" | jq -r '.result.tx_json.hash' 2>/dev/null || echo "unknown")
@@ -478,7 +505,7 @@ fi
 
 log ""
 log "--- RPC Spans ---"
-check_span "rpc.request"
+check_span "rpc.http_request"
 check_span "rpc.process"
 check_span "rpc.command.server_info"
 check_span "rpc.command.server_state"
@@ -562,7 +589,7 @@ check_otel_metric() {
 # Node health gauges (ObservableGauge — no _total suffix)
 check_otel_metric "rippled_LedgerMaster_Validated_Ledger_Age"
 check_otel_metric "rippled_LedgerMaster_Published_Ledger_Age"
-check_otel_metric "rippled_job_count"
+check_otel_metric "rippled_jobq_job_count"
 
 # State accounting
 check_otel_metric "rippled_State_Accounting_Full_duration"
@@ -594,6 +621,11 @@ fi
 # ---------------------------------------------------------------------------
 # Step 11: Summary
 # ---------------------------------------------------------------------------
+
+# All checks are done, so the run counts as complete: keep the stack and the
+# nodes up for inspection even when some checks failed.
+RUN_COMPLETED=1
+
 echo ""
 echo "==========================================================="
 echo "  INTEGRATION TEST RESULTS"
