@@ -725,24 +725,24 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### Node Health -- System Metrics (`node-health`)
 
-| Panel                                  | Type       | PromQL                                                                            | Labels Used |
-| -------------------------------------- | ---------- | --------------------------------------------------------------------------------- | ----------- |
-| Validated Ledger Age                   | stat       | `ledgermaster_validated_ledger_age`                                               | —           |
-| Published Ledger Age                   | stat       | `ledgermaster_published_ledger_age`                                               | —           |
-| Operating Mode (Time Share)            | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))`                        | —           |
-| Operating Mode Transitions             | timeseries | `increase(state_accounting_*_transitions[$__rate_interval])`                      | —           |
-| I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`                                    | —           |
-| Job Queue Depth                        | timeseries | `jobq_job_count`                                                                  | —           |
-| Ledger Fetch Rate                      | stat       | `rate(ledger_fetches_total[$__rate_interval])`                                    | —           |
-| Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch_total[$__rate_interval])`                           | —           |
-| Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)                         | `quantile`  |
-| Key Jobs Dequeue Wait Time             | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)                                | `quantile`  |
-| FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                                               | —           |
-| FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                                           | —           |
-| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                                     | —           |
-| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`                              | —           |
-| All Jobs Execution Time (Detail)       | timeseries | `histogram_quantile($quantile, rate(job_running_us_bucket[5m])) by job_type` — µs | `quantile`  |
-| All Jobs Dequeue Wait (Detail)         | timeseries | `histogram_quantile($quantile, rate(job_queued_us_bucket[5m])) by job_type` — µs  | `quantile`  |
+| Panel                                  | Type       | PromQL                                                                             | Labels Used |
+| -------------------------------------- | ---------- | ---------------------------------------------------------------------------------- | ----------- |
+| Validated Ledger Age                   | stat       | `ledgermaster_validated_ledger_age`                                                | —           |
+| Published Ledger Age                   | stat       | `ledgermaster_published_ledger_age`                                                | —           |
+| Operating Mode (Time Share)            | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))`                         | —           |
+| Operating Mode Transitions             | timeseries | `round(increase(state_accounting_*_transitions[$__interval]))` (bars, Min step 1m) | —           |
+| I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`                                     | —           |
+| Job Queue Depth                        | timeseries | `jobq_job_count`                                                                   | —           |
+| Ledger Fetch Rate                      | stat       | `rate(ledger_fetches_total[$__rate_interval])`                                     | —           |
+| Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch_total[$__rate_interval])`                            | —           |
+| Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)                          | `quantile`  |
+| Key Jobs Dequeue Wait Time             | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)                                 | `quantile`  |
+| FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                                                | —           |
+| FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                                            | —           |
+| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                                      | —           |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`                               | —           |
+| All Jobs Execution Time (Detail)       | timeseries | `histogram_quantile($quantile, rate(job_running_us_bucket[5m])) by job_type` — µs  | `quantile`  |
+| All Jobs Dequeue Wait (Detail)         | timeseries | `histogram_quantile($quantile, rate(job_queued_us_bucket[5m])) by job_type` — µs   | `quantile`  |
 
 ### Network Traffic -- System Metrics (`network-traffic`)
 
