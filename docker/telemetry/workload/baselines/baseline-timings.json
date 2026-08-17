@@ -78,18 +78,6 @@
       "unit": "ms",
       "value": 6.699999999999978
     },
-    "span.rpc.process.p50": {
-      "unit": "ms",
-      "value": null
-    },
-    "span.rpc.process.p95": {
-      "unit": "ms",
-      "value": null
-    },
-    "span.rpc.process.p99": {
-      "unit": "ms",
-      "value": null
-    },
     "span.rpc.ws_message.p50": {
       "unit": "ms",
       "value": 0.5026522773001647

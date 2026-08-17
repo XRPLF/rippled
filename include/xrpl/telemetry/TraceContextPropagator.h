@@ -101,13 +101,23 @@ injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceCont
     // Serialize flags
     proto.set_trace_flags(spanCtx.trace_flags().flags());
 
-    // TODO(observability/secure-OTel): the protobuf TraceContext message
-    // also carries `trace_state` (field 4), which is currently neither
-    // populated here nor read by extractFromProtobuf above. The field is
-    // reserved for the secure tracing pipeline outlined in
-    // OpenTelemetryPlan/secure-OTel.md, where an authenticated token in
-    // tracestate will let receivers reject spoofed/poisoned trace context.
-    // Wire trace_state through inject/extract once the consumer lands.
+    /**
+     * TODO: wire `trace_state` (protobuf TraceContext field 4) through
+     * inject and extract. It is neither written here nor read by
+     * extractFromProtobuf above, so the field is inert on the wire.
+     *
+     * Two uses are intended. One is W3C tracestate vendor-specific
+     * key-value pairs, for cross-vendor propagation. The other is an
+     * authenticated token. Today a peer's trace context is
+     * unauthenticated input: extractFromProtobuf only checks that the ids
+     * are well formed (16-byte trace_id, 8-byte span_id, neither
+     * all-zero) before using them as a parent, so the ids are a hint
+     * rather than trusted provenance. A token the receiver could verify
+     * would let it decide whether to adopt a peer's context at all. That
+     * needs a shared verification key, a canonical form to sign, and a
+     * defined policy for peers that send no token. None of that exists
+     * yet, which is why the field stays unpopulated.
+     */
 }
 
 }  // namespace xrpl::telemetry

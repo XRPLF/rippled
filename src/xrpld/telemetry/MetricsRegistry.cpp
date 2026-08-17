@@ -24,6 +24,23 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+// The app and overlay includes below are why
+// .github/scripts/levelization/results/loops.txt records
+// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry`, where
+// ordering.txt previously had telemetry strictly below both. The observable
+// gauges are pull-model: their callbacks sample live state when the reader
+// thread fires, so they need the concrete types to call getJqTransOverflow(),
+// size(), getPeerDisconnectCharges(), foreach() and txMetrics().
+//
+// The cycle is confined to this translation unit. No telemetry header includes
+// app or overlay (MetricsRegistry.h forward-declares what it needs and takes a
+// ServiceRegistry&), and all of src/xrpld builds into a single CMake target, so
+// there is no header cycle and no link cycle to break.
+//
+// Inverting it properly means declaring a metrics-source interface below overlay
+// and implementing it there, which is deliberately left as follow-up rather than
+// widening this change. Note loops.txt is generated: it can only change as a
+// consequence of changing these includes, never by editing the baseline.
 #include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
@@ -451,7 +468,7 @@ MetricsRegistry::initSyncInstruments()
     jobRunningDurationHistogram_ =
         meter_->CreateDoubleHistogram(kJobRunningDurationUs, "Job execution time in microseconds");
 
-    // --- External dashboard parity counters (Task 7.14) ---
+    // --- External dashboard parity counters ---
     ledgersClosedCounter_ =
         meter_->CreateUInt64Counter("ledgers_closed_total", "Total ledgers closed by consensus");
     validationsSentCounter_ = meter_->CreateUInt64Counter(
@@ -512,7 +529,7 @@ MetricsRegistry::stop()
 }
 
 // -----------------------------------------------------------------
-// Synchronous instrument recording — RPC metrics (Task 9.4)
+// Synchronous instrument recording — RPC metrics
 // -----------------------------------------------------------------
 
 void
@@ -571,7 +588,7 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
 }
 
 // -----------------------------------------------------------------
-// Synchronous instrument recording — Job Queue metrics (Task 9.5)
+// Synchronous instrument recording — Job Queue metrics
 // -----------------------------------------------------------------
 
 void
@@ -651,7 +668,7 @@ MetricsRegistry::recordJobFinished(
 }
 
 // -----------------------------------------------------------------
-// Observable gauge callbacks (Tasks 9.1, 9.2, 9.3, 9.6, 9.7)
+// Observable gauge callbacks
 // -----------------------------------------------------------------
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -731,7 +748,7 @@ MetricsRegistry::registerJqTransOverflowCounter()
 void
 MetricsRegistry::registerCacheHitRateGauge()
 {
-    // --- Task 9.2: Cache hit rate and size gauges ---
+    // --- Cache hit rate and size gauges ---
     cacheHitRateGauge_ =
         meter_->CreateDoubleObservableGauge("cache_metrics", "Cache hit rates and sizes");
     cacheHitRateGauge_->AddCallback(
@@ -802,7 +819,7 @@ MetricsRegistry::registerCacheHitRateGauge()
 void
 MetricsRegistry::registerTxqGauge()
 {
-    // --- Task 9.3: TxQ metrics gauges ---
+    // --- TxQ metrics gauges ---
     txqGauge_ = meter_->CreateDoubleObservableGauge("txq_metrics", "Transaction queue metrics");
     txqGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
@@ -849,7 +866,7 @@ MetricsRegistry::registerTxqGauge()
 void
 MetricsRegistry::registerObjectCountGauge()
 {
-    // --- Task 9.6: Counted object instance gauges ---
+    // --- Counted object instance gauges ---
     objectCountGauge_ = meter_->CreateInt64ObservableGauge(
         "object_count", "Live instance counts for key internal object types");
     objectCountGauge_->AddCallback(
@@ -881,7 +898,7 @@ MetricsRegistry::registerObjectCountGauge()
 void
 MetricsRegistry::registerLoadFactorGauge()
 {
-    // --- Task 9.7: Load factor breakdown gauges ---
+    // --- Load factor breakdown gauges ---
     loadFactorGauge_ =
         meter_->CreateDoubleObservableGauge("load_factor_metrics", "Fee load factor breakdown");
     loadFactorGauge_->AddCallback(
@@ -1045,7 +1062,7 @@ MetricsRegistry::observeReadQueue(node_store::Database& db, ObserveFn const& obs
 void
 MetricsRegistry::registerNodeStoreGauge()
 {
-    // --- Task 9.1: NodeStore I/O gauges ---
+    // --- NodeStore I/O gauges ---
     // The cumulative counters (reads, writes, bytes) are also exposed here
     // as observable gauges.  This avoids adding an xrpld dependency into the
     // libxrpl nodestore code — the MetricsRegistry reads the existing atomic
@@ -1157,7 +1174,7 @@ MetricsRegistry::registerRotationStateGauge()
 void
 MetricsRegistry::registerServerInfoGauge()
 {
-    // --- Task 9.7a: Server info gauges ---
+    // --- Server info gauges ---
     serverInfoGauge_ =
         meter_->CreateInt64ObservableGauge(metric::serverInfo, "Server-level health metrics");
     serverInfoGauge_->AddCallback(
@@ -1242,7 +1259,7 @@ MetricsRegistry::registerServerInfoGauge()
 void
 MetricsRegistry::registerBuildInfoGauge()
 {
-    // --- Task 9.7b: Build info gauge ---
+    // --- Build info gauge ---
     buildInfoGauge_ = meter_->CreateInt64ObservableGauge("build_info", "Build version information");
     buildInfoGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* /* state */) {
@@ -1262,7 +1279,7 @@ MetricsRegistry::registerBuildInfoGauge()
 void
 MetricsRegistry::registerCompleteLedgersGauge()
 {
-    // --- Task 9.7c: Complete ledgers range gauge ---
+    // --- Complete ledgers range gauge ---
     completeLedgersGauge_ = meter_->CreateInt64ObservableGauge(
         "complete_ledgers", "Complete ledger range start/end pairs");
     completeLedgersGauge_->AddCallback(
@@ -1321,7 +1338,7 @@ MetricsRegistry::registerCompleteLedgersGauge()
 void
 MetricsRegistry::registerDbMetricsGauge()
 {
-    // --- Task 9.7d: Database size and fetch rate gauges ---
+    // --- Database size and fetch rate gauges ---
     dbMetricsGauge_ =
         meter_->CreateInt64ObservableGauge("db_metrics", "Database storage sizes and fetch rates");
     dbMetricsGauge_->AddCallback(
@@ -1360,7 +1377,7 @@ MetricsRegistry::registerDbMetricsGauge()
 void
 MetricsRegistry::registerValidatorHealthGauge()
 {
-    // --- Task 7.9: Validator health gauges ---
+    // --- Validator health gauges ---
     validatorHealthGauge_ =
         meter_->CreateDoubleObservableGauge("validator_health", "Validator health indicators");
     validatorHealthGauge_->AddCallback(
@@ -1407,7 +1424,7 @@ MetricsRegistry::registerValidatorHealthGauge()
 void
 MetricsRegistry::registerPeerQualityGauge()
 {
-    // --- Task 7.10: Peer quality gauges ---
+    // --- Peer quality gauges ---
     // Uses Peer::json() to read latency and version since those accessors
     // are not on the abstract Peer interface (they live on PeerImp).
     peerQualityGauge_ =
@@ -1561,7 +1578,7 @@ MetricsRegistry::registerReduceRelayGauge()
 void
 MetricsRegistry::registerLedgerEconomyGauge()
 {
-    // --- Task 7.11: Ledger economy gauges ---
+    // --- Ledger economy gauges ---
     ledgerEconomyGauge_ = meter_->CreateDoubleObservableGauge(
         metric::ledgerEconomy, "Ledger fee and economy metrics");
     ledgerEconomyGauge_->AddCallback(
@@ -1626,7 +1643,7 @@ MetricsRegistry::registerLedgerEconomyGauge()
 void
 MetricsRegistry::registerStateTrackingGauge()
 {
-    // --- Task 7.12: State tracking gauges ---
+    // --- State tracking gauges ---
     stateTrackingGauge_ =
         meter_->CreateDoubleObservableGauge(metric::stateTracking, "Node state and mode tracking");
     stateTrackingGauge_->AddCallback(
@@ -1680,7 +1697,7 @@ MetricsRegistry::registerStateTrackingGauge()
 void
 MetricsRegistry::registerStorageDetailGauge()
 {
-    // --- Task 7.13: Storage detail gauges ---
+    // --- Storage detail gauges ---
     // Reports the cumulative payload bytes handed to the NodeStore. See the
     // note at the observe() call below: this is logical bytes stored, not
     // on-disk file size, because no accessor for the latter exists. The label
@@ -1732,7 +1749,7 @@ MetricsRegistry::registerStorageDetailGauge()
 void
 MetricsRegistry::registerValidationAgreementGauge()
 {
-    // --- Task 7.15: Validation agreement gauges ---
+    // --- Validation agreement gauges ---
     // Reports rolling-window agreement percentages and counts from
     // ValidationTracker.  reconcile() is called at the start of the
     // callback so that pending ledger events are resolved before the
@@ -2383,7 +2400,7 @@ MetricsRegistry::registerLedgerQuorumPublishGauge()
 #endif  // XRPL_ENABLE_TELEMETRY
 
 // -----------------------------------------------------------------
-// External dashboard parity counter increments (Task 7.14)
+// External dashboard parity counter increments
 // -----------------------------------------------------------------
 
 void

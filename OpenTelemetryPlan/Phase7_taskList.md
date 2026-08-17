@@ -75,7 +75,8 @@
 - Match existing telemetry code style from `src/libxrpl/telemetry/Telemetry.cpp`
 - Use RAII for MeterProvider lifecycle (shutdown on destructor)
 
-**Reference**: [04-code-samples.md](./04-code-samples.md) — code style and patterns
+**Reference**: [03-implementation-strategy.md](./03-implementation-strategy.md) —
+code style and patterns (`04-code-samples.md` was deleted by `d6450631bf`)
 
 ---
 

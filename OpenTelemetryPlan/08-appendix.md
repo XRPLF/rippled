@@ -133,18 +133,25 @@ The full span inventory (names, attributes, parents as instrumented) is in
 
 ### Task Lists
 
-| Document                                                                   | Description                                         |
-| -------------------------------------------------------------------------- | --------------------------------------------------- |
-| [Phase2_taskList.md](./Phase2_taskList.md)                                 | RPC layer trace instrumentation                     |
-| [Phase3_taskList.md](./Phase3_taskList.md)                                 | Peer overlay & consensus tracing                    |
-| [Phase4_taskList.md](./Phase4_taskList.md)                                 | Transaction lifecycle tracing                       |
-| [Phase5_taskList.md](./Phase5_taskList.md)                                 | Ledger processing & advanced tracing                |
-| [Phase5_IntegrationTest_taskList.md](./Phase5_IntegrationTest_taskList.md) | Observability stack integration tests               |
-| [Phase7_taskList.md](./Phase7_taskList.md)                                 | Native OTel metrics migration                       |
-| [Phase8_taskList.md](./Phase8_taskList.md)                                 | Log-trace correlation                               |
-| [Phase9_taskList.md](./Phase9_taskList.md)                                 | Internal metric instrumentation gap fill (future)   |
-| [Phase10_taskList.md](./Phase10_taskList.md)                               | Synthetic workload generation & validation (future) |
-| [Phase11_taskList.md](./Phase11_taskList.md)                               | Third-party data collection pipelines (future)      |
+| Document                                                                   | Description                                    |
+| -------------------------------------------------------------------------- | ---------------------------------------------- |
+| [Phase2_taskList.md](./Phase2_taskList.md)                                 | RPC layer trace instrumentation                |
+| [Phase3_taskList.md](./Phase3_taskList.md)                                 | Peer overlay & consensus tracing               |
+| [Phase4_taskList.md](./Phase4_taskList.md)                                 | Transaction lifecycle tracing                  |
+| [Phase5_taskList.md](./Phase5_taskList.md)                                 | Ledger processing & advanced tracing           |
+| [Phase5_IntegrationTest_taskList.md](./Phase5_IntegrationTest_taskList.md) | Observability stack integration tests          |
+| [Phase7_taskList.md](./Phase7_taskList.md)                                 | Native OTel metrics migration                  |
+| [Phase8_taskList.md](./Phase8_taskList.md)                                 | Log-trace correlation                          |
+| [Phase9_taskList.md](./Phase9_taskList.md)                                 | Internal metric instrumentation gap fill       |
+| [Phase10_taskList.md](./Phase10_taskList.md)                               | Synthetic workload generation & validation     |
+| [Phase11_taskList.md](./Phase11_taskList.md)                               | Third-party data collection pipelines (future) |
+
+> **Only Phase 11 is still "future".** Phase 9 ships on
+> `pratik/otel-phase9-metric-gap-fill` (18 task entries, 9.1–9.17 plus 9.7a) and
+> Phase 10 on `pratik/otel-phase10-workload-validation` (7 tasks). Their task
+> lists are present on every branch from those points forward, so a reader on a
+> later branch sees plans that are already implemented, not proposals. Phase 11
+> (13 tasks) has no implementation branch.
 
 > **Note**: Phases 1 and 6 do not have separate task list files. Phase 1 tasks are documented in [06-implementation-phases.md §6.2](./06-implementation-phases.md). Phase 6 tasks are documented in [06-implementation-phases.md §6.7](./06-implementation-phases.md).
 
@@ -156,13 +163,21 @@ This guide maps Phase 9–11 content to its location across the documentation.
 
 ### Phase 9: Internal Metric Instrumentation Gap Fill
 
-| Content                         | Location                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| Plan & architecture             | [06-implementation-phases.md §6.8.2](./06-implementation-phases.md)      |
-| Task list (10 tasks)            | [Phase9_taskList.md](./Phase9_taskList.md)                               |
-| Future metric definitions (~50) | [09-data-collection-reference.md §5b](./09-data-collection-reference.md) |
-| New class: `MetricsRegistry`    | `src/xrpld/telemetry/MetricsRegistry.h/.cpp` (planned)                   |
-| New dashboards                  | `fee-market`, `job-queue` (planned)                                      |
+| Content                          | Location                                                                                                                         |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Plan & architecture              | [06-implementation-phases.md §6.8.2](./06-implementation-phases.md)                                                              |
+| Task list (18 entries, 9.1–9.17) | [Phase9_taskList.md](./Phase9_taskList.md)                                                                                       |
+| Metric definitions               | [09-data-collection-reference.md §5b](./09-data-collection-reference.md)                                                         |
+| New class: `MetricsRegistry`     | `src/xrpld/telemetry/MetricsRegistry.h/.cpp` — **shipped**                                                                       |
+| New dashboards (4)               | `fee-market`, `job-queue`, `peer-quality`, `validator-health` — **shipped**                                                      |
+| Updated dashboards (2)           | `node-health`, `rpc-performance`                                                                                                 |
+| Provisioned alert rules          | `docker/telemetry/grafana/provisioning/alerting/rules.yaml` — 13 rules in 5 groups ([07 §7.6.2](./07-observability-backends.md)) |
+
+> **Task numbering**: `Phase9_taskList.md` carries 18 `## Task 9.x` headings —
+> 9.1 through 9.17 plus the inserted 9.7a (`push_metrics.py` parity). The "10
+> tasks" figure in earlier revisions predates 9.7a and 9.11–9.17. Tasks 9.8 and
+> 9.11–9.13 together produce the four new dashboards; Task 9.17 (peer span
+> coverage) is explicitly **deferred to Phase 11**.
 
 **Metric categories**: NodeStore I/O, Cache Hit Rates, TxQ, PerfLog Per-RPC, PerfLog Per-Job, Counted Objects, Fee Escalation & Load Factors.
 
@@ -172,22 +187,44 @@ This guide maps Phase 9–11 content to its location across the documentation.
 | -------------------- | ------------------------------------------------------------------------ |
 | Plan & architecture  | [06-implementation-phases.md §6.8.3](./06-implementation-phases.md)      |
 | Task list (7 tasks)  | [Phase10_taskList.md](./Phase10_taskList.md)                             |
+| Branch               | `pratik/otel-phase10-workload-validation`                                |
 | Validation inventory | [09-data-collection-reference.md §5c](./09-data-collection-reference.md) |
-| Test harness         | `docker/telemetry/docker-compose.workload.yaml` (planned)                |
-| CI workflow          | `.github/workflows/telemetry-validation.yml` (planned)                   |
+| Test harness         | `docker/telemetry/docker-compose.workload.yaml` (phase-10 branch)        |
+| CI workflow          | `.github/workflows/telemetry-validation.yml` (phase-10 branch)           |
 
-**Validates**: 16 spans, 22 attributes, 300+ metrics, 10 dashboards, log-trace correlation.
+**Validates** (Phase-10 harness inventory): **40** span types, **67** unique
+required span attributes, **36** metric entries, **14** dashboards, log-trace
+correlation.
+
+> **These are the harness manifests' counts, and two of them lag the code.** The
+> manifests (`docker/telemetry/workload/expected_spans.json`,
+> `expected_metrics.json`) live only on the phase-10 branch. `expected_spans.json`
+> holds 40 span entries against the **41** span-name families the code emits
+> (`rpc.ws_upgrade` has no entry), and its own `total_unique_attributes: 58` field
+> is stale against the 67 attributes its per-span `required_attributes` lists
+> actually name. `expected_metrics.json` asserts 14 dashboard uids against the
+> **15** dashboard JSONs in `docker/telemetry/grafana/dashboards/`;
+> `log-derived-insights` is the unasserted one. The full emitted inventory is in
+> [09-data-collection-reference.md §1.1](./09-data-collection-reference.md#11-complete-span-inventory-41-spans)
+> and [§5c](./09-data-collection-reference.md#validated-telemetry-inventory).
 
 ### Phase 11: Third-Party Data Collection Pipelines
 
 | Content                           | Location                                                                 |
 | --------------------------------- | ------------------------------------------------------------------------ |
 | Plan & architecture               | [06-implementation-phases.md §6.8.4](./06-implementation-phases.md)      |
-| Task list (11 tasks)              | [Phase11_taskList.md](./Phase11_taskList.md)                             |
+| Task list (13 tasks)              | [Phase11_taskList.md](./Phase11_taskList.md)                             |
 | External metric definitions (~30) | [09-data-collection-reference.md §5d](./09-data-collection-reference.md) |
 | Custom OTel Collector receiver    | `docker/telemetry/otel-rippled-receiver/` (planned)                      |
 | Prometheus alerting rules (11)    | [09-data-collection-reference.md §5d](./09-data-collection-reference.md) |
 | New dashboards (4)                | Validator Health, Network Topology, Fee Market (External), DEX & AMM     |
+
+> **Two of those names now collide with shipped Phase-9 boards.** Phase 9
+> already ships `validator-health` and `fee-market`, both built from the node's
+> **own** telemetry. The Phase-11 entries are the third-party-data variants
+> (network-wide validator agreement, external fee/DEX feeds via the custom
+> receiver). They need distinct uids, or they will overwrite the Phase-9 boards
+> on provisioning.
 
 **Consumer categories**: Exchanges, Payment Processors, DeFi/AMM, NFT Marketplaces, Analytics Providers, Wallets, Compliance, Academic Researchers, Institutional Custody, CBDC Bridge Operators.
 

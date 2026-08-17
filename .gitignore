@@ -89,5 +89,6 @@ target/
 
 # clangd cache
 /.cache
-docker/telemetry/workload/__pycache__/
-.claude/
+
+# Env. file carrying environmental setup data for local or cloud runs.
+.env.*

@@ -28,13 +28,19 @@ When enabled, it instruments RPC requests with trace spans that are exported via
 OTLP/HTTP to an OpenTelemetry Collector, which forwards them to a tracing backend
 such as Grafana Tempo.
 
-Telemetry is **off by default** at both compile time and runtime:
+Telemetry is gated twice — once at compile time and once at runtime:
 
-- **Compile time**: The Conan option `telemetry` and CMake option `telemetry` must be set to `True`/`ON`.
-  When disabled, all `SpanGuard` calls compile to inline no-ops (defined in `SpanGuard.h`)
+- **Compile time**: The Conan option `telemetry` and CMake option `telemetry` decide
+  whether the OTel SDK is linked in and `XRPL_ENABLE_TELEMETRY` is defined.
+  When off, all `SpanGuard` calls compile to inline no-ops (defined in `SpanGuard.h`)
   with zero overhead — no OTel SDK dependency required.
-- **Runtime**: The `[telemetry]` config section must set `enabled=1`.
-  When disabled at runtime, a no-op implementation is used.
+  The option is currently `True`/`ON` on the telemetry branches so that CI builds and
+  exercises the instrumented code; **`False`/`OFF` is the intended default once this
+  feature is merged.** Pass the value you want explicitly rather than relying on the
+  default.
+- **Runtime**: Telemetry is **off by default** — the `[telemetry]` config section must
+  set `enabled=1`. When disabled at runtime, a no-op implementation is used even in a
+  build that has the SDK compiled in.
 
 ## Building with Telemetry
 
@@ -102,11 +108,21 @@ cmake --build . --parallel $(nproc)
 
 ## Building without telemetry
 
-Omit the `-o telemetry=True` option (or pass `-o telemetry=False`).
+Pass `-o telemetry=False` to `conan install`, and `-Dtelemetry=OFF` to CMake if you
+configure without the Conan-generated toolchain. Do not just omit the option — it then
+resolves to whatever the current default is, and that default is `True` on the
+telemetry branches.
+
 The `opentelemetry-cpp` dependency will not be downloaded,
 the `XRPL_ENABLE_TELEMETRY` preprocessor define will not be set,
 and all tracing macros will compile to no-ops.
 The resulting binary is identical to one built before telemetry support was added.
+
+> **`-DXRPL_ENABLE_TELEMETRY=OFF` disables nothing.** `XRPL_ENABLE_TELEMETRY` is not a
+> CMake option — it is only a compile definition added when `telemetry` is on. Passing it
+> on the command line leaves telemetry compiled in; CMake merely lists it at the end of
+> configuration under `Manually-specified variables were not used by the project`.
+> Use `-Dtelemetry=OFF`.
 
 ## Troubleshooting
 

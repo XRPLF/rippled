@@ -241,8 +241,8 @@ namespace telemetry {
  * edit needed. Fall back to a dedicated member + init line + record
  * method (the pattern below) only when the metric needs to be read
  * back by other code (e.g. ValidationTracker-style accumulation) or
- * needs a custom histogram bucket View (see MetricMacros.h Limitation
- * 2 in tasks/metric-macro-plan.md).
+ * needs a custom histogram bucket View (see the histogram note in
+ * MetricMacros.h).
  * - Adding a new OBSERVABLE gauge still requires eager central
  * registration -- pull-model instruments cannot be lazily created.
  */
@@ -585,7 +585,7 @@ public:
         std::int64_t runningDurUs);
 
     // -----------------------------------------------------------------
-    // External dashboard parity counters (Tasks 7.9-7.14)
+    // External dashboard parity counters
     // -----------------------------------------------------------------
 
     /**
@@ -813,7 +813,7 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> rpcErroredCounter_;
     /**
-     * Histogram: rpc_method_duration_us{method="<name>"}
+     * Histogram: rpc_method_us{method="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         rpcDurationHistogram_;
@@ -834,12 +834,12 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
-     * Histogram: job_queued_duration_us{job_type="<name>",handler="<name>"}
+     * Histogram: job_queued_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobQueuedDurationHistogram_;
     /**
-     * Histogram: job_running_duration_us{job_type="<name>",handler="<name>"}
+     * Histogram: job_running_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobRunningDurationHistogram_;
@@ -959,7 +959,7 @@ private:
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> dbMetricsGauge_;
 
-    // --- External dashboard parity gauges (Tasks 7.9-7.13) ---
+    // --- External dashboard parity gauges ---
     /**
      * Observable gauge for validator health indicators (amendment blocked,
      * UNL blocked, quorum, UNL expiry).
@@ -1002,7 +1002,7 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         validationAgreementGauge_;
 
-    // --- External dashboard parity counters (Task 7.14) ---
+    // --- External dashboard parity counters ---
     /**
      * Counter: ledgers_closed_total — incremented each consensus round.
      */
@@ -1095,15 +1095,15 @@ private:
     void
     registerJqTransOverflowCounter();  // gap-fill: overlay overflow total
     void
-    registerCacheHitRateGauge();  // Task 9.2
+    registerCacheHitRateGauge();
     void
-    registerTxqGauge();  // Task 9.3
+    registerTxqGauge();
     void
-    registerObjectCountGauge();  // Task 9.6
+    registerObjectCountGauge();
     void
-    registerLoadFactorGauge();  // Task 9.7
+    registerLoadFactorGauge();
     void
-    registerNodeStoreGauge();  // Task 9.1
+    registerNodeStoreGauge();
 
     // The four nodestore_state helpers and their ObserveFn sink are public
     // (above), so a test can drive each one with a recording sink and assert
@@ -1113,27 +1113,27 @@ private:
     void
     registerRotationStateGauge();  // Sync diagnostics: online_delete rotation
     void
-    registerServerInfoGauge();  // Task 9.7a
+    registerServerInfoGauge();
     void
-    registerBuildInfoGauge();  // Task 9.7b
+    registerBuildInfoGauge();
     void
-    registerCompleteLedgersGauge();  // Task 9.7c
+    registerCompleteLedgersGauge();
     void
-    registerDbMetricsGauge();  // Task 9.7d
+    registerDbMetricsGauge();
     void
-    registerValidatorHealthGauge();  // Task 7.9
+    registerValidatorHealthGauge();
     void
-    registerPeerQualityGauge();  // Task 7.10
+    registerPeerQualityGauge();
     void
     registerReduceRelayGauge();  // Reduce-relay efficiency
     void
-    registerLedgerEconomyGauge();  // Task 7.11
+    registerLedgerEconomyGauge();
     void
-    registerStateTrackingGauge();  // Task 7.12
+    registerStateTrackingGauge();
     void
-    registerStorageDetailGauge();  // Task 7.13
+    registerStorageDetailGauge();
     void
-    registerValidationAgreementGauge();  // Task 7.15
+    registerValidationAgreementGauge();
     void
     registerValidationTotalsCounters();  // gap-fill: lifetime agree/miss _total
 

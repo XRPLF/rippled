@@ -277,9 +277,9 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     app_.getHashRouter().addSuppression(suppression);
 
-    // Inject the current thread's active span context (e.g. the
-    // consensus round span from Phase 4) so receiving peers can link
-    // their proposal.receive span as a child of this trace.
+    // Inject the current thread's active span context (e.g. the consensus
+    // round span) so receiving peers can link their proposal.receive span
+    // as a child of this trace.
     telemetry::SpanGuard::injectCurrentContextToProtobuf(*prop.mutable_trace_context());
 
     app_.getOverlay().broadcast(prop);
@@ -765,7 +765,7 @@ RCLConsensus::Adaptor::doAccept(
 
     // Record ledger close for OTel dashboard parity counter. Uses the
     // call-site macro (see MetricMacros.h) rather than a MetricsRegistry
-    // member -- proof-of-concept for tasks/metric-macro-plan.md.
+    // member.
     XRPL_METRIC_COUNTER_INC(app_, "ledgers_closed_total", "Total ledgers closed by consensus");
 
     //-------------------------------------------------------------------------

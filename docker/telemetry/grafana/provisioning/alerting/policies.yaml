@@ -1,6 +1,6 @@
 # Grafana notification-policy provisioning for rippled OTel alerts.
 #
-# Phase 9: Internal metric gap fill — alerting on health-critical metrics.
+# Alerting on health-critical internal metrics.
 #
 # The notification policy tree decides which contact point receives a firing
 # alert and how alerts are batched. Routing is split by severity:

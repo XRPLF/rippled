@@ -28,6 +28,7 @@ Usage::
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass
@@ -37,6 +38,13 @@ from typing import Any
 import aiohttp
 
 logger = logging.getLogger("prom_queries")
+
+# Instant queries run in parallel, but not all at once: a single-node
+# Prometheus is easily saturated by a burst of the whole plan. With this cap
+# the worst case (every query hitting the 30 s timeout) is
+# ceil(len(plan) / 8) * 30 s rather than len(plan) * 30 s, which for a
+# ~30-entry plan is ~2 min instead of ~15 min of a 30 min CI job.
+MAX_CONCURRENT_QUERIES = 8
 
 
 @dataclass(frozen=True)
@@ -147,6 +155,17 @@ async def run_query_plan(
     as "not yet observed" rather than as a regression. This keeps the
     baseline schema stable across runs with different load levels.
 
+    Queries run concurrently, at most MAX_CONCURRENT_QUERIES at a time. Keys
+    are emitted in plan order regardless of which query answers first.
+
+    ``return_exceptions=True`` is what keeps the fan-out self-contained.
+    Without it the first escaping exception returns from ``gather`` while its
+    siblings keep running against a session the caller is about to close, so
+    the capture ends with dozens of orphaned queries and warnings from a
+    closed session. With it, every query is awaited before this returns, and
+    an unexpected failure is logged and recorded as no data -- the same
+    outcome _instant_query already produces for a query that fails.
+
     Args:
         session:  Shared aiohttp session.
         prom_url: Base URL of Prometheus (e.g. ``http://localhost:9090``).
@@ -155,11 +174,32 @@ async def run_query_plan(
     Returns:
         Mapping from metric key to ``{"value": float|None, "unit": str}``.
     """
-    results: dict[str, dict[str, Any]] = {}
-    for entry in plan:
-        value = await _instant_query(session, prom_url, entry.promql)
-        results[entry.key] = {"value": value, "unit": entry.unit}
-    return results
+    gate = asyncio.Semaphore(MAX_CONCURRENT_QUERIES)
+
+    async def fetch(entry: QueryEntry) -> float | None:
+        """Run one plan entry once a query slot is free."""
+        async with gate:
+            return await _instant_query(session, prom_url, entry.promql)
+
+    results = await asyncio.gather(
+        *(fetch(entry) for entry in plan), return_exceptions=True
+    )
+
+    captured: dict[str, dict[str, Any]] = {}
+    for entry, result in zip(plan, results, strict=True):
+        value: float | None
+        if isinstance(result, BaseException):
+            logger.error(
+                "query for %s raised %s: %s",
+                entry.key,
+                type(result).__name__,
+                result,
+            )
+            value = None
+        else:
+            value = result
+        captured[entry.key] = {"value": value, "unit": entry.unit}
+    return captured
 
 
 async def _instant_query(
@@ -181,7 +221,10 @@ async def _instant_query(
                 logger.warning("query HTTP %d: %s", resp.status, promql)
                 return None
             body = await resp.json()
-    except (aiohttp.ClientError, TimeoutError) as exc:
+    # JSONDecodeError covers a 200 response whose body is not JSON: without it
+    # one malformed reply aborts the whole capture, since no caller of
+    # run_query_plan wraps it.
+    except (aiohttp.ClientError, TimeoutError, json.JSONDecodeError) as exc:
         logger.warning("query failed: %s — %s", promql, exc)
         return None
 

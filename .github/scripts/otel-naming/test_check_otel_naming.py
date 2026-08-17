@@ -13,7 +13,7 @@ Run from anywhere:
 
 Each rule is exercised in isolation against a synthetic tree / synthetic L1 key
 set, covering positive (must flag), negative (must not flag), and boundary
-cases. Rule E (runbook dotted-attribute detection) has the densest coverage
+cases. Rule E (doc-layer dotted-attribute detection) has the densest coverage
 because its discriminator — the `xrpl.<domain>.` prefix vs span names,
 filenames, OTel-standard keys, and metric labels — is the subtlest.
 """
@@ -23,6 +23,7 @@ import importlib.util
 import io
 import json
 import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -51,13 +52,25 @@ L1 = {
 
 def _run_rule_e(runbook_text: str):
     """Run Rule E against a synthetic runbook; return the flagged tokens."""
+    return _run_rule_e_docs({"docs/telemetry-runbook.md": runbook_text})[0]
+
+
+def _run_rule_e_docs(docs, l1_keys=None):
+    """Run Rule E against a synthetic doc set.
+
+    `docs` maps a repo-relative path to that file's text; only the listed files
+    are created, so per-file presence gating can be exercised. Returns
+    (sorted flagged tokens, the Report) so location and skip/ok lines can be
+    asserted as well as the tokens."""
     d = Path(tempfile.mkdtemp())
     try:
-        (d / "docs").mkdir()
-        (d / "docs" / "telemetry-runbook.md").write_text(runbook_text)
+        for rel, text in docs.items():
+            path = d / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
         report = chk.Report()
-        chk.run_rule_e_runbook(d, set(L1), report)
-        return sorted(v[2] for v in report.violations)
+        chk.run_rule_e_docs(d, set(L1) if l1_keys is None else set(l1_keys), report)
+        return sorted(v[2] for v in report.violations), report
     finally:
         shutil.rmtree(d)
 
@@ -170,7 +183,7 @@ class RuleERunbook(unittest.TestCase):
         d = Path(tempfile.mkdtemp())
         try:
             report = chk.Report()
-            chk.run_rule_e_runbook(d, set(L1), report)
+            chk.run_rule_e_docs(d, set(L1), report)
             self.assertEqual(report.violations, [])
             self.assertTrue(any("SKIP: E" in s for s in report.skips))
         finally:
@@ -182,11 +195,591 @@ class RuleERunbook(unittest.TestCase):
             (d / "docs").mkdir()
             (d / "docs" / "telemetry-runbook.md").write_text("`xrpl.tx.hash`")
             report = chk.Report()
-            chk.run_rule_e_runbook(d, set(), report)
+            chk.run_rule_e_docs(d, set(), report)
             self.assertEqual(report.violations, [])
             self.assertTrue(any("SKIP: E" in s for s in report.skips))
         finally:
             shutil.rmtree(d)
+
+
+# The doc paths the Rule E tests build synthetic trees from. All four are real,
+# committable files that live under RULE_E_DOC_ROOTS, so a test tree has the same
+# shape discovery meets in the repo. GLOSSARY and BUILD_GUIDE additionally prove
+# discovery is not runbook-shaped: BUILD_GUIDE sits one directory deeper, so a
+# non-recursive glob would miss it.
+RUNBOOK_DOC = "docs/telemetry-runbook.md"
+GLOSSARY_DOC = "docs/telemetry-glossary.md"
+BUILD_GUIDE_DOC = "docs/build/telemetry.md"
+TESTING_DOC = "docker/telemetry/TESTING.md"
+ALL_DOCS = (RUNBOOK_DOC, GLOSSARY_DOC, BUILD_GUIDE_DOC, TESTING_DOC)
+
+# Top-level trees that ship to the default branch, so anything the check is
+# configured to read must live inside one of them. A configured path outside
+# these would name a tree that is not part of the shipped repository: the rule
+# would warn forever about a doc that can never appear, and the matching CI
+# path-trigger would be dead weight.
+COMMITTABLE_ROOTS = (Path("docs"), Path("docker"))
+
+
+def _inside_any(rel: Path, roots) -> bool:
+    """True if `rel` is one of `roots` or lives underneath one of them."""
+    return any(root == rel or root in rel.parents for root in roots)
+
+
+def _git_tracks(root: Path, rel: Path) -> bool:
+    """True if git tracks `rel` (a file) or anything under it (a directory).
+
+    Evidence that a configured path is genuinely part of the repository rather
+    than a local scratch or ignored directory."""
+    out = subprocess.run(
+        ["git", "ls-files", "--", str(rel)],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+    )
+    return bool(out.stdout.strip())
+
+
+class RuleEDocSet(unittest.TestCase):
+    """Rule E scans every discovered doc, not just the runbook. The glossary, the
+    build/telemetry guide and the stack testing guide all publish attribute keys
+    readers copy queries from, so a dotted key left in any of them is as
+    operator-breaking as one in the runbook."""
+
+    RUNBOOK = RUNBOOK_DOC
+    GLOSSARY = GLOSSARY_DOC
+    BUILD_GUIDE = BUILD_GUIDE_DOC
+    TESTING = TESTING_DOC
+
+    def test_flags_dotted_attr_in_testing_guide(self):
+        # TESTING.md publishes copy-paste TraceQL/PromQL, so a dotted key there
+        # hands the reader a query that silently matches nothing.
+        tokens, report = _run_rule_e_docs(
+            {self.TESTING: '{name="tx.process" && span.`xrpl.tx.hash`="AB"}'}
+        )
+        self.assertEqual(tokens, ["xrpl.tx.hash"])
+        self.assertEqual(report.violations[0][1], f"{self.TESTING}:1")
+        self.assertEqual(report.violations[0][3], "underscore, not dotted")
+
+    def test_testing_guide_checked_when_every_other_doc_absent(self):
+        # Per-file presence gating: TESTING.md alone must not skip the rule.
+        tokens, report = _run_rule_e_docs({self.TESTING: "`xrpl.peer.version`"})
+        self.assertEqual(tokens, ["xrpl.peer.version"])
+        self.assertEqual(report.skips, [])
+        self.assertEqual(report.violations[0][1], f"{self.TESTING}:1")
+        # A violating run emits the violation, not an "ok" line.
+        self.assertEqual(report.checked, [])
+
+    def test_testing_guide_alone_reports_one_clean_file(self):
+        tokens, report = _run_rule_e_docs({self.TESTING: "`tx_hash`"})
+        self.assertEqual(tokens, [])
+        self.assertTrue(any("E:" in c and "1 file(s)" in c for c in report.checked))
+
+    def test_clean_testing_guide_passes_with_bare_keys(self):
+        # The real docker/telemetry/TESTING.md shape: bare/underscore attr keys
+        # plus dotted SPAN names, which must not be flagged.
+        tokens, report = _run_rule_e_docs(
+            {self.TESTING: '{name="tx.process" && span.tx_hash!=""} `ledger_seq`'}
+        )
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.violations, [])
+
+    def test_exemptions_apply_in_testing_guide_too(self):
+        tokens, _ = _run_rule_e_docs(
+            {self.TESTING: "`xrpl.network.type` `xrpl.work.item`"}
+        )
+        self.assertEqual(tokens, [])
+
+    def test_flags_dotted_attr_in_glossary(self):
+        tokens, report = _run_rule_e_docs({self.GLOSSARY: "| `xrpl.tx.hash` | h |"})
+        self.assertEqual(tokens, ["xrpl.tx.hash"])
+        self.assertEqual(report.violations[0][1], f"{self.GLOSSARY}:1")
+
+    def test_flags_dotted_attr_in_nested_build_guide(self):
+        # One directory below the root: proves discovery recurses rather than
+        # globbing only the root's own children.
+        tokens, report = _run_rule_e_docs({self.BUILD_GUIDE: "`xrpl.consensus.mode`"})
+        self.assertEqual(tokens, ["xrpl.consensus.mode"])
+        self.assertEqual(report.violations[0][1], f"{self.BUILD_GUIDE}:1")
+
+    def test_location_carries_the_offending_line_number(self):
+        tokens, report = _run_rule_e_docs(
+            {self.GLOSSARY: "clean\nstill clean\n| `xrpl.tx.hash` |"}
+        )
+        self.assertEqual(tokens, ["xrpl.tx.hash"])
+        self.assertEqual(report.violations[0][1], f"{self.GLOSSARY}:3")
+
+    def test_flags_across_all_four_docs(self):
+        tokens, report = _run_rule_e_docs(
+            {
+                self.RUNBOOK: "`xrpl.tx.hash`",
+                self.GLOSSARY: "`xrpl.peer.id`",
+                self.BUILD_GUIDE: "`xrpl.ledger.seq`",
+                self.TESTING: "`xrpl.rpc.command`",
+            }
+        )
+        self.assertEqual(
+            tokens,
+            [
+                "xrpl.ledger.seq",
+                "xrpl.peer.id",
+                "xrpl.rpc.command",
+                "xrpl.tx.hash",
+            ],
+        )
+        self.assertEqual(
+            sorted(v[1] for v in report.violations),
+            sorted(
+                [
+                    f"{self.RUNBOOK}:1",
+                    f"{self.GLOSSARY}:1",
+                    f"{self.BUILD_GUIDE}:1",
+                    f"{self.TESTING}:1",
+                ]
+            ),
+        )
+
+    def test_other_doc_checked_when_runbook_absent(self):
+        # Presence gating is per discovered file: a branch without the runbook
+        # still gets the docs it does carry checked, instead of the rule skipping.
+        tokens, report = _run_rule_e_docs({self.GLOSSARY: "`xrpl.tx.hash`"})
+        self.assertEqual(tokens, ["xrpl.tx.hash"])
+        self.assertEqual(report.skips, [])
+
+    def test_absent_doc_is_not_an_error(self):
+        tokens, report = _run_rule_e_docs({self.RUNBOOK: "`tx_hash`"})
+        self.assertEqual(tokens, [])
+        self.assertTrue(any("1 file(s)" in c for c in report.checked))
+
+    def test_clean_doc_set_reports_file_count(self):
+        tokens, report = _run_rule_e_docs(
+            {
+                self.RUNBOOK: "`tx_hash` `consensus.round`",
+                self.GLOSSARY: "`xrpl.network.id` `ledger_seq`",
+                self.BUILD_GUIDE: "`service.name` `peer_id`",
+                self.TESTING: "`rpc_command` `tx.process`",
+            }
+        )
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.violations, [])
+        self.assertTrue(any("E:" in c and "4 file(s)" in c for c in report.checked))
+
+    def test_skips_when_no_doc_present(self):
+        tokens, report = _run_rule_e_docs({})
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.checked, [])
+        self.assertTrue(any("SKIP: E" in s for s in report.skips))
+
+    def test_exemptions_apply_in_every_discovered_doc(self):
+        # The L1 resource attrs and perf-iac dotted identities must stay exempt
+        # in every discovered doc, exactly as in the runbook.
+        tokens, _ = _run_rule_e_docs(
+            {
+                self.GLOSSARY: "`xrpl.network.id` `xrpl.network.type`",
+                self.BUILD_GUIDE: "`xrpl.work.item` `xrpl.branch` `xrpl.node.role`",
+            }
+        )
+        self.assertEqual(tokens, [])
+
+
+def _marker(*keys: str) -> str:
+    """Build an allow-dotted marker naming `keys` (no key = the bare form)."""
+    body = ": " + ", ".join(keys) if keys else ""
+    return f"<!-- otel-naming:allow-dotted{body} -->"
+
+
+def _marker_warnings(report):
+    """The marker-related warnings only.
+
+    A synthetic doc set that does not create the runbook leaves that required
+    anchor absent, which is warned about in its own right (see
+    RuleERequiredDocPresence). Filtering those out keeps the marker tests
+    asserting the marker's own behaviour."""
+    return [tuple(w) for w in report.warnings if w[2] != "absent"]
+
+
+class RuleEAllowDottedMarkerParsing(unittest.TestCase):
+    """`rule_e_allowed_keys` — the marker parser. The key list is what bounds the
+    exemption, so its parsing (and the marker COUNT, which distinguishes "no
+    marker" from "a marker that names nothing") is asserted directly."""
+
+    def test_no_marker_yields_no_keys_and_no_marker_count(self):
+        self.assertEqual(
+            chk.rule_e_allowed_keys("plain `xrpl.tx.hash` line"), (set(), 0)
+        )
+
+    def test_bare_marker_counts_but_names_no_key(self):
+        self.assertEqual(chk.rule_e_allowed_keys(_marker()), (set(), 1))
+
+    def test_single_key(self):
+        self.assertEqual(
+            chk.rule_e_allowed_keys(_marker("xrpl.tx.hash")), ({"xrpl.tx.hash"}, 1)
+        )
+
+    def test_comma_separated_keys(self):
+        self.assertEqual(
+            chk.rule_e_allowed_keys(_marker("xrpl.tx.hash", "xrpl.node.server_state")),
+            ({"xrpl.tx.hash", "xrpl.node.server_state"}, 1),
+        )
+
+    def test_space_separated_and_backticked_keys(self):
+        self.assertEqual(
+            chk.rule_e_allowed_keys(
+                "<!-- otel-naming:allow-dotted: `xrpl.tx.hash` `xrpl.peer.id` -->"
+            ),
+            ({"xrpl.tx.hash", "xrpl.peer.id"}, 1),
+        )
+
+    def test_no_surrounding_whitespace(self):
+        self.assertEqual(
+            chk.rule_e_allowed_keys("<!--otel-naming:allow-dotted:xrpl.tx.hash-->"),
+            ({"xrpl.tx.hash"}, 1),
+        )
+
+    def test_two_markers_on_one_line_union(self):
+        line = _marker("xrpl.tx.hash") + " text " + _marker("xrpl.peer.id")
+        self.assertEqual(
+            chk.rule_e_allowed_keys(line), ({"xrpl.tx.hash", "xrpl.peer.id"}, 2)
+        )
+
+    def test_prose_around_marker_is_not_absorbed_as_a_key(self):
+        line = "use `tx_hash`, not `xrpl.tx.hash`. " + _marker("xrpl.tx.hash") + " ok"
+        self.assertEqual(chk.rule_e_allowed_keys(line), ({"xrpl.tx.hash"}, 1))
+
+    def test_trailing_comma_does_not_yield_empty_key(self):
+        self.assertEqual(
+            chk.rule_e_allowed_keys("<!-- otel-naming:allow-dotted: xrpl.tx.hash, -->"),
+            ({"xrpl.tx.hash"}, 1),
+        )
+
+
+class RuleEAllowDottedMarkerEnforcement(unittest.TestCase):
+    """The marker exempts ONLY the keys it names, only on its own line. A
+    blanket line opt-out would let a genuine violation appended to any marked
+    line ride in silently, which is exactly what these tests forbid."""
+
+    REFERENCE = GLOSSARY_DOC
+
+    def test_named_key_is_exempt(self):
+        tokens, report = _run_rule_e_docs(
+            {
+                self.REFERENCE: "use `tx_hash`, not `xrpl.tx.hash`. "
+                + _marker("xrpl.tx.hash")
+            }
+        )
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.violations, [])
+        self.assertEqual(_marker_warnings(report), [])
+
+    def test_unlisted_key_on_marked_line_still_fails(self):
+        # The hole this closes: one marker must not cover a second dotted key
+        # someone appends to the line later.
+        tokens, report = _run_rule_e_docs(
+            {
+                self.REFERENCE: "not `xrpl.tx.hash` and also `xrpl.peer.id` "
+                + _marker("xrpl.tx.hash")
+            }
+        )
+        self.assertEqual(tokens, ["xrpl.peer.id"])
+        self.assertEqual(report.violations[0][0], "E")
+        self.assertEqual(report.violations[0][1], f"{self.REFERENCE}:1")
+        self.assertEqual(report.violations[0][3], "underscore, not dotted")
+
+    def test_bare_marker_exempts_nothing_and_warns(self):
+        tokens, report = _run_rule_e_docs(
+            {self.REFERENCE: "not `xrpl.tx.hash`. " + _marker()}
+        )
+        self.assertEqual(tokens, ["xrpl.tx.hash"])
+        self.assertEqual(report.violations[0][1], f"{self.REFERENCE}:1")
+        warnings = _marker_warnings(report)
+        self.assertEqual(
+            [w[:3] for w in warnings], [("E", f"{self.REFERENCE}:1", "allow-dotted")]
+        )
+        self.assertIn(chk.RULE_E_MARKER_SYNTAX, warnings[0][3])
+
+    def test_marker_does_not_leak_to_adjacent_lines(self):
+        tokens, report = _run_rule_e_docs(
+            {
+                self.REFERENCE: "| `xrpl.tx.hash` | before |\n"
+                + "not `xrpl.tx.hash`. "
+                + _marker("xrpl.tx.hash")
+                + "\n| `xrpl.tx.hash` | after |"
+            }
+        )
+        self.assertEqual(tokens, ["xrpl.tx.hash", "xrpl.tx.hash"])
+        self.assertEqual(
+            sorted(v[1] for v in report.violations),
+            [f"{self.REFERENCE}:1", f"{self.REFERENCE}:3"],
+        )
+
+    def test_all_named_keys_exempt_on_a_table_row(self):
+        # The real-world shape: a "was -> is now" row naming two old
+        # dotted keys, with both listed in the marker.
+        tokens, _ = _run_rule_e_docs(
+            {
+                self.REFERENCE: "| `xrpl.validation.full`, `xrpl.peer.validation.full`"
+                " | one bare `full_validation` | "
+                + _marker("xrpl.validation.full", "xrpl.peer.validation.full")
+            }
+        )
+        self.assertEqual(tokens, [])
+
+    def test_partially_listed_table_row_fails_on_the_unlisted_key(self):
+        tokens, report = _run_rule_e_docs(
+            {
+                self.REFERENCE: "| `xrpl.validation.full`, `xrpl.peer.validation.full`"
+                " | one bare `full_validation` | " + _marker("xrpl.validation.full")
+            }
+        )
+        self.assertEqual(tokens, ["xrpl.peer.validation.full"])
+        self.assertEqual(report.violations[0][1], f"{self.REFERENCE}:1")
+
+    def test_key_prefix_does_not_exempt_a_longer_key(self):
+        # Exemption is an exact token match, not a prefix match.
+        tokens, _ = _run_rule_e_docs(
+            {self.REFERENCE: "`xrpl.tx.hash` " + _marker("xrpl.tx")}
+        )
+        self.assertEqual(tokens, ["xrpl.tx.hash"])
+
+    def test_dotted_prefix_token_can_be_listed_verbatim(self):
+        # The docs grep for prefixes such as `xrpl.node.` (trailing dot); the
+        # marker must accept that exact token.
+        tokens, report = _run_rule_e_docs(
+            {
+                self.REFERENCE: "a grep for `xrpl.node.` and `xrpl.peer.` returns "
+                "nothing " + _marker("xrpl.node.", "xrpl.peer.")
+            }
+        )
+        self.assertEqual(tokens, [])
+        self.assertEqual(_marker_warnings(report), [])
+
+    def test_stale_key_warns_but_does_not_fail(self):
+        tokens, report = _run_rule_e_docs(
+            {self.REFERENCE: "all clean now. " + _marker("xrpl.tx.hash")}
+        )
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.violations, [])
+        self.assertEqual(
+            _marker_warnings(report),
+            [
+                (
+                    "E",
+                    f"{self.REFERENCE}:1",
+                    "xrpl.tx.hash",
+                    "allow-dotted key not on this line",
+                )
+            ],
+        )
+
+    def test_marker_naming_an_l1_key_is_not_reported_stale(self):
+        # `xrpl.network.id` is exempt via L1, so a marker naming it is redundant
+        # but not stale — the key IS on the line.
+        tokens, report = _run_rule_e_docs(
+            {self.REFERENCE: "`xrpl.network.id` " + _marker("xrpl.network.id")}
+        )
+        self.assertEqual(tokens, [])
+        self.assertEqual(_marker_warnings(report), [])
+
+    def test_marker_works_in_every_doc_of_the_set(self):
+        docs = {
+            rel: "not `xrpl.tx.hash`. " + _marker("xrpl.tx.hash") for rel in ALL_DOCS
+        }
+        tokens, report = _run_rule_e_docs(docs)
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.violations, [])
+
+
+class RuleEDocDiscovery(unittest.TestCase):
+    """`rule_e_docs` — the discovery that replaced a hardcoded doc list. What has
+    to hold: it finds the real docs in this repo (a rule scanning an empty set
+    passes without checking anything), it recurses into subdirectories, it never
+    checks a file twice, and every path it is configured with lies inside a tree
+    that actually ships."""
+
+    def test_discovery_finds_more_than_one_doc_in_this_repo(self):
+        # The vacuous-pass guard, measured against the real tree: one file (or
+        # none) would mean discovery had collapsed and Rule E was reporting green
+        # over almost nothing.
+        found = chk.rule_e_docs(chk.repo_root())
+        self.assertGreater(len(found), 1, found)
+
+    def test_discovery_returns_no_duplicates(self):
+        # Roots may overlap (a root and a subdirectory of it); a file must still
+        # be checked once, so line numbers are not reported twice.
+        found = chk.rule_e_docs(chk.repo_root())
+        self.assertEqual(len(found), len(set(found)))
+
+    def test_discovery_finds_the_known_telemetry_docs(self):
+        # Named here as an expectation of DISCOVERY, not as the checker's config:
+        # if any of these is renamed, discovery still covers it under its new
+        # name and only this assertion needs updating.
+        found = set(chk.rule_e_docs(chk.repo_root()))
+        for rel in (RUNBOOK_DOC, GLOSSARY_DOC, TESTING_DOC):
+            self.assertIn(Path(rel), found)
+
+    def test_discovery_recurses_into_subdirectories(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            nested = d / "docs" / "build" / "deep"
+            nested.mkdir(parents=True)
+            (nested / "telemetry.md").write_text("`tx_hash`")
+            self.assertEqual(
+                chk.rule_e_docs(d), [Path("docs") / "build" / "deep" / "telemetry.md"]
+            )
+        finally:
+            shutil.rmtree(d)
+
+    def test_discovery_ignores_non_markdown(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            (d / "docs").mkdir()
+            (d / "docs" / "notes.txt").write_text("`xrpl.tx.hash`")
+            (d / "docs" / "runbook.md").write_text("`tx_hash`")
+            self.assertEqual(chk.rule_e_docs(d), [Path("docs") / "runbook.md"])
+        finally:
+            shutil.rmtree(d)
+
+    def test_discovery_tolerates_an_absent_root(self):
+        # Presence gating applies to the roots too: a tree carrying only one of
+        # them must not raise, and must still discover that one.
+        d = Path(tempfile.mkdtemp())
+        try:
+            (d / "docker" / "telemetry").mkdir(parents=True)
+            (d / "docker" / "telemetry" / "TESTING.md").write_text("`tx_hash`")
+            self.assertEqual(
+                chk.rule_e_docs(d), [Path("docker") / "telemetry" / "TESTING.md"]
+            )
+        finally:
+            shutil.rmtree(d)
+
+    def test_no_configured_path_lies_outside_the_committable_roots(self):
+        # The check may only be wired to trees that ship. A configured path
+        # outside them would make Rule E warn about a doc that can never appear
+        # and leave the matching CI path-trigger dead.
+        for rel in chk.RULE_E_DOC_ROOTS + chk.RULE_E_REQUIRED_DOCS:
+            self.assertTrue(_inside_any(rel, COMMITTABLE_ROOTS), rel)
+
+    def test_configured_paths_exist_and_are_version_controlled(self):
+        # "Committable" is not just a naming claim: git must actually track the
+        # contents of every configured path in this repo.
+        root = chk.repo_root()
+        for rel in chk.RULE_E_DOC_ROOTS:
+            self.assertTrue((root / rel).is_dir(), rel)
+            self.assertTrue(_git_tracks(root, rel), rel)
+        for rel in chk.RULE_E_REQUIRED_DOCS:
+            self.assertTrue((root / rel).is_file(), rel)
+            self.assertTrue(_git_tracks(root, rel), rel)
+
+    def test_every_required_doc_is_discoverable(self):
+        # An anchor outside every root could never be found, so the tripwire
+        # would fire on every run and stop meaning anything.
+        for rel in chk.RULE_E_REQUIRED_DOCS:
+            self.assertTrue(_inside_any(rel, chk.RULE_E_DOC_ROOTS), rel)
+            self.assertIn(rel, chk.rule_e_docs(chk.repo_root()))
+
+
+class RuleERequiredDocPresence(unittest.TestCase):
+    """A RULE_E_REQUIRED_DOCS anchor that is not in the tree must be VISIBLE.
+    Discovery cannot go stale, but it can go quiet — a root emptied of telemetry
+    docs still yields a clean run — so the anchor's absence is warned about and
+    counted, while staying non-fatal so a partial branch still passes."""
+
+    RUNBOOK = RUNBOOK_DOC
+
+    def test_every_required_doc_resolves_in_this_repo(self):
+        # If the runbook is renamed and RULE_E_REQUIRED_DOCS is not updated, the
+        # anchor warning would fire on every run; catch it here instead.
+        root = chk.repo_root()
+        self.assertEqual(
+            [
+                str(rel)
+                for rel in chk.RULE_E_REQUIRED_DOCS
+                if not (root / rel).is_file()
+            ],
+            [],
+        )
+
+    def test_missing_anchor_is_warned_once(self):
+        # Discovery finds the glossary, so the rule runs — but the anchor it is
+        # required to find is gone, which must be said out loud.
+        tokens, report = _run_rule_e_docs({GLOSSARY_DOC: "`tx_hash`"})
+        self.assertEqual(tokens, [])
+        self.assertEqual(
+            [tuple(w) for w in report.warnings],
+            [
+                (
+                    "E",
+                    self.RUNBOOK,
+                    "absent",
+                    "required Rule E doc not in tree (renamed?)",
+                )
+            ],
+        )
+
+    def test_ok_line_names_the_absent_anchor_count(self):
+        tokens, report = _run_rule_e_docs({GLOSSARY_DOC: "`tx_hash`"})
+        self.assertEqual(tokens, [])
+        self.assertTrue(
+            any(
+                "1 file(s) checked" in c
+                and f"1 of {len(chk.RULE_E_REQUIRED_DOCS)} required doc(s) absent" in c
+                for c in report.checked
+            ),
+            report.checked,
+        )
+
+    def test_full_doc_set_warns_nothing_and_reports_the_full_count(self):
+        docs = {rel: "`tx_hash`" for rel in ALL_DOCS}
+        tokens, report = _run_rule_e_docs(docs)
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.warnings, [])
+        self.assertTrue(
+            any(
+                f"{len(ALL_DOCS)} file(s) checked" in c and "absent" not in c
+                for c in report.checked
+            ),
+            report.checked,
+        )
+
+    def test_anchor_present_warns_nothing_even_with_other_docs_absent(self):
+        # Only the ANCHOR is required. A tree carrying just the runbook is a
+        # legitimate partial branch, not a shrinking doc set.
+        tokens, report = _run_rule_e_docs({self.RUNBOOK: "`tx_hash`"})
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.warnings, [])
+        self.assertTrue(
+            any("1 file(s) checked" in c and "absent" not in c for c in report.checked),
+            report.checked,
+        )
+
+    def test_absent_anchor_is_warned_even_when_l1_is_empty(self):
+        # The anchor can be verified without an L1 key set, so the visibility
+        # signal must not depend on the (separately gated) key comparison.
+        tokens, report = _run_rule_e_docs({GLOSSARY_DOC: "`xrpl.tx.hash`"}, l1_keys=[])
+        self.assertEqual(tokens, [])
+        self.assertEqual(len(report.warnings), len(chk.RULE_E_REQUIRED_DOCS))
+        self.assertTrue(any("SKIP: E" in s for s in report.skips))
+
+    def test_no_anchor_warning_when_discovery_finds_nothing(self):
+        # Nothing to check at all is already reported by the SKIP line, which
+        # names the roots it searched, so an anchor warning would be noise.
+        tokens, report = _run_rule_e_docs({})
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.warnings, [])
+        roots = ", ".join(str(rel) for rel in chk.RULE_E_DOC_ROOTS)
+        self.assertEqual(
+            report.skips,
+            [f"SKIP: E — no doc-layer file present (no *.md under {roots})"],
+        )
+
+    def test_doc_outside_every_root_is_not_discovered(self):
+        # The counterpart of the roots being committable: markdown parked outside
+        # them is not part of the L5 layer, so a dotted key there cannot fail the
+        # build — and equally cannot make the rule look like it checked something.
+        tokens, report = _run_rule_e_docs({"elsewhere/notes.md": "`xrpl.tx.hash`"})
+        self.assertEqual(tokens, [])
+        self.assertEqual(report.checked, [])
+        self.assertTrue(any("SKIP: E" in s for s in report.skips))
 
 
 class DslParser(unittest.TestCase):
@@ -1068,7 +1661,7 @@ class RuleEReportTuple(unittest.TestCase):
             (d / "docs").mkdir()
             (d / "docs" / "telemetry-runbook.md").write_text("`xrpl.tx.hash`")
             report = chk.Report()
-            chk.run_rule_e_runbook(d, {"xrpl.network.id"}, report)
+            chk.run_rule_e_docs(d, {"xrpl.network.id"}, report)
             self.assertEqual(len(report.violations), 1)
             rule, _loc, token, expected = report.violations[0]
             self.assertEqual(rule, "E")
@@ -1085,7 +1678,7 @@ class RuleEReportTuple(unittest.TestCase):
                 "`tx_hash` `consensus.round`"
             )
             report = chk.Report()
-            chk.run_rule_e_runbook(d, {"tx_hash"}, report)
+            chk.run_rule_e_docs(d, {"tx_hash"}, report)
             self.assertEqual(report.violations, [])
             self.assertTrue(any("E:" in c for c in report.checked))
         finally:

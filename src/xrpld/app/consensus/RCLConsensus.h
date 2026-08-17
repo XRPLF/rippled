@@ -127,9 +127,9 @@ class RCLConsensus
          *
          *  Captured in makeAcceptSpan() and consumed by createValidationSpan()
          *  on the jtACCEPT worker thread so the validation.send span can be
-         *  follows-from linked to consensus.accept (matching the design doc
-         *  and span hierarchy diagram). Reset on each startRoundTracing()
-         *  to prevent a stale prior-round context from being linked.
+         *  follows-from linked to consensus.accept. Reset on each
+         *  startRoundTracing() to prevent a stale prior-round context from
+         *  being linked.
          *
          *  Thread safety: same model as roundSpanContext_. The write in
          *  makeAcceptSpan happens on the main consensus thread under

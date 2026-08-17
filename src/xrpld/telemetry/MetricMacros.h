@@ -83,27 +83,26 @@
  * @note A histogram whose values can exceed ~10,000 units (e.g. a
  * microsecond duration beyond 10ms) needs an explicit-bucket View, which
  * OTel can only register at MeterProvider construction time -- this
- * cannot be done from a call site. See Limitation 2. Register such a
- * view in MetricsRegistry::initExporterAndProvider() as today; the
+ * cannot be done from a call site. Register such a view in
+ * MetricsRegistry::initExporterAndProvider() as today; the
  * histogram-record call itself can still use the macro.
  *
  * @note Only call the SYNCHRONOUS macros (Counter/UpDownCounter/
  * Histogram/Gauge) from code that runs AFTER MetricsRegistry::start() has
  * completed (RPC handlers, job callbacks, consensus rounds, tx apply, peer
- * message handlers). See Limitation 1.
+ * message handlers).
  *
  * @note The OBSERVABLE registration macros are the opposite: call them
  * EAGERLY, exactly once, from constructor/init code -- never from a hot
  * path. Repeated calls at the same call site register a NEW callback
  * each time (no create-once caching, unlike the synchronous macros),
- * which leaks callbacks. See Limitation 3.
+ * which leaks callbacks.
  *
  * @note There is no way to read back a synchronous instrument's current
  * accumulated value from application code -- the OTel API is
  * write-only/push-based by design. If your logic needs both to record a
  * metric AND read its running value, keep your own state (std::atomic or
- * similar) and separately feed OTel via these macros. See "Use Case 4" in
- * tasks/metric-macro-plan.md.
+ * similar) and separately feed OTel via these macros.
  */
 
 // On Windows, OTel's spin_lock_mutex.h (transitively included from
@@ -204,11 +203,11 @@
     } while (false)
 
 // UpDownCounter: like COUNTER_ADD, but the underlying instrument permits a
-// negative amount (Use Case 2 -- e.g. in-flight request count, +1 on start
-// / -1 on finish from two different points in the same or different call
-// sites). A plain Counter's Add() must never see a negative value per the
-// OTel API contract; use this macro, not COUNTER_ADD, whenever the value
-// can decrease.
+// negative amount (e.g. in-flight request count, +1 on start / -1 on
+// finish from two different points in the same or different call sites).
+// A plain Counter's Add() must never see a negative value per the OTel
+// API contract; use this macro, not COUNTER_ADD, whenever the value can
+// decrease.
 #define XRPL_METRIC_UPDOWN_ADD(app, name, description, amount)                               \
     do                                                                                       \
     {                                                                                        \
@@ -350,15 +349,15 @@
 #endif  // OPENTELEMETRY_ABI_VERSION_NO >= 2
 
 // -----------------------------------------------------------------
-// Observable/async instrument registration (Use Case 5). Unlike the
-// synchronous macros above, these do NOT lazily create-on-first-call --
-// they register a callback with the SDK immediately, at the call site,
-// the moment the macro executes. Callers MUST invoke this during
+// Observable/async instrument registration. Unlike the synchronous
+// macros above, these do NOT lazily create-on-first-call -- they
+// register a callback with the SDK immediately, at the call site, the
+// moment the macro executes. Callers MUST invoke this during
 // construction/init, before the server is fully live (same timing rule
 // MetricsRegistry::registerAsyncGauges() already follows for its own
-// gauges -- see Limitation 3). Calling it from a hot-path function
-// instead of an init path re-registers a new callback on every call,
-// which leaks callbacks and is NOT what this macro is for.
+// gauges). Calling it from a hot-path function instead of an init path
+// re-registers a new callback on every call, which leaks callbacks and
+// is NOT what this macro is for.
 //
 // The callable is captured in a heap-allocated std::function, and its
 // address is passed as the `void* state` to AddCallback (whose signature,

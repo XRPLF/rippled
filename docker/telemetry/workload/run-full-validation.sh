@@ -19,7 +19,14 @@
 # Exit codes:
 #   0 — All validation checks and the regression gate passed
 #   1 — Validation checks failed OR the regression gate detected a regression
-#   2 — Infrastructure error (cluster/stack failed to start, timing capture failed)
+#       OR the benchmark exceeded its overhead thresholds
+#   2 — Infrastructure error (cluster/stack failed to start, workload
+#       orchestration failed, timing capture failed, overhead could not be
+#       measured)
+#
+# Every step below records its status and folds it into FINAL_EXIT; the first
+# non-zero status in pipeline order is the one returned, so the earliest
+# failure — the one that explains the later ones — is what the caller sees.
 
 set -euo pipefail
 
@@ -33,6 +40,17 @@ fail() { printf "\033[1;31m[VALIDATE]\033[0m %s\n" "$*"; }
 die() {
     printf "\033[1;31m[VALIDATE]\033[0m %s\n" "$*" >&2
     exit 2
+}
+
+# Overall run status, folded step by step (see the exit-code table above).
+FINAL_EXIT=0
+
+# fold_exit STATUS — record a step's status in FINAL_EXIT.
+# First non-zero wins, so FINAL_EXIT names the earliest failing step.
+fold_exit() {
+    if [ "$1" -ne 0 ] && [ "$FINAL_EXIT" -eq 0 ]; then
+        FINAL_EXIT="$1"
+    fi
 }
 
 # ---------------------------------------------------------------------------
@@ -49,6 +67,9 @@ NUM_NODES=5
 RPC_PORT_BASE=5005
 WS_PORT_BASE=6006
 PEER_PORT_BASE=51235
+# Inert: parsed from --rpc-rate/--rpc-duration/--tx-tps/--tx-duration and never
+# read again. Load shape comes from the workload profile instead. Kept because
+# the CI workflow still passes the four flags.
 RPC_RATE=50
 RPC_DURATION=120
 TX_TPS=5
@@ -78,16 +99,22 @@ usage() {
     echo "Options:"
     echo "  --xrpld PATH         Path to xrpld binary"
     echo "  --nodes NUM          Number of validator nodes (default: 5)"
-    echo "  --rpc-rate RPS       RPC load rate (default: 50)"
-    echo "  --rpc-duration SECS  RPC load duration (default: 120)"
-    echo "  --tx-tps TPS         Transaction submit rate (default: 5)"
-    echo "  --tx-duration SECS   Transaction submit duration (default: 120)"
     echo "  --profile NAME       Workload profile (default: full-validation)"
     echo "  --with-benchmark     Also run performance overhead benchmark (telemetry off vs on)"
     echo "  --skip-loki          Skip Loki log-trace correlation checks"
     echo "  --skip-regression    Skip the OTel-baseline regression gate"
     echo "  --cleanup            Tear down everything and exit"
     echo "  -h, --help           Show this help"
+    echo ""
+    echo "Accepted but INERT (parsed for compatibility, then ignored):"
+    echo "  --rpc-rate RPS       no effect"
+    echo "  --rpc-duration SECS  no effect"
+    echo "  --tx-tps TPS         no effect"
+    echo "  --tx-duration SECS   no effect"
+    echo ""
+    echo "  Load shape comes from the workload profile (--profile), which sets"
+    echo "  the rate and duration of every phase in workload-profiles.json."
+    echo "  These four flags stay accepted because the CI workflow passes them."
     exit 0
 }
 
@@ -101,6 +128,7 @@ while [ $# -gt 0 ]; do
             NUM_NODES="$2"
             shift 2
             ;;
+        # The next four are inert — see the RPC_RATE default above.
         --rpc-rate)
             RPC_RATE="$2"
             shift 2
@@ -135,7 +163,10 @@ while [ $# -gt 0 ]; do
             ;;
         --cleanup) # Cleanup mode
             log "Cleaning up..."
-            pkill -f "$WORKDIR" 2>/dev/null || true
+            # Match the node config path, not the bare workdir: a plain
+            # "$WORKDIR" pattern also matches any shell, editor or log tail
+            # whose command line merely mentions that path.
+            pkill -f "$WORKDIR/node[0-9]+/xrpld\.cfg" 2>/dev/null || true
             docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
             rm -rf "$WORKDIR"
             ok "Cleanup complete."
@@ -170,7 +201,8 @@ ok "Prerequisites verified."
 # Cleanup previous run
 # ---------------------------------------------------------------------------
 log "Cleaning up previous run..."
-pkill -f "$WORKDIR" 2>/dev/null || true
+# Narrowed for the same reason as the --cleanup branch above.
+pkill -f "$WORKDIR/node[0-9]+/xrpld\.cfg" 2>/dev/null || true
 sleep 2
 rm -rf "$WORKDIR"
 mkdir -p "$WORKDIR" "$REPORT_DIR"
@@ -286,7 +318,6 @@ ${IPS_FIXED}
 enabled=1
 service_instance_id=validator-${i}
 endpoint=http://localhost:4318/v1/traces
-exporter=otlp_http
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
@@ -323,9 +354,55 @@ done
 # ---------------------------------------------------------------------------
 # Step 3: Wait for consensus
 # ---------------------------------------------------------------------------
+# Report whether a node process is still alive.
+#
+# A child that has exited but not yet been waited on still answers `kill -0`,
+# because the zombie keeps its pid until someone collects it. Checking only
+# `kill -0` therefore reads a dead node as alive for the whole readiness
+# window, which is how a crashed node came to look like a slow one.
+node_running() {
+    local pid="$1" state
+    kill -0 "$pid" 2>/dev/null || return 1
+    if [ -r "/proc/$pid/stat" ]; then
+        state=$(awk '{print $3}' "/proc/$pid/stat" 2>/dev/null || echo "?")
+        [ "$state" != "Z" ] || return 1
+    fi
+    return 0
+}
+
+# Print why each stopped node stopped: its wait status, then its last output.
+#
+# The status is the discriminator this harness was missing -- 137 is SIGKILL
+# (the kernel reclaiming memory), 139 a segfault, 134 an abort, anything under
+# 128 a deliberate exit. The nodes are direct children of this script, so their
+# status is still retrievable until something waits on them.
+#
+# stdout is printed inline rather than left to the artifact upload because a
+# node that dies before its debug log opens writes nothing else, and a
+# cancelled run uploads nothing at all.
+report_stopped_nodes() {
+    local i pid status
+    for i in $(seq 1 "$NUM_NODES"); do
+        pid=$(cat "$WORKDIR/node$i/xrpld.pid" 2>/dev/null || echo "")
+        [ -n "$pid" ] || continue
+        node_running "$pid" && continue
+        status=0
+        wait "$pid" 2>/dev/null || status=$?
+        warn "node$i (pid $pid) is not running — wait status $status"
+        if [ -s "$WORKDIR/node$i/stdout.log" ]; then
+            warn "node$i last output:"
+            tail -n 15 "$WORKDIR/node$i/stdout.log" | sed 's/^/      /' >&2
+        else
+            warn "node$i wrote no stdout at all"
+        fi
+    done
+}
+
 log "Step 3: Waiting for consensus..."
 for attempt in $(seq 1 120); do
     ready=0
+    # Reset each attempt so a timeout reports the final state, not a history.
+    laggards=""
     for i in $(seq 1 "$NUM_NODES"); do
         port=$((RPC_PORT_BASE + i - 1))
         state=$(curl -sf "http://localhost:$port" \
@@ -333,14 +410,45 @@ for attempt in $(seq 1 120); do
             jq -r '.result.info.server_state' 2>/dev/null || echo "")
         if [ "$state" = "proposing" ]; then
             ready=$((ready + 1))
+        else
+            # Name the node and what it last reported. A bare count says a
+            # node is missing but not which one, which leaves nothing to grep
+            # for in the artifacts. An empty state means the RPC port did not
+            # answer at all, which usually means the process is gone.
+            laggards="$laggards node$i=${state:-unreachable}"
         fi
     done
     if [ "$ready" -ge "$NUM_NODES" ]; then
         ok "All $NUM_NODES nodes proposing (attempt $attempt)"
         break
     fi
+    # A stopped process will never reach proposing. Waiting out the rest of the
+    # window only delays the same failure and buries its cause under two
+    # minutes of progress output.
+    stopped=0
+    for n in $(seq 1 "$NUM_NODES"); do
+        p=$(cat "$WORKDIR/node$n/xrpld.pid" 2>/dev/null || echo "")
+        if [ -n "$p" ] && ! node_running "$p"; then
+            stopped=$((stopped + 1))
+        fi
+    done
+    if [ "$stopped" -gt 0 ]; then
+        echo ""
+        report_stopped_nodes
+        die "$stopped of $NUM_NODES node(s) stopped during startup; only $ready reached proposing. Not proposing:${laggards}. Per-node status is above, then '$0 --cleanup'."
+    fi
     if [ "$attempt" -eq 120 ]; then
-        warn "Consensus timeout — $ready/$NUM_NODES nodes ready"
+        # Fatal, not a warning. A partial cluster still answers queries, so the
+        # run would complete and report unrelated span/metric failures: series
+        # counts scale with the number of live nodes, and spans that need a
+        # quorum are simply never emitted. One infrastructure error here is
+        # worth more than a pile of misleading assertion failures later.
+        echo ""
+        # Every node is still running but not proposing, so this is a genuine
+        # convergence problem rather than a crash. Run the reporter anyway: it
+        # is a no-op when nothing stopped, and it costs nothing to be sure.
+        report_stopped_nodes
+        die "Consensus timeout — only $ready/$NUM_NODES nodes proposing after ${attempt}s. Not proposing:${laggards}. Check $WORKDIR/node*/debug.log and $WORKDIR/node*/stdout.log (a node that died before its log sink opened writes only the latter), then '$0 --cleanup'."
     fi
     printf "\r  %d/%d nodes proposing..." "$ready" "$NUM_NODES"
     sleep 1
@@ -357,7 +465,13 @@ for attempt in $(seq 1 60); do
         ok "Validated ledger: seq $val_seq"
         break
     fi
-    [ "$attempt" -eq 60 ] && warn "No validated ledger after 60s"
+    # Fatal for the same reason as the consensus timeout above, and because
+    # several assertions are gated on a validated ledger existing at all:
+    # ledger_economy{metric="base_fee_xrp"} is only observed from a validated
+    # ledger, and complete_ledgers stays absent while the range is empty.
+    if [ "$attempt" -eq 60 ]; then
+        die "No validated ledger after ${attempt}s (last seq: $val_seq). Check $WORKDIR/node*/debug.log, then '$0 --cleanup'."
+    fi
     sleep 1
 done
 
@@ -371,14 +485,21 @@ for i in $(seq 1 "$NUM_NODES"); do
     WS_ENDPOINTS="$WS_ENDPOINTS ws://localhost:$((WS_PORT_BASE + i - 1))"
 done
 
+ORCHESTRATOR_EXIT=0
 python3 "$SCRIPT_DIR/workload_orchestrator.py" \
     --profile "$WORKLOAD_PROFILE" \
     --endpoints $WS_ENDPOINTS \
     --report "$REPORT_DIR/workload-report.json" \
-    --report-dir "$REPORT_DIR" ||
-    warn "Workload orchestrator returned non-zero exit"
+    --report-dir "$REPORT_DIR" || ORCHESTRATOR_EXIT=$?
 
-ok "Workload orchestration complete."
+if [ "$ORCHESTRATOR_EXIT" -eq 0 ]; then
+    ok "Workload orchestration complete."
+else
+    # Treated as an infrastructure error: the span and metric assertions below
+    # would be graded against traffic that was never generated.
+    fail "Workload orchestrator failed (exit $ORCHESTRATOR_EXIT) — the checks below run against incomplete traffic"
+    fold_exit 2
+fi
 
 # ---------------------------------------------------------------------------
 # Step 5: Run telemetry validation suite
@@ -398,6 +519,7 @@ if [ "$VALIDATION_EXIT" -eq 0 ]; then
 else
     fail "Some telemetry validation checks failed (exit $VALIDATION_EXIT)"
 fi
+fold_exit "$VALIDATION_EXIT"
 
 # ---------------------------------------------------------------------------
 # Step 6: Capture OTel timings and run the regression comparison
@@ -444,18 +566,33 @@ if [ "$SKIP_REGRESSION" != true ]; then
 else
     warn "Regression gate skipped."
 fi
+fold_exit "$REGRESSION_EXIT"
 
 # ---------------------------------------------------------------------------
 # Step 7: (Optional) Run overhead benchmark
 # ---------------------------------------------------------------------------
+BENCHMARK_EXIT=0
 if [ "$WITH_BENCHMARK" = true ]; then
     log "Step 7: Running performance benchmark..."
     bash "$SCRIPT_DIR/benchmark.sh" \
         --xrpld "$XRPLD" \
         --duration 120 \
         --nodes 3 \
-        --output "$REPORT_DIR" ||
-        warn "Benchmark returned non-zero exit"
+        --output "$REPORT_DIR" || BENCHMARK_EXIT=$?
+
+    if [ "$BENCHMARK_EXIT" -eq 0 ]; then
+        ok "Benchmark within overhead thresholds."
+    elif [ "$BENCHMARK_EXIT" -eq 1 ]; then
+        # A measured threshold breach — same class as a failed check.
+        fail "Benchmark exceeded overhead thresholds (exit 1)"
+        fold_exit 1
+    else
+        # benchmark.sh could not produce a usable measurement (e.g. incomplete
+        # system metrics). Reported as an infrastructure error, not a perf
+        # regression: nothing was measured, so nothing was breached.
+        fail "Benchmark could not measure overhead (exit $BENCHMARK_EXIT) — treated as an infrastructure error"
+        fold_exit 2
+    fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -486,15 +623,13 @@ echo ""
 echo "  To tear down:"
 echo "    $0 --cleanup"
 echo ""
+echo "  Step statuses (0 = ok):"
+echo "    Workload orchestration: $ORCHESTRATOR_EXIT"
+echo "    Telemetry validation:   $VALIDATION_EXIT"
+echo "    Regression gate:        $REGRESSION_EXIT"
+echo "    Overhead benchmark:     $BENCHMARK_EXIT"
+echo ""
 echo "==========================================================="
 
-# Fail the run if EITHER validation or the regression gate failed. The
-# `[ "$VAR" -gt N ]` comparison works here because exit codes are numeric.
-FINAL_EXIT=0
-if [ "$VALIDATION_EXIT" -ne 0 ]; then
-    FINAL_EXIT="$VALIDATION_EXIT"
-fi
-if [ "$REGRESSION_EXIT" -ne 0 ] && [ "$FINAL_EXIT" -eq 0 ]; then
-    FINAL_EXIT="$REGRESSION_EXIT"
-fi
+# FINAL_EXIT already holds the first non-zero step status (see fold_exit).
 exit "$FINAL_EXIT"

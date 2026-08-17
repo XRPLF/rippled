@@ -26,25 +26,32 @@ name: Telemetry Validation
 
 on:
   workflow_dispatch:
+    # NOTE: rpc_rate / rpc_duration / tx_tps / tx_duration have NO effect.
+    # They are forwarded to run-full-validation.sh, which parses them into
+    # shell variables and never reads them again — load shape comes entirely
+    # from --profile and docker/telemetry/workload/workload-profiles.json.
+    # They are kept (and labelled) rather than removed so existing dispatch
+    # bookmarks and any saved input sets do not break. To change the load,
+    # edit or add a profile in workload-profiles.json.
     inputs:
       rpc_rate:
-        description: "RPC load rate (requests per second)"
+        description: "UNUSED — has no effect. Load shape comes from the workload profile."
         required: false
         default: "50"
       rpc_duration:
-        description: "RPC load duration (seconds)"
+        description: "UNUSED — has no effect. Load shape comes from the workload profile."
         required: false
         default: "120"
       tx_tps:
-        description: "Transaction submit rate (TPS)"
+        description: "UNUSED — has no effect. Load shape comes from the workload profile."
         required: false
         default: "5"
       tx_duration:
-        description: "Transaction submit duration (seconds)"
+        description: "UNUSED — has no effect. Load shape comes from the workload profile."
         required: false
         default: "120"
       run_benchmark:
-        description: "Run performance benchmarks"
+        description: "Run performance benchmarks (the only input that changes behaviour)"
         required: false
         type: boolean
         default: false
@@ -54,11 +61,19 @@ on:
       - "pratik/otel-phase*"
       - "feature/otel-*"
       - "feature/telemetry-*"
+    # Keep these globs pointing at paths that actually exist. Two earlier
+    # entries (include/xrpl/basics/Telemetry*.h, src/xrpld/app/misc/Telemetry*)
+    # matched zero tracked files, so a pure C++ telemetry change never
+    # triggered this workflow on push — only edits under docker/telemetry/**
+    # or to this file did. The telemetry sources live in the three telemetry
+    # module directories below.
     paths:
       - ".github/workflows/telemetry-validation.yml"
       - "docker/telemetry/**"
-      - "include/xrpl/basics/Telemetry*.h"
-      - "src/xrpld/app/misc/Telemetry*"
+      - "include/xrpl/telemetry/**"
+      - "src/libxrpl/telemetry/**"
+      - "src/libxrpl/beast/insight/**"
+      - "src/xrpld/telemetry/**"
 
 concurrency:
   group: telemetry-validation-${{ github.ref }}
@@ -141,6 +156,13 @@ jobs:
           build_type: Release
           log_verbosity: verbose
 
+      # telemetry is passed explicitly even though the CMake option and the
+      # Conan recipe both default it on. The whole point of this workflow is to
+      # exercise telemetry, so it should not silently depend on a default it
+      # does not control: if that default ever flips, every span and metric
+      # assertion would fail for a reason no log names. Stated here, a build
+      # without the dependency fails loudly instead, because CMakeLists.txt
+      # does find_package(opentelemetry-cpp CONFIG REQUIRED) under this option.
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
@@ -148,6 +170,7 @@ jobs:
               -G Ninja \
               -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
               -DCMAKE_BUILD_TYPE=Release \
+              -Dtelemetry=ON \
               ..
 
       - name: Build xrpld
@@ -206,6 +229,11 @@ jobs:
           TX_DURATION: ${{ github.event.inputs.tx_duration || '120' }}
           RUN_BENCHMARK: ${{ github.event.inputs.run_benchmark }}
         run: |
+          # The four rate/duration flags below are inert (see the
+          # workflow_dispatch inputs note): run-full-validation.sh parses them
+          # and never reads them. Load shape comes from the default
+          # --profile full-validation. They are still passed so the flags stay
+          # exercised if they are ever wired up.
           ARGS="--xrpld ${{ env.BUILD_DIR }}/xrpld --skip-loki"
           ARGS="$ARGS --rpc-rate $RPC_RATE"
           ARGS="$ARGS --rpc-duration $RPC_DURATION"
@@ -234,6 +262,11 @@ jobs:
       # and `if: failure()` never fires -- which silently skipped these logs on
       # every failed run, and they are the only record of why a node did not
       # reach consensus.
+      #
+      # stdout.log matters as much as debug.log: a node that dies before its
+      # log sink opens writes no debug.log at all, so stdout is the only place
+      # its reason survives. A run that timed out at 4/5 nodes was left
+      # undiagnosable because that file was not collected.
       - name: Upload node logs
         if: always() && steps.validation.outcome != 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -241,6 +274,7 @@ jobs:
           name: xrpld-node-logs
           path: |
             /tmp/xrpld-validation/node*/debug.log
+            /tmp/xrpld-validation/node*/stdout.log
             /tmp/xrpld-validation/*.log
           retention-days: 7
           if-no-files-found: warn
