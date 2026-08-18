@@ -4927,6 +4927,14 @@ class Invariants_test : public beast::unit_test::Suite
 
             STTx const payment{ttPAYMENT, [](STObject&) {}};
 
+            // Baseline: both changes are conservation-consistent, so on
+            // tesSUCCESS nothing fires. Without these the on-failure cases below
+            // would still pass if the result guard were dropped, since they only
+            // establish that a violation is caught, not that it is caught solely
+            // on failure.
+            doInvariantCheck({}, mint, XRPAmount{}, payment, {tesSUCCESS, tesSUCCESS}, setup);
+            doInvariantCheck({}, transfer, XRPAmount{}, payment, {tesSUCCESS, tesSUCCESS}, setup);
+
             // tecKILLED and tecINCOMPLETE are not special: an MPT change paired
             // with either fires the check, exactly as any other failure does.
             doInvariantCheck(
@@ -5009,6 +5017,8 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleTok);
                 return true;
             };
+            // Baseline, as above: a lock is legitimate on tesSUCCESS.
+            doInvariantCheck({}, lock, XRPAmount{}, payment, {tesSUCCESS, tesSUCCESS}, setup);
             doInvariantCheck(
                 {{"MPToken balance changed on failure"}},
                 lock,
@@ -5027,6 +5037,43 @@ class Invariants_test : public beast::unit_test::Suite
                 payment,
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 setup,
+                TxAccount::None,
+                std::source_location::current(),
+                tecEXPIRED);
+
+            // Deleting a holder's MPToken moves no value, so the sender /
+            // receiver classification skips it (a deleted holder has no
+            // amtAfter). It must still be caught on failure — that is what the
+            // deletedAuthorized_ term covers. This needs a separate issuance
+            // whose holders were authorized but never paid, so the MPToken can
+            // be erased with a zero balance and OutstandingAmount untouched;
+            // otherwise the holder would register as a sender and the term
+            // under test would never be the deciding one.
+            MPTID emptyId;
+            auto const setupEmpty = [&](Account const& a1, Account const& a2, Env& env) {
+                Account const gw("gw");
+                env.fund(XRP(1'000), gw);
+                MPTTester const mpt({.env = env, .issuer = gw, .holders = {a1, a2}, .maxAmt = 100});
+                emptyId = mpt.issuanceID();
+                return true;
+            };
+            Precheck const eraseToken = [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sleTok = ac.view().peek(keylet::mptoken(emptyId, a1.id()));
+                if (!sleTok || (*sleTok)[sfMPTAmount] != 0)
+                    return false;
+                ac.view().erase(sleTok);
+                return true;
+            };
+            // ValidMPTIssuance also reports the deletion, so assert on the
+            // ValidMPTTransfer message specifically: it is only logged when the
+            // deletedAuthorized_ term fires.
+            doInvariantCheck(
+                {{"MPToken balance changed on failure"}},
+                eraseToken,
+                XRPAmount{},
+                payment,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setupEmpty,
                 TxAccount::None,
                 std::source_location::current(),
                 tecEXPIRED);

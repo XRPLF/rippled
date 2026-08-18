@@ -143,6 +143,10 @@ ValidMPTIssuance::finalize(
     //     must not dangle outside that controlled lifecycle.
     if (rules.enabled(fixCleanup3_2_0))
     {
+        // Unlike the same-named flags in the finalize() methods below, this is
+        // a plain accumulator: the checks in this block are enforcing whenever
+        // fixCleanup3_2_0 is enabled, and it is cleared by any violation so
+        // that all of them get logged before returning.
         bool invariantPasses = true;
         if (referenceHoldingMutated_)
         {
@@ -487,6 +491,10 @@ ValidMPTBalanceChanges::finalize(
             return true;
         }
 
+        // Value returned when a violation is detected below, so this is the
+        // advisory (log-only) condition: it holds when NEITHER amendment is
+        // enabled. Enabling either featureMPTokensV2 or fixCleanup3_4_0 makes
+        // the checks enforcing.
         bool const invariantPasses = !view.rules().enabled(featureMPTokensV2) && !fix340Enabled;
         if (overflow_)
         {
@@ -523,8 +531,7 @@ ValidMPTBalanceChanges::finalize(
             // credentials. No MPToken or MPTokenIssuance is in that set, and
             // none of those deletions moves MPT value, so whatever a transactor
             // wrote before returning a tec cannot reach this check.
-            bool const failed = !isTesSuccess(result);
-            if (failed && data.outstanding[kIAfter] != data.outstanding[kIBefore])
+            if (!isTesSuccess(result) && data.outstanding[kIAfter] != data.outstanding[kIBefore])
             {
                 JLOG(j.fatal()) << "Invariant failed: OutstandingAmount balance changed on failure "
                                 << tx.getTxnType() << " " << result;
@@ -877,6 +884,10 @@ ValidMPTTransfer::finalize(
     }();
 
     auto const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+    // Value returned when a violation is detected below, so this is the
+    // advisory (log-only) condition: it holds when NEITHER amendment is
+    // enabled. Enabling either featureMPTokensV2 or fixCleanup3_4_0 makes the
+    // checks enforcing.
     auto const invariantPasses = !view.rules().enabled(featureMPTokensV2) && !fix340Enabled;
 
     for (auto const& [mptID, values] : amount_)
@@ -887,6 +898,13 @@ ValidMPTTransfer::finalize(
         auto const sleIssuance = view.read(keylet::mptokenIssuance(mptID));
         if (!sleIssuance)
         {
+            // A missing issuance does not imply that this transaction destroyed
+            // it. MPTokenIssuanceDestroy only requires a zero OutstandingAmount,
+            // so holders' MPTokens outlive the issuance as orphans, and a later
+            // transaction of any type may clean one up (see the "Skipping
+            // Deleted MPTs" case in Invariants_test). There is no issuance left
+            // to read the transfer rules from, so skip the entry rather than
+            // trying to infer intent from the transaction type.
             continue;
         }
 
@@ -949,8 +967,8 @@ ValidMPTTransfer::finalize(
         // failure. No result code is exempt — see the matching note in
         // ValidMPTBalanceChanges::finalize for why a tec cannot carry an MPT
         // change this far.
-        bool const failed = !isTesSuccess(result);
-        if (fix340Enabled && failed && (senders > 0 || receivers > 0))
+        if (fix340Enabled && !isTesSuccess(result) &&
+            (senders > 0 || receivers > 0 || !deletedAuthorized_.empty()))
         {
             JLOG(j.fatal()) << "Invariant failed: MPToken balance changed on failure " << txnType
                             << " " << result;
