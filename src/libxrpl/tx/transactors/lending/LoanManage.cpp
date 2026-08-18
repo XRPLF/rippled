@@ -191,9 +191,10 @@ LoanManage::defaultLoan(
     // sibling change in LoanPay for the same fix on the payment path.
     //
     // The Number-precision guard `T - A >= totalDefaultAmount` below is
-    // exactly sufficient: loanVaultExposure returns a difference of vault-
-    // associated STNumber fields (IOU-normalized via associateAsset), so
-    // its STAmount promotion round-trips losslessly with no writeOff slack.
+    // exactly sufficient: loanVaultExposure returns a difference of
+    // STNumber fields that are whole multiples of the same immutable
+    // `10^sfLoanScale` and never outgrow its 16 digits, so its STAmount
+    // promotion round-trips losslessly with no writeOff slack.
     bool const useUnifiedAssetArithmetic = view.rules().enabled(fixCleanup3_4_0);
 
     if (useUnifiedAssetArithmetic)

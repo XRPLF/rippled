@@ -257,9 +257,17 @@ private:
             env(pay(issuer, borrower, asset(5'000'000'000)));
             env.close();
 
-            // Vault magnitude ~1e7 so vaultScale ~ -9; the loans below sit at
-            // loan scale ~ -13. That 4-order gap is where storage precision
-            // can differ from loan-tracked Number precision.
+            // Vault magnitude ~1e7 gives a coarse vaultScale; the loans
+            // below use principals sized so that
+            // `computeLoanProperties(..., minimumScale=vaultScale)` clamps
+            // `loanScale = std::max(vaultScale, amount.exponent())` down
+            // to `vaultScale`. That equal-scale regime is precisely the
+            // one where the pre-amendment paths still round vault-side
+            // mutations asymmetrically (rounded on sfAssetsAvailable and
+            // in the pseudo-account transfer, unrounded on sfAssetsTotal
+            // via assetsTotalDelta / defaultCovered), so the dust-snap
+            // and post-rounding invariant branches this test guards
+            // against get maximum exposure.
             BrokerParameters const brokerParams{
                 .vaultDeposit = Number{10'000'000},
                 .debtMax = Number{0},

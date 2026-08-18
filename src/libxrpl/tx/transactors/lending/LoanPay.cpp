@@ -445,10 +445,14 @@ LoanPay::doApply()
     // normalization is applied symmetrically and the two balances land on
     // the same STAmount value -- which is what makes the debug invariant
     // sfAssetsAvailable == pseudo-account balance hold. Pre-amendment,
-    // sfAssetsAvailable was fed the vaultScale-rounded value while the
-    // pseudo-account received the raw Number, creating the same
-    // cross-side asymmetry with `assetsTotalDelta` that
-    // `LoanManage::defaultLoan` addresses on the default path.
+    // sfAssetsAvailable and the pseudo-account both received the
+    // vaultScale-rounded value (accountSendMulti was called with
+    // `totalPaidToVault`, i.e. the rounded amount), but sfAssetsTotal
+    // was mutated with the unrounded `assetsTotalDelta` on the very
+    // next line. That vault-side asymmetry between sfAssetsAvailable
+    // (rounded) and sfAssetsTotal (unrounded) is the counterpart of the
+    // cross-side mismatch `LoanManage::defaultLoan` addresses on the
+    // default path.
     auto const totalPaidToVault = view.rules().enabled(fixCleanup3_4_0)
         ? totalPaidToVaultRaw
         : roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
