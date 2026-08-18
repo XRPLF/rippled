@@ -5464,21 +5464,47 @@ class Vault_test : public beast::unit_test::Suite
         }
 
         {
-            testcase("RPC vault_info json zero vault_id");
+            testcase("RPC vault_info json numeric vault_id");
             json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault_id] = 0;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            checkError(
+                jv[jss::result],
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'vault_id', not hex string.");
+        }
+
+        {
+            testcase("RPC vault_info json object vault_id");
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault_id] = json::Value(json::ValueType::Object);
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            checkError(
+                jv[jss::result],
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'vault_id', not hex string.");
+        }
+
+        {
+            // An all-zero key is a well-formed request for a vault that cannot exist, not a
+            // malformed one. parseHex accepts both the padded form and the short "0".
+            testcase("RPC vault_info json all zero vault_id");
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault_id] = strHex(uint256(beast::kZero));
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
             checkError(jv[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
         {
-            // An all-zero key is a well-formed request for a vault that cannot exist, not a
-            // malformed one.
-            testcase("RPC vault_info json all zero vault_id");
+            testcase("RPC vault_info json short zero vault_id");
             json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault_id] = strHex(uint256(beast::kZero));
+            jvParams[jss::vault_id] = "0";
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
             checkError(jv[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
@@ -5551,6 +5577,20 @@ class Vault_test : public beast::unit_test::Suite
             json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = "foobar";
+            jvParams[jss::seq] = sequence;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            checkError(
+                jv[jss::result],
+                "actMalformed",
+                RpcActMalformed,
+                "Invalid field 'owner', not AccountID.");
+        }
+
+        {
+            testcase("RPC vault_info json array owner");
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::owner] = json::Value(json::ValueType::Array);
             jvParams[jss::seq] = sequence;
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
             checkError(
