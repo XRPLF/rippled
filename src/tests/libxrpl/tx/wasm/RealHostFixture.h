@@ -38,6 +38,7 @@
 #include <expected>
 #include <functional>
 #include <memory>
+#include <source_location>
 #include <span>
 #include <string>
 #include <string_view>
@@ -131,8 +132,12 @@ toBytes(STNumber const& number)
 
 template <typename T, typename U>
 void
-expectValue(std::expected<T, HostFunctionError> const& result, U const& expected)
+expectValue(
+    std::expected<T, HostFunctionError> const& result,
+    U const& expected,
+    std::source_location loc = std::source_location::current())
 {
+    auto trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
     ASSERT_TRUE(result.has_value())
         << "expected a value, got error " << static_cast<int>(result.error());
     EXPECT_EQ(*result, expected);
@@ -140,8 +145,12 @@ expectValue(std::expected<T, HostFunctionError> const& result, U const& expected
 
 template <typename T>
 void
-expectError(std::expected<T, HostFunctionError> const& result, HostFunctionError expected)
+expectError(
+    std::expected<T, HostFunctionError> const& result,
+    HostFunctionError expected,
+    std::source_location loc = std::source_location::current())
 {
+    auto trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
     ASSERT_FALSE(result.has_value()) << "expected error, got a value";
     EXPECT_EQ(result.error(), expected);
 }
