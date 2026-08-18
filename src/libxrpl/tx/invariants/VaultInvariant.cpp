@@ -272,7 +272,8 @@ ValidVault::deltaShares(AccountID const& id) const
 bool
 ValidVault::isVaultEmpty(Vault const& vault)
 {
-    return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+    return vault.assetsAvailable == 0 && vault.assetsTotal == 0 &&
+        vault.assetsReserved == 0;
 }
 
 bool
