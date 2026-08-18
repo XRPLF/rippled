@@ -2,10 +2,10 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
@@ -227,7 +227,7 @@ sliceFixedBatches(Batch const& pool, std::size_t batchSize)
  */
 struct BackendHarness
 {
-    beast::TempDir tempDir;  ///< Declared first so it is destroyed last
+    TempDir tempDir;  ///< Declared first so it is destroyed last
     DummyScheduler scheduler;
     beast::Journal journal{beast::Journal::getNullSink()};
     std::unique_ptr<Backend> backend;
@@ -257,7 +257,7 @@ struct BackendHarness
  */
 struct DatabaseHarness
 {
-    beast::TempDir tempDir;
+    TempDir tempDir;
     DummyScheduler scheduler;
     beast::Journal journal{beast::Journal::getNullSink()};
     std::unique_ptr<Database> db;
