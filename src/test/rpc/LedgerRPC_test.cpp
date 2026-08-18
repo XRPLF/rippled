@@ -324,18 +324,18 @@ class LedgerRPC_test : public beast::unit_test::Suite
         }
 
         {
-            std::string const hash3{
+            std::string const hash5{
                 "BFF5D915A6386545C8F1D8D9B165BDB6B29636653009509E0B43517E52E36CAE"};
             // access via the ledger_hash field
             json::Value jvParams;
-            jvParams[jss::ledger_hash] = hash3;
+            jvParams[jss::ledger_hash] = hash5;
             auto jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
             BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
 
             // extra leading hex chars in hash are not allowed
-            jvParams[jss::ledger_hash] = "DEADBEEF" + hash3;
+            jvParams[jss::ledger_hash] = "DEADBEEF" + hash5;
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");

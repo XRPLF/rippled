@@ -26,6 +26,10 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 This section contains changes targeting a future version.
 
+### Breaking changes
+
+- `subscribe` (`ledger` stream): The deprecated `fee_ref` field has been removed unconditionally from both the `subscribe` response and the `ledgerClosed` stream messages. It was previously only omitted when the `XRPFees` amendment was enabled; that amendment has now been retired, so the field is never returned. This applies to all API versions, since these are server-initiated stream messages that are not versioned.
+
 ### Additions
 
 - `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`.

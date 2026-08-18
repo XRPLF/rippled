@@ -2838,7 +2838,7 @@ public:
             env.seq(alice) == aliceSeq + 16,
             "alice: " + std::to_string(aliceSeq + 16) + ", " + std::to_string(env.seq(alice)));
 
-        // Close ledger 7.  That should remove 4 more of alice's transactions.
+        // Close ledger 7.  That should remove 3 more of alice's transactions.
         env.close();
         checkMetrics(*this, env, 2, 60, 7, 6);
         BEAST_EXPECTS(

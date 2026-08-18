@@ -37,10 +37,6 @@ namespace xrpl::test {
 
 struct FeeSettingsFields
 {
-    std::optional<std::uint64_t> baseFee = std::nullopt;
-    std::optional<std::uint32_t> reserveBase = std::nullopt;
-    std::optional<std::uint32_t> reserveIncrement = std::nullopt;
-    std::optional<std::uint32_t> referenceFeeUnits = std::nullopt;
     std::optional<XRPAmount> baseFeeDrops = std::nullopt;
     std::optional<XRPAmount> reserveBaseDrops = std::nullopt;
     std::optional<XRPAmount> reserveIncrementDrops = std::nullopt;
@@ -65,42 +61,47 @@ createFeeTx(std::uint32_t seq, FeeSettingsFields const& fields)
     return STTx(ttFEE, fill);
 }
 
+// A ttFEE transaction that omits the (now mandatory) *Drops fields.
 STTx
-createInvalidFeeTx(
-    std::uint32_t seq,
-    bool missingRequiredFields = true,
-    bool wrongFeatureFields = false,
-    std::uint32_t uniqueValue = 42)
+createFeeTxMissingRequiredFields(std::uint32_t seq)
 {
-    auto fill = [&](auto& obj) {
+    return STTx(ttFEE, [&](auto& obj) {
+        obj.setAccountID(sfAccount, AccountID());
+        obj.setFieldU32(sfLedgerSequence, seq);
+    });
+}
+
+// A ttFEE transaction that carries all the required *Drops fields, but also
+// the pre-XRPFees legacy fields, which are forbidden now that XRPFees has
+// been retired.
+STTx
+createFeeTxWithLegacyFields(std::uint32_t seq)
+{
+    return STTx(ttFEE, [&](auto& obj) {
         obj.setAccountID(sfAccount, AccountID());
         obj.setFieldU32(sfLedgerSequence, seq);
 
-        if (wrongFeatureFields)
-        {
-            obj.setFieldU64(sfBaseFee, 10 + uniqueValue);
-            obj.setFieldU32(sfReserveBase, 200000);
-            obj.setFieldU32(sfReserveIncrement, 50000);
-            obj.setFieldU32(sfReferenceFeeUnits, 10);
-        }
-        else if (!missingRequiredFields)
-        {
-            // Create valid transaction (all required fields present)
-            obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10 + uniqueValue});
-            obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
-            obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
-        }
-        // If missingRequiredFields is true, we don't add the required fields
-        // (default behavior)
-    };
-    return STTx(ttFEE, fill);
+        obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10});
+        obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
+        obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
+
+        obj.setFieldU64(sfBaseFee, 10);
+        obj.setFieldU32(sfReserveBase, 200000);
+        obj.setFieldU32(sfReserveIncrement, 50000);
+        obj.setFieldU32(sfReferenceFeeUnits, 10);
+    });
+}
+
+TER
+applyFeeTx(jtx::Env& env, OpenView& view, STTx const& tx)
+{
+    return apply(env.app(), view, tx, ApplyFlags::TapNone, env.journal).ter;
 }
 
 bool
 applyFeeAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx)
 {
-    auto const res = apply(env.app(), view, tx, ApplyFlags::TapNone, env.journal);
-    return isTesSuccess(res.ter);
+    return isTesSuccess(applyFeeTx(env, view, tx));
 }
 
 bool
@@ -251,14 +252,17 @@ class FeeVote_test : public beast::unit_test::Suite
         // Create the next ledger to apply transaction to
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-        // Test transaction with missing required new fields
-        auto invalidTx = createInvalidFeeTx(ledger->seq(), true, false, 3);
         OpenView accum(ledger.get());
-        BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
 
-        // Test transaction with legacy fields. XRPFees is retired
-        auto disallowedTx = createInvalidFeeTx(ledger->seq(), false, true, 4);
-        BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
+        // Test transaction with missing required new fields
+        auto const missingTx = createFeeTxMissingRequiredFields(ledger->seq());
+        BEAST_EXPECT(applyFeeTx(env, accum, missingTx) == temMALFORMED);
+
+        // Test transaction that has all the required fields but also carries
+        // the legacy fields. Now that XRPFees is retired those are forbidden,
+        // and rejected with temMALFORMED rather than the former temDISABLED.
+        auto const disallowedTx = createFeeTxWithLegacyFields(ledger->seq());
+        BEAST_EXPECT(applyFeeTx(env, accum, disallowedTx) == temMALFORMED);
     }
 
     void
