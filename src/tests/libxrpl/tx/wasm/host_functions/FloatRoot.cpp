@@ -14,7 +14,8 @@ struct FloatRootImpl : FloatTest
 TEST_F(FloatRootImpl, BadModeIsMalformed)
 {
     expectError(
-        makeHost()->floatRoot(slice(floats::kOne), 2, -1), HostFunctionError::FloatInputMalformed);
+        makeHost()->floatRoot(slice(FloatTest::kOne), 2, -1),
+        HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatRootImpl, MalformedInput)
@@ -25,31 +26,32 @@ TEST_F(FloatRootImpl, MalformedInput)
 TEST_F(FloatRootImpl, NegativeDegreeIsMalformed)
 {
     expectError(
-        makeHost()->floatRoot(slice(floats::kOne), -2, 0), HostFunctionError::FloatInputMalformed);
+        makeHost()->floatRoot(slice(FloatTest::kOne), -2, 0),
+        HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatRootImpl, RootOfZeroIsZero)
 {
-    expectValue(makeHost()->floatRoot(slice(floats::kIntZero), 2, 0), floats::kIntZero);
+    expectValue(makeHost()->floatRoot(slice(FloatTest::kIntZero), 2, 0), FloatTest::kIntZero);
 }
 
 TEST_F(FloatRootImpl, FirstRootIsIdentity)
 {
-    expectValue(makeHost()->floatRoot(slice(floats::kMaxIOU), 1, 0), floats::kMaxIOU);
+    expectValue(makeHost()->floatRoot(slice(FloatTest::kMaxIOU), 1, 0), FloatTest::kMaxIOU);
 }
 
 TEST_F(FloatRootImpl, SquareRootOfHundredIsTen)
 {
     auto const hundred = makeHost()->floatFromMantExp(100, 0, 0);
     ASSERT_TRUE(hundred.has_value());
-    expectValue(makeHost()->floatRoot(slice(*hundred), 2, 0), floats::kTen);
+    expectValue(makeHost()->floatRoot(slice(*hundred), 2, 0), FloatTest::kTen);
 }
 
 TEST_F(FloatRootImpl, CubeRootOfThousandIsTen)
 {
     auto const thousand = makeHost()->floatFromMantExp(1000, 0, 0);
     ASSERT_TRUE(thousand.has_value());
-    expectValue(makeHost()->floatRoot(slice(*thousand), 3, 0), floats::kTen);
+    expectValue(makeHost()->floatRoot(slice(*thousand), 3, 0), FloatTest::kTen);
 }
 
 TEST_F(FloatRootImpl, SquareRootOfHundredthIsTenth)

@@ -18,17 +18,17 @@ TEST_F(FloatFromIntImpl, BadModeIsMalformed)
 
 TEST_F(FloatFromIntImpl, MinInt)
 {
-    expectValue(makeHost()->floatFromInt(kMin64, 0), floats::kIntMin);
+    expectValue(makeHost()->floatFromInt(kMin64, 0), FloatTest::kIntMin);
 }
 
 TEST_F(FloatFromIntImpl, Zero)
 {
-    expectValue(makeHost()->floatFromInt(0, 0), floats::kIntZero);
+    expectValue(makeHost()->floatFromInt(0, 0), FloatTest::kIntZero);
 }
 
 TEST_F(FloatFromIntImpl, MaxInt)
 {
-    expectValue(makeHost()->floatFromInt(kMax64, 0), floats::kIntMax);
+    expectValue(makeHost()->floatFromInt(kMax64, 0), FloatTest::kIntMax);
 }
 
 }  // namespace xrpl::test

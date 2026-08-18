@@ -10,8 +10,8 @@ namespace xrpl::test {
 
 struct FloatFromMantExpImpl : FloatTest
 {
-    static constexpr int kMaxRawExp = Number::kMaxExponent + floats::kNormalExp;
-    static constexpr int kMinRawExp = Number::kMinExponent + floats::kNormalExp;
+    static constexpr int kMaxRawExp = Number::kMaxExponent + FloatTest::kNormalExp;
+    static constexpr int kMinRawExp = Number::kMinExponent + FloatTest::kNormalExp;
 };
 
 TEST_F(FloatFromMantExpImpl, BadModeIsMalformed)
@@ -28,41 +28,41 @@ TEST_F(FloatFromMantExpImpl, ExponentTooHighIsMalformed)
 
 TEST_F(FloatFromMantExpImpl, UnderflowIsZero)
 {
-    expectValue(makeHost()->floatFromMantExp(1, kMinRawExp - 1, 0), floats::kIntZero);
+    expectValue(makeHost()->floatFromMantExp(1, kMinRawExp - 1, 0), FloatTest::kIntZero);
 }
 
 TEST_F(FloatFromMantExpImpl, MaxExponent)
 {
-    expectValue(makeHost()->floatFromMantExp(1, kMaxRawExp, 0), floats::kMaxExp);
+    expectValue(makeHost()->floatFromMantExp(1, kMaxRawExp, 0), FloatTest::kMaxExp);
 }
 
 TEST_F(FloatFromMantExpImpl, MinusMaxExponent)
 {
-    expectValue(makeHost()->floatFromMantExp(-1, kMaxRawExp, 0), floats::kMinusMaxExp);
+    expectValue(makeHost()->floatFromMantExp(-1, kMaxRawExp, 0), FloatTest::kMinusMaxExp);
 }
 
 TEST_F(FloatFromMantExpImpl, PreMaxExponent)
 {
-    expectValue(makeHost()->floatFromMantExp(1, kMaxRawExp - 1, 0), floats::kPreMaxExp);
+    expectValue(makeHost()->floatFromMantExp(1, kMaxRawExp - 1, 0), FloatTest::kPreMaxExp);
 }
 
 TEST_F(FloatFromMantExpImpl, MaxIou)
 {
     expectValue(
         makeHost()->floatFromMantExp(STAmount::kMaxValue, STAmount::kMaxOffset, 0),
-        floats::kMaxIOU);
+        FloatTest::kMaxIOU);
 }
 
 TEST_F(FloatFromMantExpImpl, MinExponent)
 {
     expectValue(
-        makeHost()->floatFromMantExp(1, Number::kMinExponent - floats::kNormalExp, 0),
-        floats::kMinExp);
+        makeHost()->floatFromMantExp(1, Number::kMinExponent - FloatTest::kNormalExp, 0),
+        FloatTest::kMinExp);
 }
 
 TEST_F(FloatFromMantExpImpl, TenTimesTenthIsOne)
 {
-    expectValue(makeHost()->floatFromMantExp(10, -1, 0), floats::kOne);
+    expectValue(makeHost()->floatFromMantExp(10, -1, 0), FloatTest::kOne);
 }
 
 }  // namespace xrpl::test

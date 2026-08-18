@@ -32,7 +32,7 @@ TEST_F(FloatFromStAmountImpl, BadModeIsMalformed)
 
 TEST_F(FloatFromStAmountImpl, ZeroXrp)
 {
-    expectValue(makeHost()->floatFromSTAmount(STAmount{XRP(0)}, 0), floats::kIntZero);
+    expectValue(makeHost()->floatFromSTAmount(STAmount{XRP(0)}, 0), FloatTest::kIntZero);
 }
 
 TEST_F(FloatFromStAmountImpl, MinusOneXrp)
@@ -54,14 +54,14 @@ TEST_F(FloatFromStAmountImpl, MinIou)
 {
     auto const amount = STAmount{
         IOUAmount{static_cast<std::int64_t>(STAmount::kMinValue), STAmount::kMinOffset}, usd()};
-    expectValue(makeHost()->floatFromSTAmount(amount, 0), floats::kMinIOU);
+    expectValue(makeHost()->floatFromSTAmount(amount, 0), FloatTest::kMinIOU);
 }
 
 TEST_F(FloatFromStAmountImpl, MaxIou)
 {
     auto const amount = STAmount{
         IOUAmount{static_cast<std::int64_t>(STAmount::kMaxValue), STAmount::kMaxOffset}, usd()};
-    expectValue(makeHost()->floatFromSTAmount(amount, 0), floats::kMaxIOU);
+    expectValue(makeHost()->floatFromSTAmount(amount, 0), FloatTest::kMaxIOU);
 }
 
 }  // namespace xrpl::test

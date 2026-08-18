@@ -22,12 +22,12 @@ TEST_F(FloatFromUintImpl, BadModeIsMalformed)
 
 TEST_F(FloatFromUintImpl, Zero)
 {
-    expectValue(makeHost()->floatFromUint(0, 0), floats::kIntZero);
+    expectValue(makeHost()->floatFromUint(0, 0), FloatTest::kIntZero);
 }
 
 TEST_F(FloatFromUintImpl, MaxUint)
 {
-    expectValue(makeHost()->floatFromUint(kMaxU64, 0), floats::kUintMax);
+    expectValue(makeHost()->floatFromUint(kMaxU64, 0), FloatTest::kUintMax);
 }
 
 }  // namespace xrpl::test

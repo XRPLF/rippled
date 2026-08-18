@@ -27,13 +27,13 @@ TEST_F(FloatFromStNumberImpl, MaxUint)
 {
     auto const n = STNumber{
         sfNumber, Number(std::numeric_limits<std::uint64_t>::max(), 0, Number::Normalized{})};
-    expectValue(makeHost()->floatFromSTNumber(n, 0), floats::kUintMax);
+    expectValue(makeHost()->floatFromSTNumber(n, 0), FloatTest::kUintMax);
 }
 
 TEST_F(FloatFromStNumberImpl, MinusMaxExponent)
 {
-    auto const n = STNumber{sfNumber, Number(-1, Number::kMaxExponent + floats::kNormalExp)};
-    expectValue(makeHost()->floatFromSTNumber(n, 0), floats::kMinusMaxExp);
+    auto const n = STNumber{sfNumber, Number(-1, Number::kMaxExponent + FloatTest::kNormalExp)};
+    expectValue(makeHost()->floatFromSTNumber(n, 0), FloatTest::kMinusMaxExp);
 }
 
 }  // namespace xrpl::test

@@ -14,36 +14,36 @@ struct FloatSubtractImpl : FloatTest
 TEST_F(FloatSubtractImpl, BadModeIsMalformed)
 {
     expectError(
-        makeHost()->floatSubtract(slice(floats::kOne), slice(floats::kOne), -1),
+        makeHost()->floatSubtract(slice(FloatTest::kOne), slice(FloatTest::kOne), -1),
         HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatSubtractImpl, MalformedInput)
 {
     expectError(
-        makeHost()->floatSubtract(slice(floats::kOne), Slice{}, 0),
+        makeHost()->floatSubtract(slice(FloatTest::kOne), Slice{}, 0),
         HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatSubtractImpl, MinusMaxExpMinusMaxIouIsMinusMaxExp)
 {
     expectValue(
-        makeHost()->floatSubtract(slice(floats::kMinusMaxExp), slice(floats::kMaxIOU), 0),
-        floats::kMinusMaxExp);
+        makeHost()->floatSubtract(slice(FloatTest::kMinusMaxExp), slice(FloatTest::kMaxIOU), 0),
+        FloatTest::kMinusMaxExp);
 }
 
 TEST_F(FloatSubtractImpl, MinMinusZeroIsMin)
 {
     expectValue(
-        makeHost()->floatSubtract(slice(floats::kIntMin), slice(floats::kIntZero), 0),
-        floats::kIntMin);
+        makeHost()->floatSubtract(slice(FloatTest::kIntMin), slice(FloatTest::kIntZero), 0),
+        FloatTest::kIntMin);
 }
 
 TEST_F(FloatSubtractImpl, ZeroMinusOneIsMinusOne)
 {
     expectValue(
-        makeHost()->floatSubtract(slice(floats::kIntZero), slice(floats::kOne), 0),
-        floats::kMinusOne);
+        makeHost()->floatSubtract(slice(FloatTest::kIntZero), slice(FloatTest::kOne), 0),
+        FloatTest::kMinusOne);
 }
 
 }  // namespace xrpl::test
