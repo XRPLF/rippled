@@ -4,7 +4,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep (range-for over getFieldArray)
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -23,31 +22,8 @@ namespace xrpl::proposal {
  * Batch's inner transactions, a proposal transaction could be hidden there.
  * TODO: cover ttTRANSACTION_PROPOSAL_SIGN once that transaction exists.
  */
-inline bool
-isProposalTx(STObject const& proposedTx)
-{
-    auto const isProposalType = [](std::uint16_t type) {
-        return type == ttTRANSACTION_PROPOSAL_CREATE || type == ttTRANSACTION_PROPOSAL_CANCEL;
-    };
-
-    auto const type = proposedTx.getFieldU16(sfTransactionType);
-    if (isProposalType(type))
-        return true;
-
-    if (type == ttBATCH && proposedTx.isFieldPresent(sfRawTransactions))
-    {
-        for (STObject const& inner : proposedTx.getFieldArray(sfRawTransactions))
-        {
-            if (!inner.isFieldPresent(sfTransactionType))
-                continue;
-            auto const innerType = inner.getFieldU16(sfTransactionType);
-            if (isProposalType(innerType) || innerType == ttBATCH)
-                return true;
-        }
-    }
-
-    return false;
-}
+bool
+isProposalTx(STObject const& proposedTx);
 
 /**
  * Whether the proposed transaction carries any signature field.

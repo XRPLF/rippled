@@ -109,7 +109,9 @@ TransactionProposalCancel::doApply()
 void
 TransactionProposalCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
-    // No transaction-specific invariants yet (future work).
+    // No transaction-specific invariants yet (future work). Unreachable while
+    // Transactor::checkInvariants skips transaction-specific invariant dispatch
+    // (disabled for 3.2.0, to be re-enabled for 3.3.0; see PR #7409).
 }
 
 bool
@@ -120,7 +122,9 @@ TransactionProposalCancel::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
+    // No transaction-specific invariants yet (future work). Unreachable while
+    // Transactor::checkInvariants skips transaction-specific invariant dispatch
+    // (disabled for 3.2.0, to be re-enabled for 3.3.0; see PR #7409).
     return true;
 }
 

@@ -13,6 +13,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep (range-for over getFieldArray)
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -24,6 +25,32 @@
 #include <optional>
 
 namespace xrpl::proposal {
+
+bool
+isProposalTx(STObject const& proposedTx)
+{
+    auto const isProposalType = [](std::uint16_t type) {
+        return type == ttTRANSACTION_PROPOSAL_CREATE || type == ttTRANSACTION_PROPOSAL_CANCEL;
+    };
+
+    auto const type = proposedTx.getFieldU16(sfTransactionType);
+    if (isProposalType(type))
+        return true;
+
+    if (type == ttBATCH && proposedTx.isFieldPresent(sfRawTransactions))
+    {
+        for (STObject const& inner : proposedTx.getFieldArray(sfRawTransactions))
+        {
+            if (!inner.isFieldPresent(sfTransactionType))
+                continue;
+            auto const innerType = inner.getFieldU16(sfTransactionType);
+            if (isProposalType(innerType) || innerType == ttBATCH)
+                return true;
+        }
+    }
+
+    return false;
+}
 
 bool
 isTerminal(

@@ -14,6 +14,7 @@
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
@@ -133,6 +134,31 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             json::Value tx = payload();
             tx[jss::TransactionType] = "TransactionProposalCreate";
             reject(tx, temINVALID);
+        }
+
+        // Nor may a proposal be buried inside a proposed Batch: isProposalTx
+        // walks the inner transactions and rejects the payload when any is
+        // itself a proposal type. An inner lacking a TransactionType must not
+        // defeat that walk — it is skipped, and a later proposal inner is still
+        // found (On-Chain Cosigner spec §5.3.1).
+        {
+            json::Value missingType;
+            missingType[jss::Account] = target.human();
+            missingType[jss::Flags] = tfInnerBatchTxn;
+            missingType[jss::Sequence] = env.seq(target);
+            missingType[jss::Fee] = "10";
+            missingType[jss::SigningPubKey] = "";
+
+            reject(
+                proposal::unsignedBatch(
+                    env,
+                    target,
+                    targetTicketSeq,
+                    tfAllOrNothing,
+                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                     missingType,
+                     proposal::innerTx(proposal::cancel(target, uint256{1}), env.seq(target) + 2)}),
+                temINVALID);
         }
 
         // The proposed transaction must be ticket-based: a missing
