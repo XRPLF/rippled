@@ -6,7 +6,6 @@
 #include <test/jtx/batch.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
-#include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
@@ -14,23 +13,28 @@
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
@@ -38,6 +42,8 @@
 #include <chrono>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -94,8 +100,11 @@ private:
 
     // Build a funded environment with a Vault + LoanBroker owned by
     // `lender`, using the requested asset type, and return the broker.
+    // When enableClawback is true and the asset is IOU, sets
+    // asfAllowTrustLineClawback on the issuer before any trust lines exist
+    // (the flag cannot be set once trust lines are outstanding).
     BrokerInfo
-    makeBroker(jtx::Env& env, Fixture const& fx, AssetType assetType)
+    makeBroker(jtx::Env& env, Fixture const& fx, AssetType assetType, bool enableClawback = false)
     {
         using namespace jtx;
         env.fund(XRP(100'000'000), noripple(fx.lender));
@@ -103,6 +112,11 @@ private:
         if (assetType != AssetType::XRP)
             env.fund(XRP(1'000'000), fx.issuer);
         env.close();
+        if (enableClawback && assetType == AssetType::IOU)
+        {
+            env(fset(fx.issuer, asfAllowTrustLineClawback));
+            env.close();
+        }
         BrokerParameters const params{};
         auto const asset = createAsset(env, assetType, params, fx.issuer, fx.lender, fx.borrower);
         env.close();
@@ -110,6 +124,35 @@ private:
             env(pay(fx.issuer, fx.lender, asset(params.vaultDeposit + params.coverDeposit)));
         env.close();
         return createVaultAndBroker(env, asset, fx.lender, params);
+    }
+
+    // Retro-actively converts a V1.1 Vault (which VaultCreate stamps as
+    // CashBasis) into an accrual (Legacy) Vault by rewriting sfLEVersion
+    // directly on the open ledger. Simulates a Vault created before V1.1
+    // activated so the two-step flow can be exercised against both
+    // accounting models without spinning up a pre-amendment environment.
+    // NoModifiedUnmodifiableFields locks sfLEVersion at the transactor
+    // boundary; going through OpenLedger::modify bypasses that guard.
+    //
+    // The field is set to VaultVersion::Legacy (0) rather than removed:
+    // makeFieldAbsent does not round-trip cleanly through tx application on
+    // this SoeDefault field, whereas an explicit 0 both resolves through
+    // getVaultVersion (0 → Legacy) and survives the vault's next update().
+    static void
+    makeVaultAccrual(jtx::Env& env, BrokerInfo const& broker)
+    {
+        auto const changed =
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                Sandbox sb(&view, TapNone);
+                auto v = sb.peek(broker.vaultKeylet());
+                if (!v)
+                    return false;
+                v->setFieldU8(sfLEVersion, std::to_underlying(VaultVersion::Legacy));
+                sb.update(v);
+                sb.apply(view);
+                return true;
+            });
+        (void)changed;
     }
 
     // The keylet of the next loan the broker will create.
@@ -239,98 +282,150 @@ private:
             LoanTwoStep_test::propose(env, fx, b, p, br, sd, extra...);
         };
 
-        for (auto const assetType : {AssetType::XRP, AssetType::IOU, AssetType::MPT})
+        // Cover both accounting models the two-step flow supports:
+        // cash-basis (default under V1.1) and accrual (simulated via
+        // makeVaultAccrual to mirror a Vault created before V1.1). Under
+        // cash-basis, interest is only recognised into Vault.AssetsTotal as
+        // payments arrive; under accrual it is recognised at proposal time.
+        for (auto const vaultVersion : {VaultVersion::CashBasis, VaultVersion::Legacy})
         {
-            testcase << "Two-step: propose then accept (" << assetTypeName(assetType) << ")";
+            char const* const versionName =
+                vaultVersion == VaultVersion::CashBasis ? "cash-basis" : "accrual";
 
-            Env env(*this, features);
-            auto const broker = makeBroker(env, assetType);
-            Number const principal = broker.asset(200).number();
-
-            auto const vault0 = readVault(env, broker);
-            auto const broker0 = readBroker(env, broker);
-            auto const lenderOwners0 = env.ownerCount(lender);
-            auto const borrowerOwners0 = env.ownerCount(borrower);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            // A StartDate comfortably in the future.
-            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            // The proposal creates a pending Loan, linked only into the broker
-            // pseudo-account's directory.
-            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+            for (auto const assetType : {AssetType::XRP, AssetType::IOU, AssetType::MPT})
             {
-                BEAST_EXPECT(loan->isFlag(lsfLoanPending));
-                BEAST_EXPECT(loan->at(sfBorrower) == borrower.id());
-                BEAST_EXPECT(loan->isFieldPresent(sfLoanBrokerNode));
-                BEAST_EXPECT(!loan->isFieldPresent(sfOwnerNode));
+                testcase << "Two-step: propose then accept (" << versionName << ", "
+                         << assetTypeName(assetType) << ")";
+
+                Env env(*this, features);
+                auto const broker = makeBroker(env, assetType);
+                // Under Legacy (accrual) the Vault's sfLEVersion is rewritten
+                // via OpenLedger::modify, which is transient: OpenLedger::accept
+                // rebuilds the open view from the last-closed ledger and
+                // re-applies pending txs, discarding raw mutations. To keep the
+                // mutation visible for both propose and accept application, we
+                // skip env.close() between the mutation and the accept, and
+                // read assertions from the open view.
+                auto const closeIfCashBasis = [&]() {
+                    if (vaultVersion == VaultVersion::CashBasis)
+                        env.close();
+                };
+                if (vaultVersion == VaultVersion::Legacy)
+                {
+                    makeVaultAccrual(env, broker);
+                    // Confirm the mutation persisted before proceeding: the
+                    // accrual code path is only exercised when the Vault
+                    // resolves to VaultVersion::Legacy (absent field or 0).
+                    if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                        BEAST_EXPECT(getVaultVersion(v) == VaultVersion::Legacy);
+                }
+                Number const principal = broker.asset(200).number();
+
+                auto const vault0 = readVault(env, broker);
+                auto const broker0 = readBroker(env, broker);
+                auto const lenderOwners0 = env.ownerCount(lender);
+                auto const borrowerOwners0 = env.ownerCount(borrower);
+
+                auto const loanKeylet = nextLoanKeylet(env, broker);
+                // A StartDate comfortably in the future.
+                propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
+                closeIfCashBasis();
+
+                // The proposal creates a pending Loan, linked only into the
+                // broker pseudo-account's directory.
+                if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                {
+                    BEAST_EXPECT(loan->isFlag(lsfLoanPending));
+                    BEAST_EXPECT(loan->at(sfBorrower) == borrower.id());
+                    BEAST_EXPECT(loan->isFieldPresent(sfLoanBrokerNode));
+                    BEAST_EXPECT(!loan->isFieldPresent(sfOwnerNode));
+                }
+
+                // The owner reserve is charged to the broker owner, not the
+                // borrower.
+                BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
+                BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
+
+                // Vault bookkeeping: Available -= P, Reserved += P. Total
+                // grows by InterestDue under accrual (interest recognised at
+                // proposal) and is unchanged under cash-basis (interest is
+                // only recognised on payment).
+                auto const vault1 = readVault(env, broker);
+                BEAST_EXPECT(vault1.available == vault0.available - principal);
+                BEAST_EXPECT(vault1.reserved == vault0.reserved + principal);
+                // Re-check the Vault version post-proposal: guards against
+                // the mutation being reverted by tx application, distinguishing
+                // that from a legitimately-zero interest amount.
+                if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                    BEAST_EXPECT(getVaultVersion(v) == vaultVersion);
+                Number interestDue{};
+                if (vaultVersion == VaultVersion::Legacy)
+                {
+                    BEAST_EXPECT(vault1.total > vault0.total);
+                    interestDue = vault1.total - vault0.total;
+                }
+                else
+                {
+                    BEAST_EXPECT(vault1.total == vault0.total);
+                }
+
+                // Broker bookkeeping: DebtTotal += P + InterestDue, OwnerCount
+                // += 1, CoverAvailable is untouched by the proposal. Under
+                // cash-basis interestDue is zero, so DebtTotal grows by
+                // exactly the principal.
+                auto const broker1 = readBroker(env, broker);
+                BEAST_EXPECT(broker1.debtTotal == broker0.debtTotal + principal + interestDue);
+                BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount + 1);
+                BEAST_EXPECT(broker1.coverAvailable == broker0.coverAvailable);
+
+                // Capture pre-acceptance balances to verify disbursement.
+                auto const vaultPseudo = [&]() {
+                    auto const v = env.le(broker.vaultKeylet());
+                    return Account("vault pseudo-account", v->at(sfAccount));
+                }();
+                STAmount const pseudoBal0 = env.balance(vaultPseudo, broker.asset).value();
+                STAmount const borrowerBal0 = env.balance(borrower, broker.asset).value();
+
+                env(accept(borrower, loanKeylet.key));
+                closeIfCashBasis();
+
+                // The loan is now active and linked into the borrower's
+                // directory.
+                if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                {
+                    BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+                    BEAST_EXPECT(loan->isFieldPresent(sfLoanBrokerNode));
+                    BEAST_EXPECT(loan->isFieldPresent(sfOwnerNode));
+                }
+
+                // The reserve is swapped from the broker owner to the
+                // borrower.
+                BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0);
+                BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0 + 1);
+
+                // Reserved principal is released; Available and Total are
+                // unchanged from the proposal (interestDue is zero for
+                // cash-basis, so vault2.total == vault0.total in that mode).
+                auto const vault2 = readVault(env, broker);
+                BEAST_EXPECT(vault2.reserved == vault0.reserved);
+                BEAST_EXPECT(vault2.available == vault0.available - principal);
+                BEAST_EXPECT(vault2.total == vault0.total + interestDue);
+
+                // Broker bookkeeping: acceptance leaves DebtTotal, OwnerCount,
+                // and CoverAvailable unchanged from the pending snapshot.
+                auto const broker2 = readBroker(env, broker);
+                BEAST_EXPECT(broker2.debtTotal == broker1.debtTotal);
+                BEAST_EXPECT(broker2.ownerCount == broker1.ownerCount);
+                BEAST_EXPECT(broker2.coverAvailable == broker1.coverAvailable);
+
+                // The principal is disbursed from the vault pseudo-account to
+                // the borrower (origination fee is zero, so the borrower
+                // receives it all, less the transaction fee it paid).
+                BEAST_EXPECT(
+                    env.balance(vaultPseudo, broker.asset).value() ==
+                    pseudoBal0 - broker.asset(200).value());
+                BEAST_EXPECT(env.balance(borrower, broker.asset).value() > borrowerBal0);
             }
-
-            // The owner reserve is charged to the broker owner, not the
-            // borrower.
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
-            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
-
-            // Vault bookkeeping: Available -= P, Reserved += P, Total +=
-            // InterestDue.
-            auto const vault1 = readVault(env, broker);
-            BEAST_EXPECT(vault1.available == vault0.available - principal);
-            BEAST_EXPECT(vault1.reserved == vault0.reserved + principal);
-            BEAST_EXPECT(vault1.total > vault0.total);
-            Number const interestDue = vault1.total - vault0.total;
-
-            // Broker bookkeeping: DebtTotal += P + InterestDue, OwnerCount +=
-            // 1, CoverAvailable is untouched by the proposal.
-            auto const broker1 = readBroker(env, broker);
-            BEAST_EXPECT(broker1.debtTotal == broker0.debtTotal + principal + interestDue);
-            BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount + 1);
-            BEAST_EXPECT(broker1.coverAvailable == broker0.coverAvailable);
-
-            // Capture pre-acceptance balances to verify disbursement.
-            auto const vaultPseudo = [&]() {
-                auto const v = env.le(broker.vaultKeylet());
-                return Account("vault pseudo-account", v->at(sfAccount));
-            }();
-            STAmount const pseudoBal0 = env.balance(vaultPseudo, broker.asset).value();
-            STAmount const borrowerBal0 = env.balance(borrower, broker.asset).value();
-
-            env(accept(borrower, loanKeylet.key));
-            env.close();
-
-            // The loan is now active and linked into the borrower's directory.
-            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-            {
-                BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
-                BEAST_EXPECT(loan->isFieldPresent(sfLoanBrokerNode));
-                BEAST_EXPECT(loan->isFieldPresent(sfOwnerNode));
-            }
-
-            // The reserve is swapped from the broker owner to the borrower.
-            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0);
-            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0 + 1);
-
-            // Reserved principal is released; Available and Total are unchanged
-            // from the proposal.
-            auto const vault2 = readVault(env, broker);
-            BEAST_EXPECT(vault2.reserved == vault0.reserved);
-            BEAST_EXPECT(vault2.available == vault0.available - principal);
-            BEAST_EXPECT(vault2.total == vault0.total + interestDue);
-
-            // Broker bookkeeping: acceptance leaves DebtTotal, OwnerCount, and
-            // CoverAvailable unchanged from the pending snapshot.
-            auto const broker2 = readBroker(env, broker);
-            BEAST_EXPECT(broker2.debtTotal == broker1.debtTotal);
-            BEAST_EXPECT(broker2.ownerCount == broker1.ownerCount);
-            BEAST_EXPECT(broker2.coverAvailable == broker1.coverAvailable);
-
-            // The principal is disbursed from the vault pseudo-account to the
-            // borrower (origination fee is zero, so the borrower receives it
-            // all, less the transaction fee it paid).
-            BEAST_EXPECT(
-                env.balance(vaultPseudo, broker.asset).value() ==
-                pseudoBal0 - broker.asset(200).value());
-            BEAST_EXPECT(env.balance(borrower, broker.asset).value() > borrowerBal0);
         }
 
         // Exercise a proposal with a non-zero origination fee, then verify at
@@ -425,8 +520,11 @@ private:
                 BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
 
             // LoanPay: a regular periodic payment succeeds, then the borrower
-            // clears the remainder with tfLoanFullPayment.
-            env.close(NetClock::time_point{NetClock::duration{startDate}} + 1h);
+            // clears the remainder with tfLoanFullPayment. Advance just past
+            // StartDate but well within the first payment interval
+            // (payInterval = 200 s), otherwise the pay would be late and
+            // require tfLoanLatePayment.
+            env.close(NetClock::time_point{NetClock::duration{startDate}} + 30s);
             env(pay(borrower, loanKeylet.key, broker.asset(30)));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
@@ -534,22 +632,25 @@ private:
             std::uint32_t const pastDate = epoch.time_since_epoch().count();
             propose(env, broker, lender, borrower, pastDate, Ter(tecEXPIRED));
 
-            // XLS-66 flow: no CounterpartySignature, no Borrower, not a Batch
-            // inner: matches neither one-step nor two-step (temINVALID with
-            // V1.1 enabled; temBAD_SIGNER without, exercised earlier).
-            env(set(lender, broker.brokerID, broker.asset(200).number()), Ter(temINVALID));
+            // XLS-66 spec 3.8.5.1.2: CounterpartySignature is not present,
+            // the transaction is not a Batch inner, and the Borrower field is
+            // not specified (temBAD_SIGNER). The one-step flow's signer
+            // requirement takes precedence over the two-step shape check.
+            env(set(lender, broker.brokerID, broker.asset(200).number()), Ter(temBAD_SIGNER));
 
             // XLS-66 flow: Borrower without StartDate is not a valid two-step
-            // proposal (temINVALID).
+            // proposal (temINVALID). Borrower is specified, so
+            // 3.8.5.1.2 does not apply; falls through to the shape check.
             env(set(lender, broker.brokerID, broker.asset(200).number()),
                 kBorrower(borrower),
                 Ter(temINVALID));
 
-            // XLS-66 flow: StartDate without Borrower is not a valid two-step
-            // proposal (temINVALID).
+            // XLS-66 spec 3.8.5.1.2: StartDate is present but Borrower is
+            // not, so this is still "Borrower field is not specified" and the
+            // signer check fires first (temBAD_SIGNER).
             env(set(lender, broker.brokerID, broker.asset(200).number()),
                 kStartDate((env.now() + 1h).time_since_epoch().count()),
-                Ter(temINVALID));
+                Ter(temBAD_SIGNER));
 
             // XLS-66 flow: Borrower + Counterparty is ambiguous (temINVALID).
             env(set(lender, broker.brokerID, broker.asset(200).number()),
@@ -1329,6 +1430,7 @@ private:
         using namespace std::chrono_literals;
 
         auto const& features = fx.features;
+        auto const& issuer = fx.issuer;
         auto const& lender = fx.lender;
         auto const& borrower = fx.borrower;
         auto const& evan = fx.evan;
@@ -1624,7 +1726,7 @@ private:
         // (propose + accept + full pay + delete) on a V1.1 cash-basis vault
         // the balance sheet must fully close out. Guards against the drift
         // that the pre-fix applyPendingLoan / deletePendingLoan produced by
-        // recognising interest at proposal time on cash-basis vaults instead
+        // recognizing interest at proposal time on cash-basis vaults instead
         // of dispatching through loanOriginationDeltas(vaultSle, ...).
         for (auto const assetType : {AssetType::XRP, AssetType::IOU, AssetType::MPT})
         {
@@ -1643,6 +1745,17 @@ private:
 
             env(accept(borrower, loanKeylet.key));
             env.close();
+
+            // For IOU / MPT, the borrower's only balance in the loan asset is
+            // the 200 units disbursed by LoanAccept. A full payment (principal
+            // + interest + fees) needs strictly more than that, so pre-fund
+            // the borrower from the issuer. XRP borrowers are already funded
+            // with millions of XRP by makeBroker via env.fund.
+            if (!broker.asset.native())
+            {
+                env(pay(issuer, borrower, broker.asset(400)));
+                env.close();
+            }
 
             // Pay the loan off in full while the first payment is still
             // on time (parent close time strictly before StartDate +
@@ -1732,8 +1845,12 @@ private:
             propose(env, broker, lender, borrower, startDate);
             env.close();
 
+            if (!BEAST_EXPECT(broker.redemptionDate.has_value()))
+                return;
+
             // Advance the ledger past RedemptionDate.
             env.close(
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 NetClock::time_point{NetClock::duration{timeType{*broker.redemptionDate + 1}}});
 
             env(accept(borrower, loanKeylet.key), Ter(tecEXPIRED));
@@ -1751,9 +1868,14 @@ private:
             // accept" — the CoverAvailable that satisfied the proposal is
             // still what the accept flow relies on).
             //
-            // IOU only: clawback is not allowed on XRP.
+            // IOU only: clawback is not allowed on XRP. Enable clawback on
+            // the issuer before any trust lines exist, otherwise setting
+            // asfAllowTrustLineClawback fails with tecOWNERS. This routes
+            // through the class-level makeBroker directly (bypassing the
+            // local lambda) so the flag is set at the right point in the
+            // funding sequence.
             Env env(*this, features);
-            auto const broker = makeBroker(env, AssetType::IOU);
+            auto const broker = this->makeBroker(env, fx, AssetType::IOU, /*enableClawback=*/true);
 
             BrokerParameters const defaults{};
             Number const coverMinRate =
@@ -1827,7 +1949,7 @@ private:
             // reserved or otherwise — remain on the vault.
             if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                 BEAST_EXPECT(v->at(sfAssetsReserved) > beast::kZero);
-            Vault vault{env};
+            Vault const vault{env};
             env(vault.del({.owner = lender, .id = broker.vaultID}), Ter(tecHAS_OBLIGATIONS));
             env.close();
 

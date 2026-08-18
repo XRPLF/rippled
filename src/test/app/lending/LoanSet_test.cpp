@@ -811,8 +811,7 @@ private:
 
                 env(pay(borrower, issuer, broker.asset(10'000)));
                 env.close();
-                auto const trustline =
-                    keylet::trustLine(borrower, broker.asset.raw().get<Issue>());
+                auto const trustline = keylet::trustLine(borrower, broker.asset.raw().get<Issue>());
                 BEAST_EXPECT(env.le(trustline) == nullptr);
 
                 env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
@@ -893,8 +892,7 @@ private:
                 env.trust(broker.asset(0), lender);
                 env.close();
 
-                auto const trustline =
-                    keylet::trustLine(lender, broker.asset.raw().get<Issue>());
+                auto const trustline = keylet::trustLine(lender, broker.asset.raw().get<Issue>());
                 auto const sleLine1 = env.le(trustline);
                 BEAST_EXPECT(sleLine1 != nullptr);
 

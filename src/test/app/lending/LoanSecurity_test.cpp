@@ -385,12 +385,28 @@ private:
 
             VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
+            // Under featureLendingProtocolV1_1 new Vaults default to
+            // cash-basis, where LoanBroker.DebtTotal tracks only principal
+            // (interest is recognised on payment); pre-V1.1 vaults use
+            // accrual, where DebtTotal tracks principal + interest at
+            // proposal. The post-creation identity is therefore against a
+            // different Loan field per accounting model.
+            bool const cashBasis = features[featureLendingProtocolV1_1];
+
             if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
             {
                 if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
                 {
-                    BEAST_EXPECT(
-                        brokerSle->at(sfDebtTotal) == loanSle->at(sfTotalValueOutstanding));
+                    if (cashBasis)
+                    {
+                        BEAST_EXPECT(
+                            brokerSle->at(sfDebtTotal) == loanSle->at(sfPrincipalOutstanding));
+                    }
+                    else
+                    {
+                        BEAST_EXPECT(
+                            brokerSle->at(sfDebtTotal) == loanSle->at(sfTotalValueOutstanding));
+                    }
                 }
             }
 

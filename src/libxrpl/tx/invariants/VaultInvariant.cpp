@@ -555,7 +555,7 @@ ValidVault::finalize(
 
     if (afterVault.assetsReserved < kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: assets reserved must be positive";
+        JLOG(j.fatal()) << "Invariant failed: assets reserved must be positive or zero";
         result = false;
     }
 

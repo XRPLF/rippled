@@ -245,6 +245,12 @@ protected:
 
             if (twoStep)
             {
+                if (!startDate.has_value())
+                {
+                    throw std::logic_error(
+                        "LoanParameters::operator(): two-step flow requires "
+                        "startDate");
+                }
                 kBorrower(account)(env, jt);
                 kStartDate(startDate.value())(env, jt);
             }

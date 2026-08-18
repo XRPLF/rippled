@@ -707,7 +707,7 @@ disburseLoan(
     Number const& loanAssetsToBorrower,
     Number const& originationFee,
     AccountID const& signingAccount,
-    AccountID const& counterparty,
+    AccountID const& authorizedCounterparty,
     beast::Journal j);
 
 }  // namespace xrpl
