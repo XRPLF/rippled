@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Blob.h>
 
-#include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>
 
 #include <array>
