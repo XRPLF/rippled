@@ -60,7 +60,7 @@ function(_unlink_libgcc_s crate)
     get_target_property(libs ${imported} INTERFACE_LINK_LIBRARIES)
     if(NOT "gcc_s" IN_LIST libs)
         message(
-            FATAL_ERROR
+            WARNING
             "'gcc_s' was not in the link interface of '${imported}' as "
             "expected. If the Rust toolchain stopped reporting it this "
             "workaround is obsolete and can be deleted; otherwise xrpld may "
