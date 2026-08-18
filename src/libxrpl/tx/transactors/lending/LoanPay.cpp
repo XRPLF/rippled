@@ -509,7 +509,7 @@ LoanPay::doApply()
     // for pending loans awaiting acceptance. LoanPay does not touch it, so the
     // invariant is pseudo_balance == AssetsAvailable + AssetsReserved both
     // before and after the payment.
-    Number const assetsReserved = *vaultSle->at(sfAssetsReserved);
+    [[maybe_unused]] Number const assetsReserved = *vaultSle->at(sfAssetsReserved);
 #if !NDEBUG
     {
         Number const pseudoAccountBalanceBefore = accountHolds(
