@@ -228,18 +228,18 @@ jobs:
               --target "${CMAKE_TARGET}" \
               2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
 
-      # macOS: nothing may reference the store, so whole trees are checked. The
-      # Conan cache included - what it holds is what gets uploaded and reused.
-      - name: Check the build output for Nix store references (macOS)
+      # Nothing may reference the store, so whole trees are checked - the Conan
+      # cache included, since what it holds is what gets uploaded and reused.
+      - name: Check the build output for Nix store references (Nix toolchain)
         if: ${{ inputs.toolchain == 'nix' }}
         run: ./bin/check-nix-store-refs.sh "${BUILD_DIR}"
 
-      - name: Check the Conan cache for Nix store references (macOS)
+      - name: Check the Conan cache for Nix store references (Nix toolchain)
         if: ${{ inputs.toolchain == 'nix' }}
         run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
 
-      # Linux: the toolchain always references the store, so only the binaries
-      # PatchNixBinary.cmake retargets are checked. Same condition it uses.
+      # Only what PatchNixBinary.cmake retargets: the toolchain in the Linux
+      # images always references the store. Same condition it uses.
       - name: Check for Nix store references (Linux)
         if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         run: |
