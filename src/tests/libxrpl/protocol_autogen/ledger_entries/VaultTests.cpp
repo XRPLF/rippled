@@ -35,6 +35,10 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
+    auto const lEVersionValue = canonical_UINT8();
+    auto const vaultKindValue = canonical_UINT8();
+    auto const subscriptionDateValue = canonical_UINT32();
+    auto const redemptionDateValue = canonical_UINT32();
     auto const assetsReservedValue = canonical_NUMBER();
 
     VaultBuilder builder{
@@ -55,6 +59,10 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setLossUnrealized(lossUnrealizedValue);
     builder.setScale(scaleValue);
+    builder.setLEVersion(lEVersionValue);
+    builder.setVaultKind(vaultKindValue);
+    builder.setSubscriptionDate(subscriptionDateValue);
+    builder.setRedemptionDate(redemptionDateValue);
     builder.setAssetsReserved(assetsReservedValue);
 
     builder.setLedgerIndex(index);
@@ -169,6 +177,38 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = lEVersionValue;
+        auto const actualOpt = entry.getLEVersion();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLEVersion");
+        EXPECT_TRUE(entry.hasLEVersion());
+    }
+
+    {
+        auto const& expected = vaultKindValue;
+        auto const actualOpt = entry.getVaultKind();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfVaultKind");
+        EXPECT_TRUE(entry.hasVaultKind());
+    }
+
+    {
+        auto const& expected = subscriptionDateValue;
+        auto const actualOpt = entry.getSubscriptionDate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSubscriptionDate");
+        EXPECT_TRUE(entry.hasSubscriptionDate());
+    }
+
+    {
+        auto const& expected = redemptionDateValue;
+        auto const actualOpt = entry.getRedemptionDate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfRedemptionDate");
+        EXPECT_TRUE(entry.hasRedemptionDate());
+    }
+
+    {
         auto const& expected = assetsReservedValue;
         auto const actualOpt = entry.getAssetsReserved();
         ASSERT_TRUE(actualOpt.has_value());
@@ -204,6 +244,10 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
+    auto const lEVersionValue = canonical_UINT8();
+    auto const vaultKindValue = canonical_UINT8();
+    auto const subscriptionDateValue = canonical_UINT32();
+    auto const redemptionDateValue = canonical_UINT32();
     auto const assetsReservedValue = canonical_NUMBER();
 
     auto sle = std::make_shared<SLE>(Vault::entryType, index);
@@ -223,6 +267,10 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfShareMPTID) = shareMPTIDValue;
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
     sle->at(sfScale) = scaleValue;
+    sle->at(sfLEVersion) = lEVersionValue;
+    sle->at(sfVaultKind) = vaultKindValue;
+    sle->at(sfSubscriptionDate) = subscriptionDateValue;
+    sle->at(sfRedemptionDate) = redemptionDateValue;
     sle->at(sfAssetsReserved) = assetsReservedValue;
 
     VaultBuilder builderFromSle{sle};
@@ -403,6 +451,58 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = lEVersionValue;
+
+        auto const fromSleOpt = entryFromSle.getLEVersion();
+        auto const fromBuilderOpt = entryFromBuilder.getLEVersion();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLEVersion");
+        expectEqualField(expected, *fromBuilderOpt, "sfLEVersion");
+    }
+
+    {
+        auto const& expected = vaultKindValue;
+
+        auto const fromSleOpt = entryFromSle.getVaultKind();
+        auto const fromBuilderOpt = entryFromBuilder.getVaultKind();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfVaultKind");
+        expectEqualField(expected, *fromBuilderOpt, "sfVaultKind");
+    }
+
+    {
+        auto const& expected = subscriptionDateValue;
+
+        auto const fromSleOpt = entryFromSle.getSubscriptionDate();
+        auto const fromBuilderOpt = entryFromBuilder.getSubscriptionDate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSubscriptionDate");
+        expectEqualField(expected, *fromBuilderOpt, "sfSubscriptionDate");
+    }
+
+    {
+        auto const& expected = redemptionDateValue;
+
+        auto const fromSleOpt = entryFromSle.getRedemptionDate();
+        auto const fromBuilderOpt = entryFromBuilder.getRedemptionDate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfRedemptionDate");
+        expectEqualField(expected, *fromBuilderOpt, "sfRedemptionDate");
+    }
+
+    {
         auto const& expected = assetsReservedValue;
 
         auto const fromSleOpt = entryFromSle.getAssetsReserved();
@@ -497,6 +597,14 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getLossUnrealized().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
+    EXPECT_FALSE(entry.hasLEVersion());
+    EXPECT_FALSE(entry.getLEVersion().has_value());
+    EXPECT_FALSE(entry.hasVaultKind());
+    EXPECT_FALSE(entry.getVaultKind().has_value());
+    EXPECT_FALSE(entry.hasSubscriptionDate());
+    EXPECT_FALSE(entry.getSubscriptionDate().has_value());
+    EXPECT_FALSE(entry.hasRedemptionDate());
+    EXPECT_FALSE(entry.getRedemptionDate().has_value());
     EXPECT_FALSE(entry.hasAssetsReserved());
     EXPECT_FALSE(entry.getAssetsReserved().has_value());
 }

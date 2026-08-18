@@ -3,6 +3,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
+#include <compare>
 #include <cstddef>
 #include <optional>
 #include <ostream>
@@ -52,7 +53,7 @@ public:
     }
 
     [[nodiscard]] SHAMapNodeID
-    getChildNodeID(unsigned int m) const;
+    getChildNodeID(unsigned int branch) const;
 
     /**
      * Create a SHAMapNodeID of a node with the depth of the node and
@@ -63,46 +64,33 @@ public:
      * @return SHAMapNodeID of the node
      */
     static SHAMapNodeID
-    createID(int depth, uint256 const& key);
+    createID(unsigned int depth, uint256 const& key);
 
-    // FIXME-C++20: use spaceship and operator synthesis
     /**
      * Comparison operators
+     *
+     * <, >, <= and >= are synthesized from the spaceship. It is written out
+     * rather than defaulted because the ordering is by depth first, and the
+     * members are not declared in that order.
      */
-    bool
-    operator<(SHAMapNodeID const& n) const
+    std::strong_ordering
+    operator<=>(SHAMapNodeID const& n) const
     {
-        return std::tie(depth_, id_) < std::tie(n.depth_, n.id_);
+        return std::tie(depth_, id_) <=> std::tie(n.depth_, n.id_);
     }
 
-    bool
-    operator>(SHAMapNodeID const& n) const
-    {
-        return n < *this;
-    }
-
-    bool
-    operator<=(SHAMapNodeID const& n) const
-    {
-        return !(n < *this);
-    }
-
-    bool
-    operator>=(SHAMapNodeID const& n) const
-    {
-        return !(*this < n);
-    }
-
+    /**
+     * Equality, which the spaceship above does not provide.
+     *
+     * Only a *defaulted* operator<=> implicitly declares a defaulted
+     * operator==; the one above is user-provided, so == has to be written.
+     * It cannot be defaulted either, because a defaulted == would also compare
+     * the CountedObject base, which is not equality comparable.
+     */
     bool
     operator==(SHAMapNodeID const& n) const
     {
         return (depth_ == n.depth_) && (id_ == n.id_);
-    }
-
-    bool
-    operator!=(SHAMapNodeID const& n) const
-    {
-        return !(*this == n);
     }
 };
 

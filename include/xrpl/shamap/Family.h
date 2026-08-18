@@ -26,10 +26,10 @@ public:
     explicit Family() = default;
     virtual ~Family() = default;
 
-    virtual NodeStore::Database&
+    virtual node_store::Database&
     db() = 0;
 
-    [[nodiscard]] virtual NodeStore::Database const&
+    [[nodiscard]] virtual node_store::Database const&
     db() const = 0;
 
     virtual beast::Journal const&

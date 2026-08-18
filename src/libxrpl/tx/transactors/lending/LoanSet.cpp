@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -22,6 +23,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -343,7 +345,8 @@ buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::ref brokerSle, bool pend
     auto const loanSequence = *brokerSle->at(sfLoanSequence);
 
     // Create the loan
-    auto loan = std::make_shared<SLE>(keylet::loan(plan.brokerID, loanSequence));
+    auto loan = std::make_shared<SLE>(
+        keylet::loan(plan.brokerID, SeqProxy::rawSequence(loanSequence)));
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
@@ -521,7 +524,9 @@ applyImmediateLoan(
     Asset const vaultAsset = vaultSle->at(sfAsset);
     auto const vaultScale = getAssetsTotalScale(vaultSle);
     auto const loanAssetsToBorrower = plan.principalRequested - plan.originationFee;
-    auto const newDebtDelta = plan.principalRequested + plan.interestDue;
+
+    auto const [assetsTotalDelta, debtTotalDelta] =
+        loanOriginationDeltas(vaultSle, plan.principalRequested, plan.interestDue);
 
     // In the immediate flow, the borrower is charged the owner reserve and the
     // funds are disbursed now.
@@ -549,11 +554,11 @@ applyImmediateLoan(
     view.insert(loan);
 
     // Update the balances in the vault. Decrement the available assets and
-    // accrue the interest due.
+    // accrue the assets-total delta.
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
     vaultAvailableProxy -= plan.principalRequested;
-    vaultTotalProxy += plan.interestDue;
+    vaultTotalProxy += assetsTotalDelta;
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::applyImmediateLoan",
@@ -561,7 +566,7 @@ applyImmediateLoan(
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), debtTotalDelta, vaultAsset, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
     loanSequenceProxy += 1;
@@ -609,7 +614,7 @@ LoanSet::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanSet::preflight(PreflightContext const& ctx)
 {
-    using namespace Lending;
+    using namespace lending;
 
     auto const& tx = ctx.tx;
 
@@ -789,6 +794,8 @@ TER
 LoanSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
+    auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
+    auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
 
     {
         // Check for numeric overflow of the schedule before we load any
@@ -888,6 +895,32 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     {
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(ctx.view, vault);
+        if (phase == VaultPhase::Subscription)
+        {
+            JLOG(ctx.j.warn()) << "Vault is still in the subscription phase.";
+            return tecTOO_SOON;
+        }
+        if (phase == VaultPhase::Redemption)
+        {
+            JLOG(ctx.j.warn()) << "Vault has entered the redemption phase.";
+            return tecEXPIRED;
+        }
+        if (phase == VaultPhase::Investment)
+        {
+            auto const finalPayment =
+                std::uint64_t{getStartDate(ctx.view, tx)} + (std::uint64_t{interval} * total);
+            if (finalPayment >= vault->at(sfRedemptionDate))
+            {
+                JLOG(ctx.j.warn()) << "Final loan payment date is on or after "
+                                      "the vault's redemption date.";
+                return tecNO_PERMISSION;
+            }
+        }
     }
 
     if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
