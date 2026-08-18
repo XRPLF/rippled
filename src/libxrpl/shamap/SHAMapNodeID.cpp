@@ -46,8 +46,7 @@ SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash) : id_(hash),
     XRPL_ASSERT(
         depth <= SHAMap::kLeafDepth, "xrpl::SHAMapNodeID::SHAMapNodeID : maximum depth input");
     XRPL_ASSERT(
-        id_ == (id_ & depthMask(depth)),
-        "xrpl::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
+        isPrefixOf(id_), "xrpl::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
 }
 
 std::string
@@ -79,12 +78,18 @@ SHAMapNodeID::getChildNodeID(unsigned int branch) const
     if (depth_ >= SHAMap::kLeafDepth)
         Throw<std::logic_error>("Request for child node ID of " + to_string(*this));
 
-    if (id_ != (id_ & depthMask(depth_)))
+    if (!isPrefixOf(id_))
         Throw<std::logic_error>("Incorrect mask for " + to_string(*this));
 
     SHAMapNodeID node{depth_ + 1, id_};
     node.id_.begin()[depth_ / 2] |= ((depth_ & 1) != 0u) ? branch : (branch << 4);
     return node;
+}
+
+bool
+SHAMapNodeID::isPrefixOf(uint256 const& key) const
+{
+    return (key & depthMask(depth_)) == id_;
 }
 
 [[nodiscard]] std::optional<SHAMapNodeID>
