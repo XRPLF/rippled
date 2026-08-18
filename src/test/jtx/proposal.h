@@ -5,9 +5,9 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
 #include <cstdint>
 #include <optional>

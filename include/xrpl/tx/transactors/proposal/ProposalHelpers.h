@@ -4,8 +4,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFormats.h>
 
-#include <cstdint>
-
 namespace xrpl::proposal {
 
 /**
@@ -47,28 +45,6 @@ hasEmptySigningPubKey(STObject const& proposedTx)
 {
     return proposedTx.isFieldPresent(sfSigningPubKey) &&
         proposedTx.getFieldVL(sfSigningPubKey).empty();
-}
-
-/**
- * Owner-reserve increments held by a proposal of an ordinary transaction.
- */
-constexpr std::uint32_t kProposalOwnerCount = 5;
-
-/**
- * Owner-reserve increments held by a proposal of a Batch transaction. A
- * proposed Batch stores up to eight inner transactions plus multi-account
- * signatures, so it reserves more than an ordinary proposed transaction.
- */
-constexpr std::uint32_t kBatchProposalOwnerCount = 10;
-
-/**
- * Owner-reserve increments held by a proposal of the given transaction.
- */
-inline std::uint32_t
-proposalOwnerCount(STObject const& proposedTx)
-{
-    return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? kBatchProposalOwnerCount
-                                                                : kProposalOwnerCount;
 }
 
 }  // namespace xrpl::proposal

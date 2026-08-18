@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -306,14 +307,11 @@ getLedgerEntryOwnerCount(SLE const& sle)
                 return 1;
             return 2 + static_cast<std::uint32_t>(sle.getFieldArray(sfSignerEntries).size());
         }
-        case ltTRANSACTION_PROPOSAL: {
-            // Mirror TransactionProposalCreate's own reserve sizing (see
-            // xrpl::proposal::proposalOwnerCount) so that creation and
-            // sponsorship accounting agree: a proposed Batch reserves more
-            // than an ordinary proposal.
-            auto const proposedTx = sle.getFieldObject(sfProposedTransaction);
-            return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? 10u : 5u;
-        }
+        case ltTRANSACTION_PROPOSAL:
+            // Mirror TransactionProposalCreate's own reserve sizing so that
+            // creation and sponsorship accounting agree: a proposed Batch
+            // reserves more than an ordinary proposal.
+            return proposal::proposalOwnerCount(sle.getFieldObject(sfProposedTransaction));
         case ltACCOUNT_ROOT:
             // LCOV_EXCL_START
             UNREACHABLE("AccountRoots are not supported by object sponsorship.");
