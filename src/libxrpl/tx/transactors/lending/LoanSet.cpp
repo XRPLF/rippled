@@ -18,6 +18,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
@@ -418,7 +419,6 @@ LoanSet::doApply()
     auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const vaultPseudo = vaultSle->at(sfAccount);
     Asset const vaultAsset = vaultSle->at(sfAsset);
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
@@ -437,10 +437,10 @@ LoanSet::doApply()
     }
     auto const principalRequested = tx[sfPrincipalRequested];
 
-    auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
-    auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
-    if (vaultAvailableProxy < principalRequested)
+    Number const vaultAvailable = vaultSle->at(sfAssetsAvailable);
+    Number const vaultTotal = vaultSle->at(sfAssetsTotal);
+    auto const vaultScale = getVaultScale(vaultSle);
+    if (vaultAvailable < principalRequested)
     {
         JLOG(j_.warn()) << "Insufficient assets available in the Vault to fund the loan.";
         return tecINSUFFICIENT_FUNDS;
@@ -467,11 +467,11 @@ LoanSet::doApply()
         properties.loanState.managementFeeDue);
 
     XRPL_ASSERT_PARTS(
-        *vaultSle->at(sfAssetsMaximum) == 0 || *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
+        *vaultSle->at(sfAssetsMaximum) == 0 || *vaultSle->at(sfAssetsMaximum) > vaultTotal,
         "xrpl::LoanSet::doApply",
         "Vault is below maximum limit");
 
-    if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
+    if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotal, state.interestDue))
     {
         JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
         return tecLIMIT_EXCEEDED;
@@ -607,13 +607,12 @@ LoanSet::doApply()
     if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
         return ter;
 
-    if (auto const ter = accountSendMulti(
+    if (auto const ter = moveVaultAssets(
             view,
-            vaultPseudo,
-            vaultAsset,
+            vaultSle,
             {{borrower, loanAssetsToBorrower}, {brokerOwner, originationFee}},
-            j_,
-            WaiveTransferFee::Yes))
+            STAmount{vaultAsset, assetsTotalDelta},
+            j_))
         return ter;
 
     // Get shortcuts to the loan property values
@@ -661,14 +660,10 @@ LoanSet::doApply()
     loan->at(sfPaymentRemaining) = paymentTotal;
     view.insert(loan);
 
-    // Update the balances in the vault
-    vaultAvailableProxy -= principalRequested;
-    vaultTotalProxy += assetsTotalDelta;
     XRPL_ASSERT_PARTS(
-        *vaultAvailableProxy <= *vaultTotalProxy,
+        *vaultSle->at(sfAssetsAvailable) <= *vaultSle->at(sfAssetsTotal),
         "xrpl::LoanSet::doApply",
         "assets available must not be greater than assets outstanding");
-    view.update(vaultSle);
 
     // Update the balances in the loan broker
     adjustImpreciseNumber(brokerSle->at(sfDebtTotal), debtTotalDelta, vaultAsset, vaultScale);

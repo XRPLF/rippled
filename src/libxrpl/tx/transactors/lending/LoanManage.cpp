@@ -9,6 +9,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -171,7 +172,7 @@ LoanManage::defaultLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
 
     // Under fixCleanup3_4_0, both vault-side fields are mutated through a
     // single asset-typed STAmount pair. `amount = STAmount{vaultAsset,
@@ -220,22 +221,6 @@ LoanManage::defaultLoan(
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-
-        // Mutate the two vault fields through a single asset-typed pair
-        // (see the block comment on useUnifiedAssetArithmetic above for
-        // why this is safe):
-        //   (1) write off totalDefaultAmount from Total only;
-        //   (2) add defaultCovered symmetrically to both fields.
-        STAmount const amount{vaultAsset, defaultCovered};
-        STAmount const writeOff{vaultAsset, totalDefaultAmount};
-
-        vaultSle->at(sfAssetsTotal) += amount - writeOff;
-        vaultSle->at(sfAssetsAvailable) += amount;
-
-        XRPL_ASSERT_PARTS(
-            *vaultSle->at(sfAssetsAvailable) <= *vaultSle->at(sfAssetsTotal),
-            "xrpl::LoanManage::defaultLoan",
-            "assets available must not be greater than assets outstanding");
     }
     else
     {
@@ -334,8 +319,37 @@ LoanManage::defaultLoan(
     loanSle->at(sfNextPaymentDueDate) = 0;
     view.update(loanSle);
 
-    // Return funds from the LoanBroker pseudo-account to the
-    // Vault pseudo-account:
+    // Return funds from the LoanBroker pseudo-account to the Vault
+    // pseudo-account. Under fixCleanup3_4_0, the vault field updates are
+    // deferred to a single call through addVaultAssets so that both fields
+    // are mutated via one asset-typed STAmount pair (see the block comment
+    // on useUnifiedAssetArithmetic above); pre-amendment, the vault fields
+    // were already mutated in place above, so a plain accountSend suffices.
+    if (useUnifiedAssetArithmetic)
+    {
+        STAmount const amount{vaultAsset, defaultCovered};
+        STAmount const writeOff{vaultAsset, totalDefaultAmount};
+
+        // Defense-in-depth mirror of the invariant check performed on the
+        // LoanSet.cpp/LoanPay.cpp addVaultAssets paths: project the raw
+        // post-mutation Vault fields (pre-rounding) and assert Available <=
+        // Total. Redundant with the tefBAD_LEDGER guard above (which is
+        // strictly stronger, since Total - Available >= totalDefaultAmount
+        // implies the post-write inequality), but kept for structural
+        // parity — if either of the addVaultAssets deltas ever drifts, this
+        // fires before the SLE mutation lands.
+        [[maybe_unused]] Number const assetsAvailableAfterRaw =
+            Number(vaultSle->at(sfAssetsAvailable)) + defaultCovered;
+        [[maybe_unused]] Number const assetsTotalAfterRaw =
+            Number(vaultSle->at(sfAssetsTotal)) + (defaultCovered - totalDefaultAmount);
+        XRPL_ASSERT_PARTS(
+            assetsAvailableAfterRaw <= assetsTotalAfterRaw,
+            "xrpl::LoanManage::defaultLoan",
+            "assets available must not be greater than assets outstanding");
+
+        return addVaultAssets(
+            view, vaultSle, brokerSle->at(sfAccount), amount, amount - writeOff, j);
+    }
     return accountSend(
         view,
         brokerSle->at(sfAccount),
@@ -359,7 +373,7 @@ LoanManage::impairLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
 
     // Update the Vault object(set "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
@@ -399,7 +413,7 @@ LoanManage::unimpairLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
 
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);

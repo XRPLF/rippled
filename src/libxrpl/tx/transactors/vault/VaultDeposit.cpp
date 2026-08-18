@@ -326,18 +326,14 @@ VaultDeposit::doApply()
         sharesCreated.asset() != assetsDeposited.asset(),
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetsTotal) += assetsDeposited;
-    vault->at(sfAssetsAvailable) += assetsDeposited;
-    view().update(vault);
-
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
-    if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
+    if (maximum != 0 && *vault->at(sfAssetsTotal) + assetsDeposited > maximum)
         return tecLIMIT_EXCEEDED;
 
-    // Transfer assets from depositor to vault.
-    if (auto const ter = accountSend(
-            view(), accountID_, vaultAccount, assetsDeposited, j_, {}, WaiveTransferFee::Yes);
+    // Update the vault's assets, and transfer assets from depositor to vault.
+    if (auto const ter =
+            addVaultAssets(view(), vault, accountID_, assetsDeposited, assetsDeposited, j_);
         !isTesSuccess(ter))
         return ter;
 

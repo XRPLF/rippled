@@ -1,10 +1,15 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <optional>
@@ -125,6 +130,212 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
  */
 [[nodiscard]] VaultVersion
 getVaultVersion(SLE::const_ref vault);
+
+/**
+ * Returns the scale (number of decimal places) at which a vault's
+ * sfAssetsTotal is maintained, derived from the vault's asset and its
+ * current sfAssetsTotal value.
+ *
+ * @param vault The vault SLE.
+ *
+ * @return The vault's scale, or `Number::kMinExponent - 1` if `vault` is
+ * null.
+ */
+[[nodiscard]] int
+getVaultScale(SLE::const_ref vault);
+
+/**
+ * The single point through which assets are added to a Vault: updates the
+ * Vault's sfAssetsTotal and sfAssetsAvailable and transfers `amount` of the
+ * Vault's asset from `sender` to the Vault's pseudo-account.
+ *
+ * Callers are responsible for rounding `amount` and `valueDelta` to whatever
+ * scale is appropriate for their own accounting (e.g. current vs. posterior
+ * Vault scale); this helper does not perform any additional rounding.
+ *
+ * Ordering: the Vault fields are mutated (and `view.update` called) before
+ * the underlying `accountSend`; on a non-tesSUCCESS return, the caller is
+ * responsible for discarding the ApplyView (transactors rely on the sandbox
+ * being thrown away on non-tesSUCCESS, which is the codebase convention).
+ * All in-tree callers are transactors that already return the propagated
+ * TER, so no additional rollback is required.
+ *
+ * @param view The ledger view to apply changes to.
+ * @param vault The vault SLE. Must not be null.
+ * @param sender The account to transfer `amount` from.
+ * @param amount The amount to add to sfAssetsAvailable, and to transfer from
+ *               `sender` to the Vault's pseudo-account.
+ * @param valueDelta The amount to add to sfAssetsTotal. May differ from
+ *                   `amount`, e.g. when recognizing a value change that is
+ *                   not fully backed by a matching cash transfer. May be
+ *                   negative (e.g. a default write-off, or a small rounding
+ *                   correction), unlike `amount`.
+ * @param j Journal for logging.
+ *
+ * @return TER on success or failure.
+ */
+[[nodiscard]] TER
+addVaultAssets(
+    ApplyView& view,
+    SLE::ref vault,
+    AccountID const& sender,
+    STAmount const& amount,
+    STAmount const& valueDelta,
+    beast::Journal j);
+
+/**
+ * Signals that a removal is the last one possible for a Vault — i.e. it
+ * burns every outstanding share. removeVaultAssets uses this to hard-reset
+ * sfAssetsTotal and sfAssetsAvailable to exactly zero, rather than
+ * subtracting `amount`/`valueDelta` from them.
+ *
+ * This matters because the discounted exchange-rate formula used to compute
+ * a withdrawal's `amount` can produce a value with more decimal precision
+ * than the Vault's asset can canonically represent. Subtracting such a
+ * value from the field would leave a non-canonical residual instead of an
+ * exact zero, corrupting the ledger entry. A final removal is defined to
+ * exhaust the Vault's exposure entirely, so hard-resetting to zero is both
+ * simpler and correct — no residual dust is possible or desired.
+ */
+enum class FinalRemoval : bool { No = false, Yes = true };
+
+/**
+ * The single point through which assets are clawed back from a Vault entirely:
+ * decreases the Vault's sfAssetsTotal and sfAssetsAvailable
+ * and transfers @p amount from the Vault's pseudo-account to @p recipient via
+ * a plain accountSend.
+ *
+ * Callers are responsible for rounding @p amount to whatever
+ * scale is appropriate for their own accounting; this helper does not
+ * perform any additional rounding.
+ *
+ * Ordering: same convention as addVaultAssets — the Vault fields are mutated
+ * before the transfer, and the ApplyView must be discarded by the caller on a
+ * non-tesSUCCESS return. The pre-transfer `amount > sfAssetsAvailable` guard
+ * still fires before any mutation, so a malformed clawback amount cannot
+ * modify the Vault at all.
+ *
+ * @param view The ledger view to apply changes to.
+ * @param vault The vault SLE. Must not be null.
+ * @param recipient The account to transfer `amount` to. Must already be
+ *                   able to hold the Vault's asset without further setup.
+ * @param amount The amount to clawback from the vault and transfer from the
+ *               Vault's pseudo-account to `recipient`. Must be positive;
+ *               callers must skip calling this helper entirely for a
+ *               zero-amount clawback (unlike addVaultAssets/removeVaultAssets,
+ *               which tolerate a zero `amount`).
+ * @param j Journal for logging.
+ *
+ * @return TER code.
+ */
+[[nodiscard]] TER
+clawbackVaultAssets(
+    ApplyView& view,
+    SLE::ref vault,
+    AccountID const& recipient,
+    STAmount const& amount,
+    beast::Journal j);
+
+/**
+ * The single point through which assets are removed from a Vault entirely
+ * and withdrawn to a recipient that may not yet have a holding for the
+ * Vault's asset: decreases the Vault's sfAssetsTotal and sfAssetsAvailable
+ * and calls doWithdraw to transfer @p amount from the
+ * Vault's pseudo-account to @p dstAcct.
+ *
+ * Unlike clawbackVaultAssets, this relies solely on doWithdraw's own
+ * pre-transfer balance check rather than an additional post-transfer sanity
+ * check.
+ *
+ * Callers are responsible for rounding @p amount; this helper does not
+ * perform any additional rounding, except when `finalRemoval` is Yes (see
+ * FinalRemoval).
+ *
+ * Ordering: same convention as addVaultAssets — the Vault fields are mutated
+ * before the transfer, and the ApplyView must be discarded by the caller on a
+ * non-tesSUCCESS return.
+ *
+ * When `finalRemoval` is Yes, callers must pass `amount ==
+ * *vault->at(sfAssetsAvailable)` (the pre-call value): the helper asserts
+ * this invariant and would otherwise leave dust on the Vault's pseudo-account
+ * despite hard-resetting the fields to zero. VaultWithdraw's final-removal
+ * path pins `amount = allAvailable` immediately before calling this helper
+ * to satisfy the contract.
+ *
+ * @param ctx The apply-view context to apply changes to.
+ * @param vault The vault SLE. Must not be null.
+ * @param senderAcct The account that submitted the withdrawal transaction.
+ * @param dstAcct The account to transfer `amount` to; may equal `senderAcct`.
+ * @param priorBalance The XRP reserve base, passed through to doWithdraw for
+ *                      creating a holding for `dstAcct` when required.
+ * @param amount The amount to subtract from sfAssetsAvailable, and to
+ *               transfer from the Vault's pseudo-account to `dstAcct`. When
+ *               `finalRemoval` is Yes, must equal the Vault's pre-call
+ *               sfAssetsAvailable so the transfer drains the pseudo-account.
+ * @param j Journal for logging.
+ * @param finalRemoval Whether this is the Vault's final removal (see
+ *                      FinalRemoval).
+ *
+ * @return TER from doWithdraw.
+ */
+[[nodiscard]] TER
+removeVaultAssets(
+    ApplyViewContext ctx,
+    SLE::ref vault,
+    AccountID const& senderAcct,
+    AccountID const& dstAcct,
+    XRPAmount priorBalance,
+    STAmount const& amount,
+    beast::Journal j,
+    FinalRemoval finalRemoval = FinalRemoval::No);
+
+/**
+ * The single point through which cash is moved out of a Vault's
+ * sfAssetsAvailable to multiple recipients in a single atomic payment, e.g.
+ * a loan's principal and origination fee, without necessarily shrinking the
+ * Vault's total exposure: updates sfAssetsAvailable (decreases by the sum of
+ * `recipients`' amounts) and sfAssetsTotal (changes by `valueDelta`, same
+ * sign convention as addVaultAssets — typically an increase, since
+ * disbursing a loan recognizes accrued interest into sfAssetsTotal even as
+ * cash leaves the Vault), then transfers the Vault's asset from the Vault's
+ * pseudo-account to each of `recipients`, via accountSendMulti.
+ *
+ * Unlike removeVaultAssets, this is not a removal — the Vault's receivables
+ * grow to match the cash that leaves sfAssetsAvailable, so there is no
+ * "final" edge case to handle here.
+ *
+ * Recipients must already be able to hold the Vault's asset (e.g. via
+ * addEmptyHolding and requireAuth performed by the caller beforehand); this
+ * helper does not create holdings or check authorization.
+ *
+ * Ordering: same convention as addVaultAssets — the Vault fields are mutated
+ * before the transfer, and the ApplyView must be discarded by the caller on
+ * a non-tesSUCCESS return.
+ *
+ * sfAssetsAvailable is decreased by an STAmount built from the sum of the
+ * recipients' Numbers, so for a very large recipient list whose sum exceeds
+ * STAmount's ~16 significant digits, this could round differently than
+ * summing the underlying Numbers directly. Not a concern for the current
+ * caller (LoanSet, two recipients).
+ *
+ * @param view The ledger view to apply changes to.
+ * @param vault The vault SLE. Must not be null.
+ * @param recipients The accounts and amounts to transfer from the Vault's
+ *                    pseudo-account. Must contain more than one entry.
+ * @param valueDelta The amount to add to sfAssetsTotal (same convention as
+ *                   addVaultAssets). May be negative, and may differ from
+ *                   the sum of `recipients`' amounts.
+ * @param j Journal for logging.
+ *
+ * @return TER from accountSendMulti.
+ */
+[[nodiscard]] TER
+moveVaultAssets(
+    ApplyView& view,
+    SLE::ref vault,
+    MultiplePaymentDestinations const& recipients,
+    STAmount const& valueDelta,
+    beast::Journal j);
 
 /**
  * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when

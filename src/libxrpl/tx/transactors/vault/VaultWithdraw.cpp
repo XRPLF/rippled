@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/vault/VaultWithdraw.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -297,15 +298,15 @@ VaultWithdraw::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
-    auto assetsAvailable = vault->at(sfAssetsAvailable);
-    auto assetsTotal = vault->at(sfAssetsTotal);
+    Number const assetsAvailableBefore = vault->at(sfAssetsAvailable);
+    [[maybe_unused]] Number const assetsTotalBefore = vault->at(sfAssetsTotal);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
-        lossUnrealized <= (assetsTotal - assetsAvailable),
+        lossUnrealized <= (assetsTotalBefore - assetsAvailableBefore),
         "xrpl::VaultWithdraw::doApply : loss and assets do balance");
 
     // The vault must have enough assets on hand.
-    if (*assetsAvailable < assetsWithdrawn)
+    if (assetsAvailableBefore < assetsWithdrawn)
     {
         JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
@@ -321,6 +322,7 @@ VaultWithdraw::doApply()
     // worth logging.
     bool const isFinalWithdrawal =
         sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
+    FinalRemoval finalRemoval = FinalRemoval::No;
     if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
     {
         // Unreachable: a final withdrawal with lossUnrealized > 0 has
@@ -338,7 +340,7 @@ VaultWithdraw::doApply()
             // LCOV_EXCL_STOP
         }
 
-        STAmount const allAvailable{vaultAsset, *assetsAvailable};
+        STAmount const allAvailable{vaultAsset, assetsAvailableBefore};
         if (assetsWithdrawn != allAvailable)
         {
             JLOG(j_.error())  //
@@ -347,17 +349,8 @@ VaultWithdraw::doApply()
                 << " assetsAvailable=" << allAvailable.getText();
         }
         assetsWithdrawn = allAvailable;
-
-        // Do not let dust accumulate in the Vault.
-        assetsTotal = 0;
-        assetsAvailable = 0;
+        finalRemoval = FinalRemoval::Yes;
     }
-    else
-    {
-        assetsTotal -= assetsWithdrawn;
-        assetsAvailable -= assetsWithdrawn;
-    }
-    view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
 
@@ -395,11 +388,26 @@ VaultWithdraw::doApply()
         // else quietly ignore, account balance is not zero
     }
 
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
+    if (auto const ter = removeVaultAssets(
+            applyViewContext,
+            vault,
+            accountID_,
+            dstAcct,
+            preFeeBalance_,
+            assetsWithdrawn,
+            j_,
+            finalRemoval);
+        !isTesSuccess(ter))
+        return ter;
+
+    // Must run after the Vault's sfAssetsTotal/sfAssetsAvailable are mutated
+    // (above): it rounds every asset-typed field on the Vault SLE to the
+    // asset's canonical precision, which the mutation above does not do
+    // itself.
     associateAsset(*vault, vaultAsset);
 
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
-    return doWithdraw(
-        applyViewContext, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+    return tesSUCCESS;
 }
 
 void

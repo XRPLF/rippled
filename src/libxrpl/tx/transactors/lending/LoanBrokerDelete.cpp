@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -77,7 +78,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     {
         // Any remaining debt should have been wiped out by the last Loan
         // Delete. This check is purely defensive.
-        auto const scale = getAssetsTotalScale(vault);
+        auto const scale = getVaultScale(vault);
 
         auto const rounded =
             roundToAsset(asset, debtTotal, scale, Number::RoundingMode::TowardsZero);

@@ -9,6 +9,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -310,7 +311,7 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle);
 
     // Send the broker fee to the owner if they have sufficient cover available,
     // _and_ if the owner can receive funds
@@ -432,8 +433,38 @@ LoanPay::doApply()
     // LoanBroker object state changes
     view.update(brokerSle);
 
-    auto assetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
-    auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
+    Number const assetsAvailableBefore = vaultSle->at(sfAssetsAvailable);
+    Number const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
+
+    // These three values are used to check that funds are conserved after the transfers
+    auto const accountBalanceBefore = accountHolds(
+        view,
+        accountID_,
+        asset,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j_,
+        SpendableHandling::FullBalance);
+    auto const vaultBalanceBefore = accountID_ == vaultPseudoAccount
+        ? STAmount{asset, 0}
+        : accountHolds(
+              view,
+              vaultPseudoAccount,
+              asset,
+              FreezeHandling::IgnoreFreeze,
+              AuthHandling::IgnoreAuth,
+              j_,
+              SpendableHandling::FullBalance);
+    auto const brokerBalanceBefore = accountID_ == brokerPayee
+        ? STAmount{asset, 0}
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              FreezeHandling::IgnoreFreeze,
+              AuthHandling::IgnoreAuth,
+              j_,
+              SpendableHandling::FullBalance);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     // Under fixCleanup3_4_0, feed the same raw payment Number into both
@@ -481,11 +512,8 @@ LoanPay::doApply()
     adjustImpreciseNumber(debtTotalProxy, -debtTotalDelta, asset, vaultScale);
 
     //------------------------------------------------------
-    // Vault object state changes
-    view.update(vaultSle);
-
-    Number const assetsAvailableBefore = *assetsAvailableProxy;
-    Number const assetsTotalBefore = *assetsTotalProxy;
+    // Vault object state changes (applied further below, via addVaultAssets,
+    // together with the transfer of funds to the Vault pseudo-account).
 #if !NDEBUG
     {
         Number const pseudoAccountBalanceBefore = accountHolds(
@@ -503,11 +531,17 @@ LoanPay::doApply()
     }
 #endif
 
-    assetsAvailableProxy += totalPaidToVault;
-    assetsTotalProxy += assetsTotalDelta;
+    // Raw (pre-rounding) projection, used only for this internal consistency
+    // check; the real post-rounding values are read back from the Vault SLE
+    // further below, once addVaultAssets/associateAsset have actually
+    // mutated and rounded it. Under fixCleanup3_4_0, totalPaidToVault is the
+    // raw payment Number; pre-amendment it is the vaultScale-rounded value.
+    [[maybe_unused]] Number const assetsAvailableAfterRaw =
+        assetsAvailableBefore + totalPaidToVault;
+    [[maybe_unused]] Number const assetsTotalAfterRaw = assetsTotalBefore + assetsTotalDelta;
 
     XRPL_ASSERT_PARTS(
-        *assetsAvailableProxy <= *assetsTotalProxy,
+        assetsAvailableAfterRaw <= assetsTotalAfterRaw,
         "xrpl::LoanPay::doApply",
         "assets available must not be greater than assets outstanding");
 
@@ -533,11 +567,58 @@ LoanPay::doApply()
 
     associateAsset(*loanSle, asset);
     associateAsset(*brokerSle, asset);
+
+    if (totalPaidToVault != beast::kZero)
+    {
+        if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
+            return ter;
+    }
+
+    if (totalPaidToBroker != beast::kZero)
+    {
+        if (brokerPayee == accountID_)
+        {
+            // The broker may have deleted their holding. Recreate it if needed
+            if (auto const ter = addEmptyHolding(
+                    ctx_.getApplyViewContext(),
+                    brokerPayee,
+                    brokerPayeeSle->at(sfBalance).value().xrp(),
+                    asset,
+                    j_);
+                ter && ter != tecDUPLICATE)
+            {
+                // ignore tecDUPLICATE. That means the holding already exists,
+                // and is fine here
+                return ter;
+            }
+        }
+        if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
+            return ter;
+    }
+
+    // Update the Vault's assets, and transfer the Vault's share of the
+    // payment from the payer to the Vault pseudo-account.
+    if (auto const ret = addVaultAssets(
+            view,
+            vaultSle,
+            accountID_,
+            STAmount{asset, totalPaidToVault},
+            STAmount{asset, assetsTotalDelta},
+            j_);
+        !isTesSuccess(ret))
+        return ret;
+
+    // Must run after addVaultAssets mutates the Vault's sfAssetsTotal/
+    // sfAssetsAvailable (above): it rounds every asset-typed field on the
+    // Vault SLE to the asset's canonical precision, which the mutation
+    // above does not do itself.
     associateAsset(*vaultSle, asset);
 
-    // Duplicate some checks after rounding
-    Number const assetsAvailableAfter = *assetsAvailableProxy;
-    Number const assetsTotalAfter = *assetsTotalProxy;
+    // Duplicate some checks after rounding. These re-read the Vault's fields
+    // rather than reusing assetsAvailableAfterRaw/assetsTotalAfterRaw, since
+    // rounding above may have moved them off the raw-arithmetic projection.
+    Number const assetsAvailableAfter = vaultSle->at(sfAssetsAvailable);
+    Number const assetsTotalAfter = vaultSle->at(sfAssetsTotal);
 
     XRPL_ASSERT_PARTS(
         assetsAvailableAfter <= assetsTotalAfter,
@@ -598,72 +679,20 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // These three values are used to check that funds are conserved after the transfers
-    auto const accountBalanceBefore = accountHolds(
-        view,
-        accountID_,
-        asset,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        j_,
-        SpendableHandling::FullBalance);
-    auto const vaultBalanceBefore = accountID_ == vaultPseudoAccount
-        ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              vaultPseudoAccount,
-              asset,
-              FreezeHandling::IgnoreFreeze,
-              AuthHandling::IgnoreAuth,
-              j_,
-              SpendableHandling::FullBalance);
-    auto const brokerBalanceBefore = accountID_ == brokerPayee
-        ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              brokerPayee,
-              asset,
-              FreezeHandling::IgnoreFreeze,
-              AuthHandling::IgnoreAuth,
-              j_,
-              SpendableHandling::FullBalance);
-
-    if (totalPaidToVault != beast::kZero)
-    {
-        if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
-            return ter;
-    }
-
+    // Transfer the LoanBroker's share of the payment (fee) separately.
     if (totalPaidToBroker != beast::kZero)
     {
-        if (brokerPayee == accountID_)
-        {
-            // The broker may have deleted their holding. Recreate it if needed
-            if (auto const ter = addEmptyHolding(
-                    ctx_.getApplyViewContext(),
-                    brokerPayee,
-                    brokerPayeeSle->at(sfBalance).value().xrp(),
-                    asset,
-                    j_);
-                ter && ter != tecDUPLICATE)
-            {
-                // ignore tecDUPLICATE. That means the holding already exists,
-                // and is fine here
-                return ter;
-            }
-        }
-        if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
+        if (auto const ter = accountSend(
+                view,
+                accountID_,
+                brokerPayee,
+                STAmount{asset, totalPaidToBroker},
+                j_,
+                {},
+                WaiveTransferFee::Yes);
+            !isTesSuccess(ter))
             return ter;
     }
-
-    if (auto const ter = accountSendMulti(
-            view,
-            accountID_,
-            asset,
-            {{vaultPseudoAccount, totalPaidToVault}, {brokerPayee, totalPaidToBroker}},
-            j_,
-            WaiveTransferFee::Yes))
-        return ter;
 
 #if !NDEBUG
     {

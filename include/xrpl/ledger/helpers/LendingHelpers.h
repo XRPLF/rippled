@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
@@ -216,14 +217,6 @@ adjustImpreciseNumber(
         value = 0;
 }
 
-inline int
-getAssetsTotalScale(SLE::const_ref vaultSle)
-{
-    if (!vaultSle)
-        return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
-    return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
-}
-
 // Compute the minimum required broker cover, rounded consistently.
 // DebtTotal is a broker-level aggregate maintained at vault scale, so the
 // rounding must also use vault scale — never an individual loan's scale.
@@ -236,7 +229,7 @@ minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::c
     return roundToAsset(
         vaultSle->at(sfAsset),
         tenthBipsOfValue(debtTotal, coverRateMinimum),
-        getAssetsTotalScale(vaultSle));
+        getVaultScale(vaultSle));
 }
 
 TER
@@ -609,9 +602,6 @@ computeLoanProperties(
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
     std::int32_t minimumScale);
-
-bool
-isRounded(Asset const& asset, Number const& value, std::int32_t scale);
 
 // Indicates what type of payment is being made.
 // regular, late, and full are mutually exclusive.
