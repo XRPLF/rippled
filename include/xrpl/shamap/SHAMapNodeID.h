@@ -53,7 +53,7 @@ public:
     }
 
     [[nodiscard]] SHAMapNodeID
-    getChildNodeID(unsigned int m) const;
+    getChildNodeID(unsigned int branch) const;
 
     /**
      * Create a SHAMapNodeID of a node with the depth of the node and
@@ -64,7 +64,7 @@ public:
      * @return SHAMapNodeID of the node
      */
     static SHAMapNodeID
-    createID(int depth, uint256 const& key);
+    createID(unsigned int depth, uint256 const& key);
 
     /**
      * Comparison operators
