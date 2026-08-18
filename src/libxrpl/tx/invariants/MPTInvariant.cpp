@@ -923,7 +923,7 @@ ValidMPTTransfer::finalize(
                     (account == loanDefaultAccounts->broker ||
                      account == loanDefaultAccounts->vault);
                 if (!invalidTransfer &&
-                    ((!exemptFromFreeze && isFrozen(view, account, MPTIssue{mptID})) ||
+                    ((!exemptFromFreeze && isFrozen(view, account, *sleIssuance)) ||
                      !isAuthorized(view, mptID, account, reqAuth)))
                 {
                     invalidTransfer = true;

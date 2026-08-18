@@ -1,5 +1,5 @@
 {
-  "image_tag": "sha-fecfc0c",
+  "image_tag": "sha-a0074f8",
   "configs": {
     "ubuntu": [
       {
@@ -92,7 +92,7 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-577d745"
+        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-028ccea"
       }
     ],
 
@@ -102,7 +102,7 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-577d745"
+        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-028ccea"
       }
     ]
   }
