@@ -1,5 +1,9 @@
-# This workflow uploads the libxrpl recipe to the Conan remote and builds
-# release packages when a versioned tag is pushed.
+# When a versioned tag is pushed, this workflow:
+#
+#   - uploads the libxrpl recipe to the Conan remote
+#   - builds and tests the release binaries
+#   - builds the DEB and RPM packages
+#   - publishes those packages to the XRPLF package repositories
 name: Tag
 
 on:
@@ -24,7 +28,7 @@ jobs:
       remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
 
   build-test:
-    if: ${{ github.repository == 'XRPLF/rippled' }}
+    if: ${{ github.repository_owner == 'XRPLF' }}
     uses: ./.github/workflows/reusable-build-test.yml
     strategy:
       fail-fast: true
@@ -37,6 +41,11 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   package:
-    if: ${{ github.repository == 'XRPLF/rippled' }}
+    if: ${{ github.repository_owner == 'XRPLF' }}
     needs: build-test
     uses: ./.github/workflows/reusable-package.yml
+    with:
+      publish: true
+    secrets:
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}

@@ -27,6 +27,8 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -7422,6 +7424,57 @@ private:
     }
 
     void
+    testDanglingAMMMPTokenFreezeCheck()
+    {
+        testcase("Dangling AMM MPToken freeze check");
+
+        using namespace jtx;
+        FeatureBitset const all{testableAmendments()};
+
+        Env env(*this, all);
+
+        env.fund(XRP(1'000), gw_, alice_);
+        MPTTester usd({.env = env, .issuer = gw_});
+        MPTTester const btc({.env = env, .issuer = gw_});
+
+        AMM amm(env, gw_, usd(10'000), btc(10'000));
+        for (auto i = 0; i < kMaxDeletableAmmTrustLines + 10; ++i)
+        {
+            Account const a{std::to_string(i)};
+            env.fund(XRP(1'000), a);
+            env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+            env.close();
+        }
+
+        // With too many LP-token trust lines to delete in one pass, the AMM
+        // remains in an empty state with zero-balance MPToken objects.
+        amm.withdrawAll(gw_);
+        BEAST_EXPECT(amm.ammExists());
+        BEAST_EXPECT(amm.expectBalances(usd(0), btc(0), IOUAmount{0}));
+
+        auto const ammToken = env.le(keylet::mptoken(usd.issuanceID(), amm.ammAccount()));
+        if (!BEAST_EXPECT(ammToken))
+            return;
+        BEAST_EXPECT((*ammToken)[sfMPTAmount] == 0);
+
+        usd.destroy();
+        BEAST_EXPECT(env.le(keylet::mptokenIssuance(usd.issuanceID())) == nullptr);
+        BEAST_EXPECT(!isFrozen(*env.current(), amm.ammAccount(), *ammToken));
+        // A Payment cannot cross this empty AMM because BookStep skips AMMs
+        // with zero LPTokenBalance. Probe the same ZeroIfFrozen balance read
+        // used by AMM accounting.
+        auto const balance = accountHolds(
+            *env.current(),
+            amm.ammAccount(),
+            MPTIssue{usd.issuanceID()},
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::IgnoreAuth,
+            env.journal);
+
+        BEAST_EXPECT(balance == usd(0));
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::testableAmendments()};
@@ -7461,6 +7514,7 @@ private:
         testDepositIntegralOverflowMPT(all);
         testDepositIntegralOverflowMPT(all - fixCleanup3_4_0);
         testWithdrawIntegralNoOverflowMPT();
+        testDanglingAMMMPTokenFreezeCheck();
     }
 };
 
