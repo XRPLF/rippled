@@ -900,7 +900,7 @@ ValidMPTTransfer::finalize(
                 // Check once: if any involved account is frozen, the whole issuance transfer is
                 // considered frozen. Only need to check for frozen if there is a transfer of funds.
                 if (!invalidTransfer &&
-                    (isFrozen(view, account, MPTIssue{mptID}) ||
+                    (isFrozen(view, account, *sleIssuance) ||
                      !isAuthorized(view, mptID, account, reqAuth)))
                 {
                     invalidTransfer = true;
