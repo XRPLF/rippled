@@ -622,7 +622,8 @@ private:
         Number const principalRequest{1, 3};
         auto createNewLoan = [&]() {
             auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
-            BEAST_EXPECT(sleBroker);
+            if (!BEAST_EXPECT(sleBroker))
+                return keylet::loan(uint256{});
             auto const lk =
                 keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
             env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),

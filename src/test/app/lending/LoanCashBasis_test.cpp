@@ -542,17 +542,6 @@ private:
             return std::make_tuple(broker, loanKeylet, lender, borrower);
         };
 
-        // Under fixCleanup3_4_0 impairment is only allowed once the
-        // payment is late. Advance past the first due date before impairing.
-        auto advancePastDueDate = [&](Env& env, Keylet const& loanKeylet) {
-            if (!env.current()->rules().enabled(fixCleanup3_4_0))
-                return;
-            auto const loan = env.le(loanKeylet);
-            BEAST_EXPECT(loan);
-            std::uint32_t const dueDate = loan->at(sfNextPaymentDueDate);
-            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
-        };
-
         // ---- impair / unimpair ----
         auto runImpairUnimpair = [&](FeatureBitset features) {
             Env env(*this, features);
