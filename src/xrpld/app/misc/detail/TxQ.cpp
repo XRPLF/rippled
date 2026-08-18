@@ -159,6 +159,9 @@ class TxQApplyImpl
     // view for updating balance in case of several queued txs for the account
     std::optional<MultiTxn> multiTxn_;
 
+    // Parent processor in case of Batch
+    std::optional<std::reference_wrapper<TxQApplyImpl const>> parent_;
+
     ///////////////////////////////////////////////////////////////////////////////
 
 public:
@@ -183,6 +186,32 @@ public:
     {
     }
 
+    TxQApplyImpl(
+        TxQ& txq,
+        Application& app,
+        OpenView& view,
+        std::reference_wrapper<TxQApplyImpl const> const& parent,
+        std::shared_ptr<STTx const> const& tx,
+        PreflightResult const& pfRes,
+        ApplyFlags flags,
+        beast::Journal j)
+        : txq_(txq)
+        , app_(app)
+        , view_(view)
+        , flags_(flags)
+        , j_(j)
+        , tx_(tx)
+        , accID_(tx_->at(sfAccount))
+        , accKey_(keylet::account(accID_))
+        , txID_(tx_->getTransactionID())
+        , txSeq_(tx_->getSeqProxy())
+        , preflightRes_(pfRes)
+        , metricsSnapshot_(txq_.feeMetrics_.getSnapshot())
+        , parent_(parent)
+    {
+    }
+
+public:
     ApplyResult
     apply();
 
@@ -203,7 +232,7 @@ private:
     std::optional<ApplyResult>
     checkIsTxBlocker() const;
 
-    void
+    std::optional<ApplyResult>
     retrieveTxToReplace();
 
     std::optional<ApplyResult>
@@ -236,6 +265,28 @@ private:
 
     void
     addTxToQueue();
+
+    std::optional<ApplyResult>
+    processInnerBatch(std::vector<TxQApplyImpl>& vec);
+
+    std::expected<std::vector<TxQApplyImpl>, ApplyResult>
+    processInnerBatchPrelock();
+
+    void
+    removeBatchTx();
+
+public:
+    static void
+    removeInnerTxs(TxQ::AccountMap& map, STTx const& tx);
+
+    // Check whether a queued candidate is at the front (lowest SeqProxy)
+    // of its account's transactions. For a regular transaction this checks
+    // only the candidate itself. For a Batch, the Batch and every inner
+    // transaction must be runnable: an inner tx is runnable if it is first
+    // in its account or is preceded only by other inner txs of the same
+    // Batch. If any member is blocked by a foreign tx, this returns false.
+    static bool
+    isFirstInAccount(TxQ::AccountMap const& map, TxQ::MaybeTx const& candidate);
 };
 
 std::optional<ApplyResult>
@@ -305,15 +356,23 @@ TxQApplyImpl::checkIsTxBlocker() const
     return {};
 }
 
-void
+std::optional<ApplyResult>
 TxQApplyImpl::retrieveTxToReplace()
 {
     if (byAccountIter_ == txq_.byAccount_.end())
-        return;
+        return {};
 
     auto const& txQAcct = byAccountIter_->second.transactions;
     if (auto const existingIter = txQAcct.find(txSeq_); existingIter != txQAcct.end())
+    {
+        // can't replace inner tx
+        // can't be replaced by batch, or by inner tx
+        if (parent_ || tx_->getTxnType() == ttBATCH || existingIter->second.parentTx)
+            return ApplyResult{telCAN_NOT_QUEUE, false};
+
         txToReplaceIter_ = existingIter;
+    }
+    return {};
 }
 
 std::optional<ApplyResult>
@@ -781,15 +840,132 @@ TxQApplyImpl::addTxToQueue()
     // Don't allow soft failures, which can lead to retries
     flags_ &= ~TapRetry;
 
+    auto const& parentTx = parent_ ? parent_->get().tx_ : std::shared_ptr<STTx const>();
     auto& candidate =
-        byAccountIter_->second.add({tx_, txID_, feeLevelPaid_, flags_, preflightRes_});
+        byAccountIter_->second.add({tx_, txID_, feeLevelPaid_, flags_, preflightRes_, parentTx});
 
     // Then index it into the byFee lookup.
-    txq_.byFee_.insert(candidate);
+    if (!parent_)
+        txq_.byFee_.insert(candidate);
+
     JLOG(j_.debug()) << "Added transaction " << candidate.txID << " with result "
                      << transToken(preflightRes_.ter) << " from " << (!created ? "existing" : "new")
                      << " account " << candidate.account << " to queue."
                      << " Flags: " << flags_;
+}
+
+std::optional<ApplyResult>
+TxQApplyImpl::processInnerBatch(std::vector<TxQApplyImpl>& vec)
+{
+    XRPL_ASSERT(!parent_, "TxQApplyImpl::processInnerBatch double nesting");
+
+    for (auto& innerImpl : vec)
+    {
+        innerImpl.txqLock_ = txqLock_;
+        auto err = innerImpl.applyImpl();
+        if (err.ter != terQUEUED)
+        {
+            err.ter = temINVALID_INNER_BATCH;
+            return err;
+        }
+    }
+
+    return {};
+}
+
+std::expected<std::vector<TxQApplyImpl>, ApplyResult>
+TxQApplyImpl::processInnerBatchPrelock()
+{
+    std::vector<TxQApplyImpl> vec;
+    vec.reserve(tx_->getBatchTransactions().size());
+
+    for (auto const& tx : tx_->getBatchTransactions())
+    {
+        // forge PreflightResult for inner tx
+        PreflightContext const pfCtx(app_, *tx, view_.rules(), flags_, j_);
+        auto const cons = invokeConsequences(pfCtx);
+        if (!cons)
+            return std::unexpected(ApplyResult{cons.error(), false});
+        PreflightResult const pfRes(pfCtx, {tesSUCCESS, *cons});
+
+        // Pseudo recursion
+        vec.emplace_back(txq_, app_, view_, std::cref(*this), tx, pfRes, flags_, j_);
+        auto& txqImpl = vec.back();
+
+        if (auto const err = txqImpl.applyImplPrelock(); err.has_value())
+            return std::unexpected(*err);
+    }
+
+    return vec;
+}
+
+void
+TxQApplyImpl::removeInnerTxs(TxQ::AccountMap& byAccount, STTx const& batchTx)
+{
+    XRPL_ASSERT(
+        batchTx.getTxnType() == ttBATCH, "TxQApplyImpl::removeInnerTxs called on non-batch tx");
+
+    auto const batchID = batchTx.getTransactionID();
+
+    // Remove all inner transactions from their respective accounts in byAccount_
+    // They are not present in byFee_.
+    for (auto const& tx : batchTx.getBatchTransactions())
+    {
+        AccountID const acc = tx->at(sfAccount);
+        SeqProxy const seq = tx->getSeqProxy();
+
+        auto const accIter = byAccount.find(acc);
+        if (accIter == byAccount.end())
+            continue;
+
+        TxQ::TxQAccount& txqa = accIter->second;
+        auto const txIter = txqa.transactions.find(seq);
+        if (txIter == txqa.transactions.end())
+            continue;
+
+        // Check if inner tx belongs to Batch (it can be just another tx with the same seq)
+        auto const& parentTx = txIter->second.parentTx;
+        if (!parentTx || parentTx->getTransactionID() != batchID)
+            continue;
+
+        txqa.transactions.erase(txIter);
+
+        if (txqa.empty())
+            byAccount.erase(accIter);
+    }
+}
+
+void
+TxQApplyImpl::removeBatchTx()
+{
+    XRPL_ASSERT(tx_->getTxnType() == ttBATCH, "TxQApplyImpl::removeBatchTx called on non-batch tx");
+    XRPL_ASSERT(!parent_, "TxQApplyImpl::removeBatchTx called on inner tx");
+
+    // Remove all inner transactions from the queue
+    removeInnerTxs(txq_.byAccount_, *tx_);
+
+    // Now remove batch transaction itself
+    // The outer batch is in both byAccount_ and byFee_
+    if (byAccountIter_ != txq_.byAccount_.end())
+    {
+        TxQ::TxQAccount& txqa = byAccountIter_->second;
+        auto const txIter = txqa.transactions.find(txSeq_);
+        if (txIter != txqa.transactions.end())
+        {
+            // Remove from byFee_
+            auto const byFeeIter = txq_.byFee_.iterator_to(txIter->second);
+            txq_.byFee_.erase(byFeeIter);
+
+            // Remove from byAccount_
+            txqa.transactions.erase(txIter);
+            // clean byAccount_
+            if (byAccountIter_->second.empty())
+                txq_.byAccount_.erase(byAccountIter_);
+        }
+    }
+
+    JLOG(j_.debug()) << "Removed batch transaction " << txID_ << " and its "
+                     << tx_->getBatchTransactions().size() << " inner transactions from queue";
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -984,8 +1160,10 @@ TxQ::MaybeTx::MaybeTx(
     TxID const& txId,
     FeeLevel64 feeLevel,
     ApplyFlags const flags,
-    PreflightResult const& pfResult)
+    PreflightResult const& pfResult,
+    std::shared_ptr<STTx const> const& parent)
     : txn(txn)
+    , parentTx(parent)
     , feeLevel(feeLevel)
     , txID(txId)
     , account(txn->getAccountID(sfAccount))
@@ -1087,12 +1265,6 @@ TxQ::canBeHeld(
     std::optional<TxQAccount::TxMap::const_iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock) const
 {
-    // A Batch is never queued: its inner transactions can change the sequence
-    // numbers of multiple accounts, which the TxQ's per-account model cannot
-    // forecast. It must apply straight to the open ledger or not at all.
-    if (tx.getTxnType() == ttBATCH)
-        return telCAN_NOT_QUEUE;
-
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.
@@ -1166,6 +1338,11 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter) -> FeeMultiSet::
 {
     auto& txQAccount = byAccount_.at(candidateIter->account);
     auto const seqProx = candidateIter->seqProxy;
+
+    XRPL_ASSERT(candidateIter->txn, "xrpl::TxQ::erase : transaction exists");
+    if (candidateIter->txn->getTxnType() == ttBATCH)
+        TxQApplyImpl::removeInnerTxs(byAccount_, *candidateIter->txn);
+
     auto const newCandidateIter = byFee_.erase(candidateIter);
     // Now that the candidate has been removed from the
     // intrusive list remove it from the TxQAccount
@@ -1174,6 +1351,60 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter) -> FeeMultiSet::
     XRPL_ASSERT(found, "xrpl::TxQ::erase : account removed");
 
     return newCandidateIter;
+}
+
+bool
+TxQApplyImpl::isFirstInAccount(TxQ::AccountMap const& map, TxQ::MaybeTx const& candidate)
+{
+    // A single (account, seqProxy) pair is "first" if it is at the front
+    // (lowest SeqProxy) of that account's queued transactions.
+    auto const checkFirst = [&map](AccountID const& acc, SeqProxy seqProx) {
+        auto const accIter = map.find(acc);
+        if (accIter == map.end())
+            return false;
+
+        XRPL_ASSERT(
+            !accIter->second.transactions.empty(),
+            "TxQApplyImpl::isFirstInAccount check tx in byAccount_");
+        if (accIter->second.transactions.empty())
+            return false;
+
+        return accIter->second.transactions.begin()->first == seqProx;
+    };
+
+    bool const isFirst = checkFirst(candidate.account, candidate.seqProxy);
+    if (candidate.txn->getTxnType() != ttBATCH)
+        return isFirst;
+
+    // To return true batch itself and every inner tx should be "first" txs.
+    // If inner is not first, check if all previous txs are from the same batch
+    auto const canRun = [&map, &candidate](AccountID const& acc, SeqProxy seqProx) {
+        auto const accIter = map.find(acc);
+        if (accIter == map.end())
+            return false;
+
+        XRPL_ASSERT(
+            !accIter->second.transactions.empty(),
+            "TxQApplyImpl::isFirstInAccount check inner tx in byAccount_");
+        if (accIter->second.transactions.empty())
+            return false;
+
+        auto const& txMap = accIter->second.transactions;
+        for (auto it = txMap.begin(); it != txMap.end() && it->first < seqProx; ++it)
+        {
+            if (it->second.txn == candidate.txn)
+                continue;
+
+            auto const& parentTx = it->second.parentTx;
+            if (!parentTx || parentTx->getTransactionID() != candidate.txID)
+                return false;
+        }
+        return true;
+    };
+
+    return std::ranges::all_of(candidate.txn->getBatchTransactions(), [&canRun](auto const& inner) {
+        return canRun(inner->at(sfAccount), inner->getSeqProxy());
+    });
 }
 
 auto
@@ -1194,19 +1425,57 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     XRPL_ASSERT(
         byFee_.iterator_to(accountIter->second) == candidateIter,
         "xrpl::TxQ::eraseAndAdvance : found in byFee");
-    auto const accountNextIter = std::next(accountIter);
 
-    // Check if the next transaction for this account is earlier in the queue,
-    // which means we skipped it earlier, and need to try it again.
+    auto accountNextIter = std::next(accountIter);
+
+    // parentAccNextIter will be equal to accountNextIter in case of regular tx.
+    // In case of Batch it will point to parent Batch tx.
+    // Every time we blocked by inner tx seq, lets try to execute batch once again
+    auto const parentAccNextIter = [&]() {
+        for (; accountNextIter != txQAccount.transactions.end(); ++accountNextIter)
+        {
+            auto const& parentTx = accountNextIter->second.parentTx;
+            if (!parentTx)
+                return accountNextIter;  // regular tx
+
+            // batch tx
+            auto& txqa = byAccount_.at(parentTx->at(sfAccount));
+            auto const parentIter = txqa.transactions.find(parentTx->getSeqProxy());
+            if (parentIter == txqa.transactions.end())
+                return accountNextIter;
+            if (parentIter->second.txID != candidateIter->txID)
+                return parentIter;
+        }
+        return accountNextIter;
+    }();
+
+    // Check if the next transaction for this account is earlier in the queue, and have higher fee
+    // than next byFee_, which means we skipped it earlier, and need to try it again.
+    // The fee guard must be evaluated before we erase the current candidate, since
+    // feeNextIter is relative to candidateIter in byFee_.
     auto const feeNextIter = std::next(candidateIter);
-    bool const useAccountNext = accountNextIter != txQAccount.transactions.end() &&
-        accountNextIter->first > candidateIter->seqProxy &&
-        (feeNextIter == byFee_.end() || byFee_.value_comp()(accountNextIter->second, *feeNextIter));
+    bool const hasNext = accountNextIter != txQAccount.transactions.end();
+    bool const feeAllowsNext = hasNext &&
+        (feeNextIter == byFee_.end() ||
+         byFee_.value_comp()(parentAccNextIter->second, *feeNextIter));
 
+    // Delete processed txs.
+    XRPL_ASSERT(candidateIter->txn, "xrpl::TxQ::eraseAndAdvance : transaction exists");
+    if (candidateIter->txn->getTxnType() == ttBATCH)
+        TxQApplyImpl::removeInnerTxs(byAccount_, *candidateIter->txn);
     auto const candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
 
-    return useAccountNext ? byFee_.iterator_to(accountNextIter->second) : candidateNextIter;
+    // The seq guard is evaluated after the erase so that isFirstInAccount sees
+    // the queue without the just-applied candidate. Only jump to the successor
+    // (which for a inner Batch is the parent Batch entry) if it is genuinely first in
+    // its account(s) - for a Batch that means the Batch and all its inner txs.
+    bool const useAccountNext =
+        feeAllowsNext && TxQApplyImpl::isFirstInAccount(byAccount_, parentAccNextIter->second);
+
+    if (useAccountNext)
+        return byFee_.iterator_to(parentAccNextIter->second);
+    return candidateNextIter;
 }
 
 auto
@@ -1217,6 +1486,11 @@ TxQ::erase(
 {
     for (auto it = begin; it != end; ++it)
     {
+        XRPL_ASSERT(it->second.txn, "xrpl::TxQ::erase : transaction exists");
+        XRPL_ASSERT(!it->second.parentTx, "xrpl::TxQ::erase : erase regular tx (not batch inner )");
+        if (it->second.txn->getTxnType() == ttBATCH)
+            TxQApplyImpl::removeInnerTxs(byAccount_, *it->second.txn);
+
         byFee_.erase(byFee_.iterator_to(it->second));
     }
     return txQAccount.transactions.erase(begin, end);
@@ -1245,6 +1519,13 @@ TxQ::tryClearAccountQueueUpThruTx(
     // [aSeqProxy, tSeqProxy)
     auto endTxIter = accountIter->second.transactions.lower_bound(tSeqProx);
     auto const dist = std::distance(beginTxIter, endTxIter);
+
+    // Can't clean if there is inner tx in queue
+    for (auto it = beginTxIter; it != endTxIter; ++it)
+    {
+        if (it->second.parentTx)
+            return {telINSUF_FEE_P, false};
+    }
 
     auto const requiredTotalFeeLevel =
         FeeMetrics::escalatedSeriesFeeLevel(metricsSnapshot, view, txExtraCount, dist + 1);
@@ -1454,12 +1735,31 @@ TxQApplyImpl::apply()
     if (auto const err = applyImplPrelock(); err.has_value())
         return *err;
 
+    std::expected<std::vector<TxQApplyImpl>, ApplyResult> prelockRes;
+    if (tx_->getTxnType() == ttBATCH)
+    {
+        prelockRes = processInnerBatchPrelock();
+        if (!prelockRes)
+            return prelockRes.error();
+    }
+
     std::scoped_lock const lock(txq_.mutex_);
     txqLock_ = lock;
 
     auto res = applyImpl();
     if (res.ter != terQUEUED)
         return res;
+
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    if (tx_->getTxnType() == ttBATCH)
+    {
+        if (auto const err = processInnerBatch(*prelockRes); err.has_value())
+        {
+            removeBatchTx();
+            return *err;
+        }
+    }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return res;
 }
@@ -1469,8 +1769,11 @@ TxQApplyImpl::applyImplPrelock()
 {
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
-    if (auto const directApplied = txq_.tryDirectApply(app_, view_, tx_, flags_, j_))
-        return directApplied;
+    if (!parent_)
+    {
+        if (auto const directApplied = txq_.tryDirectApply(app_, view_, tx_, flags_, j_))
+            return directApplied;
+    }
 
     if ((flags_ & TapDryRun) != 0u)
         return ApplyResult{telCAN_NOT_QUEUE, false};
@@ -1519,7 +1822,8 @@ TxQApplyImpl::applyImpl()
 
     // If the transaction is intending to replace a transaction in the queue
     // identify the one that might be replaced.
-    retrieveTxToReplace();
+    if (auto const err = retrieveTxToReplace(); err.has_value())
+        return *err;
 
     // We may need the base fee for multiple transactions or transaction
     // replacement, so just pull it up now.
@@ -1566,12 +1870,19 @@ TxQApplyImpl::applyImpl()
     // Note that earlier code has already verified that the sequence/ticket
     // is valid.  So we use a special entry point that runs all of the
     // preclaim checks with the exception of the sequence check.
-    auto const pcresult = preclaim(preflightRes_, app_, multiTxn_ ? multiTxn_->openView : view_);
-    if (!pcresult.likelyToClaimFee)
-        return {pcresult.ter, false};
+    //
+    // Inner tx doesn't claim a fee, but they already processed preclaim as part of batch
+    // preclaim
+    if (!parent_)
+    {
+        auto const pcresult =
+            preclaim(preflightRes_, app_, multiTxn_ ? multiTxn_->openView : view_);
+        if (!pcresult.likelyToClaimFee)
+            return {pcresult.ter, false};
 
-    // Too low of a fee should get caught by preclaim
-    XRPL_ASSERT(feeLevelPaid_ >= TxQ::kBaseLevel, "xrpl::TxQ::apply : minimum fee");
+        // Too low of a fee should get caught by preclaim
+        XRPL_ASSERT(feeLevelPaid_ >= TxQ::kBaseLevel, "xrpl::TxQ::apply : minimum fee");
+    }
 
     JLOG(j_.trace()) << "Transaction " << txID_ << " from account " << accID_
                      << " has fee level of " << feeLevelPaid_ << " needs at least "
@@ -1580,8 +1891,12 @@ TxQApplyImpl::applyImpl()
 
     // Quick heuristic check to see if it's worth checking that this tx has a high enough fee to
     // clear all the txs in front of it in the queue.
-    if (auto const res = tryClearAccountQueueUpThruTx(); res.has_value())
-        return *res;
+    // Batch tx can't clean, as it can have multiple accounts
+    if (!parent_ && tx_->getTxnType() != ttBATCH)
+    {
+        if (auto const res = tryClearAccountQueueUpThruTx(); res.has_value())
+            return *res;
+    }
 
     if (auto const err = canBeHeld(); err.has_value())
         return *err;
@@ -1688,6 +2003,8 @@ TxQ::rebuildQueue(OpenView& view)
     {
         for (auto& [_, candidate] : account.transactions)
         {
+            if (candidate.parentTx)
+                continue;
             byFee_.insert(candidate);
         }
     }

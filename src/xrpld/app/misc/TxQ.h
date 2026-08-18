@@ -599,6 +599,10 @@ private:
          * The complete transaction.
          */
         std::shared_ptr<STTx const> const txn;
+        /**
+         * Parent batch tx, if present.
+         */
+        std::shared_ptr<STTx const> const parentTx;
 
         /**
          * Computed fee level that the transaction will pay.
@@ -693,7 +697,8 @@ private:
             TxID const& txID,
             FeeLevel64 feeLevel,
             ApplyFlags const flags,
-            PreflightResult const& pfResult);
+            PreflightResult const& pfResult,
+            std::shared_ptr<STTx const> const& parent = std::shared_ptr<STTx const>());
 
         /**
          * Attempt to apply the queued transaction to the open ledger.

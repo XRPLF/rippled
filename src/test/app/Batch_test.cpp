@@ -4492,15 +4492,15 @@ class Batch_test : public beast::unit_test::Suite
     void
     testBatchTxQueue(FeatureBitset features)
     {
-        testcase("batch tx queue");
-
         using namespace test::jtx;
         using namespace std::literals;
 
-        // A Batch is never queued. Under open-ledger congestion a Batch that
-        // pays only its base fee cannot apply directly and, unlike an ordinary
-        // transaction, is rejected outright rather than held in the queue. A
-        // Batch that pays the escalated open-ledger fee applies directly.
+        testcase("Batch tx queue");
+
+        // NEW BEHAVIOR: Batches CAN be queued. Under open-ledger congestion,
+        // a Batch paying only its base fee can be queued just like ordinary
+        // transactions. The outer batch and its inner transactions are all
+        // tracked in the TxQ.
         {
             Env env{
                 *this,
@@ -4523,119 +4523,50 @@ class Batch_test : public beast::unit_test::Suite
             env(noop(alice));
             env(noop(alice));
             env(noop(alice));
+            // checkMetrics parameters:
+            //   arg 3 (expectedCount):     number of txs currently in the queue
+            //   arg 4 (expectedMaxCount):  max queue size (std::nullopt = no limit
+            //                              yet computed / not checked against a value)
+            //   arg 5 (expectedInLedger):  txs applied in the current open ledger
+            //   arg 6 (expectedPerLedger): target/expected txs per ledger (drives
+            //                              the fee-escalation threshold)
             checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
-            env(noop(carol), Ter(terQUEUED));
+            auto const carol1 = env.jt(noop(carol), Ter(terQUEUED));
+            env(carol1);
             checkMetrics(*this, env, 1, std::nullopt, 3, 2);
 
             auto const aliceSeq = env.seq(alice);
             auto const bobSeq = env.seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
-            // Paying only the base fee, the Batch cannot enter the congested
-            // open ledger and is rejected rather than queued.
-            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+            // Paying only the base fee, the Batch is queued.
+            // The outer batch (alice) and inner transactions (alice, bob) are tracked.
+            auto txids = batch::callEnv(
+                env,
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::Inner(pay(bob, alice, XRP(5)), bobSeq),
                 batch::Sig(bob),
-                Ter(telCAN_NOT_QUEUE));
+                Ter(terQUEUED));
 
-            // The Batch was not queued; only carol's transaction is queued.
-            checkMetrics(*this, env, 1, std::nullopt, 3, 2);
+            // Carol's regular tx queued ahead of the Batch must also apply.
+            txids.push_back(carol1.stx->getTransactionID());
 
-            // Paying the escalated open-ledger fee, the Batch applies directly.
-            env(batch::outer(alice, aliceSeq, openLedgerFee(env, batchFee), tfAllOrNothing),
-                batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
-                batch::Inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::Sig(bob),
-                Ter(tesSUCCESS));
-        }
-
-        // inner batch transactions are counter towards the ledger tx count
-        {
-            Env env{
-                *this,
-                makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}),
-                features,
-                nullptr,
-                beast::Severity::Error};
-
-            auto alice = Account("alice");
-            auto bob = Account("bob");
-            auto carol = Account("carol");
-
-            // Fund across several ledgers so the TxQ metrics stay restricted.
-            env.fund(XRP(10000), noripple(alice, bob));
-            env.close(env.now() + 5s, 10000ms);
-            env.fund(XRP(10000), noripple(carol));
-            env.close(env.now() + 5s, 10000ms);
-
-            // Fill the ledger leaving room for 1 queued transaction
-            env(noop(alice));
-            env(noop(alice));
-            checkMetrics(*this, env, 0, std::nullopt, 2, 2);
-
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
-
-            // Batch Successful
-            {
-                env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
-                    batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
-                    batch::Inner(pay(bob, alice, XRP(5)), bobSeq),
-                    batch::Sig(bob),
-                    Ter(tesSUCCESS));
-            }
-
-            checkMetrics(*this, env, 0, std::nullopt, 3, 2);
-
-            env(noop(carol), Ter(terQUEUED));
-            checkMetrics(*this, env, 1, std::nullopt, 3, 2);
-        }
-
-        // A Batch is never queued, so it also cannot sit behind the account's
-        // already-queued transactions: with a sequence gap it cannot apply
-        // directly and is rejected rather than queued.
-        {
-            Env env{
-                *this,
-                makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}),
-                features,
-                nullptr,
-                beast::Severity::Error};
-
-            auto alice = Account("alice");
-            auto bob = Account("bob");
-
-            env.fund(XRP(10000), noripple(alice, bob));
-            env.close(env.now() + 5s, 10000ms);
-
-            // Fill the open ledger so subsequent transactions queue.
-            env(noop(alice));
-            env(noop(alice));
-            env(noop(alice));
-            checkMetrics(*this, env, 0, std::nullopt, 3, 2);
-
-            auto const aliceSeq = env.seq(alice);
-
-            // Queue two normal transactions for alice.
-            env(noop(alice), Seq(aliceSeq + 0), Ter(terQUEUED));
-            env(noop(alice), Seq(aliceSeq + 1), Ter(terQUEUED));
+            // The Batch was queued: outer batch counts as 1 queued tx.
+            // Carol's tx (1) + Alice's batch outer (1) = 2 queued
             checkMetrics(*this, env, 2, std::nullopt, 3, 2);
 
-            // The Batch's sequence sits behind the queued transactions, so it
-            // cannot apply directly and is rejected rather than queued.
-            auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            env(batch::outer(alice, aliceSeq + 2, batchFee, tfAllOrNothing),
-                batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 3),
-                batch::Inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::Sig(bob),
-                Ter(telCAN_NOT_QUEUE));
+            // Drain the queue, waiting until the Batch and its inners have been
+            // applied to a closed ledger. A queued Batch can take several closes
+            // to fully apply on a loaded machine.
+            auto const result = batch::closeEnv(env, txids);
 
-            // The two queued transactions are untouched.
-            checkMetrics(*this, env, 2, std::nullopt, 3, 2);
+            // Everything applied and the queue is empty.
+            BEAST_EXPECT(result.allApplied);
+            BEAST_EXPECT(result.txCount == 0);
+            BEAST_EXPECT(env.balance(bob) == XRP(10000) + XRP(10) - XRP(5));
+            BEAST_EXPECT(env.balance(alice) < XRP(10000) - XRP(10) + XRP(5));  // minus fees
         }
     }
 
