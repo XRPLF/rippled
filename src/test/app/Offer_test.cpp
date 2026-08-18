@@ -5336,45 +5336,11 @@ public:
     run() override
     {
         testAll(allFeatures - featurePermissionedDEX);
+        testAll(allFeatures);
         testFalseAssert();
     }
 };
 
-class OfferWOSmallQOffers_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        testAll(allFeatures - featurePermissionedDEX);
-    }
-};
-
-class OfferAllFeatures_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        testAll(allFeatures);
-    }
-};
-
-class Offer_manual_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        using namespace jtx;
-        FeatureBitset const all{testableAmendments()};
-        FeatureBitset const permDEX{featurePermissionedDEX};
-
-        testAll(all - permDEX);
-        testAll(all);
-    }
-};
-
 BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, xrpl, 20);
 
 }  // namespace xrpl::test
