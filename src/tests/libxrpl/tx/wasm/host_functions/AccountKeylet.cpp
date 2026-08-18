@@ -19,6 +19,12 @@ TEST_F(AccountKeyletImpl, MatchesAccountKeyletFunction)
     expectKeyletMatches(makeHost()->accountKeylet(owner), keylet::account(owner.id()));
 }
 
+TEST_F(AccountKeyletImpl, NonExistentAccountStillComputesKeylet)
+{
+    auto const nobody = Account{"nobody"};
+    expectKeyletMatches(makeHost()->accountKeylet(nobody), keylet::account(nobody.id()));
+}
+
 TEST_F(AccountKeyletImpl, UnsetAccountIsInvalidAccount)
 {
     expectError(makeHost()->accountKeylet(AccountID{}), HostFunctionError::InvalidAccount);
