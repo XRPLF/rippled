@@ -11,7 +11,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -72,6 +72,16 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        if (getVaultPhase(ctx.view, vault) == VaultPhase::Investment)
+        {
+            JLOG(ctx.j.debug())
+                << "VaultWithdraw: vault withdrawal is not allowed in the investment phase.";
+            return tecTOO_SOON;
+        }
+    }
 
     auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
@@ -194,6 +204,7 @@ TER
 VaultWithdraw::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -349,9 +360,10 @@ VaultWithdraw::doApply()
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
+
     // Transfer shares from depositor to vault.
     if (auto const ter = accountSend(
-            view(), accountID_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
+            view(), accountID_, vaultAccount, sharesRedeemed, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -360,7 +372,8 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (accountID_ != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, sharesRedeemed.asset(), j_);
+        if (auto const ter =
+                removeEmptyHolding(applyViewContext, accountID_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -386,7 +399,7 @@ VaultWithdraw::doApply()
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
     return doWithdraw(
-        view(), ctx_.tx, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+        applyViewContext, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }
 
 void

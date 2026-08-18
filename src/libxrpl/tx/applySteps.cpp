@@ -181,6 +181,9 @@ invokePreclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
                             return result;
 
+                        if (NotTEC const result = T::checkSponsor(ctx.view, ctx.tx))
+                            return result;
+
                         if (NotTEC const result =
                                 Transactor::invokeCheckPermission<T>(ctx.view, ctx.tx))
                             return result;
@@ -248,7 +251,7 @@ TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::kZero)
     , potentialSpend_(beast::kZero)
-    , seqProx_(SeqProxy::sequence(0))
+    , seqProx_(SeqProxy::rawSequence(0))
     , sequencesConsumed_(0)
 {
     XRPL_ASSERT(

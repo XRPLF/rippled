@@ -90,7 +90,11 @@ public:
     operator=(STObject&& other);
 
     STObject(SOTemplate const& type, SField const& name);
-    STObject(SOTemplate const& type, SerialIter& sit, SField const& name);
+    STObject(
+        SOTemplate const& type,
+        SerialIter& sit,
+        SField const& name,
+        bool requireCanonicalOrder = false);
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
@@ -123,7 +127,7 @@ public:
     set(SOTemplate const&);
 
     bool
-    set(SerialIter& u, int depth = 0);
+    set(SerialIter& u, int depth = 0, bool requireCanonicalOrder = false);
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;
@@ -229,11 +233,6 @@ public:
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
 
-    /** The account responsible for the fee and authorization: the delegate when
-        sfDelegate is present, otherwise the account. */
-    [[nodiscard]] AccountID
-    getFeePayer() const;
-
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;
     [[nodiscard]] STAmount const&
@@ -252,103 +251,112 @@ public:
     [[nodiscard]] STNumber const&
     getFieldNumber(SField const& field) const;
 
-    /** Get the value of a field.
-        @param A TypedField built from an SField value representing the desired
-            object field. In typical use, the TypedField will be implicitly
-            constructed.
-        @return The value of the specified field.
-        @throws STObject::FieldErr if the field is not present.
-    */
+    /**
+     * Get the value of a field.
+     * @param A TypedField built from an SField value representing the desired
+     *     object field. In typical use, the TypedField will be implicitly
+     *     constructed.
+     * @return The value of the specified field.
+     * @throws STObject::FieldErr if the field is not present.
+     */
     template <class T>
     T::value_type
     operator[](TypedField<T> const& f) const;
 
-    /** Get the value of a field as a std::optional
-
-        @param An OptionaledField built from an SField value representing the
-           desired object field. In typical use, the OptionaledField will be
-           constructed by using the ~ operator on an SField.
-        @return std::nullopt if the field is not present, else the value of
-           the specified field.
-    */
+    /**
+     * Get the value of a field as a std::optional
+     *
+     * @param An OptionaledField built from an SField value representing the
+     *    desired object field. In typical use, the OptionaledField will be
+     *    constructed by using the ~ operator on an SField.
+     * @return std::nullopt if the field is not present, else the value of
+     *    the specified field.
+     */
     template <class T>
     std::optional<std::decay_t<typename T::value_type>>
     operator[](OptionaledField<T> const& of) const;
 
-    /** Get a modifiable field value.
-        @param A TypedField built from an SField value representing the desired
-            object field. In typical use, the TypedField will be implicitly
-            constructed.
-        @return A modifiable reference to the value of the specified field.
-        @throws STObject::FieldErr if the field is not present.
-    */
+    /**
+     * Get a modifiable field value.
+     * @param A TypedField built from an SField value representing the desired
+     *     object field. In typical use, the TypedField will be implicitly
+     *     constructed.
+     * @return A modifiable reference to the value of the specified field.
+     * @throws STObject::FieldErr if the field is not present.
+     */
     template <class T>
     ValueProxy<T>
     operator[](TypedField<T> const& f);
 
-    /** Return a modifiable field value as std::optional
-
-        @param An OptionaledField built from an SField value representing the
-            desired object field. In typical use, the OptionaledField will be
-            constructed by using the ~ operator on an SField.
-        @return Transparent proxy object to an `optional` holding a modifiable
-            reference to the value of the specified field. Returns
-            std::nullopt if the field is not present.
-    */
+    /**
+     * Return a modifiable field value as std::optional
+     *
+     * @param An OptionaledField built from an SField value representing the
+     *     desired object field. In typical use, the OptionaledField will be
+     *     constructed by using the ~ operator on an SField.
+     * @return Transparent proxy object to an `optional` holding a modifiable
+     *     reference to the value of the specified field. Returns
+     *     std::nullopt if the field is not present.
+     */
     template <class T>
     OptionalProxy<T>
     operator[](OptionaledField<T> const& of);
 
-    /** Get the value of a field.
-        @param A TypedField built from an SField value representing the desired
-            object field. In typical use, the TypedField will be implicitly
-            constructed.
-        @return The value of the specified field.
-        @throws STObject::FieldErr if the field is not present.
-    */
+    /**
+     * Get the value of a field.
+     * @param A TypedField built from an SField value representing the desired
+     *     object field. In typical use, the TypedField will be implicitly
+     *     constructed.
+     * @return The value of the specified field.
+     * @throws STObject::FieldErr if the field is not present.
+     */
     template <class T>
     [[nodiscard]] T::value_type
     at(TypedField<T> const& f) const;
 
-    /** Get the value of a field as std::optional
-
-        @param An OptionaledField built from an SField value representing the
-           desired object field. In typical use, the OptionaledField will be
-           constructed by using the ~ operator on an SField.
-        @return std::nullopt if the field is not present, else the value of
-           the specified field.
-    */
+    /**
+     * Get the value of a field as std::optional
+     *
+     * @param An OptionaledField built from an SField value representing the
+     *    desired object field. In typical use, the OptionaledField will be
+     *    constructed by using the ~ operator on an SField.
+     * @return std::nullopt if the field is not present, else the value of
+     *    the specified field.
+     */
     template <class T>
     [[nodiscard]] std::optional<std::decay_t<typename T::value_type>>
     at(OptionaledField<T> const& of) const;
 
-    /** Get a modifiable field value.
-        @param A TypedField built from an SField value representing the desired
-            object field. In typical use, the TypedField will be implicitly
-            constructed.
-        @return A modifiable reference to the value of the specified field.
-        @throws STObject::FieldErr if the field is not present.
-    */
+    /**
+     * Get a modifiable field value.
+     * @param A TypedField built from an SField value representing the desired
+     *     object field. In typical use, the TypedField will be implicitly
+     *     constructed.
+     * @return A modifiable reference to the value of the specified field.
+     * @throws STObject::FieldErr if the field is not present.
+     */
     template <class T>
     ValueProxy<T>
     at(TypedField<T> const& f);
 
-    /** Return a modifiable field value as std::optional
-
-        @param An OptionaledField built from an SField value representing the
-            desired object field. In typical use, the OptionaledField will be
-            constructed by using the ~ operator on an SField.
-        @return Transparent proxy object to an `optional` holding a modifiable
-            reference to the value of the specified field. Returns
-            std::nullopt if the field is not present.
-    */
+    /**
+     * Return a modifiable field value as std::optional
+     *
+     * @param An OptionaledField built from an SField value representing the
+     *     desired object field. In typical use, the OptionaledField will be
+     *     constructed by using the ~ operator on an SField.
+     * @return Transparent proxy object to an `optional` holding a modifiable
+     *     reference to the value of the specified field. Returns
+     *     std::nullopt if the field is not present.
+     */
     template <class T>
     OptionalProxy<T>
     at(OptionaledField<T> const& of);
 
-    /** Set a field.
-        if the field already exists, it is replaced.
-    */
+    /**
+     * Set a field.
+     * if the field already exists, it is replaced.
+     */
     void
     set(std::unique_ptr<STBase> v);
 
@@ -424,8 +432,6 @@ public:
 
     bool
     operator==(STObject const& o) const;
-    bool
-    operator!=(STObject const& o) const;
 
     class FieldErr;
 
@@ -503,8 +509,10 @@ public:
     value_type
     operator*() const;
 
-    /// Do not use operator->() unless the field is required, or you've checked
-    /// that it's set.
+    /**
+     * Do not use operator->() unless the field is required, or you've checked
+     * that it's set.
+     */
     T const*
     operator->() const;
 
@@ -555,9 +563,14 @@ public:
     ValueProxy&
     operator=(ValueProxy const&) = delete;
 
+    // Write-through proxy: assignment sets the referenced field to the given
+    // value, so it intentionally takes the assigned value rather than a
+    // ValueProxy.
     template <class U>
-    std::enable_if_t<std::is_assignable_v<T, U>, ValueProxy&>
-    operator=(U&& u);
+    // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+    ValueProxy&
+    operator=(U&& u)
+        requires(std::is_assignable_v<T, U>);
 
     // Convenience operators for value types supporting
     // arithmetic operations
@@ -599,17 +612,20 @@ public:
     OptionalProxy&
     operator=(OptionalProxy const&) = delete;
 
-    /** Returns `true` if the field is set.
-
-        Fields with soeDEFAULT and set to the
-        default value will return `true`
-    */
+    /**
+     * Returns `true` if the field is set.
+     *
+     * Fields with soeDEFAULT and set to the
+     * default value will return `true`
+     */
     explicit
     operator bool() const noexcept;
 
     operator optional_type() const;
 
-    /** Explicit conversion to std::optional */
+    /**
+     * Explicit conversion to std::optional
+     */
     optional_type
     operator~() const;
 
@@ -649,36 +665,6 @@ public:
         return !lhs.engaged() || *lhs == *rhs;
     }
 
-    friend bool
-    operator!=(OptionalProxy const& lhs, std::nullopt_t) noexcept
-    {
-        return !(lhs == std::nullopt);
-    }
-
-    friend bool
-    operator!=(std::nullopt_t, OptionalProxy const& rhs) noexcept
-    {
-        return !(rhs == std::nullopt);
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, optional_type const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    friend bool
-    operator!=(optional_type const& lhs, OptionalProxy const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
-    friend bool
-    operator!=(OptionalProxy const& lhs, OptionalProxy const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
     // Emulate std::optional::value_or
     [[nodiscard]] value_type
     valueOr(value_type val) const;
@@ -691,8 +677,9 @@ public:
     operator=(optional_type const& v);
 
     template <class U>
-    std::enable_if_t<std::is_assignable_v<T, U>, OptionalProxy&>
-    operator=(U&& u);
+    OptionalProxy&
+    operator=(U&& u)
+        requires(std::is_assignable_v<T, U>);
 
 private:
     friend class STObject;
@@ -755,8 +742,10 @@ STObject::Proxy<T>::operator*() const -> value_type
     return this->value();
 }
 
-/// Do not use operator->() unless the field is required, or you've checked that
-/// it's set.
+/**
+ * Do not use operator->() unless the field is required, or you've checked that
+ * it's set.
+ */
 template <class T>
 T const*
 STObject::Proxy<T>::operator->() const
@@ -798,8 +787,10 @@ STObject::Proxy<T>::assign(U&& u)
 
 template <class T>
 template <class U>
-std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T>&>
+// NOLINTNEXTLINE(misc-unconventional-assign-operator)
+STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator=(U&& u)
+    requires(std::is_assignable_v<T, U>)
 {
     this->assign(std::forward<U>(u));
     return *this;
@@ -902,8 +893,9 @@ STObject::OptionalProxy<T>::operator=(optional_type const& v) -> OptionalProxy&
 
 template <class T>
 template <class U>
-std::enable_if_t<std::is_assignable_v<T, U>, STObject::OptionalProxy<T>&>
+STObject::OptionalProxy<T>&
 STObject::OptionalProxy<T>::operator=(U&& u)
+    requires(std::is_assignable_v<T, U>)
 {
     this->assign(std::forward<U>(u));
     return *this;
@@ -1178,12 +1170,6 @@ STObject::setFieldH160(SField const& field, BaseUInt<160, Tag> const& v)
     }
 }
 
-inline bool
-STObject::operator!=(STObject const& o) const
-{
-    return !(*this == o);
-}
-
 template <typename T, typename V>
 V
 STObject::getFieldByValue(SField const& field) const
@@ -1241,7 +1227,7 @@ template <typename T, typename V>
 void
 STObject::setFieldUsingSetValue(SField const& field, V value)
 {
-    static_assert(!std::is_lvalue_reference_v<V>, "");
+    static_assert(!std::is_lvalue_reference_v<V>);
 
     STBase* rf = getPField(field, true);
 

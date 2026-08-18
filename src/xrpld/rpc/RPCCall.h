@@ -23,8 +23,10 @@ namespace xrpl {
 //
 // Improvements to be more strict and to provide better diagnostics are welcome.
 
-/** Processes XRPL RPC calls. */
-namespace RPCCall {
+/**
+ * Processes XRPL RPC calls.
+ */
+namespace rpc_call {
 
 int
 fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs);
@@ -45,7 +47,7 @@ fromNetwork(
     std::function<void(json::Value const& jvInput)> callbackFuncP =
         std::function<void(json::Value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
-}  // namespace RPCCall
+}  // namespace rpc_call
 
 json::Value
 rpcCmdToJson(
@@ -54,7 +56,8 @@ rpcCmdToJson(
     unsigned int apiVersion,
     beast::Journal j);
 
-/** Internal invocation of RPC client.
+/**
+ * Internal invocation of RPC client.
  *  Used by both xrpld command line as well as xrpld unit tests
  */
 std::pair<int, json::Value>

@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -24,7 +25,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 #include <memory>
 #include <optional>
 
@@ -194,23 +194,20 @@ CheckCreate::doApply()
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    {
-        STAmount const reserve{view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1)};
-
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
+        !isTesSuccess(ret))
+        return ret;
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
-    std::uint32_t const seq = ctx_.tx.getSeqValue();
+    auto const seq = ctx_.tx.getSeqProxy();
     Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
-    sleCheck->setFieldU32(sfSequence, seq);
+    sleCheck->setFieldU32(sfSequence, seq.value());
     sleCheck->setFieldAmount(sfSendMax, ctx_.tx[sfSendMax]);
     if (auto const srcTag = ctx_.tx[~sfSourceTag])
         sleCheck->setFieldU32(sfSourceTag, *srcTag);
@@ -253,7 +250,9 @@ CheckCreate::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, 1, viewJ);
+
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, viewJ);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck);
     return tesSUCCESS;
 }
 

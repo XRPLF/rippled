@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace beast::rfc2616 {
@@ -30,17 +31,20 @@ struct CiEqualPred
     }
 };
 
-/** Returns `true` if `c` is linear white space.
-
-    This excludes the CRLF sequence allowed for line continuations.
-*/
+/**
+ * Returns `true` if `c` is linear white space.
+ *
+ * This excludes the CRLF sequence allowed for line continuations.
+ */
 inline bool
 isLws(char c)
 {
     return c == ' ' || c == '\t';
 }
 
-/** Returns `true` if `c` is any whitespace character. */
+/**
+ * Returns `true` if `c` is any whitespace character.
+ */
 inline bool
 isWhite(char c)
 {
@@ -87,14 +91,15 @@ trimRight(String const& s)
 
 }  // namespace detail
 
-/** Parse a character sequence of values separated by commas.
-    Double quotes and escape sequences will be converted.  Excess white
-    space, commas, double quotes, and empty elements are not copied.
-    Format:
-       #(token|quoted-string)
-    Reference:
-        http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2
-*/
+/**
+ * Parse a character sequence of values separated by commas.
+ * Double quotes and escape sequences will be converted.  Excess white
+ * space, commas, double quotes, and empty elements are not copied.
+ * Format:
+ *    #(token|quoted-string)
+ * Reference:
+ *     http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2
+ */
 template <
     class FwdIt,
     class Result = std::vector<std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>,
@@ -182,21 +187,22 @@ splitCommas(FwdIt first, FwdIt last)
 
 template <class Result = std::vector<std::string>>
 Result
-splitCommas(boost::beast::string_view const& s)
+splitCommas(std::string_view s)
 {
     return splitCommas(s.begin(), s.end());
 }
 
 //------------------------------------------------------------------------------
 
-/** Iterates through a comma separated list.
-
-    Meets the requirements of ForwardIterator.
-
-    List defined in rfc2616 2.1.
-
-    @note Values returned may contain backslash escapes.
-*/
+/**
+ * Iterates through a comma separated list.
+ *
+ * Meets the requirements of ForwardIterator.
+ *
+ * List defined in rfc2616 2.1.
+ *
+ * @note Values returned may contain backslash escapes.
+ */
 class ListIterator
 {
     using iter_type = boost::string_ref::const_iterator;
@@ -222,12 +228,6 @@ public:
     operator==(ListIterator const& other) const
     {
         return other.it_ == it_ && other.end_ == end_ && other.value_.size() == value_.size();
-    }
-
-    bool
-    operator!=(ListIterator const& other) const
-    {
-        return !(*this == other);
     }
 
     reference
@@ -323,17 +323,20 @@ ListIterator::increment()
         }
     }
 }
-/** Returns true if two strings are equal.
-
-    A case-insensitive comparison is used.
-*/
+/**
+ * Returns true if two strings are equal.
+ *
+ * A case-insensitive comparison is used.
+ */
 inline bool
 ciEqual(boost::string_ref s1, boost::string_ref s2)
 {
     return boost::range::equal(s1, s2, detail::CiEqualPred{});
 }
 
-/** Returns a range representing the list. */
+/**
+ * Returns a range representing the list.
+ */
 inline boost::iterator_range<ListIterator>
 makeList(boost::string_ref const& field)
 {
@@ -341,20 +344,22 @@ makeList(boost::string_ref const& field)
         ListIterator{field.begin(), field.end()}, ListIterator{field.end(), field.end()}};
 }
 
-/** Returns true if the specified token exists in the list.
-
-    A case-insensitive comparison is used.
-*/
+/**
+ * Returns true if the specified token exists in the list.
+ *
+ * A case-insensitive comparison is used.
+ */
 template <class = void>
 bool
 tokenInList(boost::string_ref const& value, boost::string_ref const& token)
 {
-    for (auto const& item : makeList(value))
-    {
-        if (ciEqual(item, token))
-            return true;
-    }
-    return false;
+    auto const list = makeList(value);
+    // ListIterator is not default-constructible, so it does not model a std::ranges
+    // sentinel/range; the classic std::any_of (which only needs an input iterator)
+    // is used instead.
+    // NOLINTNEXTLINE(modernize-use-ranges)
+    return std::any_of(
+        list.begin(), list.end(), [&token](auto const& item) { return ciEqual(item, token); });
 }
 
 template <bool IsRequest, class Body, class Fields>

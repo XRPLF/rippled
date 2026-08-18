@@ -23,25 +23,26 @@
 
 namespace xrpl {
 
-/** General RPC command that can retrieve objects in the account root.
-    {
-      account: <account>
-      ledger_hash: <string> // optional
-      ledger_index: <string | unsigned integer> // optional
-      type: <string> // optional, defaults to all account objects types
-      limit: <integer> // optional
-      marker: <opaque> // optional, resume previous query
-    }
-*/
+/**
+ * General RPC command that can retrieve objects in the account root.
+ * {
+ *   account: <account>
+ *   ledger_hash: <string> // optional
+ *   ledger_index: <string | unsigned integer> // optional
+ *   type: <string> // optional, defaults to all account objects types
+ *   limit: <integer> // optional
+ *   marker: <opaque> // optional, resume previous query
+ * }
+ */
 json::Value
-doAccountNFTs(RPC::JsonContext& context)
+doAccountNFTs(rpc::JsonContext& context)
 {
     auto const& params = context.params;
     if (!params.isMember(jss::account))
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalidFieldError(jss::account);
+        return rpc::invalidFieldError(jss::account);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
@@ -50,7 +51,7 @@ doAccountNFTs(RPC::JsonContext& context)
     }
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
     if (ledger == nullptr)
         return result;
     auto const accountID{id.value()};
@@ -59,7 +60,7 @@ doAccountNFTs(RPC::JsonContext& context)
         return rpcError(RpcActNotFound);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kAccountNfTokens, context))
+    if (auto err = readLimitField(limit, rpc::tuning::kAccountNfTokens, context))
         return *err;
 
     uint256 marker;
@@ -69,10 +70,10 @@ doAccountNFTs(RPC::JsonContext& context)
     {
         auto const& m = params[jss::marker];
         if (!m.isString())
-            return RPC::expectedFieldError(jss::marker, "string");
+            return rpc::expectedFieldError(jss::marker, "string");
 
         if (!marker.parseHex(m.asString()))
-            return RPC::invalidFieldError(jss::marker);
+            return rpc::invalidFieldError(jss::marker);
     }
 
     auto const first = keylet::nftokenPage(keylet::nftokenPageMin(accountID), marker);
@@ -124,7 +125,7 @@ doAccountNFTs(RPC::JsonContext& context)
             }
 
             if (markerSet && !markerFound)
-                return RPC::invalidFieldError(jss::marker);
+                return rpc::invalidFieldError(jss::marker);
 
             pastMarker = true;
 
@@ -159,10 +160,10 @@ doAccountNFTs(RPC::JsonContext& context)
     }
 
     if (markerSet && !markerFound)
-        return RPC::invalidFieldError(jss::marker);
+        return rpc::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = resource::kFeeMediumBurdenRpc;
     return result;
 }
 

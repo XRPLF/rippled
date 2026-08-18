@@ -25,9 +25,17 @@ struct Vault
         Asset asset;
         std::optional<std::uint32_t> flags =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint8_t> vaultKind =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint32_t> subscriptionDate =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint32_t> redemptionDate =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
-    /** Return a VaultCreate transaction and the Vault's expected keylet. */
+    /**
+     * Return a VaultCreate transaction and the Vault's expected keylet.
+     */
     [[nodiscard]] std::tuple<json::Value, Keylet>
     create(CreateArgs const& args) const;
 

@@ -2,9 +2,11 @@
 
 #include <chrono>
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
-/** Tunable constants. */
+/**
+ * Tunable constants.
+ */
 
 // balance at which a warning is issued
 static constexpr auto kWarningThreshold = 5000;
@@ -24,4 +26,4 @@ static constexpr std::chrono::seconds kSecondsUntilExpiration{300};
 // Number of seconds until imported gossip expires
 static constexpr std::chrono::seconds kGossipExpirationSeconds{30};
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

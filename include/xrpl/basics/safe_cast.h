@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>  // IWYU pragma: keep
+
 #include <type_traits>
 
 namespace xrpl {
@@ -15,8 +17,9 @@ concept SafeToCast = (std::is_integral_v<Src> && std::is_integral_v<Dest>) &&
                                                      : sizeof(Dest) >= sizeof(Src));
 
 template <class Dest, class Src>
-constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr Dest
 safeCast(Src s) noexcept
+    requires(std::is_integral_v<Dest> && std::is_integral_v<Src>)
 {
     static_assert(
         std::is_signed_v<Dest> || std::is_unsigned_v<Src>, "Cannot cast signed to unsigned");
@@ -28,15 +31,17 @@ safeCast(Src s) noexcept
 }
 
 template <class Dest, class Src>
-constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr Dest
 safeCast(Src s) noexcept
+    requires(std::is_enum_v<Dest> && std::is_integral_v<Src>)
 {
     return static_cast<Dest>(safeCast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
-constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
+constexpr Dest
 safeCast(Src s) noexcept
+    requires(std::is_integral_v<Dest> && std::is_enum_v<Src>)
 {
     return safeCast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }
@@ -46,8 +51,9 @@ safeCast(Src s) noexcept
 // underlying types become safe, it can be converted to a safe_cast.
 
 template <class Dest, class Src>
-constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr Dest
 unsafeCast(Src s) noexcept
+    requires(std::is_integral_v<Dest> && std::is_integral_v<Src>)
 {
     static_assert(
         !SafeToCast<Src, Dest>,
@@ -57,15 +63,17 @@ unsafeCast(Src s) noexcept
 }
 
 template <class Dest, class Src>
-constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr Dest
 unsafeCast(Src s) noexcept
+    requires(std::is_enum_v<Dest> && std::is_integral_v<Src>)
 {
     return static_cast<Dest>(unsafeCast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
-constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
+constexpr Dest
 unsafeCast(Src s) noexcept
+    requires(std::is_integral_v<Dest> && std::is_enum_v<Src>)
 {
     return unsafeCast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }

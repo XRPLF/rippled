@@ -13,7 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <limits>
+#include <limits>  // IWYU pragma: keep
 #include <stdexcept>
 #include <type_traits>
 
@@ -154,7 +154,7 @@ T
 toAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number::getround())
 {
     SaveNumberRoundMode const rm(Number::getround());
-    if (isXRP(asset))
+    if (asset.integral())
         Number::setround(mode);
 
     if constexpr (std::is_same_v<IOUAmount, T>)

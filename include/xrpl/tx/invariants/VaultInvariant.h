@@ -21,7 +21,7 @@
 
 namespace xrpl {
 
-/*
+/**
  * @brief Invariants: Vault object and MPTokenIssuance for vault shares
  *
  * - vault deleted and vault created is empty
@@ -38,7 +38,17 @@ namespace xrpl {
  * - vault set must not alter the vault assets or shares balance
  * - no vault transaction can change loss unrealized (it's updated by loan
  *   transactions)
+ * - a created closed-ended vault must satisfy
+ *   MIN_INVESTMENT_PERIOD <= RedemptionDate - SubscriptionDate <
+ *   MAX_INVESTMENT_PERIOD
+ * - vault deposit may only succeed when the vault phase is NoPhase or
+ *   Subscription
+ * - vault withdrawal may not succeed when the vault phase is Investment
+ * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
+ *   vault phase is Investment
  *
+ * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
+ * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp).
  */
 class ValidVault
 {
@@ -55,6 +65,9 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        std::optional<std::uint8_t> vaultKind;
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
 
         Vault static make(SLE const&);
     };
@@ -96,7 +109,7 @@ private:
      *
      * @param vaultDelta Delta of the vault's asset balance for this transaction.
      * @param rules      Active ledger rules (used to check the amendment).
-     * @returns The minimum scale to apply when rounding vault-related amounts.
+     * @return The minimum scale to apply when rounding vault-related amounts.
      */
     [[nodiscard]] std::int32_t
     computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const;
@@ -109,7 +122,7 @@ private:
      * to the vault asset held by @p id.
      *
      * @param id Account whose asset delta is requested.
-     * @returns The delta, or @c std::nullopt if the entry was not touched.
+     * @return The delta, or @c std::nullopt if the entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
     deltaAssets(AccountID const& id) const;
@@ -124,8 +137,8 @@ private:
      *
      * @param tx  The transaction being applied.
      * @param fee Fee charged by this transaction.
-     * @returns The fee-adjusted delta, or @c std::nullopt if the net delta is
-     *          zero or the account entry was not touched.
+     * @return The fee-adjusted delta, or @c std::nullopt if the net delta is
+     *         zero or the account entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
     deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const;
@@ -138,7 +151,7 @@ private:
      * returned.
      *
      * @param id Account whose share delta is requested.
-     * @returns The delta, or @c std::nullopt if the entry was not touched.
+     * @return The delta, or @c std::nullopt if the entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
     deltaShares(AccountID const& id) const;
@@ -147,11 +160,22 @@ private:
      * @brief Check whether a vault holds no assets.
      *
      * @param vault Snapshot of the vault to test.
-     * @returns @c true when both @c assetsAvailable and @c assetsTotal are
-     *          zero.
+     * @return @c true when both @c assetsAvailable and @c assetsTotal are
+     *         zero.
      */
     [[nodiscard]] static bool
     isVaultEmpty(Vault const& vault);
+
+    /**
+     * @brief Invariant check for @c ttLOAN_SET.
+     *
+     * For a closed-ended vault, a loan may only be originated while the vault is in the Investment
+     * phase (strictly past @c SubscriptionDate and before @c RedemptionDate). Open-ended vaults (@c
+     * NoPhase) are unaffected. The complementary maturity bound (final payment strictly precedes @c
+     * RedemptionDate) is enforced by @c ValidLoan.
+     */
+    [[nodiscard]] bool
+    finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;
 
 public:
     // Compute the coarsest scale required to represent all numbers
