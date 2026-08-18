@@ -168,3 +168,44 @@ grep -o '\-isysroot [^ ]*' build/compile_commands.json | sort -u
 It should print a `/nix/store/...-apple-sdk-*` path. If it prints
 `/Library/Developer/CommandLineTools/...`, re-configure from within the shell —
 CMake caches the sysroot, so an existing `build/` directory keeps the wrong one.
+
+## `Library not loaded: /nix/store/…` from a binary that used to work
+
+A binary stops starting after a `nix flake update`, or after
+`nix-collect-garbage` removes the paths the previous toolchain used:
+
+```
+dyld[57271]: Library not loaded: /nix/store/…-libresolv-93/lib/libresolv.9.dylib
+```
+
+[`bin/check-nix-store-refs.sh`](../../bin/check-nix-store-refs.sh) finds the same
+thing without having to run anything, and points at the file:
+
+```
+$ bin/check-nix-store-refs.sh ~/.conan2-nix
+/Users/you/.conan2-nix/p/b/c-are…/p/bin/adig
+    /nix/store/…-libresolv-93/lib/libresolv.9.dylib
+Checked 135 files in /Users/you/.conan2-nix (2495 skipped), 1 of them reference the Nix store.
+```
+
+### Why it happens
+
+The binary records a store path that no longer exists. Nothing we build should:
+see [Prebuilt packages](./nix.md#prebuilt-packages) for why, and
+`libresolvSystemStub` in [`nix/darwin.nix`](../../nix/darwin.nix) for the one
+dependency that needed help to comply.
+
+A Conan package ID does not encode the nixpkgs revision, so a package built
+before that stub existed stays in your local cache and keeps being reused. The
+dev shell is also what tends to produce one: it is a slightly _less_ isolated
+build environment than CI's, because `mkShell` puts every tool's headers and
+libraries on the compiler's search path — which is how c-ares found the Nix
+`libresolv` in the first place.
+
+### Fix
+
+Drop the package the check named and let Conan refetch or rebuild it:
+
+```bash
+conan remove 'c-ares/*'
+```

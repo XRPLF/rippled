@@ -144,12 +144,14 @@ are not a reliable match there.
 
 On **macOS**, CI also builds in this Nix environment, in Debug and Release (the
 `macos-arm64-*-nix` configurations — Debug because the profile defaults to it).
-The Nix build resolves to `compiler=clang`, so it gets its own package IDs, and
-the nightly [dependency upload](../../.github/workflows/upload-conan-deps.yml)
-publishes those alongside the Apple Clang ones, so `nix develop` gets cache hits
-instead of compiling every dependency locally. They run outside the reduced
-pull-request matrix, so label a PR `Full CI build` when it touches `flake.lock`
-or `nix/`.
+The Nix build resolves to `compiler=clang`, so it gets its own package IDs,
+separate from the Apple Clang ones. The
+[dependency upload](../../.github/workflows/upload-conan-deps.yml) publishes them
+on pushes to `develop` and on manual runs — its nightly run rebuilds everything
+from source but uploads nothing — so once a set has been published `nix develop`
+can reuse it instead of compiling every dependency locally. These configurations
+run outside the reduced pull-request matrix, so label a PR `Full CI build` when it
+touches `flake.lock` or `nix/`.
 
 To compile everything from source, add `--build '*'` to the `conan install`
 command.
@@ -209,17 +211,10 @@ Both environments now put a stub on the linker search path
 same library with its install name set to `/usr/lib/libresolv.9.dylib`, which is
 exactly the load command the Apple Clang build records.
 
-> [!NOTE]
-> Package IDs did not change, so Conan keeps serving anything built before this
-> fix. The dev shell is also a slightly _less_ isolated build environment than
-> CI's — `mkShell` puts every tool's headers and libraries on the compiler's
-> search path, which is how c-ares found the Nix `libresolv` to begin with, and
-> can leave a locally built dependency subtly different from the published one.
-> Either way the remedy is the same — drop the package and let Conan refetch it:
->
-> ```bash
-> conan remove 'c-ares/*'
-> ```
+Package IDs did not change, so Conan keeps serving anything built before the
+stub landed. If a binary fails to start with `Library not loaded: /nix/store/…`,
+see [that entry](./nix_troubleshooting.md#library-not-loaded-nixstore-from-a-binary-that-used-to-work)
+in the troubleshooting guide.
 
 ## Automatic Activation with direnv
 
