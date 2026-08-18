@@ -143,6 +143,8 @@ SHAMapStoreImp::SHAMapStoreImp(
             ageThreshold_ = std::chrono::seconds{temp};
         if (getIfExists(section, Keys::kRecoveryWaitSeconds, temp))
             recoveryWaitTime_ = std::chrono::seconds{temp};
+        if (recoveryWaitTime_ < std::chrono::seconds{1})
+            Throw<std::runtime_error>("recovery_wait_seconds must be at least 1 second");
 
         getIfExists(section, Keys::kAdvisoryDelete, advisoryDelete_);
 
@@ -685,25 +687,29 @@ SHAMapStoreImp::healthWait()
     // delay is fine.
     auto readServerStatus = [this](
                                 LedgerIndex& index,
+                                bool& buildingIndex,
                                 std::chrono::seconds& age,
                                 OperatingMode& mode,
                                 std::size_t& numMissing,
                                 LedgerIndex const lowerBound,
                                 ScopeUnlock<decltype(mutex_)> const&) {
         index = ledgerMaster_->getValidLedgerIndex();
+        bool const haveIndex = ledgerMaster_->haveLedger(index);
         age = ledgerMaster_->getValidatedLedgerAge();
         mode = netOPs_->getOperatingMode();
 
         numMissing =
             lowerBound == 0 ? 0 : ledgerMaster_->missingFromCompleteLedgerRange(lowerBound, index);
+
+        buildingIndex = (numMissing == 1 && !haveIndex);
     };
 
     // Tracked server status properties
     LedgerIndex index = 0;
+    bool buildingIndex = false;
     std::chrono::seconds age;
     OperatingMode mode = OperatingMode::DISCONNECTED;
     std::size_t numMissing = 0;
-    LedgerIndex lastLedger = 0;
 
     std::unique_lock lock(mutex_);
 
@@ -714,31 +720,57 @@ SHAMapStoreImp::healthWait()
 
         ScopeUnlock const unlock(lock);
 
-        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
+        readServerStatus(index, buildingIndex, age, mode, numMissing, lowerBound, unlock);
     }
-    while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold || numMissing > 0))
+
+    auto healthy = [&] {
+        // Special case: If the server is disconnected, it's not doing any ledger I/O, because
+        // it's focused on trying to get peers. A disconnected state is should never be caused by
+        // the activity of the server. It's usually limited to hardware or connectivity issues. Take
+        // advantage of that to run as much rotation I/O as possible before it comes back online.
+        if (mode == OperatingMode::DISCONNECTED)
+            return true;
+        if (age > ageThreshold)
+            return false;
+        if (numMissing > 0)
+            return false;
+        if (mode != OperatingMode::FULL)
+            return false;
+        return true;
+    };
+
+    while (!stop_ && !healthy())
     {
-        // this value shouldn't change, so grab it while we have the
-        // lock
+        // Future-proofing: this value shouldn't change while we are sleeping, but grab it while we
+        // have the lock in case it does.
         auto const lowerBound = lastGoodValidatedLedger_;
 
         ScopeUnlock const unlock(lock);
 
-        auto const stream = std::invoke([mode, age, ageThreshold, index, lastLedger, this]() {
-            if (mode != OperatingMode::FULL || age > ageThreshold)
-                return journal_.warn();
-            if (index != lastLedger)
-                return journal_.trace();
-            return journal_.info();
-        });
-        JLOG(stream) << "Waiting " << waitTime.count() << "s for node to stabilize. state: "
+        auto const [stream, waitMs] = std::invoke(
+            [mode, age, ageThreshold, buildingIndex, waitTime, this]
+            -> std::pair<beast::Journal::Stream, std::chrono::milliseconds> {
+                if (mode != OperatingMode::FULL || age > ageThreshold)
+                    return {journal_.warn(), waitTime};
+                if (buildingIndex)
+                {
+                    // We expect this ledger to be built soon, so log at a lower level, and don't
+                    // wait as long.
+                    return {
+                        journal_.trace(),
+                        std::chrono::duration_cast<std::chrono::milliseconds>(waitTime) / 10};
+                }
+                return {journal_.info(), waitTime};
+            });
+        JLOG(stream) << "Waiting " << waitMs.count() << "ms for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age " << age.count()
                      << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
-        std::this_thread::sleep_for(waitTime);
+        std::this_thread::sleep_for(waitMs);
 
-        lastLedger = index;
-        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
+        [[maybe_unused]]
+        LedgerIndex const lastLedger = index;
+        readServerStatus(index, buildingIndex, age, mode, numMissing, lowerBound, unlock);
         SOMETIMES(
             index > lastLedger, "SHAMapStoreImp::healthWait : validated ledger index changed");
     }
