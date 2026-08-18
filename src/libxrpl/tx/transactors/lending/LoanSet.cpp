@@ -235,7 +235,7 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
         principalRequested,
         properties.loanState.managementFeeDue);
 
-    auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
+    [[maybe_unused]] auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
     XRPL_ASSERT_PARTS(
         vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
