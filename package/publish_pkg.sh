@@ -16,7 +16,7 @@ set -euo pipefail
 
 channel="${1:-}"
 pkg_dir="${2:-build}"
-nexus_url="${NEXUS_URL:-https://deb.xrplf.org}"
+nexus_url="${NEXUS_URL:-https://packages.xrplf.org}"
 
 if [[ -z "${channel}" ]]; then
     echo "usage: publish_pkg.sh <channel> [package-dir]" >&2

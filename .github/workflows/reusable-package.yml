@@ -20,7 +20,7 @@ on:
         description: "The base URL of the Nexus instance hosting the deb and rpm repositories."
         required: false
         type: string
-        default: https://deb.xrplf.org
+        default: https://packages.xrplf.org
 
     secrets:
       remote_username:

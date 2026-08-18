@@ -124,7 +124,7 @@ release defaults to 1 and is overridable with `-Dpkg_release=N`.
 ## Publishing packages
 
 Packages are published to the XRPLF repositories on Sonatype Nexus at
-`https://deb.xrplf.org`. The `release-info` action decides the channel from
+`https://packages.xrplf.org`. The `release-info` action decides the channel from
 the event, and `publish_pkg.sh` maps that channel to a repository pair:
 
 | Event                    | Version           | Channel        | DEB repository     | RPM repository     |
