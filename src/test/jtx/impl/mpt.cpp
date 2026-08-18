@@ -2524,4 +2524,52 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     return jv;
 }
 
+void
+MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg)
+{
+    json::Value jv;
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    jv[sfTransactionType] = jss::ConfidentialMPTMirrorUpdate;
+
+    if (arg.holder)
+        jv[sfHolder] = arg.holder->human();
+    if (arg.issuerEncryptedAmount)
+        jv[sfIssuerEncryptedAmount] = strHex(*arg.issuerEncryptedAmount);
+    if (arg.auditorEncryptedAmount)
+        jv[sfAuditorEncryptedAmount] = strHex(*arg.auditorEncryptedAmount);
+    if (arg.previousIssuerKey)
+        jv[sfPreviousIssuerEncryptionKey] = strHex(*arg.previousIssuerKey);
+
+    // Placeholder for proof, the logic will be added in the future
+    if (arg.zkProof)
+    {
+        jv[sfZKProof] = strHex(*arg.zkProof);
+    }
+    else
+    {
+        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcGamalEncryptedTotalLength));
+    }
+
+    submit(arg, jv);
+}
+
 }  // namespace xrpl::test::jtx

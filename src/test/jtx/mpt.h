@@ -362,6 +362,25 @@ struct MPTConfidentialClawback
 };
 
 /**
+ * @brief Arguments for building a ConfidentialMPTMirrorUpdate test transaction.
+ */
+struct MPTMirrorUpdate
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> issuerEncryptedAmount = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmount = std::nullopt;
+    std::optional<Buffer> previousIssuerKey = std::nullopt;
+    std::optional<Buffer> zkProof = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
  * @brief Stores the parameters that are exclusively used to generate a
  * Pedersen linkage proof.
  */
@@ -580,6 +599,9 @@ public:
 
     void
     confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
+
+    void
+    mirrorUpdate(MPTMirrorUpdate const& arg = MPTMirrorUpdate{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
