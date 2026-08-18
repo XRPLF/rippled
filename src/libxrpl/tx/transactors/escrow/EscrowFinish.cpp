@@ -186,7 +186,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (isFrozen(ctx.view, dest, *sleIssuance))
         return tecLOCKED;
 
     return tesSUCCESS;
