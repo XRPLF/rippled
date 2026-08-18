@@ -306,9 +306,31 @@ removeVaultAssets(
     [[maybe_unused]] Asset const asset = vault->at(sfAsset);
     XRPL_ASSERT(amount.asset() == asset, "xrpl::removeVaultAssets : amount matches vault asset");
     XRPL_ASSERT(amount >= beast::kZero, "xrpl::removeVaultAssets : amount is non-negative");
+    // On a final removal both fields are hard-reset to zero, so the amount
+    // being withdrawn must equal the Vault's pre-mutation sfAssetsAvailable
+    // — otherwise the caller would leave residual funds on the Vault's
+    // pseudo-account after the Vault-level bookkeeping says the position
+    // is fully unwound. VaultWithdraw enforces this by pinning
+    // `assetsWithdrawn = allAvailable` immediately before setting
+    // FinalRemoval::Yes. The equality is checked via STAmount so both
+    // sides go through the same asset-precision normalization used by
+    // VaultWithdraw when it built `allAvailable`.
+    // Constructed outside the assert macro because unprotected commas
+    // inside `{}` initializers are parsed as extra macro arguments.
+    [[maybe_unused]] STAmount const availableSnapshot{asset, Number(vault->at(sfAssetsAvailable))};
+    XRPL_ASSERT(
+        finalRemoval == FinalRemoval::No || amount == availableSnapshot,
+        "xrpl::removeVaultAssets : final removal amount equals sfAssetsAvailable");
 
     applyRemoveVaultAssets(ctx.view, vault, amount, finalRemoval);
 
+    // The amount==0 short-circuit is defensive: every in-tree caller
+    // (VaultWithdraw) computes `assetsWithdrawn` from a positive
+    // sharesRedeemed and errors out earlier on a zero-share withdrawal, so
+    // production traffic cannot reach this path with amount==0.
+    // doWithdraw would otherwise still succeed for a zero amount, but
+    // short-circuiting here makes the invariant explicit at the single
+    // mutation point.
     if (amount == beast::kZero)
         return tesSUCCESS;  // LCOV_EXCL_LINE
 

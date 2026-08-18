@@ -153,6 +153,13 @@ getVaultScale(SLE::const_ref vault);
  * scale is appropriate for their own accounting (e.g. current vs. posterior
  * Vault scale); this helper does not perform any additional rounding.
  *
+ * Ordering: the Vault fields are mutated (and `view.update` called) before
+ * the underlying `accountSend`; on a non-tesSUCCESS return, the caller is
+ * responsible for discarding the ApplyView (transactors rely on the sandbox
+ * being thrown away on non-tesSUCCESS, which is the codebase convention).
+ * All in-tree callers are transactors that already return the propagated
+ * TER, so no additional rollback is required.
+ *
  * @param view The ledger view to apply changes to.
  * @param vault The vault SLE. Must not be null.
  * @param sender The account to transfer `amount` from.
@@ -202,6 +209,12 @@ enum class FinalRemoval : bool { No = false, Yes = true };
  * scale is appropriate for their own accounting; this helper does not
  * perform any additional rounding.
  *
+ * Ordering: same convention as addVaultAssets — the Vault fields are mutated
+ * before the transfer, and the ApplyView must be discarded by the caller on a
+ * non-tesSUCCESS return. The pre-transfer `amount > sfAssetsAvailable` guard
+ * still fires before any mutation, so a malformed clawback amount cannot
+ * modify the Vault at all.
+ *
  * @param view The ledger view to apply changes to.
  * @param vault The vault SLE. Must not be null.
  * @param recipient The account to transfer `amount` to. Must already be
@@ -238,6 +251,17 @@ clawbackVaultAssets(
  * perform any additional rounding, except when `finalRemoval` is Yes (see
  * FinalRemoval).
  *
+ * Ordering: same convention as addVaultAssets — the Vault fields are mutated
+ * before the transfer, and the ApplyView must be discarded by the caller on a
+ * non-tesSUCCESS return.
+ *
+ * When `finalRemoval` is Yes, callers must pass `amount ==
+ * *vault->at(sfAssetsAvailable)` (the pre-call value): the helper asserts
+ * this invariant and would otherwise leave dust on the Vault's pseudo-account
+ * despite hard-resetting the fields to zero. VaultWithdraw's final-removal
+ * path pins `amount = allAvailable` immediately before calling this helper
+ * to satisfy the contract.
+ *
  * @param ctx The apply-view context to apply changes to.
  * @param vault The vault SLE. Must not be null.
  * @param senderAcct The account that submitted the withdrawal transaction.
@@ -245,9 +269,9 @@ clawbackVaultAssets(
  * @param priorBalance The XRP reserve base, passed through to doWithdraw for
  *                      creating a holding for `dstAcct` when required.
  * @param amount The amount to subtract from sfAssetsAvailable, and to
- *               transfer from the Vault's pseudo-account to `dstAcct`.
- *               Ignored (other than for the transfer) when `finalRemoval` is
- *               Yes.
+ *               transfer from the Vault's pseudo-account to `dstAcct`. When
+ *               `finalRemoval` is Yes, must equal the Vault's pre-call
+ *               sfAssetsAvailable so the transfer drains the pseudo-account.
  * @param j Journal for logging.
  * @param finalRemoval Whether this is the Vault's final removal (see
  *                      FinalRemoval).
@@ -283,6 +307,10 @@ removeVaultAssets(
  * Recipients must already be able to hold the Vault's asset (e.g. via
  * addEmptyHolding and requireAuth performed by the caller beforehand); this
  * helper does not create holdings or check authorization.
+ *
+ * Ordering: same convention as addVaultAssets — the Vault fields are mutated
+ * before the transfer, and the ApplyView must be discarded by the caller on
+ * a non-tesSUCCESS return.
  *
  * sfAssetsAvailable is decreased by an STAmount built from the sum of the
  * recipients' Numbers, so for a very large recipient list whose sum exceeds

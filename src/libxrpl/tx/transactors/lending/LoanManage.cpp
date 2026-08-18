@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
@@ -327,6 +328,24 @@ LoanManage::defaultLoan(
     {
         STAmount const amount{vaultAsset, defaultCovered};
         STAmount const writeOff{vaultAsset, totalDefaultAmount};
+
+        // Defense-in-depth mirror of the invariant check performed on the
+        // LoanSet.cpp/LoanPay.cpp addVaultAssets paths: project the raw
+        // post-mutation Vault fields (pre-rounding) and assert Available <=
+        // Total. Redundant with the tefBAD_LEDGER guard above (which is
+        // strictly stronger, since Total - Available >= totalDefaultAmount
+        // implies the post-write inequality), but kept for structural
+        // parity — if either of the addVaultAssets deltas ever drifts, this
+        // fires before the SLE mutation lands.
+        [[maybe_unused]] Number const assetsAvailableAfterRaw =
+            Number(vaultSle->at(sfAssetsAvailable)) + defaultCovered;
+        [[maybe_unused]] Number const assetsTotalAfterRaw =
+            Number(vaultSle->at(sfAssetsTotal)) + (defaultCovered - totalDefaultAmount);
+        XRPL_ASSERT_PARTS(
+            assetsAvailableAfterRaw <= assetsTotalAfterRaw,
+            "xrpl::LoanManage::defaultLoan",
+            "assets available must not be greater than assets outstanding");
+
         return addVaultAssets(
             view, vaultSle, brokerSle->at(sfAccount), amount, amount - writeOff, j);
     }
