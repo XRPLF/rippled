@@ -143,10 +143,8 @@ ValidMPTIssuance::finalize(
     //     must not dangle outside that controlled lifecycle.
     if (rules.enabled(fixCleanup3_2_0))
     {
-        // Unlike the same-named flags in the finalize() methods below, this is
-        // a plain accumulator: the checks in this block are enforcing whenever
-        // fixCleanup3_2_0 is enabled, and it is cleared by any violation so
-        // that all of them get logged before returning.
+        // Not an amendment gate like the same-named flags below, just an
+        // accumulator, so that every violation gets logged before returning.
         bool invariantPasses = true;
         if (referenceHoldingMutated_)
         {
@@ -491,11 +489,9 @@ ValidMPTBalanceChanges::finalize(
             return true;
         }
 
-        // Value returned when a violation is detected below, so this is the
-        // advisory (log-only) condition: it holds when NEITHER amendment is
-        // enabled. Enabling either featureMPTokensV2 or fixCleanup3_4_0 makes
-        // the checks enforcing.
-        bool const invariantPasses = !view.rules().enabled(featureMPTokensV2) && !fix340Enabled;
+        // Returned when a violation is found below, so this is the log-only
+        // condition. Either amendment makes the checks enforcing.
+        auto const invariantPasses = !(view.rules().enabled(featureMPTokensV2) || fix340Enabled);
         if (overflow_)
         {
             JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
@@ -520,18 +516,12 @@ ValidMPTBalanceChanges::finalize(
                 return invariantPasses;
             }
 
-            // Enforce the invariant even for a failed transaction: a
-            // transaction that did not succeed must not have moved MPT value,
-            // so OutstandingAmount must be unchanged. This catches a bug or
-            // exploit that mutates issuance state on a code path that then
-            // reports failure. No result code is exempt. Transactor::operator()
-            // routes every tec through processPersistentChanges, which discards
-            // the view and re-applies only deletions of the entry types listed
-            // in typesForResult: offers, trust lines, NFT offers and
-            // credentials. No MPToken or MPTokenIssuance is in that set, and
-            // none of those deletions moves MPT value, so whatever a transactor
-            // wrote before returning a tec cannot reach this check.
-            if (!isTesSuccess(result) && data.outstanding[kIAfter] != data.outstanding[kIBefore])
+            // A failed transaction must not have moved MPT value; the check
+            // above ties mptAmount to the OutstandingAmount delta. No result
+            // code is exempt: on any tec the transactor discards the view and
+            // re-applies only offer, trust line, NFT offer and credential
+            // deletions (Transactor::typesForResult), none of which touch MPTs.
+            if (!isTesSuccess(result) && data.mptAmount != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: OutstandingAmount balance changed on failure "
                                 << tx.getTxnType() << " " << result;
@@ -884,11 +874,9 @@ ValidMPTTransfer::finalize(
     }();
 
     auto const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
-    // Value returned when a violation is detected below, so this is the
-    // advisory (log-only) condition: it holds when NEITHER amendment is
-    // enabled. Enabling either featureMPTokensV2 or fixCleanup3_4_0 makes the
-    // checks enforcing.
-    auto const invariantPasses = !view.rules().enabled(featureMPTokensV2) && !fix340Enabled;
+    // Returned when a violation is found below, so this is the log-only
+    // condition. Either amendment makes the checks enforcing.
+    auto const invariantPasses = !(view.rules().enabled(featureMPTokensV2) || fix340Enabled);
 
     for (auto const& [mptID, values] : amount_)
     {
@@ -898,13 +886,11 @@ ValidMPTTransfer::finalize(
         auto const sleIssuance = view.read(keylet::mptokenIssuance(mptID));
         if (!sleIssuance)
         {
-            // A missing issuance does not imply that this transaction destroyed
-            // it. MPTokenIssuanceDestroy only requires a zero OutstandingAmount,
-            // so holders' MPTokens outlive the issuance as orphans, and a later
-            // transaction of any type may clean one up (see the "Skipping
-            // Deleted MPTs" case in Invariants_test). There is no issuance left
-            // to read the transfer rules from, so skip the entry rather than
-            // trying to infer intent from the transaction type.
+            // A missing issuance does not mean this transaction destroyed it.
+            // MPTokenIssuanceDestroy only requires a zero OutstandingAmount, so
+            // holders' MPTokens outlive it as orphans that a later transaction
+            // of any type may clean up. With no issuance there are no transfer
+            // rules to check, so the transaction type tells us nothing here.
             continue;
         }
 
@@ -955,18 +941,11 @@ ValidMPTTransfer::finalize(
             return invariantPasses;
         }
 
-        // Enforce the invariant even for a failed transaction: a transaction
-        // that did not succeed must not have changed any holder's MPT balance.
-        // A single holder whose spendable balance moved (a sender OR a
-        // receiver) is enough — not just a two-sided transfer — so this also
-        // catches a one-sided change such as a lock/unlock that shifts value
-        // between a holder's spendable (sfMPTAmount) and locked (sfLockedAmount)
-        // buckets. (A change touching only sfLockedAmount is caught instead by
-        // ValidMPTBalanceChanges, which tracks the holder total.) This catches a
-        // bug or exploit that moves balances on a code path that then reports
-        // failure. No result code is exempt — see the matching note in
-        // ValidMPTBalanceChanges::finalize for why a tec cannot carry an MPT
-        // change this far.
+        // A failed transaction must not have changed a holder's balance. One
+        // side is enough, unlike the transfer check above, so this also catches
+        // a lock/unlock moving value between sfMPTAmount and sfLockedAmount,
+        // and a deleted MPToken, which the sender/receiver counts skip. See
+        // ValidMPTBalanceChanges::finalize for why no result code is exempt.
         if (fix340Enabled && !isTesSuccess(result) &&
             (senders > 0 || receivers > 0 || !deletedAuthorized_.empty()))
         {

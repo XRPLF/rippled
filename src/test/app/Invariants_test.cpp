@@ -139,9 +139,9 @@ class Invariants_test : public beast::unit_test::Suite
         Preclose const& preclose = {},
         TxAccount setTxAccount = TxAccount::None,
         std::source_location const& loc = std::source_location::current(),
-        // Result fed to the invariant checker on the first pass. Defaults to
-        // tesSUCCESS; set to a specific tec to test result-dependent invariant
-        // behavior (e.g. the on-failure checks and their exempt codes).
+        // Result fed to the invariant checker on the first pass. Set it to a
+        // tec to exercise result-dependent invariants; the harness runs no
+        // transactor, so one never arises on its own.
         TER initialResult = tesSUCCESS)
     {
         doInvariantCheck(
@@ -218,11 +218,10 @@ class Invariants_test : public beast::unit_test::Suite
             return;
 
         // Invoke the check twice to cover the tec and tef cases. Both passes run
-        // against the same view -- unlike production, nothing is discarded in
-        // between (Transactor::reset would), so the second pass sees the same
-        // violation and escalates tec -> tef. A {tec, tef} pair therefore says
-        // "this invariant is enforced regardless of the incoming result", not
-        // that the transaction ends in tefINVARIANT_FAILED on ledger.
+        // against the same view -- production would discard it in between -- so
+        // the second sees the same violation and escalates tec -> tef. A
+        // {tec, tef} pair therefore means "enforced whatever the incoming
+        // result", not that the transaction ends in tef on ledger.
         if (!BEAST_EXPECT(ters.size() == 2))
             return;
 
@@ -238,11 +237,9 @@ class Invariants_test : public beast::unit_test::Suite
                 loc.line());
             auto const messages = sink.messages().str();
 
-            // checkInvariants returns its input unchanged when nothing fires and
-            // an escalated failure code when an invariant fires. So a changed
-            // result means an invariant fired, and a firing invariant must log.
-            // A result that passes through unchanged (a success) fired nothing
-            // and needs no message.
+            // checkInvariants returns its input unchanged unless something
+            // fires, so a changed result means an invariant fired, and a firing
+            // invariant must log.
             if (terActual != terInput)
             {
                 expect(
@@ -4871,15 +4868,10 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         // The on-failure MPT checks (OutstandingAmount balance / transfer) apply
-        // to every non-tesSUCCESS result, with no per-result exemption. No
-        // transactor reaches the invariant check with an MPT change on a tec:
-        // Transactor::operator() routes every tec through
-        // processPersistentChanges -> reset() -> ApplyContext::discard(), and
-        // re-applies only offer / trust line / NFT offer / credential
-        // deletions. So a change that survives to here on a failure result is a
-        // bug, whatever the code. The result is supplied via doInvariantCheck's
-        // initialResult seed — a tec cannot arise naturally here, since the
-        // harness runs only the invariant check, not doApply.
+        // to every non-tesSUCCESS result, with no per-result exemption: on a tec
+        // the transactor discards the view and re-applies only offer, trust
+        // line, NFT offer and credential deletions, so an MPT change reaching
+        // the invariant is a bug whatever the code. Seeded via initialResult.
         {
             MPTID id;
             // preclose: gw issues an MPT held by A1 and A2.
@@ -4893,8 +4885,7 @@ class Invariants_test : public beast::unit_test::Suite
             };
 
             // Consistent mint: OutstandingAmount and A1's balance both grow by
-            // 10, so conservation holds but OutstandingAmount changed — only the
-            // balance-change on-failure check is sensitive to it.
+            // 10, so conservation holds and only the on-failure check fires.
             Precheck const mint = [&](Account const& a1, Account const&, ApplyContext& ac) {
                 auto sleIss = ac.view().peek(keylet::mptokenIssuance(id));
                 auto sleTok = ac.view().peek(keylet::mptoken(id, a1.id()));
@@ -4907,9 +4898,9 @@ class Invariants_test : public beast::unit_test::Suite
                 return true;
             };
 
-            // Holder-to-holder transfer (A1 -> A2 by 10): OutstandingAmount
-            // unchanged, so only the transfer on-failure check is sensitive. Set
-            // CanTransfer so the ordinary transfer check stays quiet.
+            // Holder-to-holder transfer (A1 -> A2 by 10). OutstandingAmount is
+            // unchanged, and CanTransfer keeps the ordinary transfer check
+            // quiet, so only the on-failure check fires.
             Precheck const transfer = [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleIss = ac.view().peek(keylet::mptokenIssuance(id));
                 auto sleA = ac.view().peek(keylet::mptoken(id, a1.id()));
@@ -4927,16 +4918,13 @@ class Invariants_test : public beast::unit_test::Suite
 
             STTx const payment{ttPAYMENT, [](STObject&) {}};
 
-            // Baseline: both changes are conservation-consistent, so on
-            // tesSUCCESS nothing fires. Without these the on-failure cases below
-            // would still pass if the result guard were dropped, since they only
-            // establish that a violation is caught, not that it is caught solely
-            // on failure.
+            // Negative controls: nothing fires on tesSUCCESS. Without these, the
+            // cases below would still pass if the result guard were dropped.
             doInvariantCheck({}, mint, XRPAmount{}, payment, {tesSUCCESS, tesSUCCESS}, setup);
             doInvariantCheck({}, transfer, XRPAmount{}, payment, {tesSUCCESS, tesSUCCESS}, setup);
 
             // tecKILLED and tecINCOMPLETE are not special: an MPT change paired
-            // with either fires the check, exactly as any other failure does.
+            // with either fires, as with any other failure.
             doInvariantCheck(
                 {{"OutstandingAmount balance changed on failure"}},
                 mint,
@@ -4977,8 +4965,8 @@ class Invariants_test : public beast::unit_test::Suite
                 TxAccount::None,
                 std::source_location::current(),
                 tecINCOMPLETE);
-            // The same change under another failure result, for symmetry: the
-            // check keys off "not tesSUCCESS", nothing finer.
+            // The same change under a third failure result: the check keys off
+            // "not tesSUCCESS", nothing finer.
             doInvariantCheck(
                 {{"OutstandingAmount balance changed on failure"}},
                 mint,
@@ -5000,24 +4988,21 @@ class Invariants_test : public beast::unit_test::Suite
                 std::source_location::current(),
                 tecEXPIRED);
 
-            // A one-sided lock (spendable -> locked within one holder) is not a
-            // two-sided transfer, yet must still be caught on failure — this is
-            // the gap the `senders || receivers` condition closes.
-            // OutstandingAmount and the holder total are unchanged, so only the
-            // transfer-side on-failure check sees it.
+            // A lock moves value within one holder, so it is not a two-sided
+            // transfer and the `senders || receivers` form is what catches it.
+            // OutstandingAmount and the holder total are unchanged, so the
+            // balance check stays quiet.
             Precheck const lock = [&](Account const& a1, Account const&, ApplyContext& ac) {
                 auto sleTok = ac.view().peek(keylet::mptoken(id, a1.id()));
                 if (!sleTok || (*sleTok)[sfMPTAmount] < 10)
                     return false;
-                // Move 10 from spendable to locked (a fresh MPToken has no
-                // locked amount, so set it directly). Holder total and
-                // OutstandingAmount are unchanged.
+                // A fresh MPToken has no locked amount, so set it directly.
                 (*sleTok)[sfMPTAmount] = (*sleTok)[sfMPTAmount] - 10;
                 sleTok->setFieldU64(sfLockedAmount, 10);
                 ac.view().update(sleTok);
                 return true;
             };
-            // Baseline, as above: a lock is legitimate on tesSUCCESS.
+            // Negative control: a lock is legitimate on tesSUCCESS.
             doInvariantCheck({}, lock, XRPAmount{}, payment, {tesSUCCESS, tesSUCCESS}, setup);
             doInvariantCheck(
                 {{"MPToken balance changed on failure"}},
@@ -5029,7 +5014,7 @@ class Invariants_test : public beast::unit_test::Suite
                 TxAccount::None,
                 std::source_location::current(),
                 tecKILLED);
-            // The one-sided lock is caught under any failure result.
+            // The lock is caught under any failure result.
             doInvariantCheck(
                 {{"MPToken balance changed on failure"}},
                 lock,
@@ -5041,14 +5026,11 @@ class Invariants_test : public beast::unit_test::Suite
                 std::source_location::current(),
                 tecEXPIRED);
 
-            // Deleting a holder's MPToken moves no value, so the sender /
-            // receiver classification skips it (a deleted holder has no
-            // amtAfter). It must still be caught on failure — that is what the
-            // deletedAuthorized_ term covers. This needs a separate issuance
-            // whose holders were authorized but never paid, so the MPToken can
-            // be erased with a zero balance and OutstandingAmount untouched;
-            // otherwise the holder would register as a sender and the term
-            // under test would never be the deciding one.
+            // A deleted MPToken has no amtAfter, so the sender/receiver counts
+            // skip it and only the deletedAuthorized_ term can catch it. That
+            // needs holders authorized but never paid, so the MPToken can be
+            // erased with a zero balance and OutstandingAmount untouched --
+            // otherwise the holder would register as a sender instead.
             MPTID emptyId;
             auto const setupEmpty = [&](Account const& a1, Account const& a2, Env& env) {
                 Account const gw("gw");
@@ -5064,9 +5046,8 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().erase(sleTok);
                 return true;
             };
-            // ValidMPTIssuance also reports the deletion, so assert on the
-            // ValidMPTTransfer message specifically: it is only logged when the
-            // deletedAuthorized_ term fires.
+            // ValidMPTIssuance also reports the deletion, so assert on
+            // ValidMPTTransfer's message, which only the new term can produce.
             doInvariantCheck(
                 {{"MPToken balance changed on failure"}},
                 eraseToken,
@@ -5842,12 +5823,9 @@ class Invariants_test : public beast::unit_test::Suite
                             MPTTester const usd(
                                 {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 100});
                             id = usd.issuanceID();
-                            // Enforcement is gated on featureMPTokensV2 OR
-                            // fixCleanup3_4_0, so the advisory path must
-                            // disable both to stay non-enforcing. Disabling
-                            // happens after the MPT is set up; doInvariantCheck
-                            // closes the ledger next, which is what makes it
-                            // take effect.
+                            // Either gate enforces, so both must be off to stay
+                            // advisory. Disable after setting up the MPT; the
+                            // next env.close() is what makes it take effect.
                             if (!gates[featureMPTokensV2])
                                 env.disableFeature(featureMPTokensV2);
                             if (!gates[fixCleanup3_4_0])
@@ -6032,9 +6010,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         for (bool const isMPT : {false, true})
         {
-            // Both IOU and MPT pools now escalate to tefINVARIANT_FAILED on the
-            // second invariant pass (MPT balance invariants enforce under
-            // fixCleanup3_4_0), so the AMM pool-change check fails on both.
+            // Under fixCleanup3_4_0 the MPT balance invariants also fire on the
+            // second pass, so both IOU and MPT pools now escalate to tef.
             auto const error = TER(tefINVARIANT_FAILED);
             for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
             {
@@ -6729,9 +6706,8 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
-            // Second pass is tef, not tec: the bumped holder MPTAmount also trips
-            // ValidMPTTransfer's on-failure "balance changed" check (fixCleanup3_4_0),
-            // which fires on the pass-2 tec input and escalates it to tef.
+            // Second pass is tef: the bumped MPTAmount also trips
+            // ValidMPTTransfer's on-failure check, which escalates the tec.
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseConfidential);
 
