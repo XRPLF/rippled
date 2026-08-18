@@ -77,7 +77,10 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
 
     auto const brokerSle = ctx.view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
     if (!brokerSle)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        JLOG(ctx.j.fatal()) << "LoanAccept: LoanBroker does not exist.";
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerPseudo = brokerSle->at(sfAccount);
 
@@ -178,9 +181,8 @@ LoanAccept::doApply()
             j_))
         return ter;
 
-    auto vaultAssetReservedProxy = vaultSle->at(sfAssetsReserved);
     // 3.9.4.7 Update Vault object: Decrease Vault.AssetsReserved by Loan.PrincipalOutstanding.
-    vaultAssetReservedProxy -= principalOutstanding;
+    vaultSle->at(sfAssetsReserved) -= principalOutstanding;
     view.update(vaultSle);
 
     // 3.9.4.8 Make the borrower the owner of the loan.

@@ -57,13 +57,18 @@ struct Participants
 };
 
 /**
- * Holds the values validated and computed by doApply() that the flow
+ * Whether a newly-built Loan entry should carry the lsfLoanPending flag.
+ */
+enum class LoanPendingState { NotPending, Pending };
+
+/**
+ * Holds the values validated and computed by setupLoan() that the flow
  * functions need to create the loan and update the ledger.
  *
  * The ledger entries themselves are fetched (and their existence verified)
  * by the flow functions that mutate them; the derived borrower /
  * counterparty account IDs and the pure computed scalars are carried here so
- * they are resolved once, in doApply(), rather than in each flow function.
+ * they are resolved once, in setupLoan(), rather than in each flow function.
  */
 struct LoanPlan
 {
@@ -76,23 +81,6 @@ struct LoanPlan
     LoanProperties properties;
     std::uint32_t paymentInterval{};
     std::uint32_t paymentTotal{};
-};
-
-/**
- * Holds the LoanBroker entry and the validated / computed scalars produced
- * by setupLoan(): everything doApply() needs to resolve the participants and
- * assemble the LoanPlan.
- */
-struct LoanSetup
-{
-    uint256 brokerID;
-    std::shared_ptr<SLE> brokerSle;
-    Number principalRequested;
-    Number originationFee;
-    Number interestDue;
-    LoanProperties properties;
-    std::uint32_t paymentInterval;
-    std::uint32_t paymentTotal;
 };
 
 std::uint32_t
@@ -177,16 +165,23 @@ resolveParticipants(
 
 /**
  * Reads the LoanBroker and Vault entries, validates the requested loan
- * against them, and computes the loan properties and derived values.
+ * against them, computes the loan properties and derived values, and
+ * resolves the borrower / counterparty accounts.
  *
  * @param ctx The apply context for the transaction.
+ * @param accountID The account that submitted the transaction.
+ * @param flow The flow the transaction is exercising.
  * @param j Log.
  *
- * @return The validated and computed LoanSetup on success, or the TER
- * describing why the loan cannot be created on failure.
+ * @return The fully populated LoanPlan on success, or the TER describing
+ * why the loan cannot be created on failure.
  */
-std::expected<LoanSetup, TER>
-setupLoan(ApplyContext& ctx, beast::Journal const& j)
+std::expected<LoanPlan, TER>
+setupLoan(
+    ApplyContext& ctx,
+    AccountID const& accountID,
+    LoanFlow flow,
+    beast::Journal const& j)
 {
     auto const& tx = ctx.tx;
     auto& view = ctx.view();
@@ -319,9 +314,12 @@ setupLoan(ApplyContext& ctx, beast::Journal const& j)
         }
     }
 
-    return LoanSetup{
+    auto const participants = resolveParticipants(tx, brokerSle, accountID, flow);
+
+    return LoanPlan{
         .brokerID = brokerID,
-        .brokerSle = brokerSle,
+        .borrower = participants.borrower,
+        .counterparty = participants.counterparty,
         .principalRequested = principalRequested,
         .originationFee = originationFee,
         .interestDue = state.interestDue,
@@ -341,8 +339,12 @@ setupLoan(ApplyContext& ctx, beast::Journal const& j)
  *
  * @return The newly built Loan ledger entry.
  */
-std::shared_ptr<SLE>
-buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::ref brokerSle, bool pending)
+SLE::pointer
+buildLoan(
+    ApplyContext& ctx,
+    LoanPlan const& plan,
+    SLE::ref brokerSle,
+    LoanPendingState pending)
 {
     auto const& tx = ctx.tx;
 
@@ -389,7 +391,7 @@ buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::ref brokerSle, bool pend
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + plan.paymentInterval;
     loan->at(sfPaymentRemaining) = plan.paymentTotal;
-    if (pending)
+    if (pending == LoanPendingState::Pending)
         loan->setFlag(lsfLoanPending);
 
     return loan;
@@ -444,7 +446,7 @@ applyPendingLoan(
             reserveLoanOwner(view, brokerOwner, brokerOwnerSle, accountID, preFeeBalance, j))
         return ter;
 
-    auto loan = buildLoan(ctx, plan, brokerSle, /*pending=*/true);
+    auto loan = buildLoan(ctx, plan, brokerSle, LoanPendingState::Pending);
     view.insert(loan);
 
     // Update the balances in the vault. Decrement the available assets, accrue
@@ -556,7 +558,7 @@ applyImmediateLoan(
             j))
         return ter;
 
-    auto loan = buildLoan(ctx, plan, brokerSle, /*pending=*/false);
+    auto loan = buildLoan(ctx, plan, brokerSle, LoanPendingState::NotPending);
     view.insert(loan);
 
     // Update the balances in the vault. Decrement the available assets and
@@ -648,19 +650,19 @@ LoanSet::preflight(PreflightContext const& ctx)
         return std::nullopt;
     }();
 
-    // 3.8.5.1.2 CounterpartySignature is not present and the transaction is not part of a Batch
-    // inner transaction and the Borrower field is not specified. (temBAD_SIGNER)
-    if (!counterPartySig && !tx.isFieldPresent(sfBorrower))
-    {
-        JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
-        return temBAD_SIGNER;
-    }
-
     bool const twoStepFlowEnabled = isTwoStepFlowEnabled(ctx.rules);
-    // 3.8.5.1.5 Both Borrower and Counterparty fields are specified. (temINVALID)
-    // 3.8.5.1.6 Both Borrower and CounterpartySignature fields are specified. (temINVALID)
     if (getLoanFlow(tx, twoStepFlowEnabled) == LoanFlow::Invalid)
     {
+        // 3.8.5.1.2 CounterpartySignature is not present and the transaction is not part of a Batch
+        // inner transaction and the Borrower field is not specified. (temBAD_SIGNER)
+        if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && !tx.isFieldPresent(sfBorrower))
+        {
+            JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
+            return temBAD_SIGNER;
+        }
+
+        // 3.8.5.1.5 Both Borrower and Counterparty fields are specified. (temINVALID)
+        // 3.8.5.1.6 Both Borrower and CounterpartySignature fields are specified. (temINVALID)
         JLOG(ctx.j.warn()) << "LoanSet transaction must specify either a Borrower with a "
                               "StartDate or a CounterpartySignature.";
         return temINVALID;
@@ -988,30 +990,17 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 TER
 LoanSet::doApply()
 {
-    auto const setup = setupLoan(ctx_, j_);
-    if (!setup)
-        return setup.error();
-
-    // Bundle the validated and computed values for the flow functions. The
-    // pending (two-step) and immediate flows each own their full sequence of
-    // ledger mutations; nothing here is reordered relative to the prior
+    // The pending (two-step) and immediate flows each own their full sequence
+    // of ledger mutations; nothing here is reordered relative to the prior
     // implementation.
     auto const flow = getLoanFlow(ctx_.tx, isTwoStepFlowEnabled(ctx_.view().rules()));
-    bool const twoStepFlow = flow == LoanFlow::TwoStep;
-    auto const participants = resolveParticipants(ctx_.tx, setup->brokerSle, accountID_, flow);
-    LoanPlan const plan{
-        .brokerID = setup->brokerID,
-        .borrower = participants.borrower,
-        .counterparty = participants.counterparty,
-        .principalRequested = setup->principalRequested,
-        .originationFee = setup->originationFee,
-        .interestDue = setup->interestDue,
-        .properties = setup->properties,
-        .paymentInterval = setup->paymentInterval,
-        .paymentTotal = setup->paymentTotal};
+    auto const plan = setupLoan(ctx_, accountID_, flow, j_);
+    if (!plan)
+        return plan.error();
 
-    return twoStepFlow ? applyPendingLoan(ctx_, accountID_, preFeeBalance_, plan, j_)
-                       : applyImmediateLoan(ctx_, accountID_, preFeeBalance_, plan, j_);
+    return flow == LoanFlow::TwoStep
+        ? applyPendingLoan(ctx_, accountID_, preFeeBalance_, *plan, j_)
+        : applyImmediateLoan(ctx_, accountID_, preFeeBalance_, *plan, j_);
 }
 
 void
