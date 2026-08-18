@@ -3,8 +3,13 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -28,18 +33,21 @@ class STObject;
 class STAmount;
 class Rules;
 
-/** Calculate Liquidity Provider Token (LPT) Currency.
+/**
+ * Calculate Liquidity Provider Token (LPT) Currency.
  */
 Currency
 ammLPTCurrency(Asset const& asset1, Asset const& asset2);
 
-/** Calculate LPT Issue from AMM asset pair.
+/**
+ * Calculate LPT Issue from AMM asset pair.
  */
 Issue
 ammLPTIssue(Asset const& asset1, Asset const& asset2, AccountID const& ammAccountID);
 
-/** Validate the amount.
- * If validZero is false and amount is beast::zero then invalid amount.
+/**
+ * Validate the amount.
+ * If validZero is false and amount is beast::kZero then invalid amount.
  * Return error code if invalid amount.
  * If pair then validate amount's issue matches one of the pair's issue.
  */
@@ -60,7 +68,8 @@ invalidAMMAssetPair(
     Asset const& asset2,
     std::optional<std::pair<Asset, Asset>> const& pair = std::nullopt);
 
-/** Get time slot of the auction slot.
+/**
+ * Get time slot of the auction slot.
  */
 std::optional<std::uint8_t>
 ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot);
@@ -75,7 +84,8 @@ getFee(std::uint16_t tfee)
     return Number{tfee} / kAuctionSlotFeeScaleFactor;
 }
 
-/** Get fee multiplier (1 - tfee)
+/**
+ * Get fee multiplier (1 - tfee)
  * @tfee trading fee in basis points
  */
 inline Number
@@ -84,7 +94,8 @@ feeMult(std::uint16_t tfee)
     return 1 - getFee(tfee);
 }
 
-/** Get fee multiplier (1 - tfee / 2)
+/**
+ * Get fee multiplier (1 - tfee / 2)
  * @tfee trading fee in basis points
  */
 inline Number

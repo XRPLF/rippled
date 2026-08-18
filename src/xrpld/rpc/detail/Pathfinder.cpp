@@ -962,14 +962,10 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 void
 addUniquePath(STPathSet& pathSet, STPath const& path)
 {
-    // TODO(tom): building an STPathSet this way is quadratic in the size
-    // of the STPathSet!
-    for (auto const& p : pathSet)
+    if (!pathSet.contains(path))
     {
-        if (p == path)
-            return;
+        pathSet.pushBack(path);
     }
-    pathSet.pushBack(path);
 }
 
 void
@@ -1158,11 +1154,10 @@ Pathfinder::addLink(
                 {
                     std::ranges::sort(
                         candidates,
-                        std::bind(
-                            compareAccountCandidate,
-                            ledger_->seq(),
-                            std::placeholders::_1,
-                            std::placeholders::_2));
+                        [seq = ledger_->seq()](
+                            AccountCandidate const& first, AccountCandidate const& second) {
+                            return compareAccountCandidate(seq, first, second);
+                        });
 
                     int count = candidates.size();
                     // allow more paths from source

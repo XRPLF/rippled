@@ -2,19 +2,25 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/SignerUtils.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/owners.h>
-#include <test/jtx/tags.h>
 
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 
 #include <concepts>
 #include <cstdint>
 #include <optional>
 #include <utility>
+#include <vector>
 
-/** @brief Helpers for constructing Batch test transactions. */
+/**
+ * @brief Helpers for constructing Batch test transactions.
+ */
 namespace xrpl::test::jtx::batch {
 
 /**
@@ -53,7 +59,9 @@ calcConfidentialBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32
 json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
 
-/** @brief Adds an inner Batch transaction to a JTx and autofills it. */
+/**
+ * @brief Adds an inner Batch transaction to a JTx and autofills it.
+ */
 class Inner
 {
 private:
@@ -102,7 +110,9 @@ public:
     }
 };
 
-/** @brief Sets the Batch transaction signers on a JTx. */
+/**
+ * @brief Sets the Batch transaction signers on a JTx.
+ */
 class Sig
 {
 public:
@@ -125,7 +135,9 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-/** @brief Sets a nested multi-signature for a Batch transaction on a JTx. */
+/**
+ * @brief Sets a nested multi-signature for a Batch transaction on a JTx.
+ */
 class Msig
 {
 public:

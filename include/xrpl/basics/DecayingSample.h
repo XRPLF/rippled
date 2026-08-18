@@ -2,12 +2,14 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 
 namespace xrpl {
 
-/** Sampling function using exponential decay to provide a continuous value.
-    @tparam The number of seconds in the decay window.
-*/
+/**
+ * Sampling function using exponential decay to provide a continuous value.
+ * @tparam The number of seconds in the decay window.
+ */
 template <int Window, typename Clock>
 class DecayingSample
 {
@@ -18,15 +20,16 @@ public:
     DecayingSample() = delete;
 
     /**
-        @param now Start time of DecayingSample.
-    */
+     * @param now Start time of DecayingSample.
+     */
     explicit DecayingSample(time_point now) : value_(value_type()), when_(now)
     {
     }
 
-    /** Add a new sample.
-        The value is first aged according to the specified time.
-    */
+    /**
+     * Add a new sample.
+     * The value is first aged according to the specified time.
+     */
     value_type
     add(value_type value, time_point now)
     {
@@ -35,9 +38,10 @@ public:
         return value_ / Window;
     }
 
-    /** Retrieve the current value in normalized units.
-        The samples are first aged according to the specified time.
-    */
+    /**
+     * Retrieve the current value in normalized units.
+     * The samples are first aged according to the specified time.
+     */
     value_type
     value(time_point now)
     {
@@ -86,9 +90,10 @@ private:
 
 //------------------------------------------------------------------------------
 
-/** Sampling function using exponential decay to provide a continuous value.
-    @tparam HalfLife The half life of a sample, in seconds.
-*/
+/**
+ * Sampling function using exponential decay to provide a continuous value.
+ * @tparam HalfLife The half life of a sample, in seconds.
+ */
 template <int HalfLife, class Clock>
 class DecayWindow
 {

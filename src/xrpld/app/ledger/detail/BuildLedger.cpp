@@ -13,10 +13,10 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/apply.h>
 
@@ -81,15 +81,16 @@ buildLedgerImpl(
     return built;
 }
 
-/** Apply a set of consensus transactions to a ledger.
-
-  @param app Handle to application
-  @param txns the set of transactions to apply,
-  @param failed set of transactions that failed to apply
-  @param view ledger to apply to
-  @param j Journal for logging
-  @return number of transactions applied; transactions to retry left in txns
-*/
+/**
+ * Apply a set of consensus transactions to a ledger.
+ *
+ * @param app Handle to application
+ * @param txns the set of transactions to apply,
+ * @param failed set of transactions that failed to apply
+ * @param view ledger to apply to
+ * @param j Journal for logging
+ * @return number of transactions applied; transactions to retry left in txns
+ */
 
 std::size_t
 applyTransactions(

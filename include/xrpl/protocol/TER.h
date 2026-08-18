@@ -8,7 +8,9 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 namespace xrpl {
 
@@ -223,6 +225,7 @@ enum TERcodes : TERUnderlyingType {
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
     terLOCKED,                  // MPT is locked
+    terNO_PERMISSION,           // No permission but retry
 };
 
 //------------------------------------------------------------------------------
@@ -366,6 +369,7 @@ enum TECcodes : TERUnderlyingType {
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
     tecBAD_PROOF = 199,
+    tecNO_SPONSOR_PERMISSION = 200,
 };
 
 //------------------------------------------------------------------------------
@@ -409,7 +413,7 @@ TERtoInt(TECcodes v)
 
 //------------------------------------------------------------------------------
 // Template class that is specific to selected ranges of error codes.  The
-// Trait tells std::enable_if which ranges are allowed.
+// Trait tells the requires-clause which ranges are allowed.
 template <template <typename> class Trait>
 class TERSubset
 {
@@ -435,11 +439,11 @@ public:
         return TERSubset(from);
     }
 
-    // Trait tells enable_if which types are allowed for construction.
-    template <
-        typename T,
-        typename = std::enable_if_t<Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value>>
-    constexpr TERSubset(T rhs) : code_(TERtoInt(rhs))
+    // Trait tells the requires-clause which types are allowed for construction.
+    template <typename T>
+    constexpr TERSubset(T rhs)
+        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+        : code_(TERtoInt(rhs))
     {
     }
 
@@ -449,10 +453,11 @@ public:
     constexpr TERSubset&
     operator=(TERSubset&& rhs) = default;
 
-    // Trait tells enable_if which types are allowed for assignment.
+    // Trait tells the requires-clause which types are allowed for assignment.
     template <typename T>
     constexpr auto
-    operator=(T rhs) -> std::enable_if_t<Trait<T>::value, TERSubset&>
+    operator=(T rhs) -> TERSubset&
+        requires(Trait<T>::value)
     {
         code_ = TERtoInt(rhs);
         return *this;
@@ -506,54 +511,60 @@ public:
 // Only enabled if both arguments return int if TERtiInt is called with them.
 template <typename L, typename R>
 constexpr auto
-operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator==(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) == TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator!=(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) != TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator<(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) < TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator<=(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) <= TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator>(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) > TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator>=(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) >= TERtoInt(rhs);
 }

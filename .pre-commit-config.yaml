@@ -28,8 +28,15 @@ repos:
         entry: ./bin/pre-commit/clang_tidy_check.py
         language: python
         types_or: [c++, c]
-        exclude: ^include/xrpl/protocol_autogen
-        pass_filenames: false # script determines the staged files itself
+        # .ipp fragments are included by their owning header rather than compiled
+        # as standalone translation units, so they have no compile_commands.json
+        # entry to lint (verify_headers checks them transitively).
+        exclude: '^include/xrpl/protocol_autogen|\.ipp$'
+        # run-clang-tidy --fix may edit headers included by files it is not run on,
+        # so pre-commit must not split the files across parallel hook invocations.
+        # The script determines the staged files itself and lets run-clang-tidy
+        # handle parallelism internally.
+        pass_filenames: false
       - id: fix-include-style
         name: fix include style
         entry: ./bin/pre-commit/fix_include_style.py
@@ -41,9 +48,14 @@ repos:
         language: python
         entry: ./bin/pre-commit/fix_pragma_once.py
         files: \.(h|hpp)$
+      - id: check-doxygen-style
+        name: check Doxygen comment style
+        entry: ./bin/pre-commit/check_doxygen_style.py
+        language: python
+        types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: dd18dad857d6133e90bbe478f4f2f22ec0030269 # frozen: v22.1.5
+    rev: f4d7745e17a28aad7eed2f4874ca8d1568c11c4c # frozen: v22.1.8
     hooks:
       - id: clang-format
         args: [--style=file]
@@ -56,7 +68,7 @@ repos:
       - id: gersemi
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: 39e2973981e6d2f9b6c543b0086a2d2393abdc89 # frozen: v3.9.4
+    rev: 9337a74165b178ae2c766f60bee7252a0f06f3e8 # frozen: v3.9.5
     hooks:
       - id: prettier
         args: [--end-of-line=auto]
@@ -88,20 +100,19 @@ repos:
   - repo: https://github.com/streetsidesoftware/cspell-cli
     rev: ea11f9efc0bec520073405bc30552da887ba71bc # frozen: v10.0.1
     hooks:
-      - id: cspell # Spell check changed files
+      - id: cspell
+        name: check changed files spelling
         exclude: |
           (?x)^(
-              .config/cspell.config.yaml|
+              \.cspell\.config\.yaml|
               include/xrpl/protocol_autogen/(transactions|ledger_entries)/.*
           )$
-      - id: cspell # Spell check the commit message
+      - id: cspell
         name: check commit message spelling
         args:
           - --no-must-find-files
           - --no-progress
           - --no-summary
-          - --files
-          - .git/COMMIT_EDITMSG
         stages: [commit-msg]
 
   - repo: local

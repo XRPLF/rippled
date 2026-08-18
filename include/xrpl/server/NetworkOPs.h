@@ -1,16 +1,24 @@
 #pragma once
 
-#include <xrpl/core/JobQueue.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/messages.h>
 #include <xrpl/server/InfoSub.h>
-#include <xrpl/shamap/SHAMap.h>
 
 #include <boost/asio.hpp>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
 
 namespace xrpl {
 
@@ -25,6 +33,7 @@ class Transaction;
 class ValidatorKeys;
 class CanonicalTXSet;
 class RCLCxPeerPos;
+class SHAMap;
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -38,35 +47,37 @@ class RCLCxPeerPos;
 // there's a functional network.
 //
 
-/** Specifies the mode under which the server believes it's operating.
-
-    This has implications about how the server processes transactions and
-    how it responds to requests (e.g. account balance request).
-
-    @note Other code relies on the numerical values of these constants; do
-          not change them without verifying each use and ensuring that it is
-          not a breaking change.
-*/
+/**
+ * Specifies the mode under which the server believes it's operating.
+ *
+ * This has implications about how the server processes transactions and
+ * how it responds to requests (e.g. account balance request).
+ *
+ * @note Other code relies on the numerical values of these constants; do
+ *       not change them without verifying each use and ensuring that it is
+ *       not a breaking change.
+ */
 enum class OperatingMode {
-    DISCONNECTED = 0,  //!< not ready to process requests
-    CONNECTED = 1,     //!< convinced we are talking to the network
-    SYNCING = 2,       //!< fallen slightly behind
-    TRACKING = 3,      //!< convinced we agree with the network
-    FULL = 4           //!< we have the ledger and can even validate
+    DISCONNECTED = 0,  ///< not ready to process requests
+    CONNECTED = 1,     ///< convinced we are talking to the network
+    SYNCING = 2,       ///< fallen slightly behind
+    TRACKING = 3,      ///< convinced we agree with the network
+    FULL = 4           ///< we have the ledger and can even validate
 };
 
-/** Provides server functionality for clients.
-
-    Clients include backend applications, local commands, and connected
-    clients. This class acts as a proxy, fulfilling the command with local
-    data if possible, or asking the network and returning the results if
-    needed.
-
-    A backend application or local client can trust a local instance of
-    xrpld / NetworkOPs. However, client software connecting to non-local
-    instances of xrpld will need to be hardened to protect against hostile
-    or unreliable servers.
-*/
+/**
+ * Provides server functionality for clients.
+ *
+ * Clients include backend applications, local commands, and connected
+ * clients. This class acts as a proxy, fulfilling the command with local
+ * data if possible, or asking the network and returning the results if
+ * needed.
+ *
+ * A backend application or local client can trust a local instance of
+ * xrpld / NetworkOPs. However, client software connecting to non-local
+ * instances of xrpld will need to be hardened to protect against hostile
+ * or unreliable servers.
+ */
 class NetworkOPs : public InfoSub::Source
 {
 public:
@@ -216,12 +227,13 @@ public:
     virtual json::Value
     getLedgerFetchInfo() = 0;
 
-    /** Accepts the current transaction tree, return the new ledger's sequence
-
-        This API is only used via RPC with the server in STANDALONE mode and
-        performs a virtual consensus round, with all the transactions we are
-        proposing being accepted.
-    */
+    /**
+     * Accepts the current transaction tree, return the new ledger's sequence
+     *
+     * This API is only used via RPC with the server in STANDALONE mode and
+     * performs a virtual consensus round, with all the transactions we are
+     * proposing being accepted.
+     */
     virtual std::uint32_t
     acceptLedger(std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt) = 0;
 
@@ -250,15 +262,16 @@ public:
     virtual void
     stateAccounting(json::Value& obj) = 0;
 
-    /** Total number of (book, subscriber) entries currently tracked.
+    /**
+     * Total number of (book, subscriber) entries currently tracked.
      *
-     *  Counts every weak_ptr stored across every book in subBook_, NOT the
-     *  number of distinct subscribers and NOT the number of distinct
-     *  books: a single subscriber following N books contributes N entries.
+     * Counts every weak_ptr stored across every book in subBook_, NOT the
+     * number of distinct subscribers and NOT the number of distinct
+     * books: a single subscriber following N books contributes N entries.
      *
-     *  @note Diagnostic accessor; intended for tests and operator visibility
-     *        into per-book subscription state. The returned value is a
-     *        snapshot under the subscription lock.
+     * @note Diagnostic accessor; intended for tests and operator visibility
+     *       into per-book subscription state. The returned value is a
+     *       snapshot under the subscription lock.
      */
     virtual std::size_t
     getBookSubscribersCount() = 0;

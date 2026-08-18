@@ -4,10 +4,16 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
 
+#include <chrono>
+#include <cstdint>
+#include <mutex>
 #include <optional>
 #include <set>
+#include <type_traits>
+#include <utility>
 
 namespace xrpl {
 
@@ -69,19 +75,21 @@ any(HashRouterFlags flags)
 
 class Config;
 
-/** Routing table for objects identified by hash.
-
-    This table keeps track of which hashes have been received by which peers.
-    It is used to manage the routing and broadcasting of messages in the peer
-    to peer overlay.
-*/
+/**
+ * Routing table for objects identified by hash.
+ *
+ * This table keeps track of which hashes have been received by which peers.
+ * It is used to manage the routing and broadcasting of messages in the peer
+ * to peer overlay.
+ */
 class HashRouter
 {
 public:
     // The type here *MUST* match the type of Peer::id_t
     using PeerShortID = std::uint32_t;
 
-    /** Structure used to customize @ref HashRouter behavior.
+    /**
+     * Structure used to customize @ref HashRouter behavior.
      *
      * Even though these items are configurable, they are undocumented. Don't
      * change them unless there is a good reason, and network-wide coordination
@@ -91,22 +99,27 @@ public:
      */
     struct Setup
     {
-        /// Default constructor
+        /**
+         * Default constructor
+         */
         explicit Setup() = default;
 
         using seconds = std::chrono::seconds;
 
-        /** Expiration time for a hash entry
+        /**
+         * Expiration time for a hash entry
          */
         seconds holdTime{300};
 
-        /** Amount of time required before a relayed item will be relayed again.
+        /**
+         * Amount of time required before a relayed item will be relayed again.
          */
         seconds relayTime{30};
     };
 
 private:
-    /** An entry in the routing table.
+    /**
+     * An entry in the routing table.
      */
     class Entry : public CountedObject<Entry>
     {
@@ -121,7 +134,7 @@ private:
         }
 
         [[nodiscard]] HashRouterFlags
-        getFlags(void) const
+        getFlags() const
         {
             return flags_;
         }
@@ -132,26 +145,31 @@ private:
             flags_ |= flagsToSet;
         }
 
-        /** Return set of peers we've relayed to and reset tracking */
+        /**
+         * Return set of peers we've relayed to and reset tracking
+         */
         std::set<PeerShortID>
         releasePeerSet()
         {
             return std::move(peers_);
         }
 
-        /** Return seated relay time point if the message has been relayed */
+        /**
+         * Return seated relay time point if the message has been relayed
+         */
         [[nodiscard]] std::optional<Stopwatch::time_point>
         relayed() const
         {
             return relayed_;
         }
 
-        /** Determines if this item should be relayed.
-
-            Checks whether the item has been recently relayed.
-            If it has, return false. If it has not, update the
-            last relay timestamp and return true.
-        */
+        /**
+         * Determines if this item should be relayed.
+         *
+         * Checks whether the item has been recently relayed.
+         * If it has, return false. If it has not, update the
+         * last relay timestamp and return true.
+         */
         bool
         shouldRelay(Stopwatch::time_point const& now, std::chrono::seconds relayTime)
         {
@@ -197,11 +215,13 @@ public:
     bool
     addSuppressionPeer(uint256 const& key, PeerShortID peer);
 
-    /** Add a suppression peer and get message's relay status.
+    /**
+     * Add a suppression peer and get message's relay status.
      * Return pair:
      * element 1: true if the peer is added.
      * element 2: optional is seated to the relay time point or
-     * is unseated if has not relayed yet. */
+     * is unseated if has not relayed yet.
+     */
     std::pair<bool, std::optional<Stopwatch::time_point>>
     addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer);
 
@@ -216,28 +236,30 @@ public:
         HashRouterFlags& flags,
         std::chrono::seconds txInterval);
 
-    /** Set the flags on a hash.
-
-        @return `true` if the flags were changed. `false` if unchanged.
-    */
+    /**
+     * Set the flags on a hash.
+     *
+     * @return `true` if the flags were changed. `false` if unchanged.
+     */
     bool
     setFlags(uint256 const& key, HashRouterFlags flags);
 
     HashRouterFlags
     getFlags(uint256 const& key);
 
-    /** Determines whether the hashed item should be relayed.
-
-        Effects:
-
-            If the item should be relayed, this function will not
-            return a seated optional again until the relay time has expired.
-            The internal set of peers will also be reset.
-
-        @return A `std::optional` set of peers which do not need to be
-            relayed to. If the result is unseated, the item should
-            _not_ be relayed.
-    */
+    /**
+     * Determines whether the hashed item should be relayed.
+     *
+     * Effects:
+     *
+     *     If the item should be relayed, this function will not
+     *     return a seated optional again until the relay time has expired.
+     *     The internal set of peers will also be reset.
+     *
+     * @return A `std::optional` set of peers which do not need to be
+     *     relayed to. If the result is unseated, the item should
+     *     _not_ be relayed.
+     */
     std::optional<std::set<PeerShortID>>
     shouldRelay(uint256 const& key);
 

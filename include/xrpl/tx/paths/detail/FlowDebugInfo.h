@@ -1,14 +1,22 @@
 #pragma once
 
-#include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 
 #include <boost/container/flat_map.hpp>
 
 #include <chrono>
-#include <optional>
+#include <cstddef>
 #include <sstream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl::path::detail {
 // Track performance information of a single payment

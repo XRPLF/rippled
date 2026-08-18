@@ -7,13 +7,14 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -26,6 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -44,17 +46,11 @@ namespace xrpl {
  *
  * @param view The ledger view providing fee and state information.
  * @param tx The batch transaction to calculate the fee for.
- * @return XRPAmount The total base fee required for the batch transaction.
- *
- * @throws std::overflow_error If any fee calculation would overflow the
- * XRPAmount type.
- * @throws std::length_error If the number of inner transactions or signers
- * exceeds the allowed maximum.
- * @throws std::invalid_argument If an inner transaction is itself a batch
- * transaction.
+ * @return XRPAmount The total base fee required for the batch transaction,
+ * or std::nullopt on failure (overflow, oversized arrays).
  */
-XRPAmount
-Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
+std::optional<XRPAmount>
+Batch::calculateBaseFeeImpl(ReadView const& view, STTx const& tx)
 {
     XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
 
@@ -65,49 +61,26 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (baseFee > maxAmount - view.fees().base)
     {
         JLOG(debugLog().error()) << "BatchTrace: Base fee overflow detected.";
-        return XRPAmount{kInitialXrp};
+        return std::nullopt;
     }
     // LCOV_EXCL_STOP
 
     XRPAmount const batchBase = view.fees().base + baseFee;
 
-    // Calculate the Inner Txn Fees
+    // Calculate the Inner Txn Fees. Inners are built and validated (count,
+    // no nesting) at construction, so they are reused here directly.
     XRPAmount txnFees{0};
-    if (tx.isFieldPresent(sfRawTransactions))
+    for (auto const& stx : tx.getBatchTransactions())
     {
-        auto const& txns = tx.getFieldArray(sfRawTransactions);
-
+        auto const fee = xrpl::calculateBaseFee(view, *stx);
         // LCOV_EXCL_START
-        if (txns.size() > kMaxBatchTxCount)
+        if (txnFees > maxAmount - fee)
         {
-            JLOG(debugLog().error()) << "BatchTrace: Raw Transactions array exceeds max entries.";
-            return XRPAmount{kInitialXrp};
+            JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in txnFees calculation.";
+            return std::nullopt;
         }
         // LCOV_EXCL_STOP
-
-        for (STObject txn : txns)
-        {
-            STTx const stx = STTx{std::move(txn)};
-
-            // LCOV_EXCL_START
-            if (stx.getTxnType() == ttBATCH)
-            {
-                JLOG(debugLog().error()) << "BatchTrace: Inner Batch transaction found.";
-                return XRPAmount{kInitialXrp};
-            }
-            // LCOV_EXCL_STOP
-
-            auto const fee = xrpl::calculateBaseFee(view, stx);
-            // LCOV_EXCL_START
-            if (txnFees > maxAmount - fee)
-            {
-                JLOG(debugLog().error())
-                    << "BatchTrace: XRPAmount overflow in txnFees calculation.";
-                return XRPAmount{kInitialXrp};
-            }
-            // LCOV_EXCL_STOP
-            txnFees += fee;
-        }
+        txnFees += fee;
     }
 
     // Calculate the Signers/BatchSigners Fees
@@ -120,7 +93,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         if (signers.size() > kMaxBatchSigners)
         {
             JLOG(debugLog().error()) << "BatchTrace: Batch Signers array exceeds max entries.";
-            return XRPAmount{kInitialXrp};
+            return std::nullopt;
         }
         // LCOV_EXCL_STOP
 
@@ -138,7 +111,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
                 {
                     JLOG(debugLog().error())
                         << "BatchTrace: Nested Signers array exceeds max entries.";
-                    return kInitialXrp;
+                    return std::nullopt;
                 }
                 // LCOV_EXCL_STOP
                 signerCount += nestedSigners.size();
@@ -150,7 +123,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerCount calculation.";
-        return XRPAmount{kInitialXrp};
+        return std::nullopt;
     }
     // LCOV_EXCL_STOP
 
@@ -160,18 +133,36 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerFees > maxAmount - txnFees)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerFees calculation.";
-        return XRPAmount{kInitialXrp};
+        return std::nullopt;
     }
     XRPAmount const innerFees = txnFees + signerFees;
     if (innerFees > maxAmount - batchBase)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in total fee calculation.";
-        return XRPAmount{kInitialXrp};
+        return std::nullopt;
     }
     // LCOV_EXCL_STOP
 
     // 10 drops per batch signature + sum of inner tx fees + batchBase
     return innerFees + batchBase;
+}
+
+XRPAmount
+Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    if (auto const fee = calculateBaseFeeImpl(view, tx))
+        return *fee;
+    // The fee could not be computed, so return a placeholder the account can
+    // pay; preclaim rejects the transaction with tecINSUFF_FEE.
+    return view.fees().base;  // LCOV_EXCL_LINE
+}
+
+TER
+Batch::preclaim(PreclaimContext const& ctx)
+{
+    if (!calculateBaseFeeImpl(ctx.view, ctx.tx))
+        return tecINSUFF_FEE;  // LCOV_EXCL_LINE
+    return tesSUCCESS;
 }
 
 std::uint32_t
@@ -226,19 +217,22 @@ Batch::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
+    if (ctx.tx.isFieldPresent(sfSponsorFlags))
+    {
+        if (isReserveSponsored(ctx.tx))
+        {
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
+                                << "spfSponsorReserve is not allowed on outer Batch.";
+            return temINVALID_FLAG;
+        }
+    }
+
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
     if (rawTxns.size() <= 1)
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
                             << "txns array must have at least 2 entries.";
         return temARRAY_EMPTY;
-    }
-
-    if (rawTxns.size() > kMaxBatchTxCount)
-    {
-        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
-                            << "txns array exceeds 8 entries.";
-        return temARRAY_TOO_LARGE;
     }
 
     if (ctx.tx.isFieldPresent(sfBatchSigners) &&
@@ -281,9 +275,9 @@ Batch::preflight(PreflightContext const& ctx)
 
         return tesSUCCESS;
     };
-    for (STObject rb : rawTxns)
+    for (auto const& stxPtr : ctx.tx.getBatchTransactions())
     {
-        STTx const stx = STTx{std::move(rb)};
+        STTx const& stx = *stxPtr;
         auto const hash = stx.getTransactionID();
         if (!uniqueHashes.emplace(hash).second)
         {
@@ -294,14 +288,6 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const txType = stx.getFieldU16(sfTransactionType);
-        if (txType == ttBATCH)
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "batch cannot have an inner batch txn. "
-                                << "txID: " << hash;
-            return temINVALID;
-        }
-
         if (std::ranges::any_of(
                 kDisabledTxTypes, [txType](auto const& disabled) { return txType == disabled; }))
         {
@@ -330,6 +316,14 @@ Batch::preflight(PreflightContext const& ctx)
                 return ret;
             }
         }
+        if (stx.isFieldPresent(sfSponsorSignature))
+        {
+            auto const sponsorSignature = stx.getFieldObject(sfSponsorSignature);
+            if (auto const ret = checkSignatureFields(sponsorSignature, hash, "sponsor signature "))
+            {
+                return ret;
+            }
+        }
 
         // Check that the Fee is native asset (XRP) and zero
         if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::kZero)
@@ -339,6 +333,10 @@ Batch::preflight(PreflightContext const& ctx)
                                 << "txID: " << hash;
             return temBAD_FEE;
         }
+
+        // Disallow fee sponsorship on Batch inner txs
+        if (stx.isFieldPresent(sfSponsor) && isFeeSponsored(stx))
+            return temINVALID_FLAG;
 
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult =
@@ -410,18 +408,17 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         ctx.tx.getTxnType() == ttBATCH, "xrpl::Batch::preflightSigValidated : batch transaction");
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
-    auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
-
     // Accounts that must sign the batch: each inner authorizer and counterparty
     // (excluding the outer account), sorted and de-duplicated to match against
     // the ascending, unique batch signers.
     std::vector<AccountID> requiredSigners;
     requiredSigners.reserve(kMaxBatchSigners);
-    for (STObject const& rb : rawTxns)
+    for (auto const& stxPtr : ctx.tx.getBatchTransactions())
     {
+        STTx const& rb = *stxPtr;
         // A delegated inner is signed by the delegate, not the account holder,
         // so the delegate is the required signer when present.
-        AccountID const authorizer = rb.getFeePayer();
+        AccountID const authorizer = rb.getInitiator();
 
         // The outer account signs the batch itself, so it is never added to the
         // required signers.
@@ -432,6 +429,10 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         if (auto const counterparty = rb[~sfCounterparty];
             counterparty && counterparty != outerAccount)
             requiredSigners.push_back(*counterparty);
+
+        if (auto const sponsor = rb.at(~sfSponsor);
+            sponsor && rb.isFieldPresent(sfSponsorSignature) && sponsor != outerAccount)
+            requiredSigners.push_back(*sponsor);
     }
     std::ranges::sort(requiredSigners);
     auto const dupes = std::ranges::unique(requiredSigners);

@@ -11,6 +11,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
@@ -28,6 +29,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
@@ -38,12 +40,12 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>
 
+#include <soci/blob-exchange.h>  // IWYU pragma: keep
 #include <soci/blob.h>
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/soci-backend.h>
 #include <soci/statement.h>
@@ -54,6 +56,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
+#include <format>
 #include <functional>
 #include <limits>
 #include <map>
@@ -62,6 +66,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -104,18 +109,16 @@ makeLedgerDBs(
     // ledger database
     auto lgr{std::make_unique<DatabaseCon>(
         setup, kLgrDbName, setup.lgrPragma, kLgrDbInit, checkpointerSetup, j)};
-    lgr->getSession() << boost::str(
-        boost::format("PRAGMA cache_size=-%d;") %
-        kilobytes(config.getValueFor(SizedItem::LgrDbCache)));
+    lgr->getSession() << std::format(
+        "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::LgrDbCache)));
 
     if (config.useTxTables())
     {
         // transaction database
         auto tx{std::make_unique<DatabaseCon>(
             setup, kTxDbName, setup.txPragma, kTxDbInit, checkpointerSetup, j)};
-        tx->getSession() << boost::str(
-            boost::format("PRAGMA cache_size=-%d;") %
-            kilobytes(config.getValueFor(SizedItem::TxnDbCache)));
+        tx->getSession() << std::format(
+            "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::TxnDbCache)));
 
         if (!setup.standAlone || setup.startUp == StartUpType::Load ||
             setup.startUp == StartUpType::LoadFile || setup.startUp == StartUpType::Replay)
@@ -275,15 +278,17 @@ saveValidatedLedger(
     }
 
     {
-        static boost::format kDeleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
-        static boost::format kDeleteTranS1("DELETE FROM Transactions WHERE LedgerSeq = %u;");
-        static boost::format kDeleteTranS2("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
-        static boost::format kDeleteAcctTrans(
-            "DELETE FROM AccountTransactions WHERE TransID = '%s';");
+        static constexpr char const* kDeleteLedger = "DELETE FROM Ledgers WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteTranS1 =
+            "DELETE FROM Transactions WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteTranS2 =
+            "DELETE FROM AccountTransactions WHERE LedgerSeq = {};";
+        static constexpr char const* kDeleteAcctTrans =
+            "DELETE FROM AccountTransactions WHERE TransID = '{}';";
 
         {
             auto db = ldgDB.checkoutDb();
-            *db << boost::str(kDeleteLedger % seq);
+            *db << std::format(kDeleteLedger, seq);
         }
 
         if (app.config().useTxTables())
@@ -300,19 +305,19 @@ saveValidatedLedger(
 
             soci::transaction tr(*db);
 
-            *db << boost::str(kDeleteTranS1 % seq);
-            *db << boost::str(kDeleteTranS2 % seq);
+            *db << std::format(kDeleteTranS1, seq);
+            *db << std::format(kDeleteTranS2, seq);
 
             std::string const ledgerSeq(std::to_string(seq));
 
             for (auto const& acceptedLedgerTx : *aLedger)
             {
-                uint256 transactionID = acceptedLedgerTx->getTransactionID();
+                uint256 const transactionID = acceptedLedgerTx->getTransactionID();
 
                 std::string const txnId(to_string(transactionID));
                 std::string const txnSeq(std::to_string(acceptedLedgerTx->getTxnSeq()));
 
-                *db << boost::str(kDeleteAcctTrans % transactionID);
+                *db << std::format(kDeleteAcctTrans, txnId);
 
                 auto const& accts = acceptedLedgerTx->getAffected();
 
@@ -624,11 +629,11 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
-    std::string const sql = boost::str(
-        boost::format(
-            "SELECT LedgerSeq, Status, RawTxn "
-            "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
-        startIndex % quantity);
+    std::string const sql = std::format(
+        "SELECT LedgerSeq, Status, RawTxn "
+        "FROM Transactions ORDER BY LedgerSeq DESC LIMIT {},{};",
+        startIndex,
+        quantity);
 
     std::vector<std::shared_ptr<Transaction>> txs;
     int total = 0;
@@ -725,41 +730,50 @@ transactionsSQL(
 
     if (options.ledgerRange.max != 0u)
     {
-        maxClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.ledgerRange.max);
+        maxClause =
+            std::format("AND AccountTransactions.LedgerSeq <= '{}'", options.ledgerRange.max);
     }
 
     if (options.ledgerRange.min != 0u)
     {
-        minClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.ledgerRange.min);
+        minClause =
+            std::format("AND AccountTransactions.LedgerSeq >= '{}'", options.ledgerRange.min);
     }
 
     std::string sql;
 
     if (count)
     {
-        sql = boost::str(
-            boost::format(
-                "SELECT %s FROM AccountTransactions "
-                "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
-            selection % toBase58(options.account) % maxClause % minClause % options.offset %
+        sql = std::format(
+            "SELECT {} FROM AccountTransactions "
+            "WHERE Account = '{}' {} {} LIMIT {}, {};",
+            selection,
+            toBase58(options.account),
+            maxClause,
+            minClause,
+            options.offset,
             numberOfResults);
     }
     else
     {
-        sql = boost::str(
-            boost::format(
-                "SELECT %s FROM "
-                "AccountTransactions INNER JOIN Transactions "
-                "ON Transactions.TransID = AccountTransactions.TransID "
-                "WHERE Account = '%s' %s %s "
-                "ORDER BY AccountTransactions.LedgerSeq %s, "
-                "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-                "LIMIT %u, %u;") %
-            selection % toBase58(options.account) % maxClause % minClause %
-            (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") %
-            (descending ? "DESC" : "ASC") % options.offset % numberOfResults);
+        char const* const order = descending ? "DESC" : "ASC";
+        sql = std::format(
+            "SELECT {} FROM "
+            "AccountTransactions INNER JOIN Transactions "
+            "ON Transactions.TransID = AccountTransactions.TransID "
+            "WHERE Account = '{}' {} {} "
+            "ORDER BY AccountTransactions.LedgerSeq {}, "
+            "AccountTransactions.TxnSeq {}, AccountTransactions.TransID {} "
+            "LIMIT {}, {};",
+            selection,
+            toBase58(options.account),
+            maxClause,
+            minClause,
+            order,
+            order,
+            order,
+            options.offset,
+            numberOfResults);
     }
     JLOG(j.trace()) << "txSQL query: " << sql;
     return sql;
@@ -989,6 +1003,57 @@ getNewestAccountTxsB(
 }
 
 /**
+ * @brief Determines whether a transaction should be included in account_tx
+ *        results based on a delegation filter.
+ * @param rawData Serialized transaction blob.
+ * @param filter The delegate filter specifying the role of the queried account
+ *        (Actor or Authorizer) and an optional counterparty to match against.
+ * @param contextAccount The account passed to account_tx (the queried account).
+ * @return True if the transaction passes the filter and should be included,
+ *         false if it should be skipped.
+ */
+static bool
+passesDelegateFilter(
+    Blob const& rawData,
+    DelegateFilter const& filter,
+    AccountID const& contextAccount)
+{
+    SerialIter sit{makeSlice(rawData)};
+    STTx const tx{sit};
+
+    AccountID const txOwner = tx.getAccountID(sfAccount);
+
+    if (!tx.isFieldPresent(sfDelegate))
+        return false;
+
+    AccountID const txSigner = tx.getAccountID(sfDelegate);
+
+    switch (filter.type)
+    {
+        case DelegateType::Actor: {
+            // Keep txns where the queried account (A) is the owner but
+            // another account (C) was the delegatee that signed.
+            bool const isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
+            if (!isDelegated)
+                return false;
+            return !filter.counterparty || (txSigner == *filter.counterparty);
+        }
+
+        case DelegateType::Authorizer: {
+            // Keep txns where the queried account (C) is the signer acting
+            // on behalf of another account (A, the delegator/owner).
+            bool const isActingAsDelegate =
+                (txSigner == contextAccount) && (txOwner != contextAccount);
+            if (!isActingAsDelegate)
+                return false;
+            return !filter.counterparty || (txOwner == *filter.counterparty);
+        }
+    }
+
+    return false;  // LCOV_EXCL_LINE
+}
+
+/**
  * @brief accountTxPage Searches for the oldest or newest transactions for the
  *        account that matches the given criteria starting from the provided
  *        marker and invokes the callback parameter for each found transaction.
@@ -1018,6 +1083,7 @@ accountTxPage(
 {
     int total = 0;
 
+    bool const hasDelegateFilter = options.delegate.has_value();
     bool lookingForMarker = options.marker.has_value();
 
     std::uint32_t numberOfResults = 0;
@@ -1048,14 +1114,6 @@ accountTxPage(
 
     std::optional<RelationalDatabase::AccountTxMarker> newmarker;
 
-    static std::string const kPrefix(
-        R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
-          Status,RawTxn,TxnMeta
-          FROM AccountTransactions INNER JOIN Transactions
-          ON Transactions.TransID = AccountTransactions.TransID
-          AND AccountTransactions.Account = '%s' WHERE
-          )");
-
     std::string sql;
 
     // SQL's BETWEEN uses a closed interval ([a,b])
@@ -1064,13 +1122,22 @@ accountTxPage(
 
     if (findLedger == 0)
     {
-        sql = boost::str(
-            boost::format(kPrefix + R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
-             ORDER BY AccountTransactions.LedgerSeq %s,
-             AccountTransactions.TxnSeq %s
-             LIMIT %u;)") %
-            toBase58(options.account) % options.ledgerRange.min % options.ledgerRange.max % order %
-            order % queryLimit);
+        sql = std::format(
+            R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+          Status,RawTxn,TxnMeta
+          FROM AccountTransactions INNER JOIN Transactions
+          ON Transactions.TransID = AccountTransactions.TransID
+          AND AccountTransactions.Account = '{}' WHERE
+          AccountTransactions.LedgerSeq BETWEEN {} AND {}
+             ORDER BY AccountTransactions.LedgerSeq {},
+             AccountTransactions.TxnSeq {}
+             LIMIT {};)",
+            toBase58(options.account),
+            options.ledgerRange.min,
+            options.ledgerRange.max,
+            order,
+            order,
+            queryLimit);
     }
     else
     {
@@ -1079,32 +1146,44 @@ accountTxPage(
         std::uint32_t const maxLedger = forward ? options.ledgerRange.max : findLedger - 1;
 
         auto b58acct = toBase58(options.account);
-        sql = boost::str(
-            boost::format(
-                R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+        sql = std::format(
+            R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
             Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
-            AccountTransactions.Account = '%s' AND
-            AccountTransactions.LedgerSeq BETWEEN %u AND %u)
+            AccountTransactions.Account = '{}' AND
+            AccountTransactions.LedgerSeq BETWEEN {} AND {})
             UNION
             SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
-            AccountTransactions.Account = '%s' AND
-            AccountTransactions.LedgerSeq = %u AND
-            AccountTransactions.TxnSeq %s %u)
-            ORDER BY AccountTransactions.LedgerSeq %s,
-            AccountTransactions.TxnSeq %s
-            LIMIT %u;
-            )") %
-            b58acct % minLedger % maxLedger % b58acct % findLedger % compare % findSeq % order %
-            order % queryLimit);
+            AccountTransactions.Account = '{}' AND
+            AccountTransactions.LedgerSeq = {} AND
+            AccountTransactions.TxnSeq {} {})
+            ORDER BY AccountTransactions.LedgerSeq {},
+            AccountTransactions.TxnSeq {}
+            LIMIT {};
+            )",
+            b58acct,
+            minLedger,
+            maxLedger,
+            b58acct,
+            findLedger,
+            compare,
+            findSeq,
+            order,
+            order,
+            queryLimit);
     }
 
     {
         Blob rawData;
         Blob rawMeta;
+        // Delegate filtering happens after SQL, so skipped rows need their own
+        // continuation marker accounting.
+        std::uint32_t fetchedRows = 0;
+        std::optional<RelationalDatabase::AccountTxMarker> lastEmitted;
+        std::optional<RelationalDatabase::AccountTxMarker> lastScanned;
 
         // SOCI requires boost::optional (not std::optional) as parameters.
         boost::optional<std::uint64_t> ledgerSeq;
@@ -1126,18 +1205,31 @@ accountTxPage(
 
         while (st.fetch())
         {
+            if (hasDelegateFilter)
+            {
+                ++fetchedRows;
+                lastScanned = {
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
+            }
+
             if (lookingForMarker)
             {
                 if (findLedger == ledgerSeq.value_or(0) && findSeq == txnSeq.value_or(0))
                 {
                     lookingForMarker = false;
+                    // Delegate markers are continuation cursors for the last
+                    // scanned row, so resume after the marker row.
+                    if (hasDelegateFilter)
+                        continue;
                 }
                 else
                 {
                     continue;
                 }
             }
-            else if (numberOfResults == 0)
+
+            if (!hasDelegateFilter && numberOfResults == 0)
             {
                 newmarker = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
@@ -1163,6 +1255,23 @@ accountTxPage(
                 rawMeta.clear();
             }
 
+            if (hasDelegateFilter)
+            {
+                if (rawData.empty() ||
+                    !passesDelegateFilter(rawData, options.delegate.value(), options.account))
+                {
+                    rawData.clear();
+                    rawMeta.clear();
+                    continue;
+                }
+
+                if (numberOfResults == 0)
+                {
+                    newmarker = lastEmitted;
+                    break;
+                }
+            }
+
             // Work around a bug that could leave the metadata missing
             if (rawMeta.empty())
                 onUnsavedLedger(ledgerSeq.value_or(0));
@@ -1184,7 +1293,18 @@ accountTxPage(
 
             --numberOfResults;
             total++;
+            if (hasDelegateFilter)
+            {
+                lastEmitted = {
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
+            }
         }
+
+        // If this filtered page did not fill the requested number of results,
+        // still return a marker so the caller can continue scanning later rows.
+        if (hasDelegateFilter && !newmarker && !lookingForMarker && fetchedRows == queryLimit)
+            newmarker = lastScanned;
     }
 
     return {newmarker, total};
@@ -1271,7 +1391,7 @@ getTransaction(
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};
 
-        std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
+        auto const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
 
         auto txMeta = std::make_shared<TxMeta>(id, inLedger, rawMeta);
 
@@ -1291,8 +1411,8 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
-    boost::filesystem::space_info const space =
-        boost::filesystem::space(config.legacy(Sections::kDatabasePath));
+    std::filesystem::space_info const space =
+        std::filesystem::space(config.legacy(Sections::kDatabasePath));
 
     if (space.available < megabytes(512))
     {
@@ -1303,9 +1423,9 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     if (config.useTxTables())
     {
         DatabaseCon::Setup const dbSetup = setupDatabaseCon(config);
-        boost::filesystem::path const dbPath = dbSetup.dataDir / kTxDbName;
-        boost::system::error_code ec;
-        std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
+        std::filesystem::path const dbPath = dbSetup.dataDir / kTxDbName;
+        std::error_code ec;
+        std::optional<std::uint64_t> dbSize = std::filesystem::file_size(dbPath, ec);
         if (ec)
         {
             JLOG(j.error()) << "Error checking transaction db file size: " << ec.message();

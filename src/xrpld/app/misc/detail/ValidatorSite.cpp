@@ -8,7 +8,6 @@
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -390,7 +389,7 @@ ValidatorSite::parseJsonResponse(
     json::Value const body = [&res, siteIdx, this]() {
         json::Reader r;
         json::Value body;
-        if (!r.parse(res.data(), body))
+        if (!r.parse(res, body))
         {
             JLOG(j_.warn()) << "Unable to parse JSON response from  "
                             << sites_[siteIdx].activeResource->uri;

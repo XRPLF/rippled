@@ -110,10 +110,10 @@ public:
         PrettyAmount(0u);  // NOLINT(bugprone-unused-raii)
         PrettyAmount(1u);  // NOLINT(bugprone-unused-raii)
         PrettyAmount(-1);  // NOLINT(bugprone-unused-raii)
-        static_assert(!std::is_trivially_constructible_v<PrettyAmount, char>, "");
-        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned char>, "");
-        static_assert(!std::is_trivially_constructible_v<PrettyAmount, short>, "");
-        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned short>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, char>);
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned char>);
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, short>);
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned short>);
 
         try
         {
