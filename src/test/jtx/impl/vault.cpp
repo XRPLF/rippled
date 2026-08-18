@@ -65,6 +65,8 @@ Vault::deposit(DepositArgs const& args)
     jv[jss::Account] = args.depositor.human();
     jv[sfVaultID] = to_string(args.id);
     jv[jss::Amount] = toJson(args.amount);
+    if (args.flags)
+        jv[jss::Flags] = *args.flags;
     return jv;
 }
 
