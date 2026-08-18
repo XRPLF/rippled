@@ -230,13 +230,8 @@ what catches a binary still linked against the Nix store's ELF loader (see
 3. Runs `rpmbuild -bb`, passing the normalized package metadata version as the
    `pkg_version` RPM macro and `PKG_RELEASE` as the `pkg_release` RPM macro.
    The spec uses manual `install` commands to place files, disables `dwz`, and
-   writes uncompressed RPM payloads while generating debuginfo packages.
+   generates debuginfo packages.
 4. Output: `rpmbuild/RPMS/x86_64/xrpld-*.rpm`
-
-The uncompressed RPM payload setting is intentionally unconditional for
-generated RPMs. It trades larger RPM artifacts for much shorter package
-build/validation time, which keeps RPM package validation in the same rough time
-class as Debian package validation.
 
 RPM upgrades intentionally do not restart a running `xrpld` service. The spec
 uses `%systemd_postun`, matching Debian's `dh_installsystemd
