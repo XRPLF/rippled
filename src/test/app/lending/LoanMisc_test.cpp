@@ -175,8 +175,7 @@ private:
                 // missing
                 BEAST_EXPECT(
                     jSubmitBlobResult.isMember(jss::engine_result) &&
-                    jSubmitBlobResult[jss::engine_result].asString() ==
-                        (env.enabled(featureLendingProtocolV1_1) ? "temINVALID" : "temBAD_SIGNER"));
+                    jSubmitBlobResult[jss::engine_result].asString() == "temBAD_SIGNER");
             }
 
             // 3. Borrower sends the signed transaction to the lender
@@ -282,8 +281,7 @@ private:
                 // missing
                 BEAST_EXPECT(
                     jSubmitBlobResult.isMember(jss::engine_result) &&
-                    jSubmitBlobResult[jss::engine_result].asString() ==
-                        (env.enabled(featureLendingProtocolV1_1) ? "temINVALID" : "temBAD_SIGNER"));
+                    jSubmitBlobResult[jss::engine_result].asString() == "temBAD_SIGNER");
             }
 
             // 3. Lender sends the signed transaction to the Borrower

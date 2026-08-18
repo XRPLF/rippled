@@ -17,7 +17,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -55,16 +54,12 @@ private:
             bool requireAuth = false;
             bool authorizeBorrower = false;
             int initialXRP = 1'000'000;
-            LoanFlow flow = LoanFlow::OneStep;
         };
 
         auto const testCase = [&, this](
                                   std::function<void(Env&, BrokerInfo const&, MPTTester&)> mptTest,
                                   std::function<void(Env&, BrokerInfo const&)> iouTest,
                                   CaseArgs args = {}) {
-            if (args.flow == LoanFlow::TwoStep && !features[featureLendingProtocolV1_1])
-                return;
-
             Env env(*this, features);
             env.fund(XRP(args.initialXRP), issuer, lender, borrower);
             env.close();
@@ -135,125 +130,79 @@ private:
                 iouTest(env, brokers[1]);
         };
 
-        // Submit a LoanSet under the requested flow.
-        //
-        // One-step: `submitter` signs the outer tx and `counterparty` is
-        // named in the Counterparty field and supplies the
-        // CounterpartySignature.
-        //
-        // Two-step: the LoanBroker owner (`lender`) always submits the
-        // proposal, naming as the borrower whichever of `submitter` or
-        // `counterparty` is not `lender`. There is no
-        // CounterpartySignature and no LoanAccept -- callers that need
-        // the loan to end up active must submit the LoanAccept
-        // themselves.
-        auto const submitSet = [&](Env& env,
-                                   LoanFlow flow,
-                                   BrokerInfo const& broker,
-                                   Account const& submitter,
-                                   Account const& counterparty,
-                                   Number const& principalRequest,
-                                   auto const&... extras) -> uint256 {
-            using namespace loan;
-            using namespace std::chrono_literals;
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-            // The keylet the LoanSet will (or would) create, so the caller
-            // can drive a follow-up LoanAccept in the two-step flow.
-            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
-            auto const loanKey =
-                keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)))
-                    .key;
+                testcase("MPT issuer is borrower, issuer submits");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5));
 
-            if (flow == LoanFlow::OneStep)
-            {
-                env(set(submitter, broker.brokerID, principalRequest),
-                    kCounterparty(counterparty),
-                    Sig(sfCounterpartySignature, counterparty),
-                    Fee(env.current()->fees().base * 5),
-                    extras...);
-            }
-            else
-            {
-                Account const& theBorrower =
-                    submitter.id() == lender.id() ? counterparty : submitter;
-                std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+                testcase("MPT issuer is borrower, lender submits");
                 env(set(lender, broker.brokerID, principalRequest),
-                    kBorrower(theBorrower),
-                    kStartDate(startDate),
+                    kCounterparty(issuer),
+                    Sig(sfCounterpartySignature, issuer),
+                    Fee(env.current()->fees().base * 5));
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("IOU issuer is borrower, issuer submits");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5));
+
+                testcase("IOU issuer is borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    kCounterparty(issuer),
+                    Sig(sfCounterpartySignature, issuer),
+                    Fee(env.current()->fees().base * 5));
+            },
+            CaseArgs{.requireAuth = true});
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("MPT unauthorized borrower, borrower submits");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5),
-                    extras...);
-            }
-            return loanKey;
-        };
+                    Ter{tecNO_AUTH});
 
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow, this](Env& env, BrokerInfo const& broker, auto&) {
-                    Number const principalRequest = broker.asset(1'000).value();
+                testcase("MPT unauthorized borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    kCounterparty(borrower),
+                    Sig(sfCounterpartySignature, borrower),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecNO_AUTH});
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                    testcase << "MPT issuer is borrower, issuer submits (" << flowLabel << ")";
-                    submitSet(env, flow, broker, issuer, lender, principalRequest);
+                testcase("IOU unauthorized borrower, borrower submits");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecNO_AUTH});
 
-                    // Only the broker owner may submit in the two-step
-                    // flow, so the "lender submits" variant is one-step
-                    // only.
-                    if (flow == LoanFlow::OneStep)
-                    {
-                        testcase("MPT issuer is borrower, lender submits");
-                        submitSet(env, flow, broker, lender, issuer, principalRequest);
-                    }
-                },
-                [&, flow, this](Env& env, BrokerInfo const& broker) {
-                    Number const principalRequest = broker.asset(1'000).value();
-
-                    testcase << "IOU issuer is borrower, issuer submits (" << flowLabel << ")";
-                    submitSet(env, flow, broker, issuer, lender, principalRequest);
-
-                    if (flow == LoanFlow::OneStep)
-                    {
-                        testcase("IOU issuer is borrower, lender submits");
-                        submitSet(env, flow, broker, lender, issuer, principalRequest);
-                    }
-                },
-                CaseArgs{.requireAuth = true, .flow = flow});
-        }
-
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow](Env& env, BrokerInfo const& broker, auto&) {
-                    Number const principalRequest = broker.asset(1'000).value();
-
-                    testcase << "MPT unauthorized borrower, borrower submits (" << flowLabel << ")";
-                    submitSet(
-                        env, flow, broker, borrower, lender, principalRequest, Ter{tecNO_AUTH});
-
-                    if (flow == LoanFlow::OneStep)
-                    {
-                        testcase("MPT unauthorized borrower, lender submits");
-                        submitSet(
-                            env, flow, broker, lender, borrower, principalRequest, Ter{tecNO_AUTH});
-                    }
-                },
-                [&, flow](Env& env, BrokerInfo const& broker) {
-                    Number const principalRequest = broker.asset(1'000).value();
-
-                    testcase << "IOU unauthorized borrower, borrower submits (" << flowLabel << ")";
-                    submitSet(
-                        env, flow, broker, borrower, lender, principalRequest, Ter{tecNO_AUTH});
-
-                    if (flow == LoanFlow::OneStep)
-                    {
-                        testcase("IOU unauthorized borrower, lender submits");
-                        submitSet(
-                            env, flow, broker, lender, borrower, principalRequest, Ter{tecNO_AUTH});
-                    }
-                },
-                CaseArgs{.requireAuth = true, .flow = flow});
-        }
+                testcase("IOU unauthorized borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    kCounterparty(borrower),
+                    Sig(sfCounterpartySignature, borrower),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecNO_AUTH});
+            },
+            CaseArgs{.requireAuth = true});
 
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
@@ -262,369 +211,281 @@ private:
                 env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
-                    using namespace loan;
-                    Number const principalRequest = broker.asset(1'000).value();
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                    testcase << "MPT authorized borrower, borrower has no "
-                                "reserve ("
-                             << flowLabel << ")";
-                    mptt.authorize({.account = borrower, .flags = tfMPTUnauthorize});
-                    env.close();
+                testcase(
+                    "MPT authorized borrower, borrower submits, borrower has "
+                    "no reserve");
+                mptt.authorize({.account = borrower, .flags = tfMPTUnauthorize});
+                env.close();
 
-                    auto const mptoken = keylet::mptoken(mptt.issuanceID(), borrower);
-                    BEAST_EXPECT(env.le(mptoken) == nullptr);
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), borrower);
+                auto const sleMPT1 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT1 == nullptr);
 
-                    // Burn some XRP
-                    env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
-                    env.close();
+                // Burn some XRP
+                env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
+                env.close();
 
-                    if (flow == LoanFlow::OneStep)
-                    {
-                        // Cannot create loan: borrower cannot afford MPToken
-                        // reserve on disbursement.
-                        submitSet(
-                            env,
-                            flow,
-                            broker,
-                            borrower,
-                            lender,
-                            principalRequest,
-                            Ter{tecINSUFFICIENT_RESERVE});
-                        env.close();
+                // Cannot create loan, not enough reserve to create MPToken
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecINSUFFICIENT_RESERVE});
+                env.close();
 
-                        env(pay(issuer, borrower, XRP(incReserve)));
-                        env.close();
-                        submitSet(env, flow, broker, borrower, lender, principalRequest);
-                        env.close();
-                    }
-                    else
-                    {
-                        // Two-step: the LoanBroker owner (lender) is charged
-                        // the reserve for the pending loan. Top up the lender
-                        // so they have room for the additional owner slot.
-                        env(pay(issuer, lender, XRP(incReserve)));
-                        env.close();
+                // Can create loan now, will implicitly create MPToken
+                env(pay(issuer, borrower, XRP(incReserve)));
+                env.close();
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5));
+                env.close();
 
-                        // LoanSet succeeds (the broker owner carries the
-                        // reserve for the pending loan); the borrower's
-                        // MPToken reserve check only fires on LoanAccept.
-                        auto const loanKey =
-                            submitSet(env, flow, broker, borrower, lender, principalRequest);
-                        env.close();
+                auto const sleMPT2 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT2 != nullptr);
+            },
+            {},
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
-                        env(accept(borrower, loanKey), Ter{tecINSUFFICIENT_RESERVE});
-                        env.close();
+        testCase(
+            {},
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                        env(pay(issuer, borrower, XRP(incReserve)));
-                        env.close();
-                        env(accept(borrower, loanKey));
-                        env.close();
-                    }
+                testcase(
+                    "IOU authorized borrower, borrower submits, borrower has "
+                    "no reserve");
+                // Remove trust line from borrower to issuer
+                env.trust(broker.asset(0), borrower);
+                env.close();
 
-                    BEAST_EXPECT(env.le(mptoken) != nullptr);
-                },
-                {},
-                CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1, .flow = flow});
-        }
+                env(pay(borrower, issuer, broker.asset(10'000)));
+                env.close();
+                auto const trustline = keylet::trustLine(borrower, broker.asset.raw().get<Issue>());
+                auto const sleLine1 = env.le(trustline);
+                BEAST_EXPECT(sleLine1 == nullptr);
 
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                {},
-                [&, flow](Env& env, BrokerInfo const& broker) {
-                    using namespace loan;
-                    Number const principalRequest = broker.asset(1'000).value();
+                // Burn some XRP
+                env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
+                env.close();
 
-                    testcase << "IOU authorized borrower, borrower has no "
-                                "reserve ("
-                             << flowLabel << ")";
-                    // Remove trust line from borrower to issuer
-                    env.trust(broker.asset(0), borrower);
-                    env.close();
+                // Cannot create loan, not enough reserve to create trust line
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecNO_LINE_INSUF_RESERVE});
+                env.close();
 
-                    env(pay(borrower, issuer, broker.asset(10'000)));
-                    env.close();
-                    auto const trustline =
-                        keylet::trustLine(borrower, broker.asset.raw().get<Issue>());
-                    BEAST_EXPECT(env.le(trustline) == nullptr);
+                // Can create loan now, will implicitly create trust line
+                env(pay(issuer, borrower, XRP(incReserve)));
+                env.close();
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5));
+                env.close();
 
-                    // Burn some XRP
-                    env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
-                    env.close();
+                auto const sleLine2 = env.le(trustline);
+                BEAST_EXPECT(sleLine2 != nullptr);
+            },
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
-                    if (flow == LoanFlow::OneStep)
-                    {
-                        // Cannot create loan: borrower cannot afford trust
-                        // line reserve on disbursement.
-                        submitSet(
-                            env,
-                            flow,
-                            broker,
-                            borrower,
-                            lender,
-                            principalRequest,
-                            Ter{tecNO_LINE_INSUF_RESERVE});
-                        env.close();
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                        env(pay(issuer, borrower, XRP(incReserve)));
-                        env.close();
-                        submitSet(env, flow, broker, borrower, lender, principalRequest);
-                        env.close();
-                    }
-                    else
-                    {
-                        // Two-step: the LoanBroker owner (lender) is charged
-                        // the reserve for the pending loan. Top up the lender
-                        // so they have room for the additional owner slot.
-                        env(pay(issuer, lender, XRP(incReserve)));
-                        env.close();
+                testcase(
+                    "MPT authorized borrower, borrower submits, lender has "
+                    "no reserve");
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), lender);
+                auto const sleMPT1 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT1 != nullptr);
 
-                        // LoanSet succeeds; the borrower's trust line reserve
-                        // check only fires on LoanAccept.
-                        auto const loanKey =
-                            submitSet(env, flow, broker, borrower, lender, principalRequest);
-                        env.close();
+                env(pay(lender, issuer, broker.asset(sleMPT1->at(sfMPTAmount))));
+                env.close();
 
-                        env(accept(borrower, loanKey), Ter{tecNO_LINE_INSUF_RESERVE});
-                        env.close();
+                mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+                env.close();
 
-                        env(pay(issuer, borrower, XRP(incReserve)));
-                        env.close();
-                        env(accept(borrower, loanKey));
-                        env.close();
-                    }
+                auto const sleMPT2 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT2 == nullptr);
 
-                    BEAST_EXPECT(env.le(trustline) != nullptr);
-                },
-                CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1, .flow = flow});
-        }
+                // Burn some XRP
+                env(noop(lender), Fee(XRP(incReserve)));
+                env.close();
 
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
-                    using namespace loan;
-                    Number const principalRequest = broker.asset(1'000).value();
+                // Cannot create loan, not enough reserve to create MPToken
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kLoanOriginationFee(broker.asset(1).value()),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecINSUFFICIENT_RESERVE});
+                env.close();
 
-                    testcase << "MPT authorized borrower, lender has no "
-                                "reserve ("
-                             << flowLabel << ")";
-                    auto const mptoken = keylet::mptoken(mptt.issuanceID(), lender);
-                    auto const sleMPT1 = env.le(mptoken);
-                    BEAST_EXPECT(sleMPT1 != nullptr);
+                // Can create loan now, will implicitly create MPToken
+                env(pay(issuer, lender, XRP(incReserve)));
+                env.close();
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kLoanOriginationFee(broker.asset(1).value()),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5));
+                env.close();
 
-                    env(pay(lender, issuer, broker.asset(sleMPT1->at(sfMPTAmount))));
-                    env.close();
+                auto const sleMPT3 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT3 != nullptr);
+            },
+            {},
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
-                    mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
-                    env.close();
+        testCase(
+            {},
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                    BEAST_EXPECT(env.le(mptoken) == nullptr);
+                testcase(
+                    "IOU authorized borrower, borrower submits, lender has no "
+                    "reserve");
+                // Remove trust line from lender to issuer
+                env.trust(broker.asset(0), lender);
+                env.close();
 
-                    // Burn some XRP
-                    env(noop(lender), Fee(XRP(incReserve)));
-                    env.close();
+                auto const trustline = keylet::trustLine(lender, broker.asset.raw().get<Issue>());
+                auto const sleLine1 = env.le(trustline);
+                BEAST_EXPECT(sleLine1 != nullptr);
 
-                    // Both flows need one extra owner-count increment on the
-                    // lender: the disburse-time MPToken in one-step, the
-                    // pending-loan reserve in two-step. Both return the
-                    // generic tecINSUFFICIENT_RESERVE.
-                    submitSet(
-                        env,
-                        flow,
-                        broker,
-                        borrower,
-                        lender,
-                        principalRequest,
-                        kLoanOriginationFee(broker.asset(1).value()),
-                        Ter{tecINSUFFICIENT_RESERVE});
-                    env.close();
+                env(pay(lender, issuer, broker.asset(abs(sleLine1->at(sfBalance).value()))));
+                env.close();
+                auto const sleLine2 = env.le(trustline);
+                BEAST_EXPECT(sleLine2 == nullptr);
 
-                    // Top up the lender and retry.
-                    env(pay(issuer, lender, XRP(incReserve)));
-                    env.close();
-                    auto const loanKey = submitSet(
-                        env,
-                        flow,
-                        broker,
-                        borrower,
-                        lender,
-                        principalRequest,
-                        kLoanOriginationFee(broker.asset(1).value()));
-                    env.close();
+                // Burn some XRP
+                env(noop(lender), Fee(XRP(incReserve)));
+                env.close();
 
-                    if (flow == LoanFlow::TwoStep)
-                    {
-                        env(accept(borrower, loanKey));
-                        env.close();
-                    }
+                // Cannot create loan, not enough reserve to create trust line
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kLoanOriginationFee(broker.asset(1).value()),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecNO_LINE_INSUF_RESERVE});
+                env.close();
 
-                    BEAST_EXPECT(env.le(mptoken) != nullptr);
-                },
-                {},
-                CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1, .flow = flow});
-        }
+                // Can create loan now, will implicitly create trust line
+                env(pay(issuer, lender, XRP(incReserve)));
+                env.close();
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kLoanOriginationFee(broker.asset(1).value()),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5));
+                env.close();
 
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                {},
-                [&, flow](Env& env, BrokerInfo const& broker) {
-                    using namespace loan;
-                    Number const principalRequest = broker.asset(1'000).value();
+                auto const sleLine3 = env.le(trustline);
+                BEAST_EXPECT(sleLine3 != nullptr);
+            },
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
-                    testcase << "IOU authorized borrower, lender has no "
-                                "reserve ("
-                             << flowLabel << ")";
-                    // Remove trust line from lender to issuer
-                    env.trust(broker.asset(0), lender);
-                    env.close();
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                    auto const trustline =
-                        keylet::trustLine(lender, broker.asset.raw().get<Issue>());
-                    auto const sleLine1 = env.le(trustline);
-                    BEAST_EXPECT(sleLine1 != nullptr);
+                testcase("MPT authorized borrower, unauthorized lender");
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), lender);
+                auto const sleMPT1 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT1 != nullptr);
 
-                    env(pay(lender, issuer, broker.asset(abs(sleLine1->at(sfBalance).value()))));
-                    env.close();
-                    BEAST_EXPECT(env.le(trustline) == nullptr);
+                env(pay(lender, issuer, broker.asset(sleMPT1->at(sfMPTAmount))));
+                env.close();
 
-                    // Burn some XRP
-                    env(noop(lender), Fee(XRP(incReserve)));
-                    env.close();
+                mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+                env.close();
 
-                    // One-step: addEmptyHolding on the trust line returns
-                    // tecNO_LINE_INSUF_RESERVE. Two-step: reserveLoanOwner on
-                    // the pending loan returns the generic
-                    // tecINSUFFICIENT_RESERVE before disbursement is reached.
-                    TER const expected = flow == LoanFlow::OneStep ? TER{tecNO_LINE_INSUF_RESERVE}
-                                                                   : TER{tecINSUFFICIENT_RESERVE};
-                    submitSet(
-                        env,
-                        flow,
-                        broker,
-                        borrower,
-                        lender,
-                        principalRequest,
-                        kLoanOriginationFee(broker.asset(1).value()),
-                        Ter{expected});
-                    env.close();
+                auto const sleMPT2 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT2 == nullptr);
 
-                    // Top up the lender and retry.
-                    env(pay(issuer, lender, XRP(incReserve)));
-                    env.close();
-                    auto const loanKey = submitSet(
-                        env,
-                        flow,
-                        broker,
-                        borrower,
-                        lender,
-                        principalRequest,
-                        kLoanOriginationFee(broker.asset(1).value()));
-                    env.close();
+                // Cannot create loan, lender not authorized to receive fee
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kLoanOriginationFee(broker.asset(1).value()),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecNO_AUTH});
+                env.close();
 
-                    if (flow == LoanFlow::TwoStep)
-                    {
-                        env(accept(borrower, loanKey));
-                        env.close();
-                    }
+                // Cannot create loan, even without an origination fee
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    Ter{tecNO_AUTH});
+                env.close();
 
-                    BEAST_EXPECT(env.le(trustline) != nullptr);
-                },
-                CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1, .flow = flow});
-        }
+                // No MPToken for lender - no authorization and no payment
+                auto const sleMPT3 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT3 == nullptr);
+            },
+            {},
+            CaseArgs{.requireAuth = true, .authorizeBorrower = true});
 
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
-                    using namespace loan;
-                    Number const principalRequest = broker.asset(1'000).value();
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                    testcase << "MPT authorized borrower, unauthorized lender (" << flowLabel
-                             << ")";
-                    auto const mptoken = keylet::mptoken(mptt.issuanceID(), lender);
-                    auto const sleMPT1 = env.le(mptoken);
-                    BEAST_EXPECT(sleMPT1 != nullptr);
+                testcase("MPT authorized borrower, borrower submits");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5));
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                    env(pay(lender, issuer, broker.asset(sleMPT1->at(sfMPTAmount))));
-                    env.close();
+                testcase("IOU authorized borrower, borrower submits");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5));
+            },
+            CaseArgs{.requireAuth = true, .authorizeBorrower = true});
 
-                    mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
-                    env.close();
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                    BEAST_EXPECT(env.le(mptoken) == nullptr);
+                testcase("MPT authorized borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    kCounterparty(borrower),
+                    Sig(sfCounterpartySignature, borrower),
+                    Fee(env.current()->fees().base * 5));
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
 
-                    // Cannot create loan, lender not authorized to receive fee
-                    submitSet(
-                        env,
-                        flow,
-                        broker,
-                        borrower,
-                        lender,
-                        principalRequest,
-                        kLoanOriginationFee(broker.asset(1).value()),
-                        Ter{tecNO_AUTH});
-                    env.close();
-
-                    // Cannot create loan, even without an origination fee
-                    submitSet(
-                        env, flow, broker, borrower, lender, principalRequest, Ter{tecNO_AUTH});
-                    env.close();
-
-                    // No MPToken for lender - no authorization and no payment
-                    BEAST_EXPECT(env.le(mptoken) == nullptr);
-                },
-                {},
-                CaseArgs{.requireAuth = true, .authorizeBorrower = true, .flow = flow});
-        }
-
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow](Env& env, BrokerInfo const& broker, auto&) {
-                    Number const principalRequest = broker.asset(1'000).value();
-
-                    testcase << "MPT authorized borrower, borrower submits (" << flowLabel << ")";
-                    submitSet(env, flow, broker, borrower, lender, principalRequest);
-                },
-                [&, flow](Env& env, BrokerInfo const& broker) {
-                    Number const principalRequest = broker.asset(1'000).value();
-
-                    testcase << "IOU authorized borrower, borrower submits (" << flowLabel << ")";
-                    submitSet(env, flow, broker, borrower, lender, principalRequest);
-                },
-                CaseArgs{.requireAuth = true, .authorizeBorrower = true, .flow = flow});
-        }
-
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow](Env& env, BrokerInfo const& broker, auto&) {
-                    Number const principalRequest = broker.asset(1'000).value();
-
-                    testcase << "MPT authorized borrower, lender submits (" << flowLabel << ")";
-                    submitSet(env, flow, broker, lender, borrower, principalRequest);
-                },
-                [&, flow](Env& env, BrokerInfo const& broker) {
-                    Number const principalRequest = broker.asset(1'000).value();
-
-                    testcase << "IOU authorized borrower, lender submits (" << flowLabel << ")";
-                    submitSet(env, flow, broker, lender, borrower, principalRequest);
-                },
-                CaseArgs{.requireAuth = true, .authorizeBorrower = true, .flow = flow});
-        }
+                testcase("IOU authorized borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    kCounterparty(borrower),
+                    Sig(sfCounterpartySignature, borrower),
+                    Fee(env.current()->fees().base * 5));
+            },
+            CaseArgs{.requireAuth = true, .authorizeBorrower = true});
 
         jtx::Account const alice{"alice"};
         jtx::Account const bella{"bella"};
@@ -692,64 +553,385 @@ private:
             },
             CaseArgs{.requireAuth = true, .authorizeBorrower = true});
 
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+                Vault const vault{env};
+                auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                tx[sfAssetsMaximum] = BrokerParameters::defaults().vaultDeposit;
+                env(tx);
+                env.close();
+
+                testcase("Vault at maximum value");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    kInterestRate(TenthBips32(10'000)),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    Ter(tecLIMIT_EXCEEDED));
+            },
+            nullptr);
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+                Vault const vault{env};
+                auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                tx[sfAssetsMaximum] =
+                    BrokerParameters::defaults().vaultDeposit + broker.asset(1).number();
+                env(tx);
+                env.close();
+
+                testcase("Vault maximum value exceeded");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    kCounterparty(lender),
+                    kInterestRate(TenthBips32(100'000)),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 5),
+                    kPaymentTotal(2),
+                    kPaymentInterval(3600 * 24),
+                    Ter(tecLIMIT_EXCEEDED));
+            },
+            nullptr);
+    }
+
+    // Two-step LoanSet scenarios where preclaim / doApply semantics diverge
+    // from the one-step (immediate) flow. Cases where both flows behave
+    // identically are already covered by testLoanSet -- this method only
+    // exercises the divergences:
+    //
+    //   * proposal is submitted by the broker owner, naming the borrower
+    //     via kBorrower / kStartDate (no CounterpartySignature);
+    //   * the pending loan reserves an owner slot on the broker owner, so
+    //     the lender's reserve is checked at LoanSet time rather than at
+    //     disbursement;
+    //   * the borrower's holding reserve (MPToken / trust line) is deferred
+    //     to LoanAccept, yielding tecINSUFFICIENT_RESERVE /
+    //     tecNO_LINE_INSUF_RESERVE on accept rather than on set.
+    //
+    // Requires featureLendingProtocolV1_1.
+    void
+    testTwoStepLoanSet()
+    {
+        using namespace jtx;
+        using namespace jtx::loan;
+        using namespace std::chrono_literals;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        struct CaseArgs
         {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow](Env& env, BrokerInfo const& broker, auto&) {
-                    using namespace loan;
-                    Number const principalRequest = broker.asset(1'000).value();
-                    Vault const vault{env};
-                    auto tx = vault.set({.owner = lender, .id = broker.vaultID});
-                    tx[sfAssetsMaximum] = BrokerParameters::defaults().vaultDeposit;
-                    env(tx);
-                    env.close();
+            bool requireAuth = false;
+            bool authorizeBorrower = false;
+            int initialXRP = 1'000'000;
+        };
 
-                    testcase << "Vault at maximum value (" << flowLabel << ")";
-                    submitSet(
-                        env,
-                        flow,
-                        broker,
-                        issuer,
-                        lender,
-                        principalRequest,
-                        kInterestRate(TenthBips32(10'000)),
-                        Ter(tecLIMIT_EXCEEDED));
-                },
-                nullptr,
-                CaseArgs{.flow = flow});
-        }
+        // Same shape as testLoanSet's harness, duplicated here so the two
+        // methods stay independent.
+        auto const testCase = [&, this](
+                                  std::function<void(Env&, BrokerInfo const&, MPTTester&)> mptTest,
+                                  std::function<void(Env&, BrokerInfo const&)> iouTest,
+                                  CaseArgs args = {}) {
+            Env env(*this);
+            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
+            env.fund(XRP(args.initialXRP), issuer, lender, borrower);
+            env.close();
+            if (args.requireAuth)
+            {
+                env(fset(issuer, asfRequireAuth));
+                env.close();
+            }
 
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            char const* const flowLabel = flow == LoanFlow::OneStep ? "one-step" : "two-step";
-            testCase(
-                [&, flow](Env& env, BrokerInfo const& broker, auto&) {
-                    using namespace loan;
-                    Number const principalRequest = broker.asset(1'000).value();
-                    Vault const vault{env};
-                    auto tx = vault.set({.owner = lender, .id = broker.vaultID});
-                    tx[sfAssetsMaximum] =
-                        BrokerParameters::defaults().vaultDeposit + broker.asset(1).number();
-                    env(tx);
-                    env.close();
+            // MPT
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            auto const kNone = LedgerSpecificFlags(0);
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock |
+                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
+            env.close();
+            PrettyAsset const mptAsset = mptt.issuanceID();
+            mptt.authorize({.account = lender});
+            mptt.authorize({.account = borrower});
+            env.close();
+            if (args.requireAuth)
+            {
+                mptt.authorize({.account = issuer, .holder = lender});
+                if (args.authorizeBorrower)
+                    mptt.authorize({.account = issuer, .holder = borrower});
+                env.close();
+            }
+            env(pay(issuer, lender, mptAsset(10'000'000)));
+            env.close();
 
-                    testcase << "Vault maximum value exceeded (" << flowLabel << ")";
-                    submitSet(
-                        env,
-                        flow,
-                        broker,
-                        issuer,
-                        lender,
-                        principalRequest,
-                        kInterestRate(TenthBips32(100'000)),
-                        kPaymentTotal(2),
-                        kPaymentInterval(3600 * 24),
-                        Ter(tecLIMIT_EXCEEDED));
-                },
-                nullptr,
-                CaseArgs{.flow = flow});
-        }
+            // IOU
+            PrettyAsset const iouAsset = issuer[iouCurrency_];
+            env(trust(lender, iouAsset(10'000'000)));
+            env(trust(borrower, iouAsset(10'000'000)));
+            env.close();
+            if (args.requireAuth)
+            {
+                env(trust(issuer, iouAsset(0), lender, tfSetfAuth));
+                env(pay(issuer, lender, iouAsset(10'000'000)));
+                if (args.authorizeBorrower)
+                {
+                    env(trust(issuer, iouAsset(0), borrower, tfSetfAuth));
+                    env(pay(issuer, borrower, iouAsset(10'000)));
+                }
+            }
+            else
+            {
+                env(pay(issuer, lender, iouAsset(10'000'000)));
+                env(pay(issuer, borrower, iouAsset(10'000)));
+            }
+            env.close();
+
+            std::array const assets{mptAsset, iouAsset};
+            std::vector<BrokerInfo> brokers;
+            brokers.reserve(assets.size());
+            for (auto const& asset : assets)
+                brokers.emplace_back(createVaultAndBroker(env, asset, lender));
+
+            if (mptTest)
+                mptTest(env, brokers[0], mptt);
+            if (iouTest)
+                iouTest(env, brokers[1]);
+        };
+
+        // Submit a two-step LoanSet proposal: the LoanBroker owner (lender)
+        // proposes the loan naming `theBorrower`. Returns the keylet of the
+        // pending Loan so the caller can drive a follow-up LoanAccept.
+        auto const submitSet = [&](Env& env,
+                                   BrokerInfo const& broker,
+                                   Account const& theBorrower,
+                                   Number const& principalRequest,
+                                   auto const&... extras) -> uint256 {
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+            auto const loanKey =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)))
+                    .key;
+            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+            env(set(lender, broker.brokerID, principalRequest),
+                kBorrower(theBorrower),
+                kStartDate(startDate),
+                Fee(env.current()->fees().base * 5),
+                extras...);
+            return loanKey;
+        };
+
+        // Issuer is the borrower: the broker owner (lender) proposes on
+        // behalf of the issuer. Only the "lender submits" shape exists in
+        // two-step; the one-step "issuer submits" and "issuer=borrower is
+        // the same signer" cases don't apply.
+        testCase(
+            [&](Env& env, BrokerInfo const& broker, auto&) {
+                Number const principalRequest = broker.asset(1'000).value();
+                testcase("Two-step: MPT issuer is borrower, lender submits");
+                submitSet(env, broker, issuer, principalRequest);
+            },
+            [&](Env& env, BrokerInfo const& broker) {
+                Number const principalRequest = broker.asset(1'000).value();
+                testcase("Two-step: IOU issuer is borrower, lender submits");
+                submitSet(env, broker, issuer, principalRequest);
+            },
+            CaseArgs{.requireAuth = true});
+
+        // Unauthorized borrower is rejected at LoanSet preclaim (WeakAuth
+        // requireAuth on the named Borrower).
+        testCase(
+            [&](Env& env, BrokerInfo const& broker, auto&) {
+                Number const principalRequest = broker.asset(1'000).value();
+                testcase("Two-step: MPT unauthorized borrower, lender submits");
+                submitSet(env, broker, borrower, principalRequest, Ter{tecNO_AUTH});
+            },
+            [&](Env& env, BrokerInfo const& broker) {
+                Number const principalRequest = broker.asset(1'000).value();
+                testcase("Two-step: IOU unauthorized borrower, lender submits");
+                submitSet(env, broker, borrower, principalRequest, Ter{tecNO_AUTH});
+            },
+            CaseArgs{.requireAuth = true});
+
+        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+            Env const env{*this, testableAmendments()};
+            return {
+                env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
+                env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
+        }();
+
+        // Borrower has no reserve: LoanSet succeeds (the broker owner
+        // carries the pending-loan reserve), the borrower's holding-reserve
+        // check is deferred to LoanAccept.
+        testCase(
+            [&](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("Two-step: MPT authorized borrower, borrower has no reserve");
+                mptt.authorize({.account = borrower, .flags = tfMPTUnauthorize});
+                env.close();
+
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), borrower);
+                BEAST_EXPECT(env.le(mptoken) == nullptr);
+
+                // Burn borrower XRP so it cannot afford the LoanAccept
+                // MPToken reserve.
+                env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
+                env.close();
+
+                // Top up the lender so the proposal's owner slot fits.
+                env(pay(issuer, lender, XRP(incReserve)));
+                env.close();
+
+                auto const loanKey = submitSet(env, broker, borrower, principalRequest);
+                env.close();
+
+                env(accept(borrower, loanKey), Ter{tecINSUFFICIENT_RESERVE});
+                env.close();
+
+                env(pay(issuer, borrower, XRP(incReserve)));
+                env.close();
+                env(accept(borrower, loanKey));
+                env.close();
+
+                BEAST_EXPECT(env.le(mptoken) != nullptr);
+            },
+            {},
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
+
+        testCase(
+            {},
+            [&](Env& env, BrokerInfo const& broker) {
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("Two-step: IOU authorized borrower, borrower has no reserve");
+                env.trust(broker.asset(0), borrower);
+                env.close();
+
+                env(pay(borrower, issuer, broker.asset(10'000)));
+                env.close();
+                auto const trustline =
+                    keylet::trustLine(borrower, broker.asset.raw().get<Issue>());
+                BEAST_EXPECT(env.le(trustline) == nullptr);
+
+                env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
+                env.close();
+
+                // Top up the lender so the proposal's owner slot fits.
+                env(pay(issuer, lender, XRP(incReserve)));
+                env.close();
+
+                auto const loanKey = submitSet(env, broker, borrower, principalRequest);
+                env.close();
+
+                env(accept(borrower, loanKey), Ter{tecNO_LINE_INSUF_RESERVE});
+                env.close();
+
+                env(pay(issuer, borrower, XRP(incReserve)));
+                env.close();
+                env(accept(borrower, loanKey));
+                env.close();
+
+                BEAST_EXPECT(env.le(trustline) != nullptr);
+            },
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
+
+        // Lender has no reserve: the pending-loan owner slot on the broker
+        // owner cannot be reserved, so LoanSet itself fails with the
+        // generic tecINSUFFICIENT_RESERVE (regardless of asset type).
+        testCase(
+            [&](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("Two-step: MPT authorized borrower, lender has no reserve");
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), lender);
+                auto const sleMPT1 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT1 != nullptr);
+
+                env(pay(lender, issuer, broker.asset(sleMPT1->at(sfMPTAmount))));
+                env.close();
+                mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+                env.close();
+                BEAST_EXPECT(env.le(mptoken) == nullptr);
+
+                env(noop(lender), Fee(XRP(incReserve)));
+                env.close();
+
+                submitSet(
+                    env,
+                    broker,
+                    borrower,
+                    principalRequest,
+                    kLoanOriginationFee(broker.asset(1).value()),
+                    Ter{tecINSUFFICIENT_RESERVE});
+                env.close();
+
+                env(pay(issuer, lender, XRP(incReserve)));
+                env.close();
+                auto const loanKey = submitSet(
+                    env,
+                    broker,
+                    borrower,
+                    principalRequest,
+                    kLoanOriginationFee(broker.asset(1).value()));
+                env.close();
+                env(accept(borrower, loanKey));
+                env.close();
+
+                BEAST_EXPECT(env.le(mptoken) != nullptr);
+            },
+            {},
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
+
+        testCase(
+            {},
+            [&](Env& env, BrokerInfo const& broker) {
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("Two-step: IOU authorized borrower, lender has no reserve");
+                env.trust(broker.asset(0), lender);
+                env.close();
+
+                auto const trustline =
+                    keylet::trustLine(lender, broker.asset.raw().get<Issue>());
+                auto const sleLine1 = env.le(trustline);
+                BEAST_EXPECT(sleLine1 != nullptr);
+
+                env(pay(lender, issuer, broker.asset(abs(sleLine1->at(sfBalance).value()))));
+                env.close();
+                BEAST_EXPECT(env.le(trustline) == nullptr);
+
+                env(noop(lender), Fee(XRP(incReserve)));
+                env.close();
+
+                // Note: one-step returns tecNO_LINE_INSUF_RESERVE here;
+                // two-step's reserveLoanOwner on the pending loan trips
+                // first with the generic tecINSUFFICIENT_RESERVE.
+                submitSet(
+                    env,
+                    broker,
+                    borrower,
+                    principalRequest,
+                    kLoanOriginationFee(broker.asset(1).value()),
+                    Ter{tecINSUFFICIENT_RESERVE});
+                env.close();
+
+                env(pay(issuer, lender, XRP(incReserve)));
+                env.close();
+                auto const loanKey = submitSet(
+                    env,
+                    broker,
+                    borrower,
+                    principalRequest,
+                    kLoanOriginationFee(broker.asset(1).value()));
+                env.close();
+                env(accept(borrower, loanKey));
+                env.close();
+
+                BEAST_EXPECT(env.le(trustline) != nullptr);
+            },
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
     }
 
     // LoanSet in a closed-ended vault — phase gating and maturity bound.
@@ -881,6 +1063,7 @@ public:
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             testLoanSet(features);
 
+        testTwoStepLoanSet();
         testLoanSetClosedEnded();
     }
 };

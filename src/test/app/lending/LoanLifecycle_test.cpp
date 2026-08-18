@@ -197,8 +197,7 @@ private:
         // but it will not pass preflight
         auto createJson = env.json(
             set(lender, broker.brokerID, broker.asset(principalRequest).value()), Fee(loanSetFee));
-        env(createJson,
-            env.enabled(featureLendingProtocolV1_1) ? Ter(temINVALID) : Ter(temBAD_SIGNER));
+        env(createJson, Ter(temBAD_SIGNER));
 
         // Adding an empty counterparty signature object also fails, but
         // at the RPC level.
@@ -317,8 +316,7 @@ private:
             bool const twoStep = flow == LoanFlow::TwoStep;
 
             Env env(*this);
-            if (twoStep && !env.enabled(featureLendingProtocolV1_1))
-                continue;
+            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
 
             env.fund(XRP(1'000), issuer, lender);
 
@@ -818,6 +816,8 @@ public:
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
+        testBatchBypassCounterparty(all_ | featureLendingProtocolV1_1);
+        testLifecycle(all_ | featureLendingProtocolV1_1);
     }
 };
 

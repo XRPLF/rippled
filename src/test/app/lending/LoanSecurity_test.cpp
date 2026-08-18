@@ -550,6 +550,7 @@ public:
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
+        testRIPD3459(all_ | featureLendingProtocolV1_1);
     }
 };
 
