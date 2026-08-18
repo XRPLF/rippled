@@ -40,8 +40,10 @@ runs:
         # Unlike the Linux nix images, macOS needs no SSL_CERT_FILE: it has its
         # own trust store, and pinning would break TLS to hosts relying on it.
 
-        # The dev shell's Conan home: separate from this runner's system one.
-        echo "CONAN_HOME=${HOME}/.conan2-nix" >>"${GITHUB_ENV}"
+        # Workspace-local, so `cleanup-workspace` clears it, but not the
+        # `.conan2` prepare-runner hands the system toolchain: that Conan is a
+        # different version, and the two would migrate each other's cache.
+        echo "CONAN_HOME=${{ github.workspace }}/.conan2-nix" >>"${GITHUB_ENV}"
 
     # Config, profiles and remote, exactly as the dev shell sets them up on
     # entry; the `setup-conan` action is skipped for this toolchain.
