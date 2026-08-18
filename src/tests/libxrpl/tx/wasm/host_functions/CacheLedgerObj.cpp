@@ -25,7 +25,7 @@ struct CacheLedgerObjImpl : WasmImplTest
 
         for (auto i = int32_t{1}; i < 257; ++i)
         {
-            auto const slot = h->cacheLedgerObj(key, i);
+            auto const slot = h->cacheLedgerObj(key, implicit ? 0 : i);
             ASSERT_TRUE(slot.has_value()) << "cacheLedgerObj should find the created account";
             EXPECT_EQ(*slot, i);
 
