@@ -78,6 +78,11 @@ struct LoanPlan
     Number principalRequested;
     Number originationFee;
     Number interestDue;
+    // Accounting deltas resolved once via loanOriginationDeltas(vaultSle, ...)
+    // so both the immediate and pending flows apply the same accrual- vs
+    // cash-basis dispatch to Vault.AssetsTotal and LoanBroker.DebtTotal.
+    Number assetsTotalDelta;
+    Number debtTotalDelta;
     LoanProperties properties;
     std::uint32_t paymentInterval{};
     std::uint32_t paymentTotal{};
@@ -323,6 +328,8 @@ setupLoan(
         .principalRequested = principalRequested,
         .originationFee = originationFee,
         .interestDue = state.interestDue,
+        .assetsTotalDelta = assetsTotalDelta,
+        .debtTotalDelta = debtTotalDelta,
         .properties = properties,
         .paymentInterval = paymentInterval,
         .paymentTotal = paymentTotal};
@@ -437,7 +444,6 @@ applyPendingLoan(
     AccountID const brokerPseudo = brokerSle->at(sfAccount);
     Asset const vaultAsset = vaultSle->at(sfAsset);
     auto const vaultScale = getAssetsTotalScale(vaultSle);
-    auto const newDebtDelta = plan.principalRequested + plan.interestDue;
 
     // In the two-step flow, the LoanBroker.Owner is charged the owner reserve
     // for the pending loan; the borrower is not charged and receives no funds
@@ -449,23 +455,25 @@ applyPendingLoan(
     auto loan = buildLoan(ctx, plan, brokerSle, LoanPendingState::Pending);
     view.insert(loan);
 
-    // Update the balances in the vault. Decrement the available assets, accrue
-    // the interest due, and move the principal into the reserved bucket until
-    // the borrower accepts.
+    // Update the balances in the vault. Decrement the available assets, apply
+    // the assets-total delta (accrual-basis recognises the interest here;
+    // cash-basis leaves the total untouched), and move the principal into the
+    // reserved bucket until the borrower accepts.
     auto vaultAssetReservedProxy = vaultSle->at(sfAssetsReserved);
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
     vaultAvailableProxy -= plan.principalRequested;
-    vaultTotalProxy += plan.interestDue;
+    vaultTotalProxy += plan.assetsTotalDelta;
     vaultAssetReservedProxy += plan.principalRequested;
     XRPL_ASSERT_PARTS(
-        *vaultAvailableProxy <= *vaultTotalProxy,
+        *vaultAvailableProxy + *vaultAssetReservedProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::applyPendingLoan",
-        "assets available must not be greater than assets outstanding");
+        "assets available plus reserved must not exceed assets outstanding");
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(
+        brokerSle->at(sfDebtTotal), plan.debtTotalDelta, vaultAsset, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
     loanSequenceProxy += 1;
@@ -533,9 +541,6 @@ applyImmediateLoan(
     auto const vaultScale = getAssetsTotalScale(vaultSle);
     auto const loanAssetsToBorrower = plan.principalRequested - plan.originationFee;
 
-    auto const [assetsTotalDelta, debtTotalDelta] =
-        loanOriginationDeltas(vaultSle, plan.principalRequested, plan.interestDue);
-
     // In the immediate flow, the borrower is charged the owner reserve and the
     // funds are disbursed now.
     if (auto const ter =
@@ -566,15 +571,16 @@ applyImmediateLoan(
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
     vaultAvailableProxy -= plan.principalRequested;
-    vaultTotalProxy += assetsTotalDelta;
+    vaultTotalProxy += plan.assetsTotalDelta;
     XRPL_ASSERT_PARTS(
-        *vaultAvailableProxy <= *vaultTotalProxy,
+        *vaultAvailableProxy + *vaultSle->at(sfAssetsReserved) <= *vaultTotalProxy,
         "xrpl::LoanSet::applyImmediateLoan",
-        "assets available must not be greater than assets outstanding");
+        "assets available plus reserved must not exceed assets outstanding");
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), debtTotalDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(
+        brokerSle->at(sfDebtTotal), plan.debtTotalDelta, vaultAsset, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
     loanSequenceProxy += 1;

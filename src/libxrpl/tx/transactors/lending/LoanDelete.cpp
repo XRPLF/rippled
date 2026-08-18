@@ -45,6 +45,13 @@ deletePendingLoan(
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     auto const state = constructLoanState(loanSle);
 
+    // Reverse exactly the accounting the proposal recognised: dispatch through
+    // loanOriginationDeltas so cash-basis vaults (which never accrued the
+    // interest at proposal time) do not have a phantom interestDue subtracted
+    // here.
+    auto const [assetsTotalDelta, debtTotalDelta] =
+        loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue);
+
     // 3.10.4.1.1 Remove LoanID from the broker pseudo-account's directory.
     if (!view.dirRemove(
             keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
@@ -56,15 +63,12 @@ deletePendingLoan(
     // 3.10.4.1.3 Reverse the vault bookkeeping from the proposal.
     vaultSle->at(sfAssetsAvailable) += principalOutstanding;
     vaultSle->at(sfAssetsReserved) -= principalOutstanding;
-    vaultSle->at(sfAssetsTotal) -= state.interestDue;
+    vaultSle->at(sfAssetsTotal) -= assetsTotalDelta;
     view.update(vaultSle);
 
     //  3.10.4.1.4 Reverse the broker debt and outstanding loan count.
     adjustImpreciseNumber(
-        brokerSle->at(sfDebtTotal),
-        -(principalOutstanding + state.interestDue),
-        vaultAsset,
-        vaultScale);
+        brokerSle->at(sfDebtTotal), -debtTotalDelta, vaultAsset, vaultScale);
     // 3.10.4.1.4 Decrement LoanBroker.OwnerCount by 1.
     adjustLoanBrokerOwnerCount(view, brokerSle, -1, j);
 

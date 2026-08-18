@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -86,9 +87,30 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
 
     auto const vaultSle = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
+    {
+        JLOG(ctx.j.fatal()) << "LoanAccept: Vault does not exist.";
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
     Asset const asset = vaultSle->at(sfAsset);
     auto const vaultPseudo = vaultSle->at(sfAccount);
+
+    // Closed-ended vault gate: acceptance is only meaningful during the
+    // Investment phase. If the vault is still in Subscription, the loan is
+    // being accepted before its funds are formally in the investment pool;
+    // if it has entered Redemption, the vault is winding down and can no
+    // longer hand principal out to a borrower.
+    switch (getVaultPhase(ctx.view, vaultSle))
+    {
+        case VaultPhase::Subscription:
+            JLOG(ctx.j.warn()) << "Vault is still in the subscription phase.";
+            return tecTOO_SOON;
+        case VaultPhase::Redemption:
+            JLOG(ctx.j.warn()) << "Vault has entered the redemption phase.";
+            return tecEXPIRED;
+        case VaultPhase::NoPhase:
+        case VaultPhase::Investment:
+            break;
+    }
 
     // 3.9.3.2.6 The Vault pseudo-account is frozen for the asset. (tecFROZEN for IOUs, tecLOCKED
     // for MPTs)
