@@ -345,8 +345,7 @@ private:
         // XLS-66 spec 3.9.3.1.1: LoanID is zero (temINVALID).
         env(accept(alice, beast::kZero), Ter(temINVALID));
 
-        auto const bogusLoanID =
-            keylet::loan(uint256{1}, SeqProxy::rawSequence(1)).key;
+        auto const bogusLoanID = keylet::loan(uint256{1}, SeqProxy::rawSequence(1)).key;
 
         // preflight: temINVALID_FLAG. LoanAccept does not override
         // getFlagsMask, so only universal flags (tfFullyCanonicalSig,
@@ -673,8 +672,7 @@ public:
     {
         runAmendmentIndependent();
         for (auto const& features : jtx::amendmentCombinations(
-                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2},
-                 all_))
+                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
     }
 };

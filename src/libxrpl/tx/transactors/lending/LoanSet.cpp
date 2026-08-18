@@ -182,11 +182,7 @@ resolveParticipants(
  * why the loan cannot be created on failure.
  */
 std::expected<LoanPlan, TER>
-setupLoan(
-    ApplyContext& ctx,
-    AccountID const& accountID,
-    LoanFlow flow,
-    beast::Journal const& j)
+setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::Journal const& j)
 {
     auto const& tx = ctx.tx;
     auto& view = ctx.view();
@@ -347,11 +343,7 @@ setupLoan(
  * @return The newly built Loan ledger entry.
  */
 SLE::pointer
-buildLoan(
-    ApplyContext& ctx,
-    LoanPlan const& plan,
-    SLE::ref brokerSle,
-    LoanPendingState pending)
+buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::ref brokerSle, LoanPendingState pending)
 {
     auto const& tx = ctx.tx;
 
@@ -456,7 +448,7 @@ applyPendingLoan(
     view.insert(loan);
 
     // Update the balances in the vault. Decrement the available assets, apply
-    // the assets-total delta (accrual-basis recognises the interest here;
+    // the assets-total delta (accrual-basis recognizes the interest here;
     // cash-basis leaves the total untouched), and move the principal into the
     // reserved bucket until the borrower accepts.
     auto vaultAssetReservedProxy = vaultSle->at(sfAssetsReserved);
@@ -472,8 +464,7 @@ applyPendingLoan(
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(
-        brokerSle->at(sfDebtTotal), plan.debtTotalDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), plan.debtTotalDelta, vaultAsset, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
     loanSequenceProxy += 1;
@@ -579,8 +570,7 @@ applyImmediateLoan(
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(
-        brokerSle->at(sfDebtTotal), plan.debtTotalDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), plan.debtTotalDelta, vaultAsset, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
     loanSequenceProxy += 1;

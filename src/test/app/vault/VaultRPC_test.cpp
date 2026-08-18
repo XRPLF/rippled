@@ -12,6 +12,7 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
@@ -20,7 +21,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/ledger/Sandbox.h>
 
 #include <chrono>
 #include <memory>
@@ -455,8 +455,8 @@ private:
             testcase("RPC vault_info reflects AssetsReserved when non-zero");
             Number const reserved{25};
 
-            auto const changed = env.app().getOpenLedger().modify(
-                [&](OpenView& view, beast::Journal) -> bool {
+            auto const changed =
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
                     Sandbox sb(&view, TapNone);
                     auto v = sb.peek(keylet);
                     if (!v)
@@ -472,8 +472,7 @@ private:
             BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
             auto const& vaultJv = jv[jss::result][jss::vault];
             BEAST_EXPECT(vaultJv.isMember(sfAssetsReserved.getJsonName()));
-            BEAST_EXPECT(
-                vaultJv[sfAssetsReserved.getJsonName()].asString() == to_string(reserved));
+            BEAST_EXPECT(vaultJv[sfAssetsReserved.getJsonName()].asString() == to_string(reserved));
         }
     }
 

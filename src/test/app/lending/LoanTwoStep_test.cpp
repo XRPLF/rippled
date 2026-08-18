@@ -65,10 +65,10 @@ private:
     struct Fixture
     {
         FeatureBitset features;
-        jtx::Account issuer;   // Issues the IOU / MPT assets
-        jtx::Account lender;   // Vault + LoanBroker owner
+        jtx::Account issuer;  // Issues the IOU / MPT assets
+        jtx::Account lender;  // Vault + LoanBroker owner
         jtx::Account borrower;
-        jtx::Account evan;     // unrelated third party
+        jtx::Account evan;  // unrelated third party
 
         // Loan terms shared across the scenarios. The principal is derived
         // from the broker's asset, so it adapts to XRP, IOU and MPT.
@@ -104,8 +104,7 @@ private:
             env.fund(XRP(1'000'000), fx.issuer);
         env.close();
         BrokerParameters const params{};
-        auto const asset =
-            createAsset(env, assetType, params, fx.issuer, fx.lender, fx.borrower);
+        auto const asset = createAsset(env, assetType, params, fx.issuer, fx.lender, fx.borrower);
         env.close();
         if (!asset.native())
             env(pay(fx.issuer, fx.lender, asset(params.vaultDeposit + params.coverDeposit)));
@@ -118,8 +117,7 @@ private:
     nextLoanKeylet(jtx::Env& env, BrokerInfo const& broker)
     {
         auto const brokerSle = env.le(broker.brokerKeylet());
-        return keylet::loan(
-            broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+        return keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
     }
 
     static VaultAmounts
@@ -231,9 +229,7 @@ private:
         auto const& evan = fx.evan;
         auto const& payTotal = fx.payTotal;
         auto const assetTypeName = &Fixture::assetTypeName;
-        auto const makeBroker = [&](Env& env, AssetType t) {
-            return this->makeBroker(env, fx, t);
-        };
+        auto const makeBroker = [&](Env& env, AssetType t) { return this->makeBroker(env, fx, t); };
         auto const propose = [&](Env& env,
                                  BrokerInfo const& b,
                                  Account const& p,
@@ -245,8 +241,7 @@ private:
 
         for (auto const assetType : {AssetType::XRP, AssetType::IOU, AssetType::MPT})
         {
-            testcase << "Two-step: propose then accept (" << assetTypeName(assetType)
-                     << ")";
+            testcase << "Two-step: propose then accept (" << assetTypeName(assetType) << ")";
 
             Env env(*this, features);
             auto const broker = makeBroker(env, assetType);
@@ -508,9 +503,7 @@ private:
         auto const& payTotal = fx.payTotal;
         auto const& payInterval = fx.payInterval;
         auto const assetTypeName = &Fixture::assetTypeName;
-        auto const makeBroker = [&](Env& env, AssetType t) {
-            return this->makeBroker(env, fx, t);
-        };
+        auto const makeBroker = [&](Env& env, AssetType t) { return this->makeBroker(env, fx, t); };
         auto const propose = [&](Env& env,
                                  BrokerInfo const& b,
                                  Account const& p,
@@ -669,9 +662,8 @@ private:
             {
                 BEAST_EXPECT(loan->isFlag(lsfLoanPending));
                 BEAST_EXPECT(
-                    env.now() >
-                    NetClock::time_point{NetClock::duration{
-                        loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod)}});
+                    env.now() > NetClock::time_point{NetClock::duration{
+                                    loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod)}});
             }
 
             env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecNO_PERMISSION));
@@ -708,8 +700,7 @@ private:
             auto const broker = makeBroker(env, AssetType::XRP);
 
             Number const principal = broker.asset(200).number();
-            auto const parentClose =
-                env.current()->parentCloseTime().time_since_epoch().count();
+            auto const parentClose = env.current()->parentCloseTime().time_since_epoch().count();
 
             // StartDate == parentCloseTime is inclusive-expired.
             env(set(lender, broker.brokerID, principal),
@@ -862,9 +853,7 @@ private:
         auto const& lender = fx.lender;
         auto const& borrower = fx.borrower;
         auto const assetTypeName = &Fixture::assetTypeName;
-        auto const makeBroker = [&](Env& env, AssetType t) {
-            return this->makeBroker(env, fx, t);
-        };
+        auto const makeBroker = [&](Env& env, AssetType t) { return this->makeBroker(env, fx, t); };
         auto const propose = [&](Env& env,
                                  BrokerInfo const& b,
                                  Account const& p,
@@ -1347,9 +1336,7 @@ private:
         auto const& payTotal = fx.payTotal;
         auto const& payInterval = fx.payInterval;
         auto const assetTypeName = &Fixture::assetTypeName;
-        auto const makeBroker = [&](Env& env, AssetType t) {
-            return this->makeBroker(env, fx, t);
-        };
+        auto const makeBroker = [&](Env& env, AssetType t) { return this->makeBroker(env, fx, t); };
         auto const propose = [&](Env& env,
                                  BrokerInfo const& b,
                                  Account const& p,
@@ -1467,8 +1454,7 @@ private:
 
             // Propose L1 (borrower) to establish a baseline delta.
             auto const l1Keylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower,
-                    (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             auto const vault1 = readVault(env, broker);
@@ -1480,8 +1466,7 @@ private:
             // Propose L2 (evan) on the same broker while L1 is still
             // pending. Each proposal contributes an equal delta.
             auto const l2Keylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, evan,
-                    (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender, evan, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             auto const vault2 = readVault(env, broker);
@@ -1522,8 +1507,7 @@ private:
             auto const broker = makeBroker(env, AssetType::XRP);
 
             auto const l1Keylet = nextLoanKeylet(env, broker);
-            propose(env, broker, lender, borrower,
-                    (env.now() + 1h).time_since_epoch().count());
+            propose(env, broker, lender, borrower, (env.now() + 1h).time_since_epoch().count());
             env.close();
 
             auto const brokerL1 = env.le(broker.brokerKeylet());
@@ -1538,9 +1522,13 @@ private:
             env.close();
 
             // Second proposal exceeds the debt cap.
-            propose(env, broker, lender, evan,
-                    (env.now() + 1h).time_since_epoch().count(),
-                    Ter(tecLIMIT_EXCEEDED));
+            propose(
+                env,
+                broker,
+                lender,
+                evan,
+                (env.now() + 1h).time_since_epoch().count(),
+                Ter(tecLIMIT_EXCEEDED));
             env.close();
 
             // L1 remains pending; L2 was not created.
@@ -1559,10 +1547,9 @@ private:
         // Batch::kDisabledTxTypes, the batch fails with temINVALID_INNER_BATCH;
         // once the disabled-list is updated, it must create a pending loan.
         {
-            bool const lendingBatchEnabled =
-                !std::ranges::any_of(Batch::kDisabledTxTypes, [](auto const& disabled) {
-                    return disabled == ttLOAN_SET;
-                });
+            bool const lendingBatchEnabled = !std::ranges::any_of(
+                Batch::kDisabledTxTypes,
+                [](auto const& disabled) { return disabled == ttLOAN_SET; });
 
             testcase(
                 lendingBatchEnabled
@@ -1700,9 +1687,7 @@ private:
         auto const& evan = fx.evan;
         auto const& payTotal = fx.payTotal;
         auto const& payInterval = fx.payInterval;
-        auto const makeBroker = [&](Env& env, AssetType t) {
-            return this->makeBroker(env, fx, t);
-        };
+        auto const makeBroker = [&](Env& env, AssetType t) { return this->makeBroker(env, fx, t); };
         auto const propose = [&](Env& env,
                                  BrokerInfo const& b,
                                  Account const& p,
@@ -1733,8 +1718,7 @@ private:
             params.vaultKind = VaultKind::ClosedEnded;
             params.subscriptionOffset = 60;
             params.redemptionOffset = (payInterval * payTotal) + 3600;
-            auto const asset =
-                createAsset(env, AssetType::XRP, params, issuer, lender, borrower);
+            auto const asset = createAsset(env, AssetType::XRP, params, issuer, lender, borrower);
             auto const broker = createVaultAndBroker(env, asset, lender, params);
 
             if (!BEAST_EXPECT(broker.redemptionDate))
@@ -1749,8 +1733,8 @@ private:
             env.close();
 
             // Advance the ledger past RedemptionDate.
-            env.close(NetClock::time_point{
-                NetClock::duration{timeType{*broker.redemptionDate + 1}}});
+            env.close(
+                NetClock::time_point{NetClock::duration{timeType{*broker.redemptionDate + 1}}});
 
             env(accept(borrower, loanKeylet.key), Ter(tecEXPIRED));
             expectStillPending(env, loanKeylet);
@@ -1844,8 +1828,7 @@ private:
             if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                 BEAST_EXPECT(v->at(sfAssetsReserved) > beast::kZero);
             Vault vault{env};
-            env(vault.del({.owner = lender, .id = broker.vaultID}),
-                Ter(tecHAS_OBLIGATIONS));
+            env(vault.del({.owner = lender, .id = broker.vaultID}), Ter(tecHAS_OBLIGATIONS));
             env.close();
 
             // Cancelling the pending loan reverses the proposal-time
@@ -1895,8 +1878,8 @@ private:
             Env env(*this, features);
             auto const broker = makeBroker(env, AssetType::XRP);
 
-            auto const changed = env.app().getOpenLedger().modify(
-                [&](OpenView& view, beast::Journal) -> bool {
+            auto const changed =
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
                     Sandbox sb(&view, TapNone);
                     auto b = sb.peek(keylet::loanBroker(broker.brokerID));
                     if (!b)

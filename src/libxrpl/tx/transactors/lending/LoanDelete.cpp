@@ -67,8 +67,7 @@ deletePendingLoan(
     view.update(vaultSle);
 
     //  3.10.4.1.4 Reverse the broker debt and outstanding loan count.
-    adjustImpreciseNumber(
-        brokerSle->at(sfDebtTotal), -debtTotalDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), -debtTotalDelta, vaultAsset, vaultScale);
     // 3.10.4.1.4 Decrement LoanBroker.OwnerCount by 1.
     adjustLoanBrokerOwnerCount(view, brokerSle, -1, j);
 
