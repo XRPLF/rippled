@@ -19,11 +19,11 @@
 namespace xrpl {
 
 void
-ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref, SLE::const_ref after)
 {
-    // Pre-fixCleanup3_4_0: after-only — null after is a no-op (original).
-    // Post-fixCleanup3_4_0: fall back to before when after is null.
-    if (!isFeatureEnabled(fixCleanup3_4_0) && !after)
+    // Post-fixCleanup3_4_0: skip when after is null (defensive).
+    // Pre-amendment: original after-only path via the `if (after && ...)` checks below.
+    if (isFeatureEnabled(fixCleanup3_4_0) && !after)
         return;
 
     auto trackDomain = [this, isDelete](uint256 const& domain) {
@@ -32,19 +32,17 @@ ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::cons
             domains_.insert(domain);
     };
 
-    auto const sle = after ? after : before;
-
-    if (sle && sle->getType() == ltDIR_NODE)
+    if (after && after->getType() == ltDIR_NODE)
     {
-        if (sle->isFieldPresent(sfDomainID))
-            trackDomain(sle->getFieldH256(sfDomainID));
+        if (after->isFieldPresent(sfDomainID))
+            trackDomain(after->getFieldH256(sfDomainID));
     }
 
-    if (sle && sle->getType() == ltOFFER)
+    if (after && after->getType() == ltOFFER)
     {
-        if (sle->isFieldPresent(sfDomainID))
+        if (after->isFieldPresent(sfDomainID))
         {
-            trackDomain(sle->getFieldH256(sfDomainID));
+            trackDomain(after->getFieldH256(sfDomainID));
         }
         else
         {
@@ -55,14 +53,13 @@ ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::cons
 
         // pre-fixCleanup3_1_3: hybrid offer missing domain, missing
         // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
-        // `after` may be null when falling back to `before` for a deleted entry
-        if (after && after->isFlag(lsfHybrid) &&
+        if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() > 1))
             badHybridsOld_ = true;
 
         // post-fixCleanup3_1_3: same as above but also catches size == 0
-        if (after && after->isFlag(lsfHybrid) &&
+        if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() != 1))
             badHybrids_ = true;

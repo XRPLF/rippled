@@ -2248,6 +2248,8 @@ class Invariants_test : public beast::unit_test::Suite
         // Matrix over fixCleanup3_4_0 × isDelete × (after null / after = offer on pd1).
         // Tx is always OfferCreate on pd2, so tracking pd1 must fail the invariant
         // iff that domain lands in the set finalize consults.
+        // after == null is never tracked: pre-340 via after-only checks, post-340
+        // via the early return.
         auto const check = [this](
                                FeatureBitset features,
                                bool const afterIsNull,
@@ -2276,7 +2278,7 @@ class Invariants_test : public beast::unit_test::Suite
             ValidPermissionedDEX invariant;
             if (afterIsNull)
             {
-                // Defensive path: after is null, before holds the offer on pd1.
+                // Defensive path: after is null. Must not fall back to before.
                 invariant.visitEntry(isDelete, sleOffer, nullptr);
             }
             else
@@ -2309,14 +2311,11 @@ class Invariants_test : public beast::unit_test::Suite
         auto const pre = defaultAmendments() - fixCleanup3_4_0;
         auto const post = defaultAmendments() | fixCleanup3_4_0;
 
-        // after == null
-        // pre-340: early return (original after-only) → never tracks → pass
+        // after == null: never tracked (pre-340 after-only; post-340 early return)
         check(pre, true, true, false);
         check(pre, true, false, false);
-        // post-340: fall back to before; isDelete → only domainsOld_ → pass
-        //           !isDelete → domains_ → fail
         check(post, true, true, false);
-        check(post, true, false, true);
+        check(post, true, false, false);
 
         // after == offer on pd1 (no null fallback involved)
         // pre-340: finalize uses domainsOld_ (always inserted) → fail
