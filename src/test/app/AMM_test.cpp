@@ -6034,10 +6034,6 @@ private:
             double const poolUsdGH;
             Sendmax const sendMaxUsdBIT;
             STAmount const sendUsdGH;
-            STAmount const failUsdGH;
-            STAmount const failUsdGHr;
-            STAmount const failUsdBIT;
-            STAmount const failUsdBITr;
             STAmount const goodUsdGH;
             STAmount const goodUsdGHr;
             STAmount const goodUsdBIT;
@@ -6060,10 +6056,6 @@ private:
                      .poolUsdGH = 273,                                        //
                      .sendMaxUsdBIT{usdBIT(50)},                              //
                      .sendUsdGH{usdGH, uint64_t(272'455089820359), -12},      //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(46'47826086956522), -14},   //
-                     .failUsdBITr{usdBIT, uint64_t(46'47826086956521), -14},  //
                      .goodUsdGH{usdGH, uint64_t(96'7543114220382), -13},      //
                      .goodUsdGHr{usdGH, uint64_t(96'7543114222965), -13},     //
                      .goodUsdBIT{usdBIT, uint64_t(8'464739069120721), -15},   //
@@ -6082,10 +6074,6 @@ private:
                      .poolUsdGH = 100,                                      //
                      .sendMaxUsdBIT{usdBIT(0.111)},                         //
                      .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH = STAmount{0},                              //
-                     .failUsdGHr = STAmount{0},                             //
-                     .failUsdBIT{usdBIT, uint64_t(1'111), -3},              //
-                     .failUsdBITr{usdBIT, uint64_t(1'111), -3},             //
                      .goodUsdGH{usdGH, uint64_t(90'04347888284115), -14},   //
                      .goodUsdGHr{usdGH, uint64_t(90'04347888284201), -14},  //
                      .goodUsdBIT{usdBIT, uint64_t(1'111), -3},              //
@@ -6103,10 +6091,6 @@ private:
                      .poolUsdGH = 100,                                      //
                      .sendMaxUsdBIT{usdBIT(1.00)},                          //
                      .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH = STAmount{0},                              //
-                     .failUsdGHr = STAmount{0},                             //
-                     .failUsdBIT{usdBIT, uint64_t(2), 0},                   //
-                     .failUsdBITr{usdBIT, uint64_t(2), 0},                  //
                      .goodUsdGH{usdGH, uint64_t(52'94379354424079), -14},   //
                      .goodUsdGHr{usdGH, uint64_t(52'94379354424135), -14},  //
                      .goodUsdBIT{usdBIT, uint64_t(2), 0},                   //
@@ -6124,10 +6108,6 @@ private:
                      .poolUsdGH = 100,                                        //
                      .sendMaxUsdBIT{usdBIT(4.6432)},                          //
                      .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(5'6432), -4},               //
-                     .failUsdBITr{usdBIT, uint64_t(5'6432), -4},              //
                      .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
                      .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
                      .goodUsdBIT{usdBIT, uint64_t(2'821579689703915), -15},   //
@@ -6145,10 +6125,6 @@ private:
                      .poolUsdGH = 100,                                        //
                      .sendMaxUsdBIT{usdBIT(10)},                              //
                      .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(11), 0},                    //
-                     .failUsdBITr{usdBIT, uint64_t(11), 0},                   //
                      .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
                      .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
                      .goodUsdBIT{usdBIT, uint64_t(2'821579689703915), -15},   //
@@ -6166,10 +6142,6 @@ private:
                      .poolUsdGH = 100,                                     //
                      .sendMaxUsdBIT{usdBIT(5.55)},                         //
                      .sendUsdGH{usdGH, 100},                               //
-                     .failUsdGH = STAmount{0},                             //
-                     .failUsdGHr = STAmount{0},                            //
-                     .failUsdBIT{usdBIT, uint64_t(55'55), -2},             //
-                     .failUsdBITr{usdBIT, uint64_t(55'55), -2},            //
                      .goodUsdGH{usdGH, uint64_t(90'04347888284113), -14},  //
                      .goodUsdGHr{usdGH, uint64_t(90'0434788828413), -13},  //
                      .goodUsdBIT{usdBIT, uint64_t(55'55), -2},             //
@@ -6187,10 +6159,6 @@ private:
                      .poolUsdGH = 100,                                      //
                      .sendMaxUsdBIT{usdBIT(50.00)},                         //
                      .sendUsdGH{usdGH, 100},                                //
-                     .failUsdGH{usdGH, uint64_t(52'94379354424081), -14},   //
-                     .failUsdGHr{usdGH, uint64_t(52'94379354424092), -14},  //
-                     .failUsdBIT{usdBIT, uint64_t(100), 0},                 //
-                     .failUsdBITr{usdBIT, uint64_t(100), 0},                //
                      .goodUsdGH{usdGH, uint64_t(52'94379354424081), -14},   //
                      .goodUsdGHr{usdGH, uint64_t(52'94379354424092), -14},  //
                      .goodUsdBIT{usdBIT, uint64_t(100), 0},                 //
@@ -6208,10 +6176,6 @@ private:
                      .poolUsdGH = 100,                                        //
                      .sendMaxUsdBIT{usdBIT(232.16)},                          //
                      .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(282'16), -2},               //
-                     .failUsdBITr{usdBIT, uint64_t(282'16), -2},              //
                      .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
                      .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
                      .goodUsdBIT{usdBIT, uint64_t(141'0789844851958), -13},   //
@@ -6229,10 +6193,6 @@ private:
                      .poolUsdGH = 100,                                        //
                      .sendMaxUsdBIT{usdBIT(500)},                             //
                      .sendUsdGH{usdGH, 100},                                  //
-                     .failUsdGH = STAmount{0},                                //
-                     .failUsdGHr = STAmount{0},                               //
-                     .failUsdBIT{usdBIT, uint64_t(550), 0},                   //
-                     .failUsdBITr{usdBIT, uint64_t(550), 0},                  //
                      .goodUsdGH{usdGH, uint64_t(35'44113971506987), -14},     //
                      .goodUsdGHr{usdGH, uint64_t(35'44113971506987), -14},    //
                      .goodUsdBIT{usdBIT, uint64_t(141'0789844851958), -13},   //

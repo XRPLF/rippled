@@ -13,7 +13,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/MPTAmount.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
@@ -100,28 +99,6 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
 }
 
 namespace {
-template <typename T>
-constexpr T
-maxAmount()
-{
-    if constexpr (std::is_same_v<T, XRPAmount>)
-    {
-        return XRPAmount(STAmount::kMaxNative);
-    }
-    else if constexpr (std::is_same_v<T, IOUAmount>)
-    {
-        return IOUAmount(STAmount::kMaxValue / 2, STAmount::kMaxOffset);
-    }
-    else if constexpr (std::is_same_v<T, STAmount>)
-    {
-        return STAmount(STAmount::kMaxValue / 2, STAmount::kMaxOffset);
-    }
-    else if constexpr (std::is_same_v<T, MPTAmount>)
-    {
-        return MPTAmount(kMaxMpTokenAmount);
-    }
-}
-
 template <typename T>
 T
 maxOut(T const& out, Asset const& asset)
@@ -214,7 +191,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         catch (std::overflow_error const& e)
         {
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
-            
+
             return std::nullopt;
         }
         catch (std::exception const& e)
