@@ -7,7 +7,7 @@ This guide explains how to use Nix to set up a reproducible development environm
 ## Benefits of Using Nix
 
 - **Reproducible environment**: Everyone gets the same versions of tools and compilers
-- **Matches CI**: The Linux CI runs in Docker images built from this exact Nix environment, and macOS CI builds one configuration in it too
+- **Matches CI**: The Linux CI runs in Docker images built from this exact Nix environment, and CI builds some macOS configurations in it as well
 - **No system pollution**: Dependencies are isolated and don't affect your system packages
 - **Consistent compilers**: The GCC and Clang shells use the same versions as CI
 - **Quick setup**: Get started with a single command
