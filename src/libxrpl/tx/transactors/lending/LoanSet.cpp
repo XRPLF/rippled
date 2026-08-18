@@ -244,7 +244,8 @@ setupLoan(ApplyContext& ctx, beast::Journal const& j)
         vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "Vault is below maximum limit");
-    if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
+
+    if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
     {
         JLOG(j.warn()) << "Loan would exceed the maximum assets of the vault";
         return std::unexpected(tecLIMIT_EXCEEDED);
@@ -288,8 +289,9 @@ setupLoan(ApplyContext& ctx, beast::Journal const& j)
 
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
 
-    auto const newDebtDelta = principalRequested + state.interestDue;
-    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + newDebtDelta;
+    auto const [assetsTotalDelta, debtTotalDelta] =
+        loanOriginationDeltas(vaultSle, principalRequested, state.interestDue);
+    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + debtTotalDelta;
     if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
         debtMaximum != 0 && debtMaximum < newDebtTotal)
     {
