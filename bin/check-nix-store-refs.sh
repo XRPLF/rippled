@@ -91,7 +91,7 @@ while IFS= read -r file; do
     fi
 done < <(find "$1" -type f \( -perm -u+x -o -name '*.dylib' -o -name '*.so*' \))
 
-echo "Checked ${checked} files in $1 (${skipped} skipped), ${leaked} of them reference the Nix store."
+echo "$1: checked ${checked}, skipped ${skipped}, ${leaked} with Nix store references."
 
 if [ "${leaked}" -ne 0 ]; then
     cat >&2 <<'EOF'

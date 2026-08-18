@@ -185,7 +185,7 @@ thing without having to run anything, and points at the file:
 $ bin/check-nix-store-refs.sh ~/.conan2-nix
 /Users/you/.conan2-nix/p/b/c-are…/p/bin/adig
     /nix/store/…-libresolv-93/lib/libresolv.9.dylib
-Checked 135 files in /Users/you/.conan2-nix (2495 skipped), 1 of them reference the Nix store.
+/Users/you/.conan2-nix: checked 135, skipped 2495, 1 with Nix store references.
 ```
 
 ### Why it happens
