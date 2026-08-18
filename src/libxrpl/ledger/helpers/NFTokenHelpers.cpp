@@ -12,6 +12,7 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -24,7 +25,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/UintTypes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -258,7 +259,9 @@ changeTokenURI(
     return tesSUCCESS;
 }
 
-/** Insert the token in the owner's token directory. */
+/**
+ * Insert the token in the owner's token directory.
+ */
 TER
 insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
@@ -269,11 +272,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     // the NFT.
     SLE::pointer const page =
         getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                1,
-                beast::Journal{beast::Journal::getNullSink()});
+            increaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
         });
 
     if (!page)
@@ -351,7 +350,9 @@ mergePages(ApplyView& view, SLE::ref p1, SLE::ref p2)
     return true;
 }
 
-/** Remove the token from the owner's token directory. */
+/**
+ * Remove the token from the owner's token directory.
+ */
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
@@ -364,7 +365,9 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
     return removeToken(view, owner, nftokenID, page);
 }
 
-/** Remove the token from the owner's token directory. */
+/**
+ * Remove the token from the owner's token directory.
+ */
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref curr)
 {
@@ -411,21 +414,17 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
         curr->setFieldArray(sfNFTokens, arr);
         view.update(curr);
 
-        int cnt = 0;
+        std::uint32_t cnt = 0;
 
         if (prev && mergePages(view, prev, curr))
-            cnt--;
+            ++cnt;
 
         if (next && mergePages(view, curr, next))
-            cnt--;
+            ++cnt;
 
         if (cnt != 0)
         {
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                cnt,
-                beast::Journal{beast::Journal::getNullSink()});
+            decreaseOwnerCount(view, owner, {}, cnt, beast::Journal{beast::Journal::getNullSink()});
         }
 
         return tesSUCCESS;
@@ -460,11 +459,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                -1,
-                beast::Journal{beast::Journal::getNullSink()});
+            decreaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
 
             view.update(curr);
             view.erase(prev);
@@ -502,7 +497,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
 
     view.erase(curr);
 
-    int cnt = 1;
+    uint32_t cnt = 1;
 
     // Since we're here, try to consolidate the previous and current pages
     // of the page we removed (if any) into one.  mergePages() _should_
@@ -519,11 +514,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
         cnt++;
 
-    adjustOwnerCount(
-        view,
-        view.peek(keylet::account(owner)),
-        -1 * cnt,
-        beast::Journal{beast::Journal::getNullSink()});
+    decreaseOwnerCount(view, owner, {}, cnt, beast::Journal{beast::Journal::getNullSink()});
 
     return tesSUCCESS;
 }
@@ -639,8 +630,7 @@ deleteTokenOffer(ApplyView& view, SLE::ref offer)
             false))
         return false;
 
-    adjustOwnerCount(
-        view, view.peek(keylet::account(owner)), -1, beast::Journal{beast::Journal::getNullSink()});
+    decreaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
 
     view.erase(offer);
     return true;
@@ -743,9 +733,11 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             auto const newPrev = view.peek(Keylet(ltNFTOKEN_PAGE, *prevLink));
             if (!newPrev)
             {
+                // LCOV_EXCL_START
                 Throw<std::runtime_error>(
                     "NFTokenPage directory for " + to_string(owner) +
-                    " cannot be repaired.  Unexpected link problem.");
+                    " cannot be repaired. Unexpected link problem.");
+                // LCOV_EXCL_STOP
             }
             newPrev->at(sfNextPageMin) = nextPage->key();
             view.update(newPrev);
@@ -780,6 +772,13 @@ tokenOfferCreatePreflight(
     {
         // An offer for a negative amount makes no sense.
         return temBAD_AMOUNT;
+    }
+
+    if (rules.enabled(fixCleanup3_4_0))
+    {
+        // We don't allow a non-native currency to use the currency code XRP.
+        if (badAsset() == amount.asset())
+            return temBAD_CURRENCY;
     }
 
     if (!isXRP(amount))
@@ -860,7 +859,13 @@ tokenOfferCreatePreclaim(
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
-    if (isFrozen(view, acctID, amount.get<Issue>().currency, amount.getIssuer()))
+    // The IOU issuer is not subject to their own global freeze when the offer
+    // is denominated in their own IOU (e.g. receiving their own transfer fees),
+    // and they cannot hold a trust line to themselves.
+    bool const acctIsIouIssuer =
+        view.rules().enabled(fixCleanup3_4_0) && acctID == amount.getIssuer();
+    if (!acctIsIouIssuer &&
+        isFrozen(view, acctID, amount.get<Issue>().currency, amount.getIssuer()))
         return tecFROZEN;
 
     // If this is an offer to buy the token, the account must have the
@@ -931,10 +936,10 @@ tokenOfferCreateApply(
 {
     Keylet const acctKeylet = keylet::account(acctID);
     if (auto const acct = view.read(acctKeylet);
-        priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
+        priorBalance < accountReserve(view, acct, j, {.ownerCountDelta = 1}))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const offerID = keylet::nftokenOffer(acctID, seqProxy.value());
+    auto const offerID = keylet::nftokenOffer(acctID, seqProxy);
 
     // Create the offer:
     {
@@ -983,7 +988,7 @@ tokenOfferCreateApply(
     }
 
     // Update owner count.
-    adjustOwnerCount(view, view.peek(acctKeylet), 1, j);
+    increaseOwnerCount(view, acctID, {}, 1, j);
 
     return tesSUCCESS;
 }

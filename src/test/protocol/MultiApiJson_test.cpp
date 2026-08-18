@@ -62,35 +62,35 @@ struct MultiApiJson_test : beast::unit_test::Suite
             // Some static data for test inputs
             static int const kPrimes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
                                           43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97};
-            static_assert(std::size(kPrimes) > RPC::kApiMaximumValidVersion);
+            static_assert(std::size(kPrimes) > rpc::kApiMaximumValidVersion);
 
             MultiApiJson<1, 3> s1{};
             static_assert(
-                s1.kSize == RPC::kApiMaximumValidVersion + 1 - RPC::kApiMinimumSupportedVersion);
+                s1.kSize == rpc::kApiMaximumValidVersion + 1 - rpc::kApiMinimumSupportedVersion);
 
             int productAllVersions = 1;
-            for (unsigned i = RPC::kApiMinimumSupportedVersion; i <= RPC::kApiMaximumValidVersion;
+            for (unsigned i = rpc::kApiMinimumSupportedVersion; i <= rpc::kApiMaximumValidVersion;
                  ++i)
             {
-                auto const index = i - RPC::kApiMinimumSupportedVersion;
+                auto const index = i - rpc::kApiMinimumSupportedVersion;
                 BEAST_EXPECT(index == s1.index(i));
                 BEAST_EXPECT(s1.valid(i));
                 s1.val[index] = makeJson("value", kPrimes[i]);
                 productAllVersions *= kPrimes[i];
             }
             BEAST_EXPECT(!s1.valid(0));
-            BEAST_EXPECT(!s1.valid(RPC::kApiMaximumValidVersion + 1));
+            BEAST_EXPECT(!s1.valid(rpc::kApiMaximumValidVersion + 1));
             BEAST_EXPECT(!s1.valid(
-                std::numeric_limits<decltype(RPC::kApiMaximumValidVersion.value)>::max()));
+                std::numeric_limits<decltype(rpc::kApiMaximumValidVersion.value)>::max()));
 
             int result = 1;
-            static_assert(RPC::kApiMinimumSupportedVersion + 1 <= RPC::kApiMaximumValidVersion);
-            forApiVersions<RPC::kApiMinimumSupportedVersion, RPC::kApiMinimumSupportedVersion + 1>(
+            static_assert(rpc::kApiMinimumSupportedVersion + 1 <= rpc::kApiMaximumValidVersion);
+            forApiVersions<rpc::kApiMinimumSupportedVersion, rpc::kApiMinimumSupportedVersion + 1>(
                 std::as_const(s1).visit(),
                 [this](json::Value const& json, unsigned int version, int* result) {
                     BEAST_EXPECT(
-                        version >= RPC::kApiMinimumSupportedVersion &&
-                        version <= RPC::kApiMinimumSupportedVersion + 1);
+                        version >= rpc::kApiMinimumSupportedVersion &&
+                        version <= rpc::kApiMinimumSupportedVersion + 1);
                     if (BEAST_EXPECT(json.isMember("value")))
                     {
                         *result *= json["value"].asInt();
@@ -99,8 +99,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 &result);
             BEAST_EXPECT(
                 result ==
-                kPrimes[RPC::kApiMinimumSupportedVersion] *
-                    kPrimes[RPC::kApiMinimumSupportedVersion + 1]);
+                kPrimes[rpc::kApiMinimumSupportedVersion] *
+                    kPrimes[rpc::kApiMinimumSupportedVersion + 1]);
 
             // Check all the values with mutable data
             forAllApiVersions(s1.visit(), [&s1, this](json::Value& json, auto version) {
@@ -116,8 +116,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 std::as_const(s1).visit(),
                 [this](json::Value const& json, unsigned int version, int* result) {
                     BEAST_EXPECT(
-                        version >= RPC::kApiMinimumSupportedVersion &&
-                        version <= RPC::kApiMaximumValidVersion);
+                        version >= rpc::kApiMinimumSupportedVersion &&
+                        version <= rpc::kApiMaximumValidVersion);
                     if (BEAST_EXPECT(json.isMember("value")))
                     {
                         *result *= json["value"].asInt();

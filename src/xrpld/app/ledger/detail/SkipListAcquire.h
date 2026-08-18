@@ -1,11 +1,19 @@
 #pragma once
 
-#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 class InboundLedgers;

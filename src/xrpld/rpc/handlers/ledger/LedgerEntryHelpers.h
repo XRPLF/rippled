@@ -2,20 +2,27 @@
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/strHex.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/json/json_errors.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <expected>
-#include <functional>
+#include <initializer_list>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
-namespace xrpl::LedgerEntryHelpers {
+namespace xrpl::ledger_entry_helpers {
 
 inline std::unexpected<json::Value>
 missingFieldError(json::StaticString const field, std::optional<std::string> err = std::nullopt)
@@ -23,7 +30,7 @@ missingFieldError(json::StaticString const field, std::optional<std::string> err
     json::Value json = json::ValueType::Object;
     json[jss::error] = err.value_or("malformedRequest");
     json[jss::error_code] = RpcInvalidParams;
-    json[jss::error_message] = RPC::missingFieldMessage(std::string(field.cStr()));
+    json[jss::error_message] = rpc::missingFieldMessage(std::string(field.cStr()));
     return std::unexpected(json);
 }
 
@@ -33,7 +40,7 @@ invalidFieldError(std::string const& err, json::StaticString const field, std::s
     json::Value json = json::ValueType::Object;
     json[jss::error] = err;
     json[jss::error_code] = RpcInvalidParams;
-    json[jss::error_message] = RPC::expectedFieldMessage(field, type);
+    json[jss::error_message] = rpc::expectedFieldMessage(field, type);
     return std::unexpected(json);
 }
 
@@ -284,4 +291,4 @@ parseBridgeFields(json::Value const& params)
         *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
-}  // namespace xrpl::LedgerEntryHelpers
+}  // namespace xrpl::ledger_entry_helpers

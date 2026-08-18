@@ -6,13 +6,17 @@
 
 #include <google/protobuf/io/zero_copy_stream.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace xrpl {
 
-/** Implements ZeroCopyInputStream around a buffer sequence.
-    @tparam Buffers A type meeting the requirements of ConstBufferSequence.
-    @see
-   https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
-*/
+/**
+ * Implements ZeroCopyInputStream around a buffer sequence.
+ * @tparam Buffers A type meeting the requirements of ConstBufferSequence.
+ * @see
+ * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
+ */
 template <class Buffers>
 class ZeroCopyInputStream : public ::google::protobuf::io::ZeroCopyInputStream
 {
@@ -20,7 +24,7 @@ private:
     using iterator = Buffers::const_iterator;
     using const_buffer = boost::asio::const_buffer;
 
-    google::protobuf::int64 count_ = 0;
+    std::int64_t count_ = 0;
     iterator last_;
     iterator first_;    // Where pos_ comes from
     const_buffer pos_;  // What Next() will return
@@ -37,7 +41,7 @@ public:
     bool
     Skip(int count) override;
 
-    [[nodiscard]] google::protobuf::int64
+    [[nodiscard]] std::int64_t
     ByteCount() const override
     {
         return count_;
@@ -102,10 +106,11 @@ ZeroCopyInputStream<Buffers>::Skip(int count)
 
 //------------------------------------------------------------------------------
 
-/** Implements ZeroCopyOutputStream around a Streambuf.
-    Streambuf matches the public interface defined by boost::asio::streambuf.
-    @tparam Streambuf A type meeting the requirements of Streambuf.
-*/
+/**
+ * Implements ZeroCopyOutputStream around a Streambuf.
+ * Streambuf matches the public interface defined by boost::asio::streambuf.
+ * @tparam Streambuf A type meeting the requirements of Streambuf.
+ */
 template <class Streambuf>
 class ZeroCopyOutputStream : public ::google::protobuf::io::ZeroCopyOutputStream
 {
@@ -116,7 +121,7 @@ private:
 
     Streambuf& streambuf_;
     std::size_t blockSize_;
-    google::protobuf::int64 count_ = 0;
+    std::int64_t count_ = 0;
     std::size_t commit_ = 0;
     buffers_type buffers_;
     iterator pos_;
@@ -132,7 +137,7 @@ public:
     void
     BackUp(int count) override;
 
-    [[nodiscard]] google::protobuf::int64
+    [[nodiscard]] std::int64_t
     ByteCount() const override
     {
         return count_;

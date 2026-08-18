@@ -3,7 +3,6 @@
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/JobTypeData.h>
-#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
@@ -12,10 +11,27 @@
 // `boost/context/pooled_fixedsize_stack.hpp`, whose `.malloc()` / `.free()`
 // member calls on `boost::pool` collide with MSVC's `_CRTDBG_MAP_ALLOC` macros
 // in Debug builds (see cmake/XrplCompiler.cmake).
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/LoadEvent.h>
+
 #include <boost/context/protected_fixedsize_stack.hpp>
 #include <boost/coroutine2/coroutine.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <set>
+#include <string>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -29,20 +45,23 @@ struct CoroCreateT
     explicit CoroCreateT() = default;
 };
 
-/** A pool of threads to perform work.
-
-    A job posted will always run to completion.
-
-    Coroutines that are suspended must be resumed,
-    and run to completion.
-
-    When the JobQueue stops, it waits for all jobs
-    and coroutines to finish.
-*/
+/**
+ * A pool of threads to perform work.
+ *
+ * A job posted will always run to completion.
+ *
+ * Coroutines that are suspended must be resumed,
+ * and run to completion.
+ *
+ * When the JobQueue stops, it waits for all jobs
+ * and coroutines to finish.
+ */
 class JobQueue : private Workers::Callback
 {
 public:
-    /** Coroutines must run to completion. */
+    /**
+     * Coroutines must run to completion.
+     */
     class Coro : public std::enable_shared_from_this<Coro>
     {
     private:
@@ -71,55 +90,64 @@ public:
 
         ~Coro();
 
-        /** Suspend coroutine execution.
-            Effects:
-              The coroutine's stack is saved.
-              The associated Job thread is released.
-            Note:
-              The associated Job function returns.
-              Undefined behavior if called consecutively without a corresponding
-           post.
-        */
+        /**
+         * Suspend coroutine execution.
+         *  Effects:
+         *    The coroutine's stack is saved.
+         *    The associated Job thread is released.
+         *  Note:
+         *    The associated Job function returns.
+         *    Undefined behavior if called consecutively without a corresponding
+         * post.
+         */
         void
         yield() const;
 
-        /** Schedule coroutine execution.
-            Effects:
-              Returns immediately.
-              A new job is scheduled to resume the execution of the coroutine.
-              When the job runs, the coroutine's stack is restored and execution
-                continues at the beginning of coroutine function or the
-           statement after the previous call to yield. Undefined behavior if
-           called after the coroutine has completed with a return (as opposed to
-           a yield()). Undefined behavior if post() or resume() called
-           consecutively without a corresponding yield.
-
-            @return true if the Coro's job is added to the JobQueue.
-        */
+        /**
+         * Schedule coroutine execution.
+         * Effects:
+         *   Returns immediately.
+         *   A new job is scheduled to resume the execution of the coroutine.
+         *   When the job runs, the coroutine's stack is restored and execution
+         *     continues at the beginning of coroutine function or the
+         * statement after the previous call to yield. Undefined behavior if
+         * called after the coroutine has completed with a return (as opposed to
+         * a yield()). Undefined behavior if post() or resume() called
+         * consecutively without a corresponding yield.
+         *
+         * @return true if the Coro's job is added to the JobQueue.
+         */
         bool
         post();
 
-        /** Resume coroutine execution.
-            Effects:
-               The coroutine continues execution from where it last left off
-                 using this same thread.
-               If the coroutine has already completed, returns immediately
-                 (handles the documented post-before-yield race condition).
-            Undefined behavior if resume() or post() called consecutively
-              without a corresponding yield.
-        */
+        /**
+         * Resume coroutine execution.
+         * Effects:
+         *    The coroutine continues execution from where it last left off
+         *      using this same thread.
+         *    If the coroutine has already completed, returns immediately
+         *      (handles the documented post-before-yield race condition).
+         * Undefined behavior if resume() or post() called consecutively
+         *   without a corresponding yield.
+         */
         void
         resume();
 
-        /** Returns true if the Coro is still runnable (has not returned). */
-        bool
+        /**
+         * Returns true if the Coro is still runnable (has not returned).
+         */
+        [[nodiscard]] bool
         runnable() const;
 
-        /** Once called, the Coro allows early exit without an assert. */
+        /**
+         * Once called, the Coro allows early exit without an assert.
+         */
         void
         expectEarlyExit();
 
-        /** Waits until coroutine returns from the user function. */
+        /**
+         * Waits until coroutine returns from the user function.
+         */
         void
         join();
     };
@@ -134,20 +162,19 @@ public:
         perf::PerfLog& perfLog);
     ~JobQueue() override;
 
-    /** Adds a job to the JobQueue.
-
-        @param type The type of job.
-        @param name Name of the job.
-        @param jobHandler Lambda with signature void (Job&).  Called when the
-       job is executed.
-
-        @return true if jobHandler added to queue.
-    */
-    template <
-        typename JobHandler,
-        typename = std::enable_if_t<std::is_same_v<decltype(std::declval<JobHandler&&>()()), void>>>
+    /**
+     * Adds a job to the JobQueue.
+     *
+     * @param type The type of job.
+     * @param name Name of the job.
+     * @param jobHandler Callable with signature void(). Called when the job is executed.
+     *
+     * @return true if jobHandler added to queue.
+     */
+    template <typename JobHandler>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
+        requires(std::is_void_v<std::invoke_result_t<JobHandler>>)
     {
         if (auto optionalCountedJob = jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
         {
@@ -156,40 +183,46 @@ public:
         return false;
     }
 
-    /** Creates a coroutine and adds a job to the queue which will run it.
-
-        @param t The type of job.
-        @param name Name of the job.
-        @param f Has a signature of void(std::shared_ptr<Coro>). Called when the
-       job executes.
-
-        @return shared_ptr to posted Coro.  nullptr if post was not successful.
-    */
+    /**
+     * Creates a coroutine and adds a job to the queue which will run it.
+     *
+     * @param t The type of job.
+     * @param name Name of the job.
+     * @param f Has a signature of void(std::shared_ptr<Coro>). Called when the
+     * job executes.
+     *
+     * @return shared_ptr to posted Coro.  nullptr if post was not successful.
+     */
     template <class F>
     std::shared_ptr<Coro>
     postCoro(JobType t, std::string const& name, F&& f);
 
-    /** Jobs waiting at this priority.
+    /**
+     * Jobs waiting at this priority.
      */
     int
     getJobCount(JobType t) const;
 
-    /** Jobs waiting plus running at this priority.
+    /**
+     * Jobs waiting plus running at this priority.
      */
     int
     getJobCountTotal(JobType t) const;
 
-    /** All waiting jobs at or greater than this priority.
+    /**
+     * All waiting jobs at or greater than this priority.
      */
     int
     getJobCountGE(JobType t) const;
 
-    /** Return a scoped LoadEvent.
+    /**
+     * Return a scoped LoadEvent.
      */
     std::unique_ptr<LoadEvent>
     makeLoadEvent(JobType t, std::string const& name);
 
-    /** Add multiple load events.
+    /**
+     * Add multiple load events.
      */
     void
     addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed);
@@ -202,7 +235,9 @@ public:
     json::Value
     getJson(int c = 0);
 
-    /** Block until no jobs running. */
+    /**
+     * Block until no jobs running.
+     */
     void
     rendezvous();
 
@@ -384,7 +419,7 @@ private:
 
 }  // namespace xrpl
 
-#include <xrpl/core/Coro.ipp>
+#include <xrpl/core/Coro.ipp>  // IWYU pragma: keep
 
 namespace xrpl {
 

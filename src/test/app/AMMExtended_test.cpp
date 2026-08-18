@@ -267,20 +267,39 @@ private:
             {features});
 
         // tfPassive -- place the offer without crossing it.
-        testAMM(
-            [&](AMM& ammAlice, Env& env) {
-                // Carol creates a passive offer that could cross AMM.
-                // Carol's offer should stay in the ledger.
-                env(offer(carol_, XRP(100), USD(100), tfPassive));
-                env.close();
-                BEAST_EXPECT(
-                    ammAlice.expectBalances(XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
-                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
-            },
-            {{XRP(10'100), USD(10'000)}},
-            0,
-            std::nullopt,
-            {features});
+        if (features[featureMPTokensV2])
+        {
+            Env env{*this, features};
+            fund(env, gw_, {alice_, carol_}, XRP(30'000'000), {USD(30'000'000)});
+
+            AMM const ammAlice(env, alice_, XRP(10'100'000), USD(10'000'000));
+
+            // Scale the exact-quality fixture up so the visual relationship
+            // stays clear: the passive CLOB offer has the same 1:1 quality as
+            // the generated AMM offer, so it should not cross.
+            env(offer(carol_, XRP(100'000), USD(100'000), tfPassive));
+            env.close();
+            BEAST_EXPECT(
+                ammAlice.expectBalances(XRP(10'100'000), USD(10'000'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100'000), USD(100'000)}}}));
+        }
+        else
+        {
+            testAMM(
+                [&](AMM& ammAlice, Env& env) {
+                    // Carol creates a passive offer that could cross AMM.
+                    // Carol's offer should stay in the ledger.
+                    env(offer(carol_, XRP(100), USD(100), tfPassive));
+                    env.close();
+                    BEAST_EXPECT(ammAlice.expectBalances(
+                        XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
+                    BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
+                },
+                {{XRP(10'100), USD(10'000)}},
+                0,
+                std::nullopt,
+                {features});
+        }
 
         // tfPassive -- cross only offers of better quality.
         testAMM(
@@ -546,7 +565,7 @@ private:
         //  1 for each trust limit == 3 (alice_ < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(3) + env.current()->fees().base * 4;
+            XRP(100) + env.current()->fees().accountReserve(3, 1) + env.current()->fees().base * 4;
 
         env.fund(startingXrp, gw1, gw2, gw3, localAlice);
         env.fund(XRP(2'000), localBob);
@@ -1359,6 +1378,7 @@ private:
         testRmFundedOffer(all_ - fixAMMv1_1 - fixAMMv1_3);
         testEnforceNoRipple(all_);
         testFillModes(all_);
+        testFillModes(all_ - featureMPTokensV2);
         testOfferCrossWithXRP(all_);
         testOfferCrossWithLimitOverride(all_);
         testCurrencyConversionEntire(all_);
@@ -2420,8 +2440,10 @@ private:
                 // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
                 BEAST_EXPECT(
                     expectHolding(env, alice_, STAmount{GBP, UINT64_C(1'329'578947368421), -12}));
-                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
-                ///= 70.4210EUR
+                /**
+                 * / 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                 * = 70.4210EUR
+                 */
                 // 56.3368GBP is swapped in for 53.3322EUR
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{GBP, UINT64_C(1'056'336842105263), -12},
@@ -2435,8 +2457,10 @@ private:
                 // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
                 BEAST_EXPECT(
                     expectHolding(env, alice_, STAmount{GBP, UINT64_C(1'329'57894736842), -11}));
-                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
-                ///= 70.4210EUR
+                /**
+                 * / 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                 * = 70.4210EUR
+                 */
                 // 56.3368GBP is swapped in for 53.3322EUR
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{GBP, UINT64_C(1'056'336842105264), -12},

@@ -27,6 +27,7 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -34,6 +35,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
@@ -1451,12 +1453,14 @@ public:
             // Alice creates one sell offer for each NFT
             // Verify the offer indexes are correct in the NFTokenCreateOffer tx
             // meta
-            uint256 const aliceOfferIndex1 = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId1, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex2 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId2, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -1470,7 +1474,8 @@ public:
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
-            auto const bobBuyOfferIndex = keylet::nftokenOffer(bob, env.seq(bob)).key;
+            auto const bobBuyOfferIndex =
+                keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
             env(token::createOffer(bob, nftId1, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(bobBuyOfferIndex);
@@ -1491,7 +1496,8 @@ public:
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const offerAliceToBroker =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)),
                 token::Destination(broker),
                 Txflags(tfSellNFToken));
@@ -1499,7 +1505,8 @@ public:
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker = keylet::nftokenOffer(bob, env.seq(bob)).key;
+            uint256 const offerBobToBroker =
+                keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
             env(token::createOffer(bob, nftId, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(offerBobToBroker);
@@ -1520,12 +1527,14 @@ public:
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
-            uint256 const aliceOfferIndex1 = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex1 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex2 =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -1540,11 +1549,418 @@ public:
         if (features[featureNFTokenMintOffer])
         {
             uint256 const aliceMintWithOfferIndex1 =
-                keylet::nftokenOffer(alice, env.seq(alice)).key;
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::mint(alice), token::Amount(XRP(0)));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
         }
+    }
+
+    // ----- Subscription limit / teardown verification ----------------------
+    //
+    // The helpers and tests below exercise:
+    //   * the per-connection subscription cap + proportional charge enforced
+    //     in doSubscribe (Subscribe.cpp), and
+    //   * the asynchronous, chunked teardown of a disconnecting connection's
+    //     account subscriptions (~InfoSub -> scheduleAccountCleanup -> JobQueue).
+    //
+    // The cap-exceeded error is rpcINVALID_PARAMS with the message "Too many
+    // subscriptions for this connection."; the tests assert that exactly.
+    //
+    // There is no public accessor for the server-side per-connection count, so
+    // the async cleanup is verified behaviorally: publishing still flows to a
+    // live subscriber, rather than by reading a count to zero.
+
+    // Build `count` distinct, valid, base58-encoded account strings cheaply by
+    // incrementing an AccountID. parseAccountIds dedups into a hash_set, so the
+    // strings MUST be distinct for the cap arithmetic to be exact; incrementing
+    // guarantees distinctness without deriving `count` keypairs.
+    static std::vector<std::string>
+    makeAccountStrings(std::size_t count, std::uint32_t seed = 1)
+    {
+        std::vector<std::string> out;
+        out.reserve(count);
+        // Start at `seed` so separate calls produce non-overlapping ranges,
+        // letting a test subscribe disjoint batches across requests.
+        AccountID id{static_cast<std::uint64_t>(seed)};
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            out.push_back(toBase58(id));
+            ++id;
+        }
+        return out;
+    }
+
+    // Append the given account strings as a jss::accounts array onto a fresh
+    // subscribe request object.
+    static json::Value
+    accountsRequest(std::vector<std::string> const& accts)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::accounts] = json::ValueType::Array;
+        for (auto const& a : accts)
+            jv[jss::accounts].append(a);
+        return jv;
+    }
+
+    // Append the given account strings as a jss::accounts_proposed array onto a
+    // fresh subscribe request object.
+    static json::Value
+    accountsProposedRequest(std::vector<std::string> const& accts)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::accounts_proposed] = json::ValueType::Array;
+        for (auto const& a : accts)
+            jv[jss::accounts_proposed].append(a);
+        return jv;
+    }
+
+    // A single, valid XRP/USD order book request, as one entry of a
+    // jss::books array.
+    static json::Value
+    oneBookRequest()
+    {
+        using namespace jtx;
+        json::Value jv{json::ValueType::Object};
+        jv[jss::books] = json::ValueType::Array;
+        json::Value& book = jv[jss::books][0u];
+        book[jss::taker_gets] = json::ValueType::Object;
+        book[jss::taker_gets][jss::currency] = "XRP";
+        book[jss::taker_pays] = json::ValueType::Object;
+        book[jss::taker_pays][jss::currency] = "USD";
+        book[jss::taker_pays][jss::issuer] = Account("alice").human();
+        return jv;
+    }
+
+    // A single account_history_tx_stream subscribe request for `acct`.
+    static json::Value
+    accountHistoryRequest(std::string const& acct)
+    {
+        json::Value jv{json::ValueType::Object};
+        jv[jss::account_history_tx_stream] = json::ValueType::Object;
+        jv[jss::account_history_tx_stream][jss::account] = acct;
+        return jv;
+    }
+
+    // An envconfig modifier that lowers the per-connection subscription cap to
+    // `cap`, so the cap logic in doSubscribe can be driven without subscribing
+    // the production default (100'000) entries. (Env is non-movable, so this
+    // returns the config modifier rather than a ready-made Env.)
+    static auto
+    cappedConfig(std::size_t cap)
+    {
+        return [cap](std::unique_ptr<Config> cfg) {
+            cfg->maxSubscriptionsPerConnection = cap;
+            return jtx::singleThreadIo(std::move(cfg));
+        };
+    }
+
+    void
+    testSubscriptionCapRejects()
+    {
+        // A request that alone exceeds the cap is rejected with the exact
+        // cap error, before any state is recorded. Baseline negative path.
+        testcase("subscription cap rejects an over-cap request");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Six accounts against a cap of five: rejected.
+        auto const jr =
+            wsc->invoke("subscribe", accountsRequest(makeAccountStrings(6)))[jss::result];
+        BEAST_EXPECT(jr[jss::error] == "invalidParams");
+        BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+    }
+
+    void
+    testReSubscribeNotOvercounted()
+    {
+        // Re-subscribing accounts already held by this connection adds no new
+        // tracked state, so it must be admitted even at the cap. The cap check
+        // must count only NET-NEW accounts, not the raw request size.
+        testcase("re-subscribe at the cap is not over-counted");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the cap exactly with five distinct accounts.
+        auto const five = makeAccountStrings(5);
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // Re-subscribe the same five: net-new is zero, so it stays within the
+        // cap and must succeed. (Pre-fix this was wrongly rejected.)
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(five));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testBooksCapIndependentOfAccounts()
+    {
+        // Book subscriptions are tracked separately (OrderBookDB) and are not
+        // part of totalSubscriptionCount(). An account set at the cap must not
+        // block an unrelated book subscription.
+        testcase("books cap is independent of account count");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the account cap exactly.
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(5)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A single book subscription must still be admitted: it does not count
+        // against the account cap. (Pre-fix this was wrongly rejected.)
+        {
+            auto const r = wsc->invoke("subscribe", oneBookRequest());
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testMultiFieldNoPartialSubscribe()
+    {
+        // A single request mixing fields must be all-or-nothing: if a later
+        // field trips the cap, an earlier field must NOT have subscribed. The
+        // leak is detected through the cap arithmetic itself - a follow-up
+        // request succeeds only if no state leaked from the rejected one.
+        testcase("multi-field subscribe does not partially subscribe");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(5))};
+        auto wsc = makeWSClient(env.app().config());
+
+        // accounts_proposed (3, evaluated first, would subscribe) +
+        // accounts (3): combined 6 exceeds the cap of 5, so the request is
+        // rejected. The proposed branch must not have leaked its 3 entries.
+        json::Value req = accountsProposedRequest(makeAccountStrings(3, 1));
+        for (auto const& a : makeAccountStrings(3, 100))
+            req[jss::accounts].append(a);
+        {
+            auto const jr = wsc->invoke("subscribe", req)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+
+        // If the rejected request leaked its 3 proposed subscriptions, the
+        // connection's count is already 3 and this 3-account request would be
+        // rejected (3 + 3 > 5). With no leak the count is 0 and it succeeds.
+        {
+            auto const r = wsc->invoke("subscribe", accountsRequest(makeAccountStrings(3, 200)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+    }
+
+    void
+    testHistoryReSubscribeNotOvercounted()
+    {
+        // An account_history_tx_stream subscribe is charged against the cap only
+        // when it is net-new, matching the account branches. Re-subscribing an
+        // account-history already held on this connection adds no tracked entry,
+        // so it must NOT be rejected at the cap. The two rejection causes are
+        // told apart by their exact error_message: the cap check yields "Too
+        // many subscriptions for this connection."; a duplicate that gets past
+        // the cap and is rejected downstream by subAccountHistory yields the
+        // generic "Invalid parameters.".
+        testcase("account_history re-subscribe at the cap is not over-counted");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(1))};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // First account-history subscribe is net-new: charge 1 fills the cap of
+        // 1 exactly, so it is admitted. Positive path.
+        {
+            auto const r = wsc->invoke("subscribe", accountHistoryRequest(alice.human()));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // Re-subscribe the same account-history while sitting exactly at the
+        // cap. Net-new is zero, so the cap check must pass; the request is then
+        // rejected by subAccountHistory as a duplicate, NOT by the cap. Proven
+        // by the exact message: it is the duplicate error, not the cap error.
+        // (Pre-fix, the flat charge of 1 made the cap check reject this with the
+        // cap message instead.)
+        {
+            auto const jr =
+                wsc->invoke("subscribe", accountHistoryRequest(alice.human()))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+            BEAST_EXPECT(jr[jss::error_message] != "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testHistoryCapRejectsNetNew()
+    {
+        // A genuinely net-new account-history subscribe on a connection already
+        // at the cap IS rejected, with the cap error. Negative path, and the
+        // counterpart to testHistoryReSubscribeNotOvercounted: it confirms the
+        // net-new charge still rejects when the entry really is new.
+        testcase("account_history net-new subscribe is rejected at the cap");
+
+        using namespace jtx;
+        Env env{*this, envconfig(cappedConfig(1))};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        BEAST_EXPECT(env.syncClose());
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // Fill the cap of 1 with alice's account-history.
+        {
+            auto const r = wsc->invoke("subscribe", accountHistoryRequest(alice.human()));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A different account-history (bob) is net-new: charge 1 over a cap of 1
+        // already full, so it is rejected with the cap error.
+        {
+            auto const jr =
+                wsc->invoke("subscribe", accountHistoryRequest(bob.human()))[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
+        }
+    }
+
+    void
+    testAsyncTeardownDoesNotStall()
+    {
+        // Test C (core regression): disconnecting a connection with many
+        // account subscriptions must NOT block subsequent operations or
+        // publishing. The teardown is now posted to a JobQueue job
+        // (scheduleAccountCleanup), so it runs off the disconnect thread.
+        testcase("async teardown does not stall publishing");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        // A second, long-lived subscriber to alice that must keep receiving
+        // publishes after the first connection disconnects.
+        auto wscLive = makeWSClient(env.app().config());
+        {
+            json::Value jv{json::ValueType::Object};
+            jv[jss::accounts] = json::ValueType::Array;
+            jv[jss::accounts].append(alice.human());
+            auto const r = wscLive->invoke("subscribe", jv);
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A connection that subscribes to many accounts, then disconnects. A
+        // few thousand entries is enough to be a real teardown while still
+        // running fast in CI.
+        constexpr std::size_t kBulk = 3000;
+        {
+            auto wscBulk = makeWSClient(env.app().config());
+            auto const r =
+                wscBulk->invoke("subscribe", accountsRequest(makeAccountStrings(kBulk, 10)));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+            // Destroying the client closes the WS connection, which destroys
+            // the server-side InfoSub and posts the chunked async cleanup job.
+            // WSClient exposes no explicit close(); resetting the owning
+            // unique_ptr is the disconnect path.
+            wscBulk.reset();
+        }
+
+        // Immediately after the disconnect, an unrelated operation completes
+        // promptly (it would block for seconds with inline teardown). This is a
+        // cheap liveness check; the publish assertion below is the real proof.
+        {
+            auto const info = env.app().getOPs().getServerInfo(false, true, false);
+            BEAST_EXPECT(info.isMember(jss::server_state));
+        }
+
+        // The live subscriber still receives a published transaction for alice
+        // within a short timeout, proving account-publishing was not stalled by
+        // the concurrent teardown.
+        {
+            env(pay(env.master, alice, XRP(100)));
+            BEAST_EXPECT(env.syncClose());
+            BEAST_EXPECT(wscLive->findMsg(5s, [&](auto const& jv) {
+                return jv.isMember(jss::transaction) &&
+                    jv[jss::transaction][jss::TransactionType] == jss::Payment &&
+                    jv[jss::transaction][jss::Destination] == alice.human();
+            }));
+        }
+
+        wscLive->invoke("unsubscribe", accountsRequest({alice.human()}));
+    }
+
+    void
+    testResubscribeAfterDisconnect()
+    {
+        // Test D (Phase 3 correctness): connection A subscribes to account X
+        // and disconnects (async cleanup pending, keyed on A's seq). A new
+        // connection B subscribes to X and MUST still receive publishes for X -
+        // A's deferred, seq-keyed cleanup must not remove B's subscription.
+        testcase("re-subscribe after disconnect still delivers");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        BEAST_EXPECT(env.syncClose());
+
+        // Connection A subscribes to alice, then disconnects. A also subscribes
+        // to a bulk set so its deferred cleanup is non-trivial and races with B.
+        {
+            auto wscA = makeWSClient(env.app().config());
+            auto bulk = makeAccountStrings(2000, 10);
+            bulk.push_back(alice.human());
+            auto const r = wscA->invoke("subscribe", accountsRequest(bulk));
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+            // Disconnect A by destroying its client (no explicit close()).
+            wscA.reset();
+        }
+
+        // Connection B (a new InfoSub with a distinct seq) subscribes to alice.
+        auto wscB = makeWSClient(env.app().config());
+        {
+            json::Value jv{json::ValueType::Object};
+            jv[jss::accounts] = json::ValueType::Array;
+            jv[jss::accounts].append(alice.human());
+            auto const r = wscB->invoke("subscribe", jv);
+            BEAST_EXPECTS(r[jss::status] == "success", to_string(r));
+        }
+
+        // A publish for alice must reach B. If A's seq-keyed cleanup had wrongly
+        // removed the shared alice entry, B would receive nothing.
+        {
+            env(pay(env.master, alice, XRP(100)));
+            BEAST_EXPECT(env.syncClose());
+            BEAST_EXPECT(wscB->findMsg(5s, [&](auto const& jv) {
+                return jv.isMember(jss::transaction) &&
+                    jv[jss::transaction][jss::TransactionType] == jss::Payment &&
+                    jv[jss::transaction][jss::Destination] == alice.human();
+            }));
+        }
+
+        wscB->invoke("unsubscribe", accountsRequest({alice.human()}));
     }
 
     void
@@ -1566,6 +1982,14 @@ public:
         testSubBookChanges();
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
+        testAsyncTeardownDoesNotStall();
+        testResubscribeAfterDisconnect();
+        testSubscriptionCapRejects();
+        testReSubscribeNotOvercounted();
+        testBooksCapIndependentOfAccounts();
+        testMultiFieldNoPartialSubscribe();
+        testHistoryReSubscribeNotOvercounted();
+        testHistoryCapRejectsNetNew();
     }
 };
 

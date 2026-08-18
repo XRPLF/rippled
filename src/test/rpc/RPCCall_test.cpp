@@ -14,7 +14,6 @@
 
 #include <cstdint>
 #include <cstring>
-#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <string>
@@ -5856,8 +5855,8 @@ public:
     {
         testcase << "RPCCall API version " << apiVersion;
         if (!BEAST_EXPECT(
-                apiVersion >= RPC::kApiMinimumSupportedVersion &&
-                apiVersion <= RPC::kApiMaximumValidVersion))
+                apiVersion >= rpc::kApiMinimumSupportedVersion &&
+                apiVersion <= rpc::kApiMaximumValidVersion))
             return;
 
         test::jtx::Env const env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
@@ -5871,8 +5870,8 @@ public:
             std::vector<std::string> const args{rpcCallTest.args.begin(), rpcCallTest.args.end()};
 
             char const* const expVersioned =
-                (apiVersion - RPC::kApiMinimumSupportedVersion) < rpcCallTest.exp.size()
-                ? rpcCallTest.exp[apiVersion - RPC::kApiMinimumSupportedVersion]
+                (apiVersion - rpc::kApiMinimumSupportedVersion) < rpcCallTest.exp.size()
+                ? rpcCallTest.exp[apiVersion - rpc::kApiMinimumSupportedVersion]
                 : rpcCallTest.exp.back();
 
             // Note that, over the long term, kNone of these tests should
@@ -5927,7 +5926,7 @@ public:
     void
     run() override
     {
-        forAllApiVersions(std::bind_front(&RPCCall_test::testRPCCall, this));
+        forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
     }
 };
 

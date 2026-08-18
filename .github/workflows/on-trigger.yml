@@ -15,11 +15,12 @@ on:
 
       # Keep the paths below in sync with those in `on-pr.yml`.
       - ".github/actions/build-deps/**"
-      - ".github/actions/generate-version/**"
+      - ".github/actions/release-info/**"
       - ".github/actions/setup-conan/**"
       - ".github/scripts/strategy-matrix/**"
       - ".github/workflows/reusable-build-test-config.yml"
       - ".github/workflows/reusable-build-test.yml"
+      - ".github/workflows/reusable-check-autogen.yml"
       - ".github/workflows/reusable-clang-tidy.yml"
       - ".github/workflows/reusable-package.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
@@ -28,6 +29,7 @@ on:
       - ".clang-tidy"
       - ".codecov.yml"
       - "bin/check-tools.sh"
+      - "bin/default-loader-path.sh"
       - "cfg/**"
       - "cmake/**"
       - "conan/**"
@@ -66,6 +68,9 @@ defaults:
     shell: bash
 
 jobs:
+  check-autogen:
+    uses: ./.github/workflows/reusable-check-autogen.yml
+
   clang-tidy:
     uses: ./.github/workflows/reusable-clang-tidy.yml
     permissions:
@@ -103,3 +108,10 @@ jobs:
   package:
     needs: build-test
     uses: ./.github/workflows/reusable-package.yml
+    with:
+      # Packages are built on every trigger; only develop pushes in XRPLF/rippled
+      # publish them, matching upload-recipe above.
+      publish: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+    secrets:
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}

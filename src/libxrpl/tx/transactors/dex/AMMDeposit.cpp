@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace xrpl {
@@ -251,7 +252,36 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             : tecUNFUNDED_AMM;
     };
 
-    if (ctx.view.rules().enabled(featureAMMClawback))
+    auto const amount = ctx.tx[~sfAmount];
+    auto const amount2 = ctx.tx[~sfAmount2];
+    auto const ammAccountID = ammSle->getAccountID(sfAccount);
+
+    if (ctx.view.rules().enabled(fixCleanup3_3_0))
+    {
+        // Unified deposit freeze check for both pool assets.
+        // AMMDeposit is not allowed if either asset is frozen.
+        auto checkAsset = [&](Asset const& asset) -> TER {
+            if (auto const ter = requireAuth(ctx.view, asset, accountID, AuthType::WeakAuth))
+            {
+                JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, " << asset;
+                return ter;
+            }
+            if (auto const ter = checkDepositFreeze(ctx.view, accountID, ammAccountID, asset))
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Deposit: frozen, " << to_string(accountID) << " " << to_string(asset);
+                return ter;
+            }
+            return tesSUCCESS;
+        };
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset]))
+            return ter;
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
+            return ter;
+    }
+    else if (ctx.view.rules().enabled(featureAMMClawback))
     {
         // Check if either of the assets is frozen, AMMDeposit is not allowed
         // if either asset is frozen
@@ -283,10 +313,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return ter;
     }
 
-    auto const amount = ctx.tx[~sfAmount];
-    auto const amount2 = ctx.tx[~sfAmount2];
-    auto const ammAccountID = ammSle->getAccountID(sfAccount);
-
     auto checkAmount = [&](std::optional<STAmount> const& amount, bool checkBalance) -> TER {
         if (amount)
         {
@@ -301,21 +327,26 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 return ter;
                 // LCOV_EXCL_STOP
             }
-            // AMM account or currency frozen
-            if (auto const ter = checkFrozen(ctx.view, ammAccountID, amount->asset());
-                !isTesSuccess(ter))
+            if (!ctx.view.rules().enabled(fixCleanup3_3_0))
             {
-                JLOG(ctx.j.debug()) << "AMM Deposit: AMM account or currency is frozen or locked, "
-                                    << to_string(accountID);
-                return ter;
-            }
-            // Account frozen
-            if (auto const ter = checkIndividualFrozen(ctx.view, accountID, amount->asset());
-                !isTesSuccess(ter))
-            {
-                JLOG(ctx.j.debug()) << "AMM Deposit: account is frozen or locked, "
-                                    << to_string(accountID) << " " << to_string(amount->asset());
-                return ter;
+                // AMM account or currency frozen
+                if (auto const ter = checkFrozen(ctx.view, ammAccountID, amount->asset());
+                    !isTesSuccess(ter))
+                {
+                    JLOG(ctx.j.debug())
+                        << "AMM Deposit: AMM account or currency is frozen or locked, "
+                        << to_string(accountID);
+                    return ter;
+                }
+                // Account frozen
+                if (auto const ter = checkIndividualFrozen(ctx.view, accountID, amount->asset());
+                    !isTesSuccess(ter))
+                {
+                    JLOG(ctx.j.debug())
+                        << "AMM Deposit: account is frozen or locked, " << to_string(accountID)
+                        << " " << to_string(amount->asset());
+                    return ter;
+                }
             }
             if (checkBalance)
             {
@@ -407,11 +438,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
-    auto const [result, newLPTokenBalance] = [&,
-                                              &amountBalance = amountBalance,
-                                              &amount2Balance = amount2Balance,
-                                              &lptAMMBalance =
-                                                  lptAMMBalance]() -> std::pair<TER, STAmount> {
+    auto dispatchToDeposit = [&,
+                              &amountBalance = amountBalance,
+                              &amount2Balance = amount2Balance,
+                              &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalDepositLimit(
@@ -463,6 +493,28 @@ AMMDeposit::applyGuts(Sandbox& sb)
         JLOG(j_.error()) << "AMM Deposit: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
         // LCOV_EXCL_STOP
+    };
+
+    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+        try
+        {
+            return dispatchToDeposit();
+        }
+        catch (std::runtime_error const& e)
+        {
+            REACHABLE("xrpl::AMMDeposit::applyGuts : deposit amount out of range reached");
+            // A deposit whose solved amount exceeds the integral asset's range
+            // throws while converting to STAmount: past int64max
+            // Number::operator rep() throws std::overflow_error; above the asset
+            // maximum STAmount::canonicalize throws std::runtime_error. Fail
+            // cleanly with a tec rather than letting it escape doApply as
+            // tefEXCEPTION. Any other exception is left to propagate.
+            // Gated by fixCleanup3_4_0 to preserve the legacy result pre-amendment.
+            if (!sb.rules().enabled(fixCleanup3_4_0))
+                throw;  // LCOV_EXCL_LINE - preserve legacy tefEXCEPTION
+            JLOG(j_.error()) << "AMMDeposit: deposit amount out of range " << e.what();
+            return std::make_pair(tecAMM_FAILED, STAmount{});
+        }
     }();
 
     if (isTesSuccess(result))
@@ -588,7 +640,13 @@ AMMDeposit::deposit(
     }
 
     auto res = accountSend(
-        view, accountID_, ammAccount, amountDepositActual, ctx_.journal, WaiveTransferFee::Yes);
+        view,
+        accountID_,
+        ammAccount,
+        amountDepositActual,
+        ctx_.journal,
+        {},  // don't sponsor for AMM Trustline
+        WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit " << amountDepositActual;
@@ -612,6 +670,7 @@ AMMDeposit::deposit(
             ammAccount,
             *amount2DepositActual,
             ctx_.journal,
+            {},  // don't sponsor for AMM Trustline
             WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
@@ -643,7 +702,8 @@ adjustLPTokensOut(
     return adjustLPTokens(lptAMMBalance, lpTokensDeposit, IsDeposit::Yes);
 }
 
-/** Proportional deposit of pools assets in exchange for the specified
+/**
+ * Proportional deposit of pools assets in exchange for the specified
  * amount of LPTokens.
  */
 std::pair<TER, STAmount>
@@ -691,7 +751,8 @@ AMMDeposit::equalDepositTokens(
     }
 }
 
-/** Proportional deposit of pool assets with the constraints on the maximum
+/**
+ * Proportional deposit of pool assets with the constraints on the maximum
  * amount of each asset that the trader is willing to deposit.
  *      a = (t/T) * A (1)
  *      b = (t/T) * B (2)
@@ -792,7 +853,8 @@ AMMDeposit::equalDepositLimit(
     return {tecAMM_FAILED, STAmount{}};
 }
 
-/** Single asset deposit of the amount of asset specified by Asset1In.
+/**
+ * Single asset deposit of the amount of asset specified by Asset1In.
  *       t = T * (b / B - x) / (1 + x) (3)
  *      where
  *         f1 = (1 - 0.5 * tfee) / (1 - tfee)
@@ -840,7 +902,8 @@ AMMDeposit::singleDeposit(
         tfee);
 }
 
-/** Single asset asset1 is deposited to obtain some share of
+/**
+ * Single asset asset1 is deposited to obtain some share of
  * the AMM instance's pools represented by amount of LPTokens.
  * Use equation 4 to compute the amount of asset1 to be deposited,
  * given t represented by amount of LPTokens. Equation 4 solves
@@ -878,7 +941,8 @@ AMMDeposit::singleDepositTokens(
         tfee);
 }
 
-/** Single asset deposit with two constraints.
+/**
+ * Single asset deposit with two constraints.
  * a. Amount of asset1 if specified (not 0) in Asset1In specifies the maximum
  *     amount of asset1 that the trader is willing to deposit.
  * b. The effective-price of the LPToken traded out does not exceed
