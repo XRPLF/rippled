@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -90,9 +91,11 @@ private:
     }
 
     void
-    testInvalidLoanSet()
+    testInvalidLoanSet(VaultKind vaultKind)
     {
-        testcase("Invalid LoanSet");
+        testcase(
+            std::string("Invalid LoanSet (") +
+            (vaultKind == VaultKind::OpenEnded ? "open-ended" : "closed-ended") + " vault)");
         using namespace jtx;
         using namespace loan;
         Account const lender{"lender"};
@@ -106,7 +109,8 @@ private:
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
-            BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+            BrokerInfo const brokerInfo{
+                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind})};
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -530,7 +534,8 @@ private:
     runAmendmentIndependent()
     {
         testDisabled();
-        testInvalidLoanSet();
+        for (auto const kind : {VaultKind::OpenEnded, VaultKind::ClosedEnded})
+            testInvalidLoanSet(kind);
         testInvalidLoanDelete();
         testInvalidLoanManage();
         testInvalidLoanPay();

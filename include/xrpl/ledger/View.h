@@ -36,6 +36,11 @@ enum class SkipEntry : bool { No = false, Yes };
 //------------------------------------------------------------------------------
 
 /**
+ * Whether an expiration check should be inclusive or exclusive.
+ */
+enum class ExpiryComparison { Inclusive, Exclusive };
+
+/**
  * Determines whether the given expiration time has passed.
  *
  * In the XRP Ledger, expiration times are defined as the number of whole
@@ -54,11 +59,16 @@ enum class SkipEntry : bool { No = false, Yes };
  *
  * @param view The ledger whose parent time is used as the clock.
  * @param exp The optional expiration time we want to check.
+ * @param comparison Whether the boundary is inclusive (`now >= exp`, the
+ *                   default) or exclusive (`now > exp`).
  *
  * @return `true` if `exp` is in the past; `false` otherwise.
  */
 [[nodiscard]] bool
-hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
+hasExpired(
+    ReadView const& view,
+    std::optional<std::uint32_t> const& exp,
+    ExpiryComparison comparison = ExpiryComparison::Inclusive);
 
 // Note, depth parameter is used to limit the recursion depth
 [[nodiscard]] bool
@@ -69,11 +79,38 @@ isVaultPseudoAccountFrozen(
     std::uint8_t depth);
 
 [[nodiscard]] bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth);
+
+[[nodiscard]] bool
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
     Asset const& asset,
     Asset const& asset2);
+
+/**
+ * Check whether an AMM LPToken may be transferred between @p from and @p to.
+ *
+ * @p lpTokenIssuer is the issuer of the LPToken being moved. If it is not an
+ * AMM account the token is not an LPToken and the transfer is unconditionally
+ * permitted. Otherwise, for each MPT pool asset of that AMM, canTransfer() must
+ * permit the transfer (which exempts the MPT issuer). Non-MPT pool assets are
+ * always transferable by this check, so it is implicitly gated by
+ * featureMPTokensV2 (MPTs can only be AMM pool assets once V2 is enabled).
+ *
+ * @return tesSUCCESS if permitted, otherwise the canTransfer() failure code
+ * (e.g. tecNO_AUTH) of the first MPT pool asset that disallows it.
+ */
+[[nodiscard]] TER
+canTransferLPToken(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    AccountID const& lpTokenIssuer);
 
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
