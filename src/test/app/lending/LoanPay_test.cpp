@@ -733,12 +733,30 @@ private:
         }
     }
 
+    // Which pseudo-account is left holding an unauthorized trust line when the
+    // repayment lands.
+    enum class UnauthorizedPayee {
+        // The vault's own line, as VaultCreate leaves it.
+        Vault,
+        // Same vault, but the issuer authorized the line by hand first.
+        VaultAuthorized,
+        // Vault line authorized, broker owner unable to take the fee, so the
+        // fee goes to the loan broker's pseudo-account instead.
+        Broker,
+    };
+
     // A vault holding an IOU whose issuer requires authorization ends up with
     // its own trust line unauthorized: VaultCreate opens the line without the
     // auth flag, and the pseudo-account has no key to sign a TrustSet for
     // itself. Neither deposits nor loan origination look at that line, so the
     // vault appears to work right up to the first repayment, which is the only
     // step that has to credit the vault back.
+    //
+    // The loan broker's pseudo-account has the same defect for the same reason,
+    // and LoanPay reaches it whenever the broker owner cannot take the fee.
+    //
+    // The issuer can still repair either line by hand, because TrustSet accepts
+    // a line that already exists even when its owner is a pseudo-account.
     void
     testRepayIntoUnauthorizedVault()
     {
@@ -748,10 +766,26 @@ private:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        auto runTestCases = [&](FeatureBitset features) {
+        auto runTestCases = [&](FeatureBitset features, UnauthorizedPayee payee) {
             bool const pseudoExempt = features[fixCleanup3_4_0];
+            // With the vault's line repaired by the issuer, the only remaining
+            // unauthorized payee is the broker's pseudo-account.
+            bool const expectSuccess = pseudoExempt || payee == UnauthorizedPayee::VaultAuthorized;
 
-            testcase << "LoanPay into a vault whose own trust line is unauthorized: pseudo-account "
+            auto const payeeLabel = [payee]() -> char const* {
+                switch (payee)
+                {
+                    case UnauthorizedPayee::Vault:
+                        return "vault";
+                    case UnauthorizedPayee::VaultAuthorized:
+                        return "vault authorized by the issuer";
+                    case UnauthorizedPayee::Broker:
+                        return "loan broker";
+                }
+                return "";  // LCOV_EXCL_LINE
+            }();
+
+            testcase << "LoanPay crediting an unauthorized " << payeeLabel << ": pseudo-account "
                      << (pseudoExempt ? "exempt" : "not exempt");
 
             Env env{*this, features};
@@ -782,38 +816,108 @@ private:
             BrokerInfo const broker{createVaultAndBroker(env, asset, lender)};
 
             auto const vaultSle = env.le(broker.vaultKeylet());
-            if (!BEAST_EXPECT(vaultSle))
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            if (!BEAST_EXPECT(vaultSle && brokerSle))
                 return;
 
-            AccountID const vaultPseudo = vaultSle->at(sfAccount);
-            auto const vaultLine = env.le(keylet::trustLine(vaultPseudo, asset.raw().get<Issue>()));
-            if (!BEAST_EXPECT(vaultLine))
-                return;
-            BEAST_EXPECT(!vaultLine->isFlag(vaultPseudo > issuer.id() ? lsfLowAuth : lsfHighAuth));
+            Account const vaultPseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+            Account const brokerPseudo{"broker pseudo-account", brokerSle->at(sfAccount)};
+
+            auto const lineIsAuthorized = [&](Account const& holder) -> bool {
+                auto const line = env.le(keylet::trustLine(holder, asset.raw().get<Issue>()));
+                if (!BEAST_EXPECT(line))
+                    return false;
+                return line->isFlag(holder.id() > issuer.id() ? lsfLowAuth : lsfHighAuth);
+            };
+
+            BEAST_EXPECT(!lineIsAuthorized(vaultPseudo));
+            BEAST_EXPECT(!lineIsAuthorized(brokerPseudo));
+
+            if (payee != UnauthorizedPayee::Vault)
+            {
+                env(trust(issuer, asset(0), vaultPseudo, tfSetfAuth));
+                env.close();
+                BEAST_EXPECT(lineIsAuthorized(vaultPseudo));
+            }
 
             using namespace loan;
 
+            // The service fee guarantees the broker is owed something on the
+            // first payment, so the broker leg of the transfer is exercised.
+            Number const serviceFee = asset(2).value();
             auto const loanKeylet = nextLoanKeylet(env, broker);
             env(set(borrower, broker.brokerID, asset(1'000).value()),
                 Sig(sfCounterpartySignature, lender),
+                kLoanServiceFee(serviceFee),
+                kInterestRate(percentageToTenthBips(12)),
+                kPaymentTotal(12),
+                kPaymentInterval(600),
                 Fee(env.current()->fees().base * 2));
             env.close();
 
             // Paying the principal out of the vault never needed authorization.
             BEAST_EXPECT(env.le(loanKeylet));
 
+            if (payee == UnauthorizedPayee::Broker)
+            {
+                // A deep-frozen owner cannot take the fee, so LoanPay pays it
+                // into the broker's pseudo-account instead.
+                env(trust(issuer, asset(0), lender, tfSetFreeze | tfSetDeepFreeze));
+                env.close();
+            }
+
             auto const state = getCurrentState(env, broker, loanKeylet);
             STAmount const payment{
                 broker.asset,
-                roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
+                roundPeriodicPayment(
+                    broker.asset, state.periodicPayment + serviceFee, state.loanScale)};
+
+            // Repayment turns an outstanding loan back into cash the vault can
+            // lend again, so AssetsAvailable is what moves. AssetsTotal already
+            // counted the loan.
+            auto const assetsAvailable = [&]() -> Number {
+                auto const sle = env.le(broker.vaultKeylet());
+                if (!BEAST_EXPECT(sle))
+                    return Number{};
+                return sle->at(sfAssetsAvailable);
+            };
+
+            auto const borrowerBefore = env.balance(borrower, asset).number();
+            auto const vaultBefore = env.balance(vaultPseudo, asset).number();
+            auto const brokerBefore = env.balance(brokerPseudo, asset).number();
+            auto const assetsAvailableBefore = assetsAvailable();
 
             env(pay(borrower, loanKeylet.key, payment),
-                Ter(pseudoExempt ? TER{tesSUCCESS} : TER{tecNO_AUTH}));
+                Ter(expectSuccess ? TER{tesSUCCESS} : TER{tecNO_AUTH}));
             env.close();
+
+            if (expectSuccess)
+            {
+                BEAST_EXPECT(env.balance(borrower, asset).number() < borrowerBefore);
+                BEAST_EXPECT(env.balance(vaultPseudo, asset).number() > vaultBefore);
+                BEAST_EXPECT(assetsAvailable() > assetsAvailableBefore);
+                // Confirms the broker variant really did route the fee to the
+                // pseudo-account rather than to the owner.
+                BEAST_EXPECT(
+                    (env.balance(brokerPseudo, asset).number() > brokerBefore) ==
+                    (payee == UnauthorizedPayee::Broker));
+            }
+            else
+            {
+                // A rejected repayment must leave every balance untouched.
+                BEAST_EXPECT(env.balance(borrower, asset).number() == borrowerBefore);
+                BEAST_EXPECT(env.balance(vaultPseudo, asset).number() == vaultBefore);
+                BEAST_EXPECT(env.balance(brokerPseudo, asset).number() == brokerBefore);
+                BEAST_EXPECT(assetsAvailable() == assetsAvailableBefore);
+            }
         };
 
-        runTestCases(all_);
-        runTestCases(all_ - fixCleanup3_4_0);
+        for (auto const& features : {all_, all_ - fixCleanup3_4_0})
+        {
+            runTestCases(features, UnauthorizedPayee::Vault);
+            runTestCases(features, UnauthorizedPayee::VaultAuthorized);
+            runTestCases(features, UnauthorizedPayee::Broker);
+        }
     }
 
     void
