@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <ostream>
+#include <vector>
 
 namespace xrpl::test {
 

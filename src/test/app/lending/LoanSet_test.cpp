@@ -13,15 +13,18 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -157,7 +160,9 @@ private:
             // The keylet the LoanSet will (or would) create, so the caller
             // can drive a follow-up LoanAccept in the two-step flow.
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
-            auto const loanKey = keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence))).key;
+            auto const loanKey =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)))
+                    .key;
 
             if (flow == LoanFlow::OneStep)
             {
