@@ -299,11 +299,6 @@ jobs:
         run: |
           ./xrpld --version | grep libvoidstar
 
-      - name: Run Rust tests
-        if: ${{ !inputs.build_only }}
-        working-directory: crates
-        run: cargo nextest run --workspace --all-features --locked --no-tests=warn
-
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
@@ -337,6 +332,11 @@ jobs:
           fi
 
           LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
+
+      - name: Run Rust tests
+        if: ${{ !inputs.build_only }}
+        working-directory: crates
+        run: cargo nextest run --workspace --all-features --locked --no-tests=warn
 
       # Smoke-run every benchmark module with a single repetition to confirm the
       # benchmarks still build and execute. This is a correctness check, not a
