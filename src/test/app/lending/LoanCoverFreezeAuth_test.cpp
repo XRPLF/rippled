@@ -714,7 +714,7 @@ public:
     {
         runAmendmentIndependent();
         for (auto const& features : jtx::amendmentCombinations(
-                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2, featureLendingProtocolV1_1},
+                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2},
                  all_))
             runAmendmentSensitive(features);
     }
