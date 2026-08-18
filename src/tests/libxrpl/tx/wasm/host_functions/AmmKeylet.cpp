@@ -23,17 +23,14 @@ TEST_F(AmmKeyletImpl, MatchesAmmKeyletFunction)
         makeHost()->ammKeylet(usdIssue, xrpIssue()), keylet::amm(xrpIssue(), usdIssue));
 }
 
-TEST_F(AmmKeyletImpl, InvalidIssue1)
-{
-    expectError(makeHost()->ammKeylet(xrpIssue(), xrpIssue()), HostFunctionError::InvalidParams);
-}
-
-TEST_F(AmmKeyletImpl, InvalidIssue2)
+TEST_F(AmmKeyletImpl, InvalidParameters)
 {
     auto const owner = fund("owner");
 
     auto baseMpt = makeMptID(1, owner.id());
 
+    expectError(makeHost()->ammKeylet(xrpIssue(), xrpIssue()), HostFunctionError::InvalidParams);
+    expectError(makeHost()->ammKeylet(xrpIssue(), baseMpt), HostFunctionError::InvalidParams);
     expectError(makeHost()->ammKeylet(baseMpt, xrpIssue()), HostFunctionError::InvalidParams);
 }
 
