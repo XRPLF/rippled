@@ -525,6 +525,48 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(!proposal::entry(env, bare, ticketSeq));
         }
+
+        // A SignerList with several entries authorizes every one of them, not
+        // just the first, matching a real-world multi-signer setup rather
+        // than only ever exercising a single-signer list.
+        {
+            Account const s1{"s1"};
+            Account const s2{"s2"};
+            Account const s3{"s3"};
+            Account const s4{"s4"};
+            Account const s5{"s5"};
+            env.fund(XRP(10000), s1, s2, s3, s4, s5);
+            env.close();
+
+            env(signers(target, 3, {{s1, 1}, {s2, 1}, {s3, 1}, {s4, 1}, {s5, 1}}));
+            env.close();
+
+            for (Account const& s : {s1, s2, s3, s4, s5})
+            {
+                std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+                env(proposal::create(s, payload(ticketSeq), proposal::expiration(env, 100s)));
+                env.close();
+                BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            }
+
+            // The old SignerList's sole signer is no longer on the new one.
+            {
+                std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+                env(proposal::create(signer, payload(ticketSeq), proposal::expiration(env, 100s)),
+                    Ter(tecNO_PERMISSION));
+                env.close();
+                BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            }
+
+            // An unrelated account still may not.
+            {
+                std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+                env(proposal::create(stranger, payload(ticketSeq), proposal::expiration(env, 100s)),
+                    Ter(tecNO_PERMISSION));
+                env.close();
+                BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            }
+        }
     }
 
     // The target account must be able to authorize a transaction through a
