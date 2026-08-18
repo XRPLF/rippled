@@ -186,10 +186,11 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
         if (auto const sleSigners = ctx.view.read(keylet::signerList(target)))
         {
             auto const accountSigners = SignerEntries::deserialize(*sleSigners, ctx.j, "ledger");
-            isSigner =
-                accountSigners && std::ranges::any_of(*accountSigners, [&](auto const& entry) {
-                    return entry.account == proposer;
-                });
+            if (!accountSigners)
+                return accountSigners.error();
+
+            isSigner = std::ranges::any_of(
+                *accountSigners, [&](auto const& entry) { return entry.account == proposer; });
         }
 
         if (!isSigner)
