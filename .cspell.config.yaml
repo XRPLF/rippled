@@ -4,6 +4,7 @@ ignorePaths:
   - CMakeUserPresets.json
   - Doxyfile
   - docs/**/*.puml
+  - bin/interaction_review/requirements*.txt
   - cmake/**
   - LICENSE.md
   - .clang-tidy
@@ -45,6 +46,7 @@ suggestWords:
 words:
   - abempty
   - AMMID
+  - ammclawback
   - AMMMPT
   - AMMMPToken
   - AMMMPTokens
@@ -73,6 +75,7 @@ words:
   - checkme
   - choco
   - chrono
+  - cindex
   - citardauq
   - clawback
   - clawbacks
@@ -95,12 +98,15 @@ words:
   - csprng
   - ctest
   - ctid
+  - ctypes
   - currenttxhash
   - daria
   - dcmake
   - dearmor
   - decryptor
   - dedented
+  - dedup
+  - delegability
   - deleteme
   - demultiplexer
   - deserializaton
@@ -117,6 +123,8 @@ words:
   - endmacro
   - envrc
   - exceptioned
+  - evals
+  - exfiltration
   - EXPECT_STREQ
   - Falco
   - fcontext
@@ -138,18 +146,21 @@ words:
   - hwaddress
   - hwrap
   - ifndef
+  - impls
   - inequation
   - insuf
   - insuff
   - invasively
   - iou
   - ious
+  - irreproducible
   - isrdc
   - isystem
   - itype
   - jemalloc
   - jlog
   - jtnofill
+  - judgements
   - keylet
   - keylets
   - keyvadb
@@ -211,14 +222,17 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
+  - noprefix
   - noreplace
   - noripple
+  - notrepo
   - nostdinc
   - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - obsoletion
   - onlatest
   - ostr
   - oxalica
@@ -242,19 +256,24 @@ words:
   - protos
   - ptrs
   - pushd
+  - pycache
   - pyenv
   - pyparsing
+  - pytest
+  - pyyaml
   - qalloc
   - qbsprofile
   - queuable
   - Raphson
   - rcflags
+  - regen
   - replayer
   - rerandomize
   - rerandomization
   - rerandomized
   - rerandomizes
   - rerere
+  - retargets
   - retriable
   - RIPD
   - ripdtop
@@ -275,6 +294,7 @@ words:
   - scons
   - Schnorr
   - secp
+  - serializability
   - sendq
   - seqit
   - sf
@@ -317,6 +337,7 @@ words:
   - tparam
   - trixie
   - tx
+  - txformats
   - txid
   - txids
   - txjson
@@ -334,9 +355,14 @@ words:
   - unergonomic
   - unfetched
   - unfindable
+  - unlocatable
+  - unmatch
   - unflatten
   - unfund
+  - ungated
   - unimpair
+  - unjudged
+  - unioned
   - unroutable
   - unscalable
   - unserviced
@@ -364,11 +390,13 @@ words:
   - wthread
   - xbridge
   - xchain
+  - xhigh
   - ximinez
   - XMACRO
   - xored
   - xrpkuwait
   - xrpl
+  - xrplcluster
   - xrpld
   - xrplf
   - xxhash

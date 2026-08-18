@@ -1,0 +1,13 @@
+# Extra dependencies for the optional judging pass (judge_interactions.py).
+#
+# Kept out of requirements.in on purpose. Building the graph is the load-bearing
+# half of this tool and must not gain a cloud SDK, a resolver conflict, or a
+# supply-chain surface it has no use for; judging is opt-in and degrades to
+# nothing. CI installs this file only in the judge step.
+#
+# Regenerate the hash-locked lock file with:
+#   uv pip compile requirements-judge.in --generate-hashes --output-file requirements-judge.txt
+
+# Messages API client. The `bedrock` extra pulls the AWS auth path used by
+# AnthropicBedrockMantle; credentials come from the standard AWS chain.
+anthropic[bedrock]>=0.116.0

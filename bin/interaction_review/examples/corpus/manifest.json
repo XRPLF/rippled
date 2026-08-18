@@ -1,0 +1,740 @@
+{
+  "schema": 1,
+  "name": "rippled cross-dependency review corpus",
+  "description": "Source-only bug replays and clean controls for evaluating static routing and clustered AI review without depending on live branches.",
+  "replay_contract": {
+    "bug_cases": "Start from a tree containing the historical fix, apply only the listed production-code mutation, and retain the fixed regression tests. The resulting PR should be behavior=broken and coverage=covered.",
+    "control_cases": "Apply only the listed semantics-preserving hunk. The resulting PR should be behavior=correct and coverage=covered.",
+    "oracle_isolation": "Do not place this manifest, its expected judgement, or its ground-truth prose in the model evidence packet. Use it only after judging.",
+    "execution": "Build graph, map diff, rank clusters, judge the selected cluster, then compare the structured result with expected_judgement. Each case should run in an isolated worktree or disposable branch."
+  },
+  "cases": [
+    {
+      "id": "historical_batch_delegate_consent",
+      "kind": "historical_bug",
+      "title": "Batch drops delegated-inner consent",
+      "provenance": {
+        "source": "git_history",
+        "buggy_commit": "28bd660f7f7b348e3b2c18f69ce155fbc8b53ec7",
+        "fix_commit": "fd6326d114108c00e4f409b0667b9b7dcc02c12f",
+        "subject": "fix: bind batch required signers to sfDelegate for delegated inner txns"
+      },
+      "replay": {
+        "strategy": "semantic_source_mutation",
+        "current_develop": {
+          "verified_commit": "3e6e9faa26366e51513d22b6d00fbec965639e0f",
+          "status": "clean",
+          "source_anchor": "AccountID const authorizer = rb.getInitiator();",
+          "test_anchor": "testBatchDelegateConsent",
+          "note": "Batch.cpp uses rb.getInitiator() and the complete testBatchDelegateConsent regression suite is present; the replay is a one-line production mutation."
+        },
+        "files": ["src/libxrpl/tx/transactors/system/Batch.cpp"],
+        "steps": [
+          {
+            "operation": "replace_semantics",
+            "symbol": "Batch::preflightSigValidated",
+            "instruction": "Derive each inner required signer from sfAccount only instead of the inner transaction initiator/sfDelegate. Keep the outer-account elision unchanged. On current code this is the one-line getInitiator() -> getAccountID(sfAccount) mutation."
+          }
+        ],
+        "retain_tests": ["src/test/app/Batch_test.cpp"]
+      },
+      "machine_mutation": {
+        "base": "replay.current_develop.verified_commit",
+        "operations": [
+          {
+            "operation": "replace_text",
+            "path": "src/libxrpl/tx/transactors/system/Batch.cpp",
+            "old": "        AccountID const authorizer = rb.getInitiator();",
+            "new": "        AccountID const authorizer = rb.isFieldPresent(sfDelegate)\n            ? rb.getAccountID(sfAccount)\n            : rb.getInitiator();",
+            "count": 1
+          }
+        ]
+      },
+      "target": {
+        "features": [
+          {
+            "id": "feature:transactor:Batch",
+            "name": "Batch"
+          },
+          {
+            "id": "feature:amendment:PermissionDelegationV1_1",
+            "name": "PermissionDelegationV1_1"
+          }
+        ],
+        "primary_resource": {
+          "kind": "fork",
+          "name": "checkSign"
+        },
+        "relevant_resources": [
+          {
+            "kind": "fork",
+            "name": "checkSign"
+          },
+          {
+            "kind": "fork",
+            "name": "checkPermission"
+          },
+          {
+            "kind": "fork",
+            "name": "preflight1"
+          }
+        ]
+      },
+      "expected_judgement": {
+        "behavior": "broken",
+        "coverage": "covered",
+        "verdict": "gap"
+      },
+      "ground_truth": {
+        "source_citations": [
+          {
+            "commit": "fd6326d114108c00e4f409b0667b9b7dcc02c12f",
+            "path": "src/libxrpl/tx/transactors/system/Batch.cpp",
+            "line": 418,
+            "anchor": "AccountID const authorizer",
+            "evidence": "The fix selects sfDelegate when present before deciding whether the authorizer must appear in sfBatchSigners."
+          }
+        ],
+        "tests": [
+          {
+            "commit": "fd6326d114108c00e4f409b0667b9b7dcc02c12f",
+            "path": "src/test/app/Batch_test.cpp",
+            "line": 4699,
+            "anchor": "testBatchDelegateConsent",
+            "symbol": "testBatchDelegateConsent",
+            "assertion": "A delegated inner whose delegate did not sign is rejected; valid delegate co-signing succeeds."
+          }
+        ]
+      },
+      "routing": {
+        "expectation": "must_route",
+        "why": "The diff touches the Batch wrapper's signer derivation while sfDelegate is an exact PermissionDelegation lever. The pair meets at signature, permission, and initiator forks; clustered review should investigate them once rather than emit three independent verdicts.",
+        "signals": [
+          "wrapper endpoint",
+          "sfDelegate lever",
+          "required signer state transition"
+        ]
+      }
+    },
+    {
+      "id": "historical_batch_inner_fee_sponsor",
+      "kind": "historical_bug",
+      "title": "Batch accepts fee-sponsored inner transactions",
+      "provenance": {
+        "source": "git_history",
+        "buggy_commit": "2cfbf728bc0d4194a4b210f4dda42d86ae23959d",
+        "fix_commit": "78e4bb17c8adaacd3da16dd39df75e078c51b23b",
+        "subject": "Disallow fee sponsorship on Batch inner txs (#7754)"
+      },
+      "replay": {
+        "strategy": "semantic_source_mutation",
+        "current_develop": {
+          "verified_commit": "3e6e9faa26366e51513d22b6d00fbec965639e0f",
+          "status": "clean",
+          "source_anchor": "isFeeSponsored(stx)",
+          "test_anchor": "Inner tx with sfSponsor",
+          "note": "The inner isFeeSponsored guard and Sponsor_test inner/outer Batch cases are present; deleting only the two-line guard cleanly replays the bug."
+        },
+        "files": ["src/libxrpl/tx/transactors/system/Batch.cpp"],
+        "steps": [
+          {
+            "operation": "delete_guard",
+            "symbol": "Batch::preflight",
+            "instruction": "Remove only the inner-transaction guard that rejects sfSponsor combined with isFeeSponsored(stx). Preserve the outer-Batch sponsorship behavior and all tests."
+          }
+        ],
+        "retain_tests": ["src/test/app/Sponsor_test.cpp"]
+      },
+      "machine_mutation": {
+        "base": "replay.current_develop.verified_commit",
+        "operations": [
+          {
+            "operation": "replace_text",
+            "path": "src/libxrpl/tx/transactors/system/Batch.cpp",
+            "old": "        // Disallow fee sponsorship on Batch inner txs\n        if (stx.isFieldPresent(sfSponsor) && isFeeSponsored(stx))\n            return temINVALID_FLAG;\n\n",
+            "new": "",
+            "count": 1
+          }
+        ]
+      },
+      "target": {
+        "features": [
+          {
+            "id": "feature:transactor:Batch",
+            "name": "Batch"
+          },
+          {
+            "id": "feature:amendment:Sponsor",
+            "name": "Sponsor"
+          }
+        ],
+        "primary_resource": {
+          "kind": "fork",
+          "name": "isFeeSponsored"
+        },
+        "relevant_resources": [
+          {
+            "kind": "fork",
+            "name": "isFeeSponsored"
+          },
+          {
+            "kind": "fork",
+            "name": "preflight1Sponsor"
+          },
+          {
+            "kind": "fork",
+            "name": "getFeePayer"
+          }
+        ]
+      },
+      "expected_judgement": {
+        "behavior": "broken",
+        "coverage": "covered",
+        "verdict": "gap"
+      },
+      "ground_truth": {
+        "source_citations": [
+          {
+            "commit": "78e4bb17c8adaacd3da16dd39df75e078c51b23b",
+            "path": "src/libxrpl/tx/transactors/system/Batch.cpp",
+            "line": 364,
+            "anchor": "isFeeSponsored(stx)",
+            "evidence": "The fixed preflight rejects fee sponsorship on an inner while leaving fee sponsorship on the outer Batch legal."
+          }
+        ],
+        "tests": [
+          {
+            "commit": "78e4bb17c8adaacd3da16dd39df75e078c51b23b",
+            "path": "src/test/app/Sponsor_test.cpp",
+            "line": 4893,
+            "anchor": "Inner tx with sfSponsor",
+            "symbol": "testBatch",
+            "assertion": "Pre-funded and co-signed fee-sponsored inners are rejected, while an outer fee-sponsored Batch succeeds."
+          }
+        ]
+      },
+      "routing": {
+        "expectation": "must_route",
+        "why": "The changed wrapper consumes the Sponsor common fields and controls whether inner transactions can reach Sponsor fee-payer logic. This is a direct Batch x Sponsor cluster with both shared-field and fork evidence.",
+        "signals": [
+          "wrapper endpoint",
+          "sfSponsor exact lever",
+          "inner versus outer boundary"
+        ]
+      }
+    },
+    {
+      "id": "historical_trustset_sponsor_counterparty",
+      "kind": "historical_bug",
+      "title": "TrustSet misroutes a reserve sponsor to the counterparty",
+      "provenance": {
+        "source": "git_history",
+        "buggy_commit": "60702858a12e00f4e96918d8ee59dc8354c1e1d2",
+        "fix_commit": "c738ad14ed88b07698530539ca906483a0f16e8d",
+        "subject": "Fix trust <-> sponsor interaction (#7710)"
+      },
+      "replay": {
+        "strategy": "semantic_source_mutation",
+        "current_develop": {
+          "verified_commit": "3e6e9faa26366e51513d22b6d00fbec965639e0f",
+          "status": "clean",
+          "source_anchor": "auto getSponsor",
+          "test_anchor": "testTrustSetCounterpartySponsorMisroute",
+          "note": "TrustSet.cpp still has getSponsor plus distinct lowSponsor/highSponsor uses, and the counterparty misroute test is present."
+        },
+        "files": ["src/libxrpl/tx/transactors/token/TrustSet.cpp"],
+        "steps": [
+          {
+            "operation": "replace_semantics",
+            "symbol": "TrustSet::doApply",
+            "instruction": "Bypass the per-side getSponsor(account) filter and pass the transaction-level sponsorSle into both low-side and high-side reserve updates. Retain the fixed free-tier condition and regression test so the mutation isolates counterparty sponsor misrouting."
+          }
+        ],
+        "retain_tests": ["src/test/app/Sponsor_test.cpp"]
+      },
+      "machine_mutation": {
+        "base": "replay.current_develop.verified_commit",
+        "operations": [
+          {
+            "operation": "replace_text",
+            "path": "src/libxrpl/tx/transactors/token/TrustSet.cpp",
+            "old": "    auto getSponsor = [&sponsorSle, this](AccountID const& account) {\n        return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();\n    };",
+            "new": "    auto getSponsor = [&sponsorSle](AccountID const&) { return sponsorSle; };",
+            "count": 1
+          }
+        ]
+      },
+      "target": {
+        "features": [
+          {
+            "id": "feature:transactor:TrustSet",
+            "name": "TrustSet"
+          },
+          {
+            "id": "feature:amendment:Sponsor",
+            "name": "Sponsor"
+          }
+        ],
+        "primary_resource": {
+          "kind": "fork",
+          "name": "isReserveSponsored"
+        },
+        "relevant_resources": [
+          {
+            "kind": "fork",
+            "name": "isReserveSponsored"
+          },
+          {
+            "kind": "fork",
+            "name": "checkSponsor"
+          }
+        ]
+      },
+      "expected_judgement": {
+        "behavior": "broken",
+        "coverage": "covered",
+        "verdict": "gap"
+      },
+      "ground_truth": {
+        "source_citations": [
+          {
+            "commit": "c738ad14ed88b07698530539ca906483a0f16e8d",
+            "path": "src/libxrpl/tx/transactors/token/TrustSet.cpp",
+            "line": 335,
+            "anchor": "auto getSponsor",
+            "evidence": "The fix scopes a transaction sponsor to the submitter side before changing owner counts or sfLowSponsor/sfHighSponsor."
+          }
+        ],
+        "tests": [
+          {
+            "commit": "c738ad14ed88b07698530539ca906483a0f16e8d",
+            "path": "src/test/app/Sponsor_test.cpp",
+            "line": 4448,
+            "anchor": "testTrustSetCounterpartySponsorMisroute",
+            "symbol": "testTrustSetCounterpartySponsorMisroute",
+            "assertion": "A holder update that trips the issuer-side reserve gate must not attach the holder's sponsor to the issuer side or alter sponsor counts."
+          }
+        ]
+      },
+      "routing": {
+        "expectation": "must_route",
+        "why": "The changed TrustSet implementation manipulates Sponsor-owned fields and reserve state on a two-sided ledger object. The case tests whether routing carries account-side state into the semantic investigation instead of treating sfSponsor as a generic field match.",
+        "signals": [
+          "sfSponsor exact lever",
+          "two-sided trust line",
+          "owner-count state transition"
+        ]
+      }
+    },
+    {
+      "id": "historical_escrowfinish_sponsor_reserve_recycle",
+      "kind": "historical_bug",
+      "title": "Sponsored EscrowFinish releases reserve too late",
+      "provenance": {
+        "source": "git_history",
+        "buggy_commit": "47043763afe12ed860f35db8d9df533f9bdf498c",
+        "fix_commit": "a5cced5d39495d50b124031a2cf3960b1382d414",
+        "subject": "fix: Sponsored token EscrowFinish falsely rejects net-zero recycling (#7678)"
+      },
+      "replay": {
+        "strategy": "semantic_source_mutation",
+        "current_develop": {
+          "verified_commit": "3e6e9faa26366e51513d22b6d00fbec965639e0f",
+          "status": "clean",
+          "source_anchor": "bool const sponsorEnabled",
+          "test_anchor": "testSelfEscrowFinishReserveGate",
+          "note": "EscrowFinish.cpp retains the featureSponsor ordering split and both reserve-recycling regression families are present."
+        },
+        "files": ["src/libxrpl/tx/transactors/escrow/EscrowFinish.cpp"],
+        "steps": [
+          {
+            "operation": "move_effect",
+            "symbol": "EscrowFinish::doApply",
+            "instruction": "For Sponsor-enabled ledgers, move decreaseOwnerCountForObject back to after token delivery. Preserve the legacy pre-Sponsor ordering and retain the regression tests. The mutation should make a reserve-neutral holding replacement fail because both objects temporarily count at once."
+          }
+        ],
+        "retain_tests": ["src/test/app/Sponsor_test.cpp"]
+      },
+      "machine_mutation": {
+        "base": "replay.current_develop.verified_commit",
+        "operations": [
+          {
+            "operation": "replace_text",
+            "path": "src/libxrpl/tx/transactors/escrow/EscrowFinish.cpp",
+            "old": "    // With the Sponsor amendment, release the escrow reserve before delivery.\n    // Token delivery can auto-create a destination holding, and the same\n    // sponsor (or the same account, for a self-escrow) may cover both the\n    // escrow being removed and the holding being created. Without the\n    // amendment, keep the legacy order: releasing early changes the reserve\n    // arithmetic for self-escrows and would break consensus if not gated.\n    bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);\n    if (sponsorEnabled)\n        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);\n\n",
+            "new": "",
+            "count": 1
+          },
+          {
+            "operation": "replace_text",
+            "path": "src/libxrpl/tx/transactors/escrow/EscrowFinish.cpp",
+            "old": "    // Adjust source owner count (legacy position, pre-Sponsor)\n    if (!sponsorEnabled)\n        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);",
+            "new": "    // Adjust source owner count\n    decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);",
+            "count": 1
+          }
+        ]
+      },
+      "target": {
+        "features": [
+          {
+            "id": "feature:transactor:EscrowFinish",
+            "name": "EscrowFinish"
+          },
+          {
+            "id": "feature:amendment:Sponsor",
+            "name": "Sponsor"
+          }
+        ],
+        "primary_resource": {
+          "kind": "fork",
+          "name": "isReserveSponsored"
+        },
+        "relevant_resources": [
+          {
+            "kind": "fork",
+            "name": "isReserveSponsored"
+          }
+        ]
+      },
+      "expected_judgement": {
+        "behavior": "broken",
+        "coverage": "covered",
+        "verdict": "gap"
+      },
+      "ground_truth": {
+        "source_citations": [
+          {
+            "commit": "a5cced5d39495d50b124031a2cf3960b1382d414",
+            "path": "src/libxrpl/tx/transactors/escrow/EscrowFinish.cpp",
+            "line": 355,
+            "anchor": "bool const sponsorEnabled",
+            "evidence": "Under featureSponsor the fixed implementation releases the escrow reserve before delivery can auto-create a replacement holding."
+          }
+        ],
+        "tests": [
+          {
+            "commit": "a5cced5d39495d50b124031a2cf3960b1382d414",
+            "path": "src/test/app/Sponsor_test.cpp",
+            "line": 5091,
+            "anchor": "testSelfEscrowFinishReserveGate",
+            "symbol": "testSelfEscrowFinishReserveGate",
+            "assertion": "The same self-escrow reserve window fails under legacy ordering and succeeds when Sponsor ordering recycles the released slot."
+          }
+        ]
+      },
+      "routing": {
+        "expectation": "must_route",
+        "why": "The diff has an exact featureSponsor gate inside EscrowFinish and changes ordering around a reserve-sensitive delivery. It tests whether the packet includes state transitions and amendment-on/off behavior, not only shared function names.",
+        "signals": [
+          "featureSponsor gate",
+          "reserve ordering",
+          "legacy versus amended state"
+        ]
+      }
+    },
+    {
+      "id": "historical_ammclawback_deepfreeze_override",
+      "kind": "historical_bug",
+      "title": "AMM clawback privilege is blocked by deep freeze",
+      "provenance": {
+        "source": "git_history",
+        "buggy_commit": "4173f7e499e3dd55900bf72b3c05f68577448060",
+        "fix_commit": "60291c3ed613a749f6aeced06d485b1d478d9843",
+        "subject": "fix: Allow OverrideFreeze to bypass individual/deep freeze on AMM trust lines (#6959)"
+      },
+      "replay": {
+        "strategy": "semantic_source_mutation",
+        "current_develop": {
+          "verified_commit": "3e6e9faa26366e51513d22b6d00fbec965639e0f",
+          "status": "clean",
+          "source_anchor": "fixOverrideFreeze || !isAMMLine",
+          "test_anchor": "deep-freezes the AMM-EUR trust line",
+          "note": "FreezeInvariant.cpp retains the fixOverrideFreeze condition and AMMClawback_test retains the amendment-split deep-freeze assertion; the production hunks can be reversed without touching tests."
+        },
+        "files": ["src/libxrpl/tx/invariants/FreezeInvariant.cpp"],
+        "steps": [
+          {
+            "operation": "reverse_production_hunks",
+            "symbol": "TransfersNotFrozen::validateFrozenState",
+            "instruction": "Restore the pre-fix OverrideFreeze condition that requires !isAMMLine or globalFreeze. Keep the helper plumbing unchanged so the mutation isolates the policy predicate, and do not reverse the AMMClawback regression tests."
+          }
+        ],
+        "retain_tests": ["src/test/app/AMMClawback_test.cpp"]
+      },
+      "machine_mutation": {
+        "base": "replay.current_develop.verified_commit",
+        "operations": [
+          {
+            "operation": "replace_text",
+            "path": "src/libxrpl/tx/invariants/FreezeInvariant.cpp",
+            "old": "    if ((fixOverrideFreeze || !isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))",
+            "new": "    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))",
+            "count": 1
+          }
+        ]
+      },
+      "target": {
+        "match_mode": "invariant_route",
+        "features": [
+          {
+            "id": "feature:transactor:AMMClawback",
+            "name": "AMMClawback"
+          },
+          {
+            "id": "feature:amendment:DeepFreeze",
+            "name": "DeepFreeze"
+          }
+        ],
+        "context_features": [
+          {
+            "id": "feature:amendment:Cleanup3_4_0",
+            "name": "Cleanup3_4_0"
+          }
+        ],
+        "primary_resource": {
+          "kind": "invariant",
+          "name": "OverrideFreeze"
+        },
+        "relevant_resources": [
+          {
+            "kind": "invariant",
+            "name": "OverrideFreeze"
+          }
+        ]
+      },
+      "expected_judgement": {
+        "behavior": "broken",
+        "coverage": "covered",
+        "verdict": "gap"
+      },
+      "ground_truth": {
+        "source_citations": [
+          {
+            "commit": "60291c3ed613a749f6aeced06d485b1d478d9843",
+            "path": "src/libxrpl/tx/invariants/FreezeInvariant.cpp",
+            "line": 263,
+            "anchor": "fixOverrideFreeze || !isAMMLine",
+            "evidence": "The cleanup-gated fix allows the AMMClawback OverrideFreeze privilege to bypass individual and deep freeze on AMM trust lines."
+          }
+        ],
+        "tests": [
+          {
+            "commit": "60291c3ed613a749f6aeced06d485b1d478d9843",
+            "path": "src/test/app/AMMClawback_test.cpp",
+            "line": 2306,
+            "anchor": "deep-freezes the AMM-EUR trust line",
+            "symbol": "testAMMClawbackSpecificAmount",
+            "assertion": "The same deep-frozen AMM clawback fails before Cleanup3_4_0 and succeeds after it."
+          }
+        ]
+      },
+      "routing": {
+        "expectation": "stretch_route",
+        "why": "The transactor reaches a privilege invariant whose behavior is also controlled by DeepFreeze state and a cleanup amendment. This deliberately tests routing beyond generic Transactor forks; missing it identifies an invariant-gate extraction gap rather than a judge failure.",
+        "signals": [
+          "OverrideFreeze invariant",
+          "DeepFreeze boundary state",
+          "Cleanup3_4_0 gate"
+        ]
+      }
+    },
+    {
+      "id": "control_named_sponsor_fee_predicate",
+      "kind": "synthetic_control",
+      "title": "Name the Sponsor fee-payer predicate without changing it",
+      "provenance": {
+        "source": "local_synthetic_seed",
+        "base_commit": "619146d05f74b59579462472f1beaa7046b30689",
+        "head_commit": "21096313ef38f5622b0c31f64c0b7183b7a54935",
+        "subject": "refactor: name sponsor fee-payer predicate"
+      },
+      "replay": {
+        "strategy": "apply_semantics_preserving_hunk",
+        "current_develop": {
+          "verified_commit": "3e6e9faa26366e51513d22b6d00fbec965639e0f",
+          "status": "clean",
+          "source_anchor": "if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))",
+          "test_anchor": "testZeroBalanceSponsoredPaymentFeePayerCheck",
+          "note": "getFeePayer still contains the exact inline predicate from the seed base, so the local extraction applies without adaptation."
+        },
+        "files": ["src/libxrpl/tx/Transactor.cpp"],
+        "steps": [
+          {
+            "operation": "extract_local",
+            "symbol": "Transactor::getFeePayer",
+            "instruction": "Replace the inline sfSponsor && isFeeSponsored(tx) condition with a const bool sponsorPaysFee initialized to that exact expression, then branch on the local. Make no other change."
+          }
+        ],
+        "retain_tests": ["src/test/app/Sponsor_test.cpp"]
+      },
+      "machine_mutation": {
+        "base": "replay.current_develop.verified_commit",
+        "operations": [
+          {
+            "operation": "replace_text",
+            "path": "src/libxrpl/tx/Transactor.cpp",
+            "old": "    if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))",
+            "new": "    bool const sponsorPaysFee =\n        tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx);\n    if (sponsorPaysFee)",
+            "count": 1
+          }
+        ]
+      },
+      "target": {
+        "features": [
+          {
+            "id": "feature:transactor:Payment",
+            "name": "Payment"
+          },
+          {
+            "id": "feature:amendment:Sponsor",
+            "name": "Sponsor"
+          }
+        ],
+        "primary_resource": {
+          "kind": "fork",
+          "name": "getFeePayer"
+        },
+        "relevant_resources": [
+          {
+            "kind": "fork",
+            "name": "getFeePayer"
+          }
+        ]
+      },
+      "expected_judgement": {
+        "behavior": "correct",
+        "coverage": "covered",
+        "verdict": "handled"
+      },
+      "ground_truth": {
+        "source_citations": [
+          {
+            "commit": "21096313ef38f5622b0c31f64c0b7183b7a54935",
+            "path": "src/libxrpl/tx/Transactor.cpp",
+            "line": 1382,
+            "anchor": "bool const sponsorPaysFee",
+            "evidence": "The extracted local is textually identical to the prior branch condition."
+          }
+        ],
+        "tests": [
+          {
+            "commit": "21096313ef38f5622b0c31f64c0b7183b7a54935",
+            "path": "src/test/app/Sponsor_test.cpp",
+            "line": 5300,
+            "anchor": "testZeroBalanceSponsoredPaymentFeePayerCheck",
+            "symbol": "testZeroBalanceSponsoredPaymentFeePayerCheck",
+            "assertion": "A sponsored Payment consistently attributes the fee to the sponsor when the sponsee cannot pay it."
+          }
+        ]
+      },
+      "routing": {
+        "expectation": "ambiguity_stress",
+        "why": "The generic getFeePayer refactor exposes Sponsor but no pair-specific Payment signal among hundreds of consumers. The exact Payment x Sponsor candidate should remain discoverable, but requiring it inside a small top-K budget would test arbitrary tie-breaking rather than semantic routing. The judge must still avoid turning structural relevance into a false positive when this candidate is selected.",
+        "signals": [
+          "sfSponsor exact lever",
+          "getFeePayer fork",
+          "semantics-preserving extraction"
+        ]
+      }
+    },
+    {
+      "id": "control_named_sponsor_presence_predicate",
+      "kind": "synthetic_control",
+      "title": "Name the Sponsor presence predicate without changing it",
+      "provenance": {
+        "source": "local_synthetic_seed",
+        "base_commit": "619146d05f74b59579462472f1beaa7046b30689",
+        "head_commit": "d27e93302396ab3327d1a088a37d35c0f42eff47",
+        "subject": "refactor: name sponsor and AMM feature predicates"
+      },
+      "replay": {
+        "strategy": "apply_selected_semantics_preserving_hunk",
+        "current_develop": {
+          "verified_commit": "3e6e9faa26366e51513d22b6d00fbec965639e0f",
+          "status": "clean",
+          "source_anchor": "if (!tx.isFieldPresent(sfSponsor))",
+          "test_anchor": "testDelegateBlockReserveSponsor",
+          "note": "checkSponsor still contains the exact inline sfSponsor presence check; only the selected Transactor hunk is needed."
+        },
+        "files": ["src/libxrpl/tx/Transactor.cpp"],
+        "steps": [
+          {
+            "operation": "extract_local",
+            "symbol": "Transactor::checkSponsor",
+            "instruction": "Apply only the Transactor.cpp hunk: bind tx.isFieldPresent(sfSponsor) to const bool hasSponsor and negate that local in the early return. Do not include the unrelated AMMVote hunk from the seed commit."
+          }
+        ],
+        "retain_tests": ["src/test/app/Sponsor_test.cpp"]
+      },
+      "machine_mutation": {
+        "base": "replay.current_develop.verified_commit",
+        "operations": [
+          {
+            "operation": "replace_text",
+            "path": "src/libxrpl/tx/Transactor.cpp",
+            "old": "    if (!tx.isFieldPresent(sfSponsor))",
+            "new": "    bool const hasSponsor = tx.isFieldPresent(sfSponsor);\n    if (!hasSponsor)",
+            "count": 1
+          }
+        ]
+      },
+      "target": {
+        "features": [
+          {
+            "id": "feature:amendment:PermissionDelegationV1_1",
+            "name": "PermissionDelegationV1_1"
+          },
+          {
+            "id": "feature:amendment:Sponsor",
+            "name": "Sponsor"
+          }
+        ],
+        "primary_resource": {
+          "kind": "fork",
+          "name": "checkSponsor"
+        },
+        "relevant_resources": [
+          {
+            "kind": "fork",
+            "name": "checkSponsor"
+          }
+        ]
+      },
+      "expected_judgement": {
+        "behavior": "correct",
+        "coverage": "covered",
+        "verdict": "handled"
+      },
+      "ground_truth": {
+        "source_citations": [
+          {
+            "commit": "d27e93302396ab3327d1a088a37d35c0f42eff47",
+            "path": "src/libxrpl/tx/Transactor.cpp",
+            "line": 413,
+            "anchor": "bool const hasSponsor",
+            "evidence": "The named local contains the exact pre-refactor sponsor-presence expression."
+          }
+        ],
+        "tests": [
+          {
+            "commit": "d27e93302396ab3327d1a088a37d35c0f42eff47",
+            "path": "src/test/app/Sponsor_test.cpp",
+            "line": 4807,
+            "anchor": "testDelegateBlockReserveSponsor",
+            "symbol": "testDelegateBlockReserveSponsor",
+            "assertion": "Reserve sponsorship remains blocked when permission delegation is also present."
+          }
+        ]
+      },
+      "routing": {
+        "expectation": "must_route",
+        "why": "Sponsor and PermissionDelegation are both mediators of checkSponsor. The control verifies that clustering does not equate a high-signal amendment intersection with broken behavior.",
+        "signals": [
+          "sfSponsor exact lever",
+          "mediator x mediator fork",
+          "semantics-preserving extraction"
+        ]
+      }
+    }
+  ]
+}

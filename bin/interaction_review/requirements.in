@@ -1,0 +1,21 @@
+# Python dependencies for the feature-interaction review tool (bin/interaction_review).
+#
+# Regenerate the hash-locked lock file with:
+#   uv pip compile requirements.in --generate-hashes --output-file requirements.txt
+
+# C preprocessor - reused by the shared macro parser (cmake/scripts/codegen).
+pcpp>=1.30
+
+# Parser combinator library - reused by the shared macro parser.
+pyparsing>=3.0.0
+
+# Config tables (field/flag -> amendment) and reading the JSON schema.
+PyYAML>=6.0
+
+# JSON Schema validation of the emitted graph.
+jsonschema>=4.0.0
+
+# libclang Python bindings for the Transactor.cpp AST parse. The bindings drive
+# a system dylib via ctypes (Config.set_library_file) and are forward-compatible
+# with a newer LLVM dylib; this is the newest release on PyPI.
+libclang==18.1.1
