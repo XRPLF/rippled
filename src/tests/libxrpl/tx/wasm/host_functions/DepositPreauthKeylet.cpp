@@ -34,13 +34,11 @@ TEST_F(DepositPreauthKeyletImpl, InvalidAccount)
 {
     auto const owner = fund("owner");
 
+    auto h = makeHost();
     expectError(
-        makeHost()->depositPreauthKeylet(AccountID{}, owner.id()),
-        HostFunctionError::InvalidAccount);
-
+        h->depositPreauthKeylet(AccountID{}, owner.id()), HostFunctionError::InvalidAccount);
     expectError(
-        makeHost()->depositPreauthKeylet(owner.id(), AccountID{}),
-        HostFunctionError::InvalidAccount);
+        h->depositPreauthKeylet(owner.id(), AccountID{}), HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

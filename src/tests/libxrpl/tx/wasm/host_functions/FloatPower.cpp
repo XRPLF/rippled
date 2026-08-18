@@ -57,17 +57,19 @@ TEST_F(FloatPowerImpl, DegreeOneIsIdentity)
 
 TEST_F(FloatPowerImpl, TenSquaredIsHundred)
 {
-    auto const hundred = makeHost()->floatFromMantExp(100, 0, 0);
+    auto h = makeHost();
+    auto const hundred = h->floatFromMantExp(100, 0, 0);
     ASSERT_TRUE(hundred.has_value());
-    expectValue(makeHost()->floatPower(slice(FloatTest::kTen), 2, 0), *hundred);
+    expectValue(h->floatPower(slice(FloatTest::kTen), 2, 0), *hundred);
 }
 
 TEST_F(FloatPowerImpl, TenthSquaredIsHundredth)
 {
-    auto const tenth = makeHost()->floatFromMantExp(1, -1, 0);
-    auto const hundredth = makeHost()->floatFromMantExp(1, -2, 0);
+    auto h = makeHost();
+    auto const tenth = h->floatFromMantExp(1, -1, 0);
+    auto const hundredth = h->floatFromMantExp(1, -2, 0);
     ASSERT_TRUE(tenth.has_value() && hundredth.has_value());
-    expectValue(makeHost()->floatPower(slice(*tenth), 2, 0), *hundredth);
+    expectValue(h->floatPower(slice(*tenth), 2, 0), *hundredth);
 }
 
 }  // namespace xrpl::test

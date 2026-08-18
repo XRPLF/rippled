@@ -16,8 +16,9 @@ struct FloatFromUintImpl : FloatTest
 
 TEST_F(FloatFromUintImpl, BadModeIsMalformed)
 {
-    expectError(makeHost()->floatFromUint(0, -1), HostFunctionError::FloatInputMalformed);
-    expectError(makeHost()->floatFromUint(0, 4), HostFunctionError::FloatInputMalformed);
+    auto h = makeHost();
+    expectError(h->floatFromUint(0, -1), HostFunctionError::FloatInputMalformed);
+    expectError(h->floatFromUint(0, 4), HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatFromUintImpl, Zero)

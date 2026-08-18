@@ -29,9 +29,10 @@ TEST_F(AmmKeyletImpl, InvalidParameters)
 
     auto baseMpt = makeMptID(1, owner.id());
 
-    expectError(makeHost()->ammKeylet(xrpIssue(), xrpIssue()), HostFunctionError::InvalidParams);
-    expectError(makeHost()->ammKeylet(xrpIssue(), baseMpt), HostFunctionError::InvalidParams);
-    expectError(makeHost()->ammKeylet(baseMpt, xrpIssue()), HostFunctionError::InvalidParams);
+    auto h = makeHost();
+    expectError(h->ammKeylet(xrpIssue(), xrpIssue()), HostFunctionError::InvalidParams);
+    expectError(h->ammKeylet(xrpIssue(), baseMpt), HostFunctionError::InvalidParams);
+    expectError(h->ammKeylet(baseMpt, xrpIssue()), HostFunctionError::InvalidParams);
 }
 
 }  // namespace xrpl::test

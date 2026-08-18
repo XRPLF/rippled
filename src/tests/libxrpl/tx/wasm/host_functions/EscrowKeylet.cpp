@@ -27,8 +27,9 @@ TEST_F(EscrowKeyletImpl, MatchesLedgerKeyletFunction)
 
 TEST_F(EscrowKeyletImpl, DifferentAccountsGiveDifferentKeylets)
 {
-    auto const a = makeHost()->escrowKeylet(Account{"alice"}.id(), 7);
-    auto const b = makeHost()->escrowKeylet(Account{"becky"}.id(), 7);
+    auto h = makeHost();
+    auto const a = h->escrowKeylet(Account{"alice"}.id(), 7);
+    auto const b = h->escrowKeylet(Account{"becky"}.id(), 7);
 
     ASSERT_TRUE(a.has_value() && b.has_value());
     EXPECT_NE(*a, *b);

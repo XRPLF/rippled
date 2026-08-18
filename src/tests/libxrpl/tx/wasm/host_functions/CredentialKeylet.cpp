@@ -48,13 +48,12 @@ TEST_F(CredentialKeyletImpl, InvalidAccount)
     auto const credTypeStr = std::string{"test"};
     auto const credType = Slice{credTypeStr.data(), credTypeStr.size()};
 
+    auto h = makeHost();
     expectError(
-        makeHost()->credentialKeylet(AccountID{}, owner.id(), credType),
-        HostFunctionError::InvalidAccount);
+        h->credentialKeylet(AccountID{}, owner.id(), credType), HostFunctionError::InvalidAccount);
 
     expectError(
-        makeHost()->credentialKeylet(owner.id(), AccountID{}, credType),
-        HostFunctionError::InvalidAccount);
+        h->credentialKeylet(owner.id(), AccountID{}, credType), HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

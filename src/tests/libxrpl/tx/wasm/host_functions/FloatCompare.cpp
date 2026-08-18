@@ -15,10 +15,10 @@ TEST_F(FloatCompareImpl, MalformedInputs)
 {
     // A wrong-size (here empty) buffer is malformed; the impl normalizes any well-formed
     // 12-byte buffer, so size is the only rejection.
-    expectError(makeHost()->floatCompare(Slice{}, Slice{}), HostFunctionError::FloatInputMalformed);
+    auto h = makeHost();
+    expectError(h->floatCompare(Slice{}, Slice{}), HostFunctionError::FloatInputMalformed);
     expectError(
-        makeHost()->floatCompare(slice(FloatTest::kOne), Slice{}),
-        HostFunctionError::FloatInputMalformed);
+        h->floatCompare(slice(FloatTest::kOne), Slice{}), HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatCompareImpl, Less)

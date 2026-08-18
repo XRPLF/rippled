@@ -35,13 +35,13 @@ TEST_F(PaychannelKeyletImpl, InvalidAccount)
 {
     auto const owner = fund("owner");
 
-    expectError(
-        makeHost()->paychannelKeylet(AccountID{}, owner.id(), 1u),
-        HostFunctionError::InvalidAccount);
+    auto h = makeHost();
 
     expectError(
-        makeHost()->paychannelKeylet(owner.id(), AccountID{}, 1u),
-        HostFunctionError::InvalidAccount);
+        h->paychannelKeylet(AccountID{}, owner.id(), 1u), HostFunctionError::InvalidAccount);
+
+    expectError(
+        h->paychannelKeylet(owner.id(), AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

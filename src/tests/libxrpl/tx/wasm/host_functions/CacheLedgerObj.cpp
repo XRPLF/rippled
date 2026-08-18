@@ -60,11 +60,12 @@ TEST_F(CacheLedgerObjImpl, MatchesLedgerImplicitIndices)
 
 TEST_F(CacheLedgerObjImpl, OutOfRange)
 {
-    auto result = makeHost()->cacheLedgerObj(uint256{}, -1);
+    auto h = makeHost();
+    auto result = h->cacheLedgerObj(uint256{}, -1);
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error(), HostFunctionError::SlotOutRange);
 
-    result = makeHost()->cacheLedgerObj(uint256{}, 257);
+    result = h->cacheLedgerObj(uint256{}, 257);
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error(), HostFunctionError::SlotOutRange);
 }

@@ -16,8 +16,9 @@ struct FloatFromMantExpImpl : FloatTest
 
 TEST_F(FloatFromMantExpImpl, BadModeIsMalformed)
 {
-    expectError(makeHost()->floatFromMantExp(1, 0, -1), HostFunctionError::FloatInputMalformed);
-    expectError(makeHost()->floatFromMantExp(1, 0, 4), HostFunctionError::FloatInputMalformed);
+    auto h = makeHost();
+    expectError(h->floatFromMantExp(1, 0, -1), HostFunctionError::FloatInputMalformed);
+    expectError(h->floatFromMantExp(1, 0, 4), HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatFromMantExpImpl, ExponentTooHighIsMalformed)

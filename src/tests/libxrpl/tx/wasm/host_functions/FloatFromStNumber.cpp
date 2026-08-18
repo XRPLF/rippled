@@ -18,9 +18,10 @@ struct FloatFromStNumberImpl : FloatTest
 
 TEST_F(FloatFromStNumberImpl, BadModeIsMalformed)
 {
+    auto h = makeHost();
     auto const n = STNumber{sfNumber, Number(123, 0)};
-    expectError(makeHost()->floatFromSTNumber(n, -1), HostFunctionError::FloatInputMalformed);
-    expectError(makeHost()->floatFromSTNumber(n, 4), HostFunctionError::FloatInputMalformed);
+    expectError(h->floatFromSTNumber(n, -1), HostFunctionError::FloatInputMalformed);
+    expectError(h->floatFromSTNumber(n, 4), HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatFromStNumberImpl, MaxUint)

@@ -42,24 +42,27 @@ TEST_F(FloatRootImpl, FirstRootIsIdentity)
 
 TEST_F(FloatRootImpl, SquareRootOfHundredIsTen)
 {
-    auto const hundred = makeHost()->floatFromMantExp(100, 0, 0);
+    auto h = makeHost();
+    auto const hundred = h->floatFromMantExp(100, 0, 0);
     ASSERT_TRUE(hundred.has_value());
-    expectValue(makeHost()->floatRoot(slice(*hundred), 2, 0), FloatTest::kTen);
+    expectValue(h->floatRoot(slice(*hundred), 2, 0), FloatTest::kTen);
 }
 
 TEST_F(FloatRootImpl, CubeRootOfThousandIsTen)
 {
-    auto const thousand = makeHost()->floatFromMantExp(1000, 0, 0);
+    auto h = makeHost();
+    auto const thousand = h->floatFromMantExp(1000, 0, 0);
     ASSERT_TRUE(thousand.has_value());
-    expectValue(makeHost()->floatRoot(slice(*thousand), 3, 0), FloatTest::kTen);
+    expectValue(h->floatRoot(slice(*thousand), 3, 0), FloatTest::kTen);
 }
 
 TEST_F(FloatRootImpl, SquareRootOfHundredthIsTenth)
 {
-    auto const hundredth = makeHost()->floatFromMantExp(1, -2, 0);
-    auto const tenth = makeHost()->floatFromMantExp(1, -1, 0);
+    auto h = makeHost();
+    auto const hundredth = h->floatFromMantExp(1, -2, 0);
+    auto const tenth = h->floatFromMantExp(1, -1, 0);
     ASSERT_TRUE(hundredth.has_value() && tenth.has_value());
-    expectValue(makeHost()->floatRoot(slice(*hundredth), 2, 0), *tenth);
+    expectValue(h->floatRoot(slice(*hundredth), 2, 0), *tenth);
 }
 
 }  // namespace xrpl::test

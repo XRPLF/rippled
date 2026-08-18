@@ -25,9 +25,10 @@ struct FloatFromStAmountImpl : FloatTest
 
 TEST_F(FloatFromStAmountImpl, BadModeIsMalformed)
 {
+    auto h = makeHost();
     auto const amount = STAmount{XRP(100)};
-    expectError(makeHost()->floatFromSTAmount(amount, -1), HostFunctionError::FloatInputMalformed);
-    expectError(makeHost()->floatFromSTAmount(amount, 4), HostFunctionError::FloatInputMalformed);
+    expectError(h->floatFromSTAmount(amount, -1), HostFunctionError::FloatInputMalformed);
+    expectError(h->floatFromSTAmount(amount, 4), HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatFromStAmountImpl, ZeroXrp)
@@ -38,16 +39,18 @@ TEST_F(FloatFromStAmountImpl, ZeroXrp)
 TEST_F(FloatFromStAmountImpl, MinusOneXrp)
 {
     // -1 XRP == -1'000'000 drops.
-    auto const expected = makeHost()->floatFromMantExp(-1'000'000, 0, 0);
+    auto h = makeHost();
+    auto const expected = h->floatFromMantExp(-1'000'000, 0, 0);
     ASSERT_TRUE(expected.has_value());
-    expectValue(makeHost()->floatFromSTAmount(STAmount{XRP(-1)}, 0), *expected);
+    expectValue(h->floatFromSTAmount(STAmount{XRP(-1)}, 0), *expected);
 }
 
 TEST_F(FloatFromStAmountImpl, MaxDrops)
 {
-    auto const expected = makeHost()->floatFromMantExp(9'223'372'036'854'776, 3, 0);
+    auto h = makeHost();
+    auto const expected = h->floatFromMantExp(9'223'372'036'854'776, 3, 0);
     ASSERT_TRUE(expected.has_value());
-    expectValue(makeHost()->floatFromSTAmount(STAmount{noIssue(), kMax64}, 0), *expected);
+    expectValue(h->floatFromSTAmount(STAmount{noIssue(), kMax64}, 0), *expected);
 }
 
 TEST_F(FloatFromStAmountImpl, MinIou)

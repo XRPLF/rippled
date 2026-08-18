@@ -36,10 +36,11 @@ TEST_F(FloatDivideImpl, DivideByZeroIsComputationError)
 TEST_F(FloatDivideImpl, OverflowIsComputationError)
 {
     // A divisor just below 1, so max / it overflows.
-    auto const y = makeHost()->floatFromMantExp(STAmount::kMaxValue, -FloatTest::kNormalExp - 1, 0);
+    auto h = makeHost();
+    auto const y = h->floatFromMantExp(STAmount::kMaxValue, -FloatTest::kNormalExp - 1, 0);
     ASSERT_TRUE(y.has_value());
     expectError(
-        makeHost()->floatDivide(slice(FloatTest::kMax), slice(*y), 0),
+        h->floatDivide(slice(FloatTest::kMax), slice(*y), 0),
         HostFunctionError::FloatComputationError);
 }
 
@@ -60,10 +61,11 @@ TEST_F(FloatDivideImpl, MaxExpDividedByTenIsPreMaxExp)
 // The rounding mode changes an inexact result: 1/3 rounded Downward differs from Upward.
 TEST_F(FloatDivideImpl, RoundingModeAffectsInexactResult)
 {
-    auto const three = makeHost()->floatFromInt(3, 0);
+    auto h = makeHost();
+    auto const three = h->floatFromInt(3, 0);
     ASSERT_TRUE(three.has_value());
-    auto const down = makeHost()->floatDivide(slice(FloatTest::kOne), slice(*three), 2);
-    auto const up = makeHost()->floatDivide(slice(FloatTest::kOne), slice(*three), 3);
+    auto const down = h->floatDivide(slice(FloatTest::kOne), slice(*three), 2);
+    auto const up = h->floatDivide(slice(FloatTest::kOne), slice(*three), 3);
     ASSERT_TRUE(down.has_value() && up.has_value());
     EXPECT_NE(*down, *up);
 }

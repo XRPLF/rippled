@@ -34,11 +34,9 @@ TEST_F(DelegateKeyletImpl, InvalidAccount)
 {
     auto const owner = fund("owner");
 
-    expectError(
-        makeHost()->delegateKeylet(AccountID{}, owner.id()), HostFunctionError::InvalidAccount);
-
-    expectError(
-        makeHost()->delegateKeylet(owner.id(), AccountID{}), HostFunctionError::InvalidAccount);
+    auto h = makeHost();
+    expectError(h->delegateKeylet(AccountID{}, owner.id()), HostFunctionError::InvalidAccount);
+    expectError(h->delegateKeylet(owner.id(), AccountID{}), HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

@@ -51,13 +51,13 @@ TEST_F(TrustlineKeyletImpl, InvalidAccount)
 
     auto const usd = toCurrency("USD");
 
-    expectError(
-        makeHost()->trustLineKeylet(AccountID{}, owner.id(), usd),
-        HostFunctionError::InvalidAccount);
+    auto h = makeHost();
 
     expectError(
-        makeHost()->trustLineKeylet(owner.id(), AccountID{}, usd),
-        HostFunctionError::InvalidAccount);
+        h->trustLineKeylet(AccountID{}, owner.id(), usd), HostFunctionError::InvalidAccount);
+
+    expectError(
+        h->trustLineKeylet(owner.id(), AccountID{}, usd), HostFunctionError::InvalidAccount);
 }
 
 }  // namespace xrpl::test

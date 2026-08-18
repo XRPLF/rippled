@@ -15,10 +15,9 @@ struct FloatToIntImpl : FloatTest
 
 TEST_F(FloatToIntImpl, BadModeIsMalformed)
 {
-    expectError(
-        makeHost()->floatToInt(slice(FloatTest::kOne), -1), HostFunctionError::FloatInputMalformed);
-    expectError(
-        makeHost()->floatToInt(slice(FloatTest::kOne), 4), HostFunctionError::FloatInputMalformed);
+    auto h = makeHost();
+    expectError(h->floatToInt(slice(FloatTest::kOne), -1), HostFunctionError::FloatInputMalformed);
+    expectError(h->floatToInt(slice(FloatTest::kOne), 4), HostFunctionError::FloatInputMalformed);
 }
 
 TEST_F(FloatToIntImpl, MalformedInputs)
@@ -61,10 +60,11 @@ TEST_F(FloatToIntImpl, OverflowsInt64IsComputationError)
 
 TEST_F(FloatToIntImpl, PiRoundsByMode)
 {
-    expectValue(makeHost()->floatToInt(slice(FloatTest::kPi), 0), std::int64_t{3});  // ToNearest
-    expectValue(makeHost()->floatToInt(slice(FloatTest::kPi), 1), std::int64_t{3});  // TowardsZero
-    expectValue(makeHost()->floatToInt(slice(FloatTest::kPi), 2), std::int64_t{3});  // Downward
-    expectValue(makeHost()->floatToInt(slice(FloatTest::kPi), 3), std::int64_t{4});  // Upward
+    auto h = makeHost();
+    expectValue(h->floatToInt(slice(FloatTest::kPi), 0), std::int64_t{3});  // ToNearest
+    expectValue(h->floatToInt(slice(FloatTest::kPi), 1), std::int64_t{3});  // TowardsZero
+    expectValue(h->floatToInt(slice(FloatTest::kPi), 2), std::int64_t{3});  // Downward
+    expectValue(h->floatToInt(slice(FloatTest::kPi), 3), std::int64_t{4});  // Upward
 }
 
 }  // namespace xrpl::test
