@@ -179,13 +179,23 @@ dyld[57271]: Library not loaded: /nix/store/…-libresolv-93/lib/libresolv.9.dyl
 ```
 
 [`bin/check-nix-store-refs.sh`](../../bin/check-nix-store-refs.sh) finds the same
-thing without having to run anything, and points at the file:
+thing without having to run anything, and names the file:
 
 ```
 $ bin/check-nix-store-refs.sh ~/.conan2-nix
-/Users/you/.conan2-nix/p/b/c-are…/p/bin/adig
-    /nix/store/…-libresolv-93/lib/libresolv.9.dylib
+::error file=/Users/you/.conan2-nix/p/b/c-area24ded30c388c/p/bin/adig::references the Nix store at run time
+/Users/you/.conan2-nix/p/b/c-area24ded30c388c/p/bin/adig
+    /nix/store/p4lp3xq4imd1qzqh08x8vcq2zfhi7rca-libresolv-93/lib/libresolv.9.dylib
 /Users/you/.conan2-nix: checked 135, skipped 2495, 1 with Nix store references.
+```
+
+Conan's cache folders are named after a truncated package name plus a hash, so
+ask Conan which package the offending one belongs to — pass the folder holding
+the hash, not the file itself:
+
+```
+$ conan cache ref ~/.conan2-nix/p/b/c-area24ded30c388c
+c-ares/1.34.6#545240bb1c40e2cacd4362d6b8967650:dab5992496abe6d219defb7986ecbf367615a5e5#…
 ```
 
 ### Why it happens
@@ -204,7 +214,7 @@ libraries on the compiler's search path — which is how c-ares found the Nix
 
 ### Fix
 
-Drop the package the check named and let Conan refetch or rebuild it:
+Drop that package and let Conan refetch or rebuild it:
 
 ```bash
 conan remove 'c-ares/*'
