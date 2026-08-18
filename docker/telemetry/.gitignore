@@ -4,6 +4,10 @@ data/
 # Env. file carrying environmental setup data for local or cloud runs.
 .env.*
 
+# Host-local configs rendered by systemd/install-units.sh. They carry the
+# machine's telemetry identity, which must not be committed.
+*.host.cfg
+
 # Keep examples
 !.env.alerting.example
 !.env.grafanacloud.example

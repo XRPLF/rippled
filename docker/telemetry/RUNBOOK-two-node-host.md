@@ -42,28 +42,55 @@ ln -sfn "$FAST_MOUNT"/xrpld/data  docker/telemetry/data
 ln -sfn "$FAST_MOUNT"/xrpld/data2 docker/telemetry/data2
 ```
 
-**Log directories where the collector looks.** The collector reads
-`/var/log/xrpld/<instance-id>/debug.log` and derives each node's identity from
-that directory name, so the basename must match the instance id exactly:
-
-```sh
-mkdir -p "$FAST_MOUNT"/xrpld/data/logs/xrpld-mainnet \
-         "$FAST_MOUNT"/xrpld/data2/logs/xrpld-mainnet2
-sudo mkdir -p /var/log/xrpld
-sudo ln -sfn "$FAST_MOUNT"/xrpld/data/logs/xrpld-mainnet   /var/log/xrpld/xrpld-mainnet
-sudo ln -sfn "$FAST_MOUNT"/xrpld/data2/logs/xrpld-mainnet2 /var/log/xrpld/xrpld-mainnet2
-```
-
 **Host-local settings and cloud credentials.** Both are provided out of band and
 are never committed; the ignore rules already exclude them. Copy each tracked
 example in this directory to its working name, fill it in, and set mode `600`.
 The unit installer refuses to run against a world-readable settings file.
+
+The settings include each node's telemetry identity. Name those after the
+machine, and **reuse the names this host has used before** — they are the join
+key for every metric, trace and log already stored, so a new name starts a fresh
+series and no dashboard will show the old and new data together. See
+[systemd/README.md](systemd/README.md) for why they are not committed.
+
+**Log directories where the collector looks.** The collector reads
+`/var/log/xrpld/<instance-id>/debug.log` and derives each node's identity from
+that directory name, so the basename must match the instance id exactly. Using
+the ids from the settings file keeps the two in step:
+
+```sh
+. docker/telemetry/.env.devbox   # NODE1_INSTANCE_ID, NODE2_INSTANCE_ID
+
+mkdir -p "$FAST_MOUNT"/xrpld/data/logs/"$NODE1_INSTANCE_ID" \
+         "$FAST_MOUNT"/xrpld/data2/logs/"$NODE2_INSTANCE_ID"
+sudo mkdir -p /var/log/xrpld
+sudo ln -sfn "$FAST_MOUNT"/xrpld/data/logs/"$NODE1_INSTANCE_ID"  /var/log/xrpld/"$NODE1_INSTANCE_ID"
+sudo ln -sfn "$FAST_MOUNT"/xrpld/data2/logs/"$NODE2_INSTANCE_ID" /var/log/xrpld/"$NODE2_INSTANCE_ID"
+```
+
+**Rootless Docker.** If the container runtime is rootless, its systemd user
+units need a session bus to install, and the variable is absent over a plain
+non-interactive SSH connection — the install appears to run and leaves nothing
+behind:
+
+```sh
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
+dockerd-rootless-setuptool.sh install
+```
+
+`DOCKER_HOST` must then point at the rootless socket for every later `docker`
+invocation, including non-interactive ones.
 
 **Install the units:**
 
 ```sh
 sh docker/telemetry/systemd/install-units.sh
 ```
+
+This also renders the host-local configs the units run
+(`xrpld-telemetry-mainnet{,2}.host.cfg`), so re-run it after changing either a
+tracked config or the settings file. Nothing else regenerates them.
 
 ---
 
@@ -111,9 +138,14 @@ may have changed. After every update:
 # Confirm the data directories are still symlinks to the fast mount
 ls -ld docker/telemetry/data docker/telemetry/data2
 
-# Reinstall units in case the templates changed
+# Reinstall units and re-render the host-local configs
 sh docker/telemetry/systemd/install-units.sh
 ```
+
+Re-running the installer is not optional after an update. It is what carries any
+change to a tracked config into the `.host.cfg` the unit actually runs; skip it
+and the node keeps running the previous rendering, so a config change appears to
+have been applied and has not been.
 
 Verify the ignored host files survived — they should, since a checkout does not
 touch ignored paths, but confirm their mode is still `600` before relying on
@@ -177,10 +209,21 @@ Further notes from experience:
   a running node.
 - If Conan reports a missing default profile, its cache directory was created by a
   different user than the one running it. Fix ownership, then `conan profile
-  detect`.
+detect`.
 - A dependency added upstream fails `cmake` configure with a missing package
   before any compilation starts. Re-run `conan install` rather than assuming the
   build itself broke.
+
+**Expose the binary where the units expect it.** The build leaves `xrpld` in the
+preset's build directory, while the units run `.build/xrpld`. Link the two, or
+every start fails with the unit reporting only a missing executable:
+
+```sh
+ln -sfn build/Release/xrpld .build/xrpld
+```
+
+The installer warns when that path is not executable, which is the cheapest
+place to catch it — before the unit is ever started.
 
 Confirm the binary is newer than the source you just pulled:
 
@@ -276,14 +319,17 @@ per-instance identity:
 
 ## 8. When something looks wrong
 
-| Symptom | First thing to check |
-| --- | --- |
-| Cloud dashboards empty, no errors anywhere | Collector started without the cloud overlay, or without `--force-recreate` after a config change |
-| Metrics have instance labels, logs do not | Log directory basename does not equal the instance id |
-| Unit refuses to start | The data mount is missing; the units require it deliberately, so a node cannot silently fill the root filesystem |
-| `conan: command not found` under automation | Conan installed user-locally instead of on the system PATH |
-| Node runs an old binary after rebuild | The unit did not restart; stop both, rebuild, start again |
-| Update refuses to fast-forward | The host has local commits or edits to tracked files — see the guiding rule at the top |
+| Symptom                                                                 | First thing to check                                                                                                                                                                                          |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloud dashboards empty, no errors anywhere                              | Collector started without the cloud overlay, or without `--force-recreate` after a config change                                                                                                              |
+| Collector exits at startup on an unresolved authenticator               | An overlay redeclared `service.extensions`; the collector merges configs by **replacing** lists, not appending, so the cloud auth extension was dropped. Nothing exports at all in this state, local included |
+| A node's data appears under the generic instance id, or a brand-new one | The installer was not re-run, so the `.host.cfg` still carries the old identity. Check the rendered file, not the tracked one                                                                                 |
+| A node's history seems to have stopped                                  | Its identity changed; the old data is intact under the old name. Query both names                                                                                                                             |
+| Metrics have instance labels, logs do not                               | Log directory basename does not equal the instance id                                                                                                                                                         |
+| Unit refuses to start                                                   | The data mount is missing; the units require it deliberately, so a node cannot silently fill the root filesystem                                                                                              |
+| `conan: command not found` under automation                             | Conan installed user-locally instead of on the system PATH                                                                                                                                                    |
+| Node runs an old binary after rebuild                                   | The unit did not restart; stop both, rebuild, start again                                                                                                                                                     |
+| Update refuses to fast-forward                                          | The host has local commits or edits to tracked files — see the guiding rule at the top                                                                                                                        |
 
 Counter-intuitive signals worth knowing before drawing conclusions:
 

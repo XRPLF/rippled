@@ -26,7 +26,10 @@ Type=simple
 User=__RUN_USER__
 Group=__RUN_USER__
 WorkingDirectory=__REPO_DIR__
-ExecStart=__REPO_DIR__/.build/xrpld --conf docker/telemetry/xrpld-telemetry-mainnet.cfg
+# The .host.cfg is the tracked config rendered with this host's instance id, so
+# the node's telemetry identifies the machine it runs on. install-units.sh
+# generates it; it is gitignored and never committed.
+ExecStart=__REPO_DIR__/.build/xrpld --conf docker/telemetry/xrpld-telemetry-mainnet.host.cfg
 Restart=on-failure
 RestartSec=5s
 # xrpld flushes its OpenTelemetry buffers on shutdown; killing it early loses the

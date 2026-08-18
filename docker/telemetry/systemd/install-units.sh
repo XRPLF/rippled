@@ -19,56 +19,174 @@ tel=$(dirname "$here")
 env_file="$tel/.env.devbox"
 
 if [ ! -f "$env_file" ]; then
-  echo "ERROR: $env_file not found." >&2
-  echo "       Copy $tel/.env.devbox.example to it and fill in the values." >&2
-  exit 1
+    echo "ERROR: $env_file not found." >&2
+    echo "       Copy $tel/.env.devbox.example to it and fill in the values." >&2
+    exit 1
 fi
 
 # Refuse a world-readable env file: it names the account xrpld runs as, and this
 # script is the only thing that should be reading it.
 mode=$(stat -c %a "$env_file" 2>/dev/null || echo "")
 case "$mode" in
-  600|400) : ;;
-  "") echo "WARN: could not read permissions of $env_file" >&2 ;;
-  *)  echo "ERROR: $env_file is mode $mode; expected 600. Run: chmod 600 $env_file" >&2; exit 1 ;;
+    600 | 400) : ;;
+    "") echo "WARN: could not read permissions of $env_file" >&2 ;;
+    *)
+        echo "ERROR: $env_file is mode $mode; expected 600. Run: chmod 600 $env_file" >&2
+        exit 1
+        ;;
 esac
 
 # shellcheck disable=SC1090
 . "$env_file"
 
-for var in RUN_USER REPO_DIR DATA_MOUNT; do
-  eval "val=\${$var:-}"
-  if [ -z "$val" ]; then
-    echo "ERROR: $var is empty in $env_file" >&2
-    exit 1
-  fi
+for var in RUN_USER REPO_DIR DATA_MOUNT NODE1_INSTANCE_ID NODE2_INSTANCE_ID; do
+    eval "val=\${$var:-}"
+    if [ -z "$val" ]; then
+        echo "ERROR: $var is empty in $env_file" >&2
+        exit 1
+    fi
 done
 
 # Fail early on values that would produce a unit systemd silently never starts.
-id "$RUN_USER" >/dev/null 2>&1 || { echo "ERROR: user '$RUN_USER' does not exist" >&2; exit 1; }
-[ -d "$REPO_DIR" ] || { echo "ERROR: REPO_DIR '$REPO_DIR' is not a directory" >&2; exit 1; }
+id "$RUN_USER" >/dev/null 2>&1 || {
+    echo "ERROR: user '$RUN_USER' does not exist" >&2
+    exit 1
+}
+[ -d "$REPO_DIR" ] || {
+    echo "ERROR: REPO_DIR '$REPO_DIR' is not a directory" >&2
+    exit 1
+}
 [ -x "$REPO_DIR/.build/xrpld" ] || echo "WARN: $REPO_DIR/.build/xrpld not built yet; the unit will fail to start until it is" >&2
 [ -d "$DATA_MOUNT" ] || echo "WARN: DATA_MOUNT '$DATA_MOUNT' does not exist yet; the unit will refuse to start until it is mounted" >&2
 
-for unit in xrpld-mainnet xrpld-mainnet2; do
-  tpl="$here/$unit.service.template"
-  [ -f "$tpl" ] || { echo "ERROR: missing template $tpl" >&2; exit 1; }
-  out=$(mktemp)
-  sed -e "s|__RUN_USER__|$RUN_USER|g" \
-      -e "s|__REPO_DIR__|$REPO_DIR|g" \
-      -e "s|__DATA_MOUNT__|$DATA_MOUNT|g" \
-      "$tpl" > "$out"
+# The instance id becomes a directory name and a telemetry label, so reject
+# anything that would need quoting in either.
+for var in NODE1_INSTANCE_ID NODE2_INSTANCE_ID; do
+    eval "val=\$$var"
+    case "$val" in
+        *[!A-Za-z0-9._-]*)
+            echo "ERROR: $var '$val' has characters outside [A-Za-z0-9._-]" >&2
+            exit 1
+            ;;
+    esac
+done
 
-  if grep -q '__[A-Z_]*__' "$out"; then
-    echo "ERROR: unsubstituted placeholder left in $unit:" >&2
-    grep -o '__[A-Z_]*__' "$out" | sort -u | sed 's/^/  /' >&2
-    rm -f "$out"
+if [ "$NODE1_INSTANCE_ID" = "$NODE2_INSTANCE_ID" ]; then
+    echo "ERROR: both nodes are named '$NODE1_INSTANCE_ID'; their telemetry would be indistinguishable" >&2
     exit 1
-  fi
+fi
 
-  sudo install -m 0644 "$out" "/etc/systemd/system/$unit.service"
-  rm -f "$out"
-  echo "installed /etc/systemd/system/$unit.service"
+# Render a tracked config into a host-local copy carrying this host's instance
+# id. The tracked file is never modified: this repository is public and must not
+# name a machine, and a host that edits tracked configs in place conflicts on
+# every update and loses those edits when the machine is rebuilt.
+#
+# The identity appears both as the service_instance_id setting and as the log
+# directory name, and the two must agree: the collector derives each node's
+# identity for the *logs* pipeline from the log path, so a mismatch costs the
+# logs their service_instance_id label while metrics keep theirs. Both are
+# rewritten here from one value so they cannot drift.
+render_cfg() {
+    src=$1
+    new_id=$2
+    out=$3
+
+    [ -f "$src" ] || {
+        echo "ERROR: missing config $src" >&2
+        exit 1
+    }
+
+    old_id=$(sed -n 's/^service_instance_id=\(.*\)$/\1/p' "$src" | head -1)
+    [ -n "$old_id" ] || {
+        echo "ERROR: no service_instance_id= setting in $src" >&2
+        exit 1
+    }
+
+    # Escape for use as a sed pattern; the tracked ids contain no metacharacters
+    # today, but a future rename should not silently mis-substitute.
+    old_esc=$(printf '%s' "$old_id" | sed 's/[.[\*^$/]/\\&/g')
+
+    # Count what should be replaced before replacing it. A config reshuffle that
+    # renamed or dropped one of these would otherwise yield a copy that quietly
+    # kept the tracked identity -- which reads on the dashboards as the node
+    # having vanished rather than as a failed substitution.
+    id_count=$(grep -c "^service_instance_id=$old_esc\$" "$src" || true)
+    if [ "$id_count" -ne 2 ]; then
+        echo "ERROR: $src has $id_count 'service_instance_id=$old_id' lines, expected 2 ([insight] and [telemetry])" >&2
+        exit 1
+    fi
+    log_count=$(grep -c "logs/$old_esc/" "$src" || true)
+    if [ "$log_count" -lt 1 ]; then
+        echo "ERROR: $src has no 'logs/$old_id/' path to rename" >&2
+        exit 1
+    fi
+
+    {
+        echo "# GENERATED by install-units.sh from $(basename "$src") -- do not edit."
+        echo "# Host-local copy: the tracked config names no machine, this one does."
+        echo "# Identity '$old_id' replaced with '$new_id'. Re-run the installer"
+        echo "# after updating the config or .env.devbox."
+        sed -e "s|^service_instance_id=$old_esc\$|service_instance_id=$new_id|" \
+            -e "s|logs/$old_esc/|logs/$new_id/|g" \
+            "$src"
+    } >"$out"
+
+    # Verify the copy, rather than trusting that sed did what was intended.
+    if grep -q "logs/$old_esc/" "$out" || grep -q "^service_instance_id=$old_esc\$" "$out"; then
+        echo "ERROR: $out still carries the tracked identity '$old_id'" >&2
+        exit 1
+    fi
+    new_count=$(grep -c "^service_instance_id=$new_id\$" "$out" || true)
+    if [ "$new_count" -ne 2 ]; then
+        echo "ERROR: $out has $new_count 'service_instance_id=$new_id' lines, expected 2" >&2
+        exit 1
+    fi
+    echo "rendered $(basename "$out") with service_instance_id=$new_id"
+}
+
+render_cfg "$tel/xrpld-telemetry-mainnet.cfg" "$NODE1_INSTANCE_ID" "$tel/xrpld-telemetry-mainnet.host.cfg"
+render_cfg "$tel/xrpld-telemetry-mainnet2.cfg" "$NODE2_INSTANCE_ID" "$tel/xrpld-telemetry-mainnet2.host.cfg"
+
+# The log directories have to exist under both the names the node writes and the
+# path the collector reads, or one node's logs go unlabelled while everything
+# else looks healthy.
+check_log_dir() {
+    node_dir=$1
+    id=$2
+    [ -d "$tel/$node_dir/logs/$id" ] || cat >&2 <<EOF
+WARN: $tel/$node_dir/logs/$id does not exist; create it and expose it to the collector:
+        mkdir -p "$tel/$node_dir/logs/$id"
+        sudo mkdir -p /var/log/xrpld
+        sudo ln -sfn "$tel/$node_dir/logs/$id" /var/log/xrpld/$id
+EOF
+    [ -e "/var/log/xrpld/$id" ] || echo "WARN: /var/log/xrpld/$id is missing; the collector will find no logs for '$id'" >&2
+}
+
+check_log_dir data "$NODE1_INSTANCE_ID"
+check_log_dir data2 "$NODE2_INSTANCE_ID"
+
+for unit in xrpld-mainnet xrpld-mainnet2; do
+    tpl="$here/$unit.service.template"
+    [ -f "$tpl" ] || {
+        echo "ERROR: missing template $tpl" >&2
+        exit 1
+    }
+    out=$(mktemp)
+    sed -e "s|__RUN_USER__|$RUN_USER|g" \
+        -e "s|__REPO_DIR__|$REPO_DIR|g" \
+        -e "s|__DATA_MOUNT__|$DATA_MOUNT|g" \
+        "$tpl" >"$out"
+
+    if grep -q '__[A-Z_]*__' "$out"; then
+        echo "ERROR: unsubstituted placeholder left in $unit:" >&2
+        grep -o '__[A-Z_]*__' "$out" | sort -u | sed 's/^/  /' >&2
+        rm -f "$out"
+        exit 1
+    fi
+
+    sudo install -m 0644 "$out" "/etc/systemd/system/$unit.service"
+    rm -f "$out"
+    echo "installed /etc/systemd/system/$unit.service"
 done
 
 sudo systemctl daemon-reload
