@@ -44,6 +44,8 @@ Vault::set(SetArgs const& args)
     jv[jss::TransactionType] = jss::VaultSet;
     jv[jss::Account] = args.owner.human();
     jv[sfVaultID] = to_string(args.id);
+    if (args.flags)
+        jv[jss::Flags] = *args.flags;
     return jv;
 }
 

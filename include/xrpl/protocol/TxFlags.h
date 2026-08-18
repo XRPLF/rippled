@@ -195,7 +195,13 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
                                                                                                                                                                \
     TRANSACTION(VaultCreate,                                                                                                                                   \
         TF_FLAG(tfVaultPrivate, lsfVaultPrivate)                                                                                                               \
-        TF_FLAG(tfVaultShareNonTransferable, 0x00020000),                                                                                                      \
+        TF_FLAG(tfVaultShareNonTransferable, 0x00020000)                                                                                                       \
+        TF_FLAG(tfVaultOwnerCanBlockDeposit, lsfVaultOwnerCanBlockDeposit),                                                                                    \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(VaultSet,                                                                                                                                      \
+        TF_FLAG(tfVaultDepositBlock, 0x00010000)                                                                                                               \
+        TF_FLAG(tfVaultDepositUnblock, 0x00020000),                                                                                                            \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(Batch,                                                                                                                                         \
@@ -239,7 +245,6 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfSponsorshipCreate, 0x00020000)                                                                                                               \
         TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
         MASK_ADJ(0))
-
 // clang-format on
 
 // Create all the flag values.
