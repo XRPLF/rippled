@@ -257,6 +257,8 @@ isLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accoun
             // to tecNO_PERMISSION.
             return false;
         }
+        case ltTRANSACTION_PROPOSAL:
+            return sle.getAccountID(sfOwner) == account;
         default:
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::isLedgerEntryOwner : object is not supported by sponsorship.");

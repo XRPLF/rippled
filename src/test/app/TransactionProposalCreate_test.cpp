@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/deposit.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
@@ -20,7 +21,10 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -840,6 +844,105 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(sponsoringOwnerCount(env, backer) == proposal::kProposalOwnerCount);
     }
 
+    // A proposal's sponsored reserve can be reassigned to a new sponsor
+    // through SponsorshipTransfer, the same as any other reserve-sponsored
+    // ledger entry.
+    void
+    testSponsorshipTransfer(FeatureBitset features)
+    {
+        testcase("proposer reserve sponsorship transferred");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};    // the proposer
+        Account const target{"target"};  // the account the proposal is for
+        Account const bob{"bob"};
+        Account const backer1{"backer1"};  // the original sponsor
+        Account const backer2{"backer2"};  // the new sponsor
+
+        env.fund(XRP(10000), alice, target, bob, backer1, backer2);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+        json::Value const proposedTx =
+            proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
+
+        env(proposal::create(alice, proposedTx, proposal::expiration(env, 100s)),
+            sponsor::As(backer1, spfSponsorReserve),
+            Sig(sfSponsorSignature, backer1));
+        env.close();
+
+        BEAST_EXPECT(sponsoringOwnerCount(env, backer1) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(sponsoringOwnerCount(env, backer2) == 0);
+
+        Keylet const proposalKeylet = keylet::txProposal(target.id(), targetTicketSeq);
+
+        env(sponsor::transfer(alice, tfSponsorshipReassign, proposalKeylet.key),
+            sponsor::As(backer2, spfSponsorReserve),
+            Sig(sfSponsorSignature, backer2));
+        env.close();
+
+        auto const sle = proposal::entry(env, target, targetTicketSeq);
+        if (!BEAST_EXPECT(sle))
+            return;
+
+        BEAST_EXPECT(sle->isFieldPresent(sfSponsor));
+        BEAST_EXPECT(sle->getAccountID(sfSponsor) == backer2.id());
+
+        // alice's own OwnerCount is unaffected by the reassignment: only the
+        // sponsor of the redirected reserve changes.
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(sponsoringOwnerCount(env, backer1) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, backer2) == proposal::kProposalOwnerCount);
+    }
+
+    // TransactionProposalCreate's own transaction fee can be sponsored like
+    // any other transaction's, independent of whether its reserve is
+    // sponsored (On-Chain Cosigner spec sponsorship is orthogonal to fee
+    // sponsorship).
+    void
+    testFeeSponsored(FeatureBitset features)
+    {
+        testcase("proposal creation fee sponsored");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};    // the proposer
+        Account const target{"target"};  // the account the proposal is for
+        Account const bob{"bob"};
+        Account const backer{"backer"};  // sponsors alice's transaction fee
+
+        env.fund(XRP(10000), alice, target, bob, backer);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+        json::Value const proposedTx =
+            proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
+
+        auto const aliceBalance = env.balance(alice);
+        auto const backerBalance = env.balance(backer);
+        STAmount const feeAmt = drops(20);
+
+        env(proposal::create(alice, proposedTx, proposal::expiration(env, 100s)),
+            Fee(feeAmt),
+            sponsor::As(backer, spfSponsorFee),
+            Sig(sfSponsorSignature, backer));
+        env.close();
+
+        BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
+        BEAST_EXPECT(env.balance(alice) == aliceBalance);
+        BEAST_EXPECT(env.balance(backer) == backerBalance - feeAmt);
+    }
+
     // A proposed Batch holds several inner transactions and the signatures of
     // every account they touch, so it reserves more than an ordinary proposal.
     void
@@ -951,6 +1054,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testAuxiliaryCoSignatureTypes(all);
         testReserve(all);
         testSponsoredReserve(all);
+        testSponsorshipTransfer(all);
+        testFeeSponsored(all);
         testBatchReserve(all);
         testMultiAccountBatch(all);
     }
