@@ -772,15 +772,18 @@ private:
 
         auto const vaultPseudo = [&]() {
             auto const vaultSle = env.le(keylet::vault(broker.vaultID));
-            BEAST_EXPECT(vaultSle);
-            return vaultSle ? vaultSle->at(sfAccount) : AccountID{};
+            if (!BEAST_EXPECT(vaultSle))
+                return AccountID{};
+            return vaultSle->at(sfAccount);
         }();
 
         // Raw AccountRoot balance, matching LoanPay::doApply's conservation
         // check (not the reserve-clamped accountHolds()/xrpLiquid() value).
         auto rawBalance = [&](AccountID const& id) -> STAmount {
             auto const sle = env.le(keylet::account(id));
-            return sle ? sle->getFieldAmount(sfBalance) : STAmount{};
+            if (!BEAST_EXPECT(sle))
+                return STAmount{};
+            return sle->getFieldAmount(sfBalance);
         };
         auto lenderReserve = [&] {
             return env.current()->fees().accountReserve(ownerCount(env, lender), 1);
