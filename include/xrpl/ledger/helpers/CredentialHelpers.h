@@ -39,9 +39,12 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j);
  *
  * Cleans up credentials that were linked to a pseudo-account (Vault, LoanBroker,
  * AMM), which such an account can neither accept nor delete. Only credentials
- * are removed, at most @p maxNodesToDelete of them; on reaching that bound the
- * result is `tecINCOMPLETE` and the caller must propagate it so a later
- * transaction resumes.
+ * are removed; every other object is left in place. The walk visits at most
+ * @p maxNodesToDelete directory entries and charges the ones it leaves alone
+ * against that budget too, so a directory holding other objects yields fewer
+ * than @p maxNodesToDelete deletions. On reaching the bound the result is
+ * `tecINCOMPLETE` and the caller must propagate it so a later transaction
+ * resumes.
  *
  * @param view Mutable ledger view.
  * @param pseudoAcct The pseudo-account whose directory is cleaned.

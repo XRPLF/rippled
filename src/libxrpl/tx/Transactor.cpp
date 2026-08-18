@@ -1246,7 +1246,7 @@ removeExpiredNFTokenOffers(
 }
 
 static void
-removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
+removeDeletedCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
 {
     for (auto const& index : creds)
     {
@@ -1255,7 +1255,7 @@ removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
             if (auto const ter = credentials::deleteSLE(view, sle, viewJ); !isTesSuccess(ter))
             {
                 JLOG(viewJ.error())
-                    << "removeExpiredCredentials: failed to delete expired credential. Err: "
+                    << "removeDeletedCredentials: failed to delete credential. Err: "
                     << transToken(ter);
             }
         }
@@ -1529,7 +1529,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                     removeDeletedTrustLines(view(), ids, viewJ);
                     break;
                 case ltCREDENTIAL:
-                    removeExpiredCredentials(view(), ids, viewJ);
+                    removeDeletedCredentials(view(), ids, viewJ);
                     break;
                 // LCOV_EXCL_START
                 default:
