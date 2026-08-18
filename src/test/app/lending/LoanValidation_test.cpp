@@ -182,7 +182,7 @@ private:
                 testZeroBrokerID(to_string(uint256{}), tfFullyCanonicalSig);
             }
 
-            // both Borrower and Counterparty are specified
+            // XLS-66 flow: Borrower + Counterparty is ambiguous (temINVALID).
             env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 kBorrower(borrower),
                 kCounterparty(lender),
@@ -190,7 +190,8 @@ private:
                 loanSetFee,
                 Ter(temINVALID));
 
-            // both Borrower and CounterpartySignature are specified
+            // XLS-66 flow: Borrower + CounterpartySignature is ambiguous
+            // (temINVALID).
             env(set(lender, brokerInfo.brokerID, debtMaximumRequest),
                 kBorrower(borrower),
                 Sig(sfCounterpartySignature, borrower),
@@ -322,6 +323,41 @@ private:
             env.close();
             env(manage(alice, beast::kZero, tfLoanDefault), Ter(temINVALID));
         }
+    }
+
+    void
+    testInvalidLoanAccept()
+    {
+        testcase("Invalid LoanAccept");
+        using namespace jtx;
+        using namespace loan;
+
+        // Mirrors testInvalidLoanSet/Delete/Manage/Pay for the
+        // transaction-level preflight/preclaim guards of LoanAccept.
+        // Two-step-specific failures (frozen, unauthorised, insufficient
+        // reserve, expired proposal) are covered inline in
+        // LoanTwoStep_test.cpp.
+        Account const alice{"alice"};
+        Env env(*this);
+        env.fund(XRP(1'000), alice);
+        env.close();
+
+        // XLS-66 spec 3.9.3.1.1: LoanID is zero (temINVALID).
+        env(accept(alice, beast::kZero), Ter(temINVALID));
+
+        auto const bogusLoanID =
+            keylet::loan(uint256{1}, SeqProxy::rawSequence(1)).key;
+
+        // preflight: temINVALID_FLAG. LoanAccept does not override
+        // getFlagsMask, so only universal flags (tfFullyCanonicalSig,
+        // tfInnerBatchTxn) are permitted. Any other bit must be rejected.
+        // Reuses tfLoanImpair (a LoanManage flag) as a stand-in for "any
+        // non-universal flag".
+        env(accept(alice, bogusLoanID, tfLoanImpair), Ter(temINVALID_FLAG));
+
+        // XLS-66 spec 3.9.3.2.1: Loan with the specified LoanID does not
+        // exist (tecNO_ENTRY).
+        env(accept(alice, bogusLoanID), Ter(tecNO_ENTRY));
     }
 
     void
@@ -618,6 +654,7 @@ private:
             testInvalidLoanSet(kind);
         testInvalidLoanDelete();
         testInvalidLoanManage();
+        testInvalidLoanAccept();
         testInvalidLoanPay();
         testRequireAuth();
         testLimitExceeded();

@@ -593,11 +593,12 @@ private:
             BEAST_EXPECT(objects.size() == 0);
         }
 
-        // A Batch inner LoanSet with no Counterparty (and no Borrower)
-        // is rejected in preflight with temBAD_SIGNER. Inside a Batch,
-        // the immediate flow still applies but the inner transaction
-        // cannot carry a CounterpartySignature, so the Counterparty
-        // must be named explicitly on the inner transaction.
+        // XLS-66 spec 3.8.5.2.1 (Batch-inner refinement): a Batch inner
+        // LoanSet with no Counterparty and no Borrower is rejected with
+        // temBAD_SIGNER in preflight. Inside a Batch, the immediate flow
+        // still applies but the inner transaction cannot carry a
+        // CounterpartySignature, so the Counterparty must be named
+        // explicitly on the inner transaction.
         {
             auto const jtx =
                 env.jt(set(lender, broker.brokerID, principalRequest), Txflags(tfInnerBatchTxn));
@@ -609,9 +610,9 @@ private:
             }
         }
 
-        // Once V1.1 enables the two-step flow, a Batch inner LoanSet may
-        // name a Borrower (with a StartDate) instead of a Counterparty:
-        // the borrower is identified explicitly on the inner tx and no
+        // XLS-66 flow (Batch + V1.1): a Batch inner LoanSet may name a
+        // Borrower (with a StartDate) instead of a Counterparty: the
+        // borrower is identified explicitly on the inner tx and no
         // CounterpartySignature is required. Preflight must accept it.
         if (features[featureLendingProtocolV1_1])
         {
@@ -627,10 +628,11 @@ private:
                 BEAST_EXPECT(Transactor::invokePreflight<LoanSet>(pfCtx) == tesSUCCESS);
             }
 
-            // A Batch inner LoanSet with Borrower but no StartDate is not a
-            // valid two-step proposal and no longer masquerades as a
-            // missing-Counterparty error: it is rejected as temINVALID by
-            // getLoanFlow, past the Batch-specific check.
+            // XLS-66 flow (Batch + V1.1): a Batch inner LoanSet with
+            // Borrower but no StartDate is not a valid two-step proposal
+            // and no longer masquerades as a missing-Counterparty error:
+            // it is rejected as temINVALID by getLoanFlow, past the
+            // Batch-specific check.
             auto const jtxNoStart = env.jt(
                 set(lender, broker.brokerID, principalRequest),
                 Txflags(tfInnerBatchTxn),
@@ -648,11 +650,12 @@ private:
             }
         }
 
-        // Success: a Batch containing an inner LoanSet that names a
-        // Counterparty (but carries no CounterpartySignature) is accepted
-        // when the counterparty signs the outer Batch. The immediate flow's
-        // counterparty consent is satisfied by the batch signature rather
-        // than an inner CounterpartySignature. Requires both the Batch and
+        // XLS-66 flow (Batch + V1.1) success: a Batch containing an inner
+        // LoanSet that names a Counterparty (but carries no
+        // CounterpartySignature) is accepted when the counterparty signs
+        // the outer Batch. The immediate flow's counterparty consent is
+        // satisfied by the batch signature rather than an inner
+        // CounterpartySignature. Requires both the Batch and
         // LendingProtocolV1_1 amendments.
         if (features[featureLendingProtocolV1_1] && lendingBatchEnabled)
         {

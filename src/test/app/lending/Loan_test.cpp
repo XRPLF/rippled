@@ -18,7 +18,7 @@ class Loan_test : public beast::unit_test::Suite
     void
     run() override
     {
-        static constexpr std::array<std::string_view, 12> kMembers{
+        static constexpr std::array<std::string_view, 13> kMembers{
             "LendingHelpers",
             "LoanBroker",
             "LoanCashBasis",
@@ -30,6 +30,7 @@ class Loan_test : public beast::unit_test::Suite
             "LoanRounding",
             "LoanSecurity",
             "LoanSet",
+            "LoanTwoStep",
             "LoanValidation",
         };
 

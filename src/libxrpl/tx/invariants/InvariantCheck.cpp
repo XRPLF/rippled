@@ -1148,7 +1148,6 @@ NoModifiedUnmodifiableFields::finalize(
                 break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||
-                    kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
                     kFieldChanged(before, after, sfBorrower) ||
@@ -1165,7 +1164,13 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
-                if (!view.rules().enabled(featureLendingProtocolV1_1))
+                // Pre-V1.1, sfOwnerNode is set at loan creation and immutable
+                // thereafter. V1.1 introduces the two-step flow: a pending
+                // loan is created without sfOwnerNode and LoanAccept adds it
+                // when the borrower accepts. Allow only that specific
+                // transition; any other tx modifying sfOwnerNode is a bug.
+                if (!view.rules().enabled(featureLendingProtocolV1_1) ||
+                    tx.getTxnType() != ttLOAN_ACCEPT)
                 {
                     bad = bad || kFieldChanged(before, after, sfOwnerNode);
                 }

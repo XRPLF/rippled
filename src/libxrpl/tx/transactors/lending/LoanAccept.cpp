@@ -30,6 +30,7 @@ LoanAccept::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanAccept::preflight(PreflightContext const& ctx)
 {
+    // 3.9.3.1.1 LoanID is zero. (temINVALID)
     if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
@@ -44,24 +45,30 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     auto const loanID = tx[sfLoanID];
 
     auto const loanSle = ctx.view.read(keylet::loan(loanID));
+    // 3.9.3.2.1 The Loan object with the specified LoanID does not exist on the ledger.
+    // (tecNO_ENTRY)
     if (!loanSle)
     {
         JLOG(ctx.j.warn()) << "Loan does not exist.";
         return tecNO_ENTRY;
     }
 
+    // 3.9.3.2.2 The Loan object does not have the lsfLoanPending flag set. (tecNO_PERMISSION)
     if (!isLoanPending(loanSle))
     {
         JLOG(ctx.j.warn()) << "Loan is not pending acceptance.";
         return tecNO_PERMISSION;
     }
 
+    // 3.9.3.2.3 The Account submitting the transaction is not the Loan.Borrower. (tecNO_PERMISSION)
     if (loanSle->at(sfBorrower) != account)
     {
         JLOG(ctx.j.warn()) << "LoanAccept can only be submitted by the Borrower.";
         return tecNO_PERMISSION;
     }
 
+    // 3.9.3.2.4 The current ledger timestamp is greater than or equal to Loan.StartDate (the
+    // proposal has expired). (tecEXPIRED)
     if (hasExpired(ctx.view, loanSle->at(sfStartDate)))
     {
         JLOG(ctx.j.warn()) << "Loan proposal has expired.";
@@ -80,6 +87,15 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     Asset const asset = vaultSle->at(sfAsset);
     auto const vaultPseudo = vaultSle->at(sfAccount);
 
+    // 3.9.3.2.6 The Vault pseudo-account is frozen for the asset. (tecFROZEN for IOUs, tecLOCKED
+    // for MPTs)
+    // 3.9.3.2.7 The LoanBroker pseudo-account is deep frozen for the asset. (tecFROZEN for IOUs,
+    // tecLOCKED for MPTs)
+    // 3.9.3.2.8 The Borrower is frozen for the asset. (tecFROZEN for IOUs, tecLOCKED for MPTs)
+    // 3.9.3.2.9 The LoanBroker.Owner is deep frozen for the asset. (tecFROZEN for IOUs, tecLOCKED
+    // for MPTs)
+    // 3.9.3.2.10 Cannot add asset holding for the Vault.Asset (e.g., MPToken or TrustLine issues).
+    // (tecNO_PERMISSION)
     if (auto const ter = checkLoanFreeze(
             ctx.view, asset, vaultPseudo, brokerPseudo, account, brokerOwner, ctx.j))
         return ter;
@@ -88,8 +104,10 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     // receive funds at disbursement) are authorised to hold the vault asset.
     // WeakAuth is used because the holdings need not exist yet; they are
     // created at disbursement.
+    // 3.9.3.2.11 The Borrower is not authorized for the asset. (tecNO_AUTH)
     if (auto const ter = requireAuth(ctx.view, asset, account, AuthType::WeakAuth))
         return ter;
+    // 3.9.3.2.12 The LoanBroker.Owner is not authorized for the asset. (tecNO_AUTH)
     if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
         return ter;
 
@@ -130,19 +148,23 @@ LoanAccept::doApply()
     Number const originationFee = loanSle->at(sfLoanOriginationFee);
     auto const loanAssetsToBorrower = principalOutstanding - originationFee;
 
-    // The loan is no longer pending; it becomes active.
+    // 3.9.4.1 Clear the lsfLoanPending flag on the Loan object.
     loanSle->clearFlag(lsfLoanPending);
 
-    auto applyViewContext = ctx_.getApplyViewContext();
-    // Release the owner reserve that was charged to the LoanBroker.Owner when
-    // the loan was proposed, and charge it to the borrower instead.
+    // 3.9.4.2 Release the reserve from the Loan Broker: Decrement
+    // AccountRoot(LoanBroker.Owner).OwnerCount by 1.
     decreaseOwnerCount(view, brokerOwnerSle, {}, 1, j_);
+
+    // 3.9.4.3 Charge the reserve to the Borrower: Increment AccountRoot(Borrower).OwnerCount by 1.
+    // 3.9.3.2.5 The Borrower does not have sufficient reserve for the Loan object.
+    // (tecINSUFFICIENT_RESERVE)
     if (auto const ter =
             reserveLoanOwner(view, borrower, borrowerSle, accountID_, preFeeBalance_, j_))
         return ter;
 
-    // Disburse the principal to the borrower and the origination fee, if any,
-    // to the broker owner.
+    // 3.9.4.4 - 3.9.4.6 Disburse the principal to the borrower and the origination fee, if any, to
+    // the broker owner.
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (auto const ter = disburseLoan(
             applyViewContext,
             borrowerSle,
@@ -156,12 +178,12 @@ LoanAccept::doApply()
             j_))
         return ter;
 
-    // Release the reserved principal now that it has been paid out.
     auto vaultAssetReservedProxy = vaultSle->at(sfAssetsReserved);
+    // 3.9.4.7 Update Vault object: Decrease Vault.AssetsReserved by Loan.PrincipalOutstanding.
     vaultAssetReservedProxy -= principalOutstanding;
     view.update(vaultSle);
 
-    // Make the borrower the owner of the loan.
+    // 3.9.4.8 Make the borrower the owner of the loan.
     if (auto const ter = dirLink(view, borrower, loanSle, sfOwnerNode))
         return ter;
     view.update(loanSle);

@@ -630,17 +630,14 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    // Special case for Batch inner transactions. A Batch inner LoanSet
-    // must identify the borrower explicitly, since the inner transaction
-    // cannot carry a CounterpartySignature. That means either a Counterparty
-    // (immediate flow) or, once V1.1 enables it, a Borrower (two-step flow).
+    // 3.8.5.1.3 The transaction is a Batch inner transaction and the Counterparty field is not
+    // specified and the Borrower field is not specified. (temBAD_SIGNER)
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
-        !tx.isFieldPresent(sfCounterparty) &&
-        !(isTwoStepFlowEnabled(ctx.rules) && tx.isFieldPresent(sfBorrower)))
+        !tx.isFieldPresent(sfCounterparty) && !tx.isFieldPresent(sfBorrower))
     {
         auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                            << "no Counterparty or Borrower for inner LoanSet transaction.";
+                            << "no Counterparty for inner LoanSet transaction.";
         return temBAD_SIGNER;
     }
 
@@ -651,16 +648,19 @@ LoanSet::preflight(PreflightContext const& ctx)
         return std::nullopt;
     }();
 
+    // 3.8.5.1.2 CounterpartySignature is not present and the transaction is not part of a Batch
+    // inner transaction and the Borrower field is not specified. (temBAD_SIGNER)
+    if (!counterPartySig && !tx.isFieldPresent(sfBorrower))
+    {
+        JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
+        return temBAD_SIGNER;
+    }
+
     bool const twoStepFlowEnabled = isTwoStepFlowEnabled(ctx.rules);
+    // 3.8.5.1.5 Both Borrower and Counterparty fields are specified. (temINVALID)
+    // 3.8.5.1.6 Both Borrower and CounterpartySignature fields are specified. (temINVALID)
     if (getLoanFlow(tx, twoStepFlowEnabled) == LoanFlow::Invalid)
     {
-        // Before the two-step (Borrower) flow was introduced by V1.1, a
-        // CounterpartySignature was mandatory for every non-batch transaction.
-        if (!twoStepFlowEnabled)
-        {
-            JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
-            return temBAD_SIGNER;
-        }
         JLOG(ctx.j.warn()) << "LoanSet transaction must specify either a Borrower with a "
                               "StartDate or a CounterpartySignature.";
         return temINVALID;

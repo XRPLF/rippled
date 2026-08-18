@@ -45,30 +45,31 @@ deletePendingLoan(
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     auto const state = constructLoanState(loanSle);
 
-    // Remove LoanID from the broker pseudo-account's directory.
+    // 3.10.4.1.1 Remove LoanID from the broker pseudo-account's directory.
     if (!view.dirRemove(
             keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    // Delete the Loan object
+    // 3.10.4.1.2 Delete the Loan object
     view.erase(loanSle);
 
-    // Reverse the vault bookkeeping from the proposal.
+    // 3.10.4.1.3 Reverse the vault bookkeeping from the proposal.
     vaultSle->at(sfAssetsAvailable) += principalOutstanding;
     vaultSle->at(sfAssetsReserved) -= principalOutstanding;
     vaultSle->at(sfAssetsTotal) -= state.interestDue;
     view.update(vaultSle);
 
-    // Reverse the broker debt and outstanding loan count.
+    //  3.10.4.1.4 Reverse the broker debt and outstanding loan count.
     adjustImpreciseNumber(
         brokerSle->at(sfDebtTotal),
         -(principalOutstanding + state.interestDue),
         vaultAsset,
         vaultScale);
+    // 3.10.4.1.4 Decrement LoanBroker.OwnerCount by 1.
     adjustLoanBrokerOwnerCount(view, brokerSle, -1, j);
 
-    // Release the owner reserve charged to the LoanBroker owner when the
-    // loan was proposed.
+    // 3.10.4.1.5 Release the reserve from the Loan Broker: Decrement
+    // AccountRoot(LoanBroker.Owner).OwnerCount by 1.
     decreaseOwnerCount(view, brokerOwnerSle, {}, 1, j);
 
     associateAsset(*brokerSle, vaultAsset);
