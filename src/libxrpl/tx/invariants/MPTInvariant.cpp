@@ -886,11 +886,20 @@ ValidMPTTransfer::finalize(
         auto const sleIssuance = view.read(keylet::mptokenIssuance(mptID));
         if (!sleIssuance)
         {
-            // A missing issuance does not mean this transaction destroyed it.
             // MPTokenIssuanceDestroy only requires a zero OutstandingAmount, so
-            // holders' MPTokens outlive it as orphans that a later transaction
-            // of any type may clean up. With no issuance there are no transfer
-            // rules to check, so the transaction type tells us nothing here.
+            // an orphaned MPToken can outlive its issuance and be cleaned up
+            // later by a transaction of any type. There are no transfer rules
+            // left to check, but its balance is zero and nothing can raise it,
+            // so any change other than deletion is a bug.
+            for (auto const& [account, value] : values)
+            {
+                if (value.amtAfter.has_value() && value.amtBefore.value_or(0) != *value.amtAfter)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: orphaned MPToken balance changed "
+                                    << txnType << " " << result;
+                    return invariantPasses;
+                }
+            }
             continue;
         }
 

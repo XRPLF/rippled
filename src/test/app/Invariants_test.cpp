@@ -5836,6 +5836,52 @@ class Invariants_test : public beast::unit_test::Suite
             }
         }
 
+        // An orphan has a zero balance, so only deletion is legitimate (see
+        // "Skipping Deleted MPTs" in testConfidentialMPTTransfer).
+        {
+            MPTID orphanID;
+            auto const setupOrphan = [&](Account const& a1, Account const& a2, Env& env) {
+                MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+                mpt.create({.flags = tfMPTCanTransfer});
+                orphanID = mpt.issuanceID();
+                // A2 is authorized but never paid, so its balance is zero and
+                // the issuance can be destroyed while its MPToken lives on.
+                mpt.authorize({.account = a2});
+                mpt.destroy();
+                return true;
+            };
+            // ValidMPTBalanceChanges also reports this, so assert on the
+            // orphan message, which only the missing-issuance branch produces.
+            doInvariantCheck(
+                {{"orphaned MPToken balance changed"}},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    auto sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
+                    if (!sleTok || (*sleTok)[sfMPTAmount] != 0)
+                        return false;
+                    (*sleTok)[sfMPTAmount] = (*sleTok)[sfMPTAmount] + 10;
+                    ac.view().update(sleTok);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setupOrphan);
+            // Negative control: erasing the orphan is how it gets cleaned up.
+            doInvariantCheck(
+                {},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    auto sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
+                    if (!sleTok)
+                        return false;
+                    ac.view().erase(sleTok);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                setupOrphan);
+        }
+
         // Vault-share freeze invariant: isVaultPseudoAccountFrozen descends
         // through sfReferenceHolding to test the vault's underlying asset for
         // each changed holder.
