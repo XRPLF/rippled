@@ -609,6 +609,45 @@ private:
             }
         }
 
+        // Once V1.1 enables the two-step flow, a Batch inner LoanSet may
+        // name a Borrower (with a StartDate) instead of a Counterparty:
+        // the borrower is identified explicitly on the inner tx and no
+        // CounterpartySignature is required. Preflight must accept it.
+        if (features[featureLendingProtocolV1_1])
+        {
+            auto const jtx = env.jt(
+                set(lender, broker.brokerID, principalRequest),
+                Txflags(tfInnerBatchTxn),
+                kBorrower(borrower),
+                kStartDate((env.now() + 1h).time_since_epoch().count()));
+            if (BEAST_EXPECT(jtx.stx))
+            {
+                PreflightContext const pfCtx(
+                    env.app(), *jtx.stx, uint256{1}, env.current()->rules(), TapBatch, env.journal);
+                BEAST_EXPECT(Transactor::invokePreflight<LoanSet>(pfCtx) == tesSUCCESS);
+            }
+
+            // A Batch inner LoanSet with Borrower but no StartDate is not a
+            // valid two-step proposal and no longer masquerades as a
+            // missing-Counterparty error: it is rejected as temINVALID by
+            // getLoanFlow, past the Batch-specific check.
+            auto const jtxNoStart = env.jt(
+                set(lender, broker.brokerID, principalRequest),
+                Txflags(tfInnerBatchTxn),
+                kBorrower(borrower));
+            if (BEAST_EXPECT(jtxNoStart.stx))
+            {
+                PreflightContext const pfCtx(
+                    env.app(),
+                    *jtxNoStart.stx,
+                    uint256{1},
+                    env.current()->rules(),
+                    TapBatch,
+                    env.journal);
+                BEAST_EXPECT(Transactor::invokePreflight<LoanSet>(pfCtx) == temINVALID);
+            }
+        }
+
         // Success: a Batch containing an inner LoanSet that names a
         // Counterparty (but carries no CounterpartySignature) is accepted
         // when the counterparty signs the outer Batch. The immediate flow's

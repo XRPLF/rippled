@@ -5266,6 +5266,7 @@ class Vault_test : public beast::unit_test::Suite
             BEAST_EXPECT(kCheckString(vault, sfAssetsAvailable, "50"));
             BEAST_EXPECT(kCheckString(vault, sfAssetsMaximum, "1000"));
             BEAST_EXPECT(kCheckString(vault, sfAssetsTotal, "50"));
+            BEAST_EXPECT(!vault.isMember(sfAssetsReserved.getJsonName()));
             BEAST_EXPECT(!vault.isMember(sfLossUnrealized.getJsonName()));
 
             auto const strShareID = strHex(sle->at(sfShareMPTID));
@@ -5605,6 +5606,36 @@ class Vault_test : public beast::unit_test::Suite
             testcase("RPC vault_info command line invalid ledger");
             json::Value jv = env.rpc("vault_info", strHex(keylet.key), "0");
             BEAST_EXPECT(jv[jss::result][jss::error].asString() == "lgrNotFound");
+        }
+
+        // vault_info reflects AssetsReserved when the vault holds reserved
+        // assets. The field is a SoeDefault Number that is elided from the JSON
+        // when zero (asserted in `check(...)` above); after mutating the SLE to
+        // a non-zero value the response must expose it as a string matching
+        // the ledger.
+        {
+            testcase("RPC vault_info reflects AssetsReserved when non-zero");
+            Number const reserved{25};
+
+            auto const changed = env.app().getOpenLedger().modify(
+                [&](OpenView& view, beast::Journal) -> bool {
+                    Sandbox sb(&view, TapNone);
+                    auto v = sb.peek(keylet);
+                    if (!v)
+                        return false;
+                    v->at(sfAssetsReserved) = reserved;
+                    sb.update(v);
+                    sb.apply(view);
+                    return true;
+                });
+            BEAST_EXPECT(changed);
+
+            json::Value jv = env.rpc("vault_info", strHex(keylet.key));
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            auto const& vaultJv = jv[jss::result][jss::vault];
+            BEAST_EXPECT(vaultJv.isMember(sfAssetsReserved.getJsonName()));
+            BEAST_EXPECT(
+                vaultJv[sfAssetsReserved.getJsonName()].asString() == to_string(reserved));
         }
     }
 

@@ -628,13 +628,17 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    // Special case for Batch inner transactions
+    // Special case for Batch inner transactions. A Batch inner LoanSet
+    // must identify the borrower explicitly, since the inner transaction
+    // cannot carry a CounterpartySignature. That means either a Counterparty
+    // (immediate flow) or, once V1.1 enables it, a Borrower (two-step flow).
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
-        !tx.isFieldPresent(sfCounterparty))
+        !tx.isFieldPresent(sfCounterparty) &&
+        !(isTwoStepFlowEnabled(ctx.rules) && tx.isFieldPresent(sfBorrower)))
     {
         auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                            << "no Counterparty for inner LoanSet transaction.";
+                            << "no Counterparty or Borrower for inner LoanSet transaction.";
         return temBAD_SIGNER;
     }
 

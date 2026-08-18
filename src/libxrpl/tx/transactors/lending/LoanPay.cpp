@@ -474,6 +474,11 @@ LoanPay::doApply()
 
     Number const assetsAvailableBefore = *assetsAvailableProxy;
     Number const assetsTotalBefore = *assetsTotalProxy;
+    // AssetsReserved holds funds still in the pseudo-account that are earmarked
+    // for pending loans awaiting acceptance. LoanPay does not touch it, so the
+    // invariant is pseudo_balance == AssetsAvailable + AssetsReserved both
+    // before and after the payment.
+    Number const assetsReserved = *vaultSle->at(sfAssetsReserved);
 #if !NDEBUG
     {
         Number const pseudoAccountBalanceBefore = accountHolds(
@@ -485,7 +490,7 @@ LoanPay::doApply()
             j_);
 
         XRPL_ASSERT_PARTS(
-            assetsAvailableBefore == pseudoAccountBalanceBefore,
+            assetsAvailableBefore + assetsReserved == pseudoAccountBalanceBefore,
             "xrpl::LoanPay::doApply",
             "vault pseudo balance agrees before");
     }
@@ -663,7 +668,7 @@ LoanPay::doApply()
             AuthHandling::IgnoreAuth,
             j_);
         XRPL_ASSERT_PARTS(
-            assetsAvailableAfter == pseudoAccountBalanceAfter,
+            assetsAvailableAfter + assetsReserved == pseudoAccountBalanceAfter,
             "xrpl::LoanPay::doApply",
             "vault pseudo balance agrees after");
     }

@@ -236,7 +236,7 @@ protected:
             if (twoStep)
             {
                 kBorrower(account)(env, jt);
-                kStartDate (*startDate)(env, jt);
+                kStartDate(startDate.value())(env, jt);
             }
             else
             {
