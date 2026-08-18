@@ -56,6 +56,7 @@
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
+#include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
@@ -2245,6 +2246,90 @@ class Invariants_test : public beast::unit_test::Suite
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
         }
+    }
+
+    void
+    testPermissionedDEXDeletedOfferFallback()
+    {
+        using namespace test::jtx;
+
+        testcase << "PermissionedDEX null after";
+
+        // Tx is OfferCreate on pd2. Tracking pd1 fails the invariant iff that
+        // domain lands in the set finalize consults. after == null is never
+        // tracked (pre-340: after-only; post-340: early return) — same result,
+        // both sides are coverage/regression that we do not fall back to before.
+        auto const check = [this](
+                               FeatureBitset features,
+                               bool const afterIsNull,
+                               bool const isDelete,
+                               bool const expectInvariantFailure) {
+            Env env(*this, features);
+
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env, a1, a2);
+            [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env, a1, a2);
+            env.close();
+
+            auto sleOffer =
+                std::make_shared<SLE>(keylet::offer(a2.id(), SeqProxy::rawSequence(10)));
+            sleOffer->setAccountID(sfAccount, a2);
+            sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
+            sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+            sleOffer->setFieldH256(sfDomainID, pd1);
+
+            CurrentTransactionRulesGuard const rulesGuard(env.current()->rules());
+
+            ValidPermissionedDEX invariant;
+            if (afterIsNull)
+            {
+                // Defensive path: after is null. Must not fall back to before.
+                invariant.visitEntry(isDelete, sleOffer, nullptr);
+            }
+            else
+            {
+                // Normal / real-erase path: after is the offer on pd1.
+                invariant.visitEntry(isDelete, nullptr, sleOffer);
+            }
+
+            STTx const tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
+                              tx.setFieldH256(sfDomainID, pd2);
+                              tx.setFieldAmount(sfTakerPays, a1["USD"](10));
+                              tx.setFieldAmount(sfTakerGets, XRP(1));
+                          }};
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            bool const passed =
+                invariant.finalize(tx, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
+            BEAST_EXPECT(passed != expectInvariantFailure);
+            if (expectInvariantFailure)
+            {
+                BEAST_EXPECT(sink.messages().str().contains("transaction consumed wrong domains"));
+            }
+            else
+            {
+                BEAST_EXPECT(sink.messages().str().empty());
+            }
+        };
+
+        auto const pre = defaultAmendments() - fixCleanup3_4_0;
+        auto const post = defaultAmendments() | fixCleanup3_4_0;
+
+        // after == null: not tracked
+        check(pre, true, true, false);
+        check(post, true, true, false);
+
+        // after == offer on pd1
+        // pre-340: domainsOld_ (delete still inserted) → fail
+        check(pre, false, true, true);
+        // post-340: isDelete → only domainsOld_ → pass; !isDelete → domains_ → fail
+        check(post, false, true, false);
+        check(post, false, false, true);
     }
 
     void
@@ -6571,6 +6656,7 @@ public:
         testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
+        testPermissionedDEXDeletedOfferFallback();
         testBookDirectoryExchangeRate();
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
