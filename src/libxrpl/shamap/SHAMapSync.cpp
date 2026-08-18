@@ -555,10 +555,9 @@ SHAMap::addKnownNode(
 {
     XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node");
     XRPL_ASSERT(treeNode, "xrpl::SHAMap::addKnownNode : non-null tree node");
-    XRPL_ASSERT(
-        !treeNode->isLeaf() ||
-            SHAMapNodeID::createID(nodeID.getDepth(), leafKey(*treeNode)).getNodeID() ==
-                nodeID.getNodeID(),
+    XRPL_ASSERT_IF(
+        treeNode->isLeaf(),
+        nodeID.isPrefixOf(leafKey(*treeNode)),
         "xrpl::SHAMap::addKnownNode : leaf position consistent with node ID");
 
     if (!isSynching())
