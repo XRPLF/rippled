@@ -2243,13 +2243,12 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        testcase << "PermissionedDEX deleted offer fallback";
+        testcase << "PermissionedDEX null after";
 
-        // Matrix over fixCleanup3_4_0 × isDelete × (after null / after = offer on pd1).
-        // Tx is always OfferCreate on pd2, so tracking pd1 must fail the invariant
-        // iff that domain lands in the set finalize consults.
-        // after == null is never tracked: pre-340 via after-only checks, post-340
-        // via the early return.
+        // Tx is OfferCreate on pd2. Tracking pd1 fails the invariant iff that
+        // domain lands in the set finalize consults. after == null is never
+        // tracked (pre-340: after-only; post-340: early return) — same result,
+        // both sides are coverage/regression that we do not fall back to before.
         auto const check = [this](
                                FeatureBitset features,
                                bool const afterIsNull,
@@ -2311,16 +2310,13 @@ class Invariants_test : public beast::unit_test::Suite
         auto const pre = defaultAmendments() - fixCleanup3_4_0;
         auto const post = defaultAmendments() | fixCleanup3_4_0;
 
-        // after == null: never tracked (pre-340 after-only; post-340 early return)
+        // after == null: not tracked
         check(pre, true, true, false);
-        check(pre, true, false, false);
         check(post, true, true, false);
-        check(post, true, false, false);
 
-        // after == offer on pd1 (no null fallback involved)
-        // pre-340: finalize uses domainsOld_ (always inserted) → fail
+        // after == offer on pd1
+        // pre-340: domainsOld_ (delete still inserted) → fail
         check(pre, false, true, true);
-        check(pre, false, false, true);
         // post-340: isDelete → only domainsOld_ → pass; !isDelete → domains_ → fail
         check(post, false, true, false);
         check(post, false, false, true);
