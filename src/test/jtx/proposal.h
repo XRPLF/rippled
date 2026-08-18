@@ -2,6 +2,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
@@ -38,6 +39,58 @@ using xrpl::proposal::kProposalOwnerCount;
  */
 json::Value
 create(Account const& proposer, json::Value const& proposedTx, std::uint32_t expiration);
+
+/**
+ * @brief Conditions that check what a proposal transaction did to the ledger.
+ *
+ * Each is named for the generator it verifies, so a submission and its check
+ * read as a pair, and the transactions that later sign or complete a proposal
+ * get their own entries here rather than sharing one.
+ */
+namespace verify {
+
+/**
+ * @brief The condition returned by create(); see it for what is checked.
+ */
+class Create
+{
+public:
+    void
+    operator()(Env&, JTx&) const;
+};
+
+/**
+ * @brief Check the ledger effects a TransactionProposalCreate must have,
+ * whatever its outcome. Attach it to any create() submission:
+ *
+ * @code
+ * env(proposal::create(alice, payload, expiration), proposal::verify::create());
+ * @endcode
+ *
+ * The transaction already names its proposer, target, ticket, expiration and
+ * payload, so this takes no arguments and cannot come to disagree with the
+ * transaction it is attached to. It reads the proposer's owner count and the
+ * target ticket's proposal before the transaction is applied, and afterwards
+ * asserts the only two outcomes the transactor has: on tesSUCCESS the
+ * proposer's reserve grew by exactly what that payload costs and the stored
+ * proposal is the one submitted — same owner, same expiration, same payload
+ * whole — and on any other result nothing moved. A test then states only what
+ * is particular to its own case.
+ *
+ * Conditions run only once the result matched the expected TER, so a case
+ * expecting a failure asserts that failure changed nothing, without having to
+ * name the counts it left alone.
+ *
+ * This reads fields only a TransactionProposalCreate carries, so it throws
+ * rather than quietly checking nothing if attached to another transaction.
+ */
+[[nodiscard]] inline Create
+create()
+{
+    return Create{};
+}
+
+}  // namespace verify
 
 /**
  * @brief Put a transaction of any type into the form a proposal stores it in:

@@ -13,11 +13,13 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <optional>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -28,7 +30,7 @@ json::Value
 create(Account const& proposer, json::Value const& proposedTx, std::uint32_t expiration)
 {
     json::Value jv;
-    jv[jss::TransactionType] = "TransactionProposalCreate";
+    jv[jss::TransactionType] = jss::TransactionProposalCreate;
     jv[jss::Account] = proposer.human();
     jv[sfProposedTransaction.jsonName] = proposedTx;
     jv[sfExpiration.jsonName] = expiration;
@@ -122,6 +124,64 @@ SLE::const_pointer
 entry(Env const& env, Account const& target, std::uint32_t ticketSeq)
 {
     return entry(env, target.id(), ticketSeq);
+}
+
+void
+verify::Create::operator()(Env& env, JTx& jt) const
+{
+    // Only a TransactionProposalCreate carries the fields read below, and a
+    // condition that quietly checks nothing is worse than none at all.
+    if (jt.jv[jss::TransactionType].asString() != jss::TransactionProposalCreate.cStr())
+        Throw<std::logic_error>("proposal::verify::create: not a TransactionProposalCreate");
+
+    // Funclets run before the transaction is applied, so everything read here
+    // is the state the effects are measured against.
+    json::Value const& proposedTx = jt.jv[sfProposedTransaction.jsonName];
+    auto const target = parseBase58<AccountID>(proposedTx[jss::Account].asString());
+
+    // A payload naming no usable target is a malformed case a test is making
+    // on purpose, and has no ledger effect to measure.
+    if (!target)
+        return;
+
+    Account const proposer = env.lookup(jt.jv[jss::Account].asString());
+    std::uint32_t const ticketSeq = proposedTx[sfTicketSequence.jsonName].asUInt();
+    std::uint32_t const expiration = jt.jv[sfExpiration.jsonName].asUInt();
+    std::uint32_t const cost = proposedTx[jss::TransactionType].asString() == jss::Batch.cStr()
+        ? kBatchProposalOwnerCount
+        : kProposalOwnerCount;
+
+    std::uint32_t const ownerCountBefore = env.ownerCount(proposer);
+    bool const existedBefore = static_cast<bool>(entry(env, *target, ticketSeq));
+
+    jt.require.emplace_back([proposer,
+                             target = *target,
+                             ticketSeq,
+                             expiration,
+                             cost,
+                             ownerCountBefore,
+                             existedBefore,
+                             submitted = proposedTx](Env& applied) {
+        bool const created = applied.ter() == tesSUCCESS;
+        applied.test.expect(
+            applied.ownerCount(proposer) == ownerCountBefore + (created ? cost : 0),
+            "proposal reserve");
+
+        auto const sle = entry(applied, target, ticketSeq);
+        if (!applied.test.expect(
+                static_cast<bool>(sle) == (existedBefore || created), "proposal entry") ||
+            !created)
+            return;
+
+        // What is on the ledger is what was submitted. A proposal is only
+        // worth collecting signatures against if the transaction it stores is
+        // the one that was proposed, so the payload is compared whole rather
+        // than field by field.
+        applied.test.expect(sle->getAccountID(sfOwner) == proposer.id(), "proposal owner");
+        applied.test.expect(sle->getFieldU32(sfExpiration) == expiration, "proposal expiration");
+        applied.test.expect(
+            sle->getFieldObject(sfProposedTransaction) == parse(submitted), "proposal payload");
+    });
 }
 
 }  // namespace xrpl::test::jtx::proposal
