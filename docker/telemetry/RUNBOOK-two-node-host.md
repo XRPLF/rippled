@@ -53,20 +53,21 @@ key for every metric, trace and log already stored, so a new name starts a fresh
 series and no dashboard will show the old and new data together. See
 [systemd/README.md](systemd/README.md) for why they are not committed.
 
-**Log directories where the collector looks.** The collector reads
-`/var/log/xrpld/<instance-id>/debug.log` and derives each node's identity from
-that directory name, so the basename must match the instance id exactly. Using
-the ids from the settings file keeps the two in step:
+**Log directories where the collector looks.** The collector bind-mounts one log
+root — `data/logs` — and derives each node's identity from the subdirectory name
+inside it, so the basename must match the instance id exactly. **Both** nodes log
+there, whatever their nodestore uses; a log directory outside that root is simply
+never read. Using the ids from the settings file keeps the names in step:
 
 ```sh
 . docker/telemetry/.env.devbox   # NODE1_INSTANCE_ID, NODE2_INSTANCE_ID
 
 mkdir -p "$FAST_MOUNT"/xrpld/data/logs/"$NODE1_INSTANCE_ID" \
-         "$FAST_MOUNT"/xrpld/data2/logs/"$NODE2_INSTANCE_ID"
-sudo mkdir -p /var/log/xrpld
-sudo ln -sfn "$FAST_MOUNT"/xrpld/data/logs/"$NODE1_INSTANCE_ID"  /var/log/xrpld/"$NODE1_INSTANCE_ID"
-sudo ln -sfn "$FAST_MOUNT"/xrpld/data2/logs/"$NODE2_INSTANCE_ID" /var/log/xrpld/"$NODE2_INSTANCE_ID"
+         "$FAST_MOUNT"/xrpld/data/logs/"$NODE2_INSTANCE_ID"
 ```
+
+Nothing needs to be placed in the host's `/var/log/xrpld`: that path exists only
+_inside_ the collector container, which is where the log root is mounted.
 
 **Rootless Docker.** If the container runtime is rootless, its systemd user
 units need a session bus to install, and the variable is absent over a plain

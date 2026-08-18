@@ -21,7 +21,7 @@ backend comparison.
 | Backend                           | NuDB                               | RocksDB                             |
 | rpc / ws-admin / ws-public / peer | 5015 / 6016 / 6015 / 51245         | 5025 / 6026 / 6025 / 51255          |
 | Data                              | `data/mainnet`                     | `data2/mainnet`                     |
-| Logs                              | `data/logs/$NODE1_INSTANCE_ID/`    | `data2/logs/$NODE2_INSTANCE_ID/`    |
+| Logs                              | `data/logs/$NODE1_INSTANCE_ID/`    | `data/logs/$NODE2_INSTANCE_ID/`     |
 
 Ports continue the offset-by-ten scheme already in use — devnet on 5005, Mainnet
 on 5015 — so all three configs can bind on one host.
@@ -83,16 +83,23 @@ for the job pool.
 
 ## Two things that are easy to get wrong
 
-**The log directory basename must equal the `service_instance_id`.** The
-installer substitutes both from one value so they cannot drift, but the
-directory itself still has to exist under that name. The
-collector's filelog receiver derives per-node identity from the log path
-(`include_file_path` plus a regex on `/xrpld/<id>/debug.log`). Name the directory
-anything else and that node's _logs_ lose their `service_instance_id` label while
-its _metrics_ keep theirs — so the dashboards' `$node` filter matches nothing for
-logs and reads as "no logs" rather than as a misconfiguration. The collector
-expects the logs under `/var/log/xrpld/<id>/`, so symlink or bind-mount each
-node's log directory there.
+**The log directory basename must equal the `service_instance_id`, and sit in the
+one log root.** The installer substitutes the id into both the setting and the
+path from one value so they cannot drift, but the directory itself still has to
+exist under that name. The collector's filelog receiver derives per-node identity
+from the log path (`include_file_path` plus a regex on `/xrpld/<id>/debug.log`).
+Name the directory anything else and that node's _logs_ lose their
+`service_instance_id` label while its _metrics_ keep theirs — so the dashboards'
+`$node` filter matches nothing for logs and reads as "no logs" rather than as a
+misconfiguration.
+
+The root is `data/logs`, which compose mounts into the collector as
+`/var/log/xrpld`. That is a path inside the container, not on the host, so
+nothing needs creating in the host's `/var/log`. **Both** nodes log under
+`data/logs`, including the one whose nodestore is under `data2/`: a log directory
+outside the mounted root is never read at all, and since both data directories
+sit on the same disk, splitting the logs would buy no I/O separation to pay for
+the lost collection.
 
 **Put the data directories on fast local storage.** The configs use
 repo-relative paths so they stay portable; point them at the fast disk with

@@ -147,23 +147,25 @@ render_cfg() {
 render_cfg "$tel/xrpld-telemetry-mainnet.cfg" "$NODE1_INSTANCE_ID" "$tel/xrpld-telemetry-mainnet.host.cfg"
 render_cfg "$tel/xrpld-telemetry-mainnet2.cfg" "$NODE2_INSTANCE_ID" "$tel/xrpld-telemetry-mainnet2.host.cfg"
 
-# The log directories have to exist under both the names the node writes and the
-# path the collector reads, or one node's logs go unlabelled while everything
-# else looks healthy.
+# Each node needs a log directory named after its instance id inside the log root
+# the collector mounts (data/logs, exposed to the container as /var/log/xrpld).
+# A directory missing here, or placed outside that root, costs that node its logs
+# while its metrics keep flowing -- which reads as a quiet node, not as a
+# collection gap.
 check_log_dir() {
     node_dir=$1
     id=$2
     [ -d "$tel/$node_dir/logs/$id" ] || cat >&2 <<EOF
-WARN: $tel/$node_dir/logs/$id does not exist; create it and expose it to the collector:
+WARN: $tel/$node_dir/logs/$id does not exist, so the collector will find no logs for '$id'. Create it:
         mkdir -p "$tel/$node_dir/logs/$id"
-        sudo mkdir -p /var/log/xrpld
-        sudo ln -sfn "$tel/$node_dir/logs/$id" /var/log/xrpld/$id
 EOF
-    [ -e "/var/log/xrpld/$id" ] || echo "WARN: /var/log/xrpld/$id is missing; the collector will find no logs for '$id'" >&2
 }
 
+# Both nodes log under data/, whatever their nodestore uses: the collector
+# mounts that one directory as its log root and identifies each node by the
+# subdirectory name, so a log directory outside it is never read.
 check_log_dir data "$NODE1_INSTANCE_ID"
-check_log_dir data2 "$NODE2_INSTANCE_ID"
+check_log_dir data "$NODE2_INSTANCE_ID"
 
 for unit in xrpld-mainnet xrpld-mainnet2; do
     tpl="$here/$unit.service.template"
