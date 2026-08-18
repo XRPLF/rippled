@@ -15,7 +15,7 @@ on:
 
       # Keep the paths below in sync with those in `on-pr.yml`.
       - ".github/actions/build-deps/**"
-      - ".github/actions/generate-version/**"
+      - ".github/actions/release-info/**"
       - ".github/actions/setup-conan/**"
       - ".github/scripts/strategy-matrix/**"
       - ".github/workflows/reusable-build-test-config.yml"
@@ -108,3 +108,10 @@ jobs:
   package:
     needs: build-test
     uses: ./.github/workflows/reusable-package.yml
+    with:
+      # Packages are built on every trigger; only develop pushes in XRPLF/rippled
+      # publish them, matching upload-recipe above.
+      publish: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+    secrets:
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
