@@ -1,7 +1,10 @@
 #pragma once
 
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 
 namespace xrpl::proposal {
@@ -17,6 +20,42 @@ inline bool
 isProposalTx(STObject const& proposedTx)
 {
     return proposedTx.getFieldU16(sfTransactionType) == ttTRANSACTION_PROPOSAL_CREATE;
+}
+
+/**
+ * Whether the proposed transaction is independently submittable through the
+ * ordinary multi-sign path: not a nested proposal, not a pseudo-transaction,
+ * not itself flagged as someone else's inner batch transaction, and — if it
+ * is a Batch — none of its own inner transactions is a nested proposal or a
+ * pseudo-transaction either. A Batch inner transaction cannot itself be
+ * pseudo (preflight0 rejects the pseudo/tfInnerBatchTxn combination
+ * generically), but that guard lives outside this feature, so it is checked
+ * again here rather than relied upon.
+ */
+inline bool
+isValidProposal(STObject const& proposedTx)
+{
+    if (isProposalTx(proposedTx))
+        return false;
+
+    if (isPseudoTx(proposedTx))
+        return false;
+
+    if (proposedTx.isFieldPresent(sfFlags) &&
+        (proposedTx.getFieldU32(sfFlags) & tfInnerBatchTxn) != 0u)
+        return false;
+
+    if (proposedTx.getFieldU16(sfTransactionType) == ttBATCH &&
+        proposedTx.isFieldPresent(sfRawTransactions))
+    {
+        for (STObject const& inner : proposedTx.getFieldArray(sfRawTransactions))
+        {
+            if (isProposalTx(inner) || isPseudoTx(inner))
+                return false;
+        }
+    }
+
+    return true;
 }
 
 /**

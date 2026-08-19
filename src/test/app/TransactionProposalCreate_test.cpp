@@ -141,6 +141,20 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             reject(tx, temINVALID);
         }
 
+        // Nor may a proposed Batch smuggle a nested proposal in as one of its
+        // own inner transactions.
+        {
+            json::Value const nestedProposal =
+                proposal::create(target, payload(), proposal::expiration(env, 100s));
+            json::Value const tx = proposal::unsignedBatch(
+                env,
+                target,
+                targetTicketSeq,
+                tfAllOrNothing,
+                {proposal::innerTx(nestedProposal, env.seq(target))});
+            reject(tx, temINVALID);
+        }
+
         // The proposed transaction must be ticket-based: a missing
         // TicketSequence, or a live Sequence alongside it, is rejected.
         {

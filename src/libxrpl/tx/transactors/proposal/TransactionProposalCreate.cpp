@@ -16,7 +16,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
@@ -50,25 +49,13 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     // The proposed transaction must be independently submittable through the
     // ordinary multi-sign path: no nested proposals, no pseudo-transactions,
-    // no batch inner transactions.
-    if (proposal::isProposalTx(proposedTx))
+    // no batch inner transactions — and, if it is a Batch, none of its own
+    // inner transactions may be a nested proposal or a pseudo-transaction
+    // either.
+    if (!proposal::isValidProposal(proposedTx))
     {
-        JLOG(ctx.j.debug()) << "TransactionProposalCreate: nested proposal.";
-        return temINVALID;
-    }
-
-    if (isPseudoTx(proposedTx))
-    {
-        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn is a "
-                               "pseudo-transaction.";
-        return temINVALID;
-    }
-
-    if (proposedTx.isFieldPresent(sfFlags) &&
-        ((proposedTx.getFieldU32(sfFlags) & tfInnerBatchTxn) != 0u))
-    {
-        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
-                               "carries tfInnerBatchTxn.";
+        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn is not "
+                               "independently submittable.";
         return temINVALID;
     }
 
