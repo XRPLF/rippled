@@ -219,7 +219,7 @@ def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
 def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     """Generate the packaging matrix from a LinuxFile's package_configs section.
 
-    Packaging uses vanilla distro images (debian:bookworm, ubi9, …) instead of
+    Packaging uses vanilla distro images (debian:bookworm, almalinux:9) instead of
     the nix-based build images, because deb/rpm tooling (debhelper, rpm-build)
     is taken from the distro's archive rather than from nixpkgs. Each config
     entry carries its own 'image'.
