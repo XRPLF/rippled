@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
+        uses: XRPLF/actions/prepare-runner@51af40f99ea91a08c3528ddf16d98132dcc7e63c
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -161,6 +161,19 @@ jobs:
         uses: ./.github/actions/set-compiler-env
         with:
           compiler: ${{ inputs.compiler }}
+
+      - name: Use cargo artifacts cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          cache-directories: ${{ env.BUILD_DIR }}/corrosion
+          key: ${{ inputs.config_name }}
+          save-if: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release') }}
+          # two workspaces here because build artifacts are located in 2 places:
+          # - crates/target when cargo is called directly
+          # - build/cargo when cargo is called by cmake
+          workspaces: |
+            crates
+            crates -> ${{ runner.os == 'Windows' && format('../{0}/x64/{1}/cargo', env.BUILD_DIR, inputs.build_type) || format('../{0}/cargo', env.BUILD_DIR) }}
 
       # `setup-nix-env` already did this for the Nix toolchain.
       - name: Setup Conan
@@ -357,6 +370,11 @@ jobs:
 
           LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
 
+      - name: Run Rust tests
+        if: ${{ !inputs.build_only }}
+        working-directory: crates
+        run: cargo nextest run --workspace --all-features --locked --no-tests=warn
+
       # Smoke-run every benchmark module with a single repetition to confirm the
       # benchmarks still build and execute. This is a correctness check, not a
       # performance measurement, so there is nothing to gain from repeating it
@@ -428,6 +446,7 @@ jobs:
           disable_telem: true
           fail_ci_if_error: true
           files: ${{ env.BUILD_DIR }}/coverage.xml
+          flags: cpp
           plugins: noop
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true

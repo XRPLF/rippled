@@ -24,6 +24,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -58,6 +59,7 @@
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
@@ -70,6 +72,7 @@
 #include <memory>
 #include <optional>
 #include <source_location>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -219,7 +222,8 @@ class Invariants_test : public beast::unit_test::Suite
         TER terActual = tesSUCCESS;
         for (TER const& terExpect : ters)
         {
-            terActual = transactor->checkInvariants(terActual, fee);
+            terActual =
+                transactor->checkInvariants(terActual, fee, Transactor::InvariantScope::Full);
             expect(
                 terExpect == terActual,
                 "expected: " + transToken(terExpect) + " got: " + transToken(terActual),
@@ -6381,7 +6385,8 @@ class Invariants_test : public beast::unit_test::Suite
             auto transactor = makeTransactor(ac);
             if (!BEAST_EXPECT(transactor))
                 return;
-            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(sink.messages().str().contains("is missing pseudo-account field"));
         }
@@ -6559,6 +6564,130 @@ class Invariants_test : public beast::unit_test::Suite
                     preclose,
                     TxAccount::A1);
             }
+        }
+    }
+
+    void
+    testTxCheckException()
+    {
+        testcase << "txCheck exception";
+        using namespace jtx;
+
+        // A TxInvariantCheck that throws from the requested hook, so we can
+        // exercise checkInvariantsHelper's catch block via the
+        // transaction-specific layer (as opposed to the protocol layer,
+        // which testObjectHasPseudoAccount's last case already covers via a
+        // real Transactor's finalizeInvariants).
+        enum class ThrowFrom { VisitEntry, Finalize };
+
+        struct ThrowingTxInvariantCheck : TxInvariantCheck
+        {
+            ThrowFrom const throwFrom;
+
+            explicit ThrowingTxInvariantCheck(ThrowFrom throwFrom) : throwFrom(throwFrom)
+            {
+            }
+
+            void
+            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            {
+                if (throwFrom == ThrowFrom::VisitEntry)
+                    throw std::runtime_error("test-injected visitEntry exception");
+            }
+
+            [[nodiscard]] bool
+            finalize(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) override
+            {
+                if (throwFrom == ThrowFrom::Finalize)
+                    throw std::runtime_error("test-injected finalize exception");
+                return true;
+            }
+        };
+
+        for (auto const throwFrom : {ThrowFrom::VisitEntry, ThrowFrom::Finalize})
+        {
+            Env env{*this};
+            Account const alice{"alice"};
+            env.fund(XRP(1000), alice);
+            env.close();
+
+            OpenView ov{*env.current()};
+            STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // visitEntry only runs for entries the transaction touched, so
+            // make a modification for the traversal to report.
+            auto sle = ac.view().peek(keylet::account(alice.id()));
+            if (!BEAST_EXPECT(sle))
+                return;
+            sle->at(sfSequence) = sle->at(sfSequence) + 1;
+            ac.view().update(sle);
+
+            ThrowingTxInvariantCheck throwing{throwFrom};
+            TER terActual = tesSUCCESS;
+            for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+            {
+                terActual = checkInvariants(ac, terActual, XRPAmount{}, throwing);
+                BEAST_EXPECT(terExpect == terActual);
+                BEAST_EXPECT(sink.messages().str().contains(
+                    "Transaction caused an exception during invariant checks"));
+            }
+        }
+    }
+
+    void
+    testTxCheckFinalizeFalse()
+    {
+        testcase << "txCheck finalize returns false";
+        using namespace jtx;
+
+        // A TxInvariantCheck whose finalize returns false, so we can exercise
+        // the "Transaction has failed one or more transaction invariants"
+        // log path in checkInvariantsHelper independently of any real
+        // transactor. This is the transaction-layer analogue of the
+        // protocol-layer coverage in testObjectHasPseudoAccount / others.
+        struct FailingTxInvariantCheck : TxInvariantCheck
+        {
+            void
+            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            {
+            }
+
+            [[nodiscard]] bool
+            finalize(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) override
+            {
+                return false;
+            }
+        };
+
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        OpenView ov{*env.current()};
+        STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+        test::StreamSink sink{beast::Severity::Warning};
+        beast::Journal const jlog{sink};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+        FailingTxInvariantCheck failing;
+        TER terActual = tesSUCCESS;
+        for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+        {
+            terActual = checkInvariants(ac, terActual, XRPAmount{}, failing);
+            BEAST_EXPECT(terExpect == terActual);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "Transaction has failed one or more transaction invariants"));
+            // The protocol-layer log must not appear: only the tx-layer
+            // finalize failed here.
+            BEAST_EXPECT(!sink.messages().str().contains(
+                "Transaction has failed one or more global invariants"));
         }
     }
 
@@ -6848,6 +6977,8 @@ public:
         testAMM();
         testObjectHasPseudoAccount();
         testSponsorship();
+        testTxCheckException();
+        testTxCheckFinalizeFalse();
     }
 };
 
