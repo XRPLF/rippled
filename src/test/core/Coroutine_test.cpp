@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 
@@ -49,6 +50,11 @@ public:
         }
     };
 
+    // NOTE: All coroutine lambdas passed to postCoroTask use explicit
+    // pointer-by-value captures instead of [&] to work around a GCC 14
+    // bug where reference captures in coroutine lambdas are corrupted
+    // in the coroutine frame.
+
     void
     correctOrder()
     {
@@ -63,14 +69,22 @@ public:
         }));
 
         Gate g1, g2;
-        std::shared_ptr<JobQueue::Coro> c;
-        env.app().getJobQueue().postCoro(JtClient, "CoroTest", [&](auto const& cr) {
-            c = cr;
-            g1.signal();
-            c->yield();
-            g2.signal();
-        });
-        BEAST_EXPECT(g1.waitFor(5s));
+        std::shared_ptr<JobQueue::CoroTaskRunner> c;
+        env.app().getJobQueue().postCoroTask(
+            JtClient,
+            "CoroTest",
+            // Safe capture: the test blocks on the Gates until the coroutine
+            // completes, so the captured pointers outlive the coroutine.
+            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+            [cp = &c, g1p = &g1, g2p = &g2](auto runner) -> CoroTask<void> {
+                *cp = runner;
+                g1p->signal();
+                co_await runner->suspend();
+                g2p->signal();
+                co_return;
+            });
+        if (!BEAST_EXPECT(g1.waitFor(5s)))
+            return;
         c->join();
         c->post();
         BEAST_EXPECT(g2.waitFor(5s));
@@ -90,11 +104,22 @@ public:
         }));
 
         Gate g;
-        env.app().getJobQueue().postCoro(JtClient, "CoroTest", [&](auto const& c) {
-            c->post();
-            c->yield();
-            g.signal();
-        });
+        env.app().getJobQueue().postCoroTask(
+            JtClient,
+            "CoroTest",
+            // Safe capture: the test blocks on the Gate until the coroutine
+            // completes, so the captured pointer outlives the coroutine.
+            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+            [gp = &g](auto runner) -> CoroTask<void> {
+                // Schedule a resume before suspending.  The posted job
+                // cannot actually call resume() until the current resume()
+                // releases CoroTaskRunner::mutex_, which only happens after
+                // the coroutine suspends at co_await.
+                runner->post();
+                co_await runner->suspend();
+                gp->signal();
+                co_return;
+            });
         BEAST_EXPECT(g.waitFor(5s));
     }
 
@@ -110,7 +135,7 @@ public:
         auto& jq = env.app().getJobQueue();
 
         static int const kN = 4;
-        std::array<std::shared_ptr<JobQueue::Coro>, kN> a;
+        std::array<std::shared_ptr<JobQueue::CoroTaskRunner>, kN> a;
 
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
@@ -127,26 +152,36 @@ public:
 
         for (int i = 0; i < kN; ++i)
         {
-            jq.postCoro(JtClient, "CoroTest", [&, id = i](auto const& c) {
-                a[id] = c;
-                g.signal();
-                c->yield();
+            jq.postCoroTask(
+                JtClient,
+                "CoroTest",
+                // Safe capture: the test drives every coroutine to completion
+                // via the Gate/post()/join() sequences below, so the captured
+                // pointers outlive the coroutines.
+                // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                [this, ap = &a, gp = &g, lvp = &lv, id = i](auto runner) -> CoroTask<void> {
+                    (*ap)[id] = runner;
+                    gp->signal();
+                    co_await runner->suspend();
 
-                this->BEAST_EXPECT(*lv == -1);
-                *lv = id;
-                this->BEAST_EXPECT(*lv == id);
-                g.signal();
-                c->yield();
+                    this->BEAST_EXPECT(**lvp == -1);
+                    **lvp = id;
+                    this->BEAST_EXPECT(**lvp == id);
+                    gp->signal();
+                    co_await runner->suspend();
 
-                this->BEAST_EXPECT(*lv == id);
-            });
-            BEAST_EXPECT(g.waitFor(5s));
+                    this->BEAST_EXPECT(**lvp == id);
+                    co_return;
+                });
+            if (!BEAST_EXPECT(g.waitFor(5s)))
+                return;
             a[i]->join();
         }
         for (auto const& c : a)
         {
             c->post();
-            BEAST_EXPECT(g.waitFor(5s));
+            if (!BEAST_EXPECT(g.waitFor(5s)))
+                return;
             c->join();
         }
         for (auto const& c : a)

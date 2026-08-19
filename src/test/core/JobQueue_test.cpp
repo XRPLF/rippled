@@ -1,11 +1,11 @@
 #include <test/jtx/Env.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 
 #include <atomic>
-#include <memory>
 
 namespace xrpl::test {
 
@@ -46,87 +46,114 @@ class JobQueue_test : public beast::unit_test::Suite
         }
     }
 
+    // NOTE: All coroutine lambdas passed to postCoroTask use explicit
+    // pointer-by-value captures instead of [&] to work around a GCC 14
+    // bug where reference captures in coroutine lambdas are corrupted
+    // in the coroutine frame.
+
     void
-    testPostCoro()
+    testPostCoroTask()
     {
         jtx::Env env{*this};
 
         JobQueue& jQueue = env.app().getJobQueue();
         {
-            // Test repeated post()s until the Coro completes.
+            // Test repeated post()s until the coroutine completes.
             std::atomic<int> yieldCount{0};
-            auto const coro = jQueue.postCoro(
+            auto const runner = jQueue.postCoroTask(
                 JtClient,
                 "PostCoroTest1",
-                [&yieldCount](std::shared_ptr<JobQueue::Coro> const& coroCopy) {
-                    while (++yieldCount < 4)
-                        coroCopy->yield();
+                // Safe capture: the test blocks below until the coroutine
+                // completes, so the captured pointer outlives the coroutine.
+                // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                [ycp = &yieldCount](auto runner) -> CoroTask<void> {
+                    while (++(*ycp) < 4)
+                        co_await runner->suspend();
+                    co_return;
                 });
-            BEAST_EXPECT(coro != nullptr);
+            BEAST_EXPECT(runner != nullptr);
 
             // Wait for the Job to run and yield.
             while (yieldCount == 0)
                 ;
 
-            // Now re-post until the Coro says it is done.
+            // Now re-post until the CoroTaskRunner says it is done.
             int old = yieldCount;
-            while (coro->runnable())
+            while (runner->runnable())
             {
-                BEAST_EXPECT(coro->post());
+                BEAST_EXPECT(runner->post());
                 while (old == yieldCount)
                 {
                 }
-                coro->join();
+                runner->join();
                 BEAST_EXPECT(++old == yieldCount);
             }
             BEAST_EXPECT(yieldCount == 4);
         }
         {
-            // Test repeated resume()s until the Coro completes.
+            // Test repeated post()+join()s until the coroutine completes.
             int yieldCount{0};
-            auto const coro = jQueue.postCoro(
+            auto const runner = jQueue.postCoroTask(
                 JtClient,
                 "PostCoroTest2",
-                [&yieldCount](std::shared_ptr<JobQueue::Coro> const& coroCopy) {
-                    while (++yieldCount < 4)
-                        coroCopy->yield();
+                // Safe capture: the test blocks below until the coroutine
+                // completes, so the captured pointer outlives the coroutine.
+                // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                [ycp = &yieldCount](auto runner) -> CoroTask<void> {
+                    while (++(*ycp) < 4)
+                        co_await runner->suspend();
+                    co_return;
                 });
-            if (!coro)
+            if (!runner)
             {
-                // There's no good reason we should not get a Coro, but we
+                // There's no good reason we should not get a runner, but we
                 // can't continue without one.
                 BEAST_EXPECT(false);
                 return;
             }
 
             // Wait for the Job to run and yield.
-            coro->join();
+            runner->join();
 
-            // Now resume until the Coro says it is done.
+            // Now post()+join() until the CoroTaskRunner says it is done.
+            // resume() requires a prior post() (see the precondition on
+            // CoroTaskRunner::resume()), so the posted job performs the
+            // resume and join() blocks until it completes. yieldCount is
+            // deliberately not atomic: the mutexRun_ handoff inside join()
+            // must provide the happens-before edge that makes the
+            // increment visible to this thread.
             int old = yieldCount;
-            while (coro->runnable())
+            while (runner->runnable())
             {
-                coro->resume();  // Resume runs synchronously on this thread.
+                BEAST_EXPECT(runner->post());
+                runner->join();
                 BEAST_EXPECT(++old == yieldCount);
             }
             BEAST_EXPECT(yieldCount == 4);
         }
         {
             // If the JobQueue is stopped, we should no
-            // longer be able to add a Coro (and calling postCoro() should
-            // return false).
+            // longer be able to post a coroutine (and calling postCoroTask()
+            // should return nullptr).
             using namespace std::chrono_literals;
             jQueue.stop();
 
-            // The Coro should never run, so having the Coro access this
+            // The coroutine should never run, so having it access this
             // unprotected variable on the stack should be completely safe.
             // Not recommended for the faint of heart...
             bool unprotected = false;
-            auto const coro = jQueue.postCoro(
-                JtClient, "PostCoroTest3", [&unprotected](std::shared_ptr<JobQueue::Coro> const&) {
-                    unprotected = false;
+            auto const runner = jQueue.postCoroTask(
+                JtClient,
+                "PostCoroTest3",
+                // Safe capture: the JobQueue is stopped, so the coroutine is
+                // never started and the captured pointer is never dereferenced.
+                // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                [up = &unprotected](auto) -> CoroTask<void> {
+                    *up = true;
+                    co_return;
                 });
-            BEAST_EXPECT(coro == nullptr);
+            BEAST_EXPECT(runner == nullptr);
+            BEAST_EXPECT(unprotected == false);
         }
     }
 
@@ -135,7 +162,7 @@ public:
     run() override
     {
         testAddJob();
-        testPostCoro();
+        testPostCoroTask();
     }
 };
 
