@@ -411,7 +411,11 @@ private:
             testcase(
                 "bug: VaultDeposit below Vault precision canonicalized to zero "
                 "(pre-fixCleanup3_2_0)");
-            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+            // Also remove fixCleanup3_4_0 so the VaultDeposit clamp
+            // introduced by that amendment does not short-circuit this
+            // pre-fixCleanup3_2_0 scenario with tecPRECISION_LOSS.
+            runScenario(
+                testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
         }
         {
             testcase(

@@ -325,6 +325,18 @@ VaultClawback::assetsToClawback(
         return std::unexpected(tecPATH_DRY);
     }
 
+    if (ctx_.view().rules().enabled(fixCleanup3_4_0) && assetsRecovered > beast::kZero)
+    {
+        // sharesDestroyed is deliberately NOT re-derived from the clamped
+        // amount: the holder's shares are burned for their pre-clamp value,
+        // so any sub-ULP amount trimmed off here is left behind in the
+        // vault, favouring the remaining shareholders.
+        assetsRecovered =
+            clampToAssetsTotalScale(vault, -assetsRecovered, Number::RoundingMode::Upward);
+        if (assetsRecovered <= beast::kZero)
+            return std::unexpected(tecPRECISION_LOSS);
+    }
+
     return std::make_pair(assetsRecovered, sharesDestroyed);
 }
 

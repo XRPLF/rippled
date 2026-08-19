@@ -67,6 +67,18 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     return assets;
 }
 
+[[nodiscard]] STAmount
+clampToAssetsTotalScale(SLE::ref vault, STAmount const& delta, Number::RoundingMode mode)
+{
+    Asset const asset = *vault->at(sfAsset);
+    STAmount const totalBefore{asset, *vault->at(sfAssetsTotal)};
+    STAmount const totalAfter = [&]() {
+        NumberRoundModeGuard const mg(mode);
+        return STAmount{asset, *vault->at(sfAssetsTotal) + delta};
+    }();
+    return delta.negative() ? totalBefore - totalAfter : totalAfter - totalBefore;
+}
+
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     SLE::const_ref vault,

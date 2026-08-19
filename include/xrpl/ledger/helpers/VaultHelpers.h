@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
@@ -40,6 +41,27 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+
+/**
+ * Clamps `delta` (positive when crediting the vault, negative when debiting
+ * it) to the largest magnitude that changes sfAssetsTotal by an exact
+ * multiple of its own STAmount grid step, rounding in `mode`. The returned
+ * delta has the same sign convention as `delta` (i.e. this is a magnitude
+ * adjustment toward zero, never away from it). Applying the returned delta
+ * to both sfAssetsTotal and any other field derived from the same raw amount
+ * (e.g. sfAssetsAvailable) keeps them exactly in sync, since those fields'
+ * scale is always at least as fine as sfAssetsTotal's.
+ *
+ * @param vault The vault SLE (mutable, since sfAssetsTotal is read through a
+ *              non-const field proxy).
+ * @param delta The signed amount by which sfAssetsTotal is about to change.
+ * @param mode The rounding mode to apply when quantizing to sfAssetsTotal's
+ *             scale.
+ *
+ * @return The clamped delta.
+ */
+[[nodiscard]] STAmount
+clampToAssetsTotalScale(SLE::ref vault, STAmount const& delta, Number::RoundingMode mode);
 
 /**
  * Controls whether to truncate shares instead of rounding.

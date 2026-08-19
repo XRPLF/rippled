@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/vault/VaultWithdraw.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -203,6 +204,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 TER
 VaultWithdraw::doApply()
 {
+    bool const fixEnabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -303,6 +305,14 @@ VaultWithdraw::doApply()
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "xrpl::VaultWithdraw::doApply : loss and assets do balance");
+
+    if (fixEnabled)
+    {
+        assetsWithdrawn =
+            clampToAssetsTotalScale(vault, -assetsWithdrawn, Number::RoundingMode::Upward);
+        if (assetsWithdrawn <= beast::kZero)
+            return tecPRECISION_LOSS;
+    }
 
     // The vault must have enough assets on hand.
     if (*assetsAvailable < assetsWithdrawn)

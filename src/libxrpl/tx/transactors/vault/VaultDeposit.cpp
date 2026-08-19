@@ -208,6 +208,7 @@ TER
 VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
+    bool const fixEnabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -309,6 +310,26 @@ VaultDeposit::doApply()
             // LCOV_EXCL_STOP
         }
         assetsDeposited = *maybeAssets;
+
+        if (fixEnabled)
+        {
+            assetsDeposited =
+                clampToAssetsTotalScale(vault, assetsDeposited, Number::RoundingMode::Downward);
+
+            if (assetsDeposited <= beast::kZero)
+            {
+                JLOG(j_.warn()) << "VaultDeposit: deposit rounds to zero at "
+                                   "assets outstanding scale.";
+                return tecPRECISION_LOSS;
+            }
+
+            auto const maybeReShares = assetsToSharesDeposit(vault, sleIssuance, assetsDeposited);
+            if (!maybeReShares)
+                return tecINTERNAL;
+            sharesCreated = *maybeReShares;
+            if (sharesCreated == beast::kZero)
+                return tecPRECISION_LOSS;
+        }
     }
     catch (std::overflow_error const&)
     {
