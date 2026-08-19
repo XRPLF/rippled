@@ -7,6 +7,7 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
   - .clang-tidy
+  - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -68,6 +69,7 @@ words:
   - Buildx
   - canonicality
   - canonicalised
+  - cctools
   - changespq
   - checkme
   - choco
@@ -109,6 +111,7 @@ words:
   - disablerepo
   - distro
   - doxyfile
+  - dsymutil
   - dxrpl
   - elgamal
   - enabled
@@ -132,6 +135,7 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - Hinnant
   - hotwallet
   - hwaddress
   - hwrap
@@ -165,6 +169,8 @@ words:
   - llection
   - LOCALGOOD
   - logwstream
+  - Lombrozo
+  - lresolv
   - lseq
   - lsmf
   - ltype
@@ -174,7 +180,6 @@ words:
   - MPTAMM
   - MPTDEX
   - Merkle
-  - Metafuncton
   - misprediction
   - missingok
   - mptbalance
@@ -202,6 +207,7 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - Nikolaos
   - nixfmt
   - nixos
   - nixpkgs
@@ -218,6 +224,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otool
   - oxalica
   - pargs
   - partitioner
@@ -247,6 +254,8 @@ words:
   - Raphson
   - rcflags
   - replayer
+  - repodata
+  - repomd
   - repost
   - reposts
   - rerandomize
@@ -254,6 +263,8 @@ words:
   - rerandomized
   - rerandomizes
   - rerere
+  - retargeted
+  - retargets
   - retriable
   - RIPD
   - ripdtop
@@ -289,6 +300,7 @@ words:
   - sles
   - soci
   - socidb
+  - Sonatype
   - sponsee
   - sponsees
   - SRPMS
@@ -309,6 +321,7 @@ words:
   - summands
   - superpeer
   - superpeers
+  - Swatinem
   - takergets
   - takerpays
   - ters
@@ -364,12 +377,15 @@ words:
   - wthread
   - xbridge
   - xchain
+  - xcrun
   - ximinez
   - XMACRO
+  - xored
   - xrpkuwait
   - xrpl
   - xrpld
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT

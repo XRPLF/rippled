@@ -45,6 +45,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -213,10 +214,10 @@ findPathsRequest(
     using namespace jtx;
 
     auto& app = env.app();
-    Resource::Charge loadType = Resource::kFeeReferenceRpc;
-    Resource::Consumer c;
+    resource::Charge loadType = resource::kFeeReferenceRpc;
+    resource::Consumer c;
 
-    RPC::JsonContext context{
+    rpc::JsonContext context{
         {.j = env.journal,
          .app = app,
          .loadType = loadType,
@@ -225,7 +226,7 @@ findPathsRequest(
          .consumer = c,
          .role = Role::USER,
          .infoSub = {},
-         .apiVersion = RPC::kApiVersionIfUnspecified},
+         .apiVersion = rpc::kApiVersionIfUnspecified},
         {},
         {}};
 
@@ -255,7 +256,7 @@ findPathsRequest(
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
         context.params = std::move(params);
-        RPC::doCommand(context, result);
+        rpc::doCommand(context, result);
         g.signal();
         co_return;
     });
@@ -575,7 +576,8 @@ claim(
 uint256
 channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue)
 {
-    auto const k = keylet::payChannel(account, dst, seqProxyValue);
+    auto const seqProxy = SeqProxy::rawSequence(seqProxyValue);
+    auto const k = keylet::payChannel(account, dst, seqProxy);
     return k.key;
 }
 
@@ -747,7 +749,7 @@ issueHelperMPT(IssuerArgs const& args)
 /* LoanBroker */
 /******************************************************************************/
 
-namespace loanBroker {
+namespace loan_broker {
 
 json::Value
 set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
@@ -813,7 +815,7 @@ coverClawback(AccountID const& account, std::uint32_t flags)
     return jv;
 }
 
-}  // namespace loanBroker
+}  // namespace loan_broker
 
 /* Loan */
 /******************************************************************************/
