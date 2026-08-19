@@ -4,7 +4,7 @@ updates:
     directories:
       - /
       - .github/actions/build-deps/
-      - .github/actions/generate-version/
+      - .github/actions/release-info/
       - .github/actions/set-compiler-env/
       - .github/actions/setup-conan/
     schedule:
