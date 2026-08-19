@@ -13,6 +13,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -70,6 +71,17 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(ctx.view, vault);
+        if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: vault deposit is not allowed in the investment "
+                                   "or redemption phase.";
+            return tecEXPIRED;
+        }
+    }
 
     auto const& account = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];
