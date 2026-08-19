@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-struct DelegateKeyletImpl : WasmImplTest
+struct DelegateKeyletImpl : RealHostFixture
 {
 };
 

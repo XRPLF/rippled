@@ -3,7 +3,7 @@
 
 namespace xrpl::test {
 
-struct ParentLedgerHashImpl : WasmImplTest
+struct ParentLedgerHashImpl : RealHostFixture
 {
 };
 

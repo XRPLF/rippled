@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-struct IsAmendmentEnabledImpl : WasmImplTest
+struct IsAmendmentEnabledImpl : RealHostFixture
 {
 };
 

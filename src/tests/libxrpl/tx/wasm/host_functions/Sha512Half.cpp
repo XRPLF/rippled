@@ -7,7 +7,7 @@
 
 namespace xrpl::test {
 
-struct Sha512HalfImpl : WasmImplTest
+struct Sha512HalfImpl : RealHostFixture
 {
 };
 

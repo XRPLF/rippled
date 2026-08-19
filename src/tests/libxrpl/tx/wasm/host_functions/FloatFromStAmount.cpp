@@ -48,7 +48,8 @@ TEST_F(FloatFromStAmountImpl, MinusOneXrp)
 TEST_F(FloatFromStAmountImpl, MaxDrops)
 {
     auto h = makeHost();
-    auto const expected = h->floatFromMantExp(9'223'372'036'854'776, 3, 0);
+    static constexpr int64_t kTestValue{9'223'372'036'854'776};
+    auto const expected = h->floatFromMantExp(kTestValue, 3, 0);
     ASSERT_TRUE(expected.has_value());
     expectValue(h->floatFromSTAmount(STAmount{noIssue(), kMax64}, 0), *expected);
 }

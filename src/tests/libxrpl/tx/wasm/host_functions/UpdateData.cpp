@@ -6,7 +6,7 @@
 
 namespace xrpl::test {
 
-struct UpdateDataImpl : WasmImplTest
+struct UpdateDataImpl : RealHostFixture
 {
 };
 

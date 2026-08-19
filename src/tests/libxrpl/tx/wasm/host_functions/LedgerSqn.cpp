@@ -3,7 +3,7 @@
 
 namespace xrpl::test {
 
-struct LedgerSqnImpl : WasmImplTest
+struct LedgerSqnImpl : RealHostFixture
 {
 };
 

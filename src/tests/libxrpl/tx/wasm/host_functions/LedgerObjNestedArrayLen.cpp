@@ -11,9 +11,9 @@
 
 namespace xrpl::test {
 
-struct LedgerObjNestedArrayLenImpl : WasmImplTest
+struct LedgerObjNestedArrayLenImpl : RealHostFixture
 {
-    using WasmImplTest::makeHost;
+    using RealHostFixture::makeHost;
 
     WasmHost
     makeHost(Account const& acct)

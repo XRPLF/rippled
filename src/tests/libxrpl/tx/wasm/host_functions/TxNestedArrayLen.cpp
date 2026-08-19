@@ -12,9 +12,9 @@
 
 namespace xrpl::test {
 
-struct TxNestedArrayLenImpl : WasmImplTest
+struct TxNestedArrayLenImpl : RealHostFixture
 {
-    using WasmImplTest::makeHost;
+    using RealHostFixture::makeHost;
 
     WasmHost
     makeHost(Account const& acct)

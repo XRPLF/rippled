@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-struct AmmKeyletImpl : WasmImplTest
+struct AmmKeyletImpl : RealHostFixture
 {
 };
 

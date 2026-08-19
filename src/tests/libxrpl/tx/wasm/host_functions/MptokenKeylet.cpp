@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-struct MptokenKeyletImpl : WasmImplTest
+struct MptokenKeyletImpl : RealHostFixture
 {
 };
 

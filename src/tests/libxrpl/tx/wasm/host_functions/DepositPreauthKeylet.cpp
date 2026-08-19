@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-struct DepositPreauthKeyletImpl : WasmImplTest
+struct DepositPreauthKeyletImpl : RealHostFixture
 {
 };
 

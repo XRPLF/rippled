@@ -10,9 +10,9 @@
 
 namespace xrpl::test {
 
-struct CurrentLedgerObjArrayLenImpl : WasmImplTest
+struct CurrentLedgerObjArrayLenImpl : RealHostFixture
 {
-    using WasmImplTest::makeHost;
+    using RealHostFixture::makeHost;
 
     WasmHost
     makeHost(Account const& acct)

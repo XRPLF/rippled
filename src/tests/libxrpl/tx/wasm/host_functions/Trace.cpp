@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-struct TraceImpl : WasmImplTest
+struct TraceImpl : RealHostFixture
 {
 };
 

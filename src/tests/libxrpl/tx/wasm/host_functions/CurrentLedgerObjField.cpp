@@ -14,7 +14,7 @@
 
 namespace xrpl::test {
 
-struct CurrentLedgerObjFieldImpl : WasmImplTest
+struct CurrentLedgerObjFieldImpl : RealHostFixture
 {
     // Create an escrow owned by `owner` and return its keylet (the object the host will
     // read as its "current" object).

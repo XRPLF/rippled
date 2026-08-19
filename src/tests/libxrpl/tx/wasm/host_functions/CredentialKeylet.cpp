@@ -10,7 +10,7 @@
 
 namespace xrpl::test {
 
-struct CredentialKeyletImpl : WasmImplTest
+struct CredentialKeyletImpl : RealHostFixture
 {
 };
 

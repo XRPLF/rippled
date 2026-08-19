@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-struct AccountKeyletImpl : WasmImplTest
+struct AccountKeyletImpl : RealHostFixture
 {
 };
 

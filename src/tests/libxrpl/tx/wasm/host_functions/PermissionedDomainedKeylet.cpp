@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-struct PermissionedDomainKeyletImpl : WasmImplTest
+struct PermissionedDomainKeyletImpl : RealHostFixture
 {
 };
 

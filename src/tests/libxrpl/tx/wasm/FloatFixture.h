@@ -7,16 +7,16 @@
 
 #include <cstdint>
 #include <limits>
-#include <string>
+#include <string_view>
 
 namespace xrpl::test {
 
-struct FloatTest : WasmImplTest
+struct FloatTest : RealHostFixture
 {
     static constexpr std::int64_t kMin64 = std::numeric_limits<std::int64_t>::min();
     static constexpr std::int64_t kMax64 = std::numeric_limits<std::int64_t>::max();
     static constexpr std::int32_t kNormalExp = 18;
-    static inline std::string const kInvalidData = "invalid_data";
+    static constexpr std::string_view const kInvalidData = "invalid_data";
 
     // clang-format off
     static inline Bytes const kIntMin      = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};  // -2^63 (rounds to -(2^63-1))

@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-struct OracleKeyletImpl : WasmImplTest
+struct OracleKeyletImpl : RealHostFixture
 {
 };
 

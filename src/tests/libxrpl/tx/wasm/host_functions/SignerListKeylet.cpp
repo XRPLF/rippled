@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-struct SignerListKeyletImpl : WasmImplTest
+struct SignerListKeyletImpl : RealHostFixture
 {
 };
 

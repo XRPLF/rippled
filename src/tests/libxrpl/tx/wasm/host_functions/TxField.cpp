@@ -17,7 +17,7 @@
 
 namespace xrpl::test {
 
-struct TxFieldImpl : WasmImplTest
+struct TxFieldImpl : RealHostFixture
 {
     template <typename Functor>
     void

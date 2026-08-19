@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-struct TicketKeyletImpl : WasmImplTest
+struct TicketKeyletImpl : RealHostFixture
 {
 };
 

@@ -12,7 +12,7 @@
 
 namespace xrpl::test {
 
-struct CacheLedgerObjImpl : WasmImplTest
+struct CacheLedgerObjImpl : RealHostFixture
 {
     void
     runMatchesLedger(bool implicit)

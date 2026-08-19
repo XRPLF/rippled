@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-struct PaychannelKeyletImpl : WasmImplTest
+struct PaychannelKeyletImpl : RealHostFixture
 {
 };
 

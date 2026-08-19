@@ -12,7 +12,7 @@
 
 namespace xrpl::test {
 
-struct LedgerObjFieldImpl : WasmImplTest
+struct LedgerObjFieldImpl : RealHostFixture
 {
     template <typename Functor>
     void

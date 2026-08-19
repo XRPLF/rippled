@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-struct CheckSignatureImpl : WasmImplTest
+struct CheckSignatureImpl : RealHostFixture
 {
 };
 

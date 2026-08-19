@@ -15,7 +15,7 @@
 
 namespace xrpl::test {
 
-struct TxNestedFieldImpl : WasmImplTest
+struct TxNestedFieldImpl : RealHostFixture
 {
     TxAssembler
     assemble(Account const& acct)
@@ -32,7 +32,7 @@ struct TxNestedFieldImpl : WasmImplTest
         return assembler;
     }
 
-    using WasmImplTest::makeHost;
+    using RealHostFixture::makeHost;
 
     WasmHost
     makeHost(Account const& acct)

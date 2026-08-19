@@ -3,7 +3,7 @@
 
 namespace xrpl::test {
 
-struct BaseFeeImpl : WasmImplTest
+struct BaseFeeImpl : RealHostFixture
 {
 };
 

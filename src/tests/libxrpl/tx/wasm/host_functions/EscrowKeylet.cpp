@@ -11,7 +11,7 @@
 
 namespace xrpl::test {
 
-struct EscrowKeyletImpl : WasmImplTest
+struct EscrowKeyletImpl : RealHostFixture
 {
 };
 

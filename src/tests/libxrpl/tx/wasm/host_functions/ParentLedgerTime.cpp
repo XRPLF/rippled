@@ -3,7 +3,7 @@
 
 namespace xrpl::test {
 
-struct ParentLedgerTimeImpl : WasmImplTest
+struct ParentLedgerTimeImpl : RealHostFixture
 {
 };
 

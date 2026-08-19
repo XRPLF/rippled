@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-struct NftokenOfferKeyletImpl : WasmImplTest
+struct NftokenOfferKeyletImpl : RealHostFixture
 {
 };
 
