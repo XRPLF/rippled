@@ -120,7 +120,7 @@ if(MSVC)
             _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
             $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>:_CRTDBG_MAP_ALLOC>
     )
-    target_link_libraries(common INTERFACE -errorreport:none -machine:X64)
+    target_link_libraries(common INTERFACE -errorreport:none -machine:X64 -ignore:4099)
 else()
     target_compile_options(
         common
