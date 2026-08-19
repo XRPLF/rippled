@@ -168,6 +168,9 @@ jobs:
           cache-directories: ${{ env.BUILD_DIR }}/corrosion
           key: ${{ inputs.config_name }}
           save-if: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release') }}
+          # two workspaces here because build artifacts are located in 2 places:
+          # - crates/target when cargo is called directly
+          # - build/cargo when cargo is called by cmake
           workspaces: |
             crates
             crates -> ${{ runner.os == 'Windows' && format('../{0}/x64/{1}/cargo', env.BUILD_DIR, inputs.build_type) || format('../{0}/cargo', env.BUILD_DIR) }}
