@@ -3,9 +3,11 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 
+#include <fast_float/fast_float.h>  // IWYU pragma: keep
+#include <fast_float/parse_number.h>
+
 #include <algorithm>
 #include <cctype>
-#include <charconv>
 #include <cstdint>
 #include <cstdio>
 #include <istream>
@@ -605,8 +607,14 @@ Reader::decodeNumber(Token& token)
 bool
 Reader::decodeDouble(Token& token)
 {
+    // Sanity check to avoid buffer overflow exploits.
+    if (token.end < token.start)
+    {
+        return addError("Unable to parse token length", token);
+    }
+
     double value = 0;
-    auto const [ptr, ec] = std::from_chars(token.start, token.end, value);
+    auto const [ptr, ec] = fast_float::from_chars(token.start, token.end, value);
 
     // Reject anything from_chars could not turn into a finite double:
     //   - ec != std::errc{}: no valid conversion, or an out-of-range magnitude
