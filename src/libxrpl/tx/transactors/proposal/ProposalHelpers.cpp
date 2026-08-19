@@ -21,24 +21,37 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <optional>
 
 namespace xrpl::proposal {
 
+namespace {
+constexpr auto kProposalTxTypes = std::to_array<TxType>({
+    ttTRANSACTION_PROPOSAL_CREATE,
+    ttTRANSACTION_PROPOSAL_CANCEL,
+});
+}  // namespace
+
 bool
 isProposalTx(STObject const& proposedTx)
 {
     auto const isProposalType = [](std::uint16_t type) {
-        return type == ttTRANSACTION_PROPOSAL_CREATE || type == ttTRANSACTION_PROPOSAL_CANCEL;
+        return std::ranges::find(kProposalTxTypes, type) != kProposalTxTypes.end();
     };
 
     auto const type = proposedTx.getFieldU16(sfTransactionType);
     if (isProposalType(type))
         return true;
 
-    if (type == ttBATCH && proposedTx.isFieldPresent(sfRawTransactions))
+    if (type == ttBATCH)
     {
+        XRPL_ASSERT(
+            proposedTx.isFieldPresent(sfRawTransactions),
+            "xrpl::proposal::isProposalTx : Batch has RawTransactions");
+
         for (STObject const& inner : proposedTx.getFieldArray(sfRawTransactions))
         {
             if (!inner.isFieldPresent(sfTransactionType))
@@ -68,14 +81,14 @@ isTerminal(
 TER
 deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j)
 {
-    // view carries no null contract (a reference), but the two parameters are
-    // bound to each other: sleProposal must be a live entry of this same
-    // view, since the directory removal, owner-root peek, and erase below all
-    // mutate that view assuming they see the entry's state.
-    XRPL_ASSERT(
-        sleProposal && sleProposal->getType() == ltTRANSACTION_PROPOSAL &&
-            view.exists(Keylet{ltTRANSACTION_PROPOSAL, sleProposal->key()}),
-        "xrpl::proposal::deleteProposal : valid proposal sle of this view");
+    if (!sleProposal || sleProposal->getType() != ltTRANSACTION_PROPOSAL ||
+        !view.exists(Keylet{ltTRANSACTION_PROPOSAL, sleProposal->key()}))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "Invalid TransactionProposal deletion.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     AccountID const owner = sleProposal->getAccountID(sfOwner);
 
@@ -135,13 +148,24 @@ payloadMatches(STObject const& proposedTx, STObject const& tx)
 }
 
 bool
-mayConsumeReservedTicket(SLE const& sleProposal, STTx const& tx)
+canConsumeTicket(ReadView const& view, STTx const& tx)
 {
-    XRPL_ASSERT(
-        sleProposal.getType() == ltTRANSACTION_PROPOSAL,
-        "xrpl::proposal::mayConsumeReservedTicket : a TransactionProposal entry");
+    auto const seqProx = tx.getSeqProxy();
+    if (!seqProx.isTicket())
+    {
+        // The caller only reaches here for a Ticket-based transaction.
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::proposal::canConsumeTicket : tx spends a Sequence");
+        return false;
+        // LCOV_EXCL_STOP
+    }
 
-    return payloadMatches(sleProposal.getFieldObject(sfProposedTransaction), tx);
+    auto const sleProposal =
+        view.read(keylet::txProposal(tx.getAccountID(sfAccount), seqProx.value()));
+    if (!sleProposal)
+        return true;
+
+    return payloadMatches(sleProposal->getFieldObject(sfProposedTransaction), tx);
 }
 
 }  // namespace xrpl::proposal

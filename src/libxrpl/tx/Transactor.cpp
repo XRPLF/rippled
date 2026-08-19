@@ -761,13 +761,10 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         // may consume it, so unrelated activity cannot invalidate the
         // proposal while signatures are being collected (XLS-0103 §4.2.1).
         // Cancelling the proposal frees the Ticket, so this is a retry, not
-        // a final failure. Proposal objects exist only when Cosign is
-        // enabled, so no amendment gate is needed here.
-        auto const sleProposal = view.read(keylet::txProposal(id, tSeqProx.value()));
-        if (sleProposal && !proposal::mayConsumeReservedTicket(*sleProposal, tx))
+        // a final failure.
+        if (!proposal::canConsumeTicket(view, tx))
         {
-            JLOG(j.trace()) << "applyTransaction: ticket " << tSeqProx
-                            << " is reserved by a TransactionProposal";
+            JLOG(j.trace()) << "applyTransaction: ticket " << tSeqProx << " is reserved";
             return terTICKET_RESERVED;
         }
     }
@@ -891,8 +888,7 @@ Transactor::ticketDelete(
     // The reservation check in checkSeqProxy means this is reached only by
     // the proposal's own proposed transaction executing (or failing with a
     // claimed-fee tec), or by AccountDelete sweeping the target account's
-    // Tickets. Proposal objects exist only when Cosign is enabled, so no
-    // amendment gate is needed here.
+    // Tickets.
     if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
     {
         if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))

@@ -115,7 +115,8 @@ isTerminal(
  * @param view The apply view for making changes
  * @param sleProposal The TransactionProposal ledger entry to delete
  * @param j Journal for logging
- * @return tesSUCCESS, or tefBAD_LEDGER if the ledger contradicts the entry
+ * @return tesSUCCESS, tecINTERNAL for an invalid entry, or tefBAD_LEDGER if
+ *         the ledger contradicts the entry
  */
 TER
 deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j);
@@ -139,18 +140,19 @@ bool
 payloadMatches(STObject const& proposedTx, STObject const& tx);
 
 /**
- * Whether tx may consume the Ticket a TransactionProposal is keyed to.
+ * Whether tx may consume its Ticket.
  *
- * While a proposal exists, its target's ticket is reserved: only the
- * proposal's own proposed transaction may spend it (XLS-0103 §4.2.1), so
- * that unrelated target-account activity cannot invalidate the proposal
- * while signatures are being collected. TransactionProposalCancel is not
- * allowed through: it deletes the reservation without consuming the ticket.
+ * While a proposal keyed to the Ticket exists, the target's Ticket is
+ * reserved: only the proposal's own proposed transaction may spend it
+ * (XLS-0103 §4.2.1), so that unrelated target-account activity cannot
+ * invalidate the proposal while signatures are being collected.
+ * TransactionProposalCancel is not allowed through: it deletes the
+ * reservation without consuming the ticket.
  *
- * @param sleProposal The TransactionProposal keyed to the ticket tx spends.
+ * @param view The ledger containing the Ticket and any reservation.
  * @param tx The transaction attempting to consume that ticket.
  */
 bool
-mayConsumeReservedTicket(SLE const& sleProposal, STTx const& tx);
+canConsumeTicket(ReadView const& view, STTx const& tx);
 
 }  // namespace xrpl::proposal

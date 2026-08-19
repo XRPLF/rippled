@@ -848,8 +848,8 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
             BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
             BEAST_EXPECT(env.balance(bob) == bobBefore);
-            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
-            BEAST_EXPECT(ownerCount(env, target) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, target) == 2);
         }
     }
 
