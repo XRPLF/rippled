@@ -176,6 +176,7 @@ public:
     void
     onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) override;
 
+    [[nodiscard]]
     bool
     rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const override;
     int

@@ -256,6 +256,7 @@ SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
     cond_.notify_one();
 }
 
+[[nodiscard]]
 bool
 SHAMapStoreImp::rendezvous(std::optional<std::chrono::milliseconds> const& timeout) const
 {
@@ -814,7 +815,7 @@ SHAMapStoreImp::healthWait()
             });
         JLOG(stream) << "Waiting " << waitMs.count() << "ms for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age " << age.count()
-                     << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
+                     << "s. Missing ledgers: " << numMissing << ". Expect: " << lowerBound << "-"
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
         std::this_thread::sleep_for(waitMs);
 
