@@ -15,6 +15,7 @@ TEST(TelemetryConfig, setup_defaults)
     EXPECT_EQ(s.serviceName, "xrpld");
     EXPECT_TRUE(s.serviceVersion.empty());
     EXPECT_TRUE(s.serviceInstanceId.empty());
+    EXPECT_TRUE(s.nodeId.empty());
     EXPECT_EQ(s.exporterEndpoint, "http://localhost:4318/v1/traces");
     EXPECT_FALSE(s.useTls);
     EXPECT_TRUE(s.tlsCertPath.empty());

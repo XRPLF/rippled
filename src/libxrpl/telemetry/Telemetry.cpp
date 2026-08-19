@@ -283,8 +283,8 @@ class TelemetryImpl : public Telemetry
 {
     /**
      * Configuration from the [telemetry] config section.
-     * Non-const so setServiceInstanceId() can update the instance ID
-     * before start() creates the OTel resource.
+     * Non-const so setServiceInstanceId() and setNodeId() can update the
+     * identity attributes before start() creates the OTel resource.
      */
     Setup setup_;
 
@@ -344,6 +344,12 @@ public:
     }
 
     void
+    setNodeId(std::string const& id) override
+    {
+        setup_.nodeId = id;
+    }
+
+    void
     start() override
     {
         JLOG(journal_.info()) << "Telemetry starting: endpoint=" << setup_.exporterEndpoint
@@ -384,6 +390,7 @@ public:
             {std::string(attr::networkId),
              static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
             {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
+            {std::string(attr::nodeId), setup_.nodeId},            // LCOV_EXCL_LINE
         });
 
         // Configure sampler. Head sampling is fixed at 1.0 (sample everything);
@@ -442,6 +449,8 @@ public:
      * during ApplicationImp's member-init list. The metrics resource uses
      * setup_.serviceInstanceId from config; it is immutable once the provider
      * is built, so a later node-key setServiceInstanceId() does not affect it.
+     * The same applies to setNodeId(): xrpl.node.id reaches this resource only
+     * if setup_.nodeId is already populated when the constructor runs.
      */
     void
     initMetrics()
@@ -479,16 +488,7 @@ public:
         auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
             std::move(metricExporter), readerOpts);
 
-        // Metrics resource: same attributes as the tracer resource so metrics
-        // and traces share one identity. Built here (not shared with start())
-        // because start() runs later; serviceInstanceId comes from config.
-        auto resourceAttrs = resource::Resource::Create({
-            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
-            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
-            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
-            {std::string(attr::networkId), static_cast<int64_t>(setup_.networkId)},
-            {std::string(attr::networkType), setup_.networkType},
-        });
+        auto resourceAttrs = makeMetricsResource();
 
         // Create MeterProvider with the shared resource, then attach reader.
         meterProvider_ = metrics_sdk::MeterProviderFactory::Create(

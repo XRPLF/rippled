@@ -1394,6 +1394,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     if (!config_->section("telemetry").exists("service_instance_id"))
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
+    // xrpl.node.id always carries the node public key. Unlike
+    // service_instance_id it is not configurable, so traces and metrics keep a
+    // stable per-node key whatever [telemetry] says.
+    telemetry_->setNodeId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
+
     // Create the OTel MetricsRegistry for gap-fill metrics (counters,
     // histograms, observable gauges). It must exist before startTelemetry(),
     // which starts the metrics half of the pipeline.
@@ -1748,7 +1753,13 @@ ApplicationImp::startTelemetry() const
         if (instanceId.empty() && nodeIdentity_)
             instanceId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
 
-        metricsRegistry_->start(endpoint, instanceId);
+        // The node public key also goes on its own resource attribute,
+        // xrpl.node.id, which config cannot override.
+        std::string nodeId;
+        if (nodeIdentity_)
+            nodeId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
+
+        metricsRegistry_->start(endpoint, instanceId, nodeId);
     }
 }
 

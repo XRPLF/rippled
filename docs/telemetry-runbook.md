@@ -146,6 +146,12 @@ curl -s http://localhost:5015 -d '{"method":"server_info"}' |
 | `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS        |
 | `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                      |
 
+> **Traces and metrics also carry `xrpl.node.id`.** xrpld sets it as a resource
+> attribute alongside `service.instance.id`; the value is the node public key
+> (base58, begins with `n`). It comes from the node identity unconditionally, so
+> it is present even when `[telemetry] service_instance_id` is configured.
+> TraceQL filters on it as `resource.xrpl.node.id`.
+
 > **`consensus_trace_strategy` is not validated.** The parser copies the raw
 > string through (`TelemetryConfig.cpp:155-156`) and the only equality test in
 > the code is `strategy == "attribute"` (`RCLConsensus.cpp:1296`). Any other
@@ -2160,7 +2166,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Validated Ledger Age                                         | stat       | `ledgermaster_validated_ledger_age`                                                                                                                        | —                |
 | Published Ledger Age                                         | stat       | `ledgermaster_published_ledger_age`                                                                                                                        | —                |
 | Operating Mode (Time Share)                                  | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))`                                                                                                 | —                |
-| Operating Mode Transitions                                   | timeseries | `increase(state_accounting_*_transitions[$__rate_interval])`                                                                                               | —                |
+| Operating Mode Transitions                                   | timeseries | `round(increase(state_accounting_*_transitions[$__interval]))` (bars, Min step 1m)                                                                         | —                |
 | I/O Latency                                                  | timeseries | `histogram_quantile(0.95, ios_latency_milliseconds_bucket)`                                                                                                | —                |
 | Job Queue Depth                                              | timeseries | `jobq_job_count`                                                                                                                                           | —                |
 | Ledger Fetch Rate                                            | stat       | `rate(ledger_fetches[5m])`                                                                                                                                 | —                |
