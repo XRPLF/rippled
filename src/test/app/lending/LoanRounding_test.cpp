@@ -1013,11 +1013,14 @@ private:
         auto const loanKeylet =
             keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker0->at(sfLoanSequence)));
 
-        // Active loan (immediate flow), single payment, 0% interest.
+        // Active loan (immediate flow), 0% interest. paymentTotal must be
+        // >= 2 so tfLoanFullPayment below is allowed (checkFullPayment in
+        // LendingHelpers rejects a full-payment shortcut on the last
+        // scheduled payment with tecKILLED).
         env(set(borrower, broker.brokerID, xrpAsset(100).value()),
             Sig(sfCounterpartySignature, lender),
             kInterestRate(TenthBips32{0}),
-            kPaymentTotal(1),
+            kPaymentTotal(2),
             kPaymentInterval(3600),
             Fee(env.current()->fees().base * 2));
         env.close();
