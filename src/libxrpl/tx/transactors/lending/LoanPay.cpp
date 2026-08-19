@@ -620,12 +620,6 @@ LoanPay::doApply()
         ? STAmount{asset, 0}
         : conservationBalance(view, brokerPayee, asset, j_);
 
-    // Authorization stops being meaningful for these two payees once the rule
-    // is enabled. A vault or broker pseudo-account is exempt from IOU
-    // authorization, and a broker owner only becomes the payee by passing the
-    // very same check where the payee is chosen above. Dropping the calls also
-    // drops their missing-line guard, so a payout into a holding that no longer
-    // exists creates it rather than failing.
     bool const skipPayeeAuth = view.rules().enabled(fixCleanup3_4_0);
 
     if (!skipPayeeAuth && totalPaidToVaultRounded != beast::kZero)
