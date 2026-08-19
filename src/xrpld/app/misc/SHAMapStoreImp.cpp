@@ -169,9 +169,10 @@ SHAMapStoreImp::SHAMapStoreImp(
         else
             maxWaitingLedgers_ = deleteInterval_;
 
-        if (maxWaitingLedgers_ < minInterval / 4)
+        auto const minWaiting = minInterval / 4;
+        if (maxWaitingLedgers_ < minWaiting)
             Throw<std::runtime_error>(
-                "max_waiting_ledgers must be at least " + std::to_string(minInterval));
+                "max_waiting_ledgers must be at least " + std::to_string(minWaiting));
 
         stateDb_.init(config, dbName_);
         dbPaths();
@@ -746,8 +747,8 @@ SHAMapStoreImp::healthWait()
     // If index gets past this point without the health check succeeding, return
     // HealthWait::Expired. This depends on index being initialized, so it must be after
     // readServerStatus().
-    auto const circuitBreaker =
-        (lastSuccessfulHealthCheck_ == 0 ? index : lastSuccessfulHealthCheck_) + maxWaitingLedgers_;
+    auto const lastSuccess = lastSuccessfulHealthCheck_ == 0 ? index : lastSuccessfulHealthCheck_;
+    auto const circuitBreaker = lastSuccess + maxWaitingLedgers_;
 
     auto healthy = [&] {
         // Special case: If the server is disconnected, it's not doing any ledger I/O, because
@@ -774,9 +775,10 @@ SHAMapStoreImp::healthWait()
         ScopeUnlock const unlock(lock);
 
         auto const [stream, waitMs] = std::invoke(
-            [mode, age, ageThreshold, buildingIndex, waitTime, this]
+            [mode, age, ageThreshold, buildingIndex, waitTime, index, lastSuccess, this]
             -> std::pair<beast::Journal::Stream, std::chrono::milliseconds> {
-                if (mode != OperatingMode::FULL || age > ageThreshold)
+                if (mode != OperatingMode::FULL || age > ageThreshold ||
+                    (index - lastSuccess > maxWaitingLedgers_ / 4))
                     return {journal_.warn(), waitTime};
                 if (buildingIndex)
                 {
