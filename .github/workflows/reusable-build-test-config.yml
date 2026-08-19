@@ -69,6 +69,12 @@ on:
         type: string
         default: ""
 
+      toolchain:
+        description: 'Where the toolchain comes from ("nix" to build the flake CI environment on the runner, empty for the system one). macOS only: Linux always builds in a Nix image, and Nix has no Windows support.'
+        required: false
+        type: string
+        default: ""
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -127,6 +133,11 @@ jobs:
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
+      # Before any step that uses a build tool, composite actions included.
+      - name: Setup Nix environment
+        if: ${{ inputs.toolchain == 'nix' }}
+        uses: ./.github/actions/setup-nix-env
+
       - name: Set ccache log file
         if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
         run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >>"${GITHUB_ENV}"
@@ -151,7 +162,9 @@ jobs:
         with:
           compiler: ${{ inputs.compiler }}
 
+      # `setup-nix-env` already did this for the Nix toolchain.
       - name: Setup Conan
+        if: ${{ inputs.toolchain != 'nix' }}
         env:
           SANITIZERS: ${{ inputs.sanitizers }}
         uses: ./.github/actions/setup-conan
@@ -214,6 +227,24 @@ jobs:
               --parallel "${BUILD_NPROC}" \
               --target "${CMAKE_TARGET}" \
               2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
+
+      # Nothing may reference the store, so whole trees are checked - the Conan
+      # cache included, since what it holds is what gets uploaded and reused.
+      - name: Check the build output for Nix store references (Nix toolchain)
+        if: ${{ inputs.toolchain == 'nix' }}
+        run: ./bin/check-nix-store-refs.sh "${BUILD_DIR}"
+
+      - name: Check the Conan cache for Nix store references (Nix toolchain)
+        if: ${{ inputs.toolchain == 'nix' }}
+        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
+
+      # Only what PatchNixBinary.cmake retargets: the toolchain in the Linux
+      # images always references the store. Same condition it uses.
+      - name: Check for Nix store references (Linux)
+        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
+        run: |
+          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
+          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
