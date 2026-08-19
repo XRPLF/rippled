@@ -193,7 +193,7 @@ public:
     fixMismatch(ReadView const& ledger);
 
     bool
-    haveLedger(std::uint32_t seq);
+    haveLedger(std::uint32_t seq) const;
     void
     clearLedger(std::uint32_t seq);
     bool

@@ -6,6 +6,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/scope.h>
@@ -28,14 +29,12 @@
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/directory.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -144,6 +143,8 @@ SHAMapStoreImp::SHAMapStoreImp(
             ageThreshold_ = std::chrono::seconds{temp};
         if (getIfExists(section, Keys::kRecoveryWaitSeconds, temp))
             recoveryWaitTime_ = std::chrono::seconds{temp};
+        if (recoveryWaitTime_ < std::chrono::seconds{1})
+            Throw<std::runtime_error>("recovery_wait_seconds must be at least 1 second");
 
         getIfExists(section, Keys::kAdvisoryDelete, advisoryDelete_);
 
@@ -455,10 +456,10 @@ SHAMapStoreImp::dbPaths()
     if (boost::iequals(get(section, Keys::kType), "memory"))
         return;
 
-    boost::filesystem::path dbPath = get(section, Keys::kPath);
-    if (boost::filesystem::exists(dbPath))
+    std::filesystem::path dbPath = get(section, Keys::kPath);
+    if (std::filesystem::exists(dbPath))
     {
-        if (!boost::filesystem::is_directory(dbPath))
+        if (!std::filesystem::is_directory(dbPath))
         {
             journal_.error() << "node db path must be a directory. " << dbPath.string();
             Throw<std::runtime_error>("node db path must be a directory.");
@@ -466,7 +467,7 @@ SHAMapStoreImp::dbPaths()
     }
     else
     {
-        boost::filesystem::create_directories(dbPath);
+        std::filesystem::create_directories(dbPath);
     }
 
     SavedState state = stateDb_.getState();
@@ -477,8 +478,8 @@ SHAMapStoreImp::dbPaths()
                 return false;
 
             // Check if configured "path" matches stored directory path
-            using namespace boost::filesystem;
-            auto const stored{path(sPath)};
+            using namespace std::filesystem;
+            auto const stored{std::filesystem::path(sPath)};
             if (stored.parent_path() == dbPath)
                 return false;
 
@@ -496,9 +497,9 @@ SHAMapStoreImp::dbPaths()
     bool writableDbExists = false;
     bool archiveDbExists = false;
 
-    std::vector<boost::filesystem::path> pathsToDelete;
-    for (boost::filesystem::directory_iterator it(dbPath);
-         it != boost::filesystem::directory_iterator();
+    std::vector<std::filesystem::path> pathsToDelete;
+    for (std::filesystem::directory_iterator it(dbPath);
+         it != std::filesystem::directory_iterator();
          ++it)
     {
         if (state.writableDb == it->path().string())
@@ -519,7 +520,7 @@ SHAMapStoreImp::dbPaths()
         (!archiveDbExists && !state.archiveDb.empty()) || (writableDbExists != archiveDbExists) ||
         state.writableDb.empty() != state.archiveDb.empty())
     {
-        boost::filesystem::path stateDbPathName = app_.config().legacy(Sections::kDatabasePath);
+        std::filesystem::path stateDbPathName = app_.config().legacy(Sections::kDatabasePath);
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
@@ -541,15 +542,15 @@ SHAMapStoreImp::dbPaths()
     }
 
     // The necessary directories exist. Now, remove any others.
-    for (boost::filesystem::path const& p : pathsToDelete)
-        boost::filesystem::remove_all(p);
+    for (std::filesystem::path const& p : pathsToDelete)
+        std::filesystem::remove_all(p);
 }
 
 std::unique_ptr<node_store::Backend>
 SHAMapStoreImp::makeBackendRotating(std::string path)
 {
     Section section{app_.config().section(Sections::kNodeDatabase)};
-    boost::filesystem::path newPath;
+    std::filesystem::path newPath;
 
     if (!path.empty())
     {
@@ -557,10 +558,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     else
     {
-        boost::filesystem::path p = get(section, Keys::kPath);
-        p /= dbPrefix_;
-        p += ".%%%%";
-        newPath = boost::filesystem::unique_path(p);
+        newPath = uniqueRandomPath(get(section, Keys::kPath), dbPrefix_ + ".");
     }
     section.set(Keys::kPath, newPath.string());
 
@@ -695,25 +693,29 @@ SHAMapStoreImp::healthWait()
     // delay is fine.
     auto readServerStatus = [this](
                                 LedgerIndex& index,
+                                bool& buildingIndex,
                                 std::chrono::seconds& age,
                                 OperatingMode& mode,
                                 std::size_t& numMissing,
                                 LedgerIndex const lowerBound,
                                 ScopeUnlock<decltype(mutex_)> const&) {
         index = ledgerMaster_->getValidLedgerIndex();
+        bool const haveIndex = ledgerMaster_->haveLedger(index);
         age = ledgerMaster_->getValidatedLedgerAge();
         mode = netOPs_->getOperatingMode();
 
         numMissing =
             lowerBound == 0 ? 0 : ledgerMaster_->missingFromCompleteLedgerRange(lowerBound, index);
+
+        buildingIndex = (numMissing == 1 && !haveIndex);
     };
 
     // Tracked server status properties
     LedgerIndex index = 0;
+    bool buildingIndex = false;
     std::chrono::seconds age;
     OperatingMode mode = OperatingMode::DISCONNECTED;
     std::size_t numMissing = 0;
-    LedgerIndex lastLedger = 0;
 
     std::unique_lock lock(mutex_);
 
@@ -724,31 +726,59 @@ SHAMapStoreImp::healthWait()
 
         ScopeUnlock const unlock(lock);
 
-        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
+        readServerStatus(index, buildingIndex, age, mode, numMissing, lowerBound, unlock);
     }
-    while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold || numMissing > 0))
+
+    auto healthy = [&] {
+        // Special case: If the server is disconnected, it's not doing any ledger I/O, because
+        // it's focused on trying to get peers. A disconnected state is should never be caused by
+        // the activity of the server. It's usually limited to hardware or connectivity issues. Take
+        // advantage of that to run as much rotation I/O as possible before it comes back online.
+        if (mode == OperatingMode::DISCONNECTED)
+            return true;
+        if (age > ageThreshold)
+            return false;
+        if (numMissing > 0)
+            return false;
+        if (mode != OperatingMode::FULL)
+            return false;
+        return true;
+    };
+
+    while (!stop_ && !healthy())
     {
-        // this value shouldn't change, so grab it while we have the
-        // lock
+        // Future-proofing: this value shouldn't change while we are sleeping, but grab it while we
+        // have the lock in case it does.
         auto const lowerBound = lastGoodValidatedLedger_;
 
         ScopeUnlock const unlock(lock);
 
-        auto const stream = std::invoke([mode, age, ageThreshold, index, lastLedger, this]() {
-            if (mode != OperatingMode::FULL || age > ageThreshold)
-                return journal_.warn();
-            if (index != lastLedger)
-                return journal_.trace();
-            return journal_.info();
-        });
-        JLOG(stream) << "Waiting " << waitTime.count() << "s for node to stabilize. state: "
+        auto const [stream, waitMs] = std::invoke(
+            [mode, age, ageThreshold, buildingIndex, waitTime, this]
+            -> std::pair<beast::Journal::Stream, std::chrono::milliseconds> {
+                if (mode != OperatingMode::FULL || age > ageThreshold)
+                    return {journal_.warn(), waitTime};
+                if (buildingIndex)
+                {
+                    // We expect this ledger to be built soon, so log at a lower level, and don't
+                    // wait as long.
+                    return {
+                        journal_.trace(),
+                        std::chrono::duration_cast<std::chrono::milliseconds>(waitTime) / 10};
+                }
+                return {journal_.info(), waitTime};
+            });
+        JLOG(stream) << "Waiting " << waitMs.count() << "ms for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age " << age.count()
                      << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
-        std::this_thread::sleep_for(waitTime);
+        std::this_thread::sleep_for(waitMs);
 
-        lastLedger = index;
-        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
+        [[maybe_unused]]
+        LedgerIndex const lastLedger = index;
+        readServerStatus(index, buildingIndex, age, mode, numMissing, lowerBound, unlock);
+        SOMETIMES(
+            index > lastLedger, "SHAMapStoreImp::healthWait : validated ledger index changed");
     }
 
     return stop_ ? HealthResult::Stopping : HealthResult::KeepGoing;

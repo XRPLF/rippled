@@ -493,7 +493,7 @@ LedgerMaster::setBuildingLedger(LedgerIndex i)
 }
 
 bool
-LedgerMaster::haveLedger(std::uint32_t seq)
+LedgerMaster::haveLedger(std::uint32_t seq) const
 {
     std::scoped_lock const sl(completeLock_);
     return boost::icl::contains(completeLedgers_, seq);
