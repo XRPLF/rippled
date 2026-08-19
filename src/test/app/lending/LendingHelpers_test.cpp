@@ -4,12 +4,11 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/vault.h>
-#include <test/unit_test/SuiteJournal.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/vault.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
@@ -29,11 +28,10 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -2102,7 +2100,7 @@ public:
         testLoanOriginationExceedsVaultMaximumDispatcher();
         testLoanVaultExposureDispatcher();
         testLoanPaymentDeltasDispatcher();
-        
+
         testDisburseLoanTransferFailure();
         testLoanDefaultFreezeExemptAccounts();
     }
