@@ -3665,6 +3665,7 @@ class Invariants_test : public beast::unit_test::Suite
             {
                 "created vault must be empty",
                 "create operation must not have updated a vault",
+                "invalid OutstandingAmount balance 0 9 0",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
