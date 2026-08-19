@@ -37,6 +37,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 
 #include <cstdint>
@@ -134,6 +135,30 @@ private:
                     Sig(sfCounterpartySignature, lender),
                     loanSetFee,
                     Ter(temINVALID_FLAG));
+            }
+
+            // Direct-preflight coverage of LoanSet::preflight's reserve-sponsor guard.
+            // The env(...) submissions above go through the full Transactor pipeline;
+            // preflight1Sponsor runs before LoanSet::preflight and rejects
+            // spfSponsorReserve for any tx type not on isReserveSponsorAllowed's
+            // allow-list (LoanSet is not on the list). Both guards return
+            // temINVALID_FLAG, so the outer test cannot tell them apart and the
+            // LoanSet-specific branch would remain uncovered. Calling
+            // LoanSet::preflight(pfCtx) directly bypasses preflight1Sponsor and
+            // exercises the guard in isolation.
+            for (auto const sponsorFlags : {spfSponsorReserve, spfSponsorReserve | spfSponsorFee})
+            {
+                auto const jtx = env.jt(
+                    set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                    sponsor::As(sponsor, sponsorFlags),
+                    Sig(sfCounterpartySignature, lender),
+                    loanSetFee);
+                if (BEAST_EXPECT(jtx.stx))
+                {
+                    PreflightContext const pfCtx(
+                        env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
+                    BEAST_EXPECT(LoanSet::preflight(pfCtx) == temINVALID_FLAG);
+                }
             }
 
             // first temBAD_SIGNER: TODO
@@ -289,6 +314,96 @@ private:
                 loanSetFee,
                 Ter(tecMAX_SEQUENCE_REACHED));
         });
+    }
+
+    // Coverage for LoanSet::doApply's per-value-field precision-loss guard
+    // (the "isRounded(vaultAsset, *value, properties.loanScale)" loop in
+    // setupLoan). The preclaim loop uses STAmount's own scale for the
+    // check, so any fractional value on an integral asset (XRP/MPT) trips
+    // preclaim first and the doApply loop is never reached. IOU is the
+    // only asset type where the two checks can disagree: an amount can be
+    // perfectly representable at IOU scale (up to 16 significant digits)
+    // but still coarser than the loan's computed loanScale.
+    //
+    // computeLoanProperties derives loanScale as
+    //     max(getAssetsTotalScale(vault), STAmount{iou, totalValue}.exponent())
+    // and getAssetsTotalScale returns the STAmount exponent of the vault's
+    // sfAssetsTotal. Depositing that much IOU through a normal path fails
+    // for scale reasons, so the vault's sfAssetsTotal is bumped directly
+    // on the open ledger to STAmount{iou, 1e15} (exponent = 0), pinning
+    // minimumScale (and therefore loanScale) to 0 — whole units. At that
+    // scale, isRounded(iou, 1.5, 0) is false — 1.5 rounds to 1 down / 2
+    // up — so the guard fires on any fractional fee value. The tx fails
+    // with tecPRECISION_LOSS, so the artificial sfAssetsTotal is rolled
+    // back and no invariant sees the divergence.
+    //
+    // One field per iteration to keep the failure attribution clear.
+    void
+    testLoanSetDoApplyPrecisionLoss()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        // Fractional IOU units (1.5). STAmount{iou, 1.5} == 1.5 → passes
+        // preclaim. At loanScale=0, isRounded rounds 1.5 down to 1 and
+        // up to 2 → guard fires.
+        Number const kFractionalUnits{15, -1};
+
+        auto const runCase = [&, this](char const* label, auto const& fieldSetter) {
+            testcase << "LoanSet doApply precision-loss: " << label;
+
+            Env env(*this);
+            PrettyAsset const iouAsset = createFundedRippleIouAsset(env, issuer, lender, borrower);
+            BrokerInfo const brokerInfo{createVaultAndBroker(
+                env,
+                iouAsset,
+                lender,
+                {.vaultDeposit = 100'000,
+                 .debtMax = 25'000,
+                 .managementFeeRate = TenthBips16{1000}})};
+
+            // Inflate the vault's sfAssetsTotal (and sfAssetsAvailable to
+            // keep them consistent for the LoanSet capacity checks) so
+            // that STAmount{iou, sfAssetsTotal}.exponent() = 0, pinning
+            // loanScale to whole units.
+            STAmount const inflated{iouAsset.raw(), Number{1, 15}};
+            auto const changed =
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                    Sandbox sb(&view, TapNone);
+                    auto vault = sb.peek(brokerInfo.vaultKeylet());
+                    if (!vault)
+                        return false;
+                    vault->at(sfAssetsTotal) = inflated;
+                    vault->at(sfAssetsAvailable) = inflated;
+                    sb.update(vault);
+                    sb.apply(view);
+                    return true;
+                });
+            BEAST_EXPECT(changed);
+
+            auto const loanSetFee = Fee(env.current()->fees().base * 2);
+            Number const kLegalPrincipal{1'000};
+
+            env(set(borrower, brokerInfo.brokerID, kLegalPrincipal),
+                Sig(sfCounterpartySignature, lender),
+                kInterestRate(TenthBips32{10'000}),
+                kPaymentTotal(12),
+                kPaymentInterval(60),
+                kGracePeriod(60),
+                fieldSetter(kFractionalUnits),
+                loanSetFee,
+                Ter(tecPRECISION_LOSS));
+            env.close();
+        };
+
+        runCase("sfLoanOriginationFee", kLoanOriginationFee);
+        runCase("sfLoanServiceFee", kLoanServiceFee);
+        runCase("sfLatePaymentFee", kLatePaymentFee);
+        runCase("sfClosePaymentFee", kClosePaymentFee);
     }
 
     void
@@ -651,6 +766,7 @@ private:
         testDisabled();
         for (auto const kind : {VaultKind::OpenEnded, VaultKind::ClosedEnded})
             testInvalidLoanSet(kind);
+        testLoanSetDoApplyPrecisionLoss();
         testInvalidLoanDelete();
         testInvalidLoanManage();
         testInvalidLoanAccept();

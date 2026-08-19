@@ -1415,6 +1415,65 @@ private:
             env(accept(borrower, loanKeylet.key), Ter(tecNO_AUTH));
             expectStillPending(env, loanKeylet);
         }
+
+        {
+            testcase("Two-step: LoanSet with unauthorized broker owner (MPT)");
+
+            // Covers LoanSet::preclaim's second twoStepFlow requireAuth
+            // check (WeakAuth on brokerOwner). The borrower must stay
+            // authorised so the preceding borrower check passes and this
+            // branch is what fails. The other unauthorized-broker-owner
+            // tests all attack LoanAccept — this is the only path that
+            // reaches the LoanSet-side guard. IOU is unusable because
+            // asfRequireAuth cannot revoke an already-granted trust-line
+            // authorisation, so once the vault + broker are created (which
+            // requires the broker owner to be authorised) the auth cannot
+            // be taken away. MPT allows unauthorize.
+            Env env(*this, features);
+
+            env.fund(XRP(1'000'000), issuer, noripple(lender), borrower);
+            env.close();
+
+            MPTTester asset(
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {lender, borrower},
+                 .flags = kMptDexFlags | tfMPTRequireAuth | tfMPTCanClawback | tfMPTCanLock,
+                 .authHolder = true});
+
+            env(pay(issuer, lender, asset(2'000'000)));
+            env.close();
+
+            auto const broker = createVaultAndBroker(env, asset, lender);
+
+            // Zero the broker owner's MPT balance so the issuer can revoke
+            // the MPToken authorization (MPTTester::authorize with
+            // tfMPTUnauthorize refuses on a non-zero balance).
+            auto const lenderBalance = env.balance(lender, broker.asset);
+            env(pay(lender, issuer, lenderBalance));
+            env.close();
+
+            // Issuer revokes the broker owner's MPToken authorization.
+            // Borrower remains authorised so LoanSet's preceding
+            // requireAuth(borrower) passes and the brokerOwner branch is
+            // reached.
+            asset.authorize({.account = issuer, .holder = lender, .flags = tfMPTUnauthorize});
+            env.close();
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            // A StartDate comfortably in the future.
+            propose(
+                env,
+                broker,
+                lender,
+                borrower,
+                (env.now() + 1h).time_since_epoch().count(),
+                Ter(tecNO_AUTH));
+
+            // The proposal never made it to doApply, so no pending loan
+            // was created.
+            BEAST_EXPECT(!env.le(loanKeylet));
+        }
     }
 
     // Delete/interlock scenarios that exercise how a pending loan participates
