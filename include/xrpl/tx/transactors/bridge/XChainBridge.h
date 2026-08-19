@@ -45,7 +45,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 class BridgeModify : public Transactor
@@ -78,7 +78,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 using XChainModifyBridge = BridgeModify;
@@ -122,7 +122,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 //------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 //------------------------------------------------------------------------------
@@ -200,7 +200,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 //------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 class XChainAddAccountCreateAttestation : public Transactor
@@ -271,7 +271,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 //------------------------------------------------------------------------------
@@ -326,7 +326,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 using XChainAccountCreateCommit = XChainCreateAccountCommit;

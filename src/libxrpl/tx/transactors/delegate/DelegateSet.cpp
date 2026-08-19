@@ -189,6 +189,7 @@ DelegateSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 
 bool
 DelegateSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+    const
 {
     // No transaction-specific invariants yet (future work).
     return true;

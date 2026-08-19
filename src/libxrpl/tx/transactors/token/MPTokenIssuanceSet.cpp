@@ -414,7 +414,7 @@ MPTokenIssuanceSet::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;

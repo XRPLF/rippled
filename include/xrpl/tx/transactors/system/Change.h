@@ -34,7 +34,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx)

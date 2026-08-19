@@ -49,7 +49,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 
     static TER
     deleteOracle(ApplyView& view, SLE::ref sle, AccountID const& account, beast::Journal j);

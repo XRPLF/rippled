@@ -51,7 +51,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 };
 
 }  // namespace xrpl

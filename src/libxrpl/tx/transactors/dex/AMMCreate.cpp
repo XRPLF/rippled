@@ -427,6 +427,7 @@ AMMCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 
 bool
 AMMCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+    const
 {
     // No transaction-specific invariants yet (future work).
     return true;

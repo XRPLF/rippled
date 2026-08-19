@@ -577,7 +577,7 @@ Batch::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 }
 
 bool
-Batch::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+Batch::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;

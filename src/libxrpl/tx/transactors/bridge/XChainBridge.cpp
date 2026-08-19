@@ -2246,7 +2246,7 @@ XChainCreateBridge::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;
@@ -2264,7 +2264,7 @@ BridgeModify::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;
@@ -2278,6 +2278,7 @@ XChainClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 
 bool
 XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+    const
 {
     // No transaction-specific invariants yet (future work).
     return true;
@@ -2295,7 +2296,7 @@ XChainCommit::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;
@@ -2313,7 +2314,7 @@ XChainCreateClaimID::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;
@@ -2331,7 +2332,7 @@ XChainAddClaimAttestation::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;
@@ -2349,7 +2350,7 @@ XChainAddAccountCreateAttestation::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;
@@ -2367,7 +2368,7 @@ XChainCreateAccountCommit::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const&) const
 {
     // No transaction-specific invariants yet (future work).
     return true;
