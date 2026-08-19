@@ -39,6 +39,12 @@ enum class FreezeHandling { IgnoreFreeze, ZeroIfFrozen };
 enum class AuthHandling { IgnoreAuth, ZeroIfUnauthorized };
 
 /**
+ * Controls whether the recipient owner-reserve check is enforced when
+ * auto-creating a trustline or MPToken during a withdrawal.
+ */
+enum class ReserveHandling : bool { EnforceReserve, IgnoreReserve };
+
+/**
  * Controls whether to include the account's full spendable balance
  */
 enum class SpendableHandling { SimpleBalance, FullBalance };

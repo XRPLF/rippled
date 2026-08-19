@@ -128,6 +128,7 @@ public:
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
         AuthHandling authHandling,
+        ReserveHandling reserveHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);
@@ -169,6 +170,7 @@ public:
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
         AuthHandling authHandling,
+        ReserveHandling reserveHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);

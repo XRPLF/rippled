@@ -527,6 +527,7 @@ AMMWithdraw::withdraw(
         tfee,
         issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
+        ReserveHandling::EnforceReserve,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         j_);
@@ -548,6 +549,7 @@ AMMWithdraw::withdraw(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    ReserveHandling reserveHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -682,10 +684,10 @@ AMMWithdraw::withdraw(
         }();
         if (assetNotExists)
         {
-            // AMMClawback (authHandling == IgnoreAuth) is a compliance recovery
-            // that returns the holder's own asset without their cooperation,
-            // consistent with the IgnoreFreeze/IgnoreAuth handling used
-            // throughout the clawback path. Intentionally bypass the
+            // AMMClawback (reserveHandling == IgnoreReserve) is a compliance
+            // recovery that returns the holder's own asset without their
+            // cooperation, consistent with the IgnoreFreeze/IgnoreAuth handling
+            // used throughout the clawback path. Intentionally bypass the
             // recipient's owner-reserve check here:
             //   - Gating the paired-asset return on the recipient's reserve
             //     would reintroduce a holder veto: a holder could block
@@ -701,7 +703,8 @@ AMMWithdraw::withdraw(
             // blocked. The amendment removes that incidental dependency by
             // skipping the check outright. mptokenKey is already set above, so
             // a deleted MPToken is still recreated by createMPToken().
-            if (view.rules().enabled(fixCleanup3_4_0) && authHandling == AuthHandling::IgnoreAuth)
+            if (view.rules().enabled(fixCleanup3_4_0) &&
+                reserveHandling == ReserveHandling::IgnoreReserve)
                 return tesSUCCESS;
 
             auto sleAccount = view.peek(keylet::account(account));
@@ -873,6 +876,7 @@ AMMWithdraw::equalWithdrawTokens(
         tfee,
         issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
+        ReserveHandling::EnforceReserve,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         ctx_.journal);
@@ -926,6 +930,7 @@ AMMWithdraw::equalWithdrawTokens(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    ReserveHandling reserveHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -949,6 +954,7 @@ AMMWithdraw::equalWithdrawTokens(
                 tfee,
                 freezeHandling,
                 authHandling,
+                reserveHandling,
                 WithdrawAll::Yes,
                 priorBalance,
                 journal);
@@ -985,6 +991,7 @@ AMMWithdraw::equalWithdrawTokens(
             tfee,
             freezeHandling,
             authHandling,
+            reserveHandling,
             withdrawAll,
             priorBalance,
             journal);
