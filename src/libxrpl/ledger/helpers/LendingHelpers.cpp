@@ -15,6 +15,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
@@ -23,6 +24,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -31,6 +34,7 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -80,6 +84,40 @@ checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
         return false;
 
     return true;
+}
+
+std::optional<LoanDefaultFreezeExemptAccounts>
+getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx)
+{
+    if (tx.getTxnType() != ttLOAN_MANAGE || !tx.isFlag(tfLoanDefault) ||
+        !view.rules().enabled(fixCleanup3_4_0))
+        return std::nullopt;
+
+    // Unlike the broker/vault lookups below, the submitter picks the LoanID,
+    // so a nonexistent Loan is an ordinary (if unusual) input, not a
+    // structural impossibility -- exercised directly in LendingHelpers_test.
+    auto const loanSle = view.read(keylet::loan(tx[sfLoanID]));
+    if (!loanSle)
+        return std::nullopt;
+
+    // A Loan can't outlive its LoanBroker (LoanBrokerDelete's preclaim
+    // rejects deletion while DebtTotal != 0), and a LoanBroker can't outlive
+    // its Vault (VaultDelete's preclaim has the equivalent guard) -- so these
+    // two lookups are structurally guaranteed to succeed here.
+    auto const brokerSle = view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
+    if (!brokerSle)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    if (!vaultSle)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    return LoanDefaultFreezeExemptAccounts{
+        .issuer = vaultAsset.getIssuer(),
+        .broker = brokerSle->at(sfAccount),
+        .vault = vaultSle->at(sfAccount),
+        .asset = vaultAsset};
 }
 
 LoanPaymentParts&

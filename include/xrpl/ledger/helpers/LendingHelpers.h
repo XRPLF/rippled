@@ -23,6 +23,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -69,6 +70,42 @@ canApplyToBrokerCover(
 // Lending protocol has dependencies, so capture them here.
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx);
+
+/**
+ * The accounts and asset that LoanManage::defaultLoan's fixCleanup3_4_0
+ * freeze/lock exemption applies to.
+ *
+ * `defaultLoan` moves funds from the LoanBroker pseudo-account to the Vault
+ * pseudo-account via `accountSend`. Since neither is the vault asset's
+ * issuer, this is a third-party transfer that transits through the issuer in
+ * two hops (broker -> issuer, issuer -> vault; see
+ * `directSendNoLimitIOU`/`directSendNoLimitMPT`), so the exemption must cover
+ * both the issuer/broker and issuer/vault pairs, not a direct broker/vault
+ * pair. `asset` scopes it further to the vault's own currency/MPT issuance,
+ * so an unrelated one the same accounts happen to hold is still protected.
+ */
+struct LoanDefaultFreezeExemptAccounts
+{
+    AccountID issuer;
+    AccountID broker;
+    AccountID vault;
+    Asset asset;
+};
+
+/**
+ * Resolves the accounts and asset a LoanManage default transaction is
+ * exempt from freeze/lock for.
+ *
+ * @param view Ledger view used to resolve the Loan -> LoanBroker -> Vault
+ * chain.
+ * @param tx The transaction under invariant review.
+ * @return The exempt accounts and asset if `tx` is a `ttLOAN_MANAGE`
+ * transaction with the `tfLoanDefault` flag set, `fixCleanup3_4_0` is
+ * enabled, and the loan/broker/vault objects it references can all be
+ * resolved; `std::nullopt` otherwise.
+ */
+[[nodiscard]] std::optional<LoanDefaultFreezeExemptAccounts>
+getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx);
 
 static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 
