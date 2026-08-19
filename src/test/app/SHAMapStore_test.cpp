@@ -37,6 +37,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace xrpl::test {
 

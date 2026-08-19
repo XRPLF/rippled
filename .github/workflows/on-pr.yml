@@ -86,6 +86,7 @@ jobs:
             .github/workflows/reusable-check-autogen.yml
             .github/workflows/reusable-clang-tidy.yml
             .github/workflows/reusable-package.yml
+            .github/workflows/reusable-rust.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
@@ -97,6 +98,7 @@ jobs:
             cfg/**
             cmake/**
             conan/**
+            crates/**
             external/**
             include/**
             src/**
@@ -173,6 +175,13 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  rust:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-rust.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   package:
     needs: [should-run, build-test]
     # Packaging consumes the debian/rhel release binaries, which are only built
@@ -216,6 +225,7 @@ jobs:
       - check-rename
       - clang-tidy
       - build-test
+      - rust
       - package
       - upload-recipe
       - notify-clio

@@ -165,14 +165,20 @@ SHAMapStoreImp::SHAMapStoreImp(
         getIfExists(section, Keys::kAdvisoryDelete, advisoryDelete_);
 
         if (getIfExists(section, Keys::kMaxWaitingLedgers, temp))
+        {
             maxWaitingLedgers_ = temp;
+        }
         else
+        {
             maxWaitingLedgers_ = deleteInterval_;
+        }
 
         auto const minWaiting = minInterval / 4;
         if (maxWaitingLedgers_ < minWaiting)
+        {
             Throw<std::runtime_error>(
                 "max_waiting_ledgers must be at least " + std::to_string(minWaiting));
+        }
 
         stateDb_.init(config, dbName_);
         dbPaths();
@@ -437,9 +443,13 @@ SHAMapStoreImp::run()
 
             clearPrior(lastRotated);
             if (auto const health = healthWait(); health == HealthResult::Stopping)
+            {
                 return;
+            }
             else if (health != HealthResult::KeepGoing)
+            {
                 continue;
+            }
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
@@ -459,9 +469,13 @@ SHAMapStoreImp::run()
             }
 
             if (auto const health = healthWait(); health == HealthResult::Stopping)
+            {
                 return;
+            }
             else if (health != HealthResult::KeepGoing)
+            {
                 continue;
+            }
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " duplicated "
@@ -470,9 +484,13 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
             if (auto const health = healthWait(); health == HealthResult::Stopping)
+            {
                 return;
+            }
             else if (health != HealthResult::KeepGoing)
+            {
                 continue;
+            }
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << validatedSeq << " freshened caches";
 
@@ -482,9 +500,13 @@ SHAMapStoreImp::run()
 
             clearCaches(validatedSeq);
             if (auto const health = healthWait(); health == HealthResult::Stopping)
+            {
                 return;
+            }
             else if (health != HealthResult::KeepGoing)
+            {
                 continue;
+            }
 
             lastRotated = validatedSeq;
 
