@@ -40,7 +40,7 @@ json::Value
 cancel(Account const& account, uint256 const& proposalID)
 {
     json::Value jv;
-    jv[jss::TransactionType] = "TransactionProposalCancel";
+    jv[jss::TransactionType] = jss::TransactionProposalCancel;
     jv[jss::Account] = account.human();
     jv[sfProposalID.jsonName] = to_string(proposalID);
     return jv;

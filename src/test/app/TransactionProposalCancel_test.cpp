@@ -671,7 +671,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             int noEntry = 0;
             for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
             {
-                if (txn[jss::TransactionType] == "TransactionProposalCancel")
+                if (txn[jss::TransactionType] == jss::TransactionProposalCancel)
                 {
                     auto const result =
                         txn[jss::metaData][sfTransactionResult.getJsonName()].asString();
@@ -795,15 +795,14 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
     }
 
-    // The strongest form of refusal (XLS-0103 §13.4): the target cancels the
-    // proposal by spending the very ticket it is keyed to. Deleting the
-    // proposal alone does not invalidate signatures an observer may have
-    // copied, but consuming the reserved ticket positively prevents the
-    // proposed transaction from ever executing.
+    // Cancel may not spend the ticket the proposal is keyed to. The
+    // reservation is only for the proposed transaction (XLS-0103 §4.2.1);
+    // a target that wants to revoke both the proposal and the ticket must
+    // cancel first, then spend the ticket separately.
     void
-    testCancelSpendingReservedTicket(FeatureBitset features)
+    testCancelCannotSpendReservedTicket(FeatureBitset features)
     {
-        testcase("target revokes by cancelling with the reserved ticket");
+        testcase("cancel cannot consume the reserved ticket");
 
         using namespace jtx;
 
@@ -815,58 +814,42 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, target, bob);
         env.close();
 
-        // Standalone.
+        // Standalone: the Cancel is held as a retry and neither object is
+        // touched.
         {
             std::uint32_t const ticketSeq = env.seq(target) + 1;
             uint256 const proposalID = makeProposal(env, alice, target, bob);
 
-            env(proposal::cancel(target, proposalID), ticket::Use(ticketSeq));
+            env(proposal::cancel(target, proposalID),
+                ticket::Use(ticketSeq),
+                Ter(terTICKET_RESERVED));
             env.close();
 
-            BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
-            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, target) == 0);
+            BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, target) == 1);
         }
 
-        // The same revocation as an inner Batch transaction, where the
-        // ticket-spend hook and the Cancel's own apply step run against the
-        // layered per-transaction batch view.
+        // The same attempt as an inner Batch transaction: tfAllOrNothing
+        // discards the whole batch, so the sibling payment does not land.
         {
             std::uint32_t const ticketSeq = env.seq(target) + 1;
             uint256 const proposalID = makeProposal(env, alice, target, bob);
 
             auto const seq = env.seq(target);
+            auto const bobBefore = env.balance(bob);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(target, seq, batchFee, tfAllOrNothing),
                 batch::Inner(proposal::cancel(target, proposalID), 0, ticketSeq),
                 batch::Inner(pay(target, bob, XRP(1)), seq + 1));
             env.close();
 
-            BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
-            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, target) == 0);
-        }
-
-        // Under tfIndependent, a failing sibling does not roll the
-        // revocation back: the inner Cancel's deletion of both proposal and
-        // ticket stands on its own.
-        {
-            std::uint32_t const ticketSeq = env.seq(target) + 1;
-            uint256 const proposalID = makeProposal(env, alice, target, bob);
-
-            auto const seq = env.seq(target);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            env(batch::outer(target, seq, batchFee, tfIndependent),
-                batch::Inner(proposal::cancel(target, proposalID), 0, ticketSeq),
-                batch::Inner(pay(target, bob, XRP(1'000'000)), seq + 1));
-            env.close();
-
-            BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
-            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, target) == 0);
+            BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+            BEAST_EXPECT(env.balance(bob) == bobBefore);
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, target) == 1);
         }
     }
 
@@ -953,25 +936,33 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
     run() override
     {
         using namespace jtx;
-        testDisabled(testableAmendments());
-        testMalformed(testableAmendments());
-        testNoEntry(testableAmendments());
-        testOwnerCancel(testableAmendments());
-        testTargetCancel(testableAmendments());
-        testDelegateCancel(testableAmendments());
-        testThirdPartyNoPermission(testableAmendments());
-        testExpiredPermissionlessCancel(testableAmendments());
-        testExpirationBoundary(testableAmendments());
-        testLastLedgerSequenceTerminal(testableAmendments());
-        testOwnerCancelTerminal(testableAmendments());
-        testBatchProposalCancel(testableAmendments());
-        testCancelSubmissionForms(testableAmendments());
-        testCancelInsideBatch(testableAmendments());
-        testSponsoredCancel(testableAmendments());
-        testDelegatedCancelRejected(testableAmendments());
-        testCounterpartyCannotCancel(testableAmendments());
-        testCancelSpendingReservedTicket(testableAmendments());
-        testCannotProposeCancel(testableAmendments());
+
+        FeatureBitset const all{testableAmendments()};
+
+        // Preflight
+        testDisabled(all);
+        testMalformed(all);
+        testDelegatedCancelRejected(all);
+        testCannotProposeCancel(all);
+
+        // Preclaim
+        testNoEntry(all);
+        testThirdPartyNoPermission(all);
+        testExpiredPermissionlessCancel(all);
+        testExpirationBoundary(all);
+        testLastLedgerSequenceTerminal(all);
+        testCounterpartyCannotCancel(all);
+        testCancelCannotSpendReservedTicket(all);
+
+        // Apply
+        testOwnerCancel(all);
+        testTargetCancel(all);
+        testDelegateCancel(all);
+        testOwnerCancelTerminal(all);
+        testBatchProposalCancel(all);
+        testCancelSubmissionForms(all);
+        testCancelInsideBatch(all);
+        testSponsoredCancel(all);
     }
 };
 

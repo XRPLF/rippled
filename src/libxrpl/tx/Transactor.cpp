@@ -758,19 +758,17 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
 
         // While a TransactionProposal keyed to this Ticket exists, the
         // Ticket is reserved: only the proposal's own proposed transaction
-        // (or a Cancel of that very proposal) may consume it, so unrelated
-        // activity cannot invalidate the proposal while signatures are being
-        // collected (XLS-0103 §4.2.1). Cancelling the proposal frees the
-        // Ticket, so this is a retry, not a final failure.
-        if (view.rules().enabled(featureCosign))
+        // may consume it, so unrelated activity cannot invalidate the
+        // proposal while signatures are being collected (XLS-0103 §4.2.1).
+        // Cancelling the proposal frees the Ticket, so this is a retry, not
+        // a final failure. Proposal objects exist only when Cosign is
+        // enabled, so no amendment gate is needed here.
+        auto const sleProposal = view.read(keylet::txProposal(id, tSeqProx.value()));
+        if (sleProposal && !proposal::mayConsumeReservedTicket(*sleProposal, tx))
         {
-            auto const sleProposal = view.read(keylet::txProposal(id, tSeqProx.value()));
-            if (sleProposal && !proposal::mayConsumeReservedTicket(*sleProposal, tx))
-            {
-                JLOG(j.trace()) << "applyTransaction: ticket " << tSeqProx
-                                << " is reserved by a TransactionProposal";
-                return terTICKET_RESERVED;
-            }
+            JLOG(j.trace()) << "applyTransaction: ticket " << tSeqProx
+                            << " is reserved by a TransactionProposal";
+            return terTICKET_RESERVED;
         }
     }
 
@@ -892,16 +890,13 @@ Transactor::ticketDelete(
     // up the stale proposal and release its Owner's reserve (XLS-0103 §4.5).
     // The reservation check in checkSeqProxy means this is reached only by
     // the proposal's own proposed transaction executing (or failing with a
-    // claimed-fee tec), by a Cancel of this very proposal paying with the
-    // reserved Ticket (XLS-0103 §13.4), or by AccountDelete sweeping the
-    // target account's Tickets.
-    if (view.rules().enabled(featureCosign))
+    // claimed-fee tec), or by AccountDelete sweeping the target account's
+    // Tickets. Proposal objects exist only when Cosign is enabled, so no
+    // amendment gate is needed here.
+    if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
     {
-        if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
-        {
-            if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
-                return ter;  // LCOV_EXCL_LINE
-        }
+        if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
     }
 
     return tesSUCCESS;

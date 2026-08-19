@@ -141,13 +141,6 @@ mayConsumeReservedTicket(SLE const& sleProposal, STTx const& tx)
         sleProposal.getType() == ltTRANSACTION_PROPOSAL,
         "xrpl::proposal::mayConsumeReservedTicket : a TransactionProposal entry");
 
-    // Cancelling this very proposal deletes the reservation itself, so the
-    // Cancel may also be the transaction that consumes the reserved ticket
-    // (XLS-0103 §13.4). Spending the ticket proves the submitter is the
-    // proposal's target, who may always cancel (XLS-0103 §7.2).
-    if (tx.getTxnType() == ttTRANSACTION_PROPOSAL_CANCEL && tx[sfProposalID] == sleProposal.key())
-        return true;
-
     return payloadMatches(sleProposal.getFieldObject(sfProposedTransaction), tx);
 }
 

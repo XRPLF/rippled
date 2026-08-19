@@ -11,7 +11,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -53,8 +52,8 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
 
     // A terminal proposal can never complete, so anyone may delete it and
     // release the Owner's reserve (XLS-0103 §7.2).
-    if (proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx))
-        return tesSUCCESS;
+    bool const terminal =
+        proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx);
 
     // A live proposal may only be cancelled by its Owner (the proposer) or
     // by its target. The target is the account the proposed transaction
@@ -69,13 +68,17 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
     // deletes the proposer's own entry and returns the proposer's own
     // reserve.
     AccountID const account = ctx.tx[sfAccount];
-    if (account == sleProposal->getAccountID(sfOwner) ||
-        account == proposedTx.getAccountID(sfAccount) || account == proposedTx[~sfDelegate])
-        return tesSUCCESS;
+    bool const ownerOrTarget = account == sleProposal->getAccountID(sfOwner) ||
+        account == proposedTx.getAccountID(sfAccount) || account == proposedTx[~sfDelegate];
 
-    JLOG(ctx.j.debug()) << "TransactionProposalCancel: proposal is live and "
-                           "canceller is neither its Owner nor its target.";
-    return tecNO_PERMISSION;
+    if (!terminal && !ownerOrTarget)
+    {
+        JLOG(ctx.j.debug()) << "TransactionProposalCancel: proposal is live and "
+                               "canceller is neither its Owner nor its target.";
+        return tecNO_PERMISSION;
+    }
+
+    return tesSUCCESS;
 }
 
 TER
@@ -87,21 +90,9 @@ TransactionProposalCancel::doApply()
     if (proposalID == beast::kZero)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // The below condition covers the case of TransactionProposalCancel
-    // consuming the very ticket specified in the
-    // sleProposal[sfProposedTransaction] field. This indicates the intent of
-    // the Target-Account to cancel the ticket+associated-txProposal.
-    Keylet const proposalKeylet = keylet::txProposal(proposalID);
-    auto const sleProposal = view().peek(proposalKeylet);
+    auto const sleProposal = view().peek(keylet::txProposal(proposalID));
     if (!sleProposal)
-    {
-        SeqProxy const seqProx = ctx_.tx.getSeqProxy();
-        if (seqProx.isTicket() &&
-            keylet::txProposal(accountID_, seqProx.value()).key == proposalKeylet.key)
-            return tesSUCCESS;
-
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    }
 
     return proposal::deleteProposal(view(), sleProposal, ctx_.registry.get().getJournal("View"));
 }

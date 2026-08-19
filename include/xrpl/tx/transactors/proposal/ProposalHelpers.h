@@ -144,13 +144,8 @@ payloadMatches(STObject const& proposedTx, STObject const& tx);
  * While a proposal exists, its target's ticket is reserved: only the
  * proposal's own proposed transaction may spend it (XLS-0103 §4.2.1), so
  * that unrelated target-account activity cannot invalidate the proposal
- * while signatures are being collected. The one other transaction allowed
- * through is a TransactionProposalCancel naming this very proposal: it
- * deletes the reservation itself, its submitter is necessarily the
- * proposal's target (the ticket spent is the target's, and the proposal's ID
- * is derived from target and ticket), who may always cancel — and cancelling
- * while consuming the reserved ticket is the strongest form of refusal,
- * revoking even signatures an observer may have copied (XLS-0103 §13.4).
+ * while signatures are being collected. TransactionProposalCancel is not
+ * allowed through: it deletes the reservation without consuming the ticket.
  *
  * @param sleProposal The TransactionProposal keyed to the ticket tx spends.
  * @param tx The transaction attempting to consume that ticket.
