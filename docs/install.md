@@ -28,7 +28,9 @@ wherever it appears in the repository configuration.
 > Channels other than `stable` may be broken at any time.
 > Do not use them for production servers.
 
-## With the APT package manager
+## Install the xrpld package
+
+### With the APT package manager
 
 1.  Install utilities:
 
@@ -79,7 +81,7 @@ wherever it appears in the repository configuration.
     sudo apt -y install xrpld
     ```
 
-## With the YUM package manager
+### With the YUM package manager
 
 1.  Add the XRPL Foundation package-signing key:
 
@@ -112,17 +114,17 @@ wherever it appears in the repository configuration.
 
 ## The xrpld service
 
-The package installs a systemd unit and enables it, so `xrpld` starts on boot.
-On Debian and Ubuntu the package starts it immediately as well; elsewhere, start it yourself:
-
-```bash
-sudo systemctl start xrpld.service
-```
-
-Check that it is running:
+Both package managers install a systemd unit and enable it, so `xrpld` starts on boot.
+Check whether it is already running:
 
 ```bash
 systemctl status xrpld.service
+```
+
+The APT packages start it immediately as well; the YUM packages do not, so start it yourself:
+
+```bash
+sudo systemctl start xrpld.service
 ```
 
 ### Optional: binding to privileged ports
