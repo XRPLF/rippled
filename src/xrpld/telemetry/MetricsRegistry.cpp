@@ -63,6 +63,7 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -240,14 +241,17 @@ MetricsRegistry::~MetricsRegistry()
 }
 
 void
-MetricsRegistry::start(std::string const& endpoint, std::string const& instanceId)
+MetricsRegistry::start(
+    std::string const& endpoint,
+    std::string const& instanceId,
+    std::string const& nodeId)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_)
         return;
 
     JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << endpoint
-                          << ", instanceId=" << instanceId;
+                          << ", instanceId=" << instanceId << ", nodeId=" << nodeId;
 
     // Rule for anything added below: this phase may create only instruments
     // whose recording is PUSHED from app code -- counters and histograms. An
@@ -257,13 +261,14 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     // belongs in startAsyncGauges(), not here. That includes observable
     // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
     // its callback read getOverlay(), which asserts overlay_ is non-null.
-    initExporterAndProvider(endpoint, instanceId);
+    initExporterAndProvider(endpoint, instanceId, nodeId);
     initSyncInstruments();
 
     JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
 #else
     (void)endpoint;
     (void)instanceId;
+    (void)nodeId;
     (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
@@ -294,7 +299,10 @@ MetricsRegistry::startAsyncGauges()
 
 #ifdef XRPL_ENABLE_TELEMETRY
 void
-MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::string const& instanceId)
+MetricsRegistry::initExporterAndProvider(
+    std::string const& endpoint,
+    std::string const& instanceId,
+    std::string const& nodeId)
 {
     // Configure OTLP/HTTP metric exporter.
     otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
@@ -318,6 +326,11 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     attrs[opentelemetry::semconv::service::kServiceName] = std::string("xrpld");
     if (!instanceId.empty())
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
+    // xrpl.node.id: the same per-node key the trace resource carries, so
+    // metrics and traces resolve to one node. std::string for the same
+    // variant reason as service.name above.
+    if (!nodeId.empty())
+        attrs[std::string(attr::nodeId)] = nodeId;
     auto resourceAttrs = otel_resource::Resource::Create(attrs);
 
     // Build a view registry with explicit microsecond buckets for the

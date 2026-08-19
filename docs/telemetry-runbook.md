@@ -146,15 +146,11 @@ curl -s http://localhost:5015 -d '{"method":"server_info"}' |
 | `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS        |
 | `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                      |
 
-> **`service_instance_id` reaches traces as a span attribute too.** xrpld sends
-> it as the `service.instance.id` resource attribute; the collector's
-> `transform/spanidentity` processor copies it onto every span as
-> `service_instance_id`, so TraceQL can filter per node
-> (`{span.service_instance_id="validator-0"}`) with the same value the `$node`
-> dashboard variable uses for metrics. Spans recorded before that processor was
-> added do not carry it, and a TraceQL regex does **not** match a missing
-> attribute — so a `$node` filter on a trace panel returns nothing for older
-> data.
+> **Traces and metrics also carry `xrpl.node.id`.** xrpld sets it as a resource
+> attribute alongside `service.instance.id`; the value is the node public key
+> (base58, begins with `n`). It comes from the node identity unconditionally, so
+> it is present even when `[telemetry] service_instance_id` is configured.
+> TraceQL filters on it as `resource.xrpl.node.id`.
 
 > **`consensus_trace_strategy` is not validated.** The parser copies the raw
 > string through (`TelemetryConfig.cpp:155-156`) and the only equality test in
