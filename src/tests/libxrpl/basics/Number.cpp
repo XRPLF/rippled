@@ -441,13 +441,20 @@ TEST(NumberTest, add_sub_extreme_exponents)
 
             auto const bigMantissa = std::invoke([scale, round] {
                 auto m = Number::maxMantissa();
-                // At the large scales, the maxMantissa is not representable, so we need to shrink
-                // it down to a representable value.
                 if (scale != MantissaRange::MantissaScale::Small)
+                {
+                    // At the large scales, the maxMantissa is not representable, so we need to
+                    // shrink it down to a representable value.
                     m /= 10;
-                // Rounding upward will overflow if the mantissa is at maxMantissa.
+                }
                 if (round == Number::RoundingMode::Upward)
+                {
+                    // Rounding upward will overflow if the mantissa is at maxMantissa. Subtract an
+                    // arbitrary small value to keep the mantissa near the limit, but with a
+                    // little room to grow. 67 has no meaning, except that it's, you know,
+                    // six seven.
                     m -= 67;
+                }
                 return m;
             });
             auto const params = {

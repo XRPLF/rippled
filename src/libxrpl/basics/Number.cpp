@@ -428,7 +428,7 @@ void
 Number::Guard::doDropDigitWithTarget(T& mantissa, int& exponent, int const targetExponent) noexcept
 {
     XRPL_ASSERT(
-        exponent < targetExponent, "Number::Guard::doDropDigitWithTarget : something to do");
+        exponent < targetExponent, "xrpl::Number::Guard::doDropDigitWithTarget : something to do");
     while (exponent < targetExponent)
     {
         if (mantissa == 0 && unrecoverable())
@@ -969,7 +969,7 @@ Number::operator+=(Number const& y)
     //  to match, if necessary.
     auto const adjust = [&g, &upperLimit](
                             uint128_t& expandM, int& expandE, uint128_t& shrinkM, int& shrinkE) {
-        XRPL_ASSERT(shrinkE < expandE, "xrpl::Number::operator+ : exponents match");
+        XRPL_ASSERT(shrinkE < expandE, "xrpl::Number::operator+= : exponents ordered correctly");
         // Adjust up and down until the exponents match
         if (g.cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330)
         {
@@ -998,7 +998,7 @@ Number::operator+=(Number const& y)
         {
             g.doDropDigitWithTarget(shrinkM, shrinkE, expandE);
         }
-        XRPL_ASSERT(shrinkE == expandE, "xrpl::Number::operator+ : exponents match");
+        XRPL_ASSERT(shrinkE == expandE, "xrpl::Number::operator+= : exponents are equal");
     };
 
     // Shrink the mantissa and raise the exponent of the value with the lower exponent. Store any
@@ -1041,7 +1041,7 @@ Number::operator+=(Number const& y)
             // round.
             XRPL_ASSERT(
                 xm > maxMantissa || g.empty(),
-                "xrpl::Number::operator+ : rounding state expected after add");
+                "xrpl::Number::operator+= : rounding state expected after add");
         }
         else
         {
@@ -1083,7 +1083,7 @@ Number::operator+=(Number const& y)
             }
             XRPL_ASSERT(
                 xm > maxMantissa || g.empty(),
-                "xrpl::Number::operator+ : rounding state expected after subtract");
+                "xrpl::Number::operator+= : rounding state expected after subtract");
         }
         else
         {
@@ -1378,7 +1378,7 @@ operator rep() const
         if (offset < 0)
         {
             g.doDropDigitWithTarget(drops, offset, 0);
-            XRPL_ASSERT(offset == 0, "xrpl::Number::operator+ : exponents match");
+            XRPL_ASSERT(offset == 0, "xrpl::Number::operator rep() : exponents are equal");
         }
         for (; offset > 0; --offset)
         {
