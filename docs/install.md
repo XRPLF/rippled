@@ -132,12 +132,17 @@ systemctl status xrpld.service
 
 ### Optional: binding to privileged ports
 
-This allows you to serve incoming API requests on port 80 or 443.
-(If you want to do so, you must also update the config file's port settings.)
+To serve incoming API requests on port 80 or 443,
+grant the service the capability to bind them.
+You must also update the config file's port settings.
 
 ```bash
-sudo setcap 'cap_net_bind_service=+ep' /usr/bin/xrpld
+sudo install -d -m 0755 /etc/systemd/system/xrpld.service.d
+sudo tee /etc/systemd/system/xrpld.service.d/privileged-ports.conf >/dev/null <<'EOF'
+[Service]
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart xrpld.service
 ```
-
-Uncomment `CapabilityBoundingSet` and `AmbientCapabilities` in `/usr/lib/systemd/system/xrpld.service` as well,
-then reload systemd.
