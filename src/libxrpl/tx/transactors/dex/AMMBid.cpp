@@ -276,7 +276,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
                                           << *bidMin << " " << *bidMax;
                 return std::nullopt;
             }
-            // Bidder pays max(bidPrice, computedPrice)
+            // Bidder pays max(bidPrice, effectivePrice)
             if (bidMin)
             {
                 return std::max(effectivePrice, Number(*bidMin));
