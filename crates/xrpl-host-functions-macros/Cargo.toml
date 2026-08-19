@@ -11,8 +11,8 @@ syn = { version = "3", features = ["full"] }
 quote = "1"
 proc-macro2 = "1"
 
-# The expansion names `::xrpl_host_functions::HostFnSpec`, so the doctest needs the
-# facade crate. Cargo allows this cycle because dev-dependencies are outside the
-# library build graph.
+# The doctest declares host functions returning `HostResult`, which the facade
+# crate hand-writes. Cargo allows this cycle because dev-dependencies are outside
+# the library build graph.
 [dev-dependencies]
 xrpl-host-functions.path = "../xrpl-host-functions"

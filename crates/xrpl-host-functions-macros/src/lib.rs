@@ -20,9 +20,29 @@ use parsed_host_function::ParsedHostFunction;
 /// are kept and appear on the generated items.
 ///
 /// This crate is an implementation detail of `xrpl-host-functions`, which
-/// hand-writes the types the expansion refers to and holds the one declaration
-/// block. The expansion names those types by absolute path, so a call site needs
-/// `xrpl-host-functions` as a dependency but no imports from it.
+/// hand-writes the types the declarations refer to and holds the one declaration
+/// block.
+///
+/// # What it generates
+///
+/// Three items, in the scope the block is written in:
+///
+/// - `pub trait HostFunctions`: one method per declaration, emitted verbatim —
+///   receiver, parameters, return type and doc comment exactly as written. An
+///   execution environment implements it; the rest of the expansion does not
+///   mention it.
+/// - `pub enum HostFunctionSpec`: one variant per declaration, named by
+///   PascalCasing the function name (`get_ledger_sqn` becomes `GetLedgerSqn`) and
+///   carrying that declaration's doc comment. Its `const fn wasm_name` and
+///   `const fn gas` are the ABI metadata, and `ALL` is every variant in
+///   declaration order — what a wasm engine iterates to build its import table.
+/// - `struct HostFnSpec`: private, one row of that metadata table. It exists only
+///   so `wasm_name` and `gas` read from a single `match` over the declarations,
+///   and never appears in a signature a caller can name.
+///
+/// The expansion introduces no other name and reaches for none: the only paths in
+/// it are `Self::Variant` and whatever the declarations themselves spell. So the
+/// block compiles wherever the types it names — `HostResult` above — resolve.
 ///
 /// ```
 /// use xrpl_host_functions::HostResult;
@@ -40,20 +60,22 @@ use parsed_host_function::ParsedHostFunction;
 ///     fn trace_num(&self, msg: &str, number: i64) -> HostResult<()>;
 /// }
 ///
-/// // A `HostFunctions` trait, holding the declarations verbatim:
-/// struct Host;
-/// impl HostFunctions for Host {
-///     fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize> {
-///         out[..4].copy_from_slice(&7u32.to_le_bytes());
-///         Ok(4)
-///     }
-///     fn trace_num(&self, _msg: &str, _number: i64) -> HostResult<()> { Ok(()) }
+/// // The trait's methods are the declarations, down to the `&self` receiver the
+/// // VM calls the host through.
+/// fn ledger_sqn(host: &dyn HostFunctions, out: &mut [u8]) -> HostResult<usize> {
+///     host.get_ledger_sqn(out)
 /// }
 ///
-/// // A `HostFunctionSpec` enum carrying the ABI metadata as a `const` table:
-/// assert_eq!(HostFunctionSpec::GetLedgerSqn.gas(), 60);
-/// assert_eq!(HostFunctionSpec::TraceNum.wasm_name(), "trace_num");
-/// assert_eq!(HostFunctionSpec::ALL.len(), 2);
+/// // The metadata is a `const` table, so gas and import names are available at
+/// // compile time rather than looked up at run time.
+/// const TRACE_GAS: u64 = HostFunctionSpec::TraceNum.gas();
+/// assert_eq!(TRACE_GAS, 500);
+///
+/// assert_eq!(HostFunctionSpec::GetLedgerSqn.wasm_name(), "ldgr_index");
+/// assert_eq!(
+///     HostFunctionSpec::ALL,
+///     &[HostFunctionSpec::GetLedgerSqn, HostFunctionSpec::TraceNum],
+/// );
 /// ```
 ///
 /// A declaration must be a plain `fn` taking `&self` and returning
