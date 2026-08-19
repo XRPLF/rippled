@@ -16,7 +16,6 @@
 #include <helpers/TestSink.h>
 #include <shamap/common.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -113,7 +112,7 @@ protected:
     intToVuc(std::uint8_t v)
     {
         Buffer vuc{32};
-        std::fill_n(vuc.data(), vuc.size(), v);
+        vuc.fill(v);
         return vuc;
     }
 };

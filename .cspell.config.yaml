@@ -8,6 +8,7 @@ ignorePaths:
   - LICENSE.md
   - .clang-tidy
   - src/test/app/wasm_fixtures/*.c
+  - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -70,6 +71,7 @@ words:
   - canonicality
   - cdylib
   - canonicalised
+  - cctools
   - changespq
   - checkme
   - choco
@@ -111,6 +113,7 @@ words:
   - disablerepo
   - distro
   - doxyfile
+  - dsymutil
   - dxrpl
   - elgamal
   - enabled
@@ -169,6 +172,7 @@ words:
   - LOCALGOOD
   - logwstream
   - Lombrozo
+  - lresolv
   - lseq
   - lsmf
   - ltype
@@ -222,6 +226,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otool
   - oxalica
   - pargs
   - partitioner
@@ -251,11 +256,15 @@ words:
   - Raphson
   - rcflags
   - replayer
+  - repodata
+  - repomd
   - rerandomize
   - rerandomization
   - rerandomized
   - rerandomizes
   - rerere
+  - retargeted
+  - retargets
   - retriable
   - RIPD
   - ripdtop
@@ -291,6 +300,7 @@ words:
   - sles
   - soci
   - socidb
+  - Sonatype
   - sponsee
   - sponsees
   - SRPMS
@@ -311,6 +321,7 @@ words:
   - summands
   - superpeer
   - superpeers
+  - Swatinem
   - takergets
   - takerpays
   - ters
@@ -366,13 +377,16 @@ words:
   - wthread
   - xbridge
   - xchain
+  - xcrun
   - xfloat
   - ximinez
   - XMACRO
+  - xored
   - xrpkuwait
   - xrpl
   - xrpld
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT
