@@ -12,6 +12,6 @@
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-args=-static-libgcc"]
 
-# Windows builds use the static MSVC runtime (`-MT`/`-MTd`).
+# Windows builds use the static MSVC runtime.
 [target.'cfg(windows)']
 rustflags = ["-C", "target-feature=+crt-static"]

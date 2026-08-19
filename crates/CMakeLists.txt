@@ -77,6 +77,14 @@ endfunction()
 function(add_xrpl_crate name)
     cmake_parse_arguments(ARG "" "CRATE" "FILES" ${ARGN})
     _unlink_libgcc_s(${ARG_CRATE})
+    # `cc` picks its runtime flag from `crt-static` alone, so it compiles a
+    # crate's C++ with `-MT`; Debug needs `-MTd` (to match cmake/XrplCompiler.cmake).
+    if(is_msvc)
+        corrosion_set_env_vars(
+            ${ARG_CRATE}
+            "$<$<CONFIG:Debug>:CXXFLAGS=-MTd>"
+        )
+    endif()
     corrosion_add_cxxbridge(${name}_cxxbridge CRATE ${ARG_CRATE} FILES
                             ${ARG_FILES}
     )
