@@ -2,18 +2,27 @@
 // DO NOT REMOVE
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
 #include <cstdint>
@@ -1871,6 +1880,93 @@ public:
         }
     }
 
+    // Targeted unit test for getLoanDefaultFreezeExemptAccounts(): builds a real
+    // (XRP, so no trust lines needed) Vault/LoanBroker/Loan chain, then calls
+    // the function directly against hand-picked, unsubmitted transactions
+    // (via env.jt(), which never touches the ledger) to exercise every early
+    // return and the success path precisely.
+    void
+    testLoanDefaultFreezeExemptAccounts()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        testcase("getLoanDefaultFreezeExemptAccounts");
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        Env env{*this};
+        Vault const vault{env};
+        env.fund(XRP(10'000), lender, borrower);
+        env.close();
+
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = xrpIssue()});
+        env(vaultTx);
+        env.close();
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = XRP(1'000)}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
+        env(loan_broker::set(lender, vaultKeylet.key));
+        env.close();
+
+        env(set(borrower, brokerKeylet.key, Number{200'000}),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+
+        // Not a LoanManage transaction at all.
+        {
+            auto const jt = env.jt(jtx::pay(lender, borrower, XRP(1)));
+            BEAST_EXPECT(!getLoanDefaultFreezeExemptAccounts(*env.current(), *jt.stx));
+        }
+
+        // LoanManage, but not the tfLoanDefault flag.
+        {
+            auto const jt = env.jt(manage(lender, loanKeylet.key, tfLoanImpair));
+            BEAST_EXPECT(!getLoanDefaultFreezeExemptAccounts(*env.current(), *jt.stx));
+        }
+
+        // tfLoanDefault, but fixCleanup3_4_0 is disabled.
+        {
+            env.disableFeature(fixCleanup3_4_0);
+            auto const jt = env.jt(manage(lender, loanKeylet.key, tfLoanDefault));
+            BEAST_EXPECT(!getLoanDefaultFreezeExemptAccounts(*env.current(), *jt.stx));
+            env.enableFeature(fixCleanup3_4_0);
+        }
+
+        // tfLoanDefault, amendment enabled, but the referenced Loan doesn't
+        // exist (reusing the broker's own ID as a bogus LoanID, same trick
+        // testInvalidLoanManage-style tests use elsewhere in this suite).
+        {
+            auto const jt = env.jt(manage(lender, brokerKeylet.key, tfLoanDefault));
+            BEAST_EXPECT(!getLoanDefaultFreezeExemptAccounts(*env.current(), *jt.stx));
+        }
+
+        // tfLoanDefault, amendment enabled, Loan/LoanBroker/Vault all exist:
+        // resolves the issuer, broker, vault accounts, and the vault's asset.
+        {
+            auto const jt = env.jt(manage(lender, loanKeylet.key, tfLoanDefault));
+            auto const result = getLoanDefaultFreezeExemptAccounts(*env.current(), *jt.stx);
+            auto const brokerSle = env.le(brokerKeylet);
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(result);
+            BEAST_EXPECT(brokerSle);
+            BEAST_EXPECT(vaultSle);
+            if (result && brokerSle && vaultSle)
+            {
+                BEAST_EXPECT(result->issuer == vaultSle->at(sfAsset).getIssuer());
+                BEAST_EXPECT(result->broker == brokerSle->at(sfAccount));
+                BEAST_EXPECT(result->vault == vaultSle->at(sfAccount));
+                BEAST_EXPECT(result->asset == vaultSle->at(sfAsset));
+            }
+        }
+    }
+
     void
     run() override
     {
@@ -1906,6 +2002,8 @@ public:
         testLoanOriginationExceedsVaultMaximumDispatcher();
         testLoanVaultExposureDispatcher();
         testLoanPaymentDeltasDispatcher();
+
+        testLoanDefaultFreezeExemptAccounts();
     }
 };
 
