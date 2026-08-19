@@ -24,7 +24,9 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -1638,7 +1640,6 @@ struct PayChan_test : public beast::unit_test::Suite
              .ledgerMaster = app.getLedgerMaster(),
              .consumer = c,
              .role = Role::USER,
-             .coro = {},
              .infoSub = {},
              .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
@@ -1654,10 +1655,13 @@ struct PayChan_test : public beast::unit_test::Suite
         BEAST_EXPECT(context.loadType == resource::kFeeReferenceRpc);
         json::Value result;
         Gate g;
-        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.coro = coro;
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             result = doChannelVerify(context);
             g.signal();
+            co_return;
         });
 
         using namespace std::chrono_literals;
@@ -1705,7 +1709,6 @@ struct PayChan_test : public beast::unit_test::Suite
              .ledgerMaster = app.getLedgerMaster(),
              .consumer = c,
              .role = Role::ADMIN,  // channel_authorize requires ADMIN or canSign()
-             .coro = {},
              .infoSub = {},
              .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
@@ -1720,10 +1723,13 @@ struct PayChan_test : public beast::unit_test::Suite
         BEAST_EXPECT(context.loadType == resource::kFeeReferenceRpc);
         json::Value result;
         Gate g;
-        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.coro = coro;
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             result = doChannelAuthorize(context);
             g.signal();
+            co_return;
         });
 
         using namespace std::chrono_literals;

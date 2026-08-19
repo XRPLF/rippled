@@ -1483,7 +1483,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .ledgerMaster = getLedgerMaster(),
              .consumer = c,
              .role = Role::ADMIN,
-             .coro = {},
              .infoSub = {},
              .apiVersion = rpc::kApiMaximumSupportedVersion},
             jvCommand};

@@ -3,13 +3,11 @@
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 
-#include <memory>
 #include <string_view>
 
 namespace xrpl {
@@ -32,7 +30,6 @@ struct Context
     LedgerMaster& ledgerMaster;
     resource::Consumer& consumer;
     Role role;
-    std::shared_ptr<JobQueue::Coro> coro;
     InfoSub::pointer infoSub;
     unsigned int apiVersion;
 };

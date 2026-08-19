@@ -6,7 +6,6 @@
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/JobQueue.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
@@ -228,9 +227,12 @@ private:
         clone() override;
 
     private:
-        // process the request. Called inside the coroutine passed to JobQueue
+        /**
+         * Process the gRPC request. Called inside the CoroTask lambda
+         * posted to the JobQueue by process().
+         */
         void
-        process(std::shared_ptr<JobQueue::Coro> coro);
+        processRequest();
 
         // return load type of this RPC
         resource::Charge

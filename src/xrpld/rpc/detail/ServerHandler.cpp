@@ -17,6 +17,7 @@
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/Output.h>
@@ -317,9 +318,23 @@ ServerHandler::onRequest(Session& session)
     }
 
     std::shared_ptr<Session> const detachedSession = session.detach();
-    auto const postResult = jobQueue_.postCoro(
-        JtClientRpc, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
-            processSession(detachedSession, coro);
+    auto const postResult = jobQueue_.postCoroTask(
+        JtClientRpc,
+        "RPC-Client",
+        // Safe capture: postCoroTask heap-allocates the lambda (FuncStore),
+        // detachedSession is captured by value, and this (the ServerHandler)
+        // outlives the JobQueue jobs.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        [this, detachedSession](auto) -> CoroTask<void> {
+            try
+            {
+                processSession(detachedSession);
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(journal_.error()) << "RPC-Client coroutine exception: " << e.what();
+            }
+            co_return;
         });
     if (postResult == nullptr)
     {
@@ -355,17 +370,30 @@ ServerHandler::onWSMessage(
 
     JLOG(journal_.trace()) << "Websocket received '" << jv << "'";
 
-    auto const postResult = jobQueue_.postCoro(
+    auto const postResult = jobQueue_.postCoroTask(
         JtClientWebsocket,
         "WS-Client",
-        [this, session, jv = std::move(jv)](std::shared_ptr<JobQueue::Coro> const& coro) {
-            auto const jr = this->processSession(session, coro, jv);
-            auto const s = to_string(jr);
-            auto const n = s.length();
-            boost::beast::multi_buffer sb(n);
-            sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
-            session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
-            session->complete();
+        // Safe capture: postCoroTask heap-allocates the lambda (FuncStore),
+        // session and jv are captured by value, and this (the ServerHandler)
+        // outlives the JobQueue jobs.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        [this, session, jv = std::move(jv)](auto) -> CoroTask<void> {
+            try
+            {
+                auto const jr = this->processSession(session, jv);
+                auto const s = to_string(jr);
+                auto const n = s.length();
+                boost::beast::multi_buffer sb(n);
+                sb.commit(
+                    boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
+                session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+                session->complete();
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(journal_.error()) << "WS-Client coroutine exception: " << e.what();
+            }
+            co_return;
         });
     if (postResult == nullptr)
     {
@@ -410,10 +438,7 @@ logDuration(json::Value const& request, T const& duration, beast::Journal& journ
 }
 
 json::Value
-ServerHandler::processSession(
-    std::shared_ptr<WSSession> const& session,
-    std::shared_ptr<JobQueue::Coro> const& coro,
-    json::Value const& jv)
+ServerHandler::processSession(std::shared_ptr<WSSession> const& session, json::Value const& jv)
 {
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
@@ -480,7 +505,6 @@ ServerHandler::processSession(
                  .ledgerMaster = app_.getLedgerMaster(),
                  .consumer = is->getConsumer(),
                  .role = role,
-                 .coro = coro,
                  .infoSub = is,
                  .apiVersion = apiVersion},
                 jv,
@@ -551,18 +575,14 @@ ServerHandler::processSession(
     return jr;
 }
 
-// Run as a coroutine.
 void
-ServerHandler::processSession(
-    std::shared_ptr<Session> const& session,
-    std::shared_ptr<JobQueue::Coro> coro)
+ServerHandler::processSession(std::shared_ptr<Session> const& session)
 {
     processRequest(
         session->port(),
         buffersToString(session->request().body().data()),
         session->remoteAddress().atPort(0),
         makeOutput(*session),
-        coro,
         forwardedFor(session->request()),
         [&] -> std::string_view {
             auto const iter = session->request().find("X-User");
@@ -603,7 +623,6 @@ ServerHandler::processRequest(
     std::string const& request,
     beast::ip::Endpoint const& remoteIPAddress,
     Output const& output,
-    std::shared_ptr<JobQueue::Coro> coro,
     std::string_view forwardedFor,
     std::string_view user)
 {
@@ -863,7 +882,6 @@ ServerHandler::processRequest(
              .ledgerMaster = app_.getLedgerMaster(),
              .consumer = usage,
              .role = role,
-             .coro = coro,
              .infoSub = InfoSub::pointer(),
              .apiVersion = apiVersion},
             params,

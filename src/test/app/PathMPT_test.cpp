@@ -19,6 +19,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
@@ -123,7 +124,6 @@ public:
              .ledgerMaster = app.getLedgerMaster(),
              .consumer = c,
              .role = Role::USER,
-             .coro = {},
              .infoSub = {},
              .apiVersion = rpc::kApiVersionIfUnspecified},
             {},
@@ -135,22 +135,28 @@ public:
         numSrc.reserve(rpc::tuning::kMaxSrcCur);
         for (std::uint8_t i = 0; i < rpc::tuning::kMaxSrcCur; ++i)
             numSrc.push_back(makeMptID(i, bob));
-        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
-            context.coro = coro;
             rpc::doCommand(context, result);
             g.signal();
+            co_return;
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than rpc::tuning::max_src_cur source currencies.
         numSrc.push_back(makeMptID(rpc::tuning::kMaxSrcCur, bob));
-        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
-            context.coro = coro;
             rpc::doCommand(context, result);
             g.signal();
+            co_return;
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
@@ -162,22 +168,28 @@ public:
             auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
             numSrc.push_back(curm.issuanceID());
         }
-        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
-            context.coro = coro;
             rpc::doCommand(context, result);
             g.signal();
+            co_return;
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than rpc::tuning::max_auto_src_cur source currencies.
         auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
-        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+        app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
-            context.coro = coro;
             rpc::doCommand(context, result);
             g.signal();
+            co_return;
         });
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
