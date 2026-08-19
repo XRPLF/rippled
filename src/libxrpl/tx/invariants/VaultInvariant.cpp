@@ -305,6 +305,43 @@ ValidVault::finalizeLoanSet(ReadView const& view, beast::Journal const& j) const
     return true;
 }
 
+namespace {
+
+// sfAssetsTotal, sfAssetsAvailable and sfLossUnrealized are STNumber fields
+// with kSmdNeedsAsset, so IOU writes go through associateAsset -> roundToAsset
+// -> STAmount quantization. Since assetsTotal is the largest number, it lands
+// on the coarsest decimal grid, and strict equality on the deltas can fire on
+// a single unit of quantization noise even when the underlying flow is
+// correct. Absorb one unit at the coarsest scale.
+//
+// XRP and MPT are integer-domain assets (STAmount scale == 0) with no
+// sub-ULP quantization; treating a whole drop / MPT unit as "noise" would
+// hide real accounting bugs. Keep the strict comparison there.
+[[nodiscard]] static bool
+agreesWithinOneUnit(Number const& lhs, Number const& rhs, std::int32_t scale)
+{
+    if (scale >= 0)
+        return lhs == rhs;
+    auto const diff = lhs - rhs;
+    Number const tolerance{1, scale};
+    return (diff < beast::kZero ? -diff : diff) <= tolerance;
+}
+
+// L, T and A are each independently quantized; the strict L <= T - A check
+// can fire on residual noise even when the true relationship holds. Tolerate
+// one unit at scale(assetsTotal) - the coarsest of the three grids. As with
+// the delta check above, the tolerance is meaningful only for IOU (scale < 0);
+// XRP and MPT keep the strict comparison.
+[[nodiscard]] static bool
+lessOrEqualPlusOneUnit(Number const& lhs, Number const& rhs, std::int32_t scale)
+{
+    if (scale >= 0)
+        return lhs <= rhs;
+    return lhs <= rhs + Number{1, scale};
+}
+
+}  // namespace
+
 std::int32_t
 ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const
 {
@@ -526,12 +563,24 @@ ValidVault::finalize(
                            "not be greater than assets outstanding";
         result = false;
     }
-    else if (afterVault.lossUnrealized > afterVault.assetsTotal - afterVault.assetsAvailable)
+    else
     {
-        JLOG(j.fatal())  //
-            << "Invariant failed: loss unrealized must not exceed "
-               "the difference between assets outstanding and available";
-        result = false;
+        bool const gapExceeded = [&] {
+            if (!view.rules().enabled(fixCleanup3_4_0))
+                return afterVault.lossUnrealized >
+                    afterVault.assetsTotal - afterVault.assetsAvailable;
+
+            auto const s = scale(afterVault.assetsTotal, afterVault.asset);
+            return !lessOrEqualPlusOneUnit(
+                afterVault.lossUnrealized, afterVault.assetsTotal - afterVault.assetsAvailable, s);
+        }();
+        if (gapExceeded)
+        {
+            JLOG(j.fatal())  //
+                << "Invariant failed: loss unrealized must not exceed "
+                   "the difference between assets outstanding and available";
+            result = false;
+        }
     }
 
     if (view.rules().enabled(fixCleanup3_4_0) && afterVault.lossUnrealized < kZero)
@@ -763,6 +812,8 @@ ValidVault::finalize(
                     return false;  // That's all we can do
                 }
 
+                bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
+
                 // Get the posterior scale to round calculations to
                 auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
 
@@ -820,7 +871,11 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (localVaultDeltaAssets * -1 != accountDeltaAssets)
+                    bool const acctVaultAddsUp = fixEnabled
+                        ? agreesWithinOneUnit(
+                              localVaultDeltaAssets * -1, accountDeltaAssets, localMinScale)
+                        : localVaultDeltaAssets * -1 == accountDeltaAssets;
+                    if (!acctVaultAddsUp)
                     {
                         JLOG(j.fatal()) << "Invariant failed: " <<  //
                             "deposit must change vault and depositor balance by equal amount";
@@ -868,7 +923,10 @@ ValidVault::finalize(
 
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                if (assetTotalDelta != vaultDeltaAssets)
+                bool const totalAddsUp = fixEnabled
+                    ? agreesWithinOneUnit(assetTotalDelta, vaultDeltaAssets, minScale)
+                    : assetTotalDelta == vaultDeltaAssets;
+                if (!totalAddsUp)
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: deposit and assets outstanding must add up";
@@ -877,7 +935,10 @@ ValidVault::finalize(
 
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-                if (assetAvailableDelta != vaultDeltaAssets)
+                bool const availableAddsUp = fixEnabled
+                    ? agreesWithinOneUnit(assetAvailableDelta, vaultDeltaAssets, minScale)
+                    : assetAvailableDelta == vaultDeltaAssets;
+                if (!availableAddsUp)
                 {
                     JLOG(j.fatal()) << "Invariant failed: deposit and assets available must add up";
                     result = false;
@@ -913,6 +974,8 @@ ValidVault::finalize(
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must change vault balance";
                     return false;  // That's all we can do
                 }
+
+                bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
 
                 // Get the posterior scale to round calculations to
                 auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
@@ -997,8 +1060,11 @@ ValidVault::finalize(
                             maybeVaultDeltaAssets->delta * -1 - destinationDelta.delta,
                             destinationScale,
                             Number::RoundingMode::Downward) == kZero;
-                    if (!destroyedIsSubUlp &&
-                        localPseudoDeltaAssets * -1 != roundedDestinationDelta)
+                    bool const withdrawAddsUp = fixEnabled
+                        ? agreesWithinOneUnit(
+                              localPseudoDeltaAssets * -1, roundedDestinationDelta, localMinScale)
+                        : localPseudoDeltaAssets * -1 == roundedDestinationDelta;
+                    if (!destroyedIsSubUlp && !withdrawAddsUp)
                     {
                         JLOG(j.fatal()) << "Invariant failed: " <<  //
                             "withdrawal must change vault and destination balance by equal "
@@ -1040,7 +1106,10 @@ ValidVault::finalize(
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 // Note, vaultBalance is negative (see check above)
-                if (assetTotalDelta != vaultPseudoDeltaAssets)
+                bool const totalAddsUp = fixEnabled
+                    ? agreesWithinOneUnit(assetTotalDelta, vaultPseudoDeltaAssets, minScale)
+                    : assetTotalDelta == vaultPseudoDeltaAssets;
+                if (!totalAddsUp)
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: withdrawal and assets outstanding must add up";
@@ -1050,7 +1119,10 @@ ValidVault::finalize(
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
 
-                if (assetAvailableDelta != vaultPseudoDeltaAssets)
+                bool const availableAddsUp = fixEnabled
+                    ? agreesWithinOneUnit(assetAvailableDelta, vaultPseudoDeltaAssets, minScale)
+                    : assetAvailableDelta == vaultPseudoDeltaAssets;
+                if (!availableAddsUp)
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: withdrawal and assets available must add up";
@@ -1093,9 +1165,14 @@ ValidVault::finalize(
                         result = false;
                     }
 
+                    bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
+
                     auto const assetsTotalDelta = roundToAsset(
                         vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    if (assetsTotalDelta != vaultDeltaAssets)
+                    bool const totalAddsUp = fixEnabled
+                        ? agreesWithinOneUnit(assetsTotalDelta, vaultDeltaAssets, minScale)
+                        : assetsTotalDelta == vaultDeltaAssets;
+                    if (!totalAddsUp)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets outstanding must add up";
@@ -1106,7 +1183,10 @@ ValidVault::finalize(
                         vaultAsset,
                         afterVault.assetsAvailable - beforeVault.assetsAvailable,
                         minScale);
-                    if (assetAvailableDelta != vaultDeltaAssets)
+                    bool const availableAddsUp = fixEnabled
+                        ? agreesWithinOneUnit(assetAvailableDelta, vaultDeltaAssets, minScale)
+                        : assetAvailableDelta == vaultDeltaAssets;
+                    if (!availableAddsUp)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets available must add up";

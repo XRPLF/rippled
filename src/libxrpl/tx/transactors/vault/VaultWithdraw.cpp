@@ -300,9 +300,6 @@ VaultWithdraw::doApply()
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
-    XRPL_ASSERT(
-        lossUnrealized <= (assetsTotal - assetsAvailable),
-        "xrpl::VaultWithdraw::doApply : loss and assets do balance");
 
     // The vault must have enough assets on hand.
     if (*assetsAvailable < assetsWithdrawn)
