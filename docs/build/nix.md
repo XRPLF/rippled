@@ -7,7 +7,7 @@ This guide explains how to use Nix to set up a reproducible development environm
 ## Benefits of Using Nix
 
 - **Reproducible environment**: Everyone gets the same versions of tools and compilers
-- **Matches CI**: The Linux CI runs in Docker images built from this exact Nix environment
+- **Matches CI**: The Linux CI runs in Docker images built from this exact Nix environment, and CI builds some macOS configurations in it as well
 - **No system pollution**: Dependencies are isolated and don't affect your system packages
 - **Consistent compilers**: The GCC and Clang shells use the same versions as CI
 - **Quick setup**: Get started with a single command
@@ -68,7 +68,7 @@ A compiler can be chosen by providing its name with the `.#` prefix, e.g. `nix d
 
 On Linux, `.#gcc` and `.#clang` provide the exact toolchain CI uses:
 the compiler (pinned in [`nix/packages.nix`](../../nix/packages.nix))
-rebuilt against the pinned custom glibc (see [`nix/compilers.nix`](../../nix/compilers.nix)).
+rebuilt against the pinned custom glibc (see [`nix/linux.nix`](../../nix/linux.nix)).
 Building that toolchain the first time is slow unless it is fetched from a Nix binary cache.
 If you don't need the custom glibc, the Linux-only `.#gcc-plain` and `.#clang-plain`
 give you the stock nixpkgs compilers of the same versions.
@@ -142,13 +142,79 @@ environment — CI runs in Docker images that bundle the dev shell's toolchain (
 `-plain` shells do not match that toolchain's glibc, so binaries from the remote
 are not a reliable match there.
 
-On **macOS**, CI builds with Apple Clang, so the remote holds nothing for the Nix
-`clang` toolchain and dependencies are compiled locally. We do not publish
-Nix-built macOS binaries because a Conan package ID records the compiler version
-but not the nixpkgs revision.
+On **macOS**, CI also builds in this Nix environment, in Debug and Release (the
+`macos-arm64-*-nix` configurations — Debug because the profile defaults to it).
+The Nix build resolves to `compiler=clang`, so it gets its own package IDs,
+separate from the Apple Clang ones. The
+[dependency upload](../../.github/workflows/upload-conan-deps.yml) publishes them
+on pushes to `develop` and on manual runs — its nightly run rebuilds everything
+from source but uploads nothing — so once a set has been published `nix develop`
+can reuse it instead of compiling every dependency locally. These configurations
+run outside the reduced pull-request matrix, so label a PR `Full CI build` when it
+touches `flake.lock` or `nix/`.
 
 To compile everything from source, add `--build '*'` to the `conan install`
 command.
+
+### Why the nixpkgs revision is not part of the package ID
+
+A Conan package ID records the compiler and its major version, but nothing about
+the nixpkgs revision the toolchain came from — and `flake.lock` moves far more
+often than the toolchain meaningfully changes, so folding it in would rebuild
+every dependency on every bump for nothing.
+
+That is safe as long as no cached artifact resolves a `/nix/store` path at run
+time, because store paths change on every update and the old ones disappear with
+`nix-collect-garbage`. With the `clang` toolchain macOS CI and the dev shell use,
+they do not: it links against `/usr/lib/libc++` and `/usr/lib/libSystem`, and
+store paths reach the `.a` files only through debug info, which nothing resolves
+at link or run time.
+
+> [!WARNING]
+> This does not hold for `nix develop .#gcc` on macOS. There is no system
+> libstdc++, so GCC links its own from the store and every binary keeps a
+> `/nix/store` reference. That shell is fine for tooling, but it is not a build
+> configuration CI covers, and no dependency binaries are published for it.
+
+This is checked rather than assumed.
+[`bin/check-nix-store-refs.sh`](../../bin/check-nix-store-refs.sh) takes one file
+or directory and fails if a binary under it resolves a store path at run time.
+CI runs it over the build output and the Conan cache, and again in the upload job
+before anything is published. You can run it yourself:
+
+```bash
+bin/check-nix-store-refs.sh build
+bin/check-nix-store-refs.sh ~/.conan2-nix
+```
+
+It works on Linux too, but asserts something narrower there: the toolchain always
+writes the store into `PT_INTERP` and `RUNPATH`, and CI builds inside an image
+whose store is fixed for its lifetime, so that is fine. Only the binaries
+[`PatchNixBinary.cmake`](../../cmake/PatchNixBinary.cmake) retargets to the
+system loader have to be clean, and those are what CI checks:
+
+```bash
+bin/check-nix-store-refs.sh build/xrpld
+```
+
+### The libresolv stub
+
+This is not hypothetical: `xrpld` used to be caught by it. The c-ares package
+tells the linker to pass `-lresolv`, and nixpkgs keeps `libresolv` out of the
+macOS SDK and ships it as an ordinary store dylib — so every Nix-built `xrpld`
+recorded a `/nix/store/…-libresolv-93/lib/libresolv.9.dylib` load command and
+stopped running once that path was collected. Nothing in the link uses a single
+symbol from it.
+
+Both environments now put a stub on the linker search path
+(`libresolvSystemStub` in [`nix/darwin.nix`](../../nix/darwin.nix)): the
+same library with its install name set to `/usr/lib/libresolv.9.dylib`, which is
+exactly the load command the Apple Clang build records.
+
+Package IDs did not change, so Conan keeps serving anything built before the
+stub landed. If a binary fails to start with `Library not loaded: /nix/store/…`,
+see [that entry](./nix_troubleshooting.md#library-not-loaded-nixstore-from-a-binary-that-used-to-work)
+in the troubleshooting guide.
 
 ## Automatic Activation with direnv
 
