@@ -16,7 +16,7 @@ class Application;
 class NetworkOPs;
 class LedgerMaster;
 
-namespace RPC {
+namespace rpc {
 
 /**
  * The context of information needed to call an RPC.
@@ -25,10 +25,10 @@ struct Context
 {
     beast::Journal const j;
     Application& app;
-    Resource::Charge& loadType;
+    resource::Charge& loadType;
     NetworkOPs& netOps;
     LedgerMaster& ledgerMaster;
-    Resource::Consumer& consumer;
+    resource::Consumer& consumer;
     Role role;
     InfoSub::pointer infoSub;
     unsigned int apiVersion;
@@ -56,5 +56,5 @@ struct GRPCContext : public Context
     RequestType params;
 };
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl
