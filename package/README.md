@@ -9,6 +9,7 @@ a build configured with `-Dvalidator_keys=ON`.
 ```
 package/
   build_pkg.sh        Staging and build script (called by the CMake `package` target and CI)
+  sign_rpm.sh         Signs the built RPMs (called by CI when publishing)
   publish_pkg.sh      Uploads built packages to the XRPLF Nexus repositories (called by CI)
   rpm/
     xrpld.spec      RPM spec
@@ -32,7 +33,7 @@ package manager (`apt-get` -> deb, `dnf`/`yum` -> rpm).
 
 | Package type | Image (`package_configs.<distro>[].image` in `linux.json`) | Tools required                                      |
 | ------------ | ---------------------------------------------------------- | --------------------------------------------------- |
-| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`                                          |
+| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`, `rpmsign`                               |
 | DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, debhelper with compat level 13 |
 
 To print the full packaging matrix (artifact names and images) for the current
@@ -152,11 +153,14 @@ any `XRPLF` repository, `on-pr.yml` never. Both authenticate with the
 `NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD` secrets already used for the
 Conan remote.
 
-Nexus owns the repository metadata; nothing here signs or indexes anything. Worth
-knowing:
+Nexus owns the repository metadata; nothing here indexes anything. Worth knowing:
 
 - Each apt-hosted repository needs a distribution and a PGP signing keypair
-  configured in Nexus, which rejects one created without a keypair.
+  configured in Nexus, which rejects one created without a keypair. Nexus signs
+  the apt metadata with it, never the packages.
+- Hosted yum repositories cannot be signed by Nexus at all, so `sign_rpm.sh`
+  signs the RPMs before they are uploaded, and rpm clients verify with
+  `gpgcheck=1` rather than `repo_gpgcheck=1`.
 - yum metadata is rebuilt asynchronously, so a successful publish is not
   immediately installable.
 - Each job uploads only what it built, and uploads are not transactional, so a
@@ -212,8 +216,12 @@ fail early.
 Flags are for explicit invocation; environment variables are intended for
 CMake/CI integration. The CI workflow and the CMake `package` target both invoke
 `build_pkg.sh` with no flags; CMake supplies `SRC_DIR`, `BUILD_DIR`, and
-`PKG_RELEASE` via env, while CI supplies `BUILD_DIR` and `PKG_RELEASE` via env
-and lets the script use defaults for the rest.
+`PKG_RELEASE` via env, while CI supplies `BUILD_DIR`, `PKG_RELEASE` and
+`PKG_CHANNEL` via env and lets the script use defaults for the rest.
+
+Signing is not part of this script. `sign_rpm.sh` does it in a separate CI step
+that only runs when publishing, so a published RPM is always signed and a local
+build never needs a key.
 
 It resolves `SRC_DIR` and `BUILD_DIR` to absolute paths, then calls
 `stage_common()` to copy the `xrpld` and `validator-keys` binaries, config files,
