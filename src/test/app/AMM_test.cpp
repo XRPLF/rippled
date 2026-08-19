@@ -53,6 +53,7 @@
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_search.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <chrono>
@@ -2482,12 +2483,9 @@ private:
         auto hasVoter = [](json::Value const& ammInfo, std::string const& account) {
             if (!ammInfo.isMember(jss::vote_slots))
                 return false;
-            for (auto const& entry : ammInfo[jss::vote_slots])
-            {
-                if (entry[jss::account] == account)
-                    return true;
-            }
-            return false;
+            return std::ranges::any_of(ammInfo[jss::vote_slots], [&](json::Value const& entry) {
+                return entry[jss::account] == account;
+            });
         };
 
         // PoC: an LP with a dominant, fee-suppressing vote withdraws all
