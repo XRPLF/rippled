@@ -1857,6 +1857,89 @@ private:
             expectStillPending(env, loanKeylet);
         }
 
+        // The preceding test advances the ledger clock past both StartDate
+        // and RedemptionDate, so LoanAccept::preclaim's StartDate expiry
+        // check fires first and the vault-phase branch itself is never
+        // exercised. The next two cases isolate the phase gate by rewriting
+        // the vault's SubscriptionDate / RedemptionDate on the open ledger
+        // (bypassing the normally-immutable-field invariant the same way
+        // makeVaultAccrual does for sfLEVersion) while leaving the loan's
+        // StartDate comfortably in the future.
+        for (auto const scenario : {VaultPhase::Subscription, VaultPhase::Redemption})
+        {
+            char const* const phaseName =
+                scenario == VaultPhase::Subscription ? "Subscription" : "Redemption";
+            TER const expected =
+                scenario == VaultPhase::Subscription ? TER{tecTOO_SOON} : TER{tecEXPIRED};
+            testcase << "Two-step: LoanAccept rejected during " << phaseName
+                     << " (StartDate not yet expired)";
+
+            Env env(*this, features);
+            env.fund(XRP(100'000'000), noripple(lender));
+            env.fund(XRP(1'000'000), borrower);
+            env.close();
+
+            BrokerParameters params{};
+            params.vaultKind = VaultKind::ClosedEnded;
+            params.subscriptionOffset = 60;
+            // Generous so LoanSet's finalPayment < RedemptionDate guard passes.
+            params.redemptionOffset = 10u * 365u * 24u * 60u * 60u;
+            auto const asset = createAsset(env, AssetType::XRP, params, issuer, lender, borrower);
+            auto const broker = createVaultAndBroker(env, asset, lender, params);
+
+            // Propose while the vault is in Investment. StartDate is 1h out
+            // so the StartDate expiry check does not fire before the phase
+            // check, no matter which phase the mutation forces below.
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+            propose(env, broker, lender, borrower, startDate);
+            env.close();
+            expectStillPending(env, loanKeylet);
+
+            // Force the vault into the target phase by rewriting the
+            // relevant date on the open ledger. Not closing between the
+            // mutation and the LoanAccept: OpenLedger::accept rebuilds the
+            // open view from the last-closed ledger and re-applies pending
+            // txs, discarding raw mutations.
+            std::uint32_t const parentClose =
+                env.current()->parentCloseTime().time_since_epoch().count();
+            auto const changed =
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                    Sandbox sb(&view, TapNone);
+                    auto v = sb.peek(broker.vaultKeylet());
+                    if (!v)
+                        return false;
+                    if (scenario == VaultPhase::Subscription)
+                    {
+                        // parentClose < SubscriptionDate → Subscription.
+                        // Sit strictly below StartDate so nothing else shifts.
+                        v->setFieldU32(sfSubscriptionDate, parentClose + 600);
+                    }
+                    else
+                    {
+                        // RedemptionDate < parentClose → Redemption.
+                        // SubscriptionDate is already <= parentClose from
+                        // createVaultAndBroker's phase advance.
+                        v->setFieldU32(sfRedemptionDate, parentClose - 1);
+                    }
+                    sb.update(v);
+                    sb.apply(view);
+                    return true;
+                });
+            if (!BEAST_EXPECT(changed))
+                continue;
+
+            // Sanity: the open-ledger view now reports the intended phase,
+            // and StartDate is still in the future so the phase gate — not
+            // the StartDate expiry check — is what will trip.
+            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                BEAST_EXPECT(getVaultPhase(*env.current(), v) == scenario);
+            BEAST_EXPECT(parentClose < startDate);
+
+            env(accept(borrower, loanKeylet.key), Ter(expected));
+            expectStillPending(env, loanKeylet);
+        }
+
         {
             testcase("Two-step: pending loan bounds cover clawback, LoanAccept still succeeds");
 

@@ -80,8 +80,10 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     auto const brokerSle = ctx.view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
     if (!brokerSle)
     {
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "LoanAccept: LoanBroker does not exist.";
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerPseudo = brokerSle->at(sfAccount);
@@ -89,8 +91,10 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     auto const vaultSle = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
     {
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "LoanAccept: Vault does not exist.";
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
     Asset const asset = vaultSle->at(sfAsset);
     auto const vaultPseudo = vaultSle->at(sfAccount);
@@ -210,7 +214,7 @@ LoanAccept::doApply()
 
     // 3.9.4.8 Make the borrower the owner of the loan.
     if (auto const ter = dirLink(view, borrower, loanSle, sfOwnerNode))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
     view.update(loanSle);
 
     associateAsset(*loanSle, vaultAsset);

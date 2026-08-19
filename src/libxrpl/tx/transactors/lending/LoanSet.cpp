@@ -477,7 +477,7 @@ applyPendingLoan(
     // Link the loan into the broker's directory. The borrower directory link is
     // deferred to LoanAccept for the two-step (pending) flow.
     if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
 
     associateAsset(*vaultSle, vaultAsset);
     associateAsset(*brokerSle, vaultAsset);
@@ -583,10 +583,10 @@ applyImmediateLoan(
     // Link the loan into the broker's directory, then make the borrower the
     // owner of the loan by linking it into the borrower's directory.
     if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
 
     if (auto const ter = dirLink(view, plan.borrower, loan, sfOwnerNode))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
 
     associateAsset(*vaultSle, vaultAsset);
     associateAsset(*brokerSle, vaultAsset);
