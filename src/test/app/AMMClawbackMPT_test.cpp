@@ -16,6 +16,8 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -1477,6 +1479,60 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testClawbackCreatesMissingMPToken(FeatureBitset features)
+    {
+        testcase("test AMMClawback creates missing MPToken");
+        using namespace jtx;
+
+        auto test = [&](std::optional<std::uint64_t> const clawAmount) {
+            Env env{*this, features};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            env.fund(XRP(1'000'000), gw, alice);
+            env.close();
+
+            MPTTester token(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 1'000,
+                 .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
+                 .authHolder = true});
+
+            AMM ammAlice(env, alice, token(1'000), XRP(1'000));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, token) == token(0));
+
+            // The holder can delete the zero-balance MPToken while still
+            // holding LP tokens. A regular AMMWithdraw remains subject to
+            // RequireAuth and cannot recreate the missing token.
+            token.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::mptoken(token.issuanceID(), alice.id())));
+            ammAlice.withdrawAll(alice, std::nullopt, Ter(tecNO_AUTH));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::mptoken(token.issuanceID(), alice.id())));
+
+            // AMMClawback ignores authorization and must be able to recreate
+            // the holder MPToken so the issuer can recover MPT from the pool.
+            std::optional<STAmount> amount;
+            if (clawAmount)
+                amount = token(*clawAmount);
+            env(amm::ammClawback(gw, alice, token, XRP, amount));
+            env.close();
+
+            auto const sleMpt = env.le(keylet::mptoken(token.issuanceID(), alice.id()));
+            BEAST_EXPECT(sleMpt && sleMpt->isFlag(lsfMPTAuthorized));
+            env.require(Balance(alice, token(0)));
+
+            BEAST_EXPECT(clawAmount ? ammAlice.ammExists() : !ammAlice.ammExists());
+        };
+
+        test(std::nullopt);
+        test(400);
+    }
+
+    void
     testSingleDepositAndClawback(FeatureBitset features)
     {
         testcase("test single depoit and clawback");
@@ -1949,6 +2005,199 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         }
     }
 
+    // Test that AMMClawback succeeds when the LP has previously deleted both
+    // zero-balance MPToken objects in an MPT/MPT pool.  The fix changes the
+    // ValidMPTIssuance invariant threshold from > 1 to > 2 so that the two
+    // MPToken creations triggered by the internal AMMWithdraw are permitted.
+    void
+    testClawbackAfterDeletingMPTokens(FeatureBitset features)
+    {
+        testcase("test AMMClawback after holder deletes zero-balance MPTokens");
+        using namespace jtx;
+
+        // Partial clawback (one asset): verify both MPTokens are recreated and
+        // the non-claw asset is returned to alice.
+        {
+            Env env(*this, features);
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            env.fund(XRP(100'000), gw, alice);
+            env.close();
+
+            MPTTester btc(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 10'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+
+            MPTTester eth(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 10'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+
+            // Alice deposits everything into the MPT/MPT pool; her MPT
+            // balances drop to zero.
+            AMM const amm(env, alice, btc(10'000), eth(10'000));
+            env.close();
+            BEAST_EXPECT(amm.expectBalances(btc(10'000), eth(10'000), IOUAmount{10'000}));
+
+            auto aliceBTC = env.balance(alice, btc);
+            auto aliceETH = env.balance(alice, eth);
+            BEAST_EXPECT(aliceBTC == btc(0));
+            BEAST_EXPECT(aliceETH == eth(0));
+
+            // Alice deletes both zero-balance MPTokens to reclaim reserves.
+            btc.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            eth.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), alice.id())));
+            BEAST_EXPECT(!env.le(keylet::mptoken(eth.issuanceID(), alice.id())));
+
+            // gw claws back some BTC from alice's share in the pool.
+            // AMMWithdraw internally creates both missing MPTokens
+            // (mptokensCreated_ == 2); the invariant (> 2) allows this.
+            env(amm::ammClawback(gw, alice, btc, eth, btc(1'000)));
+            env.close();
+
+            // Both MPToken objects must have been recreated.
+            BEAST_EXPECT(env.le(keylet::mptoken(btc.issuanceID(), alice.id())));
+            BEAST_EXPECT(env.le(keylet::mptoken(eth.issuanceID(), alice.id())));
+
+            // The non-claw asset (eth) was returned to alice.
+            BEAST_EXPECT(env.balance(alice, eth) > aliceETH);
+            // The claw asset (btc) was burned; alice's btc balance stays 0.
+            env.require(Balance(alice, aliceBTC));
+            BEAST_EXPECT(amm.ammExists());
+        }
+
+        // Full clawback (two assets, tfClawTwoAssets): verify both MPTokens
+        // are recreated and the AMM is deleted when fully drained.
+        {
+            Env env(*this, features);
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            env.fund(XRP(100'000), gw, alice);
+            env.close();
+
+            MPTTester btc(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 10'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+
+            MPTTester eth(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 10'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+
+            AMM const amm(env, alice, btc(10'000), eth(10'000));
+            env.close();
+
+            auto aliceBTC = env.balance(alice, btc);
+            auto aliceETH = env.balance(alice, eth);
+
+            btc.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            eth.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), alice.id())));
+            BEAST_EXPECT(!env.le(keylet::mptoken(eth.issuanceID(), alice.id())));
+
+            // Full two-asset clawback: both assets are clawed and alice
+            // receives nothing back.  The AMM should be empty and deleted.
+            env(amm::ammClawback(gw, alice, btc, eth, std::nullopt), Txflags(tfClawTwoAssets));
+            env.close();
+
+            BEAST_EXPECT(!amm.ammExists());
+            // Both assets were clawed; alice's balances remain at zero.
+            env.require(Balance(alice, aliceBTC));
+            env.require(Balance(alice, aliceETH));
+        }
+    }
+
+    void
+    testClawbackCrossIssuerPairedAssetAuth(FeatureBitset features)
+    {
+        testcase("test AMMClawback recreates paired-issuer MPToken unauthorized");
+        using namespace jtx;
+
+        // Cross-issuer MPT/MPT pool: btc is issued by gw, eth by gw2, and both
+        // require authorization. Alice deposits her entire balance of both and
+        // deletes the resulting zero-balance MPTokens. When gw claws back its
+        // own asset (btc), the two-asset withdrawal must recreate both of
+        // Alice's MPTokens so the pool can pay her the paired asset. The
+        // recreated MPToken may only be auto-authorized for the clawback
+        // issuer's own asset (btc); the paired asset's issuer (gw2) never
+        // consented, so eth must be recreated *unauthorized*, leaving gw2 in
+        // control of its own token and preserving its RequireAuth guarantee.
+        Env env(*this, features);
+        Account const gw{"gateway"};
+        Account const gw2{"gateway2"};
+        Account const alice{"alice"};
+        env.fund(XRP(100'000), gw, gw2, alice);
+        env.close();
+
+        MPTTester btc(
+            {.env = env,
+             .issuer = gw,
+             .holders = {alice},
+             .pay = 10'000,
+             .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
+             .authHolder = true});
+
+        MPTTester eth(
+            {.env = env,
+             .issuer = gw2,
+             .holders = {alice},
+             .pay = 10'000,
+             .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
+             .authHolder = true});
+
+        // Alice deposits everything into the pool; her MPT balances drop to 0.
+        AMM const amm(env, alice, btc(10'000), eth(10'000));
+        env.close();
+        BEAST_EXPECT(amm.expectBalances(btc(10'000), eth(10'000), IOUAmount{10'000}));
+        BEAST_EXPECT(env.balance(alice, btc) == btc(0));
+        BEAST_EXPECT(env.balance(alice, eth) == eth(0));
+
+        // Alice deletes both zero-balance MPTokens to reclaim reserves.
+        btc.authorize({.account = alice, .flags = tfMPTUnauthorize});
+        eth.authorize({.account = alice, .flags = tfMPTUnauthorize});
+        BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), alice.id())));
+        BEAST_EXPECT(!env.le(keylet::mptoken(eth.issuanceID(), alice.id())));
+
+        // gw (issuer of btc) claws back part of Alice's btc. This is a
+        // cross-issuer pool, so tfClawTwoAssets is not permitted: only btc is
+        // clawed back, while the paired eth is returned to Alice.
+        env(amm::ammClawback(gw, alice, btc, eth, btc(1'000)));
+        env.close();
+
+        // Both MPTokens were recreated so the withdrawal could pay Alice.
+        auto const sleBtc = env.le(keylet::mptoken(btc.issuanceID(), alice.id()));
+        auto const sleEth = env.le(keylet::mptoken(eth.issuanceID(), alice.id()));
+        BEAST_EXPECT(sleBtc);
+        BEAST_EXPECT(sleEth);
+
+        // The clawback issuer's own asset (btc) may be recreated authorized:
+        // gw has authority over its own token.
+        BEAST_EXPECT(sleBtc && sleBtc->isFlag(lsfMPTAuthorized));
+
+        // The paired asset (eth) is issued by gw2, who did not sign this
+        // transaction. It must be recreated *unauthorized* so gw2's RequireAuth
+        // is not bypassed. This is the core assertion for the cross-issuer fix.
+        BEAST_EXPECT(sleEth && !sleEth->isFlag(lsfMPTAuthorized));
+
+        // The clawback still completed: btc was clawed back (Alice keeps a zero
+        // btc balance) and the paired eth was delivered into Alice's now
+        // unauthorized, gw2-gated MPToken (non-zero raw balance).
+        BEAST_EXPECT(sleBtc && sleBtc->getFieldU64(sfMPTAmount) == 0);
+        BEAST_EXPECT(sleEth && sleEth->getFieldU64(sfMPTAmount) > 0);
+        BEAST_EXPECT(amm.ammExists());
+    }
+
     void
     testClawbackCreatesMPToken(FeatureBitset features)
     {
@@ -2081,6 +2330,9 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         testAMMClawbackAllSameIssuer(all);
         testAMMClawbackIssuesEachOther(all);
         testAssetFrozenOrLocked(all);
+        testClawbackCreatesMissingMPToken(all);
+        testClawbackAfterDeletingMPTokens(all);
+        testClawbackCrossIssuerPairedAssetAuth(all);
         testSingleDepositAndClawback(all);
         testLastHolderLPTokenBalance(all);
         testLastHolderLPTokenBalance(all - fixAMMv1_3 - fixAMMClawbackRounding);
