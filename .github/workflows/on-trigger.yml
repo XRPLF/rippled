@@ -24,6 +24,7 @@ on:
       - ".github/workflows/reusable-check-autogen.yml"
       - ".github/workflows/reusable-clang-tidy.yml"
       - ".github/workflows/reusable-package.yml"
+      - ".github/workflows/reusable-rust.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
       - ".github/workflows/reusable-test.yml"
       - ".github/workflows/reusable-upload-recipe.yml"
@@ -35,6 +36,7 @@ on:
       - "cfg/**"
       - "cmake/**"
       - "conan/**"
+      - "crates/**"
       - "external/**"
       - "include/**"
       - "src/**"
@@ -98,6 +100,11 @@ jobs:
       # not identical to a regular compilation.
       ccache_enabled: ${{ github.repository_owner == 'XRPLF' && !startsWith(github.ref, 'refs/heads/release') }}
       os: ${{ matrix.os }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  rust:
+    uses: ./.github/workflows/reusable-rust.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
