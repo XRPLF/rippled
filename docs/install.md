@@ -18,12 +18,11 @@ Packages are published to four channels:
 - `experimental` - beta builds
 - `develop` - every push to the [`develop` branch](https://github.com/XRPLF/rippled/tree/develop)
 
-For how each channel is produced,
-see [Publishing packages](../package/README.md#publishing-packages).
+See [Publishing packages](../package/README.md#publishing-packages) for how channels are produced.
 
 The instructions below use `stable`.
-To follow another channel,
-replace `stable` with its name wherever it appears in the repository configuration.
+To follow another channel, replace `stable` with its name
+wherever it appears in the repository configuration.
 
 > [!WARNING]
 > Channels other than `stable` may be broken at any time.
@@ -61,8 +60,7 @@ replace `stable` with its name wherever it appears in the repository configurati
 
     In particular, make sure that the fingerprint matches.
 
-4.  Add the repository,
-    using the channel you picked in [Release channels](#release-channels):
+4.  Add the repository, using the channel you picked in [Release channels](#release-channels):
 
     ```bash
     echo "deb [signed-by=/etc/apt/keyrings/xrplf.asc] https://packages.xrplf.org/repository/deb-stable focal main" | \
@@ -89,8 +87,7 @@ replace `stable` with its name wherever it appears in the repository configurati
     sudo rpm --import https://packages.xrplf.org/xrplf.asc
     ```
 
-2.  Add the repository,
-    using the channel you picked in [Release channels](#release-channels):
+2.  Add the repository, using the channel you picked in [Release channels](#release-channels):
 
     ```bash
     cat << REPOFILE | sudo tee /etc/yum.repos.d/xrplf.repo
@@ -116,8 +113,7 @@ replace `stable` with its name wherever it appears in the repository configurati
 ## The xrpld service
 
 The package installs a systemd unit and enables it, so `xrpld` starts on boot.
-On Debian and Ubuntu the package starts it immediately as well;
-elsewhere, start it yourself:
+On Debian and Ubuntu the package starts it immediately as well; elsewhere, start it yourself:
 
 ```bash
 sudo systemctl start xrpld.service
@@ -131,8 +127,7 @@ systemctl status xrpld.service
 
 ### Optional: binding to privileged ports
 
-To serve incoming API requests on port 80 or 443,
-grant the service the capability to bind them.
+To serve incoming API requests on port 80 or 443, grant the service the capability to bind them.
 You must also update the config file's port settings.
 
 ```bash
