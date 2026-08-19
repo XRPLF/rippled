@@ -1588,6 +1588,9 @@ LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last
 {
     if (first > last)
     {
+        // In expected usage, this will never happen because "first" is generally initialized to
+        // "last", "last" is guaranteed to grow monotonically, and "first" either doesn't change
+        // or grows more slowly.
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::LedgerMaster::missingFromCompleteLedgerRange : invalid parameters");
         return 0;
