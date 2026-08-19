@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
@@ -11,6 +12,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <map>
+#include <optional>
 #include <vector>
 
 namespace xrpl {
@@ -70,7 +72,8 @@ private:
         STTx const& tx,
         beast::Journal const& j,
         bool enforce,
-        bool fixOverrideFreeze);
+        bool fixOverrideFreeze,
+        std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts);
 
     static bool
     validateFrozenState(
@@ -80,7 +83,8 @@ private:
         beast::Journal const& j,
         bool enforce,
         bool globalFreeze,
-        bool fixOverrideFreeze);
+        bool fixOverrideFreeze,
+        std::optional<LoanDefaultFreezeExemptAccounts> const& loanDefaultAccounts);
 };
 
 }  // namespace xrpl

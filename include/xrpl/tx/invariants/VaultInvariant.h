@@ -55,7 +55,17 @@ namespace xrpl {
  * - shares outstanding may only change through deposit, withdraw, or clawback
  * - no vault transaction can change loss unrealized (it's updated by loan
  *   transactions)
+ * - a created closed-ended vault must satisfy
+ *   MIN_INVESTMENT_PERIOD <= RedemptionDate - SubscriptionDate <
+ *   MAX_INVESTMENT_PERIOD
+ * - vault deposit may only succeed when the vault phase is NoPhase or
+ *   Subscription
+ * - vault withdrawal may not succeed when the vault phase is Investment
+ * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
+ *   vault phase is Investment
  *
+ * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
+ * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp).
  */
 class ValidVault
 {
@@ -74,6 +84,9 @@ class ValidVault
         Number lossUnrealized = 0;
         std::uint8_t withdrawalPolicy = 0;
         std::uint8_t scale = 0;
+        std::optional<std::uint8_t> vaultKind;
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
 
         Vault static make(SLE const&);
     };
@@ -196,7 +209,12 @@ private:
     isVaultEmpty(Vault const& vault);
 
     /**
-     * @brief Enforce the invariants specific to a @c ttLOAN_SET transaction.
+     * @brief Invariant check for @c ttLOAN_SET.
+     *
+     * For a closed-ended vault, a loan may only be originated while the vault is in the Investment
+     * phase (strictly past @c SubscriptionDate and before @c RedemptionDate). Open-ended vaults (@c
+     * NoPhase) are unaffected. The complementary maturity bound (final payment strictly precedes @c
+     * RedemptionDate) is enforced by @c ValidLoan.
      *
      * @param tx            The transaction being applied.
      * @param view          Active ledger view (used for rules).

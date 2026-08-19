@@ -16,6 +16,8 @@ namespace xrpl {
  * @brief Invariants: Loans are internally consistent
  *
  * 1. If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
+ * 2. A newly-created Loan against a closed-ended vault must satisfy
+ *    `StartDate + PaymentInterval * PaymentRemaining < Vault.RedemptionDate`.
  *
  * A loan may only be deleted once it is fully paid off (no payments
  * remaining):
