@@ -432,7 +432,7 @@ private:
 /**
  * @brief Invariant: A failed transaction must not create domain-specific ledger objects.
  *
- * When a transaction fails (TEC result), it must not have created any new
+ * When a transaction fails (non-success TER result), it must not have created any new
  * domain objects such as Vault, Loan, or LoanBroker entries. Only fee
  * deduction from the sender's account is permitted.
  *
