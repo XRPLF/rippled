@@ -78,8 +78,6 @@ replace `stable` with its name wherever it appears in the repository configurati
     sudo apt -y install xrpld
     ```
 
-Once installed, continue with [The xrpld service](#the-xrpld-service).
-
 ## With the YUM package manager
 
 1.  Add the XRPL Foundation package-signing key:
@@ -111,8 +109,6 @@ Once installed, continue with [The xrpld service](#the-xrpld-service).
     ```bash
     sudo yum install -y xrpld
     ```
-
-Once installed, continue with [The xrpld service](#the-xrpld-service).
 
 ## The xrpld service
 
