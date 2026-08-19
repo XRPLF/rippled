@@ -20,6 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -147,7 +148,7 @@ struct FeePayer
     FeePayerType type{FeePayerType::Account};
 };
 
-class Transactor
+class Transactor : public TxInvariantCheck
 {
 protected:
     ApplyContext& ctx_;
@@ -158,7 +159,7 @@ protected:
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
 public:
-    virtual ~Transactor() = default;
+    ~Transactor() override = default;
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;
@@ -184,19 +185,49 @@ public:
     }
 
     /**
+     * Which invariant layers to check.
+     *
+     * Full runs the protocol invariants plus the transaction-specific
+     * check.  This is always the scope of the initial pass, even when the
+     * tentative TER is a tec: a bug or exploit could still mutate ledger
+     * state, so transaction-specific invariants must run for failed
+     * transactions too.
+     *
+     * ProtocolOnly runs only the protocol invariants and is used
+     * exclusively for the second invariant pass that follows a
+     * fee-claim reset — specifically, the reset that
+     * Transactor::operator() performs when the initial invariant pass
+     * returns tecINVARIANT_FAILED, rolling the transaction's effects back
+     * to a fee-claim-only state.  In that reduced state the
+     * transaction-specific post-conditions no longer apply, but the
+     * protocol invariants must still hold against the fee claim itself.
+     * ProtocolOnly is not intended for other context discards (e.g. the
+     * reset used to handle tecOVERSIZE/tecKILLED/etc. in
+     * processPersistentChanges, or the ctx_.discard() done under
+     * TapFailHard); those paths do not re-run invariants at all.
+     */
+    enum class InvariantScope { Full, ProtocolOnly };
+
+    /**
      * Check all invariants for the current transaction.
      *
-     * Runs transaction-specific invariants first (visitInvariantEntry +
-     * finalizeInvariants), then protocol-level invariants.  Both layers
-     * always run; the worst failure code is returned.
+     * Delegates to the free xrpl::checkInvariants runner.  When @p scope is
+     * InvariantScope::Full, this transactor is passed so both layers
+     * share a single walk of the modified ledger entries.  A failure in
+     * either layer fails the transaction the same way: tecINVARIANT_FAILED
+     * on the first pass, which the caller may respond to by rolling the
+     * transaction back to a fee-claim state and re-invoking this with
+     * InvariantScope::ProtocolOnly; a failure on that post-reset pass
+     * escalates to tefINVARIANT_FAILED.
      *
      * @param result  the tentative TER from transaction processing.
      * @param fee     the fee consumed by the transaction.
+     * @param scope   which invariant layers to check.
      *
      * @return the final TER after all invariant checks.
      */
     [[nodiscard]] TER
-    checkInvariants(TER result, XRPAmount fee);
+    checkInvariants(TER result, XRPAmount fee, InvariantScope scope);
 
     /////////////////////////////////////////////////////
     /*
@@ -538,20 +569,30 @@ private:
     preflightUniversal(PreflightContext const& ctx);
 
     /**
-     * Check transaction-specific invariants only.
-     *
-     * Walks every modified ledger entry via visitInvariantEntry, then
-     * calls finalizeInvariants on the derived transactor.  Returns
-     * tecINVARIANT_FAILED if any transaction invariant is violated.
-     *
-     * @param result  the tentative TER from transaction processing.
-     * @param fee     the fee consumed by the transaction.
-     *
-     * @return the original result if all invariants pass, or
-     *         tecINVARIANT_FAILED otherwise.
+     * Bridges the two-phase TxInvariantCheck interface to this transactor's
+     * visitInvariantEntry/finalizeInvariants hooks.  Declared private (rather
+     * than protected, like the hooks they forward to) so that neither this
+     * transactor nor any subclass can call them directly through a
+     * Transactor& — only through the TxInvariantCheck& that the free
+     * xrpl::checkInvariants runner holds, which is where the two-phase
+     * ordering is enforced.
      */
-    [[nodiscard]] TER
-    checkTransactionInvariants(TER result, XRPAmount fee);
+    void
+    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) final
+    {
+        visitInvariantEntry(isDelete, before, after);
+    }
+
+    [[nodiscard]] bool
+    finalize(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) final
+    {
+        return finalizeInvariants(tx, result, fee, view, j);
+    }
 };
 
 inline bool

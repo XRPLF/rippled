@@ -5,6 +5,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
@@ -22,11 +23,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/format/free_funcs.hpp>
-
 #include <array>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -57,10 +56,10 @@ injectSLE(json::Value& jv, SLE const& sle)
         auto const& hash = sle.getFieldH128(sfEmailHash);
         Blob const b(hash.begin(), hash.end());
         std::string md5 = strHex(makeSlice(b));
-        boost::to_lower(md5);
+        md5 = toLower(md5);
         // VFALCO TODO Give a name to this constant and move it
         //             to a more visible location.
-        jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
+        jv[jss::urlgravatar] = std::format("https://www.gravatar.com/avatar/{}", md5);
     }
 }
 
