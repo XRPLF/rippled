@@ -514,7 +514,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 }
 
 // Pseudo-account designator fields MUST be maintained by including the
-// SField::sMD_PseudoAccount flag in the SField definition. (Don't forget to
+// SField::kSmdPseudoAccount flag in the SField definition. (Don't forget to
 // "| SField::sMD_Default"!) The fields do NOT need to be amendment-gated,
 // since a non-active amendment will not set any field, by definition.
 // Specific properties of a pseudo-account are NOT checked here, that's what

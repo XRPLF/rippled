@@ -352,14 +352,14 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
  *
  * The list is constructed during initialization and is const after that.
  * Pseudo-account designator fields MUST be maintained by including the
- * SField::sMD_PseudoAccount flag in the SField definition.
+ * SField::kSmdPseudoAccount flag in the SField definition.
  */
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields();
 
 /**
  * Returns true if and only if sleAcct is a pseudo-account of any kind
- * (i.e. carries at least one field flagged with SField::sMD_PseudoAccount).
+ * (i.e. carries at least one field flagged with SField::kSmdPseudoAccount).
  *
  * Returns false if sleAcct is:
  * - NOT a pseudo-account OR
