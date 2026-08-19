@@ -36,6 +36,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 
@@ -7355,6 +7356,127 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testCreateOfferInvalidAmount(FeatureBitset features)
+    {
+        testcase("Invalid NFT offer create amount");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, a fake-XRP offer amount (an IOU using the
+        // "XRP" currency code) is not rejected in preflight. With the amendment
+        // enabled, preflight rejects it with temBAD_CURRENCY.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const alice{"alice"};
+            Account const gw{"gw"};
+
+            env.fund(XRP(1000), alice, gw);
+            env.close();
+
+            uint256 const nftID = token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
+            env.close();
+
+            // Fake XRP (an IOU using the "XRP" currency code) sell offer
+            // amount.
+            auto const bad = IOU(gw, badCurrency());
+            env(token::createOffer(alice, nftID, bad(1)),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{temBAD_CURRENCY} : TER{tesSUCCESS}));
+            env.close();
+        }
+    }
+
+    void
+    testAcceptOfferInvalidBrokerFee(FeatureBitset features)
+    {
+        testcase("Invalid NFT offer accept broker fee");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, a fake-XRP broker fee (an IOU using the "XRP"
+        // currency code) is not rejected in preflight and reaches later offer
+        // validation instead. With the amendment enabled, preflight rejects it
+        // with temBAD_CURRENCY.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const alice{"alice"};
+            Account const buyer{"buyer"};
+            Account const broker{"broker"};
+            Account const gw{"gw"};
+
+            env.fund(XRP(1000), alice, buyer, broker, gw);
+            env.close();
+
+            uint256 const nftID = token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
+            env.close();
+
+            uint256 const sellOfferIndex =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            env(token::createOffer(alice, nftID, XRP(10)), Txflags(tfSellNFToken));
+            env.close();
+
+            uint256 const buyOfferIndex =
+                keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
+            env(token::createOffer(buyer, nftID, XRP(40)), token::Owner(alice));
+            env.close();
+
+            // Fake XRP (an IOU using the "XRP" currency code) broker fee.
+            auto const bad = IOU(gw, badCurrency());
+            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex),
+                token::BrokerFee(bad(1)),
+                Ter(withFix ? TER{temBAD_CURRENCY} : TER{tecNFTOKEN_BUY_SELL_MISMATCH}));
+            env.close();
+        }
+    }
+
+    void
+    testCreateOfferIouIssuerGlobalFreeze(FeatureBitset features)
+    {
+        testcase("Create NFT offer by IOU issuer under global freeze");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, an IOU issuer that has set a global freeze on
+        // their own currency cannot create an NFToken offer denominated in that
+        // currency; the offer is rejected with tecFROZEN.  With the amendment
+        // enabled, the issuer is not subject to their own global freeze when the
+        // offer is denominated in their own IOU (e.g. to receive their own
+        // transfer fees), so the offer succeeds.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const issuer{"issuer"};
+            IOU const isISU(issuer["ISU"]);
+
+            env.fund(XRP(1000), issuer);
+            env.close();
+
+            // issuer mints a transferable NFToken.
+            uint256 const nftID = token::getNextID(env, issuer, 0, tfTransferable);
+            env(token::mint(issuer, 0u), Txflags(tfTransferable));
+            env.close();
+
+            // issuer sets a global freeze on their own IOU.
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+
+            // issuer creates a sell offer for the NFToken denominated in their
+            // own (globally frozen) IOU.
+            env(token::createOffer(issuer, nftID, isISU(100)),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{tesSUCCESS} : TER{tecFROZEN}));
+            env.close();
+        }
+    }
+
 protected:
     FeatureBitset const allFeatures_{test::jtx::testableAmendments()};
 
@@ -7397,6 +7519,9 @@ protected:
         testUnaskedForAutoTrustline(features);
         testNFTIssuerIsIOUIssuer(features);
         testNFTokenModify(features);
+        testCreateOfferInvalidAmount(features);
+        testAcceptOfferInvalidBrokerFee(features);
+        testCreateOfferIouIssuerGlobalFreeze(features);
     }
 
 public:
