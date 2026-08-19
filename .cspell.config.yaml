@@ -384,4 +384,5 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT
