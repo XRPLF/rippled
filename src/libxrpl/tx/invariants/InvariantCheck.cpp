@@ -1300,4 +1300,48 @@ ObjectHasPseudoAccount::finalize(
     return !failed;
 }
 
+void
+FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    // Track newly created domain-specific entries (no before state, not a deletion)
+    if (before || isDelete)
+        return;
+
+    if (!after)
+        return;
+
+    switch (after->getType())
+    {
+        case ltVAULT:
+        case ltLOAN:
+        case ltLOAN_BROKER:
+            createdDomainObjects_.push_back(after);
+            break;
+        default:
+            break;
+    }
+}
+
+[[nodiscard]] bool
+FailedTransaction::finalize(
+    STTx const&,
+    TER const tec,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j) const
+{
+    // This invariant only applies to failed transactions
+    if (isTesSuccess(tec))
+        return true;
+
+    bool result = true;
+    for (auto const& sle : createdDomainObjects_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: failed transaction created a "
+                        << ledgerEntryTypeName(*sle);
+        result = false;
+    }
+    return result;
+}
+
 }  // namespace xrpl

@@ -3141,7 +3141,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
         doInvariantCheck(
             {"vault deleted by a wrong transaction type",
@@ -3221,7 +3221,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
         doInvariantCheck(
             {"deleted vault must also delete shares",
@@ -4768,7 +4768,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const&, Env& env) -> bool {
                 auto const sub = env.now().time_since_epoch().count() + 60;
                 auto const red = sub + kMinInvestmentPeriod + 1'000'000;
@@ -4794,6 +4794,110 @@ class Invariants_test : public beast::unit_test::Suite
                 env.close(tp{d{sub + 1}});
                 return true;
             });
+    }
+
+    void
+    testFailedTransaction()
+    {
+        using namespace test::jtx;
+
+        // A failed transaction (non-vault tx type) that creates a new Vault
+        // must be caught by both ValidVault ("wrong transaction type") and
+        // FailedTransaction ("failed transaction created a Vault").
+        testcase << "FailedTransaction: vault created by non-vault tx";
+        doInvariantCheck(
+            {"vault updated by a wrong transaction type",
+             "failed transaction created a Vault"},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const vaultKeylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const vaultPage = ac.view().dirInsert(
+                    keylet::ownerDir(a1.id()),
+                    sleVault->key(),
+                    describeOwnerDir(a1.id()));
+                if (!vaultPage)
+                    return false;
+                sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                sleVault->setAccountID(sfAccount, a1.id());
+                ac.view().insert(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject&) {}});
+
+        // A failed VaultCreate that creates two Vault objects violates both
+        // ValidVault ("more than single vault") and FailedTransaction.
+        testcase << "FailedTransaction: multiple vaults created";
+        doInvariantCheck(
+            {"vault operation updated more than single vault",
+             "failed transaction created a Vault"},
+            [](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sequence = ac.view().seq();
+                auto const insertVault = [&](Account const& a) -> bool {
+                    auto const vaultKeylet =
+                        keylet::vault(a.id(), SeqProxy::rawSequence(sequence));
+                    auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                    auto const vaultPage = ac.view().dirInsert(
+                        keylet::ownerDir(a.id()),
+                        sleVault->key(),
+                        describeOwnerDir(a.id()));
+                    if (!vaultPage)
+                        return false;
+                    sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                    sleVault->setAccountID(sfAccount, a.id());
+                    ac.view().insert(sleVault);
+                    return true;
+                };
+                return insertVault(a1) && insertVault(a2);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}});
+
+        // A failed LoanSet that creates a well-formed Loan is caught only by
+        // FailedTransaction on the second (retry) pass; ValidLoan passes on
+        // the first pass because the Loan fields are all valid.
+        testcase << "FailedTransaction: loan created by failed tx";
+        doInvariantCheck(
+            {"failed transaction created a Loan"},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sleLoan = std::make_shared<SLE>(
+                    keylet::loan(beast::kZero, SeqProxy::rawSequence(0)));
+                sleLoan->at(sfLoanBrokerID) = beast::kZero;
+                sleLoan->at(sfLoanSequence) = std::uint32_t{0};
+                sleLoan->at(sfBorrower) = a1.id();
+                sleLoan->at(sfStartDate) = std::uint32_t{1};
+                sleLoan->at(sfPaymentInterval) = std::uint32_t{1};
+                sleLoan->at(sfPaymentRemaining) = std::uint32_t{1};
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->at(sfTotalValueOutstanding) = Number(100);
+                ac.view().insert(sleLoan);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject&) {}},
+            {tesSUCCESS, tefINVARIANT_FAILED});
+
+        // A failed tx that creates a LoanBroker with an unknown vault ID
+        // fires ValidLoanBroker ("vault ID is invalid") on the first pass and
+        // FailedTransaction on the second pass.
+        testcase << "FailedTransaction: loan broker created by failed tx";
+        doInvariantCheck(
+            {"Loan Broker vault ID is invalid",
+             "failed transaction created a LoanBroker"},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sleBroker = std::make_shared<SLE>(
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ac.view().seq())));
+                // sfVaultID = kZero so view.read(keylet::vault(kZero)) returns null
+                sleBroker->at(sfVaultID) = beast::kZero;
+                sleBroker->at(sfAccount) = a1.id();
+                // sfOwnerCount = 1 skips the zero-directory check in ValidLoanBroker
+                sleBroker->at(sfOwnerCount) = std::uint32_t{1};
+                ac.view().insert(sleBroker);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttLOAN_BROKER_SET, [](STObject&) {}});
     }
 
     void
@@ -6791,6 +6895,7 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
+        testFailedTransaction();
         testConfidentialMPTTransfer();
         testMPT();
         testInvariantOverwrite(defaultAmendments());

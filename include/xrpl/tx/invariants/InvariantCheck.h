@@ -429,6 +429,28 @@ public:
 private:
     std::vector<SLE::const_pointer> deletedObjSles_;
 };
+/**
+ * @brief Invariant: A failed transaction must not create domain-specific ledger objects.
+ *
+ * When a transaction fails (TEC result), it must not have created any new
+ * domain objects such as Vault, Loan, or LoanBroker entries. Only fee
+ * deduction from the sender's account is permitted.
+ *
+ * This invariant runs exclusively on the failure path and complements other
+ * invariants (e.g., ValidVault) that skip checks when a transaction fails.
+ */
+class FailedTransaction
+{
+    std::vector<SLE::const_pointer> createdDomainObjects_;
+
+public:
+    void
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -463,7 +485,8 @@ using InvariantChecks = std::tuple<
     ValidMPTTransfer,
     ObjectHasPseudoAccount,
     SponsorshipOwnerCountsMatch,
-    SponsorshipAccountCountMatchesField>;
+    SponsorshipAccountCountMatchesField,
+    FailedTransaction>;
 
 /**
  * @brief get a tuple of all invariant checks
