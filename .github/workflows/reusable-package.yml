@@ -1,17 +1,34 @@
-# Build Linux packages (DEB and RPM) from pre-built binary artifacts (xrpld and
-# validator-keys). Discovers which configurations to package from linux.json
-# (configs in "package_configs") and fans out one job per distro. Only
-# linux/amd64 is supported; the runner is hardcoded in the job below.
+# Build Linux packages from the pre-built xrpld and validator-keys artifacts:
+#
+#   - one job per distro, taken from "package_configs" in linux.json
+#   - each job runs in that distro's container, which is what decides DEB or RPM
+#   - with 'publish: true' a job also uploads what it built
+#     (see package/publish_pkg.sh)
+#
+# Only linux/amd64 is supported; the runner is hardcoded in the job below.
 name: Package
 
 on:
   workflow_call:
     inputs:
-      pkg_release:
-        description: "Package release number. Increment when repackaging the same executable."
+      publish:
+        description: "Whether to publish the packages after building them."
+        required: false
+        type: boolean
+        default: false
+      nexus_url:
+        description: "The base URL of the Nexus instance hosting the deb and rpm repositories."
         required: false
         type: string
-        default: "1"
+        default: https://packages.xrplf.org
+
+    secrets:
+      remote_username:
+        description: "The username of a Nexus account with write access to the repositories."
+        required: false
+      remote_password:
+        description: "The password or token for that Nexus account."
+        required: false
 
 defaults:
   run:
@@ -41,7 +58,7 @@ jobs:
 
   package:
     needs: [generate-matrix]
-    if: ${{ github.event.repository.visibility == 'public' }}
+    if: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
@@ -71,9 +88,14 @@ jobs:
       - name: Make binaries executable
         run: chmod +x "${BUILD_DIR}/xrpld" "${BUILD_DIR}/validator-keys"
 
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
+
       - name: Build package
         env:
-          PKG_RELEASE: ${{ inputs.pkg_release }}
+          PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
+          PKG_CHANNEL: ${{ steps.release_info.outputs.channel }}
         run: ./package/build_pkg.sh
 
       - name: Upload package artifact
@@ -85,3 +107,12 @@ jobs:
             ${{ env.BUILD_DIR }}/debbuild/*.ddeb
             ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/*.rpm
           if-no-files-found: error
+
+      - name: Publish package
+        if: ${{ inputs.publish }}
+        env:
+          CHANNEL: ${{ steps.release_info.outputs.channel }}
+          NEXUS_URL: ${{ inputs.nexus_url }}
+          NEXUS_USERNAME: ${{ secrets.remote_username }}
+          NEXUS_PASSWORD: ${{ secrets.remote_password }}
+        run: ./package/publish_pkg.sh "${CHANNEL}" "${BUILD_DIR}"

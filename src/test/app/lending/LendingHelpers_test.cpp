@@ -409,7 +409,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Env const env{*this};
         auto const& rules = env.current()->rules();
 
-        // Inputs from the bug reproduction in Loan_test.cpp:
+        // Inputs from the near-zero-rate LoanPay bug reproduction:
         //   InterestRate = 1 TenthBips32 (0.001 % per year),
         //   PaymentInterval = 600 s, principal = 100, 3 payments.
         // periodicRate is ~1.9e-10.
