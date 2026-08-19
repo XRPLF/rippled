@@ -136,10 +136,6 @@ the event, and `publish_pkg.sh` maps that channel to its repositories:
 | push to `develop`        | `xrpld --version` | `develop`      | `deb-develop`      | `rpm-develop-hosted`      |
 | tag, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private-hosted`      |
 
-RPMs are uploaded to the hosted repository, but yum clients install from the
-`rpm-<channel>` group repository in front of it, which serves signed metadata
-(see below).
-
 Only a tag names a channel — do not extend that to `develop`, where
 `BuildInfo.cpp`'s `versionString` moves through `-bN`, `-rcN` and even the final
 version during a release cycle, which would send develop builds into `stable`.
