@@ -38,6 +38,7 @@ replace `stable` with its name wherever it appears in the repository configurati
 2.  Add the XRPL Foundation package-signing key to your list of trusted keys:
 
     ```bash
+    sudo install -d -m 0755 /etc/apt/keyrings
     sudo curl -fsS https://packages.xrplf.org/xrplf.asc -o /etc/apt/keyrings/xrplf.asc
     ```
 
