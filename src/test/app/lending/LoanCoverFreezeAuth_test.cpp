@@ -464,6 +464,7 @@ private:
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
         // Realize a loss via impairment before locking.
+        advancePastDueDate(env, loanKeylet);
         env(manage(lender, loanKeylet.key, tfLoanImpair));
         env.close();
 
