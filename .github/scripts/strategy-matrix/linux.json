@@ -30,15 +30,13 @@
         "arch": ["arm64"],
         "minimal": false
       },
-
       {
         "compiler": ["gcc", "clang"],
         "build_type": ["Debug", "Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "sanitizers": ["address", "undefinedbehavior"]
+        "sanitizers": ["address", "undefinedbehavior", "thread"]
       },
-
       {
         "compiler": ["clang"],
         "build_type": ["Debug"],
@@ -64,7 +62,6 @@
         "extra_cmake_args": "-Dunity=ON"
       }
     ],
-
     "debian": [
       {
         "compiler": ["gcc"],
@@ -74,7 +71,6 @@
         "extra_cmake_args": "-Dvalidator_keys=ON"
       }
     ],
-
     "rhel": [
       {
         "compiler": ["gcc"],
@@ -95,7 +91,6 @@
         "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-a6983f8"
       }
     ],
-
     "rhel": [
       {
         "compiler": ["gcc"],

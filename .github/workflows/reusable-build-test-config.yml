@@ -218,8 +218,11 @@ jobs:
         run: |
           SUPP="${GITHUB_WORKSPACE}/sanitizers/suppressions"
           ASAN_OPTS="include=${SUPP}/runtime-asan-options.txt:suppressions=${SUPP}/asan.supp"
+          # GCC ASAN's detect_stack_use_after_return produces false positives with
+          # Boost.Context fiber stack switching (used by boost::asio::spawn).
+          # See: https://github.com/google/sanitizers/issues/856
           if [[ "${CONFIG_NAME}" == *gcc* ]]; then
-              ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
+              ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0:detect_stack_use_after_return=0"
           fi
           echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
           echo "TSAN_OPTIONS=include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp" >>${GITHUB_ENV}
@@ -346,10 +349,15 @@ jobs:
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+          SANITIZERS_ON: ${{ env.SANITIZERS_ENABLED }}
         run: |
           set -o pipefail
           # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
           [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$((BUILD_NPROC - 2))
+          # Sanitizer builds are memory hungry; run the tests single-threaded
+          [ "$SANITIZERS_ON" = "true" ] && BUILD_NPROC=1
+          # Never drop below one job (small runners could go to 0 or negative above)
+          [ "$BUILD_NPROC" -ge 1 ] || BUILD_NPROC=1
 
           # The resolver/preload workaround is only correct for the ASan build:
           # a regular build doesn't hit the __dn_expand interceptor bug, and must

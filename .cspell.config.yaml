@@ -118,6 +118,7 @@ words:
   - enablerepo
   - endmacro
   - envrc
+  - eventfd
   - exceptioned
   - EXPECT_STREQ
   - Falco
@@ -326,6 +327,7 @@ words:
   - takerpays
   - ters
   - TMEndpointv2
+  - TOCTOU
   - toolchain
   - tparam
   - trixie
