@@ -126,15 +126,19 @@ release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
 Packages are published to the XRPLF repositories on Sonatype Nexus at
 `https://packages.xrplf.org`. The `release-info` action decides the channel from
-the event, and `publish_pkg.sh` maps that channel to a repository pair:
+the event, and `publish_pkg.sh` maps that channel to its repositories:
 
-| Event                    | Version           | Channel        | DEB repository     | RPM repository     |
-| ------------------------ | ----------------- | -------------- | ------------------ | ------------------ |
-| tag                      | `X.Y.Z`           | `stable`       | `deb-stable`       | `rpm-stable`       |
-| tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable`     |
-| tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental` |
-| push to `develop`        | `xrpld --version` | `develop`      | `deb-develop`      | `rpm-develop`      |
-| tag, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private`      |
+| Event                    | Version           | Channel        | DEB repository     | RPM upload repository     |
+| ------------------------ | ----------------- | -------------- | ------------------ | ------------------------- |
+| tag                      | `X.Y.Z`           | `stable`       | `deb-stable`       | `rpm-stable-hosted`       |
+| tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable-hosted`     |
+| tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental-hosted` |
+| push to `develop`        | `xrpld --version` | `develop`      | `deb-develop`      | `rpm-develop-hosted`      |
+| tag, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private-hosted`      |
+
+RPMs are uploaded to the hosted repository, but yum clients install from the
+`rpm-<channel>` group repository in front of it, which serves signed metadata
+(see below).
 
 Only a tag names a channel — do not extend that to `develop`, where
 `BuildInfo.cpp`'s `versionString` moves through `-bN`, `-rcN` and even the final
@@ -155,12 +159,15 @@ Conan remote.
 
 Nexus owns the repository metadata; nothing here indexes anything. Worth knowing:
 
-- Each apt-hosted repository needs a distribution and a PGP signing keypair
-  configured in Nexus, which rejects one created without a keypair. Nexus signs
-  the apt metadata with it, never the packages.
-- Hosted yum repositories cannot be signed by Nexus at all, so `sign_rpm.sh`
-  signs the RPMs before they are uploaded, and rpm clients verify with
-  `gpgcheck=1` rather than `repo_gpgcheck=1`.
+- Each apt-hosted repository needs a distribution (ours use `any`) and a PGP
+  signing keypair configured in Nexus, which rejects one created without a
+  keypair. Nexus signs the apt metadata with it, never the packages.
+- Hosted yum repositories cannot be signed by Nexus, so each `rpm-<channel>-hosted`
+  repository sits behind a `rpm-<channel>` yum group repository whose metadata
+  Nexus signs. Uploads go to the hosted repository; clients point at the group
+  and verify the metadata with `repo_gpgcheck=1`. Nexus never signs the RPMs
+  themselves, so `sign_rpm.sh` signs them before they are uploaded, and clients
+  verify them with `gpgcheck=1`.
 - yum metadata is rebuilt asynchronously, so a successful publish is not
   immediately installable.
 - Each job uploads only what it built, and uploads are not transactional, so a
