@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/multisign.h>
@@ -569,6 +570,100 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // A delegate (Permission Delegation, XLS-75) may create a proposal on
+    // behalf of whichever account granted it the TransactionProposalCreate
+    // permission, whether that grantor is the target account itself or one
+    // of the target's own signers. The delegate's signature is checked
+    // against whichever account it is acting for, so if the delegate itself
+    // is a multisig account, its own SignerList governs. Delegation does not
+    // manufacture authorization on its own: the granting account still has to
+    // be the target or one of its signers.
+    void
+    testDelegatedProposer(FeatureBitset features)
+    {
+        testcase("proposer authorized through permission delegation");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const signer{"signer"};  // on target's own SignerList
+        Account const delegate1{"delegate1"};
+        Account const delegate2{"delegate2"};  // itself a multisig account
+        Account const ds1{"ds1"};              // on delegate2's SignerList
+        Account const ds2{"ds2"};              // on delegate2's SignerList
+        Account const stranger{"stranger"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, signer, delegate1, delegate2, ds1, ds2, stranger, bob);
+        env.close();
+
+        env(signers(target, 1, {{signer, 1}}));
+        env.close();
+
+        auto payload = [&](std::uint32_t ticketSeq) {
+            return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+        };
+
+        // The target account delegates the permission to delegate1, who signs
+        // for itself.
+        {
+            env(delegate::set(target, delegate1, {"TransactionProposalCreate"}));
+            env.close();
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(target, payload(ticketSeq), proposal::expiration(env, 100s)),
+                delegate::As(delegate1));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // The target account delegates to delegate2, a multisig account: any
+        // of delegate2's own signers may jointly produce the signature.
+        {
+            env(delegate::set(target, delegate2, {"TransactionProposalCreate"}));
+            env(signers(delegate2, 2, {{ds1, 1}, {ds2, 1}}));
+            env.close();
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(target, payload(ticketSeq), proposal::expiration(env, 100s)),
+                Fee(XRP(1)),
+                delegate::As(delegate2),
+                Msig(ds1, ds2));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // A signer on target's own SignerList may likewise delegate the
+        // permission onward.
+        {
+            env(delegate::set(signer, delegate1, {"TransactionProposalCreate"}));
+            env.close();
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(signer, payload(ticketSeq), proposal::expiration(env, 100s)),
+                delegate::As(delegate1));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // Delegation does not manufacture authorization: an account with no
+        // relationship to the target is still rejected, even holding a
+        // delegated grant from an equally unrelated account.
+        {
+            env(delegate::set(stranger, delegate1, {"TransactionProposalCreate"}));
+            env.close();
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(stranger, payload(ticketSeq), proposal::expiration(env, 100s)),
+                delegate::As(delegate1),
+                Ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        }
+    }
+
     // The target account must be able to authorize a transaction through a
     // SignerList, so a pseudo-account (here an AMM's) cannot be a target even
     // though it exists on-ledger (On-Chain Cosigner spec §5.3.2.5).
@@ -1088,6 +1183,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Preclaim
         testPreclaim(all);
         testProposerAuthorization(all);
+        testDelegatedProposer(all);
         testPseudoTarget(all);
 
         // Apply

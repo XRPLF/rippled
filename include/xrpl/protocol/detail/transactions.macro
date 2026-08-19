@@ -1200,7 +1200,7 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
 #   include <xrpl/tx/transactors/proposal/TransactionProposalCreate.h>
 #endif
 TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 92, TransactionProposalCreate,
-    Delegation::NotDelegable,
+    Delegation::Delegable,
     featureCosign,
     NoPriv,
     ({
