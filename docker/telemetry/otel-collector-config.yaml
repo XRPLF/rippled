@@ -124,6 +124,14 @@ processors:
         action: hash
       - key: pathfind_dest_account
         action: hash
+  # Copy the per-node id from the resource onto every span so TraceQL can
+  # filter by node (span.service_instance_id), matching the service_instance_id
+  # metric label the dashboards' $node variable already uses.
+  transform/spanidentity:
+    trace_statements:
+      - context: span
+        statements:
+          - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
 
 connectors:
   spanmetrics:
@@ -241,7 +249,14 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [resource/tier, resource/stripsdk, attributes/hash, batch]
+      processors:
+        [
+          resource/tier,
+          resource/stripsdk,
+          attributes/hash,
+          transform/spanidentity,
+          batch,
+        ]
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
