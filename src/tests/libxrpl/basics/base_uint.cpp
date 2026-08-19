@@ -6,6 +6,7 @@
 
 #include <boost/endian/detail/order.hpp>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <array>
@@ -59,65 +60,67 @@ struct BaseUintTest : public ::testing::Test
     static void
     testComparisons()
     {
-        {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
-                {{"0000000000000000", "0000000000000001"},
-                 {"0000000000000000", "ffffffffffffffff"},
-                 {"1234567812345678", "2345678923456789"},
-                 {"8000000000000000", "8000000000000001"},
-                 {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                 {"fffffffffffffffe", "ffffffffffffffff"}}};
+        using HexPair = std::pair<std::string_view, std::string_view>;
 
-            for (auto const& arg : kTestArgs)
+        {
+            static constexpr auto kTestArgs = std::to_array<HexPair>({
+                {"0000000000000000", "0000000000000001"},
+                {"0000000000000000", "ffffffffffffffff"},
+                {"1234567812345678", "2345678923456789"},
+                {"8000000000000000", "8000000000000001"},
+                {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+                {"fffffffffffffffe", "ffffffffffffffff"},
+            });
+
+            for (auto const& [smallerText, largerText] : kTestArgs)
             {
-                xrpl::BaseUInt<64> const u{arg.first}, v{arg.second};
+                xrpl::BaseUInt<64> const smaller{smallerText}, larger{largerText};
                 // For code readability, we want to use general boolean
                 // expectations instead of specific EXPECT_LT etc.
-                EXPECT_TRUE(u < v);
-                EXPECT_TRUE(u <= v);
-                EXPECT_TRUE(u != v);
-                EXPECT_FALSE(u == v);
-                EXPECT_FALSE(u > v);
-                EXPECT_FALSE(u >= v);
-                EXPECT_FALSE(v < u);
-                EXPECT_FALSE(v <= u);
-                EXPECT_TRUE(v != u);
-                EXPECT_FALSE(v == u);
-                EXPECT_TRUE(v > u);
-                EXPECT_TRUE(v >= u);
-                EXPECT_TRUE(u == u);
-                EXPECT_TRUE(v == v);
+                EXPECT_TRUE(smaller < larger);
+                EXPECT_TRUE(smaller <= larger);
+                EXPECT_TRUE(smaller != larger);
+                EXPECT_FALSE(smaller == larger);
+                EXPECT_FALSE(smaller > larger);
+                EXPECT_FALSE(smaller >= larger);
+                EXPECT_FALSE(larger < smaller);
+                EXPECT_FALSE(larger <= smaller);
+                EXPECT_TRUE(larger != smaller);
+                EXPECT_FALSE(larger == smaller);
+                EXPECT_TRUE(larger > smaller);
+                EXPECT_TRUE(larger >= smaller);
+                EXPECT_TRUE(smaller == smaller);
+                EXPECT_TRUE(larger == larger);
             }
         }
 
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
-                {
-                    {"000000000000000000000000", "000000000000000000000001"},
-                    {"000000000000000000000000", "ffffffffffffffffffffffff"},
-                    {"0123456789ab0123456789ab", "123456789abc123456789abc"},
-                    {"555555555555555555555555", "55555555555a555555555555"},
-                    {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
-                    {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
-                }};
+            static constexpr auto kTestArgs = std::to_array<HexPair>({
+                {"000000000000000000000000", "000000000000000000000001"},
+                {"000000000000000000000000", "ffffffffffffffffffffffff"},
+                {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+                {"555555555555555555555555", "55555555555a555555555555"},
+                {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+                {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+            });
 
-            for (auto const& arg : kTestArgs)
+            for (auto const& [smallerText, largerText] : kTestArgs)
             {
-                xrpl::BaseUInt<96> const u{arg.first}, v{arg.second};
-                EXPECT_TRUE(u < v);
-                EXPECT_TRUE(u <= v);
-                EXPECT_TRUE(u != v);
-                EXPECT_FALSE(u == v);
-                EXPECT_FALSE(u > v);
-                EXPECT_FALSE(u >= v);
-                EXPECT_FALSE(v < u);
-                EXPECT_FALSE(v <= u);
-                EXPECT_TRUE(v != u);
-                EXPECT_FALSE(v == u);
-                EXPECT_TRUE(v > u);
-                EXPECT_TRUE(v >= u);
-                EXPECT_TRUE(u == u);
-                EXPECT_TRUE(v == v);
+                xrpl::BaseUInt<96> const smaller{smallerText}, larger{largerText};
+                EXPECT_TRUE(smaller < larger);
+                EXPECT_TRUE(smaller <= larger);
+                EXPECT_TRUE(smaller != larger);
+                EXPECT_FALSE(smaller == larger);
+                EXPECT_FALSE(smaller > larger);
+                EXPECT_FALSE(smaller >= larger);
+                EXPECT_FALSE(larger < smaller);
+                EXPECT_FALSE(larger <= smaller);
+                EXPECT_TRUE(larger != smaller);
+                EXPECT_FALSE(larger == smaller);
+                EXPECT_TRUE(larger > smaller);
+                EXPECT_TRUE(larger >= smaller);
+                EXPECT_TRUE(smaller == smaller);
+                EXPECT_TRUE(larger == larger);
             }
         }
     }
@@ -203,125 +206,119 @@ TEST_F(BaseUintTest, base_uint)
     Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     EXPECT_EQ(BaseUInt96::kBytes, raw.size());
 
-    BaseUInt96 u = BaseUInt96::fromRaw(raw);
-    uset.insert(u);
-    EXPECT_EQ(raw.size(), u.size());
-    EXPECT_EQ(to_string(u), "0102030405060708090A0B0C");
-    EXPECT_EQ(toShortString(u), "01020304...");
-    EXPECT_EQ(*u.data(), 1);
-    EXPECT_EQ(u.signum(), 1);
-    EXPECT_FALSE(!u);
-    EXPECT_FALSE(u.isZero());
-    EXPECT_TRUE(u.isNonZero());
-    unsigned char t = 0;
-    for (auto& d : u)
-    {
-        EXPECT_EQ(d, ++t);
-    }
+    BaseUInt96 ascending = BaseUInt96::fromRaw(raw);
+    uset.insert(ascending);
+    EXPECT_EQ(raw.size(), ascending.size());
+    EXPECT_EQ(to_string(ascending), "0102030405060708090A0B0C");
+    EXPECT_EQ(toShortString(ascending), "01020304...");
+    EXPECT_EQ(*ascending.data(), 1);
+    EXPECT_EQ(ascending.signum(), 1);
+    EXPECT_FALSE(!ascending);
+    EXPECT_FALSE(ascending.isZero());
+    EXPECT_TRUE(ascending.isNonZero());
+    unsigned char expectedByte = 0;
+    for (auto& byte : ascending)
+        EXPECT_EQ(byte, ++expectedByte);
 
-    // Test hash_append by "hashing" with a no-op hasher (h)
+    // Test hash_append by "hashing" with a no-op hasher (hasher)
     // and then extracting the bytes that were written during hashing
-    // back into another base_uint (w) for comparison with the original
-    Nonhash<96> h{};
-    hash_append(h, u);
-    BaseUInt96 const w =
-        BaseUInt96::fromRaw(std::vector<std::uint8_t>(h.data.begin(), h.data.end()));
-    EXPECT_EQ(w, u);
+    // back into another base_uint (rehashed) for comparison with the original
+    Nonhash<96> hasher{};
+    hash_append(hasher, ascending);
+    BaseUInt96 const rehashed =
+        BaseUInt96::fromRaw(std::vector<std::uint8_t>(hasher.data.begin(), hasher.data.end()));
+    EXPECT_EQ(rehashed, ascending);
 
-    BaseUInt96 v{~u};
-    uset.insert(v);
-    EXPECT_EQ(to_string(v), "FEFDFCFBFAF9F8F7F6F5F4F3");
-    EXPECT_EQ(toShortString(v), "FEFDFCFB...");
-    EXPECT_EQ(*v.data(), 0xfe);
-    EXPECT_EQ(v.signum(), 1);
-    EXPECT_FALSE(!v);
-    EXPECT_FALSE(v.isZero());
-    EXPECT_TRUE(v.isNonZero());
+    BaseUInt96 complement{~ascending};
+    uset.insert(complement);
+    EXPECT_EQ(to_string(complement), "FEFDFCFBFAF9F8F7F6F5F4F3");
+    EXPECT_EQ(toShortString(complement), "FEFDFCFB...");
+    EXPECT_EQ(*complement.data(), 0xfe);
+    EXPECT_EQ(complement.signum(), 1);
+    EXPECT_FALSE(!complement);
+    EXPECT_FALSE(complement.isZero());
+    EXPECT_TRUE(complement.isNonZero());
 
-    t = 0xff;
-    for (auto& d : v)
-    {
-        EXPECT_EQ(d, --t);
-    }
+    expectedByte = 0xff;
+    for (auto& byte : complement)
+        EXPECT_EQ(byte, --expectedByte);
 
-    EXPECT_LT(u, v);
-    EXPECT_GT(v, u);
+    EXPECT_LT(ascending, complement);
+    EXPECT_GT(complement, ascending);
 
-    v = u;
-    EXPECT_EQ(v, u);
+    complement = ascending;
+    EXPECT_EQ(complement, ascending);
 
-    BaseUInt96 z{beast::kZero};
-    uset.insert(z);
-    EXPECT_EQ(to_string(z), "000000000000000000000000");
-    EXPECT_EQ(toShortString(z), "00000000...");
-    EXPECT_EQ(*z.data(), 0);
-    EXPECT_EQ(*z.begin(), 0);
-    EXPECT_EQ(*std::prev(z.end(), 1), 0);
-    EXPECT_EQ(z.signum(), 0);
-    EXPECT_TRUE(!z);
-    EXPECT_TRUE(z.isZero());
-    EXPECT_FALSE(z.isNonZero());
-    for (auto& d : z)
-    {
-        EXPECT_EQ(d, 0);
-    }
+    BaseUInt96 zero{beast::kZero};
+    uset.insert(zero);
+    EXPECT_EQ(to_string(zero), "000000000000000000000000");
+    EXPECT_EQ(toShortString(zero), "00000000...");
+    EXPECT_EQ(*zero.data(), 0);
+    EXPECT_EQ(*zero.begin(), 0);
+    EXPECT_EQ(*std::prev(zero.end(), 1), 0);
+    EXPECT_EQ(zero.signum(), 0);
+    EXPECT_TRUE(!zero);
+    EXPECT_TRUE(zero.isZero());
+    EXPECT_FALSE(zero.isNonZero());
+    for (auto& byte : zero)
+        EXPECT_EQ(byte, 0);
 
     {
         // There are several ways to create a zero. beast::kZero is tested above. Test some
         // others.
-        BaseUInt96 const z1;
-        EXPECT_EQ(z1, z) << to_string(z1);
+        BaseUInt96 const defaultZero;
+        EXPECT_EQ(defaultZero, zero) << to_string(defaultZero);
 
-        BaseUInt96 const z2{};
-        EXPECT_EQ(z2, z) << to_string(z2);
+        BaseUInt96 const bracedZero{};
+        EXPECT_EQ(bracedZero, zero) << to_string(bracedZero);
 
-        BaseUInt96 const z3{0u};
-        EXPECT_EQ(z3, z) << to_string(z3);
+        BaseUInt96 const zeroFromUInt{0u};
+        EXPECT_EQ(zeroFromUInt, zero) << to_string(zeroFromUInt);
     }
 
-    BaseUInt96 n{z};
-    n++;
-    EXPECT_EQ(n, BaseUInt96(1));
-    n--;
-    EXPECT_EQ(n, beast::kZero);
-    EXPECT_EQ(n, z);
-    n--;
-    EXPECT_EQ(to_string(n), "FFFFFFFFFFFFFFFFFFFFFFFF");
-    EXPECT_EQ(toShortString(n), "FFFFFFFF...");
-    n = beast::kZero;
-    EXPECT_EQ(n, z);
+    BaseUInt96 counter{zero};
+    counter++;
+    EXPECT_EQ(counter, BaseUInt96(1));
+    counter--;
+    EXPECT_EQ(counter, beast::kZero);
+    EXPECT_EQ(counter, zero);
+    counter--;
+    EXPECT_EQ(to_string(counter), "FFFFFFFFFFFFFFFFFFFFFFFF");
+    EXPECT_EQ(toShortString(counter), "FFFFFFFF...");
+    counter = beast::kZero;
+    EXPECT_EQ(counter, zero);
 
-    BaseUInt96 zp1{z};
-    zp1++;
-    BaseUInt96 zm1{z};
-    zm1--;
-    BaseUInt96 const x{zm1 ^ zp1};
-    uset.insert(x);
-    EXPECT_EQ(to_string(x), "FFFFFFFFFFFFFFFFFFFFFFFE") << to_string(x);
-    EXPECT_EQ(toShortString(x), "FFFFFFFF...") << toShortString(x);
+    BaseUInt96 zeroPlusOne{zero};
+    zeroPlusOne++;
+    BaseUInt96 zeroMinusOne{zero};
+    zeroMinusOne--;
+    BaseUInt96 const xored{zeroMinusOne ^ zeroPlusOne};
+    uset.insert(xored);
+    EXPECT_EQ(to_string(xored), "FFFFFFFFFFFFFFFFFFFFFFFE") << to_string(xored);
+    EXPECT_EQ(toShortString(xored), "FFFFFFFF...") << toShortString(xored);
 
     EXPECT_EQ(uset.size(), 4);
 
-    BaseUInt96 tmp;
-    EXPECT_TRUE(tmp.parseHex(to_string(u)));
-    EXPECT_EQ(tmp, u);
-    tmp = z;
+    BaseUInt96 parsed;
+    EXPECT_TRUE(parsed.parseHex(to_string(ascending)));
+    EXPECT_EQ(parsed, ascending);
+    parsed = zero;
 
     // fails with extra char
-    EXPECT_FALSE(tmp.parseHex("A" + to_string(u)));
-    tmp = z;
+    EXPECT_FALSE(parsed.parseHex("A" + to_string(ascending)));
+    parsed = zero;
 
     // fails with extra char at end
-    EXPECT_FALSE(tmp.parseHex(to_string(u) + "A"));
+    EXPECT_FALSE(parsed.parseHex(to_string(ascending) + "A"));
 
     // fails with a non-hex character at some point in the string:
-    tmp = z;
+    parsed = zero;
 
     for (std::size_t i = 0; i != 24; ++i)
     {
-        std::string x = to_string(z);
-        x[i] = ('G' + (i % 10));
-        EXPECT_FALSE(tmp.parseHex(x));
+        std::string xored = to_string(zero);
+        xored[i] = ('G' + (i % 10));
+        EXPECT_FALSE(parsed.parseHex(xored));
     }
 
     // Walking 1s:
@@ -330,8 +327,8 @@ TEST_F(BaseUintTest, base_uint)
         std::string s1 = "000000000000000000000000";
         s1[i] = '1';
 
-        EXPECT_TRUE(tmp.parseHex(s1));
-        EXPECT_EQ(to_string(tmp), s1);
+        EXPECT_TRUE(parsed.parseHex(s1));
+        EXPECT_EQ(to_string(parsed), s1);
     }
 
     // Walking 0s:
@@ -340,8 +337,8 @@ TEST_F(BaseUintTest, base_uint)
         std::string s1 = "111111111111111111111111";
         s1[i] = '0';
 
-        EXPECT_TRUE(tmp.parseHex(s1));
-        EXPECT_EQ(to_string(tmp), s1);
+        EXPECT_TRUE(parsed.parseHex(s1));
+        EXPECT_EQ(to_string(parsed), s1);
     }
 
     // Constexpr constructors
@@ -355,39 +352,27 @@ TEST_F(BaseUintTest, base_uint)
         // Using the constexpr constructor in a non-constexpr context
         // with an error in the parsing throws an exception.
         {
-            // Invalid length for string.
-            bool caught = false;
-            try
-            {
-                // Try to prevent constant evaluation.
-                std::vector<char> str(23, '7');
+            // Invalid length for string. The vector keeps this out of a constant
+            // expression, so the constructor throws instead of failing to compile.
+            auto tooShort = [] {
+                std::vector<char> const str(23, '7');
                 std::string_view const sView(str.data(), str.size());
                 [[maybe_unused]] BaseUInt96 const t96(sView);
-            }
-            catch (std::invalid_argument const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("invalid length for hex string"));
-                caught = true;
-            }
-            EXPECT_TRUE(caught);
+            };
+            EXPECT_THAT(
+                tooShort,
+                ::testing::ThrowsMessage<std::invalid_argument>("invalid length for hex string"));
         }
         {
             // Invalid character in string.
-            bool caught = false;
-            try
-            {
-                // Try to prevent constant evaluation.
+            auto badCharacter = [] {
                 std::vector<char> str(23, '7');
                 str.push_back('G');
                 std::string_view const sView(str.data(), str.size());
                 [[maybe_unused]] BaseUInt96 const t96(sView);
-            }
-            catch (std::range_error const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("invalid hex character"));
-                caught = true;
-            }
-            EXPECT_TRUE(caught);
+            };
+            EXPECT_THAT(
+                badCharacter, ::testing::ThrowsMessage<std::range_error>("invalid hex character"));
         }
 
         // Verify that constexpr base_uints interpret a string the same
@@ -401,20 +386,20 @@ TEST_F(BaseUintTest, base_uint)
             {
             }
         };
-        constexpr StrBaseUInt kTestCases[] = {
+        constexpr auto kTestCases = std::to_array<StrBaseUInt>({
             "000000000000000000000000",
             "000000000000000000000001",
             "fedcba9876543210ABCDEF91",
             "19FEDCBA0123456789abcdef",
             "800000000000000000000000",
             "fFfFfFfFfFfFfFfFfFfFfFfF",
-        };
+        });
 
-        for (StrBaseUInt const& t : kTestCases)
+        for (StrBaseUInt const& expectedByte : kTestCases)
         {
             BaseUInt96 t96;
-            EXPECT_TRUE(t96.parseHex(t.str));
-            EXPECT_EQ(t96, t.tst);
+            EXPECT_TRUE(t96.parseHex(expectedByte.str));
+            EXPECT_EQ(t96, expectedByte.tst);
         }
     }
 }
