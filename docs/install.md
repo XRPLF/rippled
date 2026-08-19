@@ -18,6 +18,9 @@ Packages are published to four channels:
 - `experimental` - beta builds
 - `develop` - every push to the [`develop` branch](https://github.com/XRPLF/rippled/tree/develop)
 
+For how each channel is produced,
+see [Publishing packages](../package/README.md#publishing-packages).
+
 The instructions below use `stable`.
 To follow another channel,
 replace `stable` with its name wherever it appears in the repository configuration.
