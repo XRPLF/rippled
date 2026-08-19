@@ -123,15 +123,6 @@ processors:
           - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
           - set(attributes["deployment_environment"], resource.attributes["deployment.environment"])
           - set(attributes["xrpl_network_type"], resource.attributes["xrpl.network.type"])
-  # Copy the per-node id from the resource onto every span so TraceQL can
-  # filter by node (span.service_instance_id). The name matches the metric
-  # label written by transform/cloudlabels, so the dashboards' $node variable
-  # applies to both signals.
-  transform/spanidentity:
-    trace_statements:
-      - context: span
-        statements:
-          - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
 
 connectors:
   spanmetrics:
@@ -265,20 +256,9 @@ service:
       exporters: [spanmetrics]
     # Trace-STORAGE branch: 0.5% probabilistic tail sampling before Tempo
     # and Grafana Cloud, so stored trace volume is ~1/200 of ingested spans.
-    # transform/spanidentity runs after tail_sampling so only retained spans
-    # pay for the copy. traces/metrics does not need it: spanmetrics already
-    # groups by the service.instance.id resource attribute
-    # (resource_metrics_key_attributes).
     traces/store:
       receivers: [otlp]
-      processors:
-        [
-          tail_sampling,
-          resource/tier,
-          resource/stripsdk,
-          transform/spanidentity,
-          batch,
-        ]
+      processors: [tail_sampling, resource/tier, resource/stripsdk, batch]
       exporters: [otlp/tempo, otlphttp/grafanacloud]
     # The local Prometheus scrape promotes tier/instance resource attrs to
     # labels via resource_to_telemetry_conversion; Grafana Cloud (OTLP) does

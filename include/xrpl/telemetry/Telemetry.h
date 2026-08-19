@@ -83,7 +83,8 @@
  *
  * @note Thread safety: The Telemetry interface is safe for concurrent reads
  * (isEnabled, shouldTrace*, getTracer, startSpan) after start() completes.
- * setServiceInstanceId() must be called before start() and is not thread-safe.
+ * setServiceInstanceId() and setNodeId() must be called before start() and
+ * are not thread-safe.
  * The OTel SDK's TracerProvider and Tracer are internally thread-safe.
  */
 
@@ -192,6 +193,14 @@ public:
          * public key).
          */
         std::string serviceInstanceId;
+
+        /**
+         * OTel resource attribute `xrpl.node.id`: the node's base58-encoded
+         * public key. Always the node identity, never config-supplied, so it
+         * stays a stable per-node key even when serviceInstanceId is
+         * overridden by [telemetry] service_instance_id.
+         */
+        std::string nodeId;
 
         /**
          * OTLP/HTTP endpoint URL where spans are sent.
@@ -308,6 +317,24 @@ public:
      */
     virtual void
     setServiceInstanceId(std::string const& id)
+    {
+        // Default no-op for NullTelemetry implementations.
+        (void)id;
+    }
+
+    /**
+     * Update the node ID (OTel resource attribute `xrpl.node.id`).
+     *
+     * Must be called before start(). A setter is needed for the same reason
+     * setServiceInstanceId() needs one: the node public key is not available
+     * when Telemetry is constructed (during the ApplicationImp member
+     * initializer list), so Application::setup() injects it once
+     * nodeIdentity_ is known.
+     *
+     * @param id  The node's base58-encoded public key.
+     */
+    virtual void
+    setNodeId(std::string const& id)
     {
         // Default no-op for NullTelemetry implementations.
         (void)id;
