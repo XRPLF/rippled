@@ -8,7 +8,9 @@ a build configured with `-Dvalidator_keys=ON`.
 
 ```
 package/
-  build_pkg.sh      Staging and build script (called by the CMake `package` target and CI)
+  build_pkg.sh        Staging and build script (called by the CMake `package` target and CI)
+  sign_rpm.sh         Signs the built RPMs (called by CI when publishing)
+  publish_pkg.sh      Uploads built packages to the XRPLF Nexus repositories (called by CI)
   rpm/
     xrpld.spec      RPM spec
   debian/           Debian control files (control, rules, copyright, xrpld.docs, xrpld.links, source/format)
@@ -31,7 +33,7 @@ package manager (`apt-get` -> deb, `dnf`/`yum` -> rpm).
 
 | Package type | Image (`package_configs.<distro>[].image` in `linux.json`) | Tools required                                      |
 | ------------ | ---------------------------------------------------------- | --------------------------------------------------- |
-| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`                                          |
+| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`, `rpmsign`                               |
 | DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, debhelper with compat level 13 |
 
 To print the full packaging matrix (artifact names and images) for the current
@@ -87,7 +89,7 @@ docker run --rm \
     ./package/build_pkg.sh --pkg-release "${PKG_RELEASE}"
 
 # Output:
-#   build/debbuild/*.deb         (DEB + dbgsym .ddeb)
+#   build/debbuild/*.deb         (DEB + dbgsym; Debian names both .deb)
 #   build/rpmbuild/RPMS/x86_64/*.rpm
 ```
 
@@ -120,6 +122,53 @@ The package version is not a CMake input on this path: `build_pkg.sh` derives it
 from the just-built `xrpld` binary's `xrpld --version` output. The package
 release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
+## Publishing packages
+
+Packages are published to the XRPLF repositories on Sonatype Nexus at
+`https://packages.xrplf.org`. The `release-info` action decides the channel from
+the event, and `publish_pkg.sh` maps that channel to a repository pair:
+
+| Event                    | Version           | Channel        | DEB repository     | RPM repository     |
+| ------------------------ | ----------------- | -------------- | ------------------ | ------------------ |
+| tag                      | `X.Y.Z`           | `stable`       | `deb-stable`       | `rpm-stable`       |
+| tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable`     |
+| tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental` |
+| push to `develop`        | `xrpld --version` | `develop`      | `deb-develop`      | `rpm-develop`      |
+| tag, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private`      |
+
+Only a tag names a channel — do not extend that to `develop`, where
+`BuildInfo.cpp`'s `versionString` moves through `-bN`, `-rcN` and even the final
+version during a release cycle, which would send develop builds into `stable`.
+Versions sort in row order, so moving to a more mature channel never downgrades.
+
+The action decides the package release number on the same split: a tag's version
+is unique, so its packages are release 1, while develop repeats the same version
+and takes `github.run_number` so each push supersedes the last. Both reach the
+packaging scripts as arguments, so neither script derives anything itself.
+
+Publishing is the last step of each packaging job, uploading from the container
+that built the packages. It runs when the caller passes `publish: true`:
+`on-trigger.yml` for develop pushes in `XRPLF/rippled`, `on-tag.yml` for tags in
+any `XRPLF` repository, `on-pr.yml` never. Both authenticate with the
+`NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD` secrets already used for the
+Conan remote.
+
+Nexus owns the repository metadata; nothing here indexes anything. Worth knowing:
+
+- Each apt-hosted repository needs a distribution and a PGP signing keypair
+  configured in Nexus, which rejects one created without a keypair. Nexus signs
+  the apt metadata with it, never the packages.
+- Hosted yum repositories cannot be signed by Nexus at all, so `sign_rpm.sh`
+  signs the RPMs before they are uploaded, and rpm clients verify with
+  `gpgcheck=1` rather than `repo_gpgcheck=1`.
+- yum metadata is rebuilt asynchronously, so a successful publish is not
+  immediately installable.
+- Each job uploads only what it built, and uploads are not transactional, so a
+  failure can leave one format published alone. Re-running is safe: both the apt
+  POST and the yum PUT replace an existing asset.
+- The `develop` repositories gain a package per push, so they need a cleanup
+  policy to stay bounded; tagged channels publish each version once.
+
 ## How `build_pkg.sh` works
 
 `build_pkg.sh` derives the `xrpld` software version from
@@ -151,10 +200,9 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 | `3.2.0-b1`         | `3.2.0~b1-1%{?dist}`         | `3.2.0~b1-1`         |
 | `3.2.0-rc1`        | `3.2.0~rc1-1%{?dist}`        | `3.2.0~rc1-1`        |
 
-The Debian changelog entry carries the repository component: final releases use
-`stable`, `b0` builds, including `b0+metadata`, use `develop`, and `bN`/`rcN`
-pre-releases use `unstable`.
-Build metadata on a final release, such as `3.2.0+abc123`, is rejected.
+The Debian changelog entry carries the channel passed as `--channel`
+(`PKG_CHANNEL`), defaulting to `unstable`. An unsupported pre-release, and build
+metadata on a final release such as `3.2.0+abc123`, are both rejected.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
@@ -168,8 +216,12 @@ fail early.
 Flags are for explicit invocation; environment variables are intended for
 CMake/CI integration. The CI workflow and the CMake `package` target both invoke
 `build_pkg.sh` with no flags; CMake supplies `SRC_DIR`, `BUILD_DIR`, and
-`PKG_RELEASE` via env, while CI supplies `BUILD_DIR` and `PKG_RELEASE` via env
-and lets the script use defaults for the rest.
+`PKG_RELEASE` via env, while CI supplies `BUILD_DIR`, `PKG_RELEASE` and
+`PKG_CHANNEL` via env and lets the script use defaults for the rest.
+
+Signing is not part of this script. `sign_rpm.sh` does it in a separate CI step
+that only runs when publishing, so a published RPM is always signed and a local
+build never needs a key.
 
 It resolves `SRC_DIR` and `BUILD_DIR` to absolute paths, then calls
 `stage_common()` to copy the `xrpld` and `validator-keys` binaries, config files,
@@ -209,17 +261,20 @@ service restart.
 5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`,
    where `pkg_version` is derived from the binary-reported `xrpld` version.
 6. Runs `dpkg-buildpackage -b --no-sign -d` (`-d` skips the build-dependency check, since the binary is already built). `debian/rules` uses manual `install` commands.
-7. Output: `debbuild/*.deb` and `debbuild/*.ddeb` (dbgsym package)
+7. Output: `debbuild/*.deb`, the binary package and the `-dbgsym` package.
+   Debian gives dbgsym packages a `.deb` extension; only Ubuntu uses `.ddeb`.
 
 ## Post-build verification
 
 ```bash
 # DEB
 dpkg-deb -c debbuild/*.deb | grep -E 'systemd|sysusers|tmpfiles'
-lintian -I debbuild/*.deb
 
 # RPM
 rpm -qlp rpmbuild/RPMS/x86_64/*.rpm
+
+# Optional, and not in the packaging image: apt-get install -y lintian
+lintian -I debbuild/*.deb
 ```
 
 ## Reproducibility
