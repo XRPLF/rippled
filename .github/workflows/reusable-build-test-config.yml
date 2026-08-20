@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@51af40f99ea91a08c3528ddf16d98132dcc7e63c
+        uses: XRPLF/actions/prepare-runner@7bf7ceca5932114abdd0d43493c3c30c5a654e13
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -163,7 +163,7 @@ jobs:
           compiler: ${{ inputs.compiler }}
 
       - name: Use cargo artifacts cache
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        uses: ./.github/actions/cargo-cache
         with:
           cache-directories: ${{ env.BUILD_DIR }}/corrosion
           key: ${{ inputs.config_name }}
