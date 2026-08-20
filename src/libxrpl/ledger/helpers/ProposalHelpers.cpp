@@ -1,4 +1,4 @@
-#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep (range-for over getFieldArray)
 #include <xrpl/protocol/STTx.h>

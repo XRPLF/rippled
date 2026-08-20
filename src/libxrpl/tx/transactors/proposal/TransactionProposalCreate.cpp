@@ -21,7 +21,6 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
 #include <algorithm>
 #include <cstdint>
