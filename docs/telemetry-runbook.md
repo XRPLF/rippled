@@ -141,8 +141,10 @@ curl -s http://localhost:5015 -d '{"method":"server_info"}' |
 | `max_queue_size`           | `2048`                            | Max spans queued before dropping                             |
 | `use_tls`                  | `0`                               | Use TLS for exporter connection                              |
 | `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                                |
-| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS        |
-| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                      |
+| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mTLS; empty = one-way. See note        |
+| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`. See note            |
+
+> **mTLS (mutual TLS) note**: `tls_client_cert` and `tls_client_key` are optional — leaving both empty gives one-way (server-only) TLS. **If either one is set**, `enabled=1` requires both of them **and** `use_tls=1`, or the node exits at startup; see the Troubleshooting entry for `Unable to start ...: [telemetry] ...`. When `enabled=0` they are read but never validated.
 
 > **Traces and metrics also carry `xrpl.node.id`.** xrpld sets it as a resource
 > attribute alongside `service.instance.id`; the value is the node public key
@@ -3356,6 +3358,30 @@ not a sign the cache is working.
 - Verify endpoint URL matches collector address
 - Check firewall rules for ports 4317/4318
 - If using TLS, verify certificate path with `tls_ca_cert`
+
+### Node exits at startup with `Unable to start ...: [telemetry] ...`
+
+- Symptom: the process exits immediately with a non-zero status (255 on POSIX)
+  — a clean exit, not a crash — after printing that line on stderr. Any
+  exception thrown while the `Application` object is constructed prints the same
+  `Unable to start` prefix, so confirm the text after the colon begins with
+  `[telemetry]` before using this entry
+- Cause: the `[telemetry]` mTLS keys (`tls_client_cert` and `tls_client_key`)
+  contradict each other. Only these two mTLS checks are gated on `enabled=1`;
+  the rest of the section is still read when telemetry is off, so a malformed
+  value in any key — including `enabled` itself, which is read before the gate
+  — still fails startup with a different message
+- Fix: the two checks need different remedies, and the printed message says
+  which one fired
+  - `tls_client_cert and tls_client_key must be set together` — exactly one of
+    the two paths is set. Either delete the one that is set, or add the missing
+    one **and** set `use_tls=1`. Unless `use_tls=1` is already set, adding the
+    missing path on its own just moves the failure to the second check
+  - `tls_client_cert/tls_client_key require use_tls=1` — both paths are set but
+    TLS is off. Either set `use_tls=1`, or delete **both** paths. Deleting only
+    one of them trips the first check
+  - If you did not mean to enable telemetry at all, set `enabled=0` — that
+    clears both checks whichever one fired
 
 ### No trace_id in log output
 
