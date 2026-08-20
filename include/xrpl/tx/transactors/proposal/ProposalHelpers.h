@@ -1,7 +1,7 @@
 #pragma once
 
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep (range-for over getFieldArray)
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>
