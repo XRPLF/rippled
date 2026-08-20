@@ -65,23 +65,24 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features - featureCosign};
 
-        Account const alice{"alice"};
         Account const target{"target"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, target, bob);
+        env.fund(XRP(10000), target, bob);
         env.close();
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
 
         env(proposal::create(
-                alice,
+                target,
                 proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq),
                 proposal::expiration(env, 100s)),
             Ter(temDISABLED));
         env.close();
 
         BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        // Its own Ticket is the only thing target owns; the rejected
+        // proposal adds nothing on top of it.
+        BEAST_EXPECT(ownerCount(env, target) == 1);
     }
 
     // The proposed transaction must be a transaction that could be submitted on
@@ -98,10 +99,9 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};
         Account const target{"target"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, target, bob);
+        env.fund(XRP(10000), target, bob);
         env.close();
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
@@ -113,11 +113,13 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
         };
 
+        // target's own Ticket is the only thing it owns throughout; a
+        // rejected proposal never adds anything on top of it.
         auto reject = [&](json::Value const& proposedTx, TER expected) {
-            env(proposal::create(alice, proposedTx, expiration), Ter(expected));
+            env(proposal::create(target, proposedTx, expiration), Ter(expected));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, target) == 1);
         };
 
         // A pseudo-transaction is never submittable by an account.
@@ -178,10 +180,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         // Expiration must be present and non-zero.
         {
-            env(proposal::create(alice, payload(), 0), Ter(temBAD_EXPIRATION));
+            env(proposal::create(target, payload(), 0), Ter(temBAD_EXPIRATION));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, target) == 1);
         }
     }
 
@@ -203,10 +205,9 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};
         Account const target{"target"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, target, bob);
+        env.fund(XRP(10000), target, bob);
         env.close();
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
@@ -226,8 +227,11 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             return proposal::unsignedPayload(env, pay(target, bob, drops(++paid)), targetTicketSeq);
         };
         auto sponsoredPayment = [&]() {
+            // bob is just standing in for an arbitrary sponsor here; every case
+            // is rejected for carrying a signature field before the sponsor
+            // itself is ever examined.
             json::Value tx = pay(target, bob, drops(++paid));
-            tx[sfSponsor.getJsonName()] = alice.human();
+            tx[sfSponsor.getJsonName()] = bob.human();
             tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
@@ -247,10 +251,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         };
 
         auto reject = [&](json::Value const& proposedTx) {
-            env(proposal::create(alice, proposedTx, expiration), Ter(temBAD_SIGNER));
+            env(proposal::create(target, proposedTx, expiration), Ter(temBAD_SIGNER));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, targetTicketSeq));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, target) == 1);
         };
 
         // Every way of filling in a signature. The payload's own signature
@@ -376,15 +380,13 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};
         Account const target{"target"};
         Account const bob{"bob"};
         Account const carol{"carol"};  // never funded
-        env.fund(XRP(10000), alice, target, bob);
+        env.fund(XRP(10000), target, bob);
         env.close();
 
         std::uint32_t const firstTicketSeq = proposal::createTicket(env, target, 3);
-        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
@@ -392,13 +394,17 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
         };
 
+        // target's three Tickets are owned throughout, so its OwnerCount
+        // never drops below 3; each successful proposal adds kProposalOwnerCount
+        // on top of that baseline.
+
         // The proposal's own expiration has already passed.
         {
-            env(proposal::create(alice, payload(firstTicketSeq), proposal::expiration(env, 0s)),
+            env(proposal::create(target, payload(firstTicketSeq), proposal::expiration(env, 0s)),
                 Ter(tecEXPIRED));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, firstTicketSeq));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, target) == 3);
         }
 
         // The proposed transaction's own ledger bound has passed: the ordinary
@@ -406,10 +412,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         {
             json::Value tx = payload(firstTicketSeq);
             tx[sfLastLedgerSequence.getJsonName()] = env.current()->seq() - 1;
-            env(proposal::create(alice, tx, expiration), Ter(tecEXPIRED));
+            env(proposal::create(target, tx, expiration), Ter(tecEXPIRED));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, firstTicketSeq));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, target) == 3);
         }
 
         // A LastLedgerSequence equal to the current ledger leaves no window to
@@ -419,54 +425,56 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         {
             json::Value tx = payload(firstTicketSeq);
             tx[sfLastLedgerSequence.getJsonName()] = env.current()->seq();
-            env(proposal::create(alice, tx, expiration), Ter(tecEXPIRED));
+            env(proposal::create(target, tx, expiration), Ter(tecEXPIRED));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, firstTicketSeq));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, target) == 3);
         }
 
         // With no ledger bound on the proposed transaction, the proposal is
         // created normally.
         {
-            env(proposal::create(alice, payload(firstTicketSeq), expiration));
+            env(proposal::create(target, payload(firstTicketSeq), expiration));
             env.close();
             BEAST_EXPECT(proposal::entry(env, target, firstTicketSeq));
-            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, target) == 3 + proposal::kProposalOwnerCount);
         }
 
         // The target and ticket already carry a proposal.
         {
-            env(proposal::create(alice, payload(firstTicketSeq), expiration), Ter(tecDUPLICATE));
+            env(proposal::create(target, payload(firstTicketSeq), expiration), Ter(tecDUPLICATE));
             env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, target) == 3 + proposal::kProposalOwnerCount);
         }
 
         // A different ticket of the same target is a different proposal.
         {
-            env(proposal::create(alice, payload(firstTicketSeq + 1), expiration));
+            env(proposal::create(target, payload(firstTicketSeq + 1), expiration));
             env.close();
             BEAST_EXPECT(proposal::entry(env, target, firstTicketSeq + 1));
-            BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, target) == 3 + (2 * proposal::kProposalOwnerCount));
         }
 
-        // The target account does not exist, so it can never sign.
+        // The target account does not exist, so it can never sign. target
+        // itself is just standing in here as an arbitrary funded submitter —
+        // the account under test is carol, the (nonexistent) target.
         {
             env(proposal::create(
-                    alice, proposal::unsignedPayload(env, pay(carol, bob, XRP(1)), 1), expiration),
+                    target, proposal::unsignedPayload(env, pay(carol, bob, XRP(1)), 1), expiration),
                 Ter(tecNO_TARGET));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, carol, 1));
-            BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, target) == 3 + (2 * proposal::kProposalOwnerCount));
         }
 
         // The referenced ticket does not exist: the proposal would reserve a
         // ticket that was never created (On-Chain Cosigner spec §5.3.2).
         {
             std::uint32_t const noSuchTicketSeq = firstTicketSeq + 100;
-            env(proposal::create(alice, payload(noSuchTicketSeq), expiration), Ter(tefNO_TICKET));
+            env(proposal::create(target, payload(noSuchTicketSeq), expiration), Ter(tefNO_TICKET));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, noSuchTicketSeq));
-            BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
+            BEAST_EXPECT(ownerCount(env, target) == 3 + (2 * proposal::kProposalOwnerCount));
         }
     }
 
@@ -715,14 +723,12 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};    // the proposer
-        Account const target{"target"};  // the account the proposal is for
+        Account const target{"target"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, target, bob);
+        env.fund(XRP(10000), target, bob);
         env.close();
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
-        proposal::authorizeProposer(env, target, alice);
 
         // The proposed transaction is stored unsigned: no signature fields and
         // an empty SigningPubKey. It is ticket-based so unrelated target account
@@ -732,14 +738,14 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
-        env(proposal::create(alice, proposedTx, expiration));
+        env(proposal::create(target, proposedTx, expiration));
         env.close();
 
         auto const sle = proposal::entry(env, target, targetTicketSeq);
         if (!BEAST_EXPECT(sle))
             return;
 
-        BEAST_EXPECT(sle->getAccountID(sfOwner) == alice.id());
+        BEAST_EXPECT(sle->getAccountID(sfOwner) == target.id());
         BEAST_EXPECT(sle->getFieldU32(sfExpiration) == expiration);
 
         auto const stored = sle->getFieldObject(sfProposedTransaction);
@@ -749,10 +755,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(stored.getFieldVL(sfSigningPubKey).empty());
 
         // The proposal reserves several owner increments against the proposer.
-        // The target owns the Ticket used by the proposed transaction, plus
-        // the SignerList that authorizes alice to propose for it.
-        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
-        BEAST_EXPECT(ownerCount(env, target) == 2);
+        // Here target is both: it owns the Ticket used by the proposed
+        // transaction, and it owns the proposal itself since it is proposing
+        // for its own account.
+        BEAST_EXPECT(ownerCount(env, target) == 1 + proposal::kProposalOwnerCount);
     }
 
     // A proposal carries a transaction of any type: what the proposal requires
@@ -769,15 +775,13 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};    // the proposer
-        Account const target{"target"};  // the account the proposals are for
+        Account const target{"target"};
         Account const bob{"bob"};
         Account const gw{"gw"};
         // NOLINTNEXTLINE(readability-identifier-naming)
         auto const USD = gw["USD"];
-        env.fund(XRP(10000), alice, target, bob, gw);
+        env.fund(XRP(10000), target, bob, gw);
         env.close();
-        proposal::authorizeProposer(env, target, alice);
 
         // One payload per transaction type, each straight from the generator
         // the ordinary tests for that type use.
@@ -800,12 +804,14 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         {
             std::uint32_t const ticketSeq = firstTicketSeq + static_cast<std::uint32_t>(i);
             env(proposal::create(
-                alice, proposal::unsignedPayload(env, payloads[i], ticketSeq), expiration));
+                target, proposal::unsignedPayload(env, payloads[i], ticketSeq), expiration));
             env.close();
             BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
         }
 
-        BEAST_EXPECT(ownerCount(env, alice) == payloads.size() * proposal::kProposalOwnerCount);
+        // target owns one Ticket per payload plus one proposal per payload.
+        BEAST_EXPECT(
+            ownerCount(env, target) == payloads.size() * (1 + proposal::kProposalOwnerCount));
     }
 
     // A proposed transaction may itself require an auxiliary co-signer beyond
@@ -824,12 +830,11 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};        // the proposer
-        Account const borrower{"borrower"};  // the target account
+        Account const borrower{"borrower"};  // the target account, proposing for itself
+        Account const bob{"bob"};            // an arbitrary sponsor placeholder
 
-        env.fund(XRP(10000), alice, borrower);
+        env.fund(XRP(10000), borrower, bob);
         env.close();
-        proposal::authorizeProposer(env, borrower, alice);
 
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
@@ -841,7 +846,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             json::Value const tx =
                 proposal::unsignedPayload(env, loan::set(borrower, uint256{1}, 1'000), ticketSeq);
 
-            env(proposal::create(alice, tx, expiration));
+            env(proposal::create(borrower, tx, expiration));
             env.close();
             BEAST_EXPECT(proposal::entry(env, borrower, ticketSeq));
         }
@@ -852,10 +857,11 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             std::uint32_t const ticketSeq = proposal::createTicket(env, borrower);
 
             json::Value tx = sponsor::transfer(borrower, tfSponsorshipCreate);
-            tx[sfSponsor.getJsonName()] = alice.human();
+            tx[sfSponsor.getJsonName()] = bob.human();
             tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
 
-            env(proposal::create(alice, proposal::unsignedPayload(env, tx, ticketSeq), expiration));
+            env(proposal::create(
+                borrower, proposal::unsignedPayload(env, tx, ticketSeq), expiration));
             env.close();
             BEAST_EXPECT(proposal::entry(env, borrower, ticketSeq));
         }
@@ -1052,31 +1058,29 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};    // the proposer
-        Account const target{"target"};  // the account the proposal is for
+        Account const target{"target"};  // the proposer, proposing for itself
         Account const bob{"bob"};
-        Account const backer{"backer"};  // sponsors alice's transaction fee
+        Account const backer{"backer"};  // sponsors target's transaction fee
 
-        env.fund(XRP(10000), alice, target, bob, backer);
+        env.fund(XRP(10000), target, bob, backer);
         env.close();
-        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
         json::Value const proposedTx =
             proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
 
-        auto const aliceBalance = env.balance(alice);
+        auto const targetBalance = env.balance(target);
         auto const backerBalance = env.balance(backer);
         STAmount const feeAmt = drops(20);
 
-        env(proposal::create(alice, proposedTx, proposal::expiration(env, 100s)),
+        env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
             Fee(feeAmt),
             sponsor::As(backer, spfSponsorFee),
             Sig(sfSponsorSignature, backer));
         env.close();
 
         BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
-        BEAST_EXPECT(env.balance(alice) == aliceBalance);
+        BEAST_EXPECT(env.balance(target) == targetBalance);
         BEAST_EXPECT(env.balance(backer) == backerBalance - feeAmt);
     }
 
@@ -1092,12 +1096,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};
         Account const target{"target"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, target, bob);
+        env.fund(XRP(10000), target, bob);
         env.close();
-        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
 
@@ -1111,11 +1113,12 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
              proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1)});
 
-        env(proposal::create(alice, proposedTx, proposal::expiration(env, 100s)));
+        env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)));
         env.close();
 
         BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
-        BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
+        // target owns its own Ticket plus the batch proposal.
+        BEAST_EXPECT(ownerCount(env, target) == 1 + proposal::kBatchProposalOwnerCount);
     }
 
     // A multi-account Batch is the primary motivating case (On-Chain Cosigner spec §10): its inner
@@ -1133,12 +1136,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        Account const alice{"alice"};
-        Account const target{"target"};  // outer account of the batch
+        Account const target{"target"};  // outer account of the batch, proposing for itself
         Account const bob{"bob"};        // a distinct inner participant
-        env.fund(XRP(10000), alice, target, bob);
+        env.fund(XRP(10000), target, bob);
         env.close();
-        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
 
@@ -1152,7 +1153,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
              proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob))});
 
-        env(proposal::create(alice, proposedTx, proposal::expiration(env, 100s)));
+        env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)));
         env.close();
 
         auto const sle = proposal::entry(env, target, targetTicketSeq);
@@ -1163,7 +1164,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // signatures are collected later through TransactionProposalSign.
         auto const stored = sle->getFieldObject(sfProposedTransaction);
         BEAST_EXPECT(!stored.isFieldPresent(sfBatchSigners));
-        BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
+        // target owns its own Ticket plus the batch proposal.
+        BEAST_EXPECT(ownerCount(env, target) == 1 + proposal::kBatchProposalOwnerCount);
     }
 
     void
