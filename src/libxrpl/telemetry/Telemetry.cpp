@@ -383,15 +383,7 @@ public:
         auto processor = std::make_unique<FilteringSpanProcessor>(std::move(batchProcessor));
 
         // Configure resource attributes
-        auto resourceAttrs = resource::Resource::Create({
-            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
-            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
-            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
-            {std::string(attr::networkId),
-             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
-            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
-            {std::string(attr::nodeId), setup_.nodeId},            // LCOV_EXCL_LINE
-        });
+        auto resourceAttrs = makeTracerResource();
 
         // Configure sampler. Head sampling is fixed at 1.0 (sample everything);
         // setup_.samplingRatio is not config-driven. Wrap the ratio sampler in a
@@ -438,6 +430,56 @@ public:
         Telemetry::setInstance(this);
 
         JLOG(journal_.info()) << "Telemetry started successfully";
+    }
+
+    /**
+     * Build the tracer resource: the process-identity attributes stamped on
+     * every exported span.
+     *
+     * Called from start(), which runs after Application::setup() has injected
+     * the node identity, so setup_.nodeId is populated by then.
+     *
+     * @return The resource attached to the TracerProvider.
+     */
+    [[nodiscard]] resource::Resource
+    makeTracerResource() const
+    {
+        return resource::Resource::Create({
+            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
+            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
+            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
+            {std::string(attr::networkId),
+             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
+            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
+            {std::string(attr::nodeId), setup_.nodeId},            // LCOV_EXCL_LINE
+        });
+    }
+
+    /**
+     * Build the metrics resource: the same attributes as the tracer resource
+     * in start(), so metrics and traces share one identity.
+     *
+     * xrpl.node.id is added only when setup_.nodeId already holds a value.
+     * setNodeId() runs after the constructor that calls this, so on the normal
+     * startup path the attribute is left off rather than stamped blank.
+     *
+     * @return The resource attached to the MeterProvider.
+     */
+    [[nodiscard]] resource::Resource
+    makeMetricsResource() const
+    {
+        resource::ResourceAttributes attrs{
+            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
+            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
+            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
+            {std::string(attr::networkId), static_cast<int64_t>(setup_.networkId)},
+            {std::string(attr::networkType), setup_.networkType},
+        };
+
+        if (!setup_.nodeId.empty())
+            attrs[std::string(attr::nodeId)] = setup_.nodeId;
+
+        return resource::Resource::Create(attrs);
     }
 
     /**
