@@ -887,6 +887,15 @@ ValidMPTTransfer::finalize(
     // condition. Either amendment makes the checks enforcing.
     auto const invariantPasses = !(view.rules().enabled(featureMPTokensV2) || fix340Enabled);
 
+    // A failed transaction must not persist an MPToken deletion. Pre-loop
+    // because deletedAuthorized_ is not issuance-scoped and orphans continue.
+    if (fix340Enabled && !isTesSuccess(result) && !deletedAuthorized_.empty())
+    {
+        JLOG(j.fatal()) << "Invariant failed: MPToken deleted on failure " << txnType << " "
+                        << result;
+        return invariantPasses;
+    }
+
     for (auto const& [mptID, values] : amount_)
     {
         std::uint16_t senders = 0;
@@ -975,11 +984,8 @@ ValidMPTTransfer::finalize(
 
         // A failed transaction must not have changed a holder's balance. One
         // side is enough, unlike the transfer check above, so this also catches
-        // a lock/unlock moving value between sfMPTAmount and sfLockedAmount,
-        // and a deleted MPToken, which the sender/receiver counts skip. See
-        // ValidMPTBalanceChanges::finalize for why no result code is exempt.
-        if (fix340Enabled && !isTesSuccess(result) &&
-            (senders > 0 || receivers > 0 || !deletedAuthorized_.empty()))
+        // a lock/unlock moving value between sfMPTAmount and sfLockedAmount.
+        if (fix340Enabled && !isTesSuccess(result) && (senders > 0 || receivers > 0))
         {
             JLOG(j.fatal()) << "Invariant failed: MPToken balance changed on failure " << txnType
                             << " " << result;

@@ -5137,9 +5137,9 @@ class Invariants_test : public beast::unit_test::Suite
                 return true;
             };
             // ValidMPTIssuance also reports the deletion, so assert on
-            // ValidMPTTransfer's message, which only the new term can produce.
+            // ValidMPTTransfer's message, which only the new check can produce.
             doInvariantCheck(
-                {{"MPToken balance changed on failure"}},
+                {{"MPToken deleted on failure"}},
                 eraseToken,
                 XRPAmount{},
                 payment,
@@ -5970,6 +5970,24 @@ class Invariants_test : public beast::unit_test::Suite
                 STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
                 {tesSUCCESS, tesSUCCESS},
                 setupOrphan);
+            // The same erase on a failure. The orphan branch continues, so only
+            // the pre-loop deletion check can report this one.
+            doInvariantCheck(
+                {{"MPToken deleted on failure"}},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    auto sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
+                    if (!sleTok)
+                        return false;
+                    ac.view().erase(sleTok);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setupOrphan,
+                TxAccount::None,
+                std::source_location::current(),
+                tecEXPIRED);
         }
 
         // Vault-share freeze invariant: isVaultPseudoAccountFrozen descends
