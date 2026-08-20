@@ -436,8 +436,10 @@ public:
 /**
  * Create a Telemetry instance.
  *
- * Returns a TelemetryImpl when setup.enabled is true, or a
- * NullTelemetry no-op stub otherwise.
+ * With XRPL_ENABLE_TELEMETRY defined, returns a TelemetryImpl when
+ * setup.enabled is true, or a no-op stub otherwise. Without it, the only
+ * definition of this factory always returns the no-op stub and never reads
+ * setup.enabled.
  *
  * @param setup    Configuration from the [telemetry] config section.
  * @param journal  Journal for log output during initialization.
@@ -454,6 +456,14 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
  * @param networkId      Network identifier from [network_id] config
  * (0 = mainnet, 1 = testnet, 2 = devnet).
  * @return A populated Setup struct with defaults for missing values.
+ * @throws std::runtime_error  If `enabled` is set and the mutual TLS (mTLS)
+ * settings contradict each other: only one of `tls_client_cert`/`tls_client_key`
+ * is given, or a client certificate is given while `use_tls` is 0. Those two
+ * checks are skipped when `enabled` is 0.
+ * @throws boost::bad_lexical_cast  If any numeric key (`enabled`, `use_tls`,
+ * `batch_size`, the trace switches, ...) holds a value Section::valueOr cannot
+ * convert. None of the numeric reads sit inside the `enabled` branch, so this
+ * escapes whether telemetry is on or off.
  */
 Telemetry::Setup
 makeTelemetrySetup(
