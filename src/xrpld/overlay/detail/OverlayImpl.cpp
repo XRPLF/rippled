@@ -48,6 +48,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Manifest.h>
@@ -790,25 +791,51 @@ OverlayImpl::onManifests(
     std::shared_ptr<protocol::TMManifests> const& m,
     std::shared_ptr<PeerImp> const& from)
 {
-    auto const n = m->list_size();
     auto const& journal = from->pJournal();
+
+    // Process every trusted manifest, but stop processing untrusted ones once
+    // the configured untrusted count has been handled, so the work stays
+    // bounded. Trusted manifests are always processed: dropping one would delay
+    // a validator key rotation reaching this node.
+    auto const maxUntrusted = untrustedManifestCount(app_.config().maxUntrustedCount);
+    auto const total = static_cast<std::size_t>(m->list_size());
+    std::size_t untrusted = 0;
+    bool skippedUntrusted = false;
 
     protocol::TMManifests relay;
 
-    for (std::size_t i = 0; i < n; ++i)
+    for (std::size_t i = 0; i < total; ++i)
     {
         auto& s = m->list().Get(i).stobject();
 
         if (auto mo = deserializeManifest(s))
         {
             auto const serialized = mo->serialized;
+            // Resolve trust before applyManifest takes the manifest-cache
+            // lock: listed() takes the validator-list lock, so ordering it
+            // first avoids holding the two locks in opposite orders.
+            bool const isTrusted = app_.getValidators().listed(mo->masterKey);
 
-            auto const result = app_.getValidatorManifests().applyManifest(std::move(*mo));
+            // Bound untrusted work: process at most maxUntrusted untrusted
+            // manifests, but never skip a trusted one. Trusted manifests are
+            // not counted against the cap.
+            if (!isTrusted)
+            {
+                if (untrusted >= maxUntrusted)
+                {
+                    skippedUntrusted = true;
+                    continue;
+                }
+                ++untrusted;
+            }
+
+            auto const result = app_.getValidatorManifests().applyManifest(
+                std::move(*mo),
+                isTrusted ? ManifestRateLimitCapPolicy::Uncapped
+                          : ManifestRateLimitCapPolicy::Capped);
 
             if (result == ManifestDisposition::Accepted)
             {
-                relay.add_list()->set_stobject(s);
-
                 // N.B.: this is important; the applyManifest call above moves
                 //       the loaded Manifest out of the optional so we need to
                 //       reload it here.
@@ -819,13 +846,17 @@ OverlayImpl::onManifests(
                     "deserialization succeeded");
                 // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
                 app_.getOPs().pubManifest(*mo);
+                // NOLINTEND(bugprone-unchecked-optional-access)
 
-                if (app_.getValidators().listed(mo->masterKey))
+                relay.add_list()->set_stobject(s);
+
+                // Persist to the wallet DB only for trusted keys, so untrusted
+                // gossip never survives a restart.
+                if (isTrusted)
                 {
                     auto db = app_.getWalletDB().checkoutDb();
                     addValidatorManifest(*db, serialized);
                 }
-                // NOLINTEND(bugprone-unchecked-optional-access)
             }
         }
         else
@@ -833,6 +864,17 @@ OverlayImpl::onManifests(
             JLOG(journal.debug()) << "Malformed manifest #" << i + 1 << ": " << strHex(s);
             continue;
         }
+    }
+
+    if (skippedUntrusted)
+    {
+        // The sender exceeded the untrusted per-message cap. Charge it (once,
+        // here) so a flood of untrusted manifests is penalized.
+        from->charge(resource::kFeeMalformedRequest, "too many untrusted manifests");
+
+        JLOG(journal.warn()) << "Manifests: message had " << total
+                             << " entries; processed all trusted plus the first " << maxUntrusted
+                             << " untrusted";
     }
 
     if (!relay.list().empty())
@@ -1337,14 +1379,62 @@ OverlayImpl::getManifestsMessage()
 
     if (auto seq = app_.getValidatorManifests().sequence(); seq != manifestListSeq_)
     {
-        protocol::TMManifests tm;
-
+        // Phase 1: snapshot the cache under its own lock. Do not call
+        // Validators::listed() here — that takes the validator-list lock, and
+        // forEachManifest holds the manifest-cache lock, so consulting trust
+        // inside the callback would invert the lock order used elsewhere
+        // (see onManifests) and risk deadlock. Capture the manifest hash now,
+        // while we have the Manifest object, for the suppression key.
+        struct CachedManifest
+        {
+            PublicKey masterKey;
+            std::string serialized;
+            uint256 hash;
+        };
+        std::vector<CachedManifest> cached;
         app_.getValidatorManifests().forEachManifest(
-            [&tm](std::size_t s) { tm.mutable_list()->Reserve(s); },
-            [&tm, &hr = app_.getHashRouter()](Manifest const& manifest) {
-                tm.add_list()->set_stobject(manifest.serialized.data(), manifest.serialized.size());
-                hr.addSuppression(manifest.hash());
+            [&cached](std::size_t s) { cached.reserve(s); },
+            [&cached](Manifest const& manifest) {
+                cached.push_back(
+                    {.masterKey = manifest.masterKey,
+                     .serialized = manifest.serialized,
+                     .hash = manifest.hash()});
             });
+
+        // Phase 2: no cache lock held, so trust checks are safe. Include every
+        // trusted manifest, then fill any remaining headroom up to the
+        // configured untrusted count with gossip. Trusted manifests are never
+        // dropped; the trusted count only sizes the accepted message.
+        std::vector<CachedManifest const*> selected;
+        std::vector<CachedManifest const*> untrusted;
+        for (auto const& e : cached)
+        {
+            if (app_.getValidators().listed(e.masterKey))
+            {
+                selected.push_back(&e);
+            }
+            else
+            {
+                untrusted.push_back(&e);
+            }
+        }
+
+        // Cap untrusted only; trusted manifests are all included above.
+        auto const take =
+            std::min(untrustedManifestCount(app_.config().maxUntrustedCount), untrusted.size());
+        selected.insert(selected.end(), untrusted.begin(), untrusted.begin() + take);
+
+        // Shuffle the order. Cryptographic randomness is not needed here.
+        std::shuffle(selected.begin(), selected.end(), defaultPrng());
+
+        protocol::TMManifests tm;
+        auto& hr = app_.getHashRouter();
+        tm.mutable_list()->Reserve(static_cast<int>(selected.size()));
+        for (auto const* e : selected)
+        {
+            tm.add_list()->set_stobject(e->serialized.data(), e->serialized.size());
+            hr.addSuppression(e->hash);
+        }
 
         manifestMessage_.reset();
 

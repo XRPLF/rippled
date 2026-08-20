@@ -17,6 +17,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <memory>
@@ -29,7 +30,6 @@
 #include <vector>
 
 namespace protocol {
-class TMValidatorList;
 class TMValidatorListCollection;
 }  // namespace protocol
 
@@ -238,7 +238,7 @@ class ValidatorList
     ManifestCache& validatorManifests_;
     ManifestCache& publisherManifests_;
     TimeKeeper& timeKeeper_;
-    boost::filesystem::path const dataPath_;
+    std::filesystem::path const dataPath_;
     beast::Journal const j_;
     std::shared_mutex mutable mutex_;
     using scoped_lock = std::scoped_lock<decltype(mutex_)>;
@@ -371,9 +371,6 @@ public:
     parseBlobs(std::uint32_t version, json::Value const& body);
 
     static std::vector<ValidatorBlobInfo>
-    parseBlobs(protocol::TMValidatorList const& body);
-
-    static std::vector<ValidatorBlobInfo>
     parseBlobs(protocol::TMValidatorListCollection const& body);
 
     static void
@@ -390,7 +387,6 @@ public:
 
     [[nodiscard]] static std::pair<std::size_t, std::size_t>
     buildValidatorListMessages(
-        std::size_t messageVersion,
         std::uint64_t peerSequence,
         std::size_t maxSequence,
         std::uint32_t rawVersion,
@@ -887,7 +883,7 @@ private:
     /**
      * Get the filename used for caching UNLs
      */
-    boost::filesystem::path
+    std::filesystem::path
     getCacheFileName(scoped_lock const&, PublicKey const& pubKey) const;
 
     /**
@@ -1006,14 +1002,6 @@ hash_append(Hasher& h, std::map<std::size_t, ValidatorBlobInfo> const& blobs)
 }  // namespace xrpl
 
 namespace protocol {
-
-template <class Hasher>
-void
-hash_append(Hasher& h, TMValidatorList const& msg)
-{
-    using beast::hash_append;
-    hash_append(h, msg.manifest(), msg.blob(), msg.signature(), msg.version());
-}
 
 template <class Hasher>
 void

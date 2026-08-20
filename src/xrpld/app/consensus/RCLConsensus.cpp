@@ -867,28 +867,17 @@ RCLConsensus::Adaptor::doAccept(
     //  close time reports, and update our clock.
     if ((mode == ConsensusMode::Proposing || mode == ConsensusMode::Observing) && !consensusFail)
     {
-        auto closeTime = rawCloseTimes.self;
-
-        JLOG(j_.info()) << "We closed at " << closeTime.time_since_epoch().count();
-        using usec64_t = std::chrono::duration<std::uint64_t>;
-        auto closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
+        JLOG(j_.info()) << "We closed at " << rawCloseTimes.self.time_since_epoch().count();
         int closeCount = 1;
-
         for (auto const& [t, v] : rawCloseTimes.peers)
         {
             JLOG(j_.info()) << std::to_string(v) << " time votes for "
                             << std::to_string(t.time_since_epoch().count());
             closeCount += v;
-            closeTotal += std::chrono::duration_cast<usec64_t>(t.time_since_epoch()) * v;
         }
 
-        closeTotal += usec64_t(closeCount / 2);  // for round to nearest
-        closeTotal /= closeCount;
-
-        // Use signed times since we are subtracting
-        using duration = std::chrono::duration<std::int32_t>;
-        using time_point = std::chrono::time_point<NetClock, duration>;
-        auto offset = time_point{closeTotal} - std::chrono::time_point_cast<duration>(closeTime);
+        // Median handles outliers better than mean.
+        auto const offset = medianCloseOffset(rawCloseTimes);
         JLOG(j_.info()) << "Our close offset is estimated at " << offset.count() << " ("
                         << closeCount << ")";
 
