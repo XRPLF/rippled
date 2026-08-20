@@ -121,6 +121,7 @@ processors:
       - context: datapoint
         statements:
           - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
+          - set(attributes["xrpl_node_id"], resource.attributes["xrpl.node.id"])
           - set(attributes["deployment_environment"], resource.attributes["deployment.environment"])
           - set(attributes["xrpl_network_type"], resource.attributes["xrpl.network.type"])
 
@@ -141,6 +142,7 @@ connectors:
     # series from distinct nodes/tiers grouped separately.
     resource_metrics_key_attributes:
       - service.instance.id
+      - xrpl.node.id
       - deployment.environment
       - xrpl.network.type
     histogram:

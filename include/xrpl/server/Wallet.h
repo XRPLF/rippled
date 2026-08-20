@@ -16,6 +16,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -87,6 +88,19 @@ addValidatorManifest(soci::session& session, std::string const& serialized);
  */
 void
 clearNodeIdentity(soci::session& session);
+
+/**
+ * Returns this node's stored keypair, if the database holds a valid one.
+ *
+ * Read-only: unlike getNodeIdentity(), never generates or persists a key. A row
+ * counts only when its public and secret keys are a pair.
+ *
+ * @param session Session with the database.
+ *
+ * @return The stored keypair, or std::nullopt.
+ */
+std::optional<std::pair<PublicKey, SecretKey>>
+readNodeIdentity(soci::session& session);
 
 /**
  * Returns a stable public and private key for this node.
