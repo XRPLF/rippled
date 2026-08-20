@@ -862,6 +862,9 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     {sfWithdrawalPolicy, SoeOptional},
     {sfData, SoeOptional},
     {sfScale, SoeOptional},
+    {sfVaultKind, SoeOptional},
+    {sfSubscriptionDate, SoeOptional},
+    {sfRedemptionDate, SoeOptional},
 }))
 
 /** This transaction updates a single asset vault. */
@@ -918,6 +921,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfDestination, SoeOptional},
     {sfDestinationTag, SoeOptional},
+    {sfCredentialIDs, SoeOptional},
 }))
 
 /** This transaction claws back tokens from a vault. */
@@ -1001,6 +1005,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfDestination, SoeOptional},
     {sfDestinationTag, SoeOptional},
+    {sfCredentialIDs, SoeOptional},
 }))
 
 /** This transaction claws back First Loss Capital from a Loan Broker to
