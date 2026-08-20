@@ -1,29 +1,28 @@
-#include <test/app/lending/LoanTestBase.h>
 #include <test/app/vault/VaultPrecisionFixture.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/TxFlags.h>
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <tuple>
@@ -87,8 +86,9 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         {
             Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
             auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-            if (!BEAST_EXPECT(f.asset && f.broker))
+            if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
                 continue;
+            jtx::PrettyAsset const& asset = *f.asset;
 
             auto const before = read(env, f);
 
@@ -96,7 +96,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             env(v.deposit(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(amount).value()}),
+                     .amount = asset(amount).value()}),
                 Ter(std::ignore));
             env.close();
 
@@ -119,14 +119,14 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
                 auto const after = read(env, f);
                 Number const tDelta = after.assetsTotal - before.assetsTotal;
                 Number const aDelta = after.assetsAvailable - before.assetsAvailable;
-                Number const requested = (*f.asset)(amount).number();
+                Number const requested = asset(amount).number();
 
                 BEAST_EXPECTS(
                     tDelta <= requested,
                     "amount=" + std::to_string(amount) + " tDelta exceeds requested");
                 Number const gap = absDiff(tDelta, aDelta);
                 BEAST_EXPECTS(
-                    gap <= oneUnit(*f.asset, after.assetsTotal),
+                    gap <= oneUnit(asset, after.assetsTotal),
                     "amount=" + std::to_string(amount) + " |tDelta-aDelta| exceeds oneUnit");
             }
             else if (isBoundary)
@@ -158,8 +158,9 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         {
             Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
             auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-            if (!BEAST_EXPECT(f.asset && f.broker))
+            if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
                 continue;
+            jtx::PrettyAsset const& asset = *f.asset;
 
             auto const before = read(env, f);
 
@@ -167,7 +168,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             env(v.deposit(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(amount).value()}),
+                     .amount = asset(amount).value()}),
                 Ter(std::ignore));
             env.close();
 
@@ -209,14 +210,15 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
 
         Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
         auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-        if (!BEAST_EXPECT(f.asset && f.broker))
+        if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
             return;
+        jtx::PrettyAsset const& asset = *f.asset;
 
         Vault const v{env};
         env(v.deposit(
                 {.depositor = f.depositor,
                  .id = f.vaultKeylet.key,
-                 .amount = (*f.asset)(99'000'000).value()}),
+                 .amount = asset(99'000'000).value()}),
             Ter(std::ignore));
         env.close();
 
@@ -224,7 +226,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         Number const kLowerBound{1, 6};
         BEAST_EXPECT(before.assetsTotal > kLowerBound);
 
-        auto const tinyAmount = (*f.asset)(Number{1, -10}).value();
+        auto const tinyAmount = asset(Number{1, -10}).value();
         env(v.deposit({.depositor = f.depositor, .id = f.vaultKeylet.key, .amount = tinyAmount}),
             Ter(std::ignore));
         env.close();
@@ -356,14 +358,15 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         auto runOnce = [&](bool useShares) {
             Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
             auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-            if (!BEAST_EXPECT(f.asset && f.broker))
+            if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
                 return;
+            jtx::PrettyAsset const& asset = *f.asset;
 
             Vault const v{env};
             env(v.deposit(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(1'000'000).value()}),
+                     .amount = asset(1'000'000).value()}),
                 Ter(std::ignore));
             env.close();
 
@@ -407,7 +410,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             {
                 for (auto const amount : kAssetAmounts)
                 {
-                    step((*f.asset)(amount).value(), "assets=" + std::to_string(amount));
+                    step(asset(amount).value(), "assets=" + std::to_string(amount));
                 }
             }
         };
@@ -434,14 +437,15 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
 
         Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
         auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-        if (!BEAST_EXPECT(f.asset && f.broker))
+        if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
             return;
+        jtx::PrettyAsset const& asset = *f.asset;
 
         Vault const v{env};
         env(v.deposit(
                 {.depositor = f.depositor,
                  .id = f.vaultKeylet.key,
-                 .amount = (*f.asset)(1'000'000).value()}),
+                 .amount = asset(1'000'000).value()}),
             Ter(std::ignore));
         env.close();
 
@@ -469,7 +473,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
                 payout <= shareValue, "shares=" + std::to_string(count) + " payout > shareValue");
             Number const shortfall = shareValue > payout ? shareValue - payout : Number{0};
             BEAST_EXPECTS(
-                shortfall <= oneUnit(*f.asset, after.assetsTotal),
+                shortfall <= oneUnit(asset, after.assetsTotal),
                 "shares=" + std::to_string(count) + " shortfall exceeds oneUnit");
         }
     }
@@ -489,14 +493,15 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
 
         Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
         auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-        if (!BEAST_EXPECT(f.asset && f.broker))
+        if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
             return;
+        jtx::PrettyAsset const& asset = *f.asset;
 
         Vault const v{env};
         env(v.deposit(
                 {.depositor = f.depositor,
                  .id = f.vaultKeylet.key,
-                 .amount = (*f.asset)(99'000'000).value()}),
+                 .amount = asset(99'000'000).value()}),
             Ter(std::ignore));
         env.close();
 
@@ -504,7 +509,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         Number const kLowerBound{1, 6};
         BEAST_EXPECT(before.assetsTotal > kLowerBound);
 
-        auto const tinyAmount = (*f.asset)(Number{1, -10}).value();
+        auto const tinyAmount = asset(Number{1, -10}).value();
         env(v.withdraw({.depositor = f.depositor, .id = f.vaultKeylet.key, .amount = tinyAmount}),
             Ter(std::ignore));
         env.close();
@@ -537,14 +542,13 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
 
         Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
         auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-        if (!BEAST_EXPECT(f.asset && f.broker))
+        if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
             return;
+        jtx::PrettyAsset const& asset = *f.asset;
 
         Vault const v{env};
         env(v.deposit(
-                {.depositor = f.depositor,
-                 .id = f.vaultKeylet.key,
-                 .amount = (*f.asset)(500).value()}),
+                {.depositor = f.depositor, .id = f.vaultKeylet.key, .amount = asset(500).value()}),
             Ter(std::ignore));
         env.close();
 
@@ -594,8 +598,9 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
 
         Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
         auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/true);
-        if (!BEAST_EXPECT(f.asset && f.broker))
+        if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
             return;
+        jtx::PrettyAsset const& asset = *f.asset;
 
         Vault const v{env};
 
@@ -604,7 +609,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         env(v.deposit(
                 {.depositor = f.depositor,
                  .id = f.vaultKeylet.key,
-                 .amount = (*f.asset)(5'000).value()}),
+                 .amount = asset(5'000).value()}),
             Ter(std::ignore));
         env.close();
 
@@ -633,7 +638,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             env(v.deposit(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(depositAmount).value()}),
+                     .amount = asset(depositAmount).value()}),
                 Ter(std::ignore));
             env.close();
             checkInvariant("deposit=" + std::to_string(depositAmount));
@@ -641,7 +646,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             env(v.withdraw(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(withdrawAmount).value()}),
+                     .amount = asset(withdrawAmount).value()}),
                 Ter(std::ignore));
             env.close();
             checkInvariant("withdraw=" + std::to_string(withdrawAmount));
@@ -674,14 +679,15 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             env,
             /*impairAndPaySibling=*/false,
             /*allowClawback=*/true);
-        if (!BEAST_EXPECT(f.asset && f.broker))
+        if (!BEAST_EXPECT(f.asset && f.broker) || !f.asset)
             return;
+        jtx::PrettyAsset const& asset = *f.asset;
 
         Vault const v{env};
         env(v.deposit(
                 {.depositor = f.depositor,
                  .id = f.vaultKeylet.key,
-                 .amount = (*f.asset)(2'000).value()}),
+                 .amount = asset(2'000).value()}),
             Ter(std::ignore));
         env.close();
 
@@ -694,7 +700,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
                     {.issuer = f.issuer,
                      .id = f.vaultKeylet.key,
                      .holder = f.depositor,
-                     .amount = (*f.asset)(amount).value()}),
+                     .amount = asset(amount).value()}),
                 Ter(std::ignore));
             env.close();
 
