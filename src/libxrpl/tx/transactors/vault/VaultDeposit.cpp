@@ -50,12 +50,11 @@ roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
     return roundToScale(amount, postScale, Number::RoundingMode::Downward);
 }
 
-// True if debiting `assets` would leave the depositor's balance untouched, because the value is
-// below half a ULP at the scale that balance is held at. Such a deposit would mint shares against
-// a transfer that never happened.
-//
-// The issuer of the asset is exempt: accountHolds reports the maximum representable value for
-// them, which would make every amount look sub-ULP.
+// True if debiting `assets` would leave the depositor's balance where it started, so the deposit
+// would mint shares against a transfer that never happened. Asking the balance directly whether it
+// notices the debit avoids having to infer the rounding step: it has to be the stored balance that
+// answers, because that magnitude is what governs the rounding, and it is not the same as the
+// spendable amount, which also counts what the counterparty's limit allows.
 [[nodiscard]]
 static bool
 roundsToZeroForDepositor(
@@ -64,7 +63,7 @@ roundsToZeroForDepositor(
     STAmount const& assets,
     beast::Journal j)
 {
-    if (assets.integral() || account == assets.getIssuer())
+    if (assets.integral())
         return false;
 
     auto const balance = accountHolds(
@@ -74,13 +73,13 @@ roundsToZeroForDepositor(
         FreezeHandling::ZeroIfFrozen,
         AuthHandling::ZeroIfUnauthorized,
         j,
-        SpendableHandling::FullBalance);
+        SpendableHandling::SimpleBalance);
 
-    if (!assets.isZeroAtScale(scale(balance, assets.asset())))
+    if (balance - assets != balance)
         return false;
 
     JLOG(j.warn()) << "VaultDeposit: amount " << assets.getFullText()
-                   << " rounds to zero at depositor trust-line scale";
+                   << " leaves the depositor's balance " << balance.getFullText() << " unchanged";
     return true;
 }
 
@@ -104,7 +103,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
-    auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
 
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
@@ -239,31 +237,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // What a deposit transfers is not the requested amount but that amount truncated to a whole
-    // number of shares and converted back, which can be smaller. Reject here if that value would
-    // be lost to rounding on the depositor's side, before anything moves.
-    if (fix340Enabled)
-    {
-        try
-        {
-            if (auto const shares = assetsToSharesDeposit(vault, sleIssuance, roundedAmount))
-            {
-                auto const assets = sharesToAssetsDeposit(vault, sleIssuance, *shares);
-                if (assets && roundsToZeroForDepositor(ctx.view, account, *assets, ctx.j))
-                    return tecPRECISION_LOSS;
-            }
-        }
-        catch (std::overflow_error const&)
-        {
-            // A large enough Scale overflows Number easily, so this stays at debug to avoid
-            // spamming the log. Nothing to decide here: the amount is unusable for a different
-            // reason than the one this check is about, and doApply reports it as tecPATH_DRY.
-            JLOG(ctx.j.debug()) << "VaultDeposit: overflow error computing deposited assets"
-                                << " with scale=" << static_cast<int>(vault->at(sfScale))
-                                << ", amount=" << roundedAmount;
-        }
-    }
-
     return tesSUCCESS;
 }
 
@@ -372,6 +345,12 @@ VaultDeposit::doApply()
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
+        // What a deposit transfers is not the requested amount but that amount truncated to a
+        // whole number of shares and converted back, which can be smaller. Only here is that
+        // value known rather than recomputed, so this is where it can be checked against the
+        // depositor's balance before anything moves.
+        if (fix340Enabled && roundsToZeroForDepositor(view(), accountID_, *maybeAssets, j_))
+            return tecPRECISION_LOSS;
         assetsDeposited = *maybeAssets;
     }
     catch (std::overflow_error const&)
@@ -389,11 +368,6 @@ VaultDeposit::doApply()
     XRPL_ASSERT(
         sharesCreated.asset() != assetsDeposited.asset(),
         "xrpl::VaultDeposit::doApply : assets are not shares");
-
-    // preclaim rejects this from the same inputs, but only here is the transferred value known
-    // rather than recomputed, so the transfer below can never be a no-op for the depositor.
-    if (fix340Enabled && roundsToZeroForDepositor(view(), accountID_, assetsDeposited, j_))
-        return tecPRECISION_LOSS;  // LCOV_EXCL_LINE
 
     vault->at(sfAssetsTotal) += assetsDeposited;
     vault->at(sfAssetsAvailable) += assetsDeposited;

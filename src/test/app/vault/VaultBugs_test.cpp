@@ -454,7 +454,15 @@ private:
         using namespace loan_broker;
         using namespace loan;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        // How bob's trust line is set up before he deposits. Holding is the plain case: a large
+        // positive balance whose ULP swallows the debit. InDebt is the case where the stored
+        // balance and the spendable amount diverge: bob owes the issuer 1e16, and the issuer's
+        // limit on the same line lets him spend 1000 anyway. Reading the spendable amount there
+        // reports a small, finely scaled number, while the rounding of the debit is still governed
+        // by the 1e16 he actually holds.
+        enum class Line { Holding, InDebt };
+
+        auto runScenario = [this](FeatureBitset features, Line line, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -469,10 +477,13 @@ private:
             env.close();
 
             PrettyAsset const usd{issuer["USD"]};
+            PrettyAsset const bobUsd{bob["USD"]};
             STAmount const trustLimit{usd.raw(), Number{99'999'999'999'999'999LL}};
             // Bob's balance sits exactly on a multiple-of-10 boundary at the
             // 1e16 IOU precision cusp, where one ULP is 10.
             STAmount const bobEdge{usd.raw(), Number{10'000'000'000'000'010LL}};
+            STAmount const bobDebt{bobUsd.raw(), Number{10'000'000'000'000'000LL}};
+            STAmount const oppositeLimit{bobUsd.raw(), Number{10'000'000'000'001'000LL}};
 
             env(trust(alice, trustLimit));
             env(trust(carol, trustLimit));
@@ -481,7 +492,18 @@ private:
 
             env(pay(issuer, alice, usd(1'000)));
             env(pay(issuer, carol, usd(1'000)));
-            env(pay(issuer, bob, bobEdge));
+            if (line == Line::Holding)
+            {
+                env(pay(issuer, bob, bobEdge));
+            }
+            else
+            {
+                // The issuer trusts bob's own USD, so bob can issue 1e16 back and still have
+                // 1000 of spendable room left on the same line.
+                env(trust(issuer, oppositeLimit));
+                env.close();
+                env(pay(bob, issuer, bobDebt));
+            }
             env.close();
 
             Vault const vault{env};
@@ -521,6 +543,13 @@ private:
             env(pay(carol, loanKeylet.key, usd(2'000).value()), Ter(tesSUCCESS));
             env.close();
 
+            // Pin the ratio the rest of the scenario reasons about, so the test cannot quietly
+            // stop exercising the bug if the setup drifts.
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault && sleVault->at(sfAssetsTotal) == Number{1'240});
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+            BEAST_EXPECT(sleIssuance && sleIssuance->at(sfOutstandingAmount) == 1'000);
+
             // Bob deposits 6 USD, which rounds to 10 at his own trust-line
             // scale and so clears the fixCleanup3_2_0 guard. But
             // floor(1000 * 6 / 1240) is 4 shares, worth 4 * 1240 / 1000 = 4.96,
@@ -535,26 +564,40 @@ private:
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(testableAmendments() - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            runScenario(testableAmendments() - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_2_0 and pre-fixCleanup3_4_0)");
             runScenario(
-                testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
+                testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0,
+                Line::Holding,
+                tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
-            runScenario(testableAmendments(), tecPRECISION_LOSS);
+            runScenario(testableAmendments(), Line::Holding, tecPRECISION_LOSS);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0, pre-fixCleanup3_2_0)");
-            runScenario(testableAmendments() - fixCleanup3_2_0, tecPRECISION_LOSS);
+            runScenario(testableAmendments() - fixCleanup3_2_0, Line::Holding, tecPRECISION_LOSS);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit share truncation against a debt balance "
+                "round away to zero (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit share truncation against a debt balance rejected with "
+                "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), Line::InDebt, tecPRECISION_LOSS);
         }
     }
 
