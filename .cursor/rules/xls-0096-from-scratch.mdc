@@ -1,0 +1,11 @@
+---
+description: Enforce a local, from-scratch implementation workflow for XLS-0096
+alwaysApply: true
+---
+
+# XLS-0096 Implementation Constraints
+
+- Do not use the `gh` CLI or query the GitHub API.
+- Do not search for, fetch, or inspect existing pull requests, remote branches, or prior implementations.
+- Do not reference PR #5860, XLS-0096 prior branches, or `ripple/confidential-transfer`.
+- Implement XLS-0096 entirely from scratch by editing local files on the current branch.
