@@ -203,6 +203,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
         if (!*isSigner && proposedTx.isFieldPresent(sfDelegate))
         {
             AccountID const delegateAccount = proposedTx.getAccountID(sfDelegate);
+            // NOLINTNEXTLINE(readability-suspicious-call-argument)
             auto const sleDelegate = ctx.view.read(keylet::delegate(target, delegateAccount));
             if (sleDelegate &&
                 isTesSuccess(checkTxPermission(sleDelegate, STTx{STObject{proposedTx}})))

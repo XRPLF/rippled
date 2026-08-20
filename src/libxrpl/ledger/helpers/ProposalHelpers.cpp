@@ -1,8 +1,11 @@
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 
-#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep (range-for over getFieldArray)
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 
 namespace xrpl::proposal {
 
@@ -22,7 +25,8 @@ isValidProposal(STObject const& proposedTx)
     if (proposedTx.getFieldU16(sfTransactionType) == ttBATCH &&
         proposedTx.isFieldPresent(sfRawTransactions))
     {
-        for (STObject const& inner : proposedTx.getFieldArray(sfRawTransactions))
+        STArray const& innerTxns = proposedTx.getFieldArray(sfRawTransactions);
+        for (STObject const& inner : innerTxns)
         {
             if (isProposalTx(inner) || isPseudoTx(inner))
                 return false;
