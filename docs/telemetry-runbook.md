@@ -1987,6 +1987,51 @@ attributes from their own alloy pipeline. Outside those runs the labels are
 absent; leaving the filters on **All** keeps every dashboard rendering
 normally.
 
+### Perf Run Annotations
+
+Perf load windows are drawn on the dashboards as shaded region annotations
+rather than single markers. perf-iac's
+`.github/scripts/post_grafana_annotation.sh` opens an annotation when a load
+phase starts and closes it with an end time when that phase finishes, so the
+shaded band covers exactly the interval over which the load was applied.
+
+Every dashboard carries two tag-matched annotation layers, one per load driver:
+
+| Layer                | Tags                  | Color  |
+| -------------------- | --------------------- | ------ |
+| `Perf Runs (JMeter)` | `perf-iac` + `jmeter` | violet |
+| `Perf Runs (Locust)` | `perf-iac` + `locust` | aqua   |
+
+Both layers set `matchAny: false`, so a region is drawn only if it carries
+**both** of the layer's tags — the tag list is an AND, not an OR. Grafana tag
+matching is a superset AND-match with no negation, so a layer listing only
+`perf-iac` would also match every driver region, and "`perf-iac` but neither
+driver" cannot be expressed at all. That is why there is no catch-all layer
+beside these two: a generic layer could only ever redraw the same regions the
+driver layers already show, giving two overlapping bands and two tooltips for
+one load window.
+
+JMeter posts **two** regions per load job, one around the warm-up phase and one
+around the measured phase. Locust posts **one**, for the measured phase only,
+because it has no warm-up step — so a Locust leg shows a single band where a
+JMeter leg shows two.
+
+The driver tag is not something a run supplies. Each load workflow hardcodes it
+as a `LOAD_DRIVER` environment value (`reusable-jmeter-test.yml` sets `jmeter`,
+`reusable-locust-test.yml` sets `locust`), so it is never a dispatch input and no
+current workflow can omit it; the script warns in CI if one ever does. Alongside
+the driver, each region also carries the ticket (work item), the side (`test` or
+`baseline`), the ref, the commit, and the phase; blank values are dropped. The
+tooltip lists those, which is how one band is told from another when several runs
+overlap. The driver is carried only as a tag, not in the tooltip — which layer
+drew the band is what identifies it.
+
+Two rendering limits are worth knowing. Grafana draws annotations only on time
+series, state timeline and candlestick panels, so on a board of mostly stats and
+gauges most panels show no band. And the shaded fill is rendered at 10% opacity,
+so the two drivers' colours are near-identical inside the band; the region's two
+full-colour dashed edges and the toolbar toggles are what tell them apart.
+
 ### Who owns which attribute
 
 - **Node and service** come from xrpld config (`service_instance_id`,
