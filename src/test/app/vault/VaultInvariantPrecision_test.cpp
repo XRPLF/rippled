@@ -1,8 +1,5 @@
-#include <test/app/lending/LoanTestBase.h>
-#include <test/app/lending/VaultPrecisionFixture.h>
-#include <test/jtx/Account.h>
+#include <test/app/vault/VaultPrecisionFixture.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/ter.h>
@@ -11,14 +8,15 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
+#include <string>
 #include <tuple>
 
 namespace xrpl::test {
@@ -51,8 +49,12 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
         {
             Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
             auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-            if (!BEAST_EXPECT(f.asset && f.broker))
+            if (!f.asset || !f.broker)
+            {
+                BEAST_EXPECT(f.asset && f.broker);
                 continue;
+            }
+            auto const& asset = *f.asset;
 
             auto const before = read(env, f);
 
@@ -60,7 +62,7 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             env(v.deposit(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(amount).value()}),
+                     .amount = asset(amount).value()}),
                 Ter(std::ignore));
             env.close();
 
@@ -76,12 +78,12 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
                 auto const after = read(env, f);
                 Number const tDelta = after.assetsTotal - before.assetsTotal;
                 Number const aDelta = after.assetsAvailable - before.assetsAvailable;
-                Number const requested = (*f.asset)(amount).number();
+                Number const requested = asset(amount).number();
 
                 BEAST_EXPECT(tDelta <= requested);
 
                 Number const gap = tDelta > aDelta ? tDelta - aDelta : aDelta - tDelta;
-                BEAST_EXPECT(gap <= oneUnit(*f.asset, after.assetsTotal));
+                BEAST_EXPECT(gap <= oneUnit(asset, after.assetsTotal));
             }
             else
             {
@@ -112,15 +114,19 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
         // available to the depositor.
         Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
         auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-        if (!BEAST_EXPECT(f.asset && f.broker))
+        if (!f.asset || !f.broker)
+        {
+            BEAST_EXPECT(f.asset && f.broker);
             return;
+        }
+        auto const& asset = *f.asset;
 
         Vault const v{env};
         // Deposit a large amount so we can afford every withdrawal below.
         env(v.deposit(
                 {.depositor = f.depositor,
                  .id = f.vaultKeylet.key,
-                 .amount = (*f.asset)(1'000'000).value()}),
+                 .amount = asset(1'000'000).value()}),
             Ter(std::ignore));
         env.close();
 
@@ -152,7 +158,7 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
                     Number const gap = tDelta > pDelta ? tDelta - pDelta : pDelta - tDelta;
                     // VaultTransactorPrecision_test tightens this to strict
                     // equality.
-                    BEAST_EXPECT(gap <= oneUnit(*f.asset, before.assetsTotal));
+                    BEAST_EXPECT(gap <= oneUnit(asset, before.assetsTotal));
                 }
             }
             // Pre-fix behaviour is fixture-dependent: some share counts may
@@ -180,8 +186,12 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
 
         Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
         auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false, /*allowClawback=*/true);
-        if (!BEAST_EXPECT(f.asset && f.broker))
+        if (!f.asset || !f.broker)
+        {
+            BEAST_EXPECT(f.asset && f.broker);
             return;
+        }
+        auto const& asset = *f.asset;
 
         Vault const v{env};
 
@@ -190,7 +200,7 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
         env(v.deposit(
                 {.depositor = f.depositor,
                  .id = f.vaultKeylet.key,
-                 .amount = (*f.asset)(2'000).value()}),
+                 .amount = asset(2'000).value()}),
             Ter(std::ignore));
         env.close();
 
@@ -204,7 +214,7 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
                     {.issuer = f.issuer,
                      .id = f.vaultKeylet.key,
                      .holder = f.depositor,
-                     .amount = (*f.asset)(amount).value()}),
+                     .amount = asset(amount).value()}),
                 Ter(std::ignore));
             env.close();
 
@@ -249,14 +259,18 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
         {
             Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
             auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/true);
-            if (!BEAST_EXPECT(f.asset && f.broker))
+            if (!f.asset || !f.broker)
+            {
+                BEAST_EXPECT(f.asset && f.broker);
                 continue;
+            }
+            auto const& asset = *f.asset;
 
             Vault const v{env};
             env(v.deposit(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(amount).value()}),
+                     .amount = asset(amount).value()}),
                 Ter(std::ignore));
             env.close();
 
@@ -272,7 +286,7 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
                 auto const after = read(env, f);
                 BEAST_EXPECT(
                     after.lossUnrealized <= (after.assetsTotal - after.assetsAvailable) +
-                        oneUnit(*f.asset, after.assetsTotal));
+                        oneUnit(asset, after.assetsTotal));
             }
             else
             {
@@ -320,14 +334,18 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
         {
             Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
             auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/false);
-            if (!BEAST_EXPECT(f.asset && f.broker))
+            if (!f.asset || !f.broker)
+            {
+                BEAST_EXPECT(f.asset && f.broker);
                 continue;
+            }
+            auto const& asset = *f.asset;
 
             Vault const v{env};
             env(v.deposit(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(amount).value()}),
+                     .amount = asset(amount).value()}),
                 Ter(std::ignore));
             env.close();
 
@@ -343,8 +361,7 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             else
             {
                 bool const shouldFail =
-                    std::find(kPreFixFailures.begin(), kPreFixFailures.end(), amount) !=
-                    kPreFixFailures.end();
+                    std::ranges::find(kPreFixFailures, amount) != kPreFixFailures.end();
                 if (shouldFail)
                 {
                     BEAST_EXPECTS(
@@ -381,14 +398,18 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
         {
             Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
             auto f = setupSingleLoanVault(env, /*impairAndPaySibling=*/true);
-            if (!BEAST_EXPECT(f.asset && f.broker))
+            if (!f.asset || !f.broker)
+            {
+                BEAST_EXPECT(f.asset && f.broker);
                 continue;
+            }
+            auto const& asset = *f.asset;
 
             Vault const v{env};
             env(v.deposit(
                     {.depositor = f.depositor,
                      .id = f.vaultKeylet.key,
-                     .amount = (*f.asset)(amount).value()}),
+                     .amount = asset(amount).value()}),
                 Ter(std::ignore));
             env.close();
 
@@ -404,8 +425,7 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             else
             {
                 bool const shouldFail =
-                    std::find(kPreFixFailures.begin(), kPreFixFailures.end(), amount) !=
-                    kPreFixFailures.end();
+                    std::ranges::find(kPreFixFailures, amount) != kPreFixFailures.end();
                 if (shouldFail)
                 {
                     BEAST_EXPECTS(

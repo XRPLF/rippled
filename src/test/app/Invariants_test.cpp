@@ -10,7 +10,6 @@
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
-#include <test/jtx/ter.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
@@ -6508,9 +6507,9 @@ class Invariants_test : public beast::unit_test::Suite
                         auto sle = ac.view().peek(vaultKeylet);
                         if (!sle)
                             return false;
-                        Number const T = sle->at(sfAssetsTotal);
-                        Number const A = sle->at(sfAssetsAvailable);
-                        (*sle)[sfLossUnrealized] = (T - A) * 2;
+                        Number const total = sle->at(sfAssetsTotal);
+                        Number const available = sle->at(sfAssetsAvailable);
+                        (*sle)[sfLossUnrealized] = (total - available) * 2;
                         ac.view().update(sle);
                         return true;
                     },
@@ -6546,11 +6545,11 @@ class Invariants_test : public beast::unit_test::Suite
                         auto sle = ac.view().peek(vaultKeylet);
                         if (!sle)
                             return false;
-                        Number const T = sle->at(sfAssetsTotal);
-                        Number const A = sle->at(sfAssetsAvailable);
+                        Number const total = sle->at(sfAssetsTotal);
+                        Number const available = sle->at(sfAssetsAvailable);
                         Asset const asset = sle->at(sfAsset);
-                        Number const oneUnit{1, scale(T, asset)};
-                        (*sle)[sfLossUnrealized] = (T - A) + oneUnit * 2;
+                        Number const oneUnit{1, scale(total, asset)};
+                        (*sle)[sfLossUnrealized] = (total - available) + oneUnit * 2;
                         ac.view().update(sle);
                         return true;
                     },

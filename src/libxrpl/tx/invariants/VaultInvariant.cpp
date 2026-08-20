@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -314,13 +315,15 @@ namespace {
 // a single unit of quantization noise even when the underlying flow is
 // correct. Absorb one unit at the coarsest scale.
 //
-// XRP and MPT are integer-domain assets (STAmount scale == 0) with no
+// XRP and MPT are integer-domain assets (Asset::integral() is true) with no
 // sub-ULP quantization; treating a whole drop / MPT unit as "noise" would
-// hide real accounting bugs. Keep the strict comparison there.
-[[nodiscard]] static bool
-agreesWithinOneUnit(Number const& lhs, Number const& rhs, std::int32_t scale)
+// hide real accounting bugs. Keep the strict comparison there. Note that
+// gating on the sign of `scale` would be wrong: IOU amounts >= 1e15 have a
+// non-negative STAmount exponent but still quantize.
+[[nodiscard]] bool
+agreesWithinOneUnit(Number const& lhs, Number const& rhs, Asset const& asset, std::int32_t scale)
 {
-    if (scale >= 0)
+    if (asset.integral())
         return lhs == rhs;
     auto const diff = lhs - rhs;
     Number const tolerance{1, scale};
@@ -330,12 +333,12 @@ agreesWithinOneUnit(Number const& lhs, Number const& rhs, std::int32_t scale)
 // L, T and A are each independently quantized; the strict L <= T - A check
 // can fire on residual noise even when the true relationship holds. Tolerate
 // one unit at scale(assetsTotal) - the coarsest of the three grids. As with
-// the delta check above, the tolerance is meaningful only for IOU (scale < 0);
-// XRP and MPT keep the strict comparison.
-[[nodiscard]] static bool
-lessOrEqualPlusOneUnit(Number const& lhs, Number const& rhs, std::int32_t scale)
+// the delta check above, the tolerance is meaningful only for IOU
+// (Asset::integral() is false); XRP and MPT keep the strict comparison.
+[[nodiscard]] bool
+lessOrEqualPlusOneUnit(Number const& lhs, Number const& rhs, Asset const& asset, std::int32_t scale)
 {
-    if (scale >= 0)
+    if (asset.integral())
         return lhs <= rhs;
     return lhs <= rhs + Number{1, scale};
 }
@@ -567,12 +570,17 @@ ValidVault::finalize(
     {
         bool const gapExceeded = [&] {
             if (!view.rules().enabled(fixCleanup3_4_0))
+            {
                 return afterVault.lossUnrealized >
                     afterVault.assetsTotal - afterVault.assetsAvailable;
+            }
 
             auto const s = scale(afterVault.assetsTotal, afterVault.asset);
             return !lessOrEqualPlusOneUnit(
-                afterVault.lossUnrealized, afterVault.assetsTotal - afterVault.assetsAvailable, s);
+                afterVault.lossUnrealized,
+                afterVault.assetsTotal - afterVault.assetsAvailable,
+                afterVault.asset,
+                s);
         }();
         if (gapExceeded)
         {
@@ -873,7 +881,10 @@ ValidVault::finalize(
 
                     bool const acctVaultAddsUp = fixEnabled
                         ? agreesWithinOneUnit(
-                              localVaultDeltaAssets * -1, accountDeltaAssets, localMinScale)
+                              localVaultDeltaAssets * -1,
+                              accountDeltaAssets,
+                              vaultAsset,
+                              localMinScale)
                         : localVaultDeltaAssets * -1 == accountDeltaAssets;
                     if (!acctVaultAddsUp)
                     {
@@ -924,7 +935,7 @@ ValidVault::finalize(
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 bool const totalAddsUp = fixEnabled
-                    ? agreesWithinOneUnit(assetTotalDelta, vaultDeltaAssets, minScale)
+                    ? agreesWithinOneUnit(assetTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
                     : assetTotalDelta == vaultDeltaAssets;
                 if (!totalAddsUp)
                 {
@@ -936,7 +947,8 @@ ValidVault::finalize(
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
                 bool const availableAddsUp = fixEnabled
-                    ? agreesWithinOneUnit(assetAvailableDelta, vaultDeltaAssets, minScale)
+                    ? agreesWithinOneUnit(
+                          assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
                     : assetAvailableDelta == vaultDeltaAssets;
                 if (!availableAddsUp)
                 {
@@ -1093,6 +1105,7 @@ ValidVault::finalize(
                             ? agreesWithinOneUnit(
                                   localPseudoDeltaAssets * -1,
                                   roundedDestinationDelta,
+                                  vaultAsset,
                                   localMinScale)
                             : localPseudoDeltaAssets * -1 == roundedDestinationDelta;
                         if (!destroyedIsSubUlp && !withdrawAddsUp)
@@ -1139,7 +1152,8 @@ ValidVault::finalize(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 // Note, vaultBalance is negative (see check above)
                 bool const totalAddsUp = fixEnabled
-                    ? agreesWithinOneUnit(assetTotalDelta, vaultPseudoDeltaAssets, minScale)
+                    ? agreesWithinOneUnit(
+                          assetTotalDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
                     : assetTotalDelta == vaultPseudoDeltaAssets;
                 if (!totalAddsUp)
                 {
@@ -1152,7 +1166,8 @@ ValidVault::finalize(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
 
                 bool const availableAddsUp = fixEnabled
-                    ? agreesWithinOneUnit(assetAvailableDelta, vaultPseudoDeltaAssets, minScale)
+                    ? agreesWithinOneUnit(
+                          assetAvailableDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
                     : assetAvailableDelta == vaultPseudoDeltaAssets;
                 if (!availableAddsUp)
                 {
@@ -1202,7 +1217,8 @@ ValidVault::finalize(
                     auto const assetsTotalDelta = roundToAsset(
                         vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                     bool const totalAddsUp = fixEnabled
-                        ? agreesWithinOneUnit(assetsTotalDelta, vaultDeltaAssets, minScale)
+                        ? agreesWithinOneUnit(
+                              assetsTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
                         : assetsTotalDelta == vaultDeltaAssets;
                     if (!totalAddsUp)
                     {
@@ -1216,7 +1232,8 @@ ValidVault::finalize(
                         afterVault.assetsAvailable - beforeVault.assetsAvailable,
                         minScale);
                     bool const availableAddsUp = fixEnabled
-                        ? agreesWithinOneUnit(assetAvailableDelta, vaultDeltaAssets, minScale)
+                        ? agreesWithinOneUnit(
+                              assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
                         : assetAvailableDelta == vaultDeltaAssets;
                     if (!availableAddsUp)
                     {
