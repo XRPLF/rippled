@@ -350,6 +350,14 @@ public:
                       build_info::getVersionString(),
                       config_->networkId),
                   logs_->journal("Telemetry")))
+        // Built here, not in setup(): getMetricsRegistry() is read from the job
+        // queue and io threads, which are already running, so assigning the
+        // handle later would race with those reads.
+        , metricsRegistry_(
+              std::make_unique<telemetry::MetricsRegistry>(
+                  telemetry_->isEnabled(),
+                  *this,
+                  logs_->journal("MetricsRegistry")))
 
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
@@ -1343,12 +1351,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // stable per-node key whatever [telemetry] says.
     telemetry_->setNodeId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
-    // Create the OTel MetricsRegistry for gap-fill metrics (counters,
-    // histograms, observable gauges). It must exist before startTelemetry(),
-    // which starts the metrics half of the pipeline.
-    metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
-        telemetry_->isEnabled(), *this, logs_->journal("MetricsRegistry"));
-
     // Start telemetry here, not in start(). Spans and metrics are both emitted
     // during the rest of setup() — the first consensus round in
     // beginConsensus() below emits spans and records the process's only
@@ -1790,17 +1792,22 @@ ApplicationImp::run()
     // Re-ordering them risks undefined behavior.
     loadManager_->stop();
 
-    // Detach MetricsRegistry observable-gauge callbacks BEFORE stopping
-    // any service the callbacks read from. The callbacks run on the OTel
-    // reader thread and touch nodeStore_, overlay_, networkOPs_,
-    // ledgerMaster, inboundLedgers, etc.  A final tick that fires after
-    // one of those services has shut down would dereference dangling
-    // state.  detachCallbacks() flips an atomic flag every callback
-    // acquire-loads at its entry, so subsequent ticks become no-ops.
-    // The final provider teardown still happens in metricsRegistry_->stop()
-    // farther down.
+    // Stop the metrics pipeline BEFORE any service its callbacks read. Those
+    // callbacks run on the OTel reader thread and touch nodeStore_, overlay_,
+    // networkOPs_, ledgerMaster, inboundLedgers and more, so a tick arriving
+    // after one of them has stopped would read dangling state.
+    //
+    // detachCallbacks() alone would not be enough: it flips a flag that each
+    // callback checks on entry, which leaves a callback that is already past
+    // that check running. stop() shuts the provider down, which joins the
+    // reader thread, so once it returns no callback is running or can start.
+    // The cost is that metrics recorded during the remaining shutdown steps
+    // are not exported.
     if (metricsRegistry_)
+    {
         metricsRegistry_->detachCallbacks();
+        metricsRegistry_->stop();
+    }
 
     shaMapStore_->stop();
     jobQueue_->stop();
@@ -1815,10 +1822,6 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     nodeStore_->stop();
     perfLog_->stop();
-    // Stop metrics pipeline before telemetry — gauge callbacks reference
-    // Application services that may be shutting down.
-    if (metricsRegistry_)
-        metricsRegistry_->stop();
     // Telemetry must stop last among trace-producing components.
     // serverHandler_, overlay_, and jobQueue_ are already stopped above,
     // so no threads should be calling startSpan() at this point.
