@@ -1,10 +1,7 @@
 #pragma once
 
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep (range-for over getFieldArray)
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 
 namespace xrpl::proposal {
@@ -32,31 +29,8 @@ isProposalTx(STObject const& proposedTx)
  * generically), but that guard lives outside this feature, so it is checked
  * again here rather than relied upon.
  */
-inline bool
-isValidProposal(STObject const& proposedTx)
-{
-    if (isProposalTx(proposedTx))
-        return false;
-
-    if (isPseudoTx(proposedTx))
-        return false;
-
-    if (proposedTx.isFieldPresent(sfFlags) &&
-        (proposedTx.getFieldU32(sfFlags) & tfInnerBatchTxn) != 0u)
-        return false;
-
-    if (proposedTx.getFieldU16(sfTransactionType) == ttBATCH &&
-        proposedTx.isFieldPresent(sfRawTransactions))
-    {
-        for (STObject const& inner : proposedTx.getFieldArray(sfRawTransactions))
-        {
-            if (isProposalTx(inner) || isPseudoTx(inner))
-                return false;
-        }
-    }
-
-    return true;
-}
+bool
+isValidProposal(STObject const& proposedTx);
 
 /**
  * Whether the proposed transaction carries any signature field.
