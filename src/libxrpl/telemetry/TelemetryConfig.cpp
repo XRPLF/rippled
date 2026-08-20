@@ -108,24 +108,37 @@ makeTelemetrySetup(
     setup.tlsClientCertPath = section.valueOr<std::string>(key::tlsClientCert, "");
     setup.tlsClientKeyPath = section.valueOr<std::string>(key::tlsClientKey, "");
 
-    // Mutual TLS needs both the client certificate and its private key.
-    // Supplying only one fails later with a cryptic SSL handshake error, so
-    // reject the partial configuration here with an actionable message.
-    if (setup.tlsClientCertPath.empty() != setup.tlsClientKeyPath.empty())
+    // The mutual TLS (mTLS) checks below are fatal, so gate them on the one
+    // thing this parser can know: `enabled` is 1. With `enabled` 0 a leftover
+    // cert line must never stop the node from booting.
+    //
+    // The predicate is only that config switch, not whether an exporter can
+    // exist. This file has no preprocessor guard, so both checks also run in a
+    // -Dtelemetry=OFF build, where makeTelemetry() returns the null
+    // implementation whatever `enabled` says.
+    if (setup.enabled)
     {
-        Throw<std::runtime_error>(
-            "[telemetry] tls_client_cert and tls_client_key must be set together "
-            "(set both for mutual TLS, or neither for one-way TLS).");
-    }
+        // mTLS needs both the client certificate and its private key.
+        // Supplying only one fails later with a cryptic SSL handshake error, so
+        // reject the partial configuration here with an actionable message.
+        if (setup.tlsClientCertPath.empty() != setup.tlsClientKeyPath.empty())
+        {
+            Throw<std::runtime_error>(
+                "[telemetry] tls_client_cert and tls_client_key must be set together "
+                "(set both for mutual TLS, or neither for one-way TLS).");
+        }
 
-    // Mutual TLS only takes effect when TLS is on. Certificate paths set with
-    // use_tls=0 would be silently ignored and the exporter would connect in
-    // plaintext, so reject that contradiction instead of failing open.
-    if (!setup.tlsClientCertPath.empty() && !setup.useTls)
-    {
-        Throw<std::runtime_error>(
-            "[telemetry] tls_client_cert/tls_client_key require use_tls=1 "
-            "(set use_tls=1 to enable mutual TLS, or remove the cert paths).");
+        // Still inside the enabled branch. mTLS only takes effect when TLS is
+        // on, so a client certificate set with use_tls=0 would be ignored and
+        // any exporter that did run would connect in plaintext. Reject that
+        // contradiction instead of failing open. tls_ca_cert is deliberately
+        // not checked this way.
+        if (!setup.tlsClientCertPath.empty() && !setup.useTls)
+        {
+            Throw<std::runtime_error>(
+                "[telemetry] tls_client_cert/tls_client_key require use_tls=1 "
+                "(set use_tls=1 to enable mutual TLS, or remove the cert paths).");
+        }
     }
 
     // Head sampling is intentionally fixed at 1.0 (sample everything) and is
