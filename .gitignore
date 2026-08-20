@@ -90,5 +90,8 @@ target/
 # clangd cache
 /.cache
 
+# Rust build directory
+crates/target
+
 # Env. file carrying environmental setup data for local or cloud runs.
 .env.*
