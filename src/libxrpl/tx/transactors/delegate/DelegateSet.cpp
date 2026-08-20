@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -122,15 +123,22 @@ DelegateSet::doApply()
 
     (*sle)[sfOwnerNode] = *page;
 
-    // Add to authorized account's owner directory so AccountDelete can find
-    // and clean up inbound delegations when the authorized account is deleted.
-    auto const destPage = ctx_.view().dirInsert(
-        keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
+    // XLS-75 lists OwnerNode only on the delegating account. Linking the
+    // Delegate into the authorized account's owner directory lets a third
+    // party fill that directory and block AccountDelete (issue 7691). After
+    // fixDelegateAccountDelete, skip that dest-side insert. Pre-amendment
+    // objects still carry sfDestinationNode and deleteDelegate still unlinks
+    // them. No owner-directory walk.
+    if (!ctx_.view().rules().enabled(fixDelegateAccountDelete))
+    {
+        auto const destPage = ctx_.view().dirInsert(
+            keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
 
-    if (!destPage)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        if (!destPage)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    (*sle)[sfDestinationNode] = *destPage;
+        (*sle)[sfDestinationNode] = *destPage;
+    }
 
     ctx_.view().insert(sle);
     increaseOwnerCount(ctx_.getApplyViewContext(), sleOwner, 1, ctx_.journal);
