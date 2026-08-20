@@ -35,14 +35,14 @@ Rust crate tests (independent of the CMake build): `cargo test --manifest-path c
 
 ## Testing
 
-Unit tests are a custom framework built into the `xrpld` binary itself (not Boost.Test/GTest/Catch):
+Unit tests are a custom framework built into the `xrpld` binary itself (not Boost.Test/GTest/Catch). Build first (e.g. `cmake --build .build -j10`), then run from the build directory:
 
 ```bash
-./xrpld --unittest --unittest-jobs <N>     # run all suites; N = ~half of available cores
-./xrpld --unittest SomeSuiteName           # run by name/prefix; an exact name match runs only that suite
+.build/xrpld --unittest --unittest-jobs <N>     # run all suites; N = ~half of available cores
+.build/xrpld --unittest xrpl.app.Credentials    # run one suite by name
 ```
 
-(Multi-config generators produce the binary under e.g. `./Release/xrpld`.) Tests that run offline in under a minute should be automatic `--unittest` suites under `src/test/`; anything else is a manual/integration test. `tests/` (top-level, separate from `src/test/`) holds integration tests exercised against `libxrpl`/`xrpld`.
+(Multi-config generators produce the binary under e.g. `.build/Release/xrpld`.) A suite's `--unittest` name is built from the arguments to its `BEAST_DEFINE_TESTSUITE`/`BEAST_DEFINE_TESTSUITE_PRIO` macro (usually at the bottom of the test file), in reverse order and joined with `.`: `BEAST_DEFINE_TESTSUITE(Credentials, app, xrpl)` → `xrpl.app.Credentials`. `--unittest` also matches by prefix unless there's an exact name match, in which case only that exact suite runs. `--unittest-arg` does nothing — don't use it. Tests that run offline in under a minute should be automatic `--unittest` suites under `src/test/`; anything else is a manual/integration test. `tests/` (top-level, separate from `src/test/`) holds integration tests exercised against `libxrpl`/`xrpld`.
 
 ## Lint/Format
 
