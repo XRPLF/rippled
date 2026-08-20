@@ -87,19 +87,12 @@ jobs:
               -Dwerr=ON \
               -Dxrpld=ON \
               -Dverify_headers=ON \
-              -Drust=ON \
               ..
 
       - name: Build clang-tidy prerequisites
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ninja -j ${{ steps.nproc.outputs.nproc }} tidy_prerequisites
-
-      # clang-tidy needs cxxbridge headers generated from Rust crates
-      - name: Build xrpl_crates
-        working-directory: ${{ env.BUILD_DIR }}
-        run: |
-          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl_crates
 
       - name: Run clang tidy
         id: run_clang_tidy

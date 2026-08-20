@@ -26,6 +26,7 @@ target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 # Lets the wasm tests write their modules as WebAssembly text. Test-only by construction:
 # the assembler lives in a crate nothing in libxrpl or xrpld links (see crates/CMakeLists).
 target_link_libraries(xrpl_tests PRIVATE xrpl_wasm_testkit_cxxbridge)
+target_link_libraries(xrpl_tests PRIVATE rs_hello_world_cxxbridge)
 add_dependencies(xrpl_tests xrpl_crates)
 
 # One source subdirectory per module. Network unit tests are currently not
@@ -48,9 +49,6 @@ set(test_modules
 if(NOT WIN32)
     list(APPEND test_modules net)
 endif()
-if(rust)
-    target_link_libraries(xrpl_tests PRIVATE rs_hello_world_cxxbridge)
-endif()
 
 foreach(module IN LISTS test_modules)
     # Append the module's sources (${module}/*.cpp and ${module}.cpp, if any).
@@ -60,12 +58,6 @@ foreach(module IN LISTS test_modules)
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
     )
-    if(NOT rust)
-        # Tests of the Rust interop include generated cxxbridge headers, which
-        # do not exist without the crates, so keep them out of the build tree
-        # entirely. They are named `Rust<something>.cpp`.
-        list(FILTER sources EXCLUDE REGEX "/Rust[^/]*\\.cpp$")
-    endif()
     target_sources(xrpl_tests PRIVATE ${sources})
 
     # Expose the module's private headers under their canonical include path.
