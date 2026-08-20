@@ -22,6 +22,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -56,6 +57,8 @@
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
+#include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
@@ -67,6 +70,7 @@
 #include <memory>
 #include <optional>
 #include <source_location>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -216,7 +220,8 @@ class Invariants_test : public beast::unit_test::Suite
         TER terActual = tesSUCCESS;
         for (TER const& terExpect : ters)
         {
-            terActual = transactor->checkInvariants(terActual, fee);
+            terActual =
+                transactor->checkInvariants(terActual, fee, Transactor::InvariantScope::Full);
             expect(
                 terExpect == terActual,
                 "expected: " + transToken(terExpect) + " got: " + transToken(terActual),
@@ -2245,6 +2250,90 @@ class Invariants_test : public beast::unit_test::Suite
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
         }
+    }
+
+    void
+    testPermissionedDEXDeletedOfferFallback()
+    {
+        using namespace test::jtx;
+
+        testcase << "PermissionedDEX null after";
+
+        // Tx is OfferCreate on pd2. Tracking pd1 fails the invariant iff that
+        // domain lands in the set finalize consults. after == null is never
+        // tracked (pre-340: after-only; post-340: early return) — same result,
+        // both sides are coverage/regression that we do not fall back to before.
+        auto const check = [this](
+                               FeatureBitset features,
+                               bool const afterIsNull,
+                               bool const isDelete,
+                               bool const expectInvariantFailure) {
+            Env env(*this, features);
+
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env, a1, a2);
+            [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env, a1, a2);
+            env.close();
+
+            auto sleOffer =
+                std::make_shared<SLE>(keylet::offer(a2.id(), SeqProxy::rawSequence(10)));
+            sleOffer->setAccountID(sfAccount, a2);
+            sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
+            sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+            sleOffer->setFieldH256(sfDomainID, pd1);
+
+            CurrentTransactionRulesGuard const rulesGuard(env.current()->rules());
+
+            ValidPermissionedDEX invariant;
+            if (afterIsNull)
+            {
+                // Defensive path: after is null. Must not fall back to before.
+                invariant.visitEntry(isDelete, sleOffer, nullptr);
+            }
+            else
+            {
+                // Normal / real-erase path: after is the offer on pd1.
+                invariant.visitEntry(isDelete, nullptr, sleOffer);
+            }
+
+            STTx const tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
+                              tx.setFieldH256(sfDomainID, pd2);
+                              tx.setFieldAmount(sfTakerPays, a1["USD"](10));
+                              tx.setFieldAmount(sfTakerGets, XRP(1));
+                          }};
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            bool const passed =
+                invariant.finalize(tx, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
+            BEAST_EXPECT(passed != expectInvariantFailure);
+            if (expectInvariantFailure)
+            {
+                BEAST_EXPECT(sink.messages().str().contains("transaction consumed wrong domains"));
+            }
+            else
+            {
+                BEAST_EXPECT(sink.messages().str().empty());
+            }
+        };
+
+        auto const pre = defaultAmendments() - fixCleanup3_4_0;
+        auto const post = defaultAmendments() | fixCleanup3_4_0;
+
+        // after == null: not tracked
+        check(pre, true, true, false);
+        check(post, true, true, false);
+
+        // after == offer on pd1
+        // pre-340: domainsOld_ (delete still inserted) → fail
+        check(pre, false, true, true);
+        // post-340: isDelete → only domainsOld_ → pass; !isDelete → domains_ → fail
+        check(post, false, true, false);
+        check(post, false, false, true);
     }
 
     void
@@ -6294,9 +6383,134 @@ class Invariants_test : public beast::unit_test::Suite
             auto transactor = makeTransactor(ac);
             if (!BEAST_EXPECT(transactor))
                 return;
-            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(sink.messages().str().contains("is missing pseudo-account field"));
+        }
+    }
+
+    void
+    testTxCheckException()
+    {
+        testcase << "txCheck exception";
+        using namespace jtx;
+
+        // A TxInvariantCheck that throws from the requested hook, so we can
+        // exercise checkInvariantsHelper's catch block via the
+        // transaction-specific layer (as opposed to the protocol layer,
+        // which testObjectHasPseudoAccount's last case already covers via a
+        // real Transactor's finalizeInvariants).
+        enum class ThrowFrom { VisitEntry, Finalize };
+
+        struct ThrowingTxInvariantCheck : TxInvariantCheck
+        {
+            ThrowFrom const throwFrom;
+
+            explicit ThrowingTxInvariantCheck(ThrowFrom throwFrom) : throwFrom(throwFrom)
+            {
+            }
+
+            void
+            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            {
+                if (throwFrom == ThrowFrom::VisitEntry)
+                    throw std::runtime_error("test-injected visitEntry exception");
+            }
+
+            [[nodiscard]] bool
+            finalize(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) override
+            {
+                if (throwFrom == ThrowFrom::Finalize)
+                    throw std::runtime_error("test-injected finalize exception");
+                return true;
+            }
+        };
+
+        for (auto const throwFrom : {ThrowFrom::VisitEntry, ThrowFrom::Finalize})
+        {
+            Env env{*this};
+            Account const alice{"alice"};
+            env.fund(XRP(1000), alice);
+            env.close();
+
+            OpenView ov{*env.current()};
+            STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // visitEntry only runs for entries the transaction touched, so
+            // make a modification for the traversal to report.
+            auto sle = ac.view().peek(keylet::account(alice.id()));
+            if (!BEAST_EXPECT(sle))
+                return;
+            sle->at(sfSequence) = sle->at(sfSequence) + 1;
+            ac.view().update(sle);
+
+            ThrowingTxInvariantCheck throwing{throwFrom};
+            TER terActual = tesSUCCESS;
+            for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+            {
+                terActual = checkInvariants(ac, terActual, XRPAmount{}, throwing);
+                BEAST_EXPECT(terExpect == terActual);
+                BEAST_EXPECT(sink.messages().str().contains(
+                    "Transaction caused an exception during invariant checks"));
+            }
+        }
+    }
+
+    void
+    testTxCheckFinalizeFalse()
+    {
+        testcase << "txCheck finalize returns false";
+        using namespace jtx;
+
+        // A TxInvariantCheck whose finalize returns false, so we can exercise
+        // the "Transaction has failed one or more transaction invariants"
+        // log path in checkInvariantsHelper independently of any real
+        // transactor. This is the transaction-layer analogue of the
+        // protocol-layer coverage in testObjectHasPseudoAccount / others.
+        struct FailingTxInvariantCheck : TxInvariantCheck
+        {
+            void
+            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            {
+            }
+
+            [[nodiscard]] bool
+            finalize(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&) override
+            {
+                return false;
+            }
+        };
+
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        OpenView ov{*env.current()};
+        STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+        test::StreamSink sink{beast::Severity::Warning};
+        beast::Journal const jlog{sink};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+        FailingTxInvariantCheck failing;
+        TER terActual = tesSUCCESS;
+        for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+        {
+            terActual = checkInvariants(ac, terActual, XRPAmount{}, failing);
+            BEAST_EXPECT(terExpect == terActual);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "Transaction has failed one or more transaction invariants"));
+            // The protocol-layer log must not appear: only the tx-layer
+            // finalize failed here.
+            BEAST_EXPECT(!sink.messages().str().contains(
+                "Transaction has failed one or more global invariants"));
         }
     }
 
@@ -6571,6 +6785,7 @@ public:
         testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
+        testPermissionedDEXDeletedOfferFallback();
         testBookDirectoryExchangeRate();
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
@@ -6584,6 +6799,8 @@ public:
         testAMM();
         testObjectHasPseudoAccount();
         testSponsorship();
+        testTxCheckException();
+        testTxCheckFinalizeFalse();
     }
 };
 
