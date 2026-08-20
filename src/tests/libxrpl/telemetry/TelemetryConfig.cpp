@@ -2,11 +2,82 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <stdexcept>
 
 using namespace xrpl;
+
+using ::testing::HasSubstr;
+using ::testing::ThrowsMessage;
+
+namespace {
+
+/**
+ * Shared inputs for the mutual TLS (mTLS) tests of makeTelemetrySetup().
+ *
+ * keyClientCert and keyClientKey are the config key names, named once so every
+ * test below spells them the same way, mirroring the `key::` constants the
+ * parser itself uses. A misspelling cannot hide here: the throwing case that
+ * names the misspelled key stops throwing, the use_tls case throws the pairing
+ * message instead and fails its matcher, and the value cases see an empty path
+ * or an unexpected throw. Tests that never set the key are unaffected. One
+ * source of truth still keeps the two files from drifting apart.
+ *
+ * clientCert and clientKey are the paths written to those keys. They are
+ * declared as `char const*` so they pass to Section::set() (which takes
+ * `std::string const&`) and compare against the parsed std::string members
+ * without an explicit conversion, exactly as a literal would.
+ *
+ * pairingError and useTlsError are message fragments. Both guards throw
+ * std::runtime_error, so the exception type alone cannot tell them apart.
+ * Each fragment occurs in exactly one of the two messages, so matching it
+ * proves which guard fired.
+ */
+namespace mtls {
+constexpr char const* keyClientCert = "tls_client_cert";
+constexpr char const* keyClientKey = "tls_client_key";
+constexpr char const* clientCert = "/etc/ssl/client.pem";
+constexpr char const* clientKey = "/etc/ssl/client.key";
+constexpr char const* pairingError = "must be set together";
+constexpr char const* useTlsError = "require use_tls=1";
+
+/**
+ * Build a [telemetry] section carrying only the `enabled` key.
+ *
+ * Every mTLS test states `enabled` explicitly, because the validation
+ * guards run only when telemetry is on. Each test then adds the TLS keys its
+ * own case needs on top of the returned section.
+ *
+ * @param telemetryEnabled  Value written to the `enabled` key.
+ * @return The section, ready for further set() calls.
+ */
+Section
+makeSection(bool telemetryEnabled)
+{
+    Section section;
+    section.set("enabled", telemetryEnabled ? "1" : "0");
+    return section;
+}
+
+/**
+ * Parse a [telemetry] section with a fixed placeholder node identity.
+ *
+ * Keeps the node key, version and network ID out of the individual cases,
+ * which vary only in their TLS keys.
+ *
+ * @param section  The section to parse.
+ * @return The populated Setup struct.
+ */
+telemetry::Telemetry::Setup
+parseSection(Section const& section)
+{
+    return telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
+}
+}  // namespace mtls
+
+}  // namespace
 
 TEST(TelemetryConfig, setup_defaults)
 {
@@ -88,39 +159,110 @@ TEST(TelemetryConfig, parse_full_section)
 
 TEST(TelemetryConfig, mtls_cert_and_key_both_set)
 {
-    Section section;
+    // Telemetry on and use_tls=1, so both guards run and neither may fire.
+    Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
-    section.set("tls_client_cert", "/etc/ssl/client.pem");
-    section.set("tls_client_key", "/etc/ssl/client.key");
+    section.set(mtls::keyClientCert, mtls::clientCert);
+    section.set(mtls::keyClientKey, mtls::clientKey);
 
-    auto setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
-    EXPECT_EQ(setup.tlsClientCertPath, "/etc/ssl/client.pem");
-    EXPECT_EQ(setup.tlsClientKeyPath, "/etc/ssl/client.key");
+    auto const setup = mtls::parseSection(section);
+    EXPECT_TRUE(setup.enabled);
+    EXPECT_TRUE(setup.useTls);
+    EXPECT_EQ(setup.tlsClientCertPath, mtls::clientCert);
+    EXPECT_EQ(setup.tlsClientKeyPath, mtls::clientKey);
 }
 
 TEST(TelemetryConfig, mtls_cert_without_key_throws)
 {
-    Section section;
-    section.set("tls_client_cert", "/etc/ssl/client.pem");
-    EXPECT_THROW(
-        telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0), std::runtime_error);
+    // Only the cert is set, so the pairing guard is the one that must fire.
+    Section section = mtls::makeSection(true);
+    section.set(mtls::keyClientCert, mtls::clientCert);
+
+    EXPECT_THAT(
+        [&section] { mtls::parseSection(section); },
+        ThrowsMessage<std::runtime_error>(HasSubstr(mtls::pairingError)));
 }
 
 TEST(TelemetryConfig, mtls_key_without_cert_throws)
 {
-    Section section;
-    section.set("tls_client_key", "/etc/ssl/client.key");
-    EXPECT_THROW(
-        telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0), std::runtime_error);
+    // Only the key is set, the mirror image of the case above.
+    Section section = mtls::makeSection(true);
+    section.set(mtls::keyClientKey, mtls::clientKey);
+
+    EXPECT_THAT(
+        [&section] { mtls::parseSection(section); },
+        ThrowsMessage<std::runtime_error>(HasSubstr(mtls::pairingError)));
+}
+
+TEST(TelemetryConfig, mtls_cert_key_without_use_tls_throws)
+{
+    // Both paths are set, so the pairing guard cannot fire; use_tls is absent
+    // and defaults to 0, so the use_tls guard is the only reachable throw.
+    Section section = mtls::makeSection(true);
+    section.set(mtls::keyClientCert, mtls::clientCert);
+    section.set(mtls::keyClientKey, mtls::clientKey);
+
+    EXPECT_THAT(
+        [&section] { mtls::parseSection(section); },
+        ThrowsMessage<std::runtime_error>(HasSubstr(mtls::useTlsError)));
+}
+
+TEST(TelemetryConfig, mtls_contradiction_ignored_when_telemetry_disabled)
+{
+    // The use_tls contradiction with telemetry off: parsing must succeed so a
+    // stale cert line cannot stop the node from booting.
+    Section section = mtls::makeSection(false);
+    section.set(mtls::keyClientCert, mtls::clientCert);
+    section.set(mtls::keyClientKey, mtls::clientKey);
+
+    auto const setup = mtls::parseSection(section);
+    EXPECT_FALSE(setup.enabled);
+    EXPECT_FALSE(setup.useTls);
+    EXPECT_EQ(setup.tlsClientCertPath, mtls::clientCert);
+    EXPECT_EQ(setup.tlsClientKeyPath, mtls::clientKey);
+}
+
+TEST(TelemetryConfig, mtls_cert_without_key_ignored_when_telemetry_disabled)
+{
+    // The pairing violation with telemetry off: also parsed, not rejected.
+    Section section = mtls::makeSection(false);
+    section.set(mtls::keyClientCert, mtls::clientCert);
+
+    auto const setup = mtls::parseSection(section);
+    EXPECT_FALSE(setup.enabled);
+    EXPECT_FALSE(setup.useTls);
+    EXPECT_EQ(setup.tlsClientCertPath, mtls::clientCert);
+    EXPECT_TRUE(setup.tlsClientKeyPath.empty());
+}
+
+TEST(TelemetryConfig, mtls_default_no_client_tls_is_accepted)
+{
+    // The documented default with telemetry on: no client certificate, and
+    // use_tls absent so it defaults to 0. Both guards run and neither may
+    // fire. The use_tls guard tests the certificate path first; drop that
+    // conjunct and this config is rejected, so no default node could boot.
+    Section const section = mtls::makeSection(true);
+
+    telemetry::Telemetry::Setup setup;
+    ASSERT_NO_THROW(setup = mtls::parseSection(section));
+    EXPECT_TRUE(setup.enabled);
+    EXPECT_FALSE(setup.useTls);
+    EXPECT_TRUE(setup.tlsClientCertPath.empty());
+    EXPECT_TRUE(setup.tlsClientKeyPath.empty());
 }
 
 TEST(TelemetryConfig, mtls_neither_set_is_one_way_tls)
 {
-    Section section;
+    // Telemetry is on so the guards run, and this config must pass both:
+    // one-way TLS with a CA bundle and no client certificate.
+    Section section = mtls::makeSection(true);
     section.set("use_tls", "1");
     section.set("tls_ca_cert", "/etc/ssl/ca.pem");
 
-    auto setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
+    auto const setup = mtls::parseSection(section);
+    EXPECT_TRUE(setup.enabled);
+    EXPECT_TRUE(setup.useTls);
+    EXPECT_EQ(setup.tlsCertPath, "/etc/ssl/ca.pem");
     EXPECT_TRUE(setup.tlsClientCertPath.empty());
     EXPECT_TRUE(setup.tlsClientKeyPath.empty());
 }
