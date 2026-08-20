@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/jtx_json.h>
+#include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -13,12 +14,14 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -68,7 +71,7 @@ private:
             return;
 
         auto const loanSequence = brokerPreLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         Number const principal = asset(1'000).value();
         Number const serviceFee = asset(2).value();
@@ -220,8 +223,8 @@ private:
         auto const brokerSle = env.le(result.brokerKeylet());
         if (!BEAST_EXPECT(brokerSle))
             return;
-        auto const loanKeylet =
-            keylet::loan(result.brokerKeylet().key, brokerSle->at(sfLoanSequence));
+        auto const loanKeylet = keylet::loan(
+            result.brokerKeylet().key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
         env(loan::set(
                 borrower, result.brokerKeylet().key, asset(10'000).value(), tfLoanOverpayment),
             Sig(sfCounterpartySignature, lender),
@@ -437,7 +440,8 @@ private:
             auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle);
             auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(set(borrower, broker.brokerID, principalRequested),
                 Sig(sfCounterpartySignature, lender),
@@ -690,7 +694,7 @@ private:
                 return;
             // Intentionally shadow the outer values
             auto const loanSequence = brokerState->at(sfLoanSequence);
-            auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const keylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             auto const interval = maxLoanTime / total;
             auto createJson = env.json(
@@ -727,6 +731,110 @@ private:
     }
 
     void
+    testLoanPayFundsConservedPayeeBelowReserve(FeatureBitset features)
+    {
+        // Regression test: LoanPay::doApply's fund-conservation check used to
+        // read XRP balances via accountHolds(..., SpendableHandling::
+        // FullBalance), which for XRP always defers to xrpLiquid (balance
+        // minus reserve, clamped at zero). When the broker fee landed on a
+        // payee sitting below its own reserve, that payee's clamped balance
+        // stayed zero and the fee vanished from the conservation sum,
+        // tripping "funds are conserved (with rounding)".
+        testcase("LoanPay funds conserved: broker fee payee below reserve");
+
+        using namespace jtx;
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        // Broker defaults match the fuzz workload: ManagementFeeRate = 100
+        // tenth-bips. The service fee guarantees feePaid > 0 on the first
+        // regular payment.
+        BrokerParameters const brokerParams;
+        Number const serviceFeeValue{2};
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .principalRequest = 1000,
+            .serviceFee = serviceFeeValue,
+            .interest = TenthBips32{percentageToTenthBips(12)},
+            .payTotal = 12,
+            .payInterval = 3600};
+
+        auto const loanOpt =
+            createLoan(env, AssetType::XRP, brokerParams, loanParams, issuer, lender, borrower);
+        if (BEAST_EXPECT(loanOpt); !loanOpt.has_value())
+            return;
+        auto const& [broker, loanKeylet, brokerPseudo] = *loanOpt;
+
+        auto const vaultPseudo = [&]() {
+            auto const vaultSle = env.le(keylet::vault(broker.vaultID));
+            if (!BEAST_EXPECT(vaultSle))
+                return AccountID{};
+            return vaultSle->at(sfAccount);
+        }();
+
+        // Raw AccountRoot balance, matching LoanPay::doApply's conservation
+        // check (not the reserve-clamped accountHolds()/xrpLiquid() value).
+        auto rawBalance = [&](AccountID const& id) -> STAmount {
+            auto const sle = env.le(keylet::account(id));
+            if (!BEAST_EXPECT(sle))
+                return STAmount{};
+            return sle->getFieldAmount(sfBalance);
+        };
+        auto lenderReserve = [&] {
+            return env.current()->fees().accountReserve(ownerCount(env, lender), 1);
+        };
+
+        STAmount const baseFee{env.current()->fees().base};
+
+        // Park the lender (broker owner, fee payee) exactly at its reserve,
+        // then burn part of the reserve with an oversized transaction fee.
+        // Fees are exempt from the reserve check, so the balance ends up
+        // below the reserve.
+        env(pay(lender, issuer, rawBalance(lender.id()) - lenderReserve() - baseFee));
+        env(noop(lender), Fee(XRP(100)));
+        env.close();
+        BEAST_EXPECT(env.balance(lender) < lenderReserve());
+
+        // First regular payment, exactly the amount due.
+        auto const state = getCurrentState(env, broker, loanKeylet);
+        STAmount const serviceFee = broker.asset(serviceFeeValue);
+        STAmount const roundedPeriodicPayment{
+            broker.asset,
+            roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
+        STAmount const totalDue = roundToScale(
+            roundedPeriodicPayment + serviceFee, state.loanScale, Number::RoundingMode::Upward);
+
+        auto const borrowerBefore = rawBalance(borrower.id());
+        auto const vaultBefore = rawBalance(vaultPseudo);
+        auto const lenderBefore = rawBalance(lender.id());
+
+        // Before the fix, this aborted inside LoanPay::doApply on
+        // XRPL_ASSERT_PARTS(goodRounding, "xrpl::LoanPay::doApply", "funds
+        // are conserved (with rounding)").
+        env(loan::pay(borrower, loanKeylet.key, totalDue));
+        env.close();
+
+        auto const borrowerAfter = rawBalance(borrower.id());
+        auto const vaultAfter = rawBalance(vaultPseudo);
+        auto const lenderAfter = rawBalance(lender.id());
+
+        // The broker fee reached the lender's AccountRoot, even though the
+        // lender's balance remains below its reserve.
+        BEAST_EXPECT(lenderAfter > lenderBefore);
+        BEAST_EXPECT(lenderAfter < lenderReserve());
+
+        // Total funds conserved across the payer, vault, and fee payee.
+        BEAST_EXPECT(
+            borrowerBefore - baseFee + vaultBefore + lenderBefore ==
+            borrowerAfter + vaultAfter + lenderAfter);
+    }
+
+    void
     runAmendmentIndependent()
     {
         testLoanSetNearZeroInterestRateSucceeds();
@@ -739,6 +847,7 @@ private:
 #if LOAN_TODO
         testLoanPayLateFullPaymentBypassesPenalties(features);
 #endif
+        testLoanPayFundsConservedPayeeBelowReserve(features);
         testOverpaymentManagementFee(features);
         testDosLoanPay(features);
         testLoanNextPaymentDueDateOverflow(features);
