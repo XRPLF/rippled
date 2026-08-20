@@ -61,15 +61,9 @@ is `Final`.
 
 ## AI coding agents
 
-[`AGENTS.md`](./AGENTS.md) (and its `CLAUDE.md` symlink, for Claude Code) holds shared,
-checked-in guidance for AI coding agents working in this repository — build/test/lint
-commands and architecture notes. Additional `AGENTS.md`/`CLAUDE.md` files may exist in
-subdirectories to give agents context specific to that part of the codebase.
+[`AGENTS.md`](./AGENTS.md) (and its `CLAUDE.md` symlink, for Claude Code) holds shared, checked-in guidance for AI coding agents working in this repository — build/test/lint commands and architecture notes. Additional `AGENTS.md`/`CLAUDE.md` files may exist in subdirectories to give agents context specific to that part of the codebase.
 
-If you want to give an agent personal instructions that shouldn't be shared with other
-contributors (e.g. your own workflow preferences), put them in `AGENTS.local.md` or
-`CLAUDE.local.md` instead — those are gitignored. Likewise, `.claude/settings.local.json`
-is for personal, untracked Claude Code settings, while `.claude/settings.json` is shared.
+If you want to give an agent personal instructions that shouldn't be shared with other contributors (e.g. your own workflow preferences), put them in `AGENTS.local.md` or `CLAUDE.local.md` instead — those are gitignored. Likewise, `.claude/settings.local.json` is for personal, untracked Claude Code settings, while `.claude/settings.json` is shared.
 
 ## Before making a pull request
 

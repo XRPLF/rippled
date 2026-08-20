@@ -1,10 +1,8 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents (Claude Code, and other AGENTS.md-compatible
-tools) when working with code in this repository. `CLAUDE.md` is a symlink to this file.
+This file provides guidance to AI coding agents (Claude Code, and other AGENTS.md-compatible tools) when working with code in this repository. `CLAUDE.md` is a symlink to this file.
 
-For personal, untracked notes to an AI agent (not meant to be shared with other contributors),
-use `AGENTS.local.md` / `CLAUDE.local.md` instead — see [CONTRIBUTING.md](./CONTRIBUTING.md).
+For personal, untracked notes to an AI agent (not meant to be shared with other contributors), use `AGENTS.local.md` / `CLAUDE.local.md` instead — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Build
 
