@@ -39,6 +39,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -66,6 +67,16 @@
 
 namespace xrpl::test {
 
+/**
+ * Shared base for the Loan*_test family under src/test/app/lending/.
+ *
+ * Run all suites in this family with
+ *   xrpld -u Loan,LendingHelpers
+ * The "Loan" prefix is matched against every suite name via
+ * beast::unit_test::Selector::ModeT::Automatch; LendingHelpers is listed
+ * explicitly because it does not share the "Loan" prefix (and lives in a
+ * different module: app vs tx).
+ */
 class LoanTestBase : public beast::unit_test::Suite
 {
 protected:
@@ -94,6 +105,23 @@ protected:
         // tests that need finer loanScale to exercise rounding edge cases.
         std::optional<std::uint8_t> vaultScale =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        // Vault kind axis. When ClosedEnded, createVaultAndBroker sets sfSubscriptionDate /
+        // sfRedemptionDate from env.now() using the offsets below and advances the ledger clock
+        // past SubscriptionDate so the vault is in the Investment phase by the time the broker is
+        // set up. Requires featureLendingProtocolV1_1.
+        VaultKind vaultKind = VaultKind::OpenEnded;
+        // Seconds past env.now() at which SubscriptionDate lands. Must be strictly positive
+        // (VaultCreate::preclaim rejects SubscriptionDate <= parentCloseTime).
+        std::uint32_t subscriptionOffset = 60;
+        // Seconds between SubscriptionDate and RedemptionDate. Must be >= kMinInvestmentPeriod, <
+        // kMaxInvestmentPeriod, and generous enough to fit any loan schedule the test runs
+        // (finalPayment must be strictly before RedemptionDate). Default sized to comfortably
+        // exceed any schedule realistic tests are likely to configure.
+        std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
+        // When true, createVaultAndBroker skips its automatic clock advance past SubscriptionDate.
+        // Useful for tests that need to observe the vault while it is still in the Subscription
+        // phase. Ignored for open-ended vaults.
+        bool skipPhaseAdvance = false;
 
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
@@ -121,15 +149,23 @@ protected:
         uint256 brokerID;
         uint256 vaultID;
         BrokerParameters params;
+        // Absolute dates resolved by createVaultAndBroker when params.vaultKind
+        // is ClosedEnded; std::nullopt for open-ended vaults.
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
         BrokerInfo(
             jtx::PrettyAsset const& asset,
             Keylet const& brokerKeylet,
             Keylet const& vaultKeylet,
-            BrokerParameters p)
+            BrokerParameters p,
+            std::optional<std::uint32_t> subscriptionDate = std::nullopt,
+            std::optional<std::uint32_t> redemptionDate = std::nullopt)
             : asset(asset)
             , brokerID(brokerKeylet.key)
             , vaultID(vaultKeylet.key)
             , params(std::move(p))
+            , subscriptionDate(subscriptionDate)
+            , redemptionDate(redemptionDate)
         {
         }
 
@@ -460,7 +496,23 @@ protected:
 
         auto const coverRateMinValue = params.coverRateMin;
 
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
+        if (params.vaultKind == VaultKind::ClosedEnded)
+        {
+            auto const nowSec = env.now().time_since_epoch().count();
+            subscriptionDate = nowSec + params.subscriptionOffset;
+            redemptionDate = *subscriptionDate + params.redemptionOffset;
+        }
+
+        auto [tx, vaultKeylet] = vault.create(
+            {.owner = lender,
+             .asset = asset,
+             .vaultKind = params.vaultKind == VaultKind::OpenEnded
+                 ? std::optional<std::uint8_t>{}
+                 : std::optional<std::uint8_t>{std::to_underlying(params.vaultKind)},
+             .subscriptionDate = subscriptionDate,
+             .redemptionDate = redemptionDate});
         if (params.vaultScale)
             tx[sfScale] = *params.vaultScale;
         env(tx);
@@ -474,7 +526,16 @@ protected:
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
         }
 
-        auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        // For closed-ended vaults, advance past SubscriptionDate so subsequent LoanSet operations
+        // run in the Investment phase (unless the caller explicitly asked to stay in Subscription).
+        if (subscriptionDate && !params.skipPhaseAdvance)
+        {
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
+            env.close(tp{d{*subscriptionDate + 1}});
+        }
+
+        auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         using namespace loan_broker;
         env(set(lender, vaultKeylet.key, params.flags),
@@ -489,7 +550,7 @@ protected:
 
         env.close();
 
-        return {asset, keylet, vaultKeylet, params};
+        return {asset, keylet, vaultKeylet, params, subscriptionDate, redemptionDate};
     }
 
     /**
@@ -665,9 +726,9 @@ protected:
     {
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(brokerStateBefore))
-            return keylet::loan(broker.brokerID, 0);
+            return keylet::loan(broker.brokerID, SeqProxy::rawSequence(0));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        return keylet::loan(broker.brokerID, loanSequence);
+        return keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
     }
 
     // Funds issuer/lender/borrower with XRP, creates an IOU asset issued by
@@ -852,7 +913,7 @@ protected:
             // The loan keylet is based on the LoanSequence of the
             // _LOAN_BROKER_ object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return keylet::loan(broker.brokerID, loanSequence);
+            return keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
         }();
         if (!loanKeyletOpt)
             return std::nullopt;
@@ -1329,7 +1390,8 @@ protected:
             // The loan keylet is based on the LoanSequence of the _LOAN_BROKER_
             // object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return std::make_pair(keylet::loan(broker.brokerID, loanSequence), loanSequence);
+            return std::make_pair(
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence)), loanSequence);
         }();
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, keylet);
@@ -1666,7 +1728,7 @@ protected:
 
         auto const baseFee = env.current()->fees().base;
 
-        auto badKeylet = keylet::vault(lender.id(), env.seq(lender));
+        auto badKeylet = keylet::vault(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
         // Try some failure cases
         // flags are checked first
         env(set(evan, broker.brokerID, principalRequest, tfLoanSetMask),
