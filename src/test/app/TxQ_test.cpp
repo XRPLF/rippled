@@ -29,6 +29,7 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
 
@@ -55,10 +56,13 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <utility>
 
 namespace xrpl::test {
@@ -5082,9 +5086,93 @@ public:
             txids.push_back(bobRegular.stx->getTransactionID());
             txids.push_back(aliceForeign.stx->getTransactionID());
 
-            // Drain the queue, waiting until every queued transaction has been
-            // applied to a closed ledger.
-            auto const result = batch::closeEnv(env, txids);
+            // === DIAGNOSTICS (Trigger 015) ===
+            // Inline drain loop (mirrors batch::closeEnv) that snapshots the
+            // TxQ after every close so we can see the last TER / retries a
+            // queued tx (esp. the Batch) got right before it is dropped.
+            // txids order: [0]=outerBatch [1]=innerBob(bobSeq+2)
+            //              [2]=innerAlice(aliceSeq+1) [3]=bobRegular
+            //              [4]=aliceForeign
+            batch::BatchResult result;
+            {
+                using namespace std::chrono_literals;
+                static constexpr int kMaxRetries = 20;
+                auto const firstClosedSeq = env.closed()->header().seq + 1;
+                auto txApplied = [&](uint256 const& txid) {
+                    auto const lastClosedSeq = env.closed()->header().seq;
+                    for (auto seq = firstClosedSeq; seq <= lastClosedSeq; ++seq)
+                    {
+                        auto const ledger = env.app().getLedgerMaster().getLedgerBySeq(seq);
+                        if (ledger && ledger->txExists(txid))
+                            return true;
+                    }
+                    return false;
+                };
+
+                auto dumpQueue = [&](int iter) {
+                    auto const txs = env.app().getTxQ().getTxs();
+                    std::cout << "  [close " << iter << "] queue size=" << txs.size() << "\n";
+                    for (auto const& d : txs)
+                    {
+                        std::cout << "    acct=" << toBase58(d.account)
+                                  << " type=" << static_cast<int>(d.txn->getTxnType())
+                                  << " seqProxy=" << d.seqProxy.value()
+                                  << " retriesRemaining=" << d.retriesRemaining
+                                  << " preflight=" << transToken(d.preflightResult)
+                                  << " lastResult="
+                                  << (d.lastResult ? transToken(*d.lastResult) : "none")
+                                  << "\n";
+                    }
+                };
+
+                std::cout << "\n=== TxQ Trigger 015 diag ===\n";
+                dumpQueue(0);
+                for (; result.iterations < kMaxRetries; ++result.iterations)
+                {
+                    env.close();
+                    std::this_thread::sleep_for(50ms);
+                    dumpQueue(result.iterations + 1);
+                    if (std::ranges::all_of(txids, txApplied))
+                        break;
+                }
+                for (auto const& txid : txids)
+                    if (!txApplied(txid))
+                        result.notApplied.push_back(txid);
+                result.allApplied = result.notApplied.empty();
+                result.txCount = env.app().getTxQ().getMetrics(*env.current()).txCount;
+
+                static char const* const kLabels[] = {
+                    "outerBatch",
+                    "innerBob",
+                    "innerAlice",
+                    "bobRegular",
+                    "aliceForeign"};
+                std::cout << "iterations=" << result.iterations
+                          << " allApplied=" << result.allApplied
+                          << " txCount=" << result.txCount << "\n"
+                          << "bobSeq: expect " << (bobSeq + 3) << " got " << env.seq(bob)
+                          << " (start " << bobSeq << ")\n"
+                          << "aliceSeq: expect " << (aliceSeq + 2) << " got " << env.seq(alice)
+                          << " (start " << aliceSeq << ")\n";
+                for (std::size_t i = 0; i < txids.size(); ++i)
+                {
+                    bool const applied =
+                        std::ranges::none_of(result.notApplied, [&](auto const& id) {
+                            return id == txids[i];
+                        });
+                    char const* label = i < std::size(kLabels) ? kLabels[i] : "?";
+                    std::cout << "  tx[" << i << "] " << label << " " << txids[i]
+                              << " applied=" << applied << "\n";
+                }
+                std::cout << "bobBalance: expect "
+                          << (preBob - drops(batchFee + batchFee * 8)) << " got "
+                          << env.balance(bob) << "\n"
+                          << "aliceBalance: expect " << (preAlice - drops(foreignFee))
+                          << " got " << env.balance(alice) << "\n"
+                          << "=== end diag ===\n"
+                          << std::endl;
+            }
+            // === END DIAGNOSTICS ===
 
             // Everything applied. On bob's account: regular@bobSeq, outer
             // Batch@bobSeq+1, inner@bobSeq+2 => seq += 3. On alice's account:

@@ -43,6 +43,7 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <iostream>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -2064,6 +2065,12 @@ TxQ::accept(Application& app, OpenView& view)
             // There is a sequence transaction at the front of the queue and
             // candidate has a later sequence, so skip this candidate.  We
             // need to process sequence-based transactions in sequence order.
+            if (candidateIter->txn->getTxnType() == ttBATCH)
+            {
+                std::cerr << "[TxQ.accept diag] BATCH " << candidateIter->txID
+                          << " SKIPPED (candidate seqProxy=" << candidateIter->seqProxy.value()
+                          << " > account front seqProxy=" << beginIter->first.value() << ")\n";
+            }
             JLOG(j_.trace()) << "Skipping queued transaction " << candidateIter->txID
                              << " from account " << candidateIter->account
                              << " as it is not the first.";
@@ -2081,6 +2088,18 @@ TxQ::accept(Application& app, OpenView& view)
                              << " to open ledger.";
 
             auto const [txnResult, didApply, _metadata] = candidateIter->apply(app, view, j_);
+
+            // === DIAGNOSTICS (Trigger 015): trace Batch outcomes in accept ===
+            bool const diagIsBatch = candidateIter->txn->getTxnType() == ttBATCH;
+            if (diagIsBatch)
+            {
+                std::cerr << "[TxQ.accept diag] BATCH " << candidateIter->txID
+                          << " apply -> ter=" << transToken(txnResult)
+                          << " didApply=" << didApply
+                          << " retriesRemaining=" << candidateIter->retriesRemaining
+                          << " seqProxy=" << candidateIter->seqProxy.value() << "\n";
+            }
+            // === END DIAGNOSTICS ===
 
             if (didApply)
             {
@@ -2104,12 +2123,27 @@ TxQ::accept(Application& app, OpenView& view)
                 {
                     account.dropPenalty = true;
                 }
+                if (diagIsBatch)
+                {
+                    std::cerr << "[TxQ.accept diag] BATCH " << candidateIter->txID
+                              << " DROPPED (ter=" << transToken(txnResult)
+                              << ", retriesRemaining=" << candidateIter->retriesRemaining
+                              << ", tef=" << isTefFailure(txnResult)
+                              << ", tem=" << isTemMalformed(txnResult) << ")\n";
+                }
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Remove from queue.";
                 candidateIter = eraseAndAdvance(candidateIter);
             }
             else
             {
+                if (diagIsBatch)
+                {
+                    std::cerr << "[TxQ.accept diag] BATCH " << candidateIter->txID
+                              << " LEFT IN QUEUE (ter=" << transToken(txnResult)
+                              << ", retriesRemaining before decrement="
+                              << candidateIter->retriesRemaining << ")\n";
+                }
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Leave in queue."
                                  << " Applied: " << didApply << ". Flags: " << candidateIter->flags;
