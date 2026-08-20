@@ -27,8 +27,6 @@
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Tuning.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-
 #include <chrono>
 #include <string>
 
@@ -203,13 +201,13 @@ class NoRippleCheck_test : public beast::unit_test::Suite
 
             if (user)
             {
-                BEAST_EXPECT(boost::starts_with(pa[0u].asString(), "You appear to have set"));
-                BEAST_EXPECT(boost::starts_with(pa[1u].asString(), "You should probably set"));
+                BEAST_EXPECT(pa[0u].asString().starts_with("You appear to have set"));
+                BEAST_EXPECT(pa[1u].asString().starts_with("You should probably set"));
             }
             else
             {
-                BEAST_EXPECT(boost::starts_with(pa[0u].asString(), "You should immediately set"));
-                BEAST_EXPECT(boost::starts_with(pa[1u].asString(), "You should clear"));
+                BEAST_EXPECT(pa[0u].asString().starts_with("You should immediately set"));
+                BEAST_EXPECT(pa[1u].asString().starts_with("You should clear"));
             }
         }
         else
