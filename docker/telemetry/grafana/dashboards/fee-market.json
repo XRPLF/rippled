@@ -37,7 +37,7 @@
         },
         "enable": true,
         "hide": false,
-        "iconColor": "rgb(25, 158, 112)",
+        "iconColor": "rgb(15, 122, 102)",
         "name": "Perf Runs (Locust)",
         "target": {
           "limit": 100,
