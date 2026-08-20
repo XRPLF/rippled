@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -27,6 +28,13 @@
 #include <stdexcept>
 
 namespace xrpl {
+
+bool
+VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        (ctx.rules.enabled(featureCredentials) && ctx.rules.enabled(fixCleanup3_4_0));
+}
 
 static WaiveUnrealizedLoss
 shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
@@ -59,6 +67,9 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
     }
+
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
+        return err;
 
     return tesSUCCESS;
 }
@@ -115,6 +126,12 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
+    // Validate credentials (if any) before canWithdraw, since canWithdraw may
+    // call credentials::authorizedDepositPreauth which assumes credentials
+    // already exist.
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
+        return err;
+
     // A pseudo-account belongs to a ledger object rather than to a person and
     // must never receive funds from a user-initiated transaction. Deposit
     // authorization, which every pseudo-account carries, already refuses the
@@ -157,7 +174,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
                     account,
                     dstAcct,
                     *maybeAssets,
-                    ctx.tx.isFieldPresent(sfDestinationTag)))
+                    ctx.tx.isFieldPresent(sfDestinationTag),
+                    ctx.tx[~sfCredentialIDs]))
                 return ret;
         }
         catch (std::overflow_error const&)

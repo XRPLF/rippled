@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Sign the RPMs built by build_pkg.sh. Nexus cannot sign hosted yum metadata, so
-# the packages carry the signature themselves and rpm clients verify them with
-# gpgcheck=1.
+# Sign the RPMs built by build_pkg.sh. Nexus signs the yum repository metadata
+# (via the 'rpm-<channel>' group repository), but never the packages themselves,
+# so they carry their own signature. Clients verify the packages with gpgcheck=1
+# and the metadata with repo_gpgcheck=1.
 #
 # Usage: sign_rpm.sh [package-dir]
 #
@@ -12,8 +13,9 @@ set -euo pipefail
 # PKG_SIGNING_KEY must hold an armoured PGP private key. It has no flag, to keep
 # the key out of the process list.
 #
-# There is no DEB equivalent: apt trusts the repository metadata, which Nexus
-# signs, rather than the packages themselves.
+# The DEBs are deliberately not signed: embedded DEB signatures exist (debsigs),
+# but apt does not verify them by default and trusts the repository metadata,
+# which Nexus signs, instead.
 
 pkg_dir="${1:-build}"
 
