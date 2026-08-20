@@ -85,9 +85,6 @@ public:
         bool
         operator==(Iterator const& other) const;
 
-        bool
-        operator!=(Iterator const& other) const;
-
         // Can throw
         reference
         operator*() const;

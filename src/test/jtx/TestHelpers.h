@@ -26,6 +26,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
@@ -42,6 +43,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -314,19 +316,11 @@ auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
 auto const kAmount = JTxFieldWrapper<StAmountField>(sfAmount);
 
-// TODO We only need this long "requires" clause as polyfill, for C++20
-// implementations which are missing <ranges> header. Replace with
-// `std::ranges::range<Input>`, and accordingly use std::ranges::begin/end
-// when we have moved to better compilers.
-template <typename Input>
+template <std::ranges::range Input>
 auto
 makeVector(Input const& input)
-    requires requires(Input& v) {
-        std::begin(v);
-        std::end(v);
-    }
 {
-    return std::vector(std::begin(input), std::end(input));
+    return std::vector(std::ranges::begin(input), std::ranges::end(input));
 }
 
 // Functions used in debugging
@@ -779,9 +773,9 @@ inline constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
 inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
 inline uint256
-getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+getCheckIndex(AccountID const& account, std::uint32_t const sequence)
 {
-    return keylet::check(account, uSequence).key;
+    return keylet::check(account, SeqProxy::rawSequence(sequence)).key;
 }
 
 template <class Suite>
