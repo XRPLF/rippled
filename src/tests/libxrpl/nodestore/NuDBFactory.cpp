@@ -356,7 +356,7 @@ TEST(NuDBFactory, configuration_parsing)
 
 TEST(NuDBFactory, write_stats_accumulate_per_insert)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
@@ -457,7 +457,7 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
 // ScopeExit runs its function during unwinding.
 TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
@@ -522,7 +522,7 @@ TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
 // while the real one satisfies it as soon as any two inserts overlap.
 TEST(NuDBFactory, write_stats_measure_depth_under_real_overlap)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
@@ -597,7 +597,7 @@ TEST(NuDBFactory, write_stats_measure_depth_under_real_overlap)
 
 TEST(NuDBFactory, write_load_reports_writer_depth)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
