@@ -5,7 +5,9 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -15,14 +17,15 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <exception>
+#include <expected>
 #include <memory>
 
 namespace xrpl {
@@ -47,25 +50,13 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
 
     // The proposed transaction must be independently submittable through the
     // ordinary multi-sign path: no nested proposals, no pseudo-transactions,
-    // no batch inner transactions.
-    if (proposal::isProposalTx(proposedTx))
+    // no batch inner transactions — and, if it is a Batch, none of its own
+    // inner transactions may be a nested proposal or a pseudo-transaction
+    // either.
+    if (!proposal::isValidProposal(proposedTx))
     {
-        JLOG(ctx.j.debug()) << "TransactionProposalCreate: nested proposal.";
-        return temINVALID;
-    }
-
-    if (isPseudoTx(proposedTx))
-    {
-        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn is a "
-                               "pseudo-transaction.";
-        return temINVALID;
-    }
-
-    if (proposedTx.isFieldPresent(sfFlags) &&
-        ((proposedTx.getFieldU32(sfFlags) & tfInnerBatchTxn) != 0u))
-    {
-        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn "
-                               "carries tfInnerBatchTxn.";
+        JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn is not "
+                               "independently submittable.";
         return temINVALID;
     }
 
@@ -174,7 +165,75 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     if (isPseudoAccount(sleTarget))
         return tecNO_PERMISSION;
 
+    // Only the target account itself, an account on its SignerList, or (if
+    // the proposed transaction's own type has been delegated by the target,
+    // Permission Delegation / XLS-75) that delegate or an account on the
+    // delegate's own SignerList, may create a proposal against it. Otherwise
+    // any account could spam or squat the target's Tickets with unwanted
+    // proposals (On-Chain Cosigner V1 scope).
+    if (AccountID const proposer = ctx.tx.getAccountID(sfAccount); proposer != target)
+    {
+        // Whether `proposer` is `account` itself or an entry on `account`'s
+        // applicable SignerList.
+        auto isAuthorizedFor = [&](AccountID const& account) -> std::expected<bool, TER> {
+            if (proposer == account)
+                return true;
+
+            auto const sleSigners = ctx.view.read(keylet::signerList(account));
+            if (!sleSigners)
+                return false;
+
+            auto const accountSigners = SignerEntries::deserialize(*sleSigners, ctx.j, "ledger");
+            if (!accountSigners)
+                return std::unexpected(TER{accountSigners.error()});
+
+            return std::ranges::any_of(
+                *accountSigners, [&](auto const& entry) { return entry.account == proposer; });
+        };
+
+        auto isSigner = isAuthorizedFor(target);
+        if (!isSigner)
+            return isSigner.error();
+
+        // A delegate that the target has granted permission over the
+        // proposed transaction's own type — or one of that delegate's own
+        // signers — is equally authorized: it will need to help complete
+        // the proposed transaction's own authorization anyway once the
+        // proposal is submitted.
+        if (!*isSigner && proposedTx.isFieldPresent(sfDelegate))
+        {
+            AccountID const delegateAccount = proposedTx.getAccountID(sfDelegate);
+            // NOLINTNEXTLINE(readability-suspicious-call-argument)
+            auto const sleDelegate = ctx.view.read(keylet::delegate(target, delegateAccount));
+            if (sleDelegate &&
+                isTesSuccess(checkTxPermission(sleDelegate, STTx{STObject{proposedTx}})))
+            {
+                isSigner = isAuthorizedFor(delegateAccount);
+                if (!isSigner)
+                    return isSigner.error();
+            }
+        }
+
+        if (!*isSigner)
+        {
+            JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposer is "
+                                   "not the target account, one of its "
+                                   "signers, or an authorized delegate.";
+            return tecNO_PERMISSION;
+        }
+    }
+
     std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
+
+    // The proposal reserves the ticket for as long as it exists (On-Chain
+    // Cosigner spec §4.2.1, §5.3.2): a ticket that doesn't exist yet can't be
+    // reserved.
+    if (!ctx.view.exists(keylet::ticket(target, ticketSequence)))
+    {
+        JLOG(ctx.j.debug()) << "TransactionProposalCreate: target ticket "
+                               "does not exist.";
+        return tefNO_TICKET;
+    }
 
     if (ctx.view.exists(keylet::txProposal(target, ticketSequence)))
     {
