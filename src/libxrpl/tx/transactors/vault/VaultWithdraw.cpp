@@ -351,14 +351,33 @@ VaultWithdraw::doApply()
     // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
     if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
     {
-        // Round Upward on the negative delta: the stored total is decremented by no more than it
-        // can represent, so the payout is trimmed downward and the vault never pays out more than
-        // it can account for.
-        assetsWithdrawn =
-            clampToAssetsTotalScale(vault, -assetsWithdrawn, Number::RoundingMode::Upward);
-        // Payout collapsed to zero. Return tecPRECISION_LOSS instead of burning shares for nothing.
-        if (assetsWithdrawn <= beast::kZero)
-            return tecPRECISION_LOSS;
+        // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
+        try
+        {
+            // Round Upward on the negative delta: the stored total is decremented by no more than
+            // it can represent, so the payout is trimmed downward and the vault never pays out
+            // more than it can account for.
+            assetsWithdrawn =
+                clampToAssetsTotalScale(vault, -assetsWithdrawn, Number::RoundingMode::Upward);
+            // Payout collapsed to zero. Return tecPRECISION_LOSS instead of burning shares for
+            // nothing.
+            if (assetsWithdrawn <= beast::kZero)
+                return tecPRECISION_LOSS;
+        }
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultWithdraw: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            // Overflow means this transaction cannot apply, but ledger state is still consistent.
+            // Return tecPATH_DRY rather than a hard internal error.
+            return tecPATH_DRY;
+        }
     }
 
     // The vault must have enough assets on hand.
