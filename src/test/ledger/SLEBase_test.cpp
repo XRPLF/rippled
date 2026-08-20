@@ -52,7 +52,9 @@ namespace xrpl {
 
 // The entry classes have no consumers yet, and an un-instantiated class
 // template is barely type-checked. Instantiate every one explicitly so the
-// compiler actually checks them. Delete this block once real call sites exist.
+// compiler actually checks them. Keep this block even once real call sites
+// exist: it is what catches a new ledger entry type being added without its
+// wrapper class, or the wrapper class existing but never actually being used.
 //
 // Driving this off ledger_entries.macro keeps it exhaustive by construction:
 // adding a ledger entry type without adding its entry class stops compiling
@@ -213,7 +215,7 @@ class SLEBase_test : public beast::unit_test::Suite
         ApplyViewImpl av(&*ledger, TapNone);
 
         WAccountRootEntry account(alice.id(), av, env.journal);
-        BEAST_EXPECT(account.canModify());
+        BEAST_EXPECT(account.exists());
         BEAST_EXPECT(account.mutableRawSle() == account.rawSle());
         BEAST_EXPECT(&account.applyView() == &av);
         BEAST_EXPECT(&account.readView() == static_cast<ReadView const*>(&av));
@@ -265,7 +267,6 @@ class SLEBase_test : public beast::unit_test::Suite
         // ctx.view directly.
         WAccountRootEntry fromCtx(keylet::account(alice.id()), ctx, env.journal);
         BEAST_EXPECT(fromCtx.exists());
-        BEAST_EXPECT(fromCtx.canModify());
         BEAST_EXPECT(&fromCtx.applyView() == &av);
         BEAST_EXPECT(fromCtx.key() == keylet::account(alice.id()).key);
 
@@ -294,21 +295,18 @@ class SLEBase_test : public beast::unit_test::Suite
         {
             WTicketEntry ticket(keylet::ticket(alice.id(), SeqProxy::rawTicket(1)), av);
             BEAST_EXPECT(!ticket.exists());
-            BEAST_EXPECT(!ticket.canModify());
             BEAST_EXPECT(ticket.key() == keylet::ticket(alice.id(), SeqProxy::rawTicket(1)).key);
             BEAST_EXPECT(ticket.type() == ltTICKET);
             BEAST_EXPECT(ticket.keylet().type == ltTICKET);
 
             ticket.newSLE();
             BEAST_EXPECT(ticket.exists());
-            BEAST_EXPECT(ticket.canModify());
             ticket.insert();
             ticket.update();
 
             // Erasing an entry inserted in this same view drops it outright.
             ticket.erase();
             BEAST_EXPECT(!ticket.exists());
-            BEAST_EXPECT(!ticket.canModify());
         }
 
         // Entry that already exists. ApplyStateTable::erase() keeps holding
@@ -318,11 +316,9 @@ class SLEBase_test : public beast::unit_test::Suite
         {
             WAccountRootEntry account(alice.id(), av);
             BEAST_EXPECT(account.exists());
-            BEAST_EXPECT(account.canModify());
 
             account.erase();
             BEAST_EXPECT(!account.exists());
-            BEAST_EXPECT(!account.canModify());
         }
     }
 

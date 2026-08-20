@@ -11,6 +11,7 @@
 
 #include <concepts>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -90,7 +91,7 @@ public:
     static constexpr bool kIsTyped = (EntryType != ltANY);
 
     // SLE pointer type: mutable for writable views, const for read-only
-    using sle_ptr_type = std::conditional_t<kIsWritable, std::shared_ptr<SLE>, SLE::const_pointer>;
+    using sle_ptr_type = std::conditional_t<kIsWritable, SLE::pointer, SLE::const_pointer>;
 
     // View reference type: ApplyView& for writable, ReadView const& for
     // read-only
@@ -113,6 +114,99 @@ public:
     SLEBase&
     operator=(SLEBase&&) = delete;
     SLEBase() = delete;
+
+    // --- Constructors that adopt/resolve an SLE (public so the ReadOnlySLE /
+    //     WritableSLE aliases and the per-type entries can be built directly
+    //     from a keylet, or -- read-only only -- from an already-fetched
+    //     SLE). ---
+
+    /**
+     * Constructor for read-only context (adopt an already-fetched SLE).
+     *
+     * There is deliberately no writable equivalent: a writable entry needs
+     * a Keylet so that newSLE() can still build an entry when none exists,
+     * and that cannot be recovered from a null SLE.
+     */
+    explicit SLEBase(
+        SLE::const_pointer sle,
+        view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires(!kIsWritable)
+        : view_(view), sle_(std::move(sle)), j_(j)
+    {
+        XRPL_ASSERT(
+            !kIsTyped || !sle_ || sle_->getType() == kEntryType,
+            "xrpl::SLEBase::SLEBase : adopted SLE matches bound entry type");
+    }
+
+    /**
+     * Constructor for read-only context (read from view by keylet)
+     */
+    explicit SLEBase(
+        Keylet const& key,
+        view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires(!kIsWritable)
+        : view_(view), sle_(detail::resolveEntry(view, key)), j_(j)
+    {
+        XRPL_ASSERT(
+            !kIsTyped || key.type == kEntryType,
+            "xrpl::SLEBase::SLEBase : keylet matches bound entry type");
+    }
+
+    /**
+     * Converting constructor: writable → read-only.
+     *
+     * Enables implicit conversion from SLEBase<ApplyView> to
+     * SLEBase<ReadView>, so functions taking ReadOnlySLE const& can accept
+     * WritableSLE.
+     *
+     * Constrained to the same entry type (or to a ltANY target, i.e. widening
+     * a typed entry to a generic ReadOnlySLE). The constraint is load-bearing:
+     * this constructor is inherited into every per-type entry, and unconstrained
+     * it would bind any writable entry that slices to SLEBase, so a WOfferEntry
+     * would convert to an RAccountRootEntry with no cast at the call site.
+     */
+    template <typename OtherViewT, LedgerEntryType OtherType>
+    SLEBase(SLEBase<OtherViewT, OtherType> const& other)
+        requires(!kIsWritable && WritableView<OtherViewT> &&
+                 (OtherType == EntryType || EntryType == ltANY))
+        : view_(other.readView()), sle_(other.rawSle()), j_(other.journal())
+    {
+    }
+
+    /**
+     * Constructor for writable context (peek from view by keylet)
+     */
+    explicit SLEBase(
+        Keylet const& key,
+        ApplyView& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires kIsWritable
+        : view_(view), key_(key), sle_(view_.peek(key)), j_(j)
+    {
+        XRPL_ASSERT(
+            !kIsTyped || key.type == kEntryType,
+            "xrpl::SLEBase::SLEBase : keylet matches bound entry type");
+    }
+
+    /**
+     * Constructor for writable context, for call sites that hold an
+     * ApplyViewContext (peek from ctx.view by keylet).
+     *
+     * ctx.tx is not retained: this exists purely so transactors can pass the
+     * context they already have instead of spelling out ctx.view. If an entry
+     * ever needs the applying transaction, store it here rather than adding
+     * another overload.
+     */
+    explicit SLEBase(
+        Keylet const& key,
+        ApplyViewContext const& ctx,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires kIsWritable
+        : SLEBase(key, ctx.view, j)
+    {
+    }
 
     // --- Common interface (always available) ---
 
@@ -153,8 +247,8 @@ public:
      * valid whether or not the entry exists. Only the generic ReadOnlySLE /
      * WritableSLE aliases have to read it back out of the SLE.
      *
-     * @pre For generic (ltANY) entries, exists() must be true. The check is
-     *      assert-only and is compiled out in Release builds.
+     * @throws std::logic_error for a generic (ltANY) entry if exists() is
+     *         false.
      */
     [[nodiscard]] LedgerEntryType
     type() const
@@ -165,7 +259,8 @@ public:
         }
         else
         {
-            XRPL_ASSERT(exists(), "xrpl::SLEBase::type : exists");
+            if (!exists())
+                throw std::logic_error("xrpl::SLEBase::type : entry does not exist");
             return sle_->getType();
         }
     }
@@ -177,9 +272,7 @@ public:
      * even before newSLE(). Read-only entries derive it from the SLE, which
      * must therefore exist.
      *
-     * @pre For read-only entries, exists() must be true. Violating this
-     *      dereferences a null pointer; the check is assert-only and is
-     *      compiled out in Release builds.
+     * @throws std::logic_error for a read-only entry if exists() is false.
      */
     [[nodiscard]] Keylet
     keylet() const
@@ -190,7 +283,8 @@ public:
         }
         else
         {
-            XRPL_ASSERT(exists(), "xrpl::SLEBase::keylet : exists");
+            if (!exists())
+                throw std::logic_error("xrpl::SLEBase::keylet : entry does not exist");
             // Take the type from the SLE, not from kEntryType: the adopt-SLE
             // constructor's type check is assert-only, so a Release build can
             // be holding an SLE whose type disagrees with the binding, and the
@@ -202,8 +296,8 @@ public:
     /**
      * Returns the ledger key of this entry.
      *
-     * @pre Same as keylet(): for read-only entries exists() must be true, and
-     *      the check is compiled out in Release builds.
+     * @throws std::logic_error same as keylet(): for read-only entries,
+     *         if exists() is false.
      */
     [[nodiscard]] uint256
     key() const
@@ -257,16 +351,6 @@ public:
     }
 
     /**
-     * Returns true if this entry supports write operations
-     */
-    [[nodiscard]] bool
-    canModify() const
-        requires kIsWritable
-    {
-        return sle_ != nullptr;
-    }
-
-    /**
      * Returns the apply view for write operations
      */
     [[nodiscard]] ApplyView&
@@ -283,7 +367,7 @@ public:
     operator->()
         requires kIsWritable
     {
-        XRPL_ASSERT(canModify(), "xrpl::SLEBase::operator-> : can modify");
+        XRPL_ASSERT(exists(), "xrpl::SLEBase::operator-> : exists");
         return sle_.get();
     }
 
@@ -291,7 +375,7 @@ public:
     operator*()
         requires kIsWritable
     {
-        XRPL_ASSERT(canModify(), "xrpl::SLEBase::operator* : can modify");
+        XRPL_ASSERT(exists(), "xrpl::SLEBase::operator* : exists");
         return *sle_;
     }
 
@@ -299,7 +383,7 @@ public:
     insert()
         requires kIsWritable
     {
-        XRPL_ASSERT(canModify(), "xrpl::SLEBase::insert : can modify");
+        XRPL_ASSERT(exists(), "xrpl::SLEBase::insert : exists");
         view_.insert(sle_);
     }
 
@@ -318,7 +402,7 @@ public:
     erase()
         requires kIsWritable
     {
-        XRPL_ASSERT(canModify(), "xrpl::SLEBase::erase : can modify");
+        XRPL_ASSERT(exists(), "xrpl::SLEBase::erase : exists");
         view_.erase(sle_);
         sle_ = nullptr;
     }
@@ -327,7 +411,7 @@ public:
     update()
         requires kIsWritable
     {
-        XRPL_ASSERT(canModify(), "xrpl::SLEBase::update : can modify");
+        XRPL_ASSERT(exists(), "xrpl::SLEBase::update : exists");
         view_.update(sle_);
     }
 
@@ -335,7 +419,7 @@ public:
     newSLE()
         requires kIsWritable
     {
-        XRPL_ASSERT(!canModify(), "xrpl::SLEBase::newSLE : no existing SLE");
+        XRPL_ASSERT(!exists(), "xrpl::SLEBase::newSLE : no existing SLE");
         sle_ = std::make_shared<SLE>(key_);
     }
 
@@ -343,99 +427,6 @@ public:
     journal() const
     {
         return j_;
-    }
-
-    // --- Constructors that adopt/resolve an SLE (public so the ReadOnlySLE /
-    //     WritableSLE aliases and the per-type entries can be built directly
-    //     from a keylet, or -- read-only only -- from an already-fetched
-    //     SLE). ---
-
-    /**
-     * Constructor for read-only context (adopt an already-fetched SLE).
-     *
-     * There is deliberately no writable equivalent: a writable entry needs
-     * a Keylet so that newSLE() can still build an entry when none exists,
-     * and that cannot be recovered from a null SLE.
-     */
-    explicit SLEBase(
-        SLE::const_pointer sle,
-        view_ref_type view,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires(!kIsWritable)
-        : view_(view), sle_(std::move(sle)), j_(j)
-    {
-        XRPL_ASSERT(
-            !kIsTyped || !sle_ || sle_->getType() == kEntryType,
-            "xrpl::SLEBase::SLEBase : adopted SLE matches bound entry type");
-    }
-
-    /**
-     * Constructor for read-only context (read from view by keylet)
-     */
-    explicit SLEBase(
-        Keylet const& key,
-        view_ref_type view,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires(!kIsWritable)
-        : view_(view), sle_(detail::resolveEntry(view, key)), j_(j)
-    {
-        XRPL_ASSERT(
-            !kIsTyped || key.type == kEntryType,
-            "xrpl::SLEBase::SLEBase : keylet matches bound entry type");
-    }
-
-    /**
-     * Converting constructor: writable → read-only.
-     *
-     * Enables implicit conversion from SLEBase<ApplyView> to
-     * SLEBase<ReadView>, so functions taking ReadOnlySLE const& can accept
-     * WritableSLE.
-     *
-     * Constrained to the same entry type (or to a ltANY target, i.e. widening
-     * a typed entry to a generic ReadOnlySLE). The constraint is load-bearing:
-     * this constructor is inherited into every per-type entry, and unconstrained
-     * it binds any writable entry that slices to SLEBase, so a WOfferEntry
-     * would convert to an RAccountRootEntry with no cast at the call site.
-     */
-    template <typename OtherViewT, LedgerEntryType OtherType>
-    SLEBase(SLEBase<OtherViewT, OtherType> const& other)
-        requires(!kIsWritable && WritableView<OtherViewT> &&
-                 (OtherType == EntryType || EntryType == ltANY))
-        : view_(other.readView()), sle_(other.rawSle()), j_(other.journal())
-    {
-    }
-
-    /**
-     * Constructor for writable context (peek from view by keylet)
-     */
-    explicit SLEBase(
-        Keylet const& key,
-        ApplyView& view,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires kIsWritable
-        : view_(view), key_(key), sle_(view_.peek(key)), j_(j)
-    {
-        XRPL_ASSERT(
-            !kIsTyped || key.type == kEntryType,
-            "xrpl::SLEBase::SLEBase : keylet matches bound entry type");
-    }
-
-    /**
-     * Constructor for writable context, for call sites that hold an
-     * ApplyViewContext (peek from ctx.view by keylet).
-     *
-     * ctx.tx is not retained: this exists purely so transactors can pass the
-     * context they already have instead of spelling out ctx.view. If an entry
-     * ever needs the applying transaction, store it here rather than adding
-     * another overload.
-     */
-    explicit SLEBase(
-        Keylet const& key,
-        ApplyViewContext const& ctx,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires kIsWritable
-        : SLEBase(key, ctx.view, j)
-    {
     }
 
 protected:
