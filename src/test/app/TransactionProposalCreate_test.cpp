@@ -1071,7 +1071,11 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         auto const targetBalance = env.balance(target);
         auto const backerBalance = env.balance(backer);
-        STAmount const feeAmt = drops(20);
+        // A generous fixed fee: the exact amount isn't the point of this
+        // test, only that the sponsor pays it instead of the proposer, so it
+        // should comfortably clear the minimum even under local fee escalation
+        // rather than assume the reference fee is some specific small value.
+        STAmount const feeAmt = XRP(1);
 
         env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
             Fee(feeAmt),
