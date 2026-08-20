@@ -98,9 +98,6 @@ public:
      */
     bool
     operator==(Rules const&) const;
-
-    bool
-    operator!=(Rules const& other) const;
 };
 
 std::optional<Rules> const&
