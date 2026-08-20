@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build an RPM or Debian package from a pre-built xrpld binary.
+# Build an RPM or Debian package from the pre-built xrpld and validator-keys
+# binaries.
 #
 # Flags override env vars; env vars override defaults.
 
@@ -11,8 +12,12 @@ Usage: build_pkg.sh [options]
 
 Options (each can also be set via the env var shown):
   --src-dir DIR            repo root                 [SRC_DIR;           default: ${PWD}]
-  --build-dir DIR          directory holding xrpld   [BUILD_DIR;         default: ${PWD}/build]
+  --build-dir DIR          directory holding the
+                           xrpld and validator-keys
+                           binaries                  [BUILD_DIR;         default: ${PWD}/build]
   --pkg-release N          package release iteration [PKG_RELEASE;       default: 1]
+  --channel NAME           release channel, written
+                           to debian/changelog       [PKG_CHANNEL;       default: unstable]
   --source-date-epoch SECS reproducibility timestamp [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
   -h, --help               show this help and exit
 EOF
@@ -29,6 +34,7 @@ need_arg() {
 SRC_DIR="${SRC_DIR:-}"
 BUILD_DIR="${BUILD_DIR:-}"
 PKG_RELEASE="${PKG_RELEASE:-1}"
+PKG_CHANNEL="${PKG_CHANNEL:-unstable}"
 SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-}"
 
 while [[ $# -gt 0 ]]; do
@@ -46,6 +52,11 @@ while [[ $# -gt 0 ]]; do
         --pkg-release)
             need_arg "$@"
             PKG_RELEASE="$2"
+            shift 2
+            ;;
+        --channel)
+            need_arg "$@"
+            PKG_CHANNEL="$2"
             shift 2
             ;;
         --source-date-epoch)
@@ -69,15 +80,44 @@ SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
 BUILD_DIR="${BUILD_DIR:-${PWD}/build}"
 if [[ ! -d "${BUILD_DIR}" ]]; then
     echo "build_pkg.sh: build directory not found: ${BUILD_DIR}" >&2
-    echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing xrpld." >&2
+    echo "Build the binaries before packaging, or set BUILD_DIR to the directory containing them." >&2
     exit 1
 fi
 BUILD_DIR="$(cd "${BUILD_DIR}" && pwd)"
 
 xrpld_binary="${BUILD_DIR}/xrpld"
-if [[ ! -x "${xrpld_binary}" ]]; then
-    echo "build_pkg.sh: expected executable xrpld binary at ${xrpld_binary}." >&2
-    echo "Build xrpld before packaging, or set BUILD_DIR to the directory containing xrpld." >&2
+validator_keys_binary="${BUILD_DIR}/validator-keys"
+
+# Report both binaries at once: they share a single BUILD_DIR, so telling the
+# reader to point it at one of them in isolation is advice they cannot follow.
+missing=()
+[[ -x "${xrpld_binary}" ]] || missing+=(xrpld)
+[[ -x "${validator_keys_binary}" ]] || missing+=(validator-keys)
+
+if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "build_pkg.sh: missing or not executable in ${BUILD_DIR}: ${missing[*]}" >&2
+    echo "Both binaries come from a single CMake build directory configured with" >&2
+    echo "-Dxrpld=ON -Dvalidator_keys=ON. Build them, then point BUILD_DIR at that" >&2
+    echo "directory." >&2
+    exit 1
+fi
+
+# Shipping validator-keys means shipping its notice, so treat it as required
+# rather than letting a package go out without the attribution.
+validator_keys_license="${BUILD_DIR}/validator-keys-LICENSE"
+if [[ ! -f "${validator_keys_license}" ]]; then
+    echo "build_pkg.sh: missing ${validator_keys_license}." >&2
+    echo "cmake/XrplValidatorKeys.cmake copies it out of the fetched" >&2
+    echo "validator-keys-tool source, so reconfigure with -Dvalidator_keys=ON." >&2
+    exit 1
+fi
+
+# The binary must also *run* here. Packaging happens in a vanilla distro
+# container, so this is what catches a binary still pointing at the Nix store's
+# ELF loader (see patch_nix_binary in cmake/PatchNixBinary.cmake); xrpld is
+# covered implicitly by the version query below.
+if ! "${validator_keys_binary}" --version >/dev/null; then
+    echo "build_pkg.sh: ${validator_keys_binary} exists but does not run here." >&2
     exit 1
 fi
 
@@ -150,7 +190,9 @@ stage_common() {
     local dest="$1"
     mkdir -p "${dest}"
 
-    cp "${BUILD_DIR}/xrpld" "${dest}/xrpld"
+    cp "${xrpld_binary}" "${dest}/xrpld"
+    cp "${validator_keys_binary}" "${dest}/validator-keys"
+    cp "${validator_keys_license}" "${dest}/validator-keys-LICENSE"
     cp "${SRC_DIR}/cfg/xrpld-example.cfg" "${dest}/xrpld.cfg"
     cp "${SRC_DIR}/cfg/validators-example.txt" "${dest}/validators.txt"
     cp "${SRC_DIR}/LICENSE.md" "${dest}/LICENSE.md"
@@ -164,7 +206,6 @@ stage_common() {
 
 build_rpm() {
     local topdir="${BUILD_DIR}/rpmbuild"
-    rm -rf "${topdir}"
     mkdir -p "${topdir}"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 
     cp "${SRC_DIR}/package/rpm/xrpld.spec" "${topdir}/SPECS/xrpld.spec"
@@ -180,7 +221,6 @@ build_rpm() {
 
 build_deb() {
     local staging="${BUILD_DIR}/debbuild/source"
-    rm -rf "${staging}"
     mkdir -p "${staging}"
 
     stage_common "${staging}"
@@ -191,25 +231,9 @@ build_deb() {
     cp "${staging}/xrpld.tmpfiles" "${staging}/debian/xrpld.tmpfiles"
     cp "${staging}/xrpld.logrotate" "${staging}/debian/xrpld.logrotate"
 
-    # Choose the Debian repository component for this package.
-    #   3.2.0 -> stable, *-b0[+metadata] -> develop,
-    #   bN/rcN pre-releases -> unstable.
-    local deb_component
-    if [[ -z "${pre_release}" ]]; then
-        deb_component="stable"
-    elif [[ "${pre_release}" =~ ^b0(\+.*)?$ ]]; then
-        deb_component="develop"
-    elif [[ "${pre_release}" =~ ^(b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
-        deb_component="unstable"
-    else
-        echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
-        echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2
-        exit 1
-    fi
-
     # Debian version is <upstream>[~<pre>]-<pkg release>.
     cat >"${staging}/debian/changelog" <<EOF
-xrpld (${pkg_version}-${PKG_RELEASE}) ${deb_component}; urgency=medium
+xrpld (${pkg_version}-${PKG_RELEASE}) ${PKG_CHANNEL}; urgency=medium
   * Release ${xrpld_version}.
 
  -- XRPL Foundation <contact@xrplf.org>  ${CHANGELOG_DATE}
@@ -220,5 +244,9 @@ EOF
     set -x
     (cd "${staging}" && dpkg-buildpackage -b --no-sign -d)
 }
+
+# Remove both build directories, because a package left from an earlier build
+# would otherwise be picked up and published alongside this one.
+rm -rf "${BUILD_DIR}/debbuild" "${BUILD_DIR}/rpmbuild"
 
 "build_${pkg_type}"
