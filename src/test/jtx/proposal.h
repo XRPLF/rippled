@@ -61,32 +61,15 @@ public:
 
 /**
  * @brief Check the ledger effects a TransactionProposalCreate must have,
- * whatever its outcome. Attach it to any create() submission:
+ * whatever its outcome: on tesSUCCESS a new proposal holding what was
+ * submitted, listed in the proposer's directory and paid for by its reserve;
+ * otherwise nothing moved. Nothing of the target's moves either way.
  *
  * @code
  * env(proposal::create(alice, payload, expiration), proposal::verify::create());
  * @endcode
  *
- * The transaction already names its proposer, target, ticket, expiration and
- * payload, so this takes no arguments and cannot come to disagree with the
- * transaction it is attached to. Every entry it could touch is read whole
- * beforehand, so what follows says that nothing moved rather than that the
- * fields we named did not.
- *
- * Whatever the result, nothing of the target's moves. On tesSUCCESS the entry is
- * a new one rather than an overwrite, the proposer's reserve grew by what that
- * payload costs, and the stored proposal is the one submitted — same owner, same
- * expiration, same payload whole, carrying nothing else and listed in the
- * proposer's directory. On any other result nothing moved, down to the last
- * field of a proposal that was already there. A test then states only what is
- * particular to its own case.
- *
- * Conditions run only once the result matched the expected TER, so a case
- * expecting a failure asserts that failure changed nothing, without having to
- * name the counts it left alone.
- *
- * This reads fields only a TransactionProposalCreate carries, so it throws
- * rather than quietly checking nothing if attached to another transaction.
+ * @throws std::logic_error if attached to another transaction type.
  */
 [[nodiscard]] inline Create
 create()
