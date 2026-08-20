@@ -340,9 +340,17 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
+        // Inbound Delegate objects sit in the authorized account's owner
+        // directory so AccountDelete can clean them up. They must not count
+        // toward kMaxDeletableDirEntries; a third party could otherwise fill
+        // the directory with inbound Delegations and permanently block
+        // AccountDelete. See https://github.com/XRPLF/rippled/issues/7691
+        bool const inboundDelegate = ctx.view.rules().enabled(fixDelegateAccountDelete) &&
+            nodeType == ltDELEGATE && (*sleItem)[sfAuthorize] == account;
+
         // We found a deletable directory entry.  Count it.  If we find too
         // many deletable directory entries then bail out.
-        if (++deletableDirEntryCount > kMaxDeletableDirEntries)
+        if (!inboundDelegate && ++deletableDirEntryCount > kMaxDeletableDirEntries)
             return tefTOO_BIG;
 
     } while (cdirNext(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));

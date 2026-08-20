@@ -784,6 +784,56 @@ class Delegate_test : public beast::unit_test::Suite
     }
 
     void
+    testInboundDelegateDoesNotBlockAccountDelete()
+    {
+        // Regression for https://github.com/XRPLF/rippled/issues/7691
+        // bob holds kMaxDeletableDirEntries of his own objects plus one inbound
+        // Delegate from alice. The inbound Delegate must not make AccountDelete
+        // return tefTOO_BIG.
+        testcase("inbound Delegates do not block AccountDelete");
+        using namespace jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000000), alice, bob, gw);
+        env.close();
+
+        std::string currency{"AAA"};
+        static constexpr int kOfferCount{1000};
+        for (int i{0}; i < kOfferCount; ++i)
+        {
+            env(offer(bob, gw[currency](1), XRP(1)));
+            ++currency[0];
+            if (currency[0] > 'Z')
+            {
+                currency[0] = 'A';
+                ++currency[1];
+            }
+            if (currency[1] > 'Z')
+            {
+                currency[1] = 'A';
+                ++currency[2];
+            }
+        }
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        for (std::uint32_t i = 0; i < 256; ++i)
+            env.close();
+
+        auto const deleteFee = drops(env.current()->fees().increment);
+        env(acctdelete(bob, gw), Fee(deleteFee));
+        env.close();
+
+        BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
+        BEAST_EXPECT(!env.closed()->exists(keylet::delegate(alice.id(), bob.id())));
+    }
+
+    void
     testDelegateTransaction()
     {
         testcase("test delegate transaction");
@@ -2908,6 +2958,7 @@ class Delegate_test : public beast::unit_test::Suite
         testFee();
         testSequence();
         testAccountDelete();
+        testInboundDelegateDoesNotBlockAccountDelete();
         testDelegateTransaction();
         testPaymentGranular(all);
         testTrustSetGranular();
