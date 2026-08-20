@@ -44,25 +44,26 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
 
 /**
- * Clamps `delta` (positive when crediting the vault, negative when debiting
- * it) to the largest magnitude that changes sfAssetsTotal by an exact
- * multiple of its own STAmount grid step, rounding in `mode`. The returned
- * delta has the same sign convention as `delta` (i.e. this is a magnitude
- * adjustment toward zero, never away from it). Applying the returned delta
- * to both sfAssetsTotal and any other field derived from the same raw amount
- * (e.g. sfAssetsAvailable) keeps them exactly in sync, since those fields'
- * scale is always at least as fine as sfAssetsTotal's.
+ * Rounds the magnitude of `delta` to the sfAssetsTotal STAmount scale and
+ * returns it as a non-negative STAmount. `delta` is positive when
+ * crediting the vault and negative when debiting it; only its sign is
+ * used to select the rounding direction. The caller adds the returned
+ * magnitude to sfAssetsTotal for credits, or subtracts it for debits, and
+ * applies it the same way to any related field (for example
+ * sfAssetsAvailable) so all rails stay in sync; the other fields' scale is
+ * at least as fine as sfAssetsTotal's.
  *
- * @param vault The vault SLE (mutable, since sfAssetsTotal is read through a
- *              non-const field proxy).
- * @param delta The signed amount by which sfAssetsTotal is about to change.
- * @param mode The rounding mode to apply when quantizing to sfAssetsTotal's
- *             scale.
+ * @param vault The vault SLE.
+ * @param delta The signed amount by which sfAssetsTotal will change; only
+ *              its sign selects the rounding direction. The magnitude is
+ *              what is quantized and returned.
+ * @param mode The rounding mode to apply when quantizing to the
+ *             sfAssetsTotal scale.
  *
- * @return The clamped delta.
+ * @return The rounded magnitude, always non-negative.
  */
 [[nodiscard]] STAmount
-clampToAssetsTotalScale(SLE::ref vault, STAmount const& delta, Number::RoundingMode mode);
+clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta, Number::RoundingMode mode);
 
 /**
  * Controls whether to truncate shares instead of rounding.
@@ -79,33 +80,30 @@ enum class TruncateShares : bool { No = false, Yes = true };
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 
 /**
- * Returns the effective total of assets backing outstanding shares for the
- * purposes of a withdrawal, i.e. sfAssetsTotal, discounted by sfLossUnrealized
- * unless waived. This is the numerator used by both withdraw conversion
- * helpers (assetsToSharesWithdraw and sharesToAssetsWithdraw) to compute the
- * share/asset exchange rate.
+ * Returns the assets backing outstanding shares for a withdrawal:
+ * sfAssetsTotal minus sfLossUnrealized, or sfAssetsTotal alone when the
+ * unrealized loss is waived. Used by assetsToSharesWithdraw and
+ * sharesToAssetsWithdraw as the numerator of the share/asset exchange rate.
  *
  * @param vault The vault SLE.
- * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
- *              loss.
+ * @param waive Whether to skip subtracting the unrealized loss.
  */
 [[nodiscard]] Number
 assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive);
 
 /**
- * Returns whether debiting `amount` from `total` — the current value of a
- * vault's sfAssetsTotal or sfAssetsAvailable field — would canonicalize back
- * to the exact same STAmount value it started at. This happens when a
- * genuinely non-zero debit is dust relative to a `total` large enough to
- * exceed STAmount's significant-digit precision: the shares still move, but
- * the stored total doesn't change, which otherwise trips the ValidVault
- * invariant after the fact instead of failing cleanly upfront.
+ * Returns true if debiting `amount` from `total` (the current value of a
+ * vault's sfAssetsTotal or sfAssetsAvailable) would canonicalize to the
+ * same STAmount value. This happens when `amount` is non-zero but too small
+ * to change the stored total at STAmount's precision. Shares would still
+ * move, so the ValidVault invariant would fail after apply; callers use
+ * this to reject the transaction upfront instead.
  *
- * @param asset The vault's underlying asset, used to canonicalize both sides
- *              the same way the ledger will when the field is stored.
+ * @param asset The vault's underlying asset, used to canonicalize both
+ *              sides the same way the ledger will when the field is stored.
  * @param total The field's current value.
- * @param amount The amount to debit. A value of zero always returns false;
- *               that case is rejected separately and unconditionally.
+ * @param amount The amount to debit. Zero always returns false; that case
+ *               is rejected separately.
  */
 [[nodiscard]] bool
 debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount);

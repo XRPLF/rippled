@@ -208,7 +208,7 @@ TER
 VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
-    bool const fixEnabled = view().rules().enabled(fixCleanup3_4_0);
+    bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -285,6 +285,8 @@ VaultDeposit::doApply()
     }
 
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
+
+    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
         // Compute exchange before transferring any amounts.
@@ -294,14 +296,20 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
+
         if (sharesCreated == beast::kZero)
             return tecPRECISION_LOSS;
 
+        // Convert shares back to assets so the depositor is debited for the amount actually minted.
+        // The truncated share count is worth <= amount; without this the difference would be
+        // credited to the vault for free.
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
+        // The round-trip must never return more than the original amount. If it does, a conversion
+        // helper is broken. Reject rather than overcharge the depositor.
         if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
@@ -311,11 +319,16 @@ VaultDeposit::doApply()
         }
         assetsDeposited = *maybeAssets;
 
-        if (fixEnabled)
+        // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
+        // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
+        // representable delta.
+        if (fix340Enabled)
         {
+            // Round Downward so the vault is credited by at most what the depositor paid.
             assetsDeposited =
                 clampToAssetsTotalScale(vault, assetsDeposited, Number::RoundingMode::Downward);
 
+            // Return tecPRECISION_LOSS instead of minting shares against a zero credit.
             if (assetsDeposited <= beast::kZero)
             {
                 JLOG(j_.warn()) << "VaultDeposit: deposit rounds to zero at "
@@ -323,10 +336,14 @@ VaultDeposit::doApply()
                 return tecPRECISION_LOSS;
             }
 
+            // The pre-clamp share count would over-issue by the trimmed ULP and give the depositor
+            // more value than they credited.
             auto const maybeReShares = assetsToSharesDeposit(vault, sleIssuance, assetsDeposited);
             if (!maybeReShares)
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
             sharesCreated = *maybeReShares;
+
             if (sharesCreated == beast::kZero)
                 return tecPRECISION_LOSS;
         }

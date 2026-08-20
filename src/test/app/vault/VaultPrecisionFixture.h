@@ -36,7 +36,7 @@
 
 namespace xrpl::test {
 
-// Shared fixture for VaultInvariantPrecision_test (PR 1) and
+// Shared fixture for VaultInvariantPrecision_test and
 // VaultTransactorPrecision_test (PR 2).  Both PRs land this file identically;
 // whichever merges second will need to reconcile this copy at rebase time.
 //

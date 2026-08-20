@@ -68,14 +68,18 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 }
 
 [[nodiscard]] STAmount
-clampToAssetsTotalScale(SLE::ref vault, STAmount const& delta, Number::RoundingMode mode)
+clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta, Number::RoundingMode mode)
 {
-    Asset const asset = *vault->at(sfAsset);
-    STAmount const totalBefore{asset, *vault->at(sfAssetsTotal)};
-    STAmount const totalAfter = [&]() {
-        NumberRoundModeGuard const mg(mode);
-        return STAmount{asset, *vault->at(sfAssetsTotal) + delta};
-    }();
+    XRPL_ASSERT(
+        delta.asset() == vault->at(sfAsset),
+        "xrpl::clampToAssetsTotalScale : delta and vault asset match");
+
+    Asset const asset = vault->at(sfAsset);
+    // Canonicalize both endpoints under the same rounding mode so the subtraction
+    // reflects only the effect of `delta`, never a rounding difference between them.
+    NumberRoundModeGuard const mg(mode);
+    STAmount const totalBefore{asset, vault->at(sfAssetsTotal)};
+    STAmount const totalAfter{asset, vault->at(sfAssetsTotal) + delta};
     return delta.negative() ? totalBefore - totalAfter : totalAfter - totalBefore;
 }
 

@@ -1,5 +1,5 @@
 #include <test/app/lending/LoanTestBase.h>
-#include <test/app/lending/VaultPrecisionFixture.h>
+#include <test/app/vault/VaultPrecisionFixture.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
