@@ -58,7 +58,7 @@ def create_transaction_parser():
 # include/xrpl/protocol/TxSettings.h. A transaction's settings blob only names
 # the members that differ from these.
 SETTING_DEFAULTS = {
-    "delegable": "Delegation::Delegable",
+    "delegable": "Delegation::NotDelegable",
     "amendment": "uint256{}",
     "privileges": "Privilege::NoPriv",
 }

@@ -74,7 +74,7 @@ struct TxSettings
     /**
      * Whether an account may delegate this transaction to another account.
      */
-    Delegation delegable{Delegation::Delegable};
+    Delegation delegable{Delegation::NotDelegable};
 
     /**
      * The amendment gating this transaction, or uint256{} if always available.
