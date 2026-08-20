@@ -23,10 +23,7 @@ set_target_properties(
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
-# Lets the wasm tests write their modules as WebAssembly text. Test-only by construction:
-# the assembler lives in a crate nothing in libxrpl or xrpld links (see crates/CMakeLists).
 target_link_libraries(xrpl_tests PRIVATE xrpl_wasm_testkit_cxxbridge)
-target_link_libraries(xrpl_tests PRIVATE rs_hello_world_cxxbridge)
 add_dependencies(xrpl_tests xrpl_crates)
 
 # One source subdirectory per module. Network unit tests are currently not

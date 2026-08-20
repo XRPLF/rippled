@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "hello_world",
     "xrpl-wasm-vm-ffi",
     "xrpl-wasm-vm",
     "xrpl-wasm-testkit",
