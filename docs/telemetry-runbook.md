@@ -2022,10 +2022,10 @@ shaded band covers exactly the interval over which the load was applied.
 
 Every dashboard carries two tag-matched annotation layers, one per load driver:
 
-| Layer                | Tags                  | Color  |
-| -------------------- | --------------------- | ------ |
-| `Perf Runs (JMeter)` | `perf-iac` + `jmeter` | violet |
-| `Perf Runs (Locust)` | `perf-iac` + `locust` | aqua   |
+| Layer                | Tags                  | Color |
+| -------------------- | --------------------- | ----- |
+| `Perf Runs (JMeter)` | `perf-iac` + `jmeter` | grey  |
+| `Perf Runs (Locust)` | `perf-iac` + `locust` | aqua  |
 
 Both layers set `matchAny: false`, so a region is drawn only if it carries
 **both** of the layer's tags — the tag list is an AND, not an OR. Grafana tag
@@ -2055,7 +2055,9 @@ Two rendering limits are worth knowing. Grafana draws annotations only on time
 series, state timeline and candlestick panels, so on a board of mostly stats and
 gauges most panels show no band. And the shaded fill is rendered at 10% opacity,
 so the two drivers' colours are near-identical inside the band; the region's two
-full-colour dashed edges and the toolbar toggles are what tell them apart.
+full-colour dashed edges and the toolbar toggles are what tell them apart. The
+JMeter grey sits below the 3:1 contrast floor on the dark theme, so its edges
+read faint there; the Locust aqua clears it in both themes.
 
 ### Who owns which attribute
 

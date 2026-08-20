@@ -34,7 +34,7 @@
         },
         "enable": true,
         "hide": false,
-        "iconColor": "rgb(144, 133, 233)",
+        "iconColor": "rgb(70, 70, 70)",
         "name": "Perf Runs (JMeter)",
         "target": {
           "limit": 100,
