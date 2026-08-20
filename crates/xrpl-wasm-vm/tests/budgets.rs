@@ -26,25 +26,25 @@ fn fuel_for(body: &str, parts: &[&str], host: &FakeHost) -> u64 {
 /// table is consensus input.
 const EMPTY_MODULE_FUEL: u64 = 30;
 
-/// wasmi's own fuel for a host call whose operands are all constants under 64: 14
-/// per `*.const`, plus 1 for the call. Our gas sits on top.
+/// wasmi's own fuel for a host call whose operands are all small constants: 15 per
+/// `*.const`, and the `call` itself is free. Our gas sits on top.
 ///
-/// The formula holds only under 64, because wasmi widens a constant's encoding
-/// above that, each tier costing 7 more. Every call in [`call_for`] keeps its
-/// operands small for that reason; one with a larger constant fails here by a
-/// multiple of 7.
+/// This holds only while every operand is a small constant. wasmi widens a
+/// constant's encoding past a threshold, and a wider const costs more, so a call
+/// built with a large constant fails here. Every call in [`call_for`] keeps its
+/// operands small for that reason.
 fn wasmi_call_fuel(small_const_operands: u64) -> u64 {
-    14 * small_const_operands + 1
+    15 * small_const_operands
 }
 
 /// What wasmi charges on top of that for a call to a function with no result —
 /// `trace`'s shape, and nothing else in the ABI. Per call, not per module. Measured
 /// and pinned like the figures above.
-const WASMI_NO_RESULT_FUEL: u64 = 14;
+const WASMI_NO_RESULT_FUEL: u64 = 15;
 
 /// wasmi's fuel for one `(drop …)`, which is how a module makes more than one call
 /// and keeps only the last result. Pinned like the two above.
-const WASMI_DROP_FUEL: u64 = 21;
+const WASMI_DROP_FUEL: u64 = 22;
 
 /// The wasm a test needs in order to call one host function: the `(import …)`
 /// declaration, a call with small-constant operands, and how many it pushes.
@@ -540,9 +540,11 @@ fn an_endless_loop_is_stopped_by_gas() {
         matches!(failure.error, RunError::OutOfGas),
         "expected the meter to stop it, got: {failure}"
     );
+    // wasmi traps the back-edge it cannot pay for, leaving the last unit unspent.
     assert_eq!(
-        failure.fuel_used, GAS,
-        "a runaway guest burns the whole limit"
+        failure.fuel_used,
+        GAS - 1,
+        "a runaway guest burns all but the last unit of the limit"
     );
 }
 
@@ -783,4 +785,65 @@ fn only_the_output_half_of_a_read_write_spends_the_budget() {
         outcome.result, HASH_LEN as i32,
         "only the digests are charged, and they fit"
     );
+}
+
+// cspell:disable
+/// Measures each pinned fuel figure straight from wasmi and asserts the constant
+/// still matches. This is what fails first when a wasmi upgrade shifts the fuel
+/// table, and it prints every measured number so the constants can be re-derived:
+///
+///     cargo test -p xrpl-wasm-vm --test budgets probe_fuel -- --exact --nocapture
+///
+/// The behavioural tests above build totals out of these constants; this one ties
+/// each constant back to the one measurement that defines it.
+// cspell:enable
+#[test]
+fn probe_fuel() {
+    let h = FakeHost::new().answering_field(1, Answer::bytes([0xaa]));
+
+    // EMPTY_MODULE_FUEL: a module that only returns a constant.
+    let empty = fuel_for("(i32.const 0)", &[ONE_PAGE], &h);
+    eprintln!("EMPTY_MODULE_FUEL = {empty}");
+    assert_eq!(empty, EMPTY_MODULE_FUEL, "EMPTY_MODULE_FUEL");
+
+    // wasmi_call_fuel(operands) = fuel(1 call) - empty - gas, for every op. Asserting
+    // it against the formula across all operand counts pins both slope and intercept.
+    eprintln!("--- wasmi_call_fuel by operand count ---");
+    for &op in HostFunctionSpec::ALL {
+        let c = call_for(op);
+        // A no-result op's body ends in a trailing constant, not the call's result,
+        // so its total carries an extra push; it is pinned in the NO_RESULT section.
+        if !c.yields {
+            continue;
+        }
+        let one = fuel_for(&c.body(1), &[c.import, ONE_PAGE], &h);
+        let measured = one - empty - op.gas();
+        eprintln!(
+            "operands={:2}  wasmi_call_fuel={measured:3}  {}",
+            c.operands, c.call
+        );
+        assert_eq!(
+            measured,
+            wasmi_call_fuel(c.operands),
+            "wasmi_call_fuel({}) for {}",
+            c.operands,
+            c.call
+        );
+    }
+
+    // WASMI_DROP_FUEL: a second yielding call adds one call plus one drop.
+    let g = call_for(HostFunctionSpec::GetLedgerSqn);
+    let g1 = fuel_for(&g.body(1), &[g.import, ONE_PAGE], &h);
+    let g2 = fuel_for(&g.body(2), &[g.import, ONE_PAGE], &h);
+    let drop = (g2 - g1) - (wasmi_call_fuel(g.operands) + HostFunctionSpec::GetLedgerSqn.gas());
+    eprintln!("WASMI_DROP_FUEL = {drop}");
+    assert_eq!(drop, WASMI_DROP_FUEL, "WASMI_DROP_FUEL");
+
+    // WASMI_NO_RESULT_FUEL: trace is the only no-result op; its module ends in a
+    // trailing constant instead of the call's result.
+    let t = call_for(HostFunctionSpec::Trace);
+    let t1 = fuel_for(&t.body(1), &[t.import, ONE_PAGE], &h);
+    let no_result = t1 - empty - wasmi_call_fuel(t.operands) - HostFunctionSpec::Trace.gas();
+    eprintln!("WASMI_NO_RESULT_FUEL = {no_result}");
+    assert_eq!(no_result, WASMI_NO_RESULT_FUEL, "WASMI_NO_RESULT_FUEL");
 }

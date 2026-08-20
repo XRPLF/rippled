@@ -368,18 +368,14 @@ fn an_unused_import_is_still_linked() {
 // The start section
 // ---------------------------------------------------------------------------
 
-/// A start section runs guest code during instantiation, before the entry point
-/// is even looked up, and `set_fuel` and the memory limiter are both installed by
-/// then — so it is metered like any other guest code, and a run it stops is
-/// charged for what it burned.
-///
-/// Reported as a **trap**, not as a module that would not instantiate: a trap is the
-/// guest's fault wherever it happens, and the stage a run stopped at is not what the
-/// caller maps. Filing it under the stage would put a contract's own defect among the
-/// faults a caller treats as the node's, and charge nothing for the instructions the
-/// contract burned reaching it.
+/// The engine disallows start sections, so a module carrying one is rejected at
+/// compile and never runs. No guest code executes ahead of the entry point, whatever
+/// that code would have done — trap, loop, or call the host — so nothing is metered
+/// and no fuel is burned. Screening catches the same module up front
+/// (`preflight::a_start_section_is_refused_by_screening`); this pins that `run`
+/// refuses it the same way rather than instantiating it.
 #[test]
-fn a_trapping_start_section_is_a_guest_trap_and_is_charged() {
+fn a_start_section_module_is_rejected_at_compile() {
     let host = FakeHost::new();
 
     let wat = format!(
@@ -390,12 +386,12 @@ fn a_trapping_start_section_is_a_guest_trap_and_is_charged() {
     );
     let failure = assert_stage!(
         run_with_gas(&wat, PLENTY_OF_GAS, &host)
-            .expect_err("a start section that traps must not complete the run"),
-        RunError::Trap(_)
+            .expect_err("a module with a start section must not run"),
+        RunError::Compile(_)
     );
-    assert!(
-        failure.fuel_used > 0,
-        "the start section's instructions are metered: {failure}"
+    assert_eq!(
+        failure.fuel_used, 0,
+        "no guest code runs, so nothing is charged: {failure}"
     );
 }
 
@@ -422,62 +418,6 @@ fn instantiation_failure_is_a_module_the_engine_will_not_accept() {
         "(i32.const 0)",
     );
     assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
-}
-
-/// A start section that runs out of gas is reported as out of gas, not as a module
-/// that would not instantiate. The stage a run stopped at is not what the caller
-/// maps — the reason is — and gas exhaustion is one outcome wherever the guest
-/// reaches it.
-#[test]
-fn a_start_section_that_exhausts_gas_is_out_of_gas_not_an_instantiation_failure() {
-    const GAS: u64 = 10_000;
-
-    let host = FakeHost::new();
-    let wat = format!(
-        r#"(module {ONE_PAGE}
-             (func $init (loop $l (br $l)))
-             (start $init)
-             (func (export "finish") (result i32) (i32.const 0)))"#
-    );
-
-    let failure = assert_stage!(
-        run_with_gas(&wat, GAS, &host).expect_err("an endless start section must not instantiate"),
-        RunError::OutOfGas
-    );
-    assert_eq!(
-        failure.fuel_used, GAS,
-        "a runaway start section burns the whole limit"
-    );
-}
-
-/// A start section cannot make a host call that needs guest memory, even in a
-/// module that exports one: the memory is resolved from the *instance's* exports,
-/// and instantiation is what produces the instance, so a call made while it is
-/// still running has no memory to work in and ends the run.
-///
-/// Not a choice: `Module::instantiate` is `pub(crate)` in wasmi, so instantiation
-/// cannot be split from the start section to resolve the memory in between.
-#[test]
-fn a_start_section_cannot_make_a_host_call() {
-    let host = FakeHost::new();
-
-    let wat = format!(
-        r#"(module {ldgr_index} {ONE_PAGE}
-             (func $init (drop (call $ldgr_index (i32.const 0) (i32.const 4))))
-             (start $init)
-             (func (export "finish") (result i32) (i32.const 0)))"#,
-        ldgr_index = import::LDGR_INDEX
-    );
-
-    let failure = assert_stage!(
-        run_with_gas(&wat, PLENTY_OF_GAS, &host)
-            .expect_err("a host call from a start section must not be served"),
-        RunError::NoMemory
-    );
-    assert!(
-        failure.fuel_used > 0,
-        "the start section is metered up to the refused call: {failure}"
-    );
 }
 
 // ---------------------------------------------------------------------------

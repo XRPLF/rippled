@@ -250,7 +250,7 @@ fn build_wasm_engine() -> Engine {
     config.wasm_custom_page_sizes(false);
     config.wasm_memory64(false);
     config.wasm_wide_arithmetic(false);
-    // TODO: enable option to reject wasm code containing start section after wasmi 2.0 release
+    config.allow_start_fn(false);
     Engine::new(&config)
 }
 
