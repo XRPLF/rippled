@@ -490,7 +490,7 @@ TEST(NodeStoreDatabase, import_accumulates_store_duration)
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
 
-    beast::TempDir const srcDir;
+    TempDir const srcDir;
     Section srcParams;
     srcParams.set("type", "nudb");
     srcParams.set("path", srcDir.path());
@@ -504,7 +504,7 @@ TEST(NodeStoreDatabase, import_accumulates_store_duration)
     storeBatch(*src, batch);
     ASSERT_EQ(src->getStoreCount(), batch.size());
 
-    beast::TempDir const destDir;
+    TempDir const destDir;
     Section destParams;
     destParams.set("type", "nudb");
     destParams.set("path", destDir.path());
