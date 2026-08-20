@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
@@ -13,6 +14,7 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -21,6 +23,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -90,7 +93,7 @@ private:
         env(loanATx);
         env.close();
 
-        auto const loanAKeylet = keylet::loan(brokerKeylet.key, 1);
+        auto const loanAKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
 
         // Create Loan B
         auto loanBTx = env.jt(
@@ -104,7 +107,7 @@ private:
         env(loanBTx);
         env.close();
 
-        auto const loanBKeylet = keylet::loan(brokerKeylet.key, 2);
+        auto const loanBKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
 
         auto loanASle = env.le(loanAKeylet);
         if (!BEAST_EXPECT(loanASle))
@@ -224,7 +227,8 @@ private:
         if (!BEAST_EXPECT(sleBroker))
             return;
 
-        auto const loanKeylet = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
 
         env(set(borrower, broker.brokerID, kPrincipalAmount),
             Sig(sfCounterpartySignature, lender),
@@ -324,7 +328,7 @@ private:
 
             BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == iou(1'000));
 
-            auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+            auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
             env(set(borrower, brokerInfo.brokerID, 10'000),
                 Sig(sfCounterpartySignature, broker),
@@ -367,6 +371,186 @@ private:
     }
 
     void
+    testLoanDefaultBypassesFreeze()
+    {
+        testcase("LoanManage: default bypasses asset freeze");
+        using namespace jtx;
+        using namespace loan;
+        Account const lender{"lender"};
+        Account const issuer{"issuer"};
+        Account const borrower{"borrower"};
+        auto const iou = issuer["IOU"];
+
+        Env env(*this);
+        env.fund(XRP(1'000), lender, issuer, borrower);
+        env(trust(lender, iou(10'000'000)));
+        env(pay(issuer, lender, iou(5'000'000)));
+        BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+        STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
+
+        env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+            Sig(sfCounterpartySignature, lender),
+            loanSetFee);
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
+
+        using tp = NetClock::time_point;
+        using d = NetClock::duration;
+
+        // Get past the grace period so the loan is defaultable.
+        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        {
+            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+        }
+
+        // Global freeze trips the post-apply TransfersNotFrozen invariant.
+        env(fset(issuer, asfGlobalFreeze));
+        env.close();
+
+        // Pre-fixCleanup3_4_0, the invariant blocks the default.
+        env.disableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecINVARIANT_FAILED));
+        env.close();
+
+        // Per XLS-0066, a default must succeed despite the freeze.
+        env.enableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+    }
+
+    // A default must bypass an MPT global lock the same way it bypasses IOU
+    // freeze, including when the loan was already impaired beforehand
+    // (a different defaultLoan() accounting branch than the un-impaired
+    // path exercised above) and after an ordinary LoanPay was correctly
+    // blocked by the same lock.
+    void
+    testLoanDefaultBypassesMptLockAfterImpair()
+    {
+        testcase("LoanManage: default bypasses MPT lock after impairment");
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        Env env(*this);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mptt(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {lender, borrower},
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
+        PrettyAsset const asset = mptt.issuanceID();
+        env(pay(issuer, lender, asset(10'000'000)));
+        env.close();
+
+        BrokerInfo const brokerInfo{createVaultAndBroker(env, asset, lender)};
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+        STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
+        env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+            Sig(sfCounterpartySignature, lender),
+            loanSetFee);
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
+
+        // Realize a loss via impairment before locking.
+        env(manage(lender, loanKeylet.key, tfLoanImpair));
+        env.close();
+
+        // Issuer applies a global lock.
+        mptt.set({.account = issuer, .flags = tfMPTLock});
+        env.close();
+
+        // An ordinary payment is correctly blocked by the lock.
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), Ter(tecLOCKED));
+        env.close();
+
+        using tp = NetClock::time_point;
+        using d = NetClock::duration;
+        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        {
+            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+        }
+
+        // Pre-fixCleanup3_4_0 the ValidMPTTransfer invariant blocks the
+        // default, mirroring the IOU path above.
+        env.disableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecINVARIANT_FAILED));
+        env.close();
+
+        // The default itself must succeed despite the lock.
+        env.enableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+    }
+
+    // The exemption must hold for an individually deep-frozen trust line, not
+    // just a global freeze: deep freeze is what the original report ran into,
+    // and it takes a different path through validateFrozenState (the frozen
+    // flag comes off the line rather than off the issuer).
+    void
+    testLoanDefaultBypassesDeepFreeze()
+    {
+        testcase("LoanManage: default bypasses asset deep freeze");
+        using namespace jtx;
+        using namespace loan;
+        Account const lender{"lender"};
+        Account const issuer{"issuer"};
+        Account const borrower{"borrower"};
+        auto const iou = issuer["IOU"];
+
+        Env env(*this);
+        env.fund(XRP(1'000), lender, issuer, borrower);
+        env(trust(lender, iou(10'000'000)));
+        env(pay(issuer, lender, iou(5'000'000)));
+        BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+        STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
+
+        env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+            Sig(sfCounterpartySignature, lender),
+            loanSetFee);
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
+
+        using tp = NetClock::time_point;
+        using d = NetClock::duration;
+
+        // Get past the grace period so the loan is defaultable.
+        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        {
+            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+        }
+
+        // The default moves First-Loss Capital off the broker pseudo-account,
+        // so that is the line to freeze.
+        auto const brokerSle = env.le(brokerInfo.brokerKeylet());
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        Account const brokerPseudo{"brokerPseudo", brokerSle->at(sfAccount)};
+
+        env(trust(issuer, brokerPseudo["IOU"](0), tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+
+        // Pre-fixCleanup3_4_0, the invariant blocks the default.
+        env.disableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecINVARIANT_FAILED));
+        env.close();
+
+        // Per XLS-0066, a default must succeed despite the deep freeze.
+        env.enableFeature(fixCleanup3_4_0);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+    }
+
+    void
     testLoanPayBrokerOwnerMissingTrustline(FeatureBitset features)
     {
         testcase << "LoanPay Broker Owner Missing Trustline (PoC)";
@@ -388,7 +572,7 @@ private:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, iou, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(iou(100).value()),
@@ -468,7 +652,7 @@ private:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(mpt(100).value()),
@@ -567,7 +751,7 @@ private:
         // Create vault and broker
         auto const brokerInfo = createVaultAndBroker(env, mpt, broker);
         // Create a loan first (this creates debt)
-        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        auto const keylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
             kLoanServiceFee(mpt(100).value()),
@@ -692,6 +876,9 @@ private:
     runAmendmentIndependent()
     {
         testServiceFeeOnBrokerDeepFreeze();
+        testLoanDefaultBypassesFreeze();
+        testLoanDefaultBypassesDeepFreeze();
+        testLoanDefaultBypassesMptLockAfterImpair();
     }
 
     // Tests run under each entry in amendmentCombinations().

@@ -25,12 +25,14 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -76,7 +78,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         for (uint32_t i = 0; i < tokenCancelCount; ++i)
         {
             // Create sell offer
-            offerIndexes.push_back(keylet::nftokenOffer(owner, env.seq(owner)).key);
+            offerIndexes.push_back(
+                keylet::nftokenOffer(owner, SeqProxy::rawSequence(env.seq(owner))).key);
             env(token::createOffer(owner, nftokenID, drops(1)), Txflags(tfSellNFToken));
             env.close();
         }
@@ -237,7 +240,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 // We do the same work on alice and minter, so make a lambda.
                 auto xferNFT = [&env, &becky](AcctStat& acct, auto& iter) {
                     uint256 const offerIndex =
-                        keylet::nftokenOffer(acct.acct, env.seq(acct.acct)).key;
+                        keylet::nftokenOffer(acct.acct, SeqProxy::rawSequence(env.seq(acct.acct)))
+                            .key;
                     env(token::createOffer(acct, *iter, XRP(0)), Txflags(tfSellNFToken));
                     env.close();
                     env(token::acceptSellOffer(becky, offerIndex));
@@ -791,7 +795,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 TER terActual = tesSUCCESS;
                 for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
                 {
-                    terActual = ac.checkInvariants(terActual, XRPAmount{});
+                    terActual = xrpl::checkInvariants(ac, terActual, XRPAmount{});
                     BEAST_EXPECT(terExpect == terActual);
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
@@ -827,7 +831,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 TER terActual = tesSUCCESS;
                 for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
                 {
-                    terActual = ac.checkInvariants(terActual, XRPAmount{});
+                    terActual = xrpl::checkInvariants(ac, terActual, XRPAmount{});
                     BEAST_EXPECT(terExpect == terActual);
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
@@ -871,7 +875,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             }
 
             // Becky creates a buy offer
-            uint256 const beckyOfferIndex = keylet::nftokenOffer(becky, env.seq(becky)).key;
+            uint256 const beckyOfferIndex =
+                keylet::nftokenOffer(becky, SeqProxy::rawSequence(env.seq(becky))).key;
             env(token::createOffer(becky, nftokenID, drops(1)), token::Owner(alice));
             env.close();
 
@@ -1046,7 +1051,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 env.close();
 
                 // Minter creates an offer for the NFToken.
-                uint256 const minterOfferIndex = keylet::nftokenOffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex =
+                    keylet::nftokenOffer(minter, SeqProxy::rawSequence(env.seq(minter))).key;
                 env(token::createOffer(minter, nfts.back(), XRP(0)), Txflags(tfSellNFToken));
                 env.close();
 
@@ -1117,7 +1123,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             nfts.pop_back();
 
             // alice creates an offer for the NFToken.
-            uint256 const aliceOfferIndex = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, last32NFTs.back(), XRP(0)), Txflags(tfSellNFToken));
             env.close();
 
@@ -1151,7 +1158,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         for (uint256 const nftID : last32NFTs)
         {
             // minter creates an offer for the NFToken.
-            uint256 const minterOfferIndex = keylet::nftokenOffer(minter, env.seq(minter)).key;
+            uint256 const minterOfferIndex =
+                keylet::nftokenOffer(minter, SeqProxy::rawSequence(env.seq(minter))).key;
             env(token::createOffer(minter, nftID, XRP(0)), Txflags(tfSellNFToken));
             env.close();
 
