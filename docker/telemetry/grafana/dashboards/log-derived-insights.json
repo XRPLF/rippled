@@ -14,7 +14,54 @@
   "uid": "log-derived-insights",
   "refresh": "60s",
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(144, 133, 233)",
+        "name": "Perf Runs (JMeter)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "jmeter"],
+          "type": "tags"
+        },
+        "type": "tags"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(25, 158, 112)",
+        "name": "Perf Runs (Locust)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "locust"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "templating": {
     "list": [
