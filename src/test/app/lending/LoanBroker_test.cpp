@@ -7,6 +7,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -2534,6 +2535,132 @@ class LoanBroker_test : public beast::unit_test::Suite
         testRIPD4274MPT();
     }
 
+    void
+    testCoverWithdrawCredentialDepositPreauth(FeatureBitset features)
+    {
+        testcase(
+            std::string{"CoverWithdraw with credential-based deposit preauth "} +
+            (features[fixCleanup3_4_0] ? "post-fix" : "pre-fix"));
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        Env env(*this, features);
+
+        Account const broker{"broker"};
+        Account const dest{"dest"};
+        Account const credIssuer{"credIssuer"};
+        char const credType[] = "abcde";
+
+        env.fund(XRP(10'000), broker, dest, credIssuer);
+        env(fset(dest, asfDepositAuth));
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+
+        Vault const vault(env);
+        auto const [vaultTx, vaultKeylet] = vault.create({.owner = broker, .asset = asset});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit({.depositor = broker, .id = vaultKeylet.key, .amount = asset(1'000)}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanBroker(broker.id(), SeqProxy::rawSequence(env.seq(broker)));
+        env(loan_broker::set(broker, vaultKeylet.key));
+        env.close();
+
+        env(loan_broker::coverDeposit(broker, brokerKeylet.key, asset(500)));
+        env.close();
+
+        auto coverWithdrawToDest = [&]() {
+            return loan_broker::coverWithdraw(broker, brokerKeylet.key, asset(10));
+        };
+
+        // Without any preauth, coverWithdraw to dest fails
+        env(coverWithdrawToDest(), loan_broker::kDestination(dest), Ter{tecNO_PERMISSION});
+        env.close();
+
+        // Issue and accept a credential for the broker (with expiration)
+        auto jv = credentials::create(broker, credIssuer, credType);
+        std::uint32_t const expiration =
+            env.current()->header().parentCloseTime.time_since_epoch().count() + 100;
+        jv[sfExpiration.jsonName] = expiration;
+        env(jv);
+        env(credentials::accept(broker, credIssuer, credType));
+        env.close();
+
+        auto const credKeylet = credentials::keylet(broker, credIssuer, credType);
+        auto const credIdx =
+            credentials::ledgerEntry(env, broker, credIssuer, credType)[jss::result][jss::index]
+                .asString();
+
+        // dest authorizes deposits from holders of credentials issued by credIssuer
+        env(deposit::authCredentials(dest, {{.issuer = credIssuer, .credType = credType}}));
+        env.close();
+
+        // Without supplying credentials, still fails
+        env(coverWithdrawToDest(), loan_broker::kDestination(dest), Ter{tecNO_PERMISSION});
+        env.close();
+
+        if (!fixEnabled)
+        {
+            // Pre-fix: sfCredentialIDs in LoanBrokerCoverWithdraw is disabled
+            env(coverWithdrawToDest(),
+                loan_broker::kDestination(dest),
+                credentials::Ids({credIdx}),
+                Ter{temDISABLED});
+            env.close();
+            return;
+        }
+
+        // With credentials, succeeds
+        env(coverWithdrawToDest(), loan_broker::kDestination(dest), credentials::Ids({credIdx}));
+        env.close();
+
+        // Bad credential id is rejected
+        std::string const invalidIdx =
+            "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E01E034";
+        env(coverWithdrawToDest(),
+            loan_broker::kDestination(dest),
+            credentials::Ids({invalidIdx}),
+            Ter{tecBAD_CREDENTIALS});
+        env.close();
+
+        // Malformed credential array (duplicates) is rejected by checkFields
+        env(coverWithdrawToDest(),
+            loan_broker::kDestination(dest),
+            credentials::Ids({credIdx, credIdx}),
+            Ter{temMALFORMED});
+        env.close();
+
+        // Valid credential not authorized by dest hits authorizedDepositPreauth error path
+        char const credType2[] = "fghij";
+        env(credentials::create(broker, credIssuer, credType2));
+        env(credentials::accept(broker, credIssuer, credType2));
+        env.close();
+        auto const credIdx2 =
+            credentials::ledgerEntry(env, broker, credIssuer, credType2)[jss::result][jss::index]
+                .asString();
+        env(coverWithdrawToDest(),
+            loan_broker::kDestination(dest),
+            credentials::Ids({credIdx2}),
+            Ter{tecNO_PERMISSION});
+        env.close();
+
+        // Advance time past expiration: credentials yield tecEXPIRED and are deleted
+        env.close(150s);
+        BEAST_EXPECT(env.le(credKeylet));
+        env(coverWithdrawToDest(),
+            loan_broker::kDestination(dest),
+            credentials::Ids({credIdx}),
+            Ter{tecEXPIRED});
+        env.close();
+        BEAST_EXPECT(!env.le(credKeylet));
+    }
+
     // Exercises canApplyToBrokerCover (fixCleanup3_2_0): a deposit, withdraw,
     // or clawback whose amount rounds to zero at sfCoverAvailable's precision
     // scale must be rejected with tecPRECISION_LOSS once the amendment is on,
@@ -2893,6 +3020,9 @@ public:
         testAmB06VaultFreezeCheckMissing();
 
         testRIPD4274();
+
+        testCoverWithdrawCredentialDepositPreauth(all_ - fixCleanup3_4_0);
+        testCoverWithdrawCredentialDepositPreauth(all_);
 
         testLoanBrokerDeleteLockedMPT(all_);
         testLoanBrokerDeleteLockedMPT(all_ - fixCleanup3_2_0);

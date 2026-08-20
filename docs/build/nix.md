@@ -128,6 +128,12 @@ Coverage builds (`-Dcoverage=ON`) work in the `gcc` shell (and `gcc-plain` on Li
 each ships a `gcov` matching its compiler, since Nix's cc-wrapper does not expose one.
 The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
 
+Builds of the Rust crates (`-Drust=ON`) also work out of the box: every shell
+provides the Rust toolchain pinned in
+[`rust-toolchain.toml`](../../rust-toolchain.toml) (see
+[Rust](./environment.md#rust)), plus the `cargo-audit`, `cargo-llvm-cov` and
+`cargo-nextest` plugins.
+
 ## Conan configuration
 
 The shell runs [`conan/init.sh`](../../conan/init.sh) on entry, so

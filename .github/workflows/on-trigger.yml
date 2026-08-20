@@ -24,6 +24,7 @@ on:
       - ".github/workflows/reusable-check-autogen.yml"
       - ".github/workflows/reusable-clang-tidy.yml"
       - ".github/workflows/reusable-package.yml"
+      - ".github/workflows/reusable-rust.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
       - ".github/workflows/reusable-test.yml"
       - ".github/workflows/reusable-upload-recipe.yml"
@@ -35,6 +36,7 @@ on:
       - "cfg/**"
       - "cmake/**"
       - "conan/**"
+      - "crates/**"
       - "external/**"
       - "include/**"
       - "src/**"
@@ -101,6 +103,11 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  rust:
+    uses: ./.github/workflows/reusable-rust.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   upload-recipe:
     needs: build-test
     # Only run when pushing to the develop branch.
@@ -120,3 +127,4 @@ jobs:
     secrets:
       remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
       remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
+      signing_key: ${{ secrets.NEXUS_PACKAGES_PRIVATE_KEY }}

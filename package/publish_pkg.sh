@@ -7,9 +7,12 @@ set -euo pipefail
 # Usage: publish_pkg.sh <channel> [package-dir]
 #
 #   channel      release channel, selecting the 'deb-<channel>' and
-#                'rpm-<channel>' repository pair
+#                'rpm-<channel>-hosted' repositories
 #   package-dir  searched recursively for *.deb, *.ddeb and *.rpm ('build' by
 #                default)
+#
+# RPMs are uploaded to the hosted repository, but yum clients install from the
+# 'rpm-<channel>' group repository in front of it, which serves signed metadata.
 #
 # NEXUS_USERNAME and NEXUS_PASSWORD are required. NEXUS_URL overrides the target
 # instance, and DRY_RUN=1 lists the uploads without performing them.
@@ -24,7 +27,7 @@ if [[ -z "${channel}" ]]; then
 fi
 
 deb_repo="deb-${channel}"
-rpm_repo="rpm-${channel}"
+rpm_repo="rpm-${channel}-hosted"
 
 if [[ -z "${DRY_RUN:-}" ]]; then
     : "${NEXUS_USERNAME:?is required}" "${NEXUS_PASSWORD:?is required}"

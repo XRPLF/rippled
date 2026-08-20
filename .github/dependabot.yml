@@ -4,6 +4,7 @@ updates:
     directories:
       - /
       - .github/actions/build-deps/
+      - .github/actions/cargo-cache/
       - .github/actions/release-info/
       - .github/actions/set-compiler-env/
       - .github/actions/setup-conan/
@@ -17,5 +18,21 @@ updates:
     target-branch: develop
     groups:
       github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: cargo
+    directory: /crates
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "chore: [DEPENDABOT] "
+    target-branch: develop
+    open-pull-requests-limit: 10
+    groups:
+      rust-dependencies:
         patterns:
           - "*"
