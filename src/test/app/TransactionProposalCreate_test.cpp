@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/multisign.h>
@@ -583,6 +584,86 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // The target account may delegate authority over the proposed
+    // transaction's own type to another account (Permission Delegation,
+    // XLS-75); if it does, that delegate — or an account on the delegate's
+    // own SignerList — may also create the proposal, since it will need to
+    // help complete the proposed transaction's own authorization anyway.
+    // Naming an account as Delegate in the proposed transaction is not
+    // itself trusted: a real DelegateSet grant is required.
+    void
+    testDelegatedProposedTx(FeatureBitset features)
+    {
+        testcase("proposer authorized through a delegated proposed txn");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const delegateAcct{"delegateAcct"};
+        Account const ds1{"ds1"};  // on delegateAcct's own SignerList
+        Account const ds2{"ds2"};  // on delegateAcct's own SignerList
+        Account const stranger{"stranger"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, delegateAcct, ds1, ds2, stranger, bob);
+        env.close();
+
+        auto delegatedPayload = [&](std::uint32_t ticketSeq) {
+            json::Value tx = pay(target, bob, XRP(1));
+            tx[sfDelegate.jsonName] = delegateAcct.human();
+            return proposal::unsignedPayload(env, tx, ticketSeq);
+        };
+
+        // Without a real DelegateSet grant, naming an account as Delegate in
+        // the proposed transaction does not authorize it.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(
+                    delegateAcct, delegatedPayload(ticketSeq), proposal::expiration(env, 100s)),
+                Ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        }
+
+        // The target grants delegateAcct permission over Payment transactions.
+        env(delegate::set(target, delegateAcct, {"Payment"}));
+        env.close();
+
+        // The delegate itself may now create the proposal.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(
+                delegateAcct, delegatedPayload(ticketSeq), proposal::expiration(env, 100s)));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // An account on the delegate's own SignerList may likewise create it.
+        {
+            env(signers(delegateAcct, 1, {{ds1, 1}, {ds2, 1}}));
+            env.close();
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(
+                ds1, delegatedPayload(ticketSeq), proposal::expiration(env, 100s)));
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // An account with no relationship to the target or the delegate is
+        // still rejected.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            env(proposal::create(
+                    stranger, delegatedPayload(ticketSeq), proposal::expiration(env, 100s)),
+                Ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        }
+    }
+
     // The target account must be able to authorize a transaction through a
     // SignerList, so a pseudo-account (here an AMM's) cannot be a target even
     // though it exists on-ledger (On-Chain Cosigner spec §5.3.2.5).
@@ -1102,6 +1183,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Preclaim
         testPreclaim(all);
         testProposerAuthorization(all);
+        testDelegatedProposedTx(all);
         testPseudoTarget(all);
 
         // Apply
