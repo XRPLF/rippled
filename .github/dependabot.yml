@@ -4,7 +4,8 @@ updates:
     directories:
       - /
       - .github/actions/build-deps/
-      - .github/actions/generate-version/
+      - .github/actions/cargo-cache/
+      - .github/actions/release-info/
       - .github/actions/set-compiler-env/
       - .github/actions/setup-conan/
     schedule:
@@ -28,10 +29,9 @@ updates:
       time: "04:00"
       timezone: Etc/GMT
     commit-message:
-      prefix: "ci: [DEPENDABOT] "
+      prefix: "chore: [DEPENDABOT] "
     target-branch: develop
     open-pull-requests-limit: 10
-    # Bundle all Rust dependency bumps into a single PR per run to reduce noise.
     groups:
       rust-dependencies:
         patterns:

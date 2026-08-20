@@ -27,14 +27,14 @@ jobs:
   determine-files:
     permissions:
       contents: read
-    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@d041ac9f1fa9f07a4ba335eb4c1c82233fb3fef6
+    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@70145243b905dc3e040a61d39c00e178cfb96f71
 
   run-clang-tidy:
     name: Run clang tidy
     needs: [determine-files]
     if: ${{ needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.need_full_run == 'true' }}
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-fecfc0c"
+    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-a0074f8"
     permissions:
       contents: read
       issues: write
@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
+        uses: XRPLF/actions/prepare-runner@7bf7ceca5932114abdd0d43493c3c30c5a654e13
         with:
           enable_ccache: false
 
@@ -58,6 +58,13 @@ jobs:
         uses: ./.github/actions/set-compiler-env
         with:
           compiler: ${{ env.COMPILER }}
+
+      - name: Use cargo artifacts cache
+        uses: ./.github/actions/cargo-cache
+        with:
+          cache-directories: ${{ env.BUILD_DIR }}/corrosion
+          save-if: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release') }}
+          workspaces: crates -> ../${{ env.BUILD_DIR }}/cargo
 
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
@@ -80,13 +87,13 @@ jobs:
               -Dwerr=ON \
               -Dxrpld=ON \
               -Dverify_headers=ON \
+              -Drust=ON \
               ..
 
-      # clang-tidy needs headers generated from proto files
-      - name: Build libxrpl.libpb
+      - name: Build clang-tidy prerequisites
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
+          ninja -j ${{ steps.nproc.outputs.nproc }} tidy_prerequisites
 
       # clang-tidy needs cxxbridge headers generated from Rust crates
       - name: Build xrpl_crates

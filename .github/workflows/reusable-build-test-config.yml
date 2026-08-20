@@ -69,6 +69,12 @@ on:
         type: string
         default: ""
 
+      toolchain:
+        description: 'Where the toolchain comes from ("nix" to build the flake CI environment on the runner, empty for the system one). macOS only: Linux always builds in a Nix image, and Nix has no Windows support.'
+        required: false
+        type: string
+        default: ""
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -111,6 +117,9 @@ jobs:
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       VALIDATOR_KEYS_ENABLED: ${{ contains(inputs.cmake_args, '-Dvalidator_keys=ON') }}
       SANITIZERS_ENABLED: ${{ inputs.sanitizers != '' }}
+      # The binaries reusable-package.yml consumes. A private repository skips
+      # them except on a tag push, which is what produces its release packages.
+      PACKAGING_ARTIFACTS_ENABLED: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
     steps:
       - name: Cleanup workspace (macOS and Windows)
         if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
@@ -120,9 +129,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@c00c22ada3bd6bcda48fcb0d62fbbab49fec8a0f
+        uses: XRPLF/actions/prepare-runner@7bf7ceca5932114abdd0d43493c3c30c5a654e13
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
+
+      # Before any step that uses a build tool, composite actions included.
+      - name: Setup Nix environment
+        if: ${{ inputs.toolchain == 'nix' }}
+        uses: ./.github/actions/setup-nix-env
 
       - name: Set ccache log file
         if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
@@ -148,7 +162,22 @@ jobs:
         with:
           compiler: ${{ inputs.compiler }}
 
+      - name: Use cargo artifacts cache
+        uses: ./.github/actions/cargo-cache
+        with:
+          cache-directories: ${{ env.BUILD_DIR }}/corrosion
+          key: ${{ inputs.config_name }}
+          save-if: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release') }}
+          # two workspaces here because build artifacts are located in 2 places:
+          # - crates/target when cargo is called directly
+          # - build/cargo when cargo is called by cmake
+          workspaces: |
+            crates
+            crates -> ${{ runner.os == 'Windows' && format('../{0}/x64/{1}/cargo', env.BUILD_DIR, inputs.build_type) || format('../{0}/cargo', env.BUILD_DIR) }}
+
+      # `setup-nix-env` already did this for the Nix toolchain.
       - name: Setup Conan
+        if: ${{ inputs.toolchain != 'nix' }}
         env:
           SANITIZERS: ${{ inputs.sanitizers }}
         uses: ./.github/actions/setup-conan
@@ -212,6 +241,24 @@ jobs:
               --target "${CMAKE_TARGET}" \
               2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
 
+      # Nothing may reference the store, so whole trees are checked - the Conan
+      # cache included, since what it holds is what gets uploaded and reused.
+      - name: Check the build output for Nix store references (Nix toolchain)
+        if: ${{ inputs.toolchain == 'nix' }}
+        run: ./bin/check-nix-store-refs.sh "${BUILD_DIR}"
+
+      - name: Check the Conan cache for Nix store references (Nix toolchain)
+        if: ${{ inputs.toolchain == 'nix' }}
+        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
+
+      # Only what PatchNixBinary.cmake retargets: the toolchain in the Linux
+      # images always references the store. Same condition it uses.
+      - name: Check for Nix store references (Linux)
+        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
+        run: |
+          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
+          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
+
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
         run: |
@@ -222,7 +269,7 @@ jobs:
           fi
 
       - name: Upload the binary (Linux)
-        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
+        if: ${{ env.PACKAGING_ARTIFACTS_ENABLED == 'true' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: xrpld-${{ inputs.config_name }}
@@ -236,7 +283,7 @@ jobs:
         run: ./validator-keys --unittest
 
       - name: Upload the validator-keys binary
-        if: ${{ github.event.repository.visibility == 'public' && env.VALIDATOR_KEYS_ENABLED == 'true' }}
+        if: ${{ env.PACKAGING_ARTIFACTS_ENABLED == 'true' && env.VALIDATOR_KEYS_ENABLED == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: validator-keys-${{ inputs.config_name }}
@@ -330,6 +377,11 @@ jobs:
           fi
 
           LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
+
+      - name: Run Rust tests
+        if: ${{ !inputs.build_only }}
+        working-directory: crates
+        run: cargo nextest run --workspace --all-features --locked --no-tests=warn
 
       # Smoke-run every benchmark module with a single repetition to confirm the
       # benchmarks still build and execute. This is a correctness check, not a
