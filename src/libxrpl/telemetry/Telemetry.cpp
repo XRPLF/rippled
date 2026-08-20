@@ -66,6 +66,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -317,11 +318,154 @@ class TelemetryImpl : public Telemetry
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage> contextStorage_;
 
+    /**
+     * Set by stop(), so a second call does nothing.
+     */
+    bool stopped_{false};
+
+    /**
+     * Build the OTel resource shared by the tracer and meter providers.
+     *
+     * Both pipelines must report the same resource identity, so this is the
+     * single place the attributes are named. Called twice because the two
+     * providers are now built at different times: metrics in the constructor,
+     * traces in start().
+     *
+     * @return The resource carrying service and network identity.
+     */
+    [[nodiscard]] resource::Resource
+    makeResource() const
+    {
+        return resource::Resource::Create({
+            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
+            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
+            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
+            {std::string(attr::networkId),
+             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
+            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
+        });
+    }
+
+    /**
+     * Build and publish the metrics pipeline (MeterProvider + periodic reader
+     * + OTLP exporter + histogram view).
+     *
+     * Called from the constructor so the provider is published before any
+     * subsystem creates an instrument. opentelemetry-cpp 1.28.0 has no proxy
+     * MeterProvider: a meter is a point-in-time copy and is never rebound, so
+     * an instrument created before this would hold a noop meter for the process
+     * lifetime.
+     *
+     * The reader is attached here too. The SDK notes a reader added later "may
+     * not receive any in-flight meter data".
+     *
+     * Observable instruments are registered later, once the services their
+     * callbacks read exist. See Collector::onCollectionReady().
+     *
+     * @note Throws whatever the SDK factories throw; the constructor catches.
+     */
+    void
+    initMetrics()
+    {
+        // Derive the metrics endpoint from the trace endpoint by swapping
+        // the trailing "/v1/traces" path for "/v1/metrics". Any other URL
+        // shape is used as-is.
+        std::string metricsEndpoint = setup_.exporterEndpoint;
+        constexpr std::string_view tracesPath{"/v1/traces"};
+        if (metricsEndpoint.ends_with(tracesPath))
+        {
+            metricsEndpoint.replace(
+                metricsEndpoint.size() - tracesPath.size(), tracesPath.size(), "/v1/metrics");
+        }
+
+        // Configure OTLP HTTP metric exporter, honoring the same TLS
+        // options as the trace exporter.
+        otlp_http::OtlpHttpMetricExporterOptions metricExporterOpts;
+        metricExporterOpts.url = metricsEndpoint;
+        if (setup_.useTls)
+        {
+            metricExporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
+            metricExporterOpts.ssl_client_cert_path = setup_.tlsClientCertPath;
+            metricExporterOpts.ssl_client_key_path = setup_.tlsClientKeyPath;
+        }
+
+        auto metricExporter = otlp_http::OtlpHttpMetricExporterFactory::Create(metricExporterOpts);
+
+        // Configure periodic metric reader (1-second export interval,
+        // matching the beast OTelCollector path).
+        metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
+        readerOpts.export_interval_millis = std::chrono::milliseconds(1000);
+        readerOpts.export_timeout_millis = std::chrono::milliseconds(500);
+
+        auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
+            std::move(metricExporter), readerOpts);
+
+        // Create MeterProvider with the shared resource, then attach reader.
+        meterProvider_ = metrics_sdk::MeterProviderFactory::Create(
+            std::make_unique<metrics_sdk::ViewRegistry>(), makeResource());
+        meterProvider_->AddMetricReader(std::move(reader));
+
+        // Histogram view: SpanMetrics-compatible bucket boundaries (ms) so
+        // histogram instruments align with the collector's SpanMetrics.
+        auto histogramSelector = metrics_sdk::InstrumentSelectorFactory::Create(
+            metrics_sdk::InstrumentType::kHistogram, "*", "ms");
+
+        // Must match the meter name used by getMeter() and the beast
+        // OTelCollector, or the view never applies.
+        auto meterSelector =
+            metrics_sdk::MeterSelectorFactory::Create(std::string(kMeterName), "", "");
+
+        auto histogramConfig = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
+        histogramConfig->boundaries_ =
+            std::vector<double>{1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 5000.0};
+
+        // An empty view name applies the buckets without renaming. A name here
+        // would collapse every matching histogram into one series.
+        auto histogramView = metrics_sdk::ViewFactory::Create(
+            "",
+            "SpanMetrics-compatible histogram buckets",
+            metrics_sdk::AggregationType::kHistogram,
+            std::move(histogramConfig));
+
+        meterProvider_->AddView(
+            std::move(histogramSelector), std::move(meterSelector), std::move(histogramView));
+
+        // Publish as the global meter provider so developers (and the beast
+        // OTelCollector shim) reach the same pipeline.
+        metrics_api::Provider::SetMeterProvider(
+            opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(meterProvider_));
+    }
+
 public:
     TelemetryImpl(Setup setup, beast::Journal journal) : setup_(std::move(setup)), journal_(journal)
     {
+        // Publish the MeterProvider before any subsystem is constructed; see
+        // initMetrics(). setup_.serviceInstanceId is already resolved by the
+        // caller, so the resource is complete.
+        //
+        // A failure must never stop the node starting: the global provider
+        // stays noop and every instrument call remains valid.
+        try
+        {
+            initMetrics();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Telemetry metrics pipeline failed to initialise, "
+                                      "continuing without metrics: "
+                                   << e.what();
+        }
     }
 
+    /**
+     * Override the service instance id, for callers that learn it late.
+     *
+     * Affects only the tracer resource, which start() builds. The metrics
+     * resource is built by the constructor and is immutable, so supply the id
+     * through Setup to have it on both.
+     *
+     * @param id The instance id to report on spans.
+     */
     void
     setServiceInstanceId(std::string const& id) override
     {
@@ -361,15 +505,9 @@ public:
         // marked with kDiscardedAttr (via SpanGuard::discard()).
         auto processor = std::make_unique<FilteringSpanProcessor>(std::move(batchProcessor));
 
-        // Configure resource attributes
-        auto resourceAttrs = resource::Resource::Create({
-            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
-            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
-            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
-            {std::string(attr::networkId),
-             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
-            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
-        });
+        // Configure resource attributes. Shared with the metrics pipeline the
+        // constructor already published, so both report one identity.
+        auto resourceAttrs = makeResource();
 
         // Configure sampler. Head sampling is fixed at 1.0 (sample everything);
         // setup_.samplingRatio is not config-driven. Wrap the ratio sampler in a
@@ -407,69 +545,7 @@ public:
         trace_api::Provider::SetTracerProvider(
             opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(sdkProvider_));
 
-        // Build the metrics pipeline, parallel to the tracer above and
-        // reusing the same resourceAttrs so metrics and traces share one
-        // resource identity.
-
-        // Derive the metrics endpoint from the trace endpoint by swapping
-        // the trailing "/v1/traces" path for "/v1/metrics". Any other URL
-        // shape is used as-is.
-        std::string metricsEndpoint = setup_.exporterEndpoint;
-        constexpr std::string_view tracesPath{"/v1/traces"};
-        if (metricsEndpoint.ends_with(tracesPath))
-        {
-            metricsEndpoint.replace(
-                metricsEndpoint.size() - tracesPath.size(), tracesPath.size(), "/v1/metrics");
-        }
-
-        // Configure OTLP HTTP metric exporter, honoring the same TLS
-        // options as the trace exporter.
-        otlp_http::OtlpHttpMetricExporterOptions metricExporterOpts;
-        metricExporterOpts.url = metricsEndpoint;
-        if (setup_.useTls)
-        {
-            metricExporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
-            metricExporterOpts.ssl_client_cert_path = setup_.tlsClientCertPath;
-            metricExporterOpts.ssl_client_key_path = setup_.tlsClientKeyPath;
-        }
-
-        auto metricExporter = otlp_http::OtlpHttpMetricExporterFactory::Create(metricExporterOpts);
-
-        // Configure periodic metric reader (1-second export interval,
-        // matching the beast OTelCollector path).
-        metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
-        readerOpts.export_interval_millis = std::chrono::milliseconds(1000);
-        readerOpts.export_timeout_millis = std::chrono::milliseconds(500);
-
-        auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
-            std::move(metricExporter), readerOpts);
-
-        // Create MeterProvider with the shared resource, then attach reader.
-        meterProvider_ = metrics_sdk::MeterProviderFactory::Create(
-            std::make_unique<metrics_sdk::ViewRegistry>(), resourceAttrs);
-        meterProvider_->AddMetricReader(std::move(reader));
-
-        // Histogram view: SpanMetrics-compatible bucket boundaries (ms) so
-        // histogram instruments align with the collector's SpanMetrics.
-        auto histogramSelector = metrics_sdk::InstrumentSelectorFactory::Create(
-            metrics_sdk::InstrumentType::kHistogram, "*", "ms");
-        auto meterSelector = metrics_sdk::MeterSelectorFactory::Create("xrpld_metrics", "", "");
-        auto histogramConfig = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
-        histogramConfig->boundaries_ =
-            std::vector<double>{1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 5000.0};
-        auto histogramView = metrics_sdk::ViewFactory::Create(
-            "default_histogram",
-            "Default histogram view with SpanMetrics-compatible buckets",
-            metrics_sdk::AggregationType::kHistogram,
-            std::move(histogramConfig));
-
-        meterProvider_->AddView(
-            std::move(histogramSelector), std::move(meterSelector), std::move(histogramView));
-
-        // Publish as the global meter provider so developers (and the beast
-        // OTelCollector shim) reach the same pipeline.
-        metrics_api::Provider::SetMeterProvider(
-            opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(meterProvider_));
+        // The metrics pipeline was built by initMetrics() in the constructor.
 
         // Register as the global Telemetry instance so SpanGuard factory
         // methods can access it without callers passing a reference.
@@ -481,10 +557,16 @@ public:
     void
     stop() override
     {
+        if (stopped_)
+            return;
+        stopped_ = true;
+
         JLOG(journal_.info()) << "Telemetry stopping";
 
-        // Unregister global instance before tearing down the pipeline.
-        Telemetry::setInstance(nullptr);
+        // Unregister global instance before tearing down the pipeline, but only
+        // if this object is the one that published it.
+        if (Telemetry::getInstance() == this)
+            Telemetry::setInstance(nullptr);
 
         if (sdkProvider_)
         {

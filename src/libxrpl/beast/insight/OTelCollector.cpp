@@ -230,13 +230,9 @@ public:
      * @param name       Export-ready metric name, already run through
      *                   formatName() by the collector: prefix prepended
      *                   and dots replaced with underscores.
-     * @param meter      OTel Meter used to create the observable gauge.
      * @param collector  Owning collector, used to invoke hooks before reads.
      */
-    OTelGaugeImpl(
-        std::string const& name,
-        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
-        std::shared_ptr<OTelCollectorImp> const& collector);
+    OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector);
 
     ~OTelGaugeImpl() override;
 
@@ -274,6 +270,25 @@ public:
     static void
     gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state);
 
+    /**
+     * Create the observable instrument and register the callback, once.
+     *
+     * Called when the collector is told collection is ready, because the
+     * callback reads live application state.
+     */
+    void
+    arm();
+
+    /**
+     * Remove the callback, so the reader thread stops observing this gauge.
+     *
+     * RemoveCallback is synchronous: the SDK guards its callback list and the
+     * observe pass with the same mutex, so no callback is running once this
+     * returns. Idempotent.
+     */
+    void
+    disarm();
+
 private:
     /**
      * Current gauge value, updated atomically by set()/increment().
@@ -281,9 +296,19 @@ private:
     std::atomic<int64_t> value_{0};
 
     /**
-     * OTel observable gauge handle (prevents deregistration).
+     * Export-ready metric name, held until arm() creates the instrument.
+     */
+    std::string const name_;
+
+    /**
+     * OTel observable gauge handle, null until arm() runs.
      */
     opentelemetry::nostd::shared_ptr<metrics_api::ObservableInstrument> gauge_;
+
+    /**
+     * Guards gauge_ against concurrent arm()/disarm().
+     */
+    std::mutex armMutex_;
 
     /**
      * Owning collector, used to invoke hooks before reading gauge values.
@@ -444,6 +469,12 @@ public:
 
     Gauge
     makeGauge(std::string const& name) override;
+
+    void
+    onCollectionReady() override;
+
+    void
+    onCollectionStopping() override;
 
     Meter
     makeMeter(std::string const& name) override;
@@ -626,14 +657,35 @@ OTelEventImpl::notify(value_type const& value)
 // OTelGaugeImpl
 //------------------------------------------------------------------------------
 
-OTelGaugeImpl::OTelGaugeImpl(
-    std::string const& name,
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
-    std::shared_ptr<OTelCollectorImp> const& collector)
-    : gauge_(meter->CreateInt64ObservableGauge(name)), collector_(collector)
+OTelGaugeImpl::OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector)
+    : name_(std::move(name)), collector_(collector)
 {
     collector_->addGauge(this);
+}
+
+void
+OTelGaugeImpl::arm()
+{
+    // AddCallback arms the SDK reader thread against this gauge, and the
+    // callback runs hook handlers that read application services. The registry
+    // does not de-duplicate callbacks, so arm at most once.
+    std::scoped_lock const lock(armMutex_);
+    if (gauge_)
+        return;
+
+    gauge_ = collector_->otelMeter()->CreateInt64ObservableGauge(name_);
     gauge_->AddCallback(gaugeCallback, this);
+}
+
+void
+OTelGaugeImpl::disarm()
+{
+    std::scoped_lock const lock(armMutex_);
+    if (!gauge_)
+        return;
+
+    gauge_->RemoveCallback(gaugeCallback, this);
+    gauge_ = nullptr;
 }
 
 void
@@ -656,7 +708,8 @@ OTelGaugeImpl::~OTelGaugeImpl()
     // The SDK's ObservableRegistry guards its callback list and the Observe()
     // pass with the same mutex, so RemoveCallback cannot return while a
     // callback for this instrument is in flight — removal is synchronous.
-    gauge_->RemoveCallback(gaugeCallback, this);
+    // A no-op when never armed, or already disarmed at shutdown.
+    disarm();
     collector_->removeGauge(this);
 }
 
@@ -785,7 +838,7 @@ OTelCollectorImp::makeEvent(std::string const& name)
 Gauge
 OTelCollectorImp::makeGauge(std::string const& name)
 {
-    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), otelMeter_, shared_from_this()));
+    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), shared_from_this()));
 }
 
 Meter
@@ -849,6 +902,58 @@ OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
 {
     std::scoped_lock const lock(mutex_);
     std::erase(gauges_, gauge);
+}
+
+void
+OTelCollectorImp::onCollectionReady()
+{
+    // Snapshot under the lock, arm outside it. arm() enters the SDK's
+    // observable registry lock, and the reader thread takes that lock before
+    // calling callHooks(), which wants mutex_. callHooks() copies its hook list
+    // for the same reason.
+    std::vector<OTelGaugeImpl*> gauges;
+    {
+        std::scoped_lock const lock(mutex_);
+        gauges = gauges_;
+    }
+
+    std::size_t armed = 0;
+    for (auto* gauge : gauges)
+    {
+        // Telemetry must never stop the node, so one bad instrument costs only
+        // its own metric.
+        try
+        {
+            gauge->arm();
+            ++armed;
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "OTelCollector: could not register an observable gauge, "
+                                      "so that metric will not be exported: "
+                                   << e.what();
+        }
+    }
+
+    JLOG(journal_.info()) << "OTelCollector: registered " << armed << " of " << gauges.size()
+                          << " observable gauges";
+}
+
+void
+OTelCollectorImp::onCollectionStopping()
+{
+    // Same lock discipline as onCollectionReady(): snapshot, then act outside
+    // the lock, because disarm() enters the SDK's observable registry lock.
+    std::vector<OTelGaugeImpl*> gauges;
+    {
+        std::scoped_lock const lock(mutex_);
+        gauges = gauges_;
+    }
+
+    for (auto* gauge : gauges)
+        gauge->disarm();
+
+    JLOG(journal_.info()) << "OTelCollector: stopped observing " << gauges.size() << " gauges";
 }
 
 opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
