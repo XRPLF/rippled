@@ -343,6 +343,34 @@ struct MPTConvertBack
 };
 
 /**
+ * @brief Arguments for building a ConfidentialMPTHolderKeyUpdate test transaction.
+ *
+ * Select the mode via flags = tfHolderKeyRotation or flags = tfHolderKeyRecovery.
+ * In Rotation mode, spendingCiphertext/inboxCiphertext are auto-filled by
+ * decrypting the account's current balances (with its currently-registered
+ * private key) and re-encrypting them under holderPubKey, unless overridden.
+ */
+struct MPTHolderKeyUpdate
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> holderPubKey = std::nullopt;
+    std::optional<Buffer> spendingCiphertext = std::nullopt;
+    std::optional<Buffer> inboxCiphertext = std::nullopt;
+    // Testing-only: skip auto-filling spending/inbox ciphertexts in Rotation
+    // mode, to exercise the "missing ciphertext" malformed-transaction path.
+    std::optional<bool> omitCiphertexts = std::nullopt;
+    std::optional<Buffer> proof = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
  * @brief Arguments for building a ConfidentialMPTClawback test transaction.
  */
 struct MPTConfidentialClawback
@@ -580,6 +608,9 @@ public:
 
     void
     confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
+
+    void
+    holderKeyUpdate(MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;

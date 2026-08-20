@@ -2008,6 +2008,90 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
 }
 
 void
+MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg)
+{
+    json::Value jv;
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTHolderKeyUpdate;
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    if (arg.holderPubKey)
+        jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
+
+    bool const rotation = (arg.flags.value_or(0) & tfHolderKeyRotation) != 0;
+
+    auto const reencryptOrDummy = [&](EncryptedBalanceType balanceType) {
+        if (arg.account && arg.holderPubKey)
+        {
+            if (auto const curCiphertext = getEncryptedBalance(*arg.account, balanceType))
+            {
+                if (auto const amt = decryptAmount(*arg.account, *curCiphertext))
+                {
+                    if (auto const reencrypted =
+                            xrpl::encryptAmount(*amt, *arg.holderPubKey, generateBlindingFactor()))
+                    {
+                        return *reencrypted;
+                    }
+                }
+            }
+        }
+        return gMakeZeroBuffer(kEcGamalEncryptedTotalLength);
+    };
+
+    if (arg.spendingCiphertext)
+    {
+        jv[sfConfidentialBalanceSpending.jsonName] = strHex(*arg.spendingCiphertext);
+    }
+    else if (rotation && !arg.omitCiphertexts.value_or(false))
+    {
+        jv[sfConfidentialBalanceSpending.jsonName] =
+            strHex(reencryptOrDummy(holderEncryptedSpending));
+    }
+
+    if (arg.inboxCiphertext)
+    {
+        jv[sfConfidentialBalanceInbox.jsonName] = strHex(*arg.inboxCiphertext);
+    }
+    else if (rotation && !arg.omitCiphertexts.value_or(false))
+    {
+        jv[sfConfidentialBalanceInbox.jsonName] = strHex(reencryptOrDummy(holderEncryptedInbox));
+    }
+
+    if (arg.proof)
+    {
+        jv[sfZKProof.jsonName] = strHex(*arg.proof);
+    }
+    else
+    {
+        // Real proof verification is not wired up yet (see
+        // verifyHolderKeyUpdateProof); a correctly-sized filler buffer is
+        // enough to pass preflight's length check.
+        auto const proofLength =
+            rotation ? kEcHolderKeyRotationProofLength : kEcHolderKeyRecoveryProofLength;
+        jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(proofLength));
+    }
+
+    submit(arg, jv);
+}
+
+void
 MPTTester::generateKeyPair(Account const& account)
 {
     unsigned char privKey[kEcPrivKeyLength];
