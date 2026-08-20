@@ -785,6 +785,61 @@ class Delegate_test : public beast::unit_test::Suite
     }
 
     void
+    testInboundDelegateRefuse()
+    {
+        // Regression for https://github.com/XRPLF/rippled/issues/7691
+        // Check/Escrow have dest-side cancel. Delegate did not, so inbound
+        // objects could permanently block AccountDelete. The authorized
+        // account can refuse inbound Delegates with an empty Permissions list
+        // (O(1) keylet lookup, no owner-directory walk).
+        testcase("authorized account can refuse inbound Delegate");
+        using namespace jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(100000), alice, bob, carol);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        auto const delegateKey = keylet::delegate(alice.id(), bob.id());
+        BEAST_EXPECT(env.closed()->exists(delegateKey));
+
+        auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+            return std::any_of(  // NOLINT(modernize-use-ranges)
+                dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
+        };
+
+        BEAST_EXPECT(hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+        BEAST_EXPECT(hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+        BEAST_EXPECT(env.closed()->read(keylet::account(alice.id()))->getFieldU32(sfOwnerCount) == 1);
+
+        // bob (the authorized account) refuses the inbound Delegate.
+        env(delegate::set(bob, alice, {}));
+        env.close();
+
+        BEAST_EXPECT(!env.closed()->exists(delegateKey));
+        BEAST_EXPECT(
+            !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+        BEAST_EXPECT(!hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+        BEAST_EXPECT(env.closed()->read(keylet::account(alice.id()))->getFieldU32(sfOwnerCount) == 0);
+
+        // alice can no longer have bob submit on her behalf.
+        env(pay(alice, carol, XRP(1)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+
+        for (std::uint32_t i = 0; i < 256; ++i)
+            env.close();
+
+        auto const deleteFee = drops(env.current()->fees().increment);
+        env(acctdelete(bob, carol), Fee(deleteFee));
+        env.close();
+        BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
+    }
+
+    void
     testDelegateTransaction()
     {
         testcase("test delegate transaction");
@@ -2914,6 +2969,7 @@ class Delegate_test : public beast::unit_test::Suite
         testFee();
         testSequence();
         testAccountDelete();
+        testInboundDelegateRefuse();
         testDelegateTransaction();
         testPaymentGranular(all);
         testTrustSetGranular();

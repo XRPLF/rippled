@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -60,10 +61,17 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
         return tecPSEUDO_ACCOUNT;
 
     // Deleting the delegate object is invalid if it doesn’t exist.
-    if (ctx.tx.getFieldArray(sfPermissions).empty() &&
-        !ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize])))
+    // Outbound: Account is the delegator. Inbound refuse (fixDelegateAccountDelete):
+    // Account is the authorized account and Authorize is the original delegator.
+    // O(1) keylet lookup, no owner-directory walk. See issue 7691.
+    if (ctx.tx.getFieldArray(sfPermissions).empty())
     {
-        return tecNO_ENTRY;
+        bool const outbound =
+            ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize]));
+        bool const inboundRefuse = ctx.view.rules().enabled(fixDelegateAccountDelete) &&
+            ctx.view.exists(keylet::delegate(ctx.tx[sfAuthorize], ctx.tx[sfAccount]));
+        if (!outbound && !inboundRefuse)
+            return tecNO_ENTRY;
     }
 
     return tesSUCCESS;
@@ -96,7 +104,16 @@ DelegateSet::doApply()
 
     auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
     if (permissions.empty())
+    {
+        // Authorized account refuses an inbound Delegate. Lookup is
+        // keylet::delegate(delegator, dest) = delegate(Authorize, Account).
+        if (ctx_.view().rules().enabled(fixDelegateAccountDelete))
+        {
+            if (auto inbound = ctx_.view().peek(keylet::delegate(authAccount, accountID_)))
+                return deleteDelegate(view(), inbound, j_);
+        }
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     if (auto const ret = checkReserve(
             ctx_.getApplyViewContext(),
