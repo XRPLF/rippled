@@ -453,6 +453,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(VaultInvariantPrecision, tx, xrpl);
+BEAST_DEFINE_TESTSUITE(VaultInvariantPrecision, app, xrpl);
 
 }  // namespace xrpl::test
