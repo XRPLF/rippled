@@ -1,7 +1,9 @@
-# Custom-glibc compiler toolchain shared by the CI environment (ci-env.nix) and
-# the Linux dev shell (devshell.nix): gcc / clang / binutils rebuilt to target
-# the pinned custom glibc. Linux only — the pinned glibc snapshot does not build
-# on darwin, so callers must not evaluate this on macOS.
+# The Linux toolchain: gcc / clang / binutils rebuilt to target the pinned
+# custom glibc, shared by the CI environment (ci-env.nix) and the dev shell
+# (devshell.nix). The counterpart to darwin.nix.
+#
+# Linux only — the pinned glibc snapshot does not build on darwin, so callers
+# must not evaluate this on macOS.
 {
   pkgs,
   customGlibc,
@@ -9,9 +11,11 @@
 let
   inherit (import ./packages.nix { inherit pkgs; })
     gccPackage
+    gccVersion
     llvmPackages
     llvmVersion
     mkGcov
+    mkVersionedToolLinks
     ;
 
   # binutils wrapped to emit binaries that reference the custom glibc
@@ -103,15 +107,46 @@ let
       echo "-isystem ${customCompilerRt.dev}/include" >> $out/nix-support/cc-cflags
     '';
   };
+  # Strip the generic cc/c++/cpp symlinks from the clang wrapper so it can
+  # coexist with the gcc wrapper in buildEnv. gcc remains the default
+  # compiler (cc/c++/cpp); clang is invoked explicitly as clang/clang++.
+  customClangForCiEnv = pkgs.symlinkJoin {
+    name = "clang-wrapper-custom-for-ci-env";
+    paths = [ customClang ];
+    postBuild = ''
+      rm -f $out/bin/cc $out/bin/c++ $out/bin/cpp
+    '';
+  };
 in
 {
-  inherit
+  # For an environment that only puts binaries on PATH.
+  toolchain = [
     customGcc
-    customClang
-    customBinutils
-    customStdenv
     customGcov
-    ;
+    customClangForCiEnv
+    customBinutils
+    (mkVersionedToolLinks {
+      name = "gcc";
+      package = customGcc;
+      version = gccVersion;
+      tools = [
+        "gcc"
+        "g++"
+        "cpp"
+      ];
+    })
+    (mkVersionedToolLinks {
+      name = "clang";
+      package = customClang;
+      version = llvmVersion;
+      tools = [
+        "clang"
+        "clang++"
+      ];
+    })
+  ];
 
-  customClangStdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv customClang;
+  gccStdenv = customStdenv;
+  clangStdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv customClang;
+  gcov = customGcov;
 }
