@@ -66,6 +66,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -317,26 +318,41 @@ class TelemetryImpl : public Telemetry
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage> contextStorage_;
 
+    /**
+     * Set by stop(), so a second call does nothing.
+     */
+    bool stopped_{false};
+
 public:
     TelemetryImpl(Setup setup, beast::Journal journal) : setup_(std::move(setup)), journal_(journal)
     {
-        // Build the metrics pipeline NOW, in the constructor, so the global
-        // MeterProvider is published before any subsystem is constructed.
-        // beast::insight instruments are created eagerly in subsystem
-        // constructors (e.g. LedgerMaster, NetworkOPs, ServerHandler), which
-        // run during ApplicationImp's member-init list — long before start().
-        // opentelemetry-cpp has no proxy MeterProvider, so an instrument
-        // created before SetMeterProvider() binds to the noop provider forever.
-        // Tracing does not have this problem because getTracer() is called
-        // fresh at each span creation (runtime, after start()).
+        // Publish the MeterProvider before any subsystem is constructed; see
+        // initMetrics(). setup_.serviceInstanceId is already resolved by the
+        // caller, so the resource is complete.
         //
-        // The metrics resource uses setup_.serviceInstanceId as provided by
-        // config. A later setServiceInstanceId() (node-key fallback) cannot
-        // change this immutable resource, so operators relying on the node-key
-        // identity should set [telemetry] service_instance_id explicitly.
-        initMetrics();
+        // A failure must never stop the node starting: the global provider
+        // stays noop and every instrument call remains valid.
+        try
+        {
+            initMetrics();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal_.error()) << "Telemetry metrics pipeline failed to initialise, "
+                                      "continuing without metrics: "
+                                   << e.what();
+        }
     }
 
+    /**
+     * Override the service instance id, for callers that learn it late.
+     *
+     * Affects only the tracer resource, which start() builds. The metrics
+     * resource is built by the constructor and is immutable, so supply the id
+     * through Setup to have it on both.
+     *
+     * @param id The instance id to report on spans.
+     */
     void
     setServiceInstanceId(std::string const& id) override
     {
@@ -572,10 +588,16 @@ public:
     void
     stop() override
     {
+        if (stopped_)
+            return;
+        stopped_ = true;
+
         JLOG(journal_.info()) << "Telemetry stopping";
 
-        // Unregister global instance before tearing down the pipeline.
-        Telemetry::setInstance(nullptr);
+        // Unregister global instance before tearing down the pipeline, but only
+        // if this object is the one that published it.
+        if (Telemetry::getInstance() == this)
+            Telemetry::setInstance(nullptr);
 
         if (sdkProvider_)
         {

@@ -31,6 +31,29 @@ public:
     virtual ~Collector() = 0;
 
     /**
+     * Called once the services that hook handlers read are constructed.
+     *
+     * Implementations that poll their producers must not do so before this:
+     * hook handlers read live application state. Default is a no-op, for
+     * collectors that only push.
+     */
+    virtual void
+    onCollectionReady()
+    {
+    }
+
+    /**
+     * Called before those services are shut down.
+     *
+     * Polling must have stopped by the time this returns. Paired with
+     * onCollectionReady().
+     */
+    virtual void
+    onCollectionStopping()
+    {
+    }
+
+    /**
      * Create a hook.
      *
      * A hook is called at each collection interval, on an implementation

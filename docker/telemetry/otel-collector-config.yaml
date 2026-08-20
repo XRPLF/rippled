@@ -136,6 +136,7 @@ connectors:
     # nodes/tiers grouped separately.
     resource_metrics_key_attributes:
       - service.instance.id
+      - xrpl.node.id
       - deployment.environment
       - xrpl.network.type
     histogram:
