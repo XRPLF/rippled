@@ -643,12 +643,6 @@ bool
 operator<(STAmount const& lhs, STAmount const& rhs);
 
 inline bool
-operator!=(STAmount const& lhs, STAmount const& rhs)
-{
-    return !(lhs == rhs);
-}
-
-inline bool
 operator>(STAmount const& lhs, STAmount const& rhs)
 {
     return rhs < lhs;
