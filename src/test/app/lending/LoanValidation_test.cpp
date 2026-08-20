@@ -26,8 +26,10 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -57,7 +59,7 @@ private:
             Account const bob{"bob"};
             env.fund(XRP(10000), alice, bob);
 
-            auto const keylet = keylet::loanBroker(alice, env.seq(alice));
+            auto const keylet = keylet::loanBroker(alice, SeqProxy::rawSequence(env.seq(alice)));
 
             using namespace std::chrono_literals;
             using namespace loan;
@@ -73,7 +75,7 @@ private:
             env(setTx);
             // Actual sequence will be based off the loan broker, but we
             // obviously don't have one of those if the amendment is disabled
-            auto const loanKeylet = keylet::loan(keylet.key, env.seq(alice));
+            auto const loanKeylet = keylet::loan(keylet.key, SeqProxy::rawSequence(env.seq(alice)));
             // Other Loan transactions are disabled, too.
             // 2. LoanDelete
             env(del(alice, loanKeylet.key), Ter(temDISABLED));
@@ -89,9 +91,11 @@ private:
     }
 
     void
-    testInvalidLoanSet()
+    testInvalidLoanSet(VaultKind vaultKind)
     {
-        testcase("Invalid LoanSet");
+        testcase(
+            std::string("Invalid LoanSet (") +
+            (vaultKind == VaultKind::OpenEnded ? "open-ended" : "closed-ended") + " vault)");
         using namespace jtx;
         using namespace loan;
         Account const lender{"lender"};
@@ -105,7 +109,8 @@ private:
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
-            BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+            BrokerInfo const brokerInfo{
+                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind})};
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -300,7 +305,8 @@ private:
         env.close();
 
         std::uint32_t const loanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(loanSequence));
 
         env(fset(issuer, asfGlobalFreeze));
         env.close();
@@ -398,7 +404,8 @@ private:
         });
 
         static constexpr std::uint32_t kLoanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLoanSequence);
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(kLoanSequence));
 
         // Can't loan pay if the borrower is not authorized
         forUnauthAuth([&](bool authorized) {
@@ -527,7 +534,8 @@ private:
     runAmendmentIndependent()
     {
         testDisabled();
-        testInvalidLoanSet();
+        for (auto const kind : {VaultKind::OpenEnded, VaultKind::ClosedEnded})
+            testInvalidLoanSet(kind);
         testInvalidLoanDelete();
         testInvalidLoanManage();
         testInvalidLoanPay();

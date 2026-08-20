@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/path.hpp>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/runtime_context.h>
@@ -19,6 +18,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -64,7 +64,7 @@ Logs::File::isOpen() const noexcept
 }
 
 bool
-Logs::File::open(boost::filesystem::path const& path)
+Logs::File::open(std::filesystem::path const& path)
 {
     close();
 
@@ -124,7 +124,7 @@ Logs::Logs(beast::Severity thresh) : thresh_(thresh)  // default severity
 }
 
 bool
-Logs::open(boost::filesystem::path const& pathToLogFile)
+Logs::open(std::filesystem::path const& pathToLogFile)
 {
     return file_.open(pathToLogFile);
 }

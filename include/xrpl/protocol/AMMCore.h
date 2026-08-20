@@ -47,7 +47,7 @@ ammLPTIssue(Asset const& asset1, Asset const& asset2, AccountID const& ammAccoun
 
 /**
  * Validate the amount.
- * If validZero is false and amount is beast::zero then invalid amount.
+ * If validZero is false and amount is beast::kZero then invalid amount.
  * Return error code if invalid amount.
  * If pair then validate amount's issue matches one of the pair's issue.
  */

@@ -6,6 +6,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -27,12 +28,10 @@
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/directory.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -426,10 +425,10 @@ SHAMapStoreImp::dbPaths()
     if (boost::iequals(get(section, Keys::kType), "memory"))
         return;
 
-    boost::filesystem::path dbPath = get(section, Keys::kPath);
-    if (boost::filesystem::exists(dbPath))
+    std::filesystem::path dbPath = get(section, Keys::kPath);
+    if (std::filesystem::exists(dbPath))
     {
-        if (!boost::filesystem::is_directory(dbPath))
+        if (!std::filesystem::is_directory(dbPath))
         {
             journal_.error() << "node db path must be a directory. " << dbPath.string();
             Throw<std::runtime_error>("node db path must be a directory.");
@@ -437,7 +436,7 @@ SHAMapStoreImp::dbPaths()
     }
     else
     {
-        boost::filesystem::create_directories(dbPath);
+        std::filesystem::create_directories(dbPath);
     }
 
     SavedState state = stateDb_.getState();
@@ -448,8 +447,8 @@ SHAMapStoreImp::dbPaths()
                 return false;
 
             // Check if configured "path" matches stored directory path
-            using namespace boost::filesystem;
-            auto const stored{path(sPath)};
+            using namespace std::filesystem;
+            auto const stored{std::filesystem::path(sPath)};
             if (stored.parent_path() == dbPath)
                 return false;
 
@@ -467,9 +466,9 @@ SHAMapStoreImp::dbPaths()
     bool writableDbExists = false;
     bool archiveDbExists = false;
 
-    std::vector<boost::filesystem::path> pathsToDelete;
-    for (boost::filesystem::directory_iterator it(dbPath);
-         it != boost::filesystem::directory_iterator();
+    std::vector<std::filesystem::path> pathsToDelete;
+    for (std::filesystem::directory_iterator it(dbPath);
+         it != std::filesystem::directory_iterator();
          ++it)
     {
         if (state.writableDb == it->path().string())
@@ -490,7 +489,7 @@ SHAMapStoreImp::dbPaths()
         (!archiveDbExists && !state.archiveDb.empty()) || (writableDbExists != archiveDbExists) ||
         state.writableDb.empty() != state.archiveDb.empty())
     {
-        boost::filesystem::path stateDbPathName = app_.config().legacy(Sections::kDatabasePath);
+        std::filesystem::path stateDbPathName = app_.config().legacy(Sections::kDatabasePath);
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
@@ -512,15 +511,15 @@ SHAMapStoreImp::dbPaths()
     }
 
     // The necessary directories exist. Now, remove any others.
-    for (boost::filesystem::path const& p : pathsToDelete)
-        boost::filesystem::remove_all(p);
+    for (std::filesystem::path const& p : pathsToDelete)
+        std::filesystem::remove_all(p);
 }
 
 std::unique_ptr<node_store::Backend>
 SHAMapStoreImp::makeBackendRotating(std::string path)
 {
     Section section{app_.config().section(Sections::kNodeDatabase)};
-    boost::filesystem::path newPath;
+    std::filesystem::path newPath;
 
     if (!path.empty())
     {
@@ -528,10 +527,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     else
     {
-        boost::filesystem::path p = get(section, Keys::kPath);
-        p /= dbPrefix_;
-        p += ".%%%%";
-        newPath = boost::filesystem::unique_path(p);
+        newPath = uniqueRandomPath(get(section, Keys::kPath), dbPrefix_ + ".");
     }
     section.set(Keys::kPath, newPath.string());
 
