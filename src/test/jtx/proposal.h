@@ -69,13 +69,17 @@ public:
  *
  * The transaction already names its proposer, target, ticket, expiration and
  * payload, so this takes no arguments and cannot come to disagree with the
- * transaction it is attached to. It reads the proposer's owner count and the
- * target ticket's proposal before the transaction is applied, and afterwards
- * asserts the only two outcomes the transactor has: on tesSUCCESS the
- * proposer's reserve grew by exactly what that payload costs and the stored
- * proposal is the one submitted — same owner, same expiration, same payload
- * whole — and on any other result nothing moved. A test then states only what
- * is particular to its own case.
+ * transaction it is attached to. Every entry it could touch is read whole
+ * beforehand, so what follows says that nothing moved rather than that the
+ * fields we named did not.
+ *
+ * Whatever the result, nothing of the target's moves. On tesSUCCESS the entry is
+ * a new one rather than an overwrite, the proposer's reserve grew by what that
+ * payload costs, and the stored proposal is the one submitted — same owner, same
+ * expiration, same payload whole, carrying nothing else and listed in the
+ * proposer's directory. On any other result nothing moved, down to the last
+ * field of a proposal that was already there. A test then states only what is
+ * particular to its own case.
  *
  * Conditions run only once the result matched the expected TER, so a case
  * expecting a failure asserts that failure changed nothing, without having to

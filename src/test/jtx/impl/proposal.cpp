@@ -6,17 +6,23 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/utility.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -126,6 +132,55 @@ entry(Env const& env, Account const& target, std::uint32_t ticketSeq)
     return entry(env, target.id(), ticketSeq);
 }
 
+namespace {
+
+// The keys an account's owner directory lists, each with the page it sits on.
+// The pages are read directly, so a key with nothing behind it is still seen.
+std::map<uint256, std::uint64_t>
+ownerDirKeys(ReadView const& view, AccountID const& account)
+{
+    std::map<uint256, std::uint64_t> keys;
+
+    Keylet const root = keylet::ownerDir(account);
+    std::uint64_t page = 0;
+    for (auto sle = view.read(root); sle;)
+    {
+        for (auto const& key : sle->getFieldV256(sfIndexes))
+            keys.emplace(key, page);
+
+        page = sle->getFieldU64(sfIndexNext);
+        if (page == 0)
+            break;
+        sle = view.read(keylet::page(root, page));
+    }
+
+    return keys;
+}
+
+// Whether two reads of a ledger entry found it unchanged, or found nothing both
+// times. Entries that are there are compared whole.
+bool
+unchanged(SLE::const_pointer const& before, SLE::const_pointer const& after)
+{
+    if (!before || !after)
+        return !before && !after;
+
+    return before->key() == after->key() &&
+        static_cast<STObject const&>(*before) == static_cast<STObject const&>(*after);
+}
+
+// Whether a TransactionProposal entry may carry the field when it is created.
+// A fresh proposal has gathered no signatures, so it carries nothing else.
+bool
+isCreationField(SField const& field)
+{
+    return field == sfLedgerEntryType || field == sfFlags || field == sfOwner ||
+        field == sfProposedTransaction || field == sfExpiration || field == sfOwnerNode ||
+        field == sfPreviousTxnID || field == sfPreviousTxnLgrSeq;
+}
+
+}  // namespace
+
 void
 verify::Create::operator()(Env& env, JTx& jt) const
 {
@@ -137,13 +192,14 @@ verify::Create::operator()(Env& env, JTx& jt) const
     // Funclets run before the transaction is applied, so everything read here
     // is the state the effects are measured against.
     json::Value const& proposedTx = jt.jv[sfProposedTransaction.jsonName];
-    auto const target = parseBase58<AccountID>(proposedTx[jss::Account].asString());
+    auto const parsedTarget = parseBase58<AccountID>(proposedTx[jss::Account].asString());
 
     // A payload naming no usable target is a malformed case a test is making
     // on purpose, and has no ledger effect to measure.
-    if (!target)
+    if (!parsedTarget)
         return;
 
+    AccountID const target = *parsedTarget;
     Account const proposer = env.lookup(jt.jv[jss::Account].asString());
     std::uint32_t const ticketSeq = proposedTx[sfTicketSequence.jsonName].asUInt();
     std::uint32_t const expiration = jt.jv[sfExpiration.jsonName].asUInt();
@@ -151,36 +207,105 @@ verify::Create::operator()(Env& env, JTx& jt) const
         ? kBatchProposalOwnerCount
         : kProposalOwnerCount;
 
+    // Every entry the transaction could touch, read whole, so what follows can
+    // say that nothing moved rather than that the fields we named did not.
+    ReadView const& view = *env.current();
+    Keylet const proposalKeylet = keylet::txProposal(target, ticketSeq);
     std::uint32_t const ownerCountBefore = env.ownerCount(proposer);
-    bool const existedBefore = static_cast<bool>(entry(env, *target, ticketSeq));
+    SLE::const_pointer const proposalBefore = view.read(proposalKeylet);
+    SLE::const_pointer const targetBefore = view.read(keylet::account(target));
+    SLE::const_pointer const ticketBefore = view.read(keylet::ticket(target, ticketSeq));
+    std::map<uint256, std::uint64_t> const proposerDirBefore = ownerDirKeys(view, proposer.id());
+    std::map<uint256, std::uint64_t> const targetDirBefore = ownerDirKeys(view, target);
 
-    jt.require.emplace_back([proposer,
-                             target = *target,
-                             ticketSeq,
-                             expiration,
-                             cost,
-                             ownerCountBefore,
-                             existedBefore,
-                             submitted = proposedTx](Env& applied) {
-        bool const created = applied.ter() == tesSUCCESS;
-        applied.test.expect(
+    jt.require.emplace_back([=](Env& applied) {
+        auto& test = applied.test;
+        ReadView const& view = *applied.current();
+
+        bool const created = isTesSuccess(applied.ter());
+
+        // A proposal holds owner-reserve increments against its proposer, more
+        // of them for a proposed Batch than for anything else.
+        test.expect(
             applied.ownerCount(proposer) == ownerCountBefore + (created ? cost : 0),
             "proposal reserve");
 
-        auto const sle = entry(applied, target, ticketSeq);
-        if (!applied.test.expect(
-                static_cast<bool>(sle) == (existedBefore || created), "proposal entry") ||
-            !created)
+        // Nothing of the target's moves, whatever the outcome: the proposal is
+        // the proposer's object and the ticket is left for the proposed
+        // transaction. A proposer proposing for its own account is exempt.
+        if (target != proposer.id())
+        {
+            test.expect(
+                unchanged(targetBefore, view.read(keylet::account(target))),
+                "proposal target account");
+            test.expect(
+                unchanged(ticketBefore, view.read(keylet::ticket(target, ticketSeq))),
+                "proposal target ticket");
+            test.expect(ownerDirKeys(view, target) == targetDirBefore, "proposal target directory");
+        }
+
+        auto const sleProposal = view.read(proposalKeylet);
+
+        if (!created)
+        {
+            // A create that did not succeed leaves the proposal as it found
+            // it, down to the last field.
+            test.expect(unchanged(proposalBefore, sleProposal), "proposal unchanged");
+
+            // Nor did the directory gain a listing for an entry that does not
+            // exist.
+            test.expect(
+                ownerDirKeys(view, proposer.id()) == proposerDirBefore, "proposal owner directory");
+            return;
+        }
+
+        // A successful create must have created the entry, not overwritten one
+        // that was already there. The checks below read the entry after the
+        // write, so they pass either way; this is what rules an overwrite out.
+        if (!test.expect(!proposalBefore, "proposal is new") ||
+            !test.expect(sleProposal, "proposal entry"))
             return;
 
-        // What is on the ledger is what was submitted. A proposal is only
-        // worth collecting signatures against if the transaction it stores is
-        // the one that was proposed, so the payload is compared whole rather
-        // than field by field.
-        applied.test.expect(sle->getAccountID(sfOwner) == proposer.id(), "proposal owner");
-        applied.test.expect(sle->getFieldU32(sfExpiration) == expiration, "proposal expiration");
-        applied.test.expect(
-            sle->getFieldObject(sfProposedTransaction) == parse(submitted), "proposal payload");
+        // What is on the ledger is what was submitted: a proposal is only worth
+        // collecting signatures against if the transaction it stores is the one
+        // proposed, so the payload is compared whole.
+        test.expect(sleProposal->getAccountID(sfOwner) == proposer.id(), "proposal owner");
+        test.expect(sleProposal->getFieldU32(sfExpiration) == expiration, "proposal expiration");
+
+        STObject const& stored = sleProposal->getFieldObject(sfProposedTransaction);
+        test.expect(stored == parse(proposedTx), "proposal payload");
+
+        // Unsigned canonical form, keyed by the target and ticket the payload
+        // names (On-Chain Cosigner spec §6.1).
+        test.expect(
+            xrpl::proposal::hasEmptySigningPubKey(stored) &&
+                !xrpl::proposal::hasSignatureField(stored),
+            "proposal payload unsigned");
+        test.expect(
+            stored.getAccountID(sfAccount) == target &&
+                stored.getFieldU32(sfTicketSequence) == ticketSeq &&
+                stored.getFieldU32(sfSequence) == 0,
+            "proposal payload target");
+
+        // Nothing beyond the fields a fresh proposal is created with. An
+        // STObject carries a placeholder for each optional field its format
+        // allows, so each field is asked whether it is really present.
+        test.expect(sleProposal->getFieldU32(sfFlags) == 0, "proposal flags");
+        for (auto const& field : *sleProposal)
+        {
+            if (field.getSType() != STI_NOTPRESENT)
+            {
+                test.expect(
+                    isCreationField(field.getFName()),
+                    "proposal field " + field.getFName().getName());
+            }
+        }
+
+        // The proposal is listed in the proposer's directory on the page its
+        // OwnerNode names, and nothing else listed moved.
+        auto expectedDir = proposerDirBefore;
+        expectedDir.emplace(sleProposal->key(), sleProposal->getFieldU64(sfOwnerNode));
+        test.expect(ownerDirKeys(view, proposer.id()) == expectedDir, "proposal owner directory");
     });
 }
 
