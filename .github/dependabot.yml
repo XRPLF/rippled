@@ -19,3 +19,19 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  - package-ecosystem: cargo
+    directory: /crates
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "chore: [DEPENDABOT] "
+    target-branch: develop
+    open-pull-requests-limit: 10
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
