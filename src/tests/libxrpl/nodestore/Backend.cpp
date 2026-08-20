@@ -223,7 +223,7 @@ TEST(BackendWriteStats, non_measuring_backends_report_absence_not_zeros)
 
         DummyScheduler scheduler;
         beast::Journal const journal{TestSink::instance()};
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
 
         Section params;
         params.set("type", type);

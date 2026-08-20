@@ -285,7 +285,7 @@ TEST_P(NodeStoreDatabaseTest, write_stats_forwarded_from_backend)
 TEST(NodeStoreDatabase, sub_millisecond_fetch_latency_is_reported)
 {
     CapturingScheduler scheduler;
-    beast::TempDir const nodeDb;
+    TempDir const nodeDb;
     Section nodeParams;
     nodeParams.set("type", "nudb");
     nodeParams.set("path", nodeDb.path());
