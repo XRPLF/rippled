@@ -929,14 +929,20 @@ OTelCollectorImp::onCollectionReady()
         }
         catch (std::exception const& e)
         {
-            JLOG(journal_.error()) << "OTelCollector: could not register an observable gauge, "
-                                      "so that metric will not be exported: "
-                                   << e.what();
+            if (auto stream = journal_.error())
+            {
+                stream << "OTelCollector: could not register an observable gauge, so that "
+                          "metric will not be exported: "
+                       << e.what();
+            }
         }
     }
 
-    JLOG(journal_.info()) << "OTelCollector: registered " << armed << " of " << gauges.size()
-                          << " observable gauges";
+    if (auto stream = journal_.info())
+    {
+        stream << "OTelCollector: registered " << armed << " of " << gauges.size()
+               << " observable gauges";
+    }
 }
 
 void
@@ -953,7 +959,8 @@ OTelCollectorImp::onCollectionStopping()
     for (auto* gauge : gauges)
         gauge->disarm();
 
-    JLOG(journal_.info()) << "OTelCollector: stopped observing " << gauges.size() << " gauges";
+    if (auto stream = journal_.info())
+        stream << "OTelCollector: stopped observing " << gauges.size() << " gauges";
 }
 
 opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
