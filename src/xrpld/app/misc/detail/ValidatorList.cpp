@@ -451,13 +451,6 @@ ValidatorList::parseBlobs(std::uint32_t version, json::Value const& body)
 
 // static
 std::vector<ValidatorBlobInfo>
-ValidatorList::parseBlobs(protocol::TMValidatorList const& body)
-{
-    return {{.blob = body.blob(), .signature = body.signature(), .manifest = {}}};
-}
-
-// static
-std::vector<ValidatorBlobInfo>
 ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
 {
     if (body.blobs_size() > kMaxSupportedBlobs)
@@ -476,7 +469,7 @@ ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
     }
     XRPL_ASSERT(
         result.size() == body.blobs_size(),
-        "xrpl::ValidatorList::parseBlobs(TMValidatorList) : result size "
+        "xrpl::ValidatorList::parseBlobs(TMValidatorListCollection) : result size "
         "match");
     return result;
 }
@@ -520,29 +513,6 @@ splitMessageParts(
 {
     if (end <= begin)
         return 0;
-    if (end - begin == 1)
-    {
-        protocol::TMValidatorList smallMsg;
-        smallMsg.set_version(1);
-        smallMsg.set_manifest(largeMsg.manifest());
-
-        auto const& blob = largeMsg.blobs(begin);
-        smallMsg.set_blob(blob.blob());
-        smallMsg.set_signature(blob.signature());
-        // This is only possible if "downgrading" a v2 UNL to v1.
-        if (blob.has_manifest())
-            smallMsg.set_manifest(blob.manifest());
-
-        XRPL_ASSERT(
-            Message::totalSize(smallMsg) <= kMaximumMessageSize,
-            "xrpl::splitMessageParts : maximum message size");
-
-        messages.emplace_back(
-            std::make_shared<Message>(smallMsg, protocol::mtVALIDATOR_LIST),
-            sha512Half(smallMsg),
-            1);
-        return messages.back().numVLs;
-    }
 
     std::optional<protocol::TMValidatorListCollection> smallMsg;
     smallMsg.emplace();
@@ -554,11 +524,27 @@ splitMessageParts(
         *smallMsg->add_blobs() = largeMsg.blobs(i);
     }
 
-    if (Message::totalSize(*smallMsg) > maxSize)
+    auto const size = Message::totalSize(*smallMsg);
+
+    // Split until each message fits, but a single blob can't be split any
+    // further, so stop recursing at that point regardless of maxSize.
+    if (size > maxSize && end - begin > 1)
     {
         // free up the message space
         smallMsg.reset();
         return splitMessage(messages, largeMsg, maxSize, begin, end);
+    }
+
+    // An unsplittable blob is still bounded by the protocol limit: peers drop
+    // messages exceeding it on receipt, so don't waste the bandwidth. maxSize
+    // only ever tightens this (it defaults to kMaximumMessageSize), so a blob
+    // reaching here can exceed maxSize but never the protocol limit.
+    if (size > kMaximumMessageSize)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::splitMessageParts : maximum message size exceeded");
+        return 0;
+        // LCOV_EXCL_STOP
     }
 
     messages.emplace_back(
@@ -566,37 +552,6 @@ splitMessageParts(
         sha512Half(*smallMsg),
         smallMsg->blobs_size());
     return messages.back().numVLs;
-}
-
-// Build a v1 protocol message using only the current VL
-std::size_t
-buildValidatorListMessage(
-    std::vector<ValidatorList::MessageWithHash>& messages,
-    std::uint32_t rawVersion,
-    std::string const& rawManifest,
-    ValidatorBlobInfo const& currentBlob,
-    std::size_t maxSize)
-{
-    XRPL_ASSERT(
-        messages.empty(),
-        "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : empty messages "
-        "input");
-    protocol::TMValidatorList msg;
-    auto const manifest = currentBlob.manifest ? *currentBlob.manifest : rawManifest;
-    auto const version = 1;
-    msg.set_manifest(manifest);
-    msg.set_blob(currentBlob.blob);
-    msg.set_signature(currentBlob.signature);
-    // Override the version
-    msg.set_version(version);
-
-    XRPL_ASSERT(
-        Message::totalSize(msg) <= kMaximumMessageSize,
-        "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
-        "message size");
-    messages.emplace_back(
-        std::make_shared<Message>(msg, protocol::mtVALIDATOR_LIST), sha512Half(msg), 1);
-    return 1;
 }
 
 // Build a v2 protocol message using all the VLs with sequence larger than the
@@ -650,7 +605,6 @@ buildValidatorListMessage(
 // static
 std::pair<std::size_t, std::size_t>
 ValidatorList::buildValidatorListMessages(
-    std::size_t messageVersion,
     std::uint64_t peerSequence,
     std::size_t maxSequence,
     std::uint32_t rawVersion,
@@ -663,14 +617,12 @@ ValidatorList::buildValidatorListMessages(
         !blobInfos.empty(),
         "xrpl::ValidatorList::buildValidatorListMessages : empty messages "
         "input");
-    auto const& [currentSeq, currentBlob] = *blobInfos.begin();
     auto numVLs = std::accumulate(
         messages.begin(), messages.end(), 0, [](std::size_t total, MessageWithHash const& m) {
             return total + m.numVLs;
         });
-    if (messageVersion == 2 && peerSequence < maxSequence)
+    if (peerSequence < maxSequence)
     {
-        // Version 2
         if (messages.empty())
         {
             numVLs = buildValidatorListMessage(
@@ -678,35 +630,12 @@ ValidatorList::buildValidatorListMessages(
             if (messages.empty())
             {
                 // No message was generated. Create an empty placeholder so we
-                // dont' repeat the work later.
+                // don't repeat the work later.
                 messages.emplace_back();
             }
         }
 
-        // Don't send it next time.
         return {maxSequence, numVLs};
-    }
-    if (messageVersion == 1 && peerSequence < currentSeq)
-    {
-        // Version 1
-        if (messages.empty())
-        {
-            numVLs = buildValidatorListMessage(
-                messages,
-                rawVersion,
-                currentBlob.manifest ? *currentBlob.manifest : rawManifest,
-                currentBlob,
-                maxSize);
-            if (messages.empty())
-            {
-                // No message was generated. Create an empty placeholder so we
-                // dont' repeat the work later.
-                messages.emplace_back();
-            }
-        }
-
-        // Don't send it next time.
-        return {currentSeq, numVLs};
     }
     return {0, 0};
 }
@@ -725,19 +654,8 @@ ValidatorList::sendValidatorList(
     HashRouter& hashRouter,
     beast::Journal j)
 {
-    std::size_t messageVersion = 0;
-    if (peer.supportsFeature(ProtocolFeature::ValidatorList2Propagation))
-    {
-        messageVersion = 2;
-    }
-    else if (peer.supportsFeature(ProtocolFeature::ValidatorListPropagation))
-    {
-        messageVersion = 1;
-    }
-    if (messageVersion == 0u)
-        return;
     auto const [newPeerSequence, numVLs] = buildValidatorListMessages(
-        messageVersion, peerSequence, maxSequence, rawVersion, rawManifest, blobInfos, messages);
+        peerSequence, maxSequence, rawVersion, rawManifest, blobInfos, messages);
     if (newPeerSequence != 0u)
     {
         XRPL_ASSERT(
@@ -764,24 +682,11 @@ ValidatorList::sendValidatorList(
             "xrpl::ValidatorList::sendValidatorList : sent or one message");
         if (sent)
         {
-            if (messageVersion > 1)
-            {
-                JLOG(j.debug()) << "Sent " << messages.size()
-                                << " validator list collection(s) containing " << numVLs
-                                << " validator list(s) for " << strHex(publisherKey)
-                                << " with sequence range " << peerSequence << ", "
-                                << newPeerSequence << " to " << peer.fingerprint();
-            }
-            else
-            {
-                XRPL_ASSERT(
-                    numVLs == 1,
-                    "xrpl::ValidatorList::sendValidatorList : one validator "
-                    "list");
-                JLOG(j.debug()) << "Sent validator list for " << strHex(publisherKey)
-                                << " with sequence " << newPeerSequence << " to "
-                                << peer.fingerprint();
-            }
+            JLOG(j.debug()) << "Sent " << messages.size()
+                            << " validator list collection(s) containing " << numVLs
+                            << " validator list(s) for " << strHex(publisherKey)
+                            << " with sequence range " << peerSequence << ", " << newPeerSequence
+                            << " to " << peer.fingerprint();
         }
     }
 }
@@ -856,16 +761,9 @@ ValidatorList::broadcastBlobs(
 
     if (toSkip)
     {
-        // We don't know what messages or message versions we're sending
-        // until we examine our peer's properties. Build the message(s) on
-        // demand, but reuse them when possible.
-
-        // This will hold a v1 message with only the current VL if we have
-        // any peers that don't support v2
-        std::vector<ValidatorList::MessageWithHash> messages1;
-        // This will hold v2 messages indexed by the peer's
-        // `publisherListSequence`. For each `publisherListSequence`, we'll
-        // only send the VLs with higher sequences.
+        // Build v2 messages on demand and reuse them when possible. Messages
+        // are indexed by the peer's `publisherListSequence`; for each sequence,
+        // we only send VLs with higher sequences.
         std::map<std::size_t, std::vector<ValidatorList::MessageWithHash>> messages2;
         // If any peers are found that are worth considering, this list will
         // be built to hold info for all of the valid VLs.
@@ -885,8 +783,6 @@ ValidatorList::broadcastBlobs(
                 {
                     if (blobInfos.empty())
                         buildBlobInfos(blobInfos, lists);
-                    auto const v2 =
-                        peer->supportsFeature(ProtocolFeature::ValidatorList2Propagation);
                     sendValidatorList(
                         *peer,
                         peerSequence,
@@ -895,11 +791,10 @@ ValidatorList::broadcastBlobs(
                         lists.rawVersion,
                         lists.rawManifest,
                         blobInfos,
-                        v2 ? messages2[peerSequence] : messages1,
+                        messages2[peerSequence],
                         hashRouter,
                         j);
-                    // Even if the peer doesn't support the messages,
-                    // suppress it so it'll be ignored next time.
+                    // Don't send it next time.
                     hashRouter.addSuppressionPeer(hash, peer->id());
                 }
             }

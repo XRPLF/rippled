@@ -1,0 +1,80 @@
+name: Cargo audit
+
+on:
+  schedule:
+    # 06:32 UTC every Monday.
+    - cron: "32 6 * * 1"
+  push:
+    branches:
+      - "develop"
+      - "release/*"
+    paths:
+      - "crates/**/Cargo.toml"
+      - "crates/Cargo.lock"
+      - ".github/workflows/cargo-audit.yml"
+  pull_request:
+    paths:
+      - "crates/**/Cargo.toml"
+      - "crates/Cargo.lock"
+      - ".github/workflows/cargo-audit.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+    working-directory: crates
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-a0074f8
+    permissions:
+      contents: read
+      # Needed to open an issue on scheduled failures.
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run cargo audit
+        id: audit
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          cargo audit | tee /tmp/cargo-audit.txt
+
+      - name: Prepare issue body
+        if: ${{ steps.audit.outcome != 'success' && github.event_name == 'schedule' }}
+        run: |
+          {
+              echo "## \`cargo audit\` found advisories"
+              echo
+              echo '```'
+              cat /tmp/cargo-audit.txt
+              echo '```'
+              echo
+              echo "---"
+              echo "*This issue was automatically created by the cargo-audit workflow.*"
+          } >/tmp/cargo-audit-issue.md
+
+      - name: Create issue
+        if: ${{ steps.audit.outcome != 'success' && github.event_name == 'schedule' }}
+        uses: XRPLF/actions/create-issue@2b8bc36af85b88bca0dd7bfac2e2dc05f94ad712
+        with:
+          title: "cargo audit found vulnerabilities"
+          body_file: /tmp/cargo-audit-issue.md
+          labels: "Bug,Security"
+
+      - name: Fail if advisories were found
+        if: ${{ steps.audit.outcome != 'success' }}
+        run: |
+          echo "cargo audit found advisories!"
+          cat /tmp/cargo-audit.txt
+          exit 1

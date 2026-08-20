@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -841,6 +842,14 @@ ValidMPTTransfer::finalize(
     if (hasPrivilege(tx, Privilege::OverrideFreeze))
         return true;
 
+    // XLS-0066: a broker must be able to default an already-late loan
+    // regardless of the vault asset's lock state. Gated behind
+    // fixCleanup3_4_0, and scoped below to exactly the broker/vault
+    // pseudo-accounts and the vault's own MPT issuance -- see
+    // FreezeInvariant.cpp's TransfersNotFrozen::finalize for the IOU-side
+    // equivalent and rationale.
+    auto const loanDefaultAccounts = getLoanDefaultFreezeExemptAccounts(view, tx);
+
     // DEX transactions (AMM[Create,Deposit], cross-currency payments, offer creates) are
     // subject to the MPTCanTrade flag in addition to the standard transfer rules.
     // A payment is only DEX if it is a cross-currency payment.
@@ -882,6 +891,13 @@ ValidMPTTransfer::finalize(
         auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
         auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
 
+        // This issuance is the LoanManage default's own vault asset, so the
+        // broker/vault freeze exemption applies to it -- an unrelated MPT
+        // issuance the same accounts happen to hold is still caught.
+        bool const isLoanDefaultAsset = loanDefaultAccounts &&
+            loanDefaultAccounts->asset.holds<MPTIssue>() &&
+            loanDefaultAccounts->asset.get<MPTIssue>().getMptID() == mptID;
+
         for (auto const& [account, value] : values)
         {
             // Classify each account as a sender or receiver based on whether their MPTAmount
@@ -900,8 +916,15 @@ ValidMPTTransfer::finalize(
 
                 // Check once: if any involved account is frozen, the whole issuance transfer is
                 // considered frozen. Only need to check for frozen if there is a transfer of funds.
+                //
+                // The LoanManage default exemption only waives the frozen check, and only for
+                // the specific broker/vault pseudo-accounts identified above -- authorization is
+                // still enforced for them, and both checks still apply to every other account.
+                bool const exemptFromFreeze = isLoanDefaultAsset && loanDefaultAccounts &&
+                    (account == loanDefaultAccounts->broker ||
+                     account == loanDefaultAccounts->vault);
                 if (!invalidTransfer &&
-                    (isFrozen(view, account, MPTIssue{mptID}) ||
+                    ((!exemptFromFreeze && isFrozen(view, account, *sleIssuance)) ||
                      !isAuthorized(view, mptID, account, reqAuth)))
                 {
                     invalidTransfer = true;
