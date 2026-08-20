@@ -207,16 +207,10 @@ target_link_libraries(
 )
 
 add_module(xrpl tx)
-# The wasm engine is a Rust crate reached over cxx: the bridge target supplies the
-# generated `lib.h` and `rust/cxx.h` that `tx/wasm` compiles against, and the Rust
-# static library everything downstream links. PUBLIC because the include path travels
-# with the module's own public headers.
 target_link_libraries(
     xrpl.libxrpl.tx
     PUBLIC xrpl.libxrpl.ledger xrpl_wasm_vm_ffi_cxxbridge
 )
-# Those headers do not exist at configure time, and the header-verification target
-# compiles this module's headers on their own, so both need the crates built first.
 add_dependencies(xrpl.libxrpl.tx xrpl_crates)
 
 add_module(xrpl consensus)

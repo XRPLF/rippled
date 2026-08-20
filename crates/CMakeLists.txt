@@ -103,15 +103,8 @@ endfunction()
 
 add_xrpl_crate(xrpl_wasm_vm_ffi CRATE xrpl_wasm_vm_ffi FILES lib.rs)
 
-# Test-only, and deliberately not part of xrpl_wasm_vm_ffi: it carries the `wat` assembler,
-# which the engine's `wasmi default-features = false` exists to keep out of the consensus
-# path. Linked from src/tests/libxrpl only, so the shipped node cannot contain it.
 add_xrpl_crate(xrpl_wasm_testkit CRATE xrpl_wasm_testkit FILES lib.rs)
 
-# The wasm bridge `include!`s a project header, so its generated translation unit needs
-# the project's include root. Deliberately only that: a header reached from here must
-# stay light enough to compile without the Boost paths this target does not get, which
-# is why `HostContext.h` forward-declares `xrpl::HostFunctions` instead of including it.
 target_include_directories(
     xrpl_wasm_vm_ffi_cxxbridge
     PRIVATE ${CMAKE_SOURCE_DIR}/include
