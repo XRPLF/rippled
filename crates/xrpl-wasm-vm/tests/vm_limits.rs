@@ -518,3 +518,21 @@ fn a_trapping_guest_fails_the_run() {
     let wat = module(&[ONE_PAGE], "(i32.load (i32.const 100000))");
     assert_stage!(failure(&wat, &host), RunError::Trap(_));
 }
+
+#[test]
+fn a_memory64_module_is_rejected_at_compile() {
+    let host = FakeHost::new();
+    let wat = r#"(module
+        (memory i64 1)
+        (func (export "finish") (result i32) (i32.const 0)))"#;
+
+    let failure = assert_stage!(
+        run_with_gas(wat, PLENTY_OF_GAS, &host)
+            .expect_err("a module using 64-bit memory must not run"),
+        RunError::Compile(_)
+    );
+    assert_eq!(
+        failure.fuel_used, 0,
+        "rejected before instantiation, so nothing is charged: {failure}"
+    );
+}

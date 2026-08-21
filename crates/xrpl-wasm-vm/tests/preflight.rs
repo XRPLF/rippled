@@ -505,3 +505,16 @@ fn a_start_section_is_refused_by_screening() {
     let refusal = assert_stage!(refusal(&wat), CheckError::Compile(_)).to_string();
     assert!(refusal.contains("start"), "{refusal}");
 }
+
+#[test]
+fn a_memory64_memory_is_refused_by_screening() {
+    let wat = r#"(module
+        (memory i64 1)
+        (func (export "finish") (result i32) (i32.const 0)))"#;
+
+    let refusal = assert_stage!(refusal(wat), CheckError::Compile(_)).to_string();
+    assert!(
+        refusal.contains("memory64") || refusal.contains("i64"),
+        "{refusal}"
+    );
+}

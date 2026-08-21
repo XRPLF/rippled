@@ -248,7 +248,8 @@ fn build_wasm_engine() -> Engine {
     config.floats(false);
     config.wasm_multi_memory(false);
     config.wasm_custom_page_sizes(false);
-    config.wasm_memory64(false);
+    // Disabled through the crate feature flag.
+    // config.wasm_memory64(false);
     config.wasm_wide_arithmetic(false);
     config.allow_start_fn(false);
     Engine::new(&config)
