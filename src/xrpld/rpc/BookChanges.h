@@ -7,6 +7,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
@@ -50,6 +51,36 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount,                 // close rate
             std::optional<uint256>>>  // optional: domain id
         tally;
+
+    // Accumulating volume can exceed what the asset can represent, and the two
+    // types fail differently: STAmount's IOU addition throws, while its MPT
+    // addition is a raw int64 add that wraps past kMaxMpTokenAmount to a
+    // negative amount. Reject both so that one extreme crossing cannot poison
+    // this ledger's report, which is otherwise permanent -- the ledger is
+    // immutable and the computation deterministic.
+    auto const checkedAdd = [](STAmount& acc, STAmount const& delta) {
+        return acc.asset().visit(
+            [&](Issue const&) {
+                try
+                {
+                    acc += delta;
+                }
+                catch (std::overflow_error const&)
+                {
+                    return false;
+                }
+                return true;
+            },
+            [&](MPTIssue const&) {
+                // Both volumes are non-negative by the time they reach the
+                // tally, so this cannot underflow.
+                auto const room = static_cast<std::int64_t>(kMaxMpTokenAmount) - acc.mpt().value();
+                if (delta.mpt().value() > room)
+                    return false;
+                acc += delta;
+                return true;
+            });
+    };
 
     for (auto& tx : lpAccepted->txs)
     {
@@ -171,8 +202,15 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                 // increment volume
                 auto& entry = tally[key];
 
-                std::get<0>(entry) += first;   // side A vol
-                std::get<1>(entry) += second;  // side B vol
+                // Commit both sides or neither, so an overflow on the second
+                // cannot leave the entry half-updated. Skipping the crossing
+                // matches how an unrepresentable rate is handled above.
+                STAmount volA = std::get<0>(entry);
+                STAmount volB = std::get<1>(entry);
+                if (!checkedAdd(volA, first) || !checkedAdd(volB, second))
+                    continue;
+                std::get<0>(entry) = volA;  // side A vol
+                std::get<1>(entry) = volB;  // side B vol
 
                 if (std::get<2>(entry) < rate)  // high
                     std::get<2>(entry) = rate;
