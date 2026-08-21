@@ -1,7 +1,9 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -54,6 +56,38 @@ enum class TruncateShares : bool { No = false, Yes = true };
  * the redeemer is the sole remaining shareholder.
  */
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
+
+/**
+ * Returns the effective total of assets backing outstanding shares for the
+ * purposes of a withdrawal, i.e. sfAssetsTotal, discounted by sfLossUnrealized
+ * unless waived. This is the numerator used by both withdraw conversion
+ * helpers (assetsToSharesWithdraw and sharesToAssetsWithdraw) to compute the
+ * share/asset exchange rate.
+ *
+ * @param vault The vault SLE.
+ * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
+ *              loss.
+ */
+[[nodiscard]] Number
+assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive);
+
+/**
+ * Returns whether debiting `amount` from `total` — the current value of a
+ * vault's sfAssetsTotal or sfAssetsAvailable field — would canonicalize back
+ * to the exact same STAmount value it started at. This happens when a
+ * genuinely non-zero debit is dust relative to a `total` large enough to
+ * exceed STAmount's significant-digit precision: the shares still move, but
+ * the stored total doesn't change, which otherwise trips the ValidVault
+ * invariant after the fact instead of failing cleanly upfront.
+ *
+ * @param asset The vault's underlying asset, used to canonicalize both sides
+ *              the same way the ledger will when the field is stored.
+ * @param total The field's current value.
+ * @param amount The amount to debit. A value of zero always returns false;
+ *               that case is rejected separately and unconditionally.
+ */
+[[nodiscard]] bool
+debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount);
 
 /**
  * From the perspective of a vault, return the number of shares to demand from

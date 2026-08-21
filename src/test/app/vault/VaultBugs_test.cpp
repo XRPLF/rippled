@@ -2,9 +2,12 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
@@ -22,12 +25,15 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -414,16 +420,189 @@ private:
         };
 
         {
+            // fixCleanup3_4_0 has to be off as well: its depositor-side check
+            // rejects alice's deposit for the same reason, so the invariant is
+            // only reachable with neither guard in place.
             testcase(
                 "bug: VaultDeposit below Vault precision canonicalized to zero "
                 "(pre-fixCleanup3_2_0)");
-            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+            runScenario(
+                testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit below Vault precision canonicalized to zero "
                 "(post-fixCleanup3_2_0)");
             runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
+    // A deposit does not transfer the requested amount. It transfers the
+    // request truncated to a whole number of shares and converted back, which
+    // can be strictly smaller. When that smaller value is below half a ULP at
+    // the depositor's own trust-line scale, the debit rounds away to nothing:
+    // the depositor pays nothing, while the vault books the assets and mints
+    // shares. ValidVault catches the desync at finalize time.
+    //
+    // Only a non-power-of-ten assets-to-shares ratio is needed, and that
+    // happens through ordinary use: LoanPay books accrued interest into
+    // sfAssetsTotal without minting shares.
+    //
+    // The fixCleanup3_2_0 guard in preclaim does not help, because it tests the
+    // raw requested amount, which is large enough to survive the rounding.
+    // Post-fixCleanup3_4_0 the post-truncation value is checked as well and the
+    // deposit is rejected with tecPRECISION_LOSS before anything moves.
+    void
+    testBugDepositShareTruncationSubUlp()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        // How bob's trust line is set up before he deposits. Holding is the plain case: a large
+        // positive balance whose ULP swallows the debit. InDebt is the case where the stored
+        // balance and the spendable amount diverge: bob owes the issuer 1e16, and the issuer's
+        // limit on the same line lets him spend 1000 anyway. Reading the spendable amount there
+        // reports a small, finely scaled number, while the rounding of the debit is still governed
+        // by the 1e16 he actually holds.
+        enum class Line { Holding, InDebt };
+
+        auto runScenario = [this](FeatureBitset features, Line line, TER expected) {
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const carol{"carol"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, carol, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            PrettyAsset const bobUsd{bob["USD"]};
+            STAmount const trustLimit{usd.raw(), Number{99'999'999'999'999'999LL}};
+            // Bob's balance sits exactly on a multiple-of-10 boundary at the
+            // 1e16 IOU precision cusp, where one ULP is 10.
+            STAmount const bobEdge{usd.raw(), Number{10'000'000'000'000'010LL}};
+            STAmount const bobDebt{bobUsd.raw(), Number{10'000'000'000'000'000LL}};
+            STAmount const oppositeLimit{bobUsd.raw(), Number{10'000'000'000'001'000LL}};
+
+            env(trust(alice, trustLimit));
+            env(trust(carol, trustLimit));
+            env(trust(bob, trustLimit));
+            env.close();
+
+            env(pay(issuer, alice, usd(1'000)));
+            env(pay(issuer, carol, usd(1'000)));
+            if (line == Line::Holding)
+            {
+                env(pay(issuer, bob, bobEdge));
+            }
+            else
+            {
+                // The issuer trusts bob's own USD, so bob can issue 1e16 back and still have
+                // 1000 of spendable room left on the same line.
+                env(trust(issuer, oppositeLimit));
+                env.close();
+                env(pay(bob, issuer, bobDebt));
+            }
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            // Alice deposits 1000 USD, minting 1000 shares 1:1.
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1'000)}));
+            env.close();
+
+            // A loan broker on the vault, then a bullet loan at 24% interest:
+            // a single payment, one year out.
+            auto const brokerKeylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+            env(set(carol, brokerKeylet.key, usd(1'000).value()),
+                loan::kInterestRate(percentageToTenthBips(24)),
+                kGracePeriod(60),
+                kPaymentInterval(365 * 24 * 60 * 60),
+                kPaymentTotal(1),
+                Sig(sfCounterpartySignature, alice),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // Advance to just before the single payment falls due and let carol
+            // repay principal plus interest. LoanPay is what books the accrued
+            // interest into sfAssetsTotal; under cash-basis accounting LoanSet
+            // alone does not. Share supply stays at 1000, so
+            // assetsTotal/sharesTotal becomes 1240/1000.
+            env.close(std::chrono::seconds{(365 * 24 * 60 * 60) - 3600});
+            env(pay(carol, loanKeylet.key, usd(2'000).value()), Ter(tesSUCCESS));
+            env.close();
+
+            // Pin the ratio the rest of the scenario reasons about, so the test cannot quietly
+            // stop exercising the bug if the setup drifts.
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault && sleVault->at(sfAssetsTotal) == Number{1'240});
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+            BEAST_EXPECT(sleIssuance && sleIssuance->at(sfOutstandingAmount) == 1'000);
+
+            // Bob deposits 6 USD, which rounds to 10 at his own trust-line
+            // scale and so clears the fixCleanup3_2_0 guard. But
+            // floor(1000 * 6 / 1240) is 4 shares, worth 4 * 1240 / 1000 = 4.96,
+            // and that is below half a ULP of his balance, so it rounds away to
+            // nothing when subtracted.
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = usd(6)}),
+                Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultDeposit share truncation lets depositor debit "
+                "round away to zero (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit share truncation lets depositor debit "
+                "round away to zero (pre-fixCleanup3_2_0 and pre-fixCleanup3_4_0)");
+            runScenario(
+                testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0,
+                Line::Holding,
+                tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit share truncation rejected with "
+                "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), Line::Holding, tecPRECISION_LOSS);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit share truncation rejected with "
+                "tecPRECISION_LOSS (post-fixCleanup3_4_0, pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, Line::Holding, tecPRECISION_LOSS);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit share truncation against a debt balance "
+                "round away to zero (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit share truncation against a debt balance rejected with "
+                "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), Line::InDebt, tecPRECISION_LOSS);
         }
     }
 
@@ -524,6 +703,102 @@ private:
                 "bug: VaultWithdraw to self at IOU edge succeeds "
                 "(post-fixCleanup3_2_0)");
             runScenario(testableAmendments(), DestKind::Self, tesSUCCESS);
+        }
+    }
+
+    // Bug: a debit can be genuinely non-zero yet still be dust relative to a
+    // sfAssetsTotal/sfAssetsAvailable large enough to exceed STAmount's precision, e.g.
+    // AssetsTotal 2e12 minus a 1e-6 debit needs 19 significant digits and rounds straight
+    // back to 2e12. The shares still move, so ValidVault later fails with "must decrease
+    // vault balance" instead of a clean upfront rejection.
+    //
+    // Fix (fixCleanup3_4_0): reject upfront with tecPRECISION_LOSS if the debit would
+    // canonicalize back to the prior stored value.
+    //
+    // With a single depositor AssetsTotal == AssetsAvailable, so both
+    // debitIsNonZeroDust operands trip together here. LoanRounding_test's
+    // "dust debit vs AssetsTotal only" case isolates the AssetsTotal operand
+    // via a heavily-loaned vault.
+    void
+    testBugVaultDustDebitCanonicalizesToNoOp()
+    {
+        using namespace test::jtx;
+
+        // Fund a single depositor and have them deposit `total` USD in one shot (default
+        // scale 6, so shares mint at exactly total*1e6).
+        auto const seedVault = [](Env& env, Number const& total) {
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const holder{"holder"};
+
+            env.fund(XRP(1'000'000), issuer, owner, holder);
+            env.close();
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(holder, usd(100'000'000'000'000LL)));
+            env.close();
+            env(pay(issuer, holder, usd(total)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = holder, .id = keylet.key, .amount = usd(total)}),
+                Ter(tesSUCCESS));
+            env.close();
+
+            return keylet;
+        };
+
+        {
+            auto runScenario = [&](FeatureBitset features, TER expected) {
+                Env env(*this, features);
+                Number const total{2, 12};
+                auto const keylet = seedVault(env, total);
+
+                Account const issuer{"issuer"};
+                PrettyAsset const usd{issuer["USD"]};
+
+                // 1 share's worth of assets: 1e-6, below AssetsTotal's storage precision.
+                env(Vault::clawback(
+                        {.issuer = issuer,
+                         .id = keylet.key,
+                         .holder = Account{"holder"},
+                         .amount = usd(Number{1, -6}).value()}),
+                    Ter(expected));
+                env.close();
+            };
+
+            testcase("bug: VaultClawback dust debit fires invariant (pre-fixCleanup3_4_0)");
+            runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            testcase("bug: VaultClawback dust debit rejected cleanly (post-fixCleanup3_4_0)");
+            runScenario(all_, tecPRECISION_LOSS);
+        }
+
+        {
+            auto runScenario = [&](FeatureBitset features, TER expected) {
+                Env env(*this, features);
+                Number const total{2, 12};
+                auto const keylet = seedVault(env, total);
+
+                MPTIssue const share{env.le(keylet)->at(sfShareMPTID)};
+
+                // Redeem 1 share, worth 1e-6 assets, below AssetsTotal's storage precision.
+                env(Vault::withdraw(
+                        {.depositor = Account{"holder"},
+                         .id = keylet.key,
+                         .amount = STAmount{share, 1}}),
+                    Ter(expected));
+                env.close();
+            };
+
+            testcase("bug: VaultWithdraw dust debit fires invariant (pre-fixCleanup3_4_0)");
+            runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            testcase("bug: VaultWithdraw dust debit rejected cleanly (post-fixCleanup3_4_0)");
+            runScenario(all_, tecPRECISION_LOSS);
         }
     }
 
@@ -987,7 +1262,9 @@ public:
         testBugMakeDeltaPosteriorScale();
         testBugMakeDeltaAnteriorScale();
         testVaultDepositCanonicalizeToZero();
+        testBugDepositShareTruncationSubUlp();
         testVaultWithdrawCanonicalizeToZero();
+        testBugVaultDustDebitCanonicalizesToNoOp();
         testVaultDepositNegativeBalanceFromOppositeLimit();
         testBug6LimitBypassWithShares();
         testBugClawbackRoundTripOvershoot();
