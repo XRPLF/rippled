@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -260,7 +261,7 @@ public:
         else
         {
             if (!exists())
-                throw std::logic_error("xrpl::SLEBase::type : entry does not exist");
+                Throw<std::logic_error>("xrpl::SLEBase::type : entry does not exist");
             return sle_->getType();
         }
     }
@@ -284,7 +285,7 @@ public:
         else
         {
             if (!exists())
-                throw std::logic_error("xrpl::SLEBase::keylet : entry does not exist");
+                Throw<std::logic_error>("xrpl::SLEBase::keylet : entry does not exist");
             // Take the type from the SLE, not from kEntryType: the adopt-SLE
             // constructor's type check is assert-only, so a Release build can
             // be holding an SLE whose type disagrees with the binding, and the
@@ -316,18 +317,22 @@ public:
 
     /**
      * Const dereference operators (always available)
+     *
+     * @throws std::logic_error if exists() is false.
      */
     STLedgerEntry const*
     operator->() const
     {
-        XRPL_ASSERT(exists(), "xrpl::SLEBase::operator-> : exists");
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::operator-> : entry does not exist");
         return sle_.get();
     }
 
     STLedgerEntry const&
     operator*() const
     {
-        XRPL_ASSERT(exists(), "xrpl::SLEBase::operator* : exists");
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::operator* : entry does not exist");
         return *sle_;
     }
 
@@ -362,12 +367,15 @@ public:
 
     /**
      * Mutable dereference operators
+     *
+     * @throws std::logic_error if exists() is false.
      */
     STLedgerEntry*
     operator->()
         requires kIsWritable
     {
-        XRPL_ASSERT(exists(), "xrpl::SLEBase::operator-> : exists");
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::operator-> : entry does not exist");
         return sle_.get();
     }
 
@@ -375,15 +383,22 @@ public:
     operator*()
         requires kIsWritable
     {
-        XRPL_ASSERT(exists(), "xrpl::SLEBase::operator* : exists");
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::operator* : entry does not exist");
         return *sle_;
     }
 
+    /**
+     * Inserts the entry into the view.
+     *
+     * @throws std::logic_error if exists() is false.
+     */
     void
     insert()
         requires kIsWritable
     {
-        XRPL_ASSERT(exists(), "xrpl::SLEBase::insert : exists");
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::insert : entry does not exist");
         view_.insert(sle_);
     }
 
@@ -397,29 +412,41 @@ public:
      * exact SLE and builds the DeletedNode's FinalFields from it, so a write
      * through the entry after erase() would land in transaction metadata
      * with no diagnostic at all.
+     *
+     * @throws std::logic_error if exists() is false.
      */
     void
     erase()
         requires kIsWritable
     {
-        XRPL_ASSERT(exists(), "xrpl::SLEBase::erase : exists");
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::erase : entry does not exist");
         view_.erase(sle_);
         sle_ = nullptr;
     }
 
+    /**
+     * @throws std::logic_error if exists() is false.
+     */
     void
     update()
         requires kIsWritable
     {
-        XRPL_ASSERT(exists(), "xrpl::SLEBase::update : exists");
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::update : entry does not exist");
         view_.update(sle_);
     }
 
+    /**
+     * @throws std::logic_error if exists() is true: newSLE() would otherwise
+     *         silently discard the SLE already held.
+     */
     void
     newSLE()
         requires kIsWritable
     {
-        XRPL_ASSERT(!exists(), "xrpl::SLEBase::newSLE : no existing SLE");
+        if (exists())
+            Throw<std::logic_error>("xrpl::SLEBase::newSLE : entry already exists");
         sle_ = std::make_shared<SLE>(key_);
     }
 

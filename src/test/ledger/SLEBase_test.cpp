@@ -46,6 +46,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
 
+#include <tuple>
 #include <type_traits>
 
 namespace xrpl {
@@ -391,6 +392,44 @@ class SLEBase_test : public beast::unit_test::Suite
         BEAST_EXPECT(readOnly->getFieldU32(sfSequence) == bumped);
     }
 
+    void
+    testThrowsOnMissingEntry()
+    {
+        testcase("throws on missing entry");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const bob("bob");
+
+        // A generic read-only entry has no static type to fall back on, so
+        // type() must read it off the (absent) SLE and throw.
+        ReadOnlySLE const absent(keylet::account(bob.id()), *env.current());
+        BEAST_EXPECT(!absent.exists());
+        try
+        {
+            std::ignore = absent.type();
+            fail("type() on a missing entry should throw");
+        }
+        catch (std::logic_error const&)
+        {
+            pass();
+        }
+
+        // A per-type read-only entry always knows its type, but keylet() and
+        // key() still have to derive the ledger key from the SLE.
+        RAccountRootEntry const missing(bob.id(), *env.current());
+        BEAST_EXPECT(!missing.exists());
+        try
+        {
+            std::ignore = missing.key();
+            fail("key() on a missing entry should throw");
+        }
+        catch (std::logic_error const&)
+        {
+            pass();
+        }
+    }
+
 public:
     void
     run() override
@@ -402,6 +441,7 @@ public:
         testWritableLifecycle();
         testConversion();
         testResolveEntryPeeks();
+        testThrowsOnMissingEntry();
     }
 };
 
