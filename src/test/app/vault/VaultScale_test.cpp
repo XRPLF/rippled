@@ -547,13 +547,10 @@ private:
 
             {
                 testcase("Scale withdraw with rounding shares up (truncated post-fixCleanup3_4_0)");
-                // Pre-fixCleanup3_4_0: shares would round UP:
-                //   shares = round(875 * 3.75 / 87.5) = round(37.5) = 38
-                //   assets = 87.5 * 38 / 875 = 3.8 > 3.75 requested
-                // (depositor would receive 0.05 more than asked for).
-                //
-                // Post-fixCleanup3_4_0 (see FN-73 in VaultBugs_test):
-                // shares are truncated (rounded down) instead:
+                // Pre-fixCleanup3_4_0:
+                //   shares = round(875 * 3.75 / 87.5) = 38
+                //   assets = 87.5 * 38 / 875 = 3.8 > 3.75 requested.
+                // Post-fixCleanup3_4_0:
                 //   shares = floor(37.5) = 37
                 //   assets = 87.5 * 37 / 875 = 3.7 <= 3.75 requested.
 
@@ -578,12 +575,9 @@ private:
 
             {
                 testcase("Scale withdraw with rounding shares down");
-                // Post-fixCleanup3_4_0 chained state coming in:
-                //   838 shares outstanding, 83.8 assets.
-                // assetsToSharesWithdraw (truncated post-fixCleanup3_4_0):
-                //  shares = floor(838 * 3.72 / 83.8) = floor(37.199...) = 37
-                // sharesToAssetsWithdraw:
-                //  assets = 83.8 * 37 / 838 = 3.7 <= 3.72 requested.
+                // Chained state: 838 shares outstanding, 83.8 assets.
+                //   shares = floor(838 * 3.72 / 83.8) = floor(37.199...) = 37
+                //   assets = 83.8 * 37 / 838 = 3.7 <= 3.72 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.withdraw(
@@ -606,16 +600,9 @@ private:
 
             {
                 testcase("Scale withdraw tiny amount rejected post-fixCleanup3_4_0");
-                // Post-fixCleanup3_4_0 chained state coming in:
-                //   801 shares outstanding, 80.1 assets.
-                //
-                // Requesting 0.09 assets:
+                // Chained state: 801 shares outstanding, 80.1 assets.
                 //   shares = floor(801 * 0.09 / 80.1) = floor(0.9) = 0
-                // Zero shares means no value can be moved at this
-                // precision, so the transactor returns tecPRECISION_LOSS —
-                // the request is honored strictly ("up to N", but N is
-                // unrepresentable) instead of silently delivering 0.1
-                // when 0.09 was asked for. State is unchanged.
+                // Zero shares => tecPRECISION_LOSS. State is unchanged.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.withdraw(
@@ -749,13 +736,10 @@ private:
 
             {
                 testcase("Scale clawback with rounding shares up (truncated post-fixCleanup3_4_0)");
-                // Pre-fixCleanup3_4_0: shares would round UP:
-                //   shares = round(875 * 3.75 / 87.5) = round(37.5) = 38
-                //   assets = 87.5 * 38 / 875 = 3.8 > 3.75 requested
-                // (issuer would recover 0.05 more than asked for).
-                //
-                // Post-fixCleanup3_4_0 (see FN-73 in VaultBugs_test): shares
-                // are truncated (rounded down) instead:
+                // Pre-fixCleanup3_4_0:
+                //   shares = round(875 * 3.75 / 87.5) = 38
+                //   assets = 87.5 * 38 / 875 = 3.8 > 3.75 requested.
+                // Post-fixCleanup3_4_0:
                 //   shares = floor(37.5) = 37
                 //   assets = 87.5 * 37 / 875 = 3.7 <= 3.75 requested.
 
@@ -779,12 +763,9 @@ private:
 
             {
                 testcase("Scale clawback with rounding shares down");
-                // Post-fixCleanup3_4_0 chained state coming in:
-                //   838 shares outstanding, 83.8 assets.
-                // assetsToSharesWithdraw (truncated post-fixCleanup3_4_0):
-                //  shares = floor(838 * 3.72 / 83.8) = floor(37.199...) = 37
-                // sharesToAssetsWithdraw:
-                //  assets = 83.8 * 37 / 838 = 3.7 <= 3.72 requested.
+                // Chained state: 838 shares outstanding, 83.8 assets.
+                //   shares = floor(838 * 3.72 / 83.8) = floor(37.199...) = 37
+                //   assets = 83.8 * 37 / 838 = 3.7 <= 3.72 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.clawback(
@@ -806,16 +787,9 @@ private:
 
             {
                 testcase("Scale clawback tiny amount rejected post-fixCleanup3_4_0");
-                // Post-fixCleanup3_4_0 chained state coming in:
-                //   801 shares outstanding, 80.1 assets.
-                //
-                // Requesting 0.09 assets:
+                // Chained state: 801 shares outstanding, 80.1 assets.
                 //   shares = floor(801 * 0.09 / 80.1) = floor(0.9) = 0
-                // Zero shares means no value can be moved at this
-                // precision, so the transactor returns tecPRECISION_LOSS —
-                // the request is honored strictly ("up to N", but N is
-                // unrepresentable) instead of silently clawing back 0.1
-                // when 0.09 was asked for. State is unchanged.
+                // Zero shares => tecPRECISION_LOSS. State is unchanged.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.clawback(

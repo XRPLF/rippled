@@ -271,18 +271,11 @@ VaultClawback::assetsToClawback(
         }
         else
         {
-            // Pre-fixCleanup3_4_0 assetsToSharesWithdraw rounded shares
-            // to nearest, and the round-trip back through
-            // sharesToAssetsWithdraw could yield assetsRecovered strictly
-            // greater than the caller's clawbackAmount whenever the share
-            // rounding went up (e.g. assetsTotal=7, sharesTotal=5,
-            // request 4 → shares = round(20/7) = 3 → assets = 7*3/5 =
-            // 4.2). Post-amendment we truncate shares down instead: the
-            // round-tripped assets are then <= clawbackAmount by
-            // construction (the clamp branch below already truncates for
-            // the same reason). Rounding down never overrecovers; at
-            // worst it underrecovers by less than one asset-per-share,
-            // which is safe under the "clawback at most N" semantic.
+            // Pre-fixCleanup3_4_0: shares were rounded to nearest, so the
+            // round-trip back to assets could exceed clawbackAmount.
+            // Post-amendment: truncate shares so assetsRecovered <=
+            // clawbackAmount by construction (matches the clamp branch
+            // below).
             auto const truncate = ctx_.view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes
                                                                                : TruncateShares::No;
             auto const maybeShares =

@@ -240,24 +240,14 @@ VaultWithdraw::doApply()
         {
             // Fixed assets, variable shares.
             //
-            // Pre-fixCleanup3_4_0: assetsToSharesWithdraw rounded shares to
-            // nearest, so the round-trip back through sharesToAssetsWithdraw
-            // could yield assetsWithdrawn strictly greater than the caller's
-            // requested amount whenever the share rounding went up (e.g.
-            // assetsTotal=7, sharesTotal=5, request 4 → shares =
-            // round(20/7) = 3 → assets = 7*3/5 = 4.2). That has two
-            // problems: it violates the "withdraw up to N" semantic
-            // (depositor asked for at most N and got more), and it can
-            // bypass the preclaim canWithdraw check on the destination —
-            // preclaim validated against the requested amount, but doApply
-            // then delivers a strictly larger amount that a limit-bound
-            // destination cannot actually receive.
-            //
-            // Post-fixCleanup3_4_0: truncate shares down so assetsWithdrawn
-            // is <= the requested amount by construction. At worst this
-            // underwithdraws by less than one asset-per-share; if it
-            // underwithdraws all the way to zero shares, the
-            // tecPRECISION_LOSS guard below fires.
+            // Pre-fixCleanup3_4_0: shares were rounded to nearest, so the
+            // round-trip back to assets could exceed the requested amount.
+            // That over-delivers to the depositor and can bypass the
+            // preclaim canWithdraw check on the destination, which was
+            // validated against the requested amount only.
+            // Post-amendment: truncate shares so assetsWithdrawn <=
+            // requested amount by construction. If truncation yields zero
+            // shares, the tecPRECISION_LOSS guard below fires.
             auto const truncate =
                 view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
             {
