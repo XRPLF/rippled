@@ -540,7 +540,11 @@ fn an_endless_loop_is_stopped_by_gas() {
         matches!(failure.error, RunError::OutOfGas),
         "expected the meter to stop it, got: {failure}"
     );
-    // wasmi traps the back-edge it cannot pay for, leaving the last unit unspent.
+    // The cost break down is as follows:
+    // 1. There is a function entry charge (finish function) which seems to be 63 units of fuel.
+    // 2. Each iteration costs 2 units of fuel.
+    // For a GAS amount of 100,000, we will be limited to burning an odd number of fuel.
+    // So the way the test is written, the most fuel that will be used is 99,999 units.
     assert_eq!(
         failure.fuel_used,
         GAS - 1,
