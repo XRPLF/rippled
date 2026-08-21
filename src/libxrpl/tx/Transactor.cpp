@@ -41,11 +41,12 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
+#include <functional>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -1541,53 +1542,12 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
 }
 
 [[nodiscard]] TER
-Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
+Transactor::checkInvariants(TER result, XRPAmount fee, InvariantScope scope)
 {
-    try
-    {
-        // Phase 1: visit modified entries
-        ctx_.visit(
-            [this](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-                this->visitInvariantEntry(isDelete, before, after);
-            });
+    if (scope == InvariantScope::Full)
+        return xrpl::checkInvariants(ctx_, result, fee, *this);
 
-        // Phase 2: finalize
-        if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
-        {
-            JLOG(ctx_.journal.fatal()) <<                                             //
-                "Transaction has failed one or more transaction invariants, tx: " <<  //
-                to_string(ctx_.tx.getJson(JsonOptions::Values::None));
-            return tecINVARIANT_FAILED;
-        }
-    }
-    catch (std::exception const& ex)
-    {
-        JLOG(ctx_.journal.fatal()) <<                               //
-            "Exception while checking transaction invariants: " <<  //
-            ex.what() <<                                            //
-            ", tx: " <<                                             //
-            to_string(ctx_.tx.getJson(JsonOptions::Values::None));
-
-        return tecINVARIANT_FAILED;
-    }
-
-    return result;
-}
-
-[[nodiscard]] TER
-Transactor::checkInvariants(TER result, XRPAmount fee)
-{
-    /*
-     * DISABLED for 3.2.0 — Must be re-introduced for 3.3.0
-     *
-     * Transaction invariants are disabled due to a performance regression:
-     * the two-pass design (transaction-specific invariants + protocol invariants)
-     * iterates over modified ledger entries twice per transaction.
-     *
-     * Until resolved, only protocol invariants are checked (delegated to ctx_).
-     * This is safe because all transaction invariants in 3.2.0 are  no-ops.
-     */
-    return ctx_.checkInvariants(result, fee);
+    return xrpl::checkInvariants(ctx_, result, fee);
 }
 
 //------------------------------------------------------------------------------
@@ -1639,85 +1599,97 @@ Transactor::operator()()
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
 
-    bool applied = isTesSuccess(result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
+    bool const canApply = std::invoke([&result, &fee, this] {
+        bool canApplyTmp = isTesSuccess(result);
 
-    if (ctx_.size() > kOversizeMetaDataCap)
-        result = tecOVERSIZE;
+        if (ctx_.size() > kOversizeMetaDataCap)
+            result = tecOVERSIZE;
 
-    if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
-    {
-        // If the TapFailHard flag is set, a tec result
-        // must not do anything
-        ctx_.discard();
-        applied = false;
-    }
-    else if (
-        (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
-    {
-        std::tie(result, fee, applied) = processPersistentChanges(result, fee);
-    }
-
-    if (applied)
-    {
-        // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
-        // proceed to apply the tx
-        result = checkInvariants(result, fee);
-        if (result == tecINVARIANT_FAILED)
+        if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
         {
-            // Reset to fee-claim only
-            auto const resetResult = reset(fee);
-            if (!isTesSuccess(resetResult.first))
-                result = resetResult.first;
-
-            fee = resetResult.second;
-
-            // Check invariants again to ensure the fee claiming doesn't violate
-            // invariants. After reset, only protocol invariants are re-checked.
-            // Transaction invariants are not meaningful here — the transaction's
-            // effects have been rolled back.
-            if (isTesSuccess(result) || isTecClaim(result))
-                result = ctx_.checkInvariants(result, fee);
+            // If the TapFailHard flag is set, a tec result
+            // must not do anything
+            ctx_.discard();
+            canApplyTmp = false;
         }
+        else if (
+            (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
+            (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+        {
+            // This is and must remain the only place where `canApplyTmp` can change from false to
+            // true. Changing from true to false is no problem.
+            std::tie(result, fee, canApplyTmp) = processPersistentChanges(result, fee);
+        }
+        return canApplyTmp;
+    });
 
-        // We ran through the invariant checker, which can, in some cases,
-        // return a tef error code. Don't apply the transaction in that case.
-        if (!isTecClaim(result) && !isTesSuccess(result))
-            applied = false;
+    auto const logger = [this](
+                            TER result,
+                            bool canApply,
+                            std::optional<TxMeta>&& metadata = std::nullopt) -> ApplyResult {
+        JLOG(j_.trace()) << (canApply ? "applied " : "not applied ") << transToken(result);
+        return {result, canApply, std::move(metadata)};
+    };
+
+    if (!canApply)
+        return logger(result, canApply);
+
+    // First invariant pass: both protocol and transaction-specific
+    // checks run against the transaction's tentative outcome. If it
+    // does not return tecINVARIANT_FAILED, we can proceed to apply the
+    // tx.
+    result = checkInvariants(result, fee, InvariantScope::Full);
+    if (result == tecINVARIANT_FAILED)
+    {
+        // Fee-claim reset: roll the transaction's effects back so that
+        // only the fee deduction remains. This is the reset referenced
+        // by InvariantScope::ProtocolOnly.
+        auto const resetResult = reset(fee);
+        if (!isTesSuccess(resetResult.first))
+            result = resetResult.first;
+
+        fee = resetResult.second;
+
+        // Re-check invariants against the post-reset (fee-claim only)
+        // state. The transaction's effects are gone, so the
+        // transaction-specific invariants no longer apply and only the
+        // protocol invariants are re-run. A failure here escalates to
+        // tefINVARIANT_FAILED and excludes the tx from the ledger.
+        if (isTesSuccess(result) || isTecClaim(result))
+            result = checkInvariants(result, fee, InvariantScope::ProtocolOnly);
     }
+
+    // We ran through the invariant checker, which can, in some cases,
+    // return a tef error code. Don't apply the transaction in that case.
+    if (!isTecClaim(result) && !isTesSuccess(result))
+        return logger(result, false);
 
     std::optional<TxMeta> metadata;
-    if (applied)
-    {
-        // Transaction succeeded fully or (retries are not allowed and the
-        // transaction could claim a fee)
 
-        // The transactor and invariant checkers guarantee that this will
-        // *never* trigger but if it, somehow, happens, don't allow a tx
-        // that charges a negative fee.
-        if (fee < beast::kZero)
-            Throw<std::logic_error>("fee charged is negative!");
+    // Transaction succeeded fully or (retries are not allowed and the
+    // transaction could claim a fee)
 
-        // Charge whatever fee they specified. The fee has already been
-        // deducted from the balance of the account that issued the
-        // transaction. We just need to account for it in the ledger
-        // header.
-        if (!view().open() && fee != beast::kZero)
-            ctx_.destroyXRP(fee);
+    // The transactor and invariant checkers guarantee that this will
+    // *never* trigger but if it, somehow, happens, don't allow a tx
+    // that charges a negative fee.
+    if (fee < beast::kZero)
+        Throw<std::logic_error>("fee charged is negative!");
 
-        // Once we call apply, we will no longer be able to look at view()
-        metadata = ctx_.apply(result);
-    }
+    // Charge whatever fee they specified. The fee has already been
+    // deducted from the balance of the account that issued the
+    // transaction. We just need to account for it in the ledger
+    // header.
+    if (!view().open() && fee != beast::kZero)
+        ctx_.destroyXRP(fee);
+
+    // Once we call apply, we will no longer be able to look at view()
+    metadata = ctx_.apply(result);
 
     if ((ctx_.flags() & TapDryRun) != 0u)
-    {
-        applied = false;
-    }
+        return logger(result, false, std::move(metadata));
 
-    JLOG(j_.trace()) << (applied ? "applied " : "not applied ") << transToken(result);
-
-    return {result, applied, metadata};
+    return logger(result, canApply, std::move(metadata));
 }
 
 }  // namespace xrpl

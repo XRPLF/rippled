@@ -25,6 +25,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -42,12 +43,15 @@
 
 namespace xrpl {
 
+#pragma push_macro("UNWRAP")
+#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegable, amendment, privileges, ...) \
-    case tag: {                                                              \
-        return (privileges) & priv;                                          \
+#define UNWRAP(...) __VA_ARGS__
+#define TRANSACTION(tag, value, name, settings, ...)                                  \
+    case tag: {                                                                       \
+        return ((TxSettings UNWRAP settings).privileges & priv) != Privilege::NoPriv; \
     }
 
 bool
@@ -65,6 +69,8 @@ hasPrivilege(STTx const& tx, Privilege priv)
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+#undef UNWRAP
+#pragma pop_macro("UNWRAP")
 
 // Returns the human-readable name of a ledger entry's type, falling back to
 // the numeric type if the format is somehow unknown.
@@ -767,7 +773,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if (hasPrivilege(tx, MustDeleteAcct) && isTesSuccess(result))
+    if (hasPrivilege(tx, Privilege::MustDeleteAcct) && isTesSuccess(result))
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -788,7 +794,7 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (hasPrivilege(tx, MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
+    if (hasPrivilege(tx, Privilege::MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -1091,14 +1097,15 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (hasPrivilege(tx, CreateAcct | CreatePseudoAcct) && isTesSuccess(result))
+    if (hasPrivilege(tx, Privilege::CreateAcct | Privilege::CreatePseudoAcct) &&
+        isTesSuccess(result))
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&
              (view.rules().enabled(featureSingleAssetVault) ||
               view.rules().enabled(featureLendingProtocol)));
 
-        if (pseudoAccount && !hasPrivilege(tx, CreatePseudoAcct))
+        if (pseudoAccount && !hasPrivilege(tx, Privilege::CreatePseudoAcct))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";

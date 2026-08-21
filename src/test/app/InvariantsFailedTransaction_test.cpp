@@ -195,7 +195,8 @@ class InvariantsFailedTransaction_test : public beast::unit_test::Suite
         TER terActual = startTer;
         for (TER const& terExpect : ters)
         {
-            terActual = transactor->checkInvariants(terActual, fee);
+            terActual =
+                transactor->checkInvariants(terActual, fee, Transactor::InvariantScope::Full);
             expect(
                 terExpect == terActual,
                 "expected: " + transToken(terExpect) + " got: " + transToken(terActual),
