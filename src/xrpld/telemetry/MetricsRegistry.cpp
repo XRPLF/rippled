@@ -63,6 +63,7 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
+#include <xrpl/telemetry/HistogramBuckets.h>
 #include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
@@ -84,7 +85,6 @@
 #include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -120,65 +120,15 @@ constexpr char kJobTypeLabel[] = "job_type";
 constexpr char kHandlerLabel[] = "handler";
 
 /**
- * Bucket boundaries for microsecond-valued duration instruments.
- *
- * 100 µs, 500 µs, 1 ms, 5 ms, 10 ms, 25 ms, 50 ms, 100 ms, 250 ms, 500 ms,
- * 1 s, 2.5 s, 5 s, 10 s, 30 s, 60 s. Covers sub-millisecond jobs through
- * multi-second stalls without saturating.
- */
-constexpr std::array kMicrosecondBoundaries{
-    100.0,
-    500.0,
-    1'000.0,
-    5'000.0,
-    10'000.0,
-    25'000.0,
-    50'000.0,
-    100'000.0,
-    250'000.0,
-    500'000.0,
-    1'000'000.0,
-    2'500'000.0,
-    5'000'000.0,
-    10'000'000.0,
-    30'000'000.0,
-    60'000'000.0};
-
-/**
- * Bucket boundaries for latencies that are normally sub-millisecond.
- *
- * 1 µs, 2 µs, 5 µs, 10 µs, 25 µs, 50 µs, 100 µs, 250 µs, 500 µs, 1 ms, 5 ms,
- * 25 ms.
- *
- * kMicrosecondBoundaries starts at 100 µs, which is above the entire range a
- * healthy nodestore read occupies, so every warm read falls in its first
- * bucket and the distribution reads as flat. These edges resolve the warm
- * range instead, while still reaching far enough to show a cold tail against
- * it.
- *
- * Currently unused: no sub-millisecond histogram instrument exists yet. The
- * edges live here so the instrument that records nodestore read latency gets
- * a ladder that fits it, rather than silently inheriting the wrong one.
- */
-[[maybe_unused]] constexpr std::array kSubMillisecondBoundaries{
-    1.0,
-    2.0,
-    5.0,
-    10.0,
-    25.0,
-    50.0,
-    100.0,
-    250.0,
-    500.0,
-    1'000.0,
-    5'000.0,
-    25'000.0};
-
-/**
  * Register an explicit-bucket histogram view.
  *
  * The SDK's default boundaries top out at 10,000, so any instrument whose
- * values exceed that saturates and every quantile reads as the ceiling.
+ * values exceed that saturates and every quantile reads as the ceiling. The
+ * floor matters just as much and is easier to miss: a ladder whose first edge
+ * sits above the mass of the distribution makes every low quantile an
+ * interpolation inside bucket 0 -- a number derived from the bucket edge
+ * rather than from any sample. Both ends are chosen from measured
+ * distributions in HistogramBuckets.h.
  *
  * @param views      The registry to add the view to.
  * @param name       Instrument name to match (e.g. "job_running_us").
@@ -206,7 +156,7 @@ addHistogramView(
  * Register the microsecond-ladder view for a duration instrument.
  *
  * Job wait/run times and RPC latencies routinely exceed the SDK default
- * ceiling, so they all share `kMicrosecondBoundaries`.
+ * ceiling, so they all share `buckets::kMicrosecondBuckets`.
  *
  * @param views   The registry to add the view to.
  * @param name    Instrument name to match.
@@ -214,7 +164,10 @@ addHistogramView(
 void
 addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
 {
-    addHistogramView(views, name, {kMicrosecondBoundaries.begin(), kMicrosecondBoundaries.end()});
+    addHistogramView(
+        views,
+        name,
+        xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kMicrosecondBuckets));
 }
 
 }  // namespace
@@ -352,18 +305,13 @@ MetricsRegistry::initExporterAndProvider(
     // asks for at most 8, so the low buckets are fine-grained and the upper
     // ones follow the charge size bands (64, 1024) up to the hard cap.
     addHistogramView(
-        *views,
-        kGetObjectRequestObjects,
-        {1.0, 2.0, 4.0, 8.0, 16.0, 64.0, 256.0, 1'024.0, 4'096.0, 12'288.0});
+        *views, kGetObjectRequestObjects, buckets::toVector(buckets::kObjectCountBuckets));
 
     // Charge values span 0 (free tier) to ~99k for a full-size all-miss
     // request. Boundaries bracket the resource thresholds that decide a
     // peer's fate -- kWarningThreshold (5000) and kDropThreshold (25000) --
     // so a dashboard can show how close charges run to each.
-    addHistogramView(
-        *views,
-        kGetObjectCharge,
-        {0.0, 100.0, 500.0, 1'000.0, 5'000.0, 10'000.0, 25'000.0, 50'000.0, 100'000.0});
+    addHistogramView(*views, kGetObjectCharge, buckets::toVector(buckets::kChargeBuckets));
 
     // Create MeterProvider with resource, then attach the metric reader.
     provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);

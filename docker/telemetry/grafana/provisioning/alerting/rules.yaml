@@ -480,6 +480,15 @@ groups:
       # p99 time a job waits in the queue before running. A sustained p99
       # above 1s means the node is saturated and work is backing up. `le` must
       # stay inside the inner sum or histogram_quantile cannot interpolate.
+      #
+      # Threshold re-validated after the microsecond ladder was re-cut. Do NOT
+      # tune it down against a casual reading of this p99: before that change
+      # the ladder's first edge was 100us with 99.3% of samples beneath it, so
+      # p99 reported 99.7us -- the bucket edge scaled by the quantile, not a
+      # latency. Measured cumulative distribution: 99.26% of samples land
+      # within 100us, 99.969% within 5ms, 99.990% within 100ms, and only
+      # 0.0022% exceed 1s. So 1s sits about four orders of magnitude above the
+      # healthy p99 and fires only on genuine saturation, which is the intent.
       - uid: xrpld-jobqueue-latency-high
         title: JobQueueLatencyHigh
         condition: C
@@ -544,6 +553,12 @@ groups:
       # first and explains the others. Measured p99-of-p95 is 37-49ms on
       # healthy nodes and 488-566ms on nodes that are actively flapping, so
       # 1000ms flags genuine degradation rather than the current baseline.
+      #
+      # Still valid after the millisecond ladder was extended: that change only
+      # ADDED edges above 5s (2s/3s/4s/10s/30s/60s/120s) and removed none, so
+      # every edge bracketing this threshold -- 25/50/100/250/500/1000ms -- is
+      # unchanged and the measurements above still hold. ios_latency's own mean
+      # is 12.9ms, far below the threshold.
       - uid: xrpld-nodestore-io-latency-high
         title: NodeStoreIOLatencyHigh
         condition: C

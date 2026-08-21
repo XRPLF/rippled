@@ -41,6 +41,7 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/MeterImpl.h>
+#include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <opentelemetry/metrics/async_instruments.h>
@@ -168,10 +169,17 @@ private:
 /**
  * @brief OTel-backed implementation of beast::insight::EventImpl.
  *
- * Wraps an OTel Histogram<double> instrument. Each notify() call
- * records the duration in milliseconds. Uses explicit bucket boundaries
- * matching the SpanMetrics connector configuration:
- *   [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000] ms
+ * Wraps an OTel Histogram<double> instrument. Each notify() call records one
+ * sample, interpreted per the Event's unit().
+ *
+ * The instrument's declared unit is what selects its bucket ladder: the
+ * histogram views registered in Telemetry.cpp match on unit, so a `ms`
+ * instrument gets the millisecond ladder and a `By` instrument the byte
+ * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h --
+ * do not restate them here. An earlier version of this comment listed
+ * `[1, 5, ..., 1000, 5000] ms` as "matching the SpanMetrics connector"; that
+ * was true when written and silently became false when the connector's
+ * ladder was extended, which is why the edges now have one owner.
  *
  * Thread safety: OTel Histogram::Record() is thread-safe by specification.
  */
@@ -183,10 +191,14 @@ public:
      *               formatName() by the collector: lowercase, with `.` and
      *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the histogram instrument.
+     * @param unit   What the samples measure. Selects the instrument's
+     *               declared unit, its description, and through the unit the
+     *               bucket ladder a histogram view applies.
      */
     OTelEventImpl(
         std::string const& name,
-        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter);
+        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
+        Unit unit);
 
     ~OTelEventImpl() override = default;
 
@@ -474,6 +486,9 @@ public:
     Event
     makeEvent(std::string const& name) override;
 
+    Event
+    makeEvent(std::string const& name, Unit unit) override;
+
     Gauge
     makeGauge(std::string const& name) override;
 
@@ -652,8 +667,10 @@ OTelCounterImpl::increment(value_type amount)
 
 OTelEventImpl::OTelEventImpl(
     std::string const& name,
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter)
-    : histogram_(meter->CreateDoubleHistogram(name, "Duration in ms", "ms"))
+    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
+    Unit unit)
+    : EventImpl(unit)
+    , histogram_(meter->CreateDoubleHistogram(name, otelUnitDescription(unit), otelUnitCode(unit)))
 {
 }
 
@@ -842,7 +859,13 @@ OTelCollectorImp::makeCounter(std::string const& name)
 Event
 OTelCollectorImp::makeEvent(std::string const& name)
 {
-    return Event(std::make_shared<OTelEventImpl>(formatName(name), otelMeter_));
+    return makeEvent(name, Unit::Millis);
+}
+
+Event
+OTelCollectorImp::makeEvent(std::string const& name, Unit unit)
+{
+    return Event(std::make_shared<OTelEventImpl>(formatName(name), otelMeter_, unit));
 }
 
 Gauge

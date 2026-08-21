@@ -531,12 +531,12 @@ a destructor must not depend on still existing. A query that only groups by
 
 The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Errors, Duration) metrics from every span. No custom metrics code in xrpld is needed.
 
-| Prometheus Metric                   | Type      | Description                                                                    |
-| ----------------------------------- | --------- | ------------------------------------------------------------------------------ |
-| `span_calls_total`                  | Counter   | Total span invocations                                                         |
-| `span_duration_milliseconds_bucket` | Histogram | Latency distribution (buckets: 1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000 ms) |
-| `span_duration_milliseconds_count`  | Histogram | Observation count                                                              |
-| `span_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                             |
+| Prometheus Metric                   | Type      | Description                                                                                                                                                                                                                                                                                                   |
+| ----------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `span_calls_total`                  | Counter   | Total span invocations                                                                                                                                                                                                                                                                                        |
+| `span_duration_milliseconds_bucket` | Histogram | Latency distribution. Buckets come from the collector's spanmetrics config: 0.01, 0.05, 0.1, 0.25, 0.5, 1, 5, 10, 25, 50, 100, 250, 500 ms then 1, 2, 3, 4, 5, 10, 30 s. The sub-millisecond edges exist because most xrpld spans are far below 1 ms; without them every p95/p99 pinned to a constant 0.95 ms |
+| `span_duration_milliseconds_count`  | Histogram | Observation count                                                                                                                                                                                                                                                                                             |
+| `span_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                                                                                                                                                                                                                                                            |
 
 **Standard labels on every metric**: `span_name`, `status_code`, `service_name`, `span_kind`
 
@@ -684,13 +684,14 @@ prefix=xrpld
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
-\* **`rpc_size` instrument mismatch (known issue):** response size in bytes is
-recorded through the millisecond-scaled event histogram (`makeEvent`), so it is
-exported as `rpc_size_milliseconds_bucket` with time-scaled boundaries that top
-out at 5000. Byte values above ~5 KB saturate in the last bucket, so the
-percentiles are not true byte sizes. The _RPC & Pathfinding_ panel is flagged
-accordingly. A dedicated byte-unit histogram is needed to fix this; tracked
-separately.
+\* **`rpc_size` now records bytes as bytes (fixed).** It used to go through the
+millisecond-scaled event histogram and export as `rpc_size_milliseconds_bucket`
+on a ladder topping out at 5000, so the 24.9% of responses larger than 5 kB all
+landed in the last bucket and every percentile read back as a flat 5000 — a
+plausible-looking constant rather than a byte size. `beast::insight::Event` now
+declares a `Unit`, so this instrument is created with unit `By` and exports as
+**`rpc_size_bytes_bucket`** on `kByteBuckets` (512 B to 1 MiB, placed from the
+measured distribution). Queries and panels must use the new name.
 
 **Grafana dashboards**: _Node Health_ (`ios_latency`), _RPC & Pathfinding_ (`rpc_time`, `rpc_size`, `pathfind_*`)
 
