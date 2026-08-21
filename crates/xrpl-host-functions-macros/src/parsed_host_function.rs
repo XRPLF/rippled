@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Attribute, Expr, ExprLit, Ident, Lit, LitStr, PathArguments, ReceiverKind, ReturnType, Safety,
-    Signature, TraitItemFn, Type, TypePath,
+    Attribute, Ident, LitInt, LitStr, PathArguments, ReceiverKind, ReturnType, Safety, Signature,
+    TraitItemFn, Type, TypePath, parse::Parse,
 };
 
 use crate::errors;
@@ -85,8 +85,8 @@ impl ParsedHostFunction {
                 }
             } else if attr.path().is_ident(WASM_NAME) {
                 saw_wasm_name = true;
-                if let Err(error) =
-                    string_value(&attr).and_then(|v| set_once(&mut wasm_name, v, &attr))
+                if let Err(error) = value::<LitStr>(&attr, "a string literal")
+                    .and_then(|v| set_once(&mut wasm_name, v, &attr))
                 {
                     errors.push(error);
                 }
@@ -335,39 +335,28 @@ fn set_once<T>(slot: &mut Option<T>, value: T, attr: &Attribute) -> syn::Result<
     Ok(())
 }
 
-fn int_value(attr: &Attribute) -> syn::Result<u64> {
-    match &attr.meta.require_name_value()?.value {
-        Expr::Lit(ExprLit {
-            lit: Lit::Int(int), ..
-        }) => {
-            // `LitInt` keeps the sign in its digits, so `base10_parse::<u64>`
-            // would report a negative value as "invalid digit found in string".
-            if int.base10_digits().starts_with('-') {
-                return Err(syn::Error::new_spanned(
-                    int,
-                    format!("`{}` must not be negative", path_name(attr)),
-                ));
-            }
-            int.base10_parse()
-        }
-        other => Err(syn::Error::new_spanned(
-            other,
-            format!("`{}` expects an integer literal", path_name(attr)),
-        )),
-    }
+/// The value of `#[name = <value>]`, parsed as `T`.
+///
+/// `expected` completes "`gas` expects …": syn's own message for the wrong kind
+/// of literal names neither the attribute nor what it wanted.
+fn value<T: Parse>(attr: &Attribute, expected: &str) -> syn::Result<T> {
+    let expr = &attr.meta.require_name_value()?.value;
+    syn::parse2(expr.to_token_stream()).map_err(|_| {
+        syn::Error::new_spanned(expr, format!("`{}` expects {expected}", path_name(attr)))
+    })
 }
 
-fn string_value(attr: &Attribute) -> syn::Result<LitStr> {
-    match &attr.meta.require_name_value()?.value {
-        Expr::Lit(ExprLit {
-            lit: Lit::Str(string),
-            ..
-        }) => Ok(string.clone()),
-        other => Err(syn::Error::new_spanned(
-            other,
-            format!("`{}` expects a string literal", path_name(attr)),
-        )),
+fn int_value(attr: &Attribute) -> syn::Result<u64> {
+    let int: LitInt = value(attr, "an integer literal")?;
+    // `LitInt` keeps the sign in its digits, so `base10_parse::<u64>` would
+    // report a negative value as "invalid digit found in string".
+    if int.base10_digits().starts_with('-') {
+        return Err(syn::Error::new_spanned(
+            int,
+            format!("`{}` must not be negative", path_name(attr)),
+        ));
     }
+    int.base10_parse()
 }
 
 /// The attribute's path as written, for diagnostics: `gas`, or `foo::bar`.
@@ -383,8 +372,7 @@ fn path_name(attr: &Attribute) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quote::ToTokens;
-    use syn::parse_quote;
+    use syn::{Expr, ExprLit, Lit, parse_quote};
 
     /// The message of every diagnostic recorded by one failed `parse`.
     ///
