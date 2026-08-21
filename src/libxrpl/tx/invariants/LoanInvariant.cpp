@@ -4,8 +4,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -143,7 +143,7 @@ ValidLoan::finalize(
             // PaymentRemaining==0 rule higher up. What remains is
             // NextPaymentDueDate: LoanManage::defaultLoan clears it (sets to 0)
             // so it is dropped from the ledger entry.
-            if (view.rules().enabled(featureLendingProtocolV1_1) &&
+            if (view.rules().enabled(fixCleanup3_4_0) &&
                 tx.isFlag(tfLoanDefault) &&
                 after->at(~sfNextPaymentDueDate).value_or(0) != 0)
             {
@@ -161,7 +161,7 @@ ValidLoan::finalize(
         // and balances go to zero - covered by the fully-paid-off rule
         // above).
         if (before && isTesSuccess(result) && txType == ttLOAN_PAY &&
-            view.rules().enabled(featureLendingProtocolV1_1) &&
+            view.rules().enabled(fixCleanup3_4_0) &&
             after->at(sfPaymentRemaining) != 0)
         {
             if (!(after->at(sfPrincipalOutstanding) < before->at(sfPrincipalOutstanding)))
@@ -263,7 +263,7 @@ ValidLoan::finalize(
         // OwnerCount-tracking bug or a spurious cascading write. Class-2
         // (transaction post-condition); gate on isTesSuccess.
         if (isTesSuccess(result) &&
-            view.rules().enabled(featureLendingProtocolV1_1) &&
+            view.rules().enabled(fixCleanup3_4_0) &&
             txType == ttLOAN_BROKER_DELETE && !loans_.empty())
         {
             JLOG(j.fatal()) << "Invariant failed: LoanBrokerDelete must not "

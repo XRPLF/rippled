@@ -537,10 +537,10 @@ ValidVault::checkLoanFunding(
         result = false;
     }
 
-    // The remaining participant-side checks are new under featureLendingProtocolV1_1
+    // The remaining participant-side checks are new under fixCleanup3_4_0
     // and use the basis-aware exposure / claim accessors; keep them behind that gate
     // so pre-V1_1 behaviour is unchanged.
-    if (!view.rules().enabled(featureLendingProtocolV1_1))
+    if (!view.rules().enabled(fixCleanup3_4_0))
         return result;
 
     // The broker whose DebtTotal must reflect the newly-originated loan is the
@@ -911,12 +911,12 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
             }
         }
 
-        // Under featureLendingProtocolV1_1 the broker snapshot lets us tie the
+        // Under fixCleanup3_4_0 the broker snapshot lets us tie the
         // vault accounting field, the vault balance, and the broker's cover
         // together as a single identity. The pre-V1_1 cover-residual above only
         // catches asymmetric movements; a default that touched neither side
         // would slip through it because both deltas fall back to zero.
-        if (view.rules().enabled(featureLendingProtocolV1_1) && oneLoan)
+        if (view.rules().enabled(fixCleanup3_4_0) && oneLoan)
         {
             if (beforeBroker_.size() != 1 || afterBroker_.size() != 1 ||
                 afterBroker_[0].key != afterLoan_[0].loanBrokerID)
@@ -1182,14 +1182,14 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         result = false;
     }
 
-    // Under featureLendingProtocolV1_1, tie the broker's aggregate exposure
+    // Under fixCleanup3_4_0, tie the broker's aggregate exposure
     // (DebtTotal) to the touched loan's exposure delta: since a LoanPay
     // touches exactly one loan, `Δ DebtTotal == Δ exposure(loan)`. The
     // universal `DebtTotal == Σ exposure` (item 22) reduces to this delta
     // check because loans are modified one at a time. Basis-aware via
     // exposure(); the residual is rounded once for the same reason as the
     // identity above.
-    if (view.rules().enabled(featureLendingProtocolV1_1))
+    if (view.rules().enabled(fixCleanup3_4_0))
     {
         if (beforeBroker_.size() != 1 || afterBroker_.size() != 1 ||
             afterBroker_[0].key != afterLoan_[0].loanBrokerID)
@@ -1331,7 +1331,7 @@ ValidVault::finalize(
         // directory) as part of doApply; verify no orphan remains on the
         // after-state ledger. Defence-in-depth against a future refactor
         // that would skip one of those erases.
-        if (view.rules().enabled(featureLendingProtocolV1_1))
+        if (view.rules().enabled(fixCleanup3_4_0))
         {
             if (view.read(keylet::mptokenIssuance(beforeVault.shareMPTID)))
             {
@@ -1439,7 +1439,7 @@ ValidVault::finalize(
         result = false;
     }
 
-    if (view.rules().enabled(featureLendingProtocolV1_1))
+    if (view.rules().enabled(fixCleanup3_4_0))
     {
         // Item 3 (XLS-65 §3.1.6.2.1): share MPTokenIssuance static invariants.
         // TransferFee, MaximumAmount and AssetScale are set at VaultCreate
@@ -1530,7 +1530,7 @@ ValidVault::finalize(
         result = false;
     }
 
-    if (view.rules().enabled(featureLendingProtocolV1_1))
+    if (view.rules().enabled(fixCleanup3_4_0))
     {
         // §3.1.2/§3.3.4: AssetsMaximum caps AssetsTotal. Currently only
         // checked in the ttVAULT_SET and ttVAULT_DEPOSIT branches; the
@@ -1609,12 +1609,12 @@ ValidVault::finalize(
     }
 
     // ttLOAN_* transactions only exist under featureLendingProtocol, and their
-    // vault-side checks are otherwise gated by featureLendingProtocolV1_1;
+    // vault-side checks are otherwise gated by fixCleanup3_4_0;
     // keep the same gate here so pre-V1_1 behaviour is unchanged.
     bool const isLoanTxn = txnType == ttLOAN_SET ||  //
         txnType == ttLOAN_MANAGE ||                  //
         txnType == ttLOAN_PAY;
-    bool const sharesCheckActive = !isLoanTxn || view.rules().enabled(featureLendingProtocolV1_1);
+    bool const sharesCheckActive = !isLoanTxn || view.rules().enabled(fixCleanup3_4_0);
 
     if (sharesCheckActive && beforeShares &&
         beforeShares->sharesTotal != updatedShares->sharesTotal && txnType != ttVAULT_DEPOSIT &&
@@ -1631,7 +1631,7 @@ ValidVault::finalize(
     // issuance) may only be issued or burned by the vault's own
     // deposit/withdraw/clawback flow. Any other transaction (notably Payment)
     // that touches share MPTokens of such an issuance violates the ban.
-    if (view.rules().enabled(featureLendingProtocolV1_1) &&
+    if (view.rules().enabled(fixCleanup3_4_0) &&
         (updatedShares->flags & lsfMPTCanTransfer) == 0 &&
         txnType != ttVAULT_DEPOSIT && txnType != ttVAULT_WITHDRAW &&
         txnType != ttVAULT_CLAWBACK && txnType != ttVAULT_CREATE &&
@@ -1757,8 +1757,8 @@ ValidVault::finalize(
                 // A vault creation must not simultaneously touch any loan; the
                 // existing emptiness check above covers the vault fields but
                 // says nothing about lending state. Gated on
-                // featureLendingProtocolV1_1 as a new invariant.
-                if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                // fixCleanup3_4_0 as a new invariant.
+                if (view.rules().enabled(fixCleanup3_4_0) &&
                     (!beforeLoan_.empty() || !afterLoan_.empty()))
                 {
                     JLOG(j.fatal())  //
@@ -2036,7 +2036,7 @@ ValidVault::finalize(
                 // undefined. Compare via cross-multiplication and normalise
                 // the residual to the vault asset scale so sub-ULP drift is
                 // tolerated.
-                if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                if (view.rules().enabled(fixCleanup3_4_0) &&
                     beforeShares && updatedShares &&
                     beforeShares->sharesTotal > 0 && updatedShares->sharesTotal > 0)
                 {
@@ -2067,7 +2067,7 @@ ValidVault::finalize(
                 //       Δassets * 10^Scale.
                 // Δshares and Δassets are the positive magnitudes of the
                 // outstanding-shares and AssetsTotal changes.
-                if (view.rules().enabled(featureLendingProtocolV1_1) && updatedShares)
+                if (view.rules().enabled(fixCleanup3_4_0) && updatedShares)
                 {
                     Number const beforeS =
                         beforeShares
@@ -2322,7 +2322,7 @@ ValidVault::finalize(
                 // ratio is undefined there and other checks already require
                 // AssetsTotal to be zero as well. Sub-ULP drift is tolerated
                 // via roundToAsset on the residual.
-                if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                if (view.rules().enabled(fixCleanup3_4_0) &&
                     beforeShares && updatedShares &&
                     beforeShares->sharesTotal > 0 && updatedShares->sharesTotal > 0)
                 {
@@ -2350,7 +2350,7 @@ ValidVault::finalize(
                 //     <= Δshares * (beforeAssetsTotal - beforeLossUnrealized)
                 // where Δassets and Δshares are the positive magnitudes of
                 // the outstanding-asset and outstanding-shares decreases.
-                if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                if (view.rules().enabled(fixCleanup3_4_0) &&
                     beforeShares && updatedShares &&
                     beforeShares->sharesTotal > 0)
                 {

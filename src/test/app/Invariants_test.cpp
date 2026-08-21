@@ -2934,9 +2934,9 @@ class Invariants_test : public beast::unit_test::Suite
             // owner-directory residual check in ValidVault (item 9) enforces
             // the substantive property indirectly; this check catches a
             // compound transaction that would modify a broker while
-            // deleting a vault. Requires featureLendingProtocolV1_1.
+            // deleting a vault. Requires fixCleanup3_4_0.
             doInvariantCheck(
-                makeEnv(defaultAmendments() | featureLendingProtocolV1_1),
+                makeEnv(defaultAmendments() | fixCleanup3_4_0),
                 {"vault operation succeeded without modifying a vault",
                  "VaultDelete must not touch any loan broker"},
                 [&](Account const&, Account const&, ApplyContext& ac) {
@@ -3737,7 +3737,10 @@ class Invariants_test : public beast::unit_test::Suite
         // Universal share conservation: the issuance's OutstandingAmount
         // delta must equal the sum of MPToken deltas across all touched
         // holders. Bump the depositor's holding by 10 but only bump the
-        // issuance by 5, so the aggregate identity is off by 5.
+        // issuance by 5, so the aggregate identity is off by 5. This state
+        // also violates ValidMPTPayment's OutstandingAmount balance identity
+        // (which is enforced regardless of TER under fixCleanup3_4_0), so
+        // both invariants fire on each pass -> escalation to tef.
         doInvariantCheck(
             {"shares outstanding delta must equal the sum of holder share deltas"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -3755,7 +3758,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -4096,6 +4099,13 @@ class Invariants_test : public beast::unit_test::Suite
             precloseXrp);
 
         // ttLOAN_MANAGE: shares outstanding changes
+        //
+        // ValidMPTPayment enforces its OutstandingAmount balance identity
+        // regardless of TER under fixCleanup3_4_0, and the harness runs both
+        // invariant passes against the same view (no reset in between), so
+        // visitEntry accumulates the MPT delta on the second pass and trips
+        // ValidMPTPayment alongside the share-change check -> escalation
+        // to tef. Real production always resets between passes.
         doInvariantCheck(
             {"shares outstanding must only change by deposit, withdraw, or clawback"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -4109,7 +4119,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_MANAGE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttLOAN_MANAGE (impair): assets available must not change
@@ -4370,6 +4380,10 @@ class Invariants_test : public beast::unit_test::Suite
             precloseXrp);
 
         // ttLOAN_PAY: shares outstanding changes
+        //
+        // Escalates to tef for the same harness reason as the ttLOAN_MANAGE
+        // shares-change case above: ValidMPTPayment fires on the second
+        // pass because visitEntry-accumulated MPT deltas double.
         doInvariantCheck(
             {"shares outstanding must only change by deposit, withdraw, or clawback"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -4387,7 +4401,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttLOAN_PAY: loss unrealized driven negative. The cash inflow is
@@ -4866,9 +4880,9 @@ class Invariants_test : public beast::unit_test::Suite
             // OwnerCount == 0 (no loans reference the broker); touching a
             // loan alongside the delete points at either an
             // OwnerCount-tracking bug or a spurious cascading write.
-            // Requires featureLendingProtocolV1_1.
+            // Requires fixCleanup3_4_0.
             doInvariantCheck(
-                makeEnv(defaultAmendments() | featureLendingProtocolV1_1),
+                makeEnv(defaultAmendments() | fixCleanup3_4_0),
                 {"LoanBrokerDelete must not touch any loan"},
                 [&loanKeylet](Account const&, Account const&, ApplyContext& ac) {
                     auto sle = ac.view().peek(loanKeylet);

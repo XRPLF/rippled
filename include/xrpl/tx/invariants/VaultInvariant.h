@@ -324,7 +324,7 @@ private:
      *
      * Verifies that the transaction moved the requested principal out of the vault
      * pseudo-account, and that the created loan records exactly that principal. Under
-     * @c featureLendingProtocolV1_1 also verifies the participant-side accounting: the broker's
+     * @c fixCleanup3_4_0 also verifies the participant-side accounting: the broker's
      * @c DebtTotal grows by the new loan's exposure (basis-aware), the borrower and broker owner
      * receive their respective portions of the principal, and the vault's @c AssetsTotal /
      * @c AssetsAvailable / claim identity holds at origination. Assumes @c checkLoanCreation has

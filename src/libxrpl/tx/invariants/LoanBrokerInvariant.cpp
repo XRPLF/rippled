@@ -192,7 +192,7 @@ ValidLoanBroker::finalize(
     // deleting a vault. Class-2 (transaction post-condition); gate on
     // isTesSuccess.
     if (isTesSuccess(result) &&
-        view.rules().enabled(featureLendingProtocolV1_1) &&
+        view.rules().enabled(fixCleanup3_4_0) &&
         tx.getTxnType() == ttVAULT_DELETE &&
         (!brokers_.empty() || !deletedBrokers_.empty()))
     {
@@ -203,8 +203,8 @@ ValidLoanBroker::finalize(
 
     // Deletion-time preconditions (XLS-66 §3.1.5), stated positively over
     // deletedBrokers_ rather than by exempting the delete case from the live
-    // check loop below. Gated on featureLendingProtocolV1_1 as new invariants.
-    if (view.rules().enabled(featureLendingProtocolV1_1))
+    // check loop below. Gated on fixCleanup3_4_0 as new invariants.
+    if (view.rules().enabled(fixCleanup3_4_0))
     {
         for (auto const& deletedBroker : deletedBrokers_)
         {
@@ -331,7 +331,7 @@ ValidLoanBroker::finalize(
             // slip past the preclaim in LoanBrokerDelete and let a broker be
             // deleted while still owing the vault. Class-1 (pure after-state
             // implication); safe to place without a TER guard.
-            if (view.rules().enabled(featureLendingProtocolV1_1) &&
+            if (view.rules().enabled(fixCleanup3_4_0) &&
                 after->at(sfDebtTotal) != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
@@ -367,7 +367,7 @@ ValidLoanBroker::finalize(
         // LoanBroker.VaultNode. The forward Broker→Vault link is checked
         // above; this catches a bug that would leave the page pointer
         // pointing at a page that no longer references the broker.
-        if (view.rules().enabled(featureLendingProtocolV1_1))
+        if (view.rules().enabled(fixCleanup3_4_0))
         {
             auto const dirPage = view.read(keylet::page(
                 keylet::ownerDir(vault->at(sfAccount)),
@@ -419,7 +419,7 @@ ValidLoanBroker::finalize(
             }
         }
 
-        if (view.rules().enabled(featureLendingProtocolV1_1))
+        if (view.rules().enabled(fixCleanup3_4_0))
         {
             // §3.1.10: DebtTotal must not exceed DebtMaximum. Currently only
             // enforced at LoanBrokerSet / LoanSet preclaim; making it universal
@@ -520,8 +520,16 @@ ValidLoanBroker::finalize(
 
                 AccountID const brokerOwner = after->at(sfOwner);
                 AccountID const brokerPseudo = after->at(sfAccount);
-                Number const ownerDelta = brokerDeltaFor(brokerOwner);
+                Number ownerDelta = brokerDeltaFor(brokerOwner);
                 Number const pseudoDelta = brokerDeltaFor(brokerPseudo);
+
+                // Fee-adjust: XRP vault + brokerOwner is fee payer (the
+                // self-loan edge case, when borrower == brokerOwner). Add the
+                // fee back so `ownerDelta` reflects the vault-side flow alone,
+                // matching the deletion-check convention above. The broker
+                // pseudo-account can never be a fee payer.
+                if (asset.native() && tx.getFeePayerID() == brokerOwner)
+                    ownerDelta += fee.drops();
 
                 if (ownerDelta > Number{} && pseudoDelta > Number{})
                 {
