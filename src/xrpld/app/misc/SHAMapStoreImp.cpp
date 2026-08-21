@@ -387,8 +387,6 @@ SHAMapStoreImp::run()
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
-            // NOLINTBEGIN(readability-else-after-return)
-            // NOLINTBEGIN(readability-braces-around-statements)
             JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq << " lastRotated "
                                   << lastRotated << " deleteInterval " << deleteInterval_
                                   << " canDelete_ " << canDelete_ << " state "
@@ -397,10 +395,15 @@ SHAMapStoreImp::run()
                                   << "s. Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
 
             clearPrior(lastRotated);
-            if (auto const health = healthWait(); health == HealthResult::Stopping)
-                return;
-            else if (health != HealthResult::KeepGoing)
-                continue;
+            switch (healthWait())
+            {
+                case HealthResult::Stopping:
+                    return;
+                case HealthResult::Expired:
+                    continue;
+                case HealthResult::KeepGoing:
+                    break;
+            }
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
@@ -419,10 +422,15 @@ SHAMapStoreImp::run()
                 continue;
             }
 
-            if (auto const health = healthWait(); health == HealthResult::Stopping)
-                return;
-            else if (health != HealthResult::KeepGoing)
-                continue;
+            switch (healthWait())
+            {
+                case HealthResult::Stopping:
+                    return;
+                case HealthResult::Expired:
+                    continue;
+                case HealthResult::KeepGoing:
+                    break;
+            }
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
@@ -446,10 +454,15 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
-            if (auto const health = healthWait(); health == HealthResult::Stopping)
-                return;
-            else if (health != HealthResult::KeepGoing)
-                continue;
+            switch (healthWait())
+            {
+                case HealthResult::Stopping:
+                    return;
+                case HealthResult::Expired:
+                    continue;
+                case HealthResult::KeepGoing:
+                    break;
+            }
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << validatedSeq << " freshened caches";
 
@@ -458,10 +471,15 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
             clearCaches(validatedSeq);
-            if (auto const health = healthWait(); health == HealthResult::Stopping)
-                return;
-            else if (health != HealthResult::KeepGoing)
-                continue;
+            switch (healthWait())
+            {
+                case HealthResult::Stopping:
+                    return;
+                case HealthResult::Expired:
+                    continue;
+                case HealthResult::KeepGoing:
+                    break;
+            }
 
             lastRotated = validatedSeq;
 
@@ -480,8 +498,6 @@ SHAMapStoreImp::run()
             JLOG(journal_.warn()) << "finished rotation. validatedSeq: " << validatedSeq
                                   << ", lastRotated: " << lastRotated
                                   << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
-            // NOLINTEND(readability-braces-around-statements)
-            // NOLINTEND(readability-else-after-return)
         }
     }
 }
