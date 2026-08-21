@@ -668,6 +668,8 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfImmutableFlags, SoeOptional},
     {sfIssuerEncryptionKey, SoeOptional},
     {sfAuditorEncryptionKey, SoeOptional},
+    {sfHolderEncryptionKey, SoeOptional},
+    {sfRecoveryKey, SoeOptional},
 }))
 
 /** This transaction type authorizes a MPToken instance */
@@ -1144,6 +1146,19 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
     {sfHolder, SoeOptional},
     {sfIssuerEncryptedAmount, SoeOptional},
     {sfAuditorEncryptedAmount, SoeOptional},
+    {sfZKProof, SoeRequired},
+}))
+
+/** This transaction type completes holder key recovery. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTRecoverBalance.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_RECOVER_BALANCE, 93, ConfidentialMPTRecoverBalance,
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeRequired},
+    {sfConfidentialBalanceSpending, SoeRequired},
     {sfZKProof, SoeRequired},
 }))
 
