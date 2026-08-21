@@ -86,7 +86,7 @@ TEST_F(WasmVMTest, NonTerminatingContractSpendsWholeBudget)
 
     // The cost break down is as follows:
     // 1. There is a function entry charge (finish function) which seems to be 63 units of fuel.
-    // 2. Each iteration costs 2 units of fuel.  
+    // 2. Each iteration costs 2 units of fuel.
     // For a GAS amount of 100,000, we will be limited to burning an odd number of fuel.
     // So the way the test is written, the most fuel that will be used is 99,999 units.
     EXPECT_EQ(*outcome.error().cost, kAmpleGas - 1);  // NOLINT(bugprone-unchecked-optional-access)
@@ -166,7 +166,7 @@ TEST_F(WasmVMTest, TrappingStartSectionIsChargedToTheContract)
     auto const outcome = run(wat);
 
     ASSERT_FALSE(outcome.has_value());
-    // This is now disabled on the Wasmi VM side.  Any wasm with a 
+    // This is now disabled on the Wasmi VM side.  Any wasm with a
     // start section is rejected outright rather than letting the code run.
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
     ASSERT_FALSE(outcome.error().cost.has_value());
