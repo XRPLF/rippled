@@ -28,14 +28,33 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
     // pre-state DebtTotal and OwnerCount were zero at deletion. `before`
     // holds the entry's state prior to erasure.
     //
-    // On deletion, `after` still carries the erased SLE (see
-    // ApplyStateTable::visit), so the non-delete branch must be gated by
-    // !isDelete to avoid mistaking an erased pseudo-account, trust line or
-    // MPToken for a live reference to a broker.
+    // Deleted trust lines and MPTokens are also recorded (from `before`) so
+    // finalize can rediscover the affected broker through its pseudo-account
+    // and confirm CoverAvailable stayed consistent with the pseudo-account
+    // balance -- a holding removed while cover remains must not slip past. A
+    // deleted pseudo-account (ltACCOUNT_ROOT) is deliberately not recorded:
+    // during a legitimate LoanBrokerDelete the broker is erased alongside it,
+    // and reviving it here would trip the finalize "Loan Broker missing"
+    // check. The live-reference branch below is gated by !isDelete for the
+    // same reason -- on deletion `after` still carries the erased SLE (see
+    // ApplyStateTable::visit).
     if (isDelete)
     {
-        if (before && before->getType() == ltLOAN_BROKER)
-            deletedBrokers_.emplace_back(before);
+        if (before)
+        {
+            if (before->getType() == ltLOAN_BROKER)
+            {
+                deletedBrokers_.emplace_back(before);
+            }
+            else if (before->getType() == ltRIPPLE_STATE)
+            {
+                lines_.emplace_back(before);
+            }
+            else if (before->getType() == ltMPTOKEN)
+            {
+                mpts_.emplace_back(before);
+            }
+        }
         return;
     }
 

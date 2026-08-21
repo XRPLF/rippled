@@ -1260,10 +1260,28 @@ NoModifiedUnmodifiableFields::finalize(
                 }
                 break;
             case ltVAULT:
-                /*
-                 * Covers sfAccount, sfAsset and sfShareMPTID in additional to the fields introduced
-                 * by featureLendingProtocolV1_1 and only exist on V1_1 vaults.
-                 */
+                // Vault immutable fields split across two amendments.
+                //
+                // sfSequence, sfOwnerNode, sfOwner, sfWithdrawalPolicy and
+                // sfScale exist on every vault and pre-date
+                // featureLendingProtocolV1_1. Gating them behind V1_1 would
+                // leave them unchecked until that amendment votes in, so they
+                // are gated on fixCleanup3_4_0 instead, which activates much
+                // sooner.
+                if (view.rules().enabled(fixCleanup3_4_0))
+                {
+                    bad = bad || kFieldChanged(before, after, sfSequence) ||
+                        kFieldChanged(before, after, sfOwnerNode) ||
+                        kFieldChanged(before, after, sfOwner) ||
+                        kFieldChanged(before, after, sfWithdrawalPolicy) ||
+                        kFieldChanged(before, after, sfScale);
+                }
+                // sfAccount, sfAsset and sfShareMPTID pre-date V1_1 too, but
+                // their immutability is already enforced by ValidVault when
+                // V1_1 is off, so they are only checked here once V1_1 is on
+                // (the two paths are mutually exclusive). sfVaultKind,
+                // sfSubscriptionDate, sfRedemptionDate and sfLEVersion are
+                // introduced by V1_1 and only exist on V1_1 vaults.
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
                     bad = bad || kFieldChanged(before, after, sfAsset) ||
@@ -1272,11 +1290,6 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfVaultKind) ||
                         kFieldChanged(before, after, sfSubscriptionDate) ||
                         kFieldChanged(before, after, sfRedemptionDate) ||
-                        kFieldChanged(before, after, sfSequence) ||
-                        kFieldChanged(before, after, sfOwnerNode) ||
-                        kFieldChanged(before, after, sfOwner) ||
-                        kFieldChanged(before, after, sfWithdrawalPolicy) ||
-                        kFieldChanged(before, after, sfScale) ||
                         kFieldChanged(before, after, sfLEVersion);
                 }
                 break;

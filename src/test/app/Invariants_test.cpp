@@ -3092,6 +3092,92 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
 
+            // A holding (trust line) removed while the broker still reports
+            // non-zero CoverAvailable must not bypass the cover invariant. The
+            // broker is left untouched, so it is only reachable through the
+            // deleted holding's before-state; erasing the holding drops the
+            // pseudo-account balance to zero while CoverAvailable stays
+            // positive.
+            //
+            // Only the IOU (trust line) case is exercised here. XRP cover has
+            // no holding SLE to delete, and an MPToken cannot be erased in
+            // isolation: the ungated ValidMPTIssuance "a MPToken was deleted"
+            // check fires for any transaction lacking MayDeleteMpt, and every
+            // transaction that carries that privilege also carries a Must*
+            // privilege (delete an account / modify a vault) that trips a
+            // different invariant. A trust line has no such generic deletion
+            // invariant, so it isolates the cover check cleanly. The RippleState
+            // and MPToken discovery paths are otherwise symmetric in finalize.
+            //
+            // The cover-greater-than-balance invariant is gated behind
+            // fixCleanup3_1_3, so the same forced deletion is run under both
+            // rule sets: with the amendment the invariant fires, without it the
+            // state is silently accepted.
+            if (assetType == Asset::IOU)
+            {
+                Keylet brokerKeylet = keylet::amendments();
+                Preclose const createBrokerWithCover =
+                    [&, this](Account const& alice, Account const& issuer, Env& env) {
+                        auto const asset = setupAsset(alice, issuer, env);
+                        brokerKeylet = this->createLoanBroker(alice, env, asset);
+                        if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                            return false;
+                        env(loan_broker::coverDeposit(alice, brokerKeylet.key, asset(10)));
+                        env.close();
+                        return BEAST_EXPECT(env.le(brokerKeylet));
+                    };
+
+                Precheck const deleteHolding =
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        if (brokerKeylet.type != ltLOAN_BROKER)
+                            return false;
+                        // Read (don't touch) the broker so it is only found via
+                        // the deleted holding, not as a modified entry.
+                        auto const sleBroker = ac.view().read(brokerKeylet);
+                        if (!BEAST_EXPECT(sleBroker))
+                            return false;
+                        auto const pseudoAccountID = sleBroker->at(sfAccount);
+
+                        // Erase every holding in the pseudo-account directory
+                        // and the directory root itself, mirroring a bug that
+                        // removed the cover holding without zeroing
+                        // CoverAvailable. Removing the root also keeps the
+                        // zero-OwnerCount directory check from firing first.
+                        auto sleDir = ac.view().peek(keylet::ownerDir(pseudoAccountID));
+                        if (!BEAST_EXPECT(sleDir))
+                            return false;
+                        for (auto const& index : sleDir->getFieldV256(sfIndexes))
+                        {
+                            if (auto holding = ac.view().peek(keylet::unchecked(index)))
+                            {
+                                ac.view().erase(holding);
+                            }
+                        }
+                        ac.view().erase(sleDir);
+                        return true;
+                    };
+
+                // With fixCleanup3_1_3: the invariant fires.
+                doInvariantCheck(
+                    makeEnv(defaultAmendments()),
+                    {{"Loan Broker cover available is greater than pseudo-account asset balance"}},
+                    deleteHolding,
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createBrokerWithCover);
+
+                // Without fixCleanup3_1_3: the same state is silently accepted.
+                doInvariantCheck(
+                    makeEnv(defaultAmendments() - fixCleanup3_1_3),
+                    {},
+                    deleteHolding,
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject&) {}},
+                    {tesSUCCESS, tesSUCCESS},
+                    createBrokerWithCover);
+            }
+
             // A LoanBroker may only be removed by ttLOAN_BROKER_DELETE. Erase
             // the broker in the apply view under a non-delete tx type and
             // expect the deletion-tx invariant to fire.
@@ -7397,7 +7483,8 @@ class Invariants_test : public beast::unit_test::Suite
         }
 
         // ttVAULT_SET: owner is immutable (enforced by
-        // NoModifiedUnmodifiableFields under featureLendingProtocolV1_1).
+        // NoModifiedUnmodifiableFields under fixCleanup3_4_0; sfOwner,
+        // sfWithdrawalPolicy and sfScale pre-date featureLendingProtocolV1_1).
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -7443,6 +7530,29 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
                 sleVault->setFieldU8(
                     sfScale, static_cast<std::uint8_t>(sleVault->getFieldU8(sfScale) + 1));
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp);
+
+        // The pre-V1_1 vault fields must be enforced without waiting for
+        // featureLendingProtocolV1_1. Run the withdrawal-policy mutation with
+        // V1_1 removed but fixCleanup3_4_0 (part of defaultAmendments via
+        // testableAmendments) still enabled: the invariant must still fire.
+        doInvariantCheck(
+            makeEnv(defaultAmendments() - featureLendingProtocolV1_1),
+            {"changed an unchangeable field"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setFieldU8(
+                    sfWithdrawalPolicy,
+                    static_cast<std::uint8_t>(sleVault->getFieldU8(sfWithdrawalPolicy) + 1));
                 ac.view().update(sleVault);
                 return true;
             },
