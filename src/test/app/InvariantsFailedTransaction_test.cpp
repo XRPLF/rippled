@@ -1,6 +1,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/sponsor.h>
@@ -9,13 +10,10 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -25,6 +23,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -34,6 +33,7 @@
 #include <memory>
 #include <source_location>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -155,7 +155,7 @@ class InvariantsFailedTransaction_test : public beast::unit_test::Suite
         Preclose const& preclose,
         Precheck const& precheck,
         TER const startTer,
-        STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
+        STTx const& tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         XRPAmount const fee = XRPAmount{},
         std::source_location const& loc = std::source_location::current())
     {
@@ -228,11 +228,11 @@ class InvariantsFailedTransaction_test : public beast::unit_test::Suite
         std::vector<std::string> const& expectLogs,
         Precheck const& precheck,
         TER const startTer,
-        STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
+        STTx const& tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         XRPAmount const fee = XRPAmount{},
         std::source_location const& loc = std::source_location::current())
     {
-        doInvariantCheck(expectLogs, Preclose{}, precheck, startTer, std::move(tx), fee, loc);
+        doInvariantCheck(expectLogs, Preclose{}, precheck, startTer, tx, fee, loc);
     }
 
     void
