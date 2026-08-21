@@ -11,14 +11,20 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -696,6 +702,328 @@ private:
         }
     }
 
+    // Bug (FN-73): VaultClawback::assetsToClawback converts the requested
+    // clawbackAmount to shares using round-to-nearest, then round-trips
+    // back to assets. When the share rounding rounds up, the round-tripped
+    // assetsRecovered can exceed the caller's clawbackAmount, letting the
+    // issuer strip more assets from the holder than they asked for.
+    //
+    // Concrete ticket repro: with assetsTotal=7 and sharesTotal=5 the
+    // request "clawback 4 assets" rounds shares = round(5*4/7) =
+    // round(2.857) = 3, then assets = 7*3/5 = 4.2 > 4.
+    //
+    // Fix (fixCleanup3_4_0): the assetsToSharesWithdraw call in the
+    // non-zero branch truncates shares (rounds down) instead of
+    // round-to-nearest, so the round-tripped assetsRecovered is <=
+    // clawbackAmount by construction. This matches the "vault guarantees
+    // up to N" semantic — an issuer asking to claw back N never recovers
+    // more than N, and at worst underrecovers by less than one
+    // asset-per-share.
+    //
+    // We drive the vault into the exact (7, 5) state by depositing 7 IOU
+    // (which mints 7 shares at scale=0) and then directly overwriting the
+    // share issuance's sfOutstandingAmount and the holder's sfMPTAmount
+    // down to 5 in the open ledger. The clawback must be submitted
+    // against that same open ledger without a preceding env.close(),
+    // because env.close() rebuilds the ledger from real transaction
+    // history and silently discards the injected state.
+    void
+    testBugClawbackRoundTripOvershoot()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool withFix) {
+            Env env{*this, features};
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const holder{"holder"};
+
+            env.fund(XRP(10'000), issuer, owner, holder);
+            env.close();
+
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd = issuer["USD"];
+            env.trust(usd(1'000), owner);
+            env.trust(usd(1'000), holder);
+            env.close();
+
+            env(pay(issuer, holder, usd(100)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = usd(7)}));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            auto const mptIssuanceID = vaultSle->at(sfShareMPTID);
+
+            // Sanity: after the deposit the vault holds 7 assets and 7
+            // shares outstanding (scale=0 first deposit mints assets * 1).
+            Number const initialAssetsTotal = vaultSle->at(sfAssetsTotal);
+            Number const initialAssetsAvailable = vaultSle->at(sfAssetsAvailable);
+            BEAST_EXPECT(initialAssetsTotal == usd(7).number());
+            BEAST_EXPECT(initialAssetsAvailable == usd(7).number());
+            {
+                auto const sleIssuance = env.le(keylet::mptokenIssuance(mptIssuanceID));
+                if (!BEAST_EXPECT(sleIssuance))
+                    return;
+                BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 7);
+            }
+
+            // Inject the (assetsTotal=7, sharesTotal=5) state directly
+            // into the open ledger. Both the issuance's outstanding total
+            // and the holder's MPToken balance are decreased so the
+            // clawback's delta bookkeeping (checked by VaultInvariant)
+            // stays internally consistent.
+            auto const issuanceKeylet = keylet::mptokenIssuance(mptIssuanceID);
+            auto const holderTokenKeylet = keylet::mptoken(mptIssuanceID, holder.id());
+            bool const injected =
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                    Sandbox sb(&view, TapNone);
+
+                    auto sleIssuance = sb.peek(issuanceKeylet);
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldU64(sfOutstandingAmount, 5);
+                    sb.update(sleIssuance);
+
+                    auto sleHolderToken = sb.peek(holderTokenKeylet);
+                    if (!sleHolderToken)
+                        return false;
+                    sleHolderToken->setFieldU64(sfMPTAmount, 5);
+                    sb.update(sleHolderToken);
+
+                    sb.apply(view);
+                    return true;
+                });
+            if (!BEAST_EXPECT(injected))
+                return;
+
+            // Verify the injection took effect against the same view the
+            // clawback will run against.
+            {
+                auto const sleIssuance =
+                    env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
+                if (!BEAST_EXPECT(sleIssuance))
+                    return;
+                BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 5);
+            }
+
+            // Submit the clawback against the injected open ledger.
+            // Critically, DO NOT env.close() before this — a close would
+            // rebuild the ledger from real history and discard the
+            // (5, 5) injection, resurrecting the original (7, 7) state.
+            auto const clawbackAmount = usd(4);
+            env(vault.clawback(
+                {.issuer = issuer,
+                 .id = vaultKeylet.key,
+                 .holder = holder,
+                 .amount = clawbackAmount.value()}));
+
+            // Measure what the vault actually paid out by diffing
+            // sfAssetsTotal (started at 7 before this clawback).
+            auto const vaultSleAfter = env.current()->read(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Number const finalAssetsTotal = vaultSleAfter->at(sfAssetsTotal);
+            Number const assetsRecovered = initialAssetsTotal - finalAssetsTotal;
+            Number const clawbackNum = clawbackAmount.number();
+
+            Number const expected2_8{28LL, -1};
+            Number const expected4_2{42LL, -1};
+            if (withFix)
+            {
+                // Post-fix: shares = floor(20/7) = 2, giving
+                // assetsRecovered = 7*2/5 = 2.8, which is <= 4 requested.
+                BEAST_EXPECT(assetsRecovered <= clawbackNum);
+                BEAST_EXPECT(assetsRecovered == expected2_8);
+            }
+            else
+            {
+                // Pre-fix (bug): shares = round(20/7) = 3, and
+                // assetsRecovered = 7*3/5 = 4.2 > 4 requested.
+                BEAST_EXPECT(assetsRecovered > clawbackNum);
+                BEAST_EXPECT(assetsRecovered == expected4_2);
+            }
+        };
+
+        {
+            testcase(
+                "bug: VaultClawback round-trip overshoot lets issuer recover "
+                "more than requested (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, false);
+        }
+        {
+            testcase(
+                "bug: VaultClawback round-trip overshoot is clamped so "
+                "assetsRecovered <= clawbackAmount (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), true);
+        }
+    }
+
+    // Same root cause as testBugClawbackRoundTripOvershoot but on the
+    // withdraw path: VaultWithdraw::doApply converts the requested
+    // asset-denominated amount to shares using round-to-nearest and then
+    // round-trips back to assets. When share rounding rounds up, the
+    // depositor receives strictly more than they asked for. Beyond the
+    // "up to N" semantic break, this can bypass the preclaim
+    // canWithdraw check on the destination — preclaim validated against
+    // the requested amount but doApply delivers more, so a destination
+    // whose trust-line limit just barely fits the requested amount can
+    // end up over-credited.
+    //
+    // Concrete repro: assetsTotal=7 and sharesTotal=5 (same injection
+    // trick as the clawback test). Request "withdraw 4 assets":
+    //   pre-fix : shares = round(20/7) = 3 → assets = 7*3/5 = 4.2 > 4.
+    //   post-fix: shares = floor(20/7) = 2 → assets = 7*2/5 = 2.8 <= 4.
+    //
+    // Fix (fixCleanup3_4_0): assetsToSharesWithdraw in the asset-
+    // denominated branch of VaultWithdraw::doApply truncates shares.
+    void
+    testBugWithdrawRoundTripOvershoot()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool withFix) {
+            Env env{*this, features};
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const holder{"holder"};
+
+            env.fund(XRP(10'000), issuer, owner, holder);
+            env.close();
+
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd = issuer["USD"];
+            env.trust(usd(1'000), owner);
+            env.trust(usd(1'000), holder);
+            env.close();
+
+            env(pay(issuer, holder, usd(100)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = usd(7)}));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            auto const mptIssuanceID = vaultSle->at(sfShareMPTID);
+
+            Number const initialAssetsTotal = vaultSle->at(sfAssetsTotal);
+            BEAST_EXPECT(initialAssetsTotal == usd(7).number());
+            {
+                auto const sleIssuance = env.le(keylet::mptokenIssuance(mptIssuanceID));
+                if (!BEAST_EXPECT(sleIssuance))
+                    return;
+                BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 7);
+            }
+
+            // Inject the (assetsTotal=7, sharesTotal=5) state directly
+            // into the open ledger. Both the issuance's outstanding total
+            // and the holder's MPToken balance are decreased so the
+            // withdraw's delta bookkeeping (checked by VaultInvariant)
+            // stays internally consistent.
+            auto const issuanceKeylet = keylet::mptokenIssuance(mptIssuanceID);
+            auto const holderTokenKeylet = keylet::mptoken(mptIssuanceID, holder.id());
+            bool const injected =
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                    Sandbox sb(&view, TapNone);
+
+                    auto sleIssuance = sb.peek(issuanceKeylet);
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldU64(sfOutstandingAmount, 5);
+                    sb.update(sleIssuance);
+
+                    auto sleHolderToken = sb.peek(holderTokenKeylet);
+                    if (!sleHolderToken)
+                        return false;
+                    sleHolderToken->setFieldU64(sfMPTAmount, 5);
+                    sb.update(sleHolderToken);
+
+                    sb.apply(view);
+                    return true;
+                });
+            if (!BEAST_EXPECT(injected))
+                return;
+
+            {
+                auto const sleIssuance =
+                    env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
+                if (!BEAST_EXPECT(sleIssuance))
+                    return;
+                BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 5);
+            }
+
+            // Submit the withdraw against the injected open ledger.
+            // Critically, DO NOT env.close() before this — a close would
+            // rebuild the ledger from real history and discard the
+            // (5, 5) injection, resurrecting the original (7, 7) state.
+            auto const requested = usd(4);
+            env(vault.withdraw(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = requested.value()}));
+
+            // Measure what the vault actually paid out by diffing
+            // sfAssetsTotal (started at 7 before this withdraw).
+            auto const vaultSleAfter = env.current()->read(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Number const finalAssetsTotal = vaultSleAfter->at(sfAssetsTotal);
+            Number const assetsWithdrawn = initialAssetsTotal - finalAssetsTotal;
+            Number const requestedNum = requested.number();
+
+            Number const expected2_8{28LL, -1};
+            Number const expected4_2{42LL, -1};
+            if (withFix)
+            {
+                // Post-fix: shares = floor(20/7) = 2, giving
+                // assetsWithdrawn = 7*2/5 = 2.8, which is <= 4 requested.
+                BEAST_EXPECT(assetsWithdrawn <= requestedNum);
+                BEAST_EXPECT(assetsWithdrawn == expected2_8);
+            }
+            else
+            {
+                // Pre-fix (bug): shares = round(20/7) = 3, and
+                // assetsWithdrawn = 7*3/5 = 4.2 > 4 requested.
+                BEAST_EXPECT(assetsWithdrawn > requestedNum);
+                BEAST_EXPECT(assetsWithdrawn == expected4_2);
+            }
+        };
+
+        {
+            testcase(
+                "bug: VaultWithdraw round-trip overshoot delivers more than "
+                "requested (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, false);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw round-trip overshoot is clamped so "
+                "assetsWithdrawn <= requested (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), true);
+        }
+    }
+
 public:
     void
     run() override
@@ -708,6 +1036,8 @@ public:
         testVaultWithdrawCanonicalizeToZero();
         testVaultDepositNegativeBalanceFromOppositeLimit();
         testBug6LimitBypassWithShares();
+        testBugClawbackRoundTripOvershoot();
+        testBugWithdrawRoundTripOvershoot();
     }
 };
 
