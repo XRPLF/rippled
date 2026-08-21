@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>

@@ -3162,8 +3162,8 @@ class Invariants_test : public beast::unit_test::Suite
             TER const result = transactor->checkInvariants(
                 tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
-            BEAST_EXPECT(sink.messages().str().contains(
-                "Loan Broker deleted with non-zero debt total"));
+            BEAST_EXPECT(
+                sink.messages().str().contains("Loan Broker deleted with non-zero debt total"));
         }
 
         // A LoanBrokerDelete must not remove a broker whose pre-transaction
@@ -3211,8 +3211,8 @@ class Invariants_test : public beast::unit_test::Suite
             TER const result = transactor->checkInvariants(
                 tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
-            BEAST_EXPECT(sink.messages().str().contains(
-                "Loan Broker deleted with non-zero owner count"));
+            BEAST_EXPECT(
+                sink.messages().str().contains("Loan Broker deleted with non-zero owner count"));
         }
     }
 
