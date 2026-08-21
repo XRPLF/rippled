@@ -3091,6 +3091,128 @@ class Invariants_test : public beast::unit_test::Suite
                 STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
+
+            // A LoanBroker may only be removed by ttLOAN_BROKER_DELETE. Erase
+            // the broker in the apply view under a non-delete tx type and
+            // expect the deletion-tx invariant to fire.
+            doInvariantCheck(
+                {{"Loan Broker deleted by a transaction other than LoanBrokerDelete"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!BEAST_EXPECT(sleBroker))
+                        return false;
+                    ac.view().erase(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+        }
+
+        // A LoanBrokerDelete must not remove a broker whose pre-transaction
+        // DebtTotal is non-zero. visitEntry captures `before` from the parent
+        // view, so the DebtTotal must be seeded in the OpenView before the
+        // ApplyContext is constructed; a Precheck modification would only
+        // land in the applyView (visible as `after`) and would leave `before`
+        // at the createLoanBroker-produced zero.
+        {
+            Env env{*this};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                return;
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            // Seed a non-zero DebtTotal in the base view so `before` at
+            // visitEntry time reports it.
+            {
+                auto const sleBrokerRead = ov.read(brokerKeylet);
+                if (!BEAST_EXPECT(sleBrokerRead))
+                    return;
+                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                sleBroker->at(sfDebtTotal) = Number(1);
+                ov.rawReplace(sleBroker);
+            }
+
+            STTx const tx{ttLOAN_BROKER_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sleBroker = ac.view().peek(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            ac.view().erase(sleBroker);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "Loan Broker deleted with non-zero debt total"));
+        }
+
+        // A LoanBrokerDelete must not remove a broker whose pre-transaction
+        // OwnerCount is non-zero. DebtTotal is left at zero so the earlier
+        // check passes and the OwnerCount check is what fires.
+        {
+            Env env{*this};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                return;
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            {
+                auto const sleBrokerRead = ov.read(brokerKeylet);
+                if (!BEAST_EXPECT(sleBrokerRead))
+                    return;
+                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                sleBroker->at(sfOwnerCount) = 1;
+                ov.rawReplace(sleBroker);
+            }
+
+            STTx const tx{ttLOAN_BROKER_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sleBroker = ac.view().peek(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            ac.view().erase(sleBroker);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "Loan Broker deleted with non-zero owner count"));
         }
     }
 
@@ -4754,6 +4876,23 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
+        // ttLOAN_MANAGE (default): the object-level identity
+        // `Delta Vault.AssetsAvailable == Delta Vault.pseudo-account balance`
+        // must hold. Bump assets available by +50 while leaving the vault
+        // pseudo-account (and the source of the first-loss capital) untouched:
+        // the shared identity fires because the two ledgers no longer add up.
+        // Sourced sibling: PR #7732 review discussion r3756829578.
+        doInvariantCheck(
+            {"vault balance and assets available must add up"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, Adjustments{.assetsAvailable = 50});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanDefault); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
         // ttLOAN_MANAGE (unimpair): loss unrealized must not increase. Bumping
         // loss unrealized upward is the wrong direction for unimpair, which
         // reverses a paper loss.
@@ -4978,6 +5117,86 @@ class Invariants_test : public beast::unit_test::Suite
 
                 STTx const tx{
                     ttLOAN_MANAGE, [](STObject& t) { t.setFieldU32(sfFlags, tfLoanImpair); }};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    continue;
+                sleLoan->setFieldU32(sfFlags, c.after);
+                ac.view().update(sleLoan);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    continue;
+                TER const result = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                BEAST_EXPECT(sink.messages().str().contains(c.expected));
+            }
+        }
+
+        // Flag-transition scoping (featureLendingProtocolV1_1).
+        // lsfLoanImpaired may only change under ttLOAN_MANAGE or ttLOAN_PAY
+        // (LoanPay unimpairs before applying the payment when the loan was
+        // impaired); lsfLoanDefault may only change under ttLOAN_MANAGE.
+        // Any other transaction that moves either flag is manufacturing
+        // state.  Setup mirrors the impair/unimpair blocks: seed a
+        // pre-existing loan with a specific flag, then flip the flag under
+        // an out-of-scope transaction type.  The out-of-scope tx is
+        // ttACCOUNT_SET, chosen because it is a valid transaction type
+        // that lives outside the loan-manage / loan-pay switch.
+        {
+            struct Case
+            {
+                std::uint32_t before;
+                std::uint32_t after;
+                std::string expected;
+            };
+            auto const cases = std::to_array<Case>({
+                {.before = 0,
+                 .after = lsfLoanImpaired,
+                 .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay"},
+                {.before = lsfLoanImpaired,
+                 .after = 0,
+                 .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay"},
+                // lsfLoanDefault: only the unset->set direction is exercised
+                // here because the reverse (set->unset) is separately blocked
+                // by NoModifiedUnmodifiableFields, whose fatal log fires first
+                // and would mask the ValidLoan message under test.
+                {.before = 0,
+                 .after = lsfLoanDefault,
+                 .expected = "lsfLoanDefault changed outside LoanManage"},
+            });
+
+            for (auto const& c : cases)
+            {
+                Env env{*this, defaultAmendments()};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), a1, a2);
+                BEAST_EXPECT(precloseXrp(a1, a2, env));
+                env.close();
+
+                OpenView ov{*env.current()};
+
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                {
+                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                    sleLoan->at(sfPeriodicPayment) = Number(1);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    sleLoan->setFieldU32(sfFlags, c.before);
+                    ov.rawInsert(sleLoan);
+                }
+
+                STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{

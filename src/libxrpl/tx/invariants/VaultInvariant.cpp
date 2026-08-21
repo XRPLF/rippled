@@ -1477,6 +1477,13 @@ ValidVault::finalize(
         // (deposit, withdraw, clawback, and every loan-* sub-operation);
         // vault set is excluded because it may never change either, and
         // vault create has nothing to compare against.
+        //
+        // The identity is written as `Δ (AssetsAvailable + reserved) ==
+        // Δ pseudo-account balance`, with `reserved == 0` today.  When
+        // Vault.AssetsReserved is introduced, the identity extends to
+        // `Δ AssetsAvailable + Δ AssetsReserved == Δ pseudo-account balance`
+        // by taking the sum of the two vault-side fields on both sides of the
+        // delta.  See PR #7732 discussion r3756798430.
         if (txnType != ttVAULT_CREATE && txnType != ttVAULT_SET)
         {
             auto const& beforeVault = beforeVault_[0];

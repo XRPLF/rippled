@@ -117,6 +117,35 @@ ValidLoan::finalize(
             // set-once (never cleared) live in NoModifiedUnmodifiableFields, next
             // to the other loan-object constant-field immutability checks.
 
+            // Flag-transition scoping: lsfLoanImpaired may only move under
+            // ttLOAN_MANAGE (impair/unimpair) or ttLOAN_PAY (LoanPay::doApply
+            // calls LoanManage::unimpairLoan before applying the payment when
+            // the loan was impaired).  lsfLoanDefault may only be set under
+            // ttLOAN_MANAGE (its set-once immutability is separately enforced
+            // by NoModifiedUnmodifiableFields).  Any other transaction that
+            // moves these flags is manufacturing state.
+            if (before)
+            {
+                bool const wasImpaired = before->isFlag(lsfLoanImpaired);
+                bool const isImpaired = after->isFlag(lsfLoanImpaired);
+                if (wasImpaired != isImpaired && txType != ttLOAN_MANAGE &&
+                    txType != ttLOAN_PAY)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: lsfLoanImpaired changed "
+                                       "outside LoanManage or LoanPay";
+                    return false;
+                }
+
+                bool const wasDefaulted = before->isFlag(lsfLoanDefault);
+                bool const isDefaulted = after->isFlag(lsfLoanDefault);
+                if (wasDefaulted != isDefaulted && txType != ttLOAN_MANAGE)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault changed "
+                                       "outside LoanManage";
+                    return false;
+                }
+            }
+
             // LoanManage sub-operation flag preconditions. These are transaction
             // post-conditions, so they only apply on a successful apply: after a
             // reset the ledger flags revert and the checks would spuriously fail.
