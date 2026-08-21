@@ -229,6 +229,7 @@ class Invariants_test : public beast::unit_test::Suite
         // result", not that the transaction ends in tef on ledger.
         if (!expect(ters.size() == 2, loc.file_name(), loc.line()))
             return;
+
         TER terActual = initialResult;
         for (TER const& terExpect : ters)
         {
@@ -240,8 +241,8 @@ class Invariants_test : public beast::unit_test::Suite
                 "expected: " + transToken(terExpect) + " got: " + transToken(terActual),
                 loc.file_name(),
                 loc.line());
-
             auto const messages = sink.messages().str();
+
             // checkInvariants returns its input unchanged unless something
             // fires, so a changed result means an invariant fired, and a firing
             // invariant must log.
@@ -250,7 +251,9 @@ class Invariants_test : public beast::unit_test::Suite
                 expect(
                     messages.starts_with("Invariant failed:") ||
                         messages.starts_with("Transaction caused an exception"),
-                    messages, loc.file_name(), loc.line());
+                    messages,
+                    loc.file_name(),
+                    loc.line());
             }
 
             // std::cerr << messages << '\n';
