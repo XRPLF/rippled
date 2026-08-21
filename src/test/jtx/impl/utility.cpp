@@ -66,7 +66,7 @@ fillFee(json::Value& jv, ReadView const& view)
     auto const txType = jv[jss::TransactionType].asString();
     if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
         txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
-        txType == jss::ConfidentialMPTClawback)
+        txType == jss::ConfidentialMPTClawback || txType == jss::ConfidentialMPTRecoverBalance)
     {
         jv[jss::Fee] = to_string(base * (kConfidentialFeeMultiplier + 1));
     }

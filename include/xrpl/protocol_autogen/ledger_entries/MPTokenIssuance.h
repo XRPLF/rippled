@@ -400,6 +400,30 @@ public:
     }
 
     /**
+     * @brief Get sfHolderCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getHolderCount() const
+    {
+        if (hasHolderCount())
+            return this->sle_->at(sfHolderCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHolderCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHolderCount() const
+    {
+        return this->sle_->isFieldPresent(sfHolderCount);
+    }
+
+    /**
      * @brief Get sfConfidentialOutstandingAmount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -667,6 +691,17 @@ public:
     setAuditorKeyEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfAuditorKeyEpoch] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfHolderCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setHolderCount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfHolderCount] = value;
         return *this;
     }
 

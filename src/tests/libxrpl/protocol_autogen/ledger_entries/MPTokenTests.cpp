@@ -33,6 +33,9 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
+    auto const issuerKeyMirrorEpochValue = canonical_UINT32();
+    auto const auditorKeyMirrorEpochValue = canonical_UINT32();
+    auto const recoveryKeyValue = canonical_VL();
 
     MPTokenBuilder builder{
         accountValue,
@@ -50,6 +53,9 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setIssuerEncryptedBalance(issuerEncryptedBalanceValue);
     builder.setAuditorEncryptedBalance(auditorEncryptedBalanceValue);
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
+    builder.setIssuerKeyMirrorEpoch(issuerKeyMirrorEpochValue);
+    builder.setAuditorKeyMirrorEpoch(auditorKeyMirrorEpochValue);
+    builder.setRecoveryKey(recoveryKeyValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -154,6 +160,30 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasHolderEncryptionKey());
     }
 
+    {
+        auto const& expected = issuerKeyMirrorEpochValue;
+        auto const actualOpt = entry.getIssuerKeyMirrorEpoch();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfIssuerKeyMirrorEpoch");
+        EXPECT_TRUE(entry.hasIssuerKeyMirrorEpoch());
+    }
+
+    {
+        auto const& expected = auditorKeyMirrorEpochValue;
+        auto const actualOpt = entry.getAuditorKeyMirrorEpoch();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAuditorKeyMirrorEpoch");
+        EXPECT_TRUE(entry.hasAuditorKeyMirrorEpoch());
+    }
+
+    {
+        auto const& expected = recoveryKeyValue;
+        auto const actualOpt = entry.getRecoveryKey();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfRecoveryKey");
+        EXPECT_TRUE(entry.hasRecoveryKey());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -180,6 +210,9 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
+    auto const issuerKeyMirrorEpochValue = canonical_UINT32();
+    auto const auditorKeyMirrorEpochValue = canonical_UINT32();
+    auto const recoveryKeyValue = canonical_VL();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -196,6 +229,9 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerEncryptedBalance) = issuerEncryptedBalanceValue;
     sle->at(sfAuditorEncryptedBalance) = auditorEncryptedBalanceValue;
     sle->at(sfHolderEncryptionKey) = holderEncryptionKeyValue;
+    sle->at(sfIssuerKeyMirrorEpoch) = issuerKeyMirrorEpochValue;
+    sle->at(sfAuditorKeyMirrorEpoch) = auditorKeyMirrorEpochValue;
+    sle->at(sfRecoveryKey) = recoveryKeyValue;
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -360,6 +396,45 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfHolderEncryptionKey");
     }
 
+    {
+        auto const& expected = issuerKeyMirrorEpochValue;
+
+        auto const fromSleOpt = entryFromSle.getIssuerKeyMirrorEpoch();
+        auto const fromBuilderOpt = entryFromBuilder.getIssuerKeyMirrorEpoch();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfIssuerKeyMirrorEpoch");
+        expectEqualField(expected, *fromBuilderOpt, "sfIssuerKeyMirrorEpoch");
+    }
+
+    {
+        auto const& expected = auditorKeyMirrorEpochValue;
+
+        auto const fromSleOpt = entryFromSle.getAuditorKeyMirrorEpoch();
+        auto const fromBuilderOpt = entryFromBuilder.getAuditorKeyMirrorEpoch();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAuditorKeyMirrorEpoch");
+        expectEqualField(expected, *fromBuilderOpt, "sfAuditorKeyMirrorEpoch");
+    }
+
+    {
+        auto const& expected = recoveryKeyValue;
+
+        auto const fromSleOpt = entryFromSle.getRecoveryKey();
+        auto const fromBuilderOpt = entryFromBuilder.getRecoveryKey();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfRecoveryKey");
+        expectEqualField(expected, *fromBuilderOpt, "sfRecoveryKey");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -438,5 +513,11 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAuditorEncryptedBalance().has_value());
     EXPECT_FALSE(entry.hasHolderEncryptionKey());
     EXPECT_FALSE(entry.getHolderEncryptionKey().has_value());
+    EXPECT_FALSE(entry.hasIssuerKeyMirrorEpoch());
+    EXPECT_FALSE(entry.getIssuerKeyMirrorEpoch().has_value());
+    EXPECT_FALSE(entry.hasAuditorKeyMirrorEpoch());
+    EXPECT_FALSE(entry.getAuditorKeyMirrorEpoch().has_value());
+    EXPECT_FALSE(entry.hasRecoveryKey());
+    EXPECT_FALSE(entry.getRecoveryKey().has_value());
 }
 }

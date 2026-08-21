@@ -31,6 +31,7 @@
 #include <cstring>
 #include <functional>
 #include <optional>
+#include <source_location>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -236,6 +237,8 @@ struct MPTSet
     std::optional<uint256> domainID = std::nullopt;
     std::optional<Buffer> issuerPubKey = std::nullopt;
     std::optional<Buffer> auditorPubKey = std::nullopt;
+    std::optional<Buffer> holderPubKey = std::nullopt;
+    bool recoveryKey = false;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
@@ -351,6 +354,25 @@ struct MPTConfidentialClawback
     std::optional<Account> holder = std::nullopt;
     std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint64_t> amt = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
+ * @brief Arguments for building a ConfidentialMPTRecoverBalance test transaction.
+ */
+struct MPTConfidentialRecover
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> recoveryPrivKey = std::nullopt;
     std::optional<std::string> proof = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
@@ -478,19 +500,25 @@ public:
     operator MPT() const;
 
     void
-    create(MPTCreate const& arg = MPTCreate{});
+    create(
+        MPTCreate const& arg = MPTCreate{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     createJV(MPTCreate const& arg = MPTCreate{});
 
     void
-    destroy(MPTDestroy const& arg = MPTDestroy{});
+    destroy(
+        MPTDestroy const& arg = MPTDestroy{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     destroyJV(MPTDestroy const& arg = MPTDestroy{});
 
     void
-    authorize(MPTAuthorize const& arg = MPTAuthorize{});
+    authorize(
+        MPTAuthorize const& arg = MPTAuthorize{},
+        std::source_location const& loc = std::source_location::current());
 
     static json::Value
     authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
@@ -499,13 +527,15 @@ public:
     authorizeHolders(Holders const& holders);
 
     void
-    set(MPTSet const& set = {});
+    set(MPTSet const& set = {}, std::source_location const& loc = std::source_location::current());
 
     static json::Value
     setJV(MPTSet const& set = {});
 
     void
-    convert(MPTConvert const& arg = MPTConvert{});
+    convert(
+        MPTConvert const& arg = MPTConvert{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential convert JV without submitting it.
@@ -519,13 +549,17 @@ public:
     convertJV(MPTConvert const& arg, std::uint32_t seq);
 
     void
-    mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
+    mergeInbox(
+        MPTMergeInbox const& arg = MPTMergeInbox{},
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] json::Value
     mergeInboxJV(MPTMergeInbox const& arg = MPTMergeInbox{}) const;
 
     void
-    send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
+    send(
+        MPTConfidentialSend const& arg = MPTConfidentialSend{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential send JV.
@@ -563,7 +597,9 @@ public:
     chainAfterSend(Account const& sender, std::uint64_t sendAmt, json::Value const& jv) const;
 
     void
-    convertBack(MPTConvertBack const& arg = MPTConvertBack{});
+    convertBack(
+        MPTConvertBack const& arg = MPTConvertBack{},
+        std::source_location const& loc = std::source_location::current());
 
     /**
      * @brief Build a confidential convertBack JV without submitting it.
@@ -579,7 +615,14 @@ public:
     convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
 
     void
-    confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
+    confidentialClaw(
+        MPTConfidentialClawback const& arg = MPTConfidentialClawback{},
+        std::source_location const& loc = std::source_location::current());
+
+    void
+    recover(
+        MPTConfidentialRecover const& arg = MPTConfidentialRecover{},
+        std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
@@ -666,6 +709,9 @@ public:
     void
     generateKeyPair(Account const& account);
 
+    [[nodiscard]] static std::pair<Buffer, Buffer>
+    generateKeyPair();
+
     [[nodiscard]] std::optional<Buffer>
     getPubKey(Account const& account) const;
 
@@ -675,11 +721,23 @@ public:
     [[nodiscard]] Buffer
     encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
+    [[nodiscard]] static Buffer
+    encryptAmountWithPubKey(Buffer const& pubKey, uint64_t const amt, Buffer const& blindingFactor);
+
     [[nodiscard]] std::optional<uint64_t>
     decryptAmount(Account const& account, Buffer const& amt) const;
 
+    [[nodiscard]] static std::optional<uint64_t>
+    decryptAmount(Buffer const& privKey, Buffer const& amt);
+
     [[nodiscard]] std::optional<uint64_t>
     getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
+
+    [[nodiscard]] std::optional<uint64_t>
+    getDecryptedBalance(
+        Account const& account,
+        EncryptedBalanceType balanceType,
+        Buffer const& privKey) const;
 
     [[nodiscard]] std::optional<std::int64_t>
     getIssuanceOutstandingBalance() const;
@@ -732,7 +790,7 @@ private:
 
     template <typename A>
     TER
-    submit(A const& arg, json::Value jv)
+    submit(A const& arg, WithSourceLocation<json::Value> jv)
     {
         auto const expectedFlags = Txflags(arg.flags.value_or(0));
         auto const expectedTer = Ter(arg.err.value_or(tesSUCCESS));
@@ -740,7 +798,7 @@ private:
         if constexpr (requires { arg.fee; })
         {
             if (arg.fee)
-                jv[jss::Fee] = to_string(*arg.fee);
+                jv.value[jss::Fee] = to_string(*arg.fee);
         }
 
         std::optional<std::uint32_t> ticketSeq;
