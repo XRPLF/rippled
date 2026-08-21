@@ -19,10 +19,12 @@
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/CoroAwareContextStorage.h>
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
+#include <xrpl/telemetry/HistogramBuckets.h>
 #include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
@@ -553,31 +555,46 @@ public:
             std::make_unique<metrics_sdk::ViewRegistry>(), resourceAttrs);
         meterProvider_->AddMetricReader(std::move(reader));
 
-        // Histogram view: SpanMetrics-compatible bucket boundaries (ms) so
-        // histogram instruments align with the collector's SpanMetrics. The
-        // view is created with an EMPTY name so it applies the buckets WITHOUT
-        // renaming instruments — a non-empty view name would collapse every
-        // matching histogram (ios_latency, rpc_size, rpc_time, pathfind_*)
-        // into a single series under that one name.
-        auto histogramSelector = metrics_sdk::InstrumentSelectorFactory::Create(
-            metrics_sdk::InstrumentType::kHistogram, "*", "ms");
-        // Meter selector MUST match the meter name used by getMeter() and the
-        // beast OTelCollector (kMeterName = "xrpld"); otherwise this histogram
-        // view never applies and duration histograms fall back to the SDK
-        // default boundaries instead of these SpanMetrics-aligned buckets.
-        auto meterSelector =
-            metrics_sdk::MeterSelectorFactory::Create(std::string(kMeterName), "", "");
-        auto histogramConfig = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
-        histogramConfig->boundaries_ =
-            std::vector<double>{1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 5000.0};
-        auto histogramView = metrics_sdk::ViewFactory::Create(
-            "",  // empty name: keep each instrument's own name, only set buckets
-            "SpanMetrics-compatible histogram buckets",
-            metrics_sdk::AggregationType::kHistogram,
-            histogramConfig);
+        // One histogram view per unit. The unit is the selector, so an
+        // instrument gets the ladder that fits what it measures -- a byte
+        // count no longer inherits a latency ladder. Edges come from
+        // HistogramBuckets.h, which owns every ladder.
+        //
+        // Each view keeps the "*" name pattern and an EMPTY view name: a
+        // non-empty view name would rename every matching histogram to it and
+        // collapse them (ios_latency, rpc_size, rpc_time, pathfind_*, and all
+        // the jobq_* pairs) into a single series.
+        //
+        // The meter selector MUST match the meter name used by getMeter() and
+        // the beast OTelCollector (kMeterName = "xrpld"); otherwise a view
+        // never applies and instruments fall back to the SDK default ladder,
+        // whose ceiling is 10,000.
+        auto const addUnitView = [this](
+                                     std::string const& unitCode,
+                                     std::vector<double> boundaries,
+                                     std::string const& description) {
+            auto selector = metrics_sdk::InstrumentSelectorFactory::Create(
+                metrics_sdk::InstrumentType::kHistogram, "*", unitCode);
+            auto meterSelector =
+                metrics_sdk::MeterSelectorFactory::Create(std::string(kMeterName), "", "");
+            auto config = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
+            config->boundaries_ = std::move(boundaries);
+            auto view = metrics_sdk::ViewFactory::Create(
+                "",  // empty name: keep each instrument's own name, only set buckets
+                description,
+                metrics_sdk::AggregationType::kHistogram,
+                std::move(config));
+            meterProvider_->AddView(std::move(selector), std::move(meterSelector), std::move(view));
+        };
 
-        meterProvider_->AddView(
-            std::move(histogramSelector), std::move(meterSelector), std::move(histogramView));
+        addUnitView(
+            beast::insight::otelUnitCode(beast::insight::Unit::Millis),
+            buckets::toVector(buckets::kMillisecondBuckets),
+            "Duration buckets, 1 ms to 120 s");
+        addUnitView(
+            beast::insight::otelUnitCode(beast::insight::Unit::Bytes),
+            buckets::toVector(buckets::kByteBuckets),
+            "Size buckets, 512 B to 1 MiB");
 
         // Publish as the global meter provider so developers (and the beast
         // OTelCollector shim) reach the same pipeline.

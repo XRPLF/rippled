@@ -1,23 +1,8 @@
 {
+  "_note": "job.* entries were removed on 2026-08-21. They were captured against the old microsecond ladder whose first edge was 100us, with 99.3% of job_queued_us samples beneath it, so job.acceptLedger.queued.p95 = 96.79us was 0.95/0.9926 x 100 -- arithmetic on the bucket edge, not a latency. Recapture them on a node running the re-cut ladder (floor 1us); until then the comparer reports them as \"new metric (not in baseline)\" and gates only the span metrics, which are unaffected. Removed values, for reference: job.acceptLedger.queued.p95=96.79us, job.acceptLedger.running.p95=10562.50us, job.transaction.queued.p95=478.97us, job.transaction.running.p95=494.14us.",
   "captured_at": "2026-06-05T18:41:52Z",
   "git_sha": "fd1c8c6060f7a15cc9e65b16f99629d9ab7ac7dc",
   "metrics": {
-    "job.acceptLedger.queued.p95": {
-      "unit": "us",
-      "value": 96.78571428571428
-    },
-    "job.acceptLedger.running.p95": {
-      "unit": "us",
-      "value": 10562.499999999945
-    },
-    "job.transaction.queued.p95": {
-      "unit": "us",
-      "value": 478.96551724137925
-    },
-    "job.transaction.running.p95": {
-      "unit": "us",
-      "value": 494.1361256544502
-    },
     "span.consensus.accept.p50": {
       "unit": "ms",
       "value": 1.059405940594059

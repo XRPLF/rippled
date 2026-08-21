@@ -33,3 +33,11 @@ jobs:
         # it enforces each rule only when the layer it needs is present, so it
         # works whether telemetry changes land in one PR or several.
         run: python .github/scripts/otel-naming/check_otel_naming.py
+      - name: Check histogram bucket parity
+        # The C++ millisecond ladder and the collector's spanmetrics ladder are
+        # specified to agree over their shared range. They were identical when
+        # first shipped, then the collector side alone was extended and nothing
+        # noticed for eleven phases: native histograms stayed capped at 5s while
+        # spans reached 30s, so every quantile above 5s reported a flat 5000.
+        # Nothing but a check keeps two lists in step.
+        run: python .github/scripts/telemetry/check_bucket_parity.py

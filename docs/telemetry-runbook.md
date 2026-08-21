@@ -2289,22 +2289,68 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | ------------------------- | ---------- | ------------------------------------------------------------- | ----------- |
 | RPC Request Rate          | stat       | `rate(rpc_requests[5m])`                                      | —           |
 | RPC Response Time         | timeseries | `histogram_quantile(0.95, rpc_time_milliseconds_bucket)`      | —           |
-| RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_milliseconds_bucket)`      | —           |
+| RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_bytes_bucket)`             | —           |
 | RPC Response Time Heatmap | heatmap    | `rpc_time_milliseconds_bucket`                                | —           |
 | Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, pathfind_fast_milliseconds_bucket)` | —           |
 | Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, pathfind_full_milliseconds_bucket)` | —           |
 | Resource Warnings Rate    | stat       | `rate(warn_total[$__rate_interval])`                          | —           |
 | Resource Drops Rate       | stat       | `rate(drop_total[$__rate_interval])`                          | —           |
 
-> **The `_milliseconds` suffix comes from the exporter, not from xrpld.** These
-> histograms are created with unit `"ms"`
-> ([OTelCollector.cpp:615](../src/libxrpl/beast/insight/OTelCollector.cpp#L615)),
-> so the Prometheus exporter appends the unit to the family name — `rpc_time`
-> becomes `rpc_time_milliseconds_bucket`. Querying the bare `rpc_time_bucket`,
+> **The unit suffix comes from the exporter, not from xrpld.** Each histogram
+> declares a unit, and the Prometheus exporter appends the unit's name to the
+> family name — a `ms` instrument like `rpc_time` becomes
+> `rpc_time_milliseconds_bucket`. Querying the bare `rpc_time_bucket`,
 > `ios_latency_bucket` or `pathfind_fast_bucket` returns no data and no error.
-> **Known issue**: `rpc_size` counts bytes but shares the same `"ms"` histogram
-> constructor, so it is exported as `rpc_size_milliseconds_bucket` — the suffix
-> is wrong, the name is nonetheless the one to query.
+>
+> The unit an `Event` declares also selects its bucket ladder, because the
+> histogram views match on unit. `rpc_size` measures bytes, so it declares
+> `Unit::Bytes` and exports as **`rpc_size_bytes_bucket`** on the byte ladder.
+> It used to share the `ms` constructor and export as
+> `rpc_size_milliseconds_bucket` on a latency ladder — if you find that name in
+> an old query or bookmark, it no longer exists.
+
+#### Reading A Histogram Percentile
+
+Two failure modes make a percentile panel lie, and neither looks like an error —
+both produce a believable number. Check for them before trusting any p95/p99.
+
+**Saturated at the top.** If the quantile falls in the `+Inf` bucket, Prometheus
+returns the **second-highest** bucket edge, not `+Inf`. A panel pinned to a round
+number that happens to equal the ladder's top edge is the signature. Confirm by
+comparing the top finite bucket against the total:
+
+```promql
+1 - (
+  sum(last_over_time(<metric>_bucket{le="<top edge>"}[15m]))
+  / sum(last_over_time(<metric>_bucket{le="+Inf"}[15m]))
+)
+```
+
+A non-trivial result means samples are being censored and the percentile is a
+lower bound, not a measurement.
+
+**Saturated at the bottom.** If nearly every sample lands in the first bucket,
+`histogram_quantile` interpolates _inside_ it and returns
+`quantile / fraction_in_bucket_0 × first_edge`. The signature is a p75/p95/p99
+that sit in near-constant proportion to each other and to the first edge — for
+example 75.5 / 95.7 / 99.7 against a 100 µs floor. Confirm with:
+
+```promql
+sum(last_over_time(<metric>_bucket{le="<first edge>"}[15m]))
+/ sum(last_over_time(<metric>_bucket{le="+Inf"}[15m]))
+```
+
+Anything close to 1 means the panel is reporting arithmetic on the bucket edge.
+
+**After a ladder change, expect a discontinuity.** Existing series keep their old
+`le` values, so a percentile panel shows a step at the restart that introduced
+new edges. That break is the ladder changing, not an incident.
+
+Bucket edges for the native instruments live in one place —
+[`include/xrpl/telemetry/HistogramBuckets.h`](../include/xrpl/telemetry/HistogramBuckets.h).
+The millisecond ladder is required to contain every representable edge of the
+collector's spanmetrics ladder; `.github/scripts/telemetry/check_bucket_parity.py`
+enforces that in CI, because the two silently drifted once already.
 
 ### Span → Metric → Dashboard Summary
 
