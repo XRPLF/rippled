@@ -143,9 +143,12 @@ SHAMap::visitDifferences(
         if (!function(*node))
             return;
 
-        // Nibbles run out at kLeafDepth, so only a leaf belongs there. An inner node at that depth
-        // means the store holds one, possibly seeded by a peer via an earlier fetch-pack exchange;
-        // skip its children rather than descending into it.
+        // Nibbles run out at kLeafDepth, so only a leaf belongs there. A well-formed map never
+        // holds an inner node at that depth: addKnownNode marks the map invalid rather than hooking
+        // one in, and fetch-pack data is hash-verified against a validated root, so reaching this
+        // means a defect or a corrupt store, not something a peer can provoke. Report the node
+        // anyway - the wire form carries no depth, and the recipient hooks blobs in by hash - but
+        // skip the children rather than letting getChildNodeID throw on them.
         if (nodeID.getDepth() >= kLeafDepth)
         {
             // LCOV_EXCL_START
@@ -760,9 +763,9 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 
     do
     {
-        // Same kLeafDepth hazard as in visitDifferences above. That's the only caller and already
-        // bails out before reaching here; this is a second line of defense since the loop below
-        // descends on its own and doesn't depend on the caller's bound.
+        // Same kLeafDepth hazard as in visitDifferences above. That guard bounds the caller's own
+        // traversal, not the map queried here, and the loop below descends from this map's root
+        // independently, so this check is what keeps a malformed map from reaching getChildNodeID.
         if (nodeID.getDepth() >= kLeafDepth)
         {
             // LCOV_EXCL_START
