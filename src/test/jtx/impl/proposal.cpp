@@ -178,13 +178,15 @@ unchanged(SLE::const_pointer const& before, SLE::const_pointer const& after)
 }
 
 // Whether a TransactionProposal entry may carry the field when it is created.
-// A fresh proposal has gathered no signatures, so it carries nothing else.
+// A fresh proposal has gathered no signatures, so it carries nothing else —
+// except a Sponsor, which a reserve-sponsored creation stamps on the entry from
+// the start.
 bool
 isCreationField(SField const& field)
 {
     return field == sfLedgerEntryType || field == sfFlags || field == sfOwner ||
         field == sfProposedTransaction || field == sfExpiration || field == sfOwnerNode ||
-        field == sfPreviousTxnID || field == sfPreviousTxnLgrSeq;
+        field == sfPreviousTxnID || field == sfPreviousTxnLgrSeq || field == sfSponsor;
 }
 
 }  // namespace
