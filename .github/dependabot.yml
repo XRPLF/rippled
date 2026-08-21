@@ -4,6 +4,7 @@ updates:
     directories:
       - /
       - .github/actions/build-deps/
+      - .github/actions/cargo-cache/
       - .github/actions/release-info/
       - .github/actions/set-compiler-env/
       - .github/actions/setup-conan/

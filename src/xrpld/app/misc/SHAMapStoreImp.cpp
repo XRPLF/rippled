@@ -412,20 +412,31 @@ SHAMapStoreImp::run()
             canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 
         {
-            JLOG(journal_.trace()) << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
             // Note that this is set after the healthWait() check, so that we
             // don't start the rotation until the validated ledger is fully
             // processed. It is not guaranteed to be done at this point. It also
             // allows the testLedgerGaps unit test to work.
-            std::unique_lock<std::mutex> const lock(mutex_);
-            lastGoodValidatedLedger_ = validatedSeq;
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (newLedger_)
+            {
+                // It is possible, though very unlikely outside of tests which manipulate internals,
+                // that healthWait() took so long that the validated ledger (newLedger_) has moved
+                // on from where we started. If that's the case, update lastGoodValidatedLedger_
+                // to that ledger's sequence number.
+                lastGoodValidatedLedger_ = newLedger_->header().seq;
+            }
+            else
+            {
+                lastGoodValidatedLedger_ = validatedSeq;
+            }
+            auto const l = lastGoodValidatedLedger_;
+            lock.unlock();
+            JLOG(journal_.trace()) << "run: Set lastGoodValidatedLedger_ to " << l;
         }
 
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
-            // NOLINTBEGIN(readability-else-after-return)
-            // NOLINTBEGIN(readability-braces-around-statements)
             auto const diff = validatedSeq - lastRotated;
             JLOG(journal_.warn()) << "ROTATING: validatedSeq " << validatedSeq << " lastRotated "
                                   << lastRotated << " diff " << diff << " deleteInterval "
@@ -445,10 +456,15 @@ SHAMapStoreImp::run()
             dbRotating_->setRotationInFlight(true);
 
             clearPrior(lastRotated);
-            if (auto const health = healthWait(); health == HealthResult::Stopping)
-                return;
-            else if (health != HealthResult::KeepGoing)
-                continue;
+            switch (healthWait())
+            {
+                case HealthResult::Stopping:
+                    return;
+                case HealthResult::Expired:
+                    continue;
+                case HealthResult::KeepGoing:
+                    break;
+            }
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
@@ -467,10 +483,15 @@ SHAMapStoreImp::run()
                 continue;
             }
 
-            if (auto const health = healthWait(); health == HealthResult::Stopping)
-                return;
-            else if (health != HealthResult::KeepGoing)
-                continue;
+            switch (healthWait())
+            {
+                case HealthResult::Stopping:
+                    return;
+                case HealthResult::Expired:
+                    continue;
+                case HealthResult::KeepGoing:
+                    break;
+            }
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " duplicated "
@@ -478,10 +499,15 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
-            if (auto const health = healthWait(); health == HealthResult::Stopping)
-                return;
-            else if (health != HealthResult::KeepGoing)
-                continue;
+            switch (healthWait())
+            {
+                case HealthResult::Stopping:
+                    return;
+                case HealthResult::Expired:
+                    continue;
+                case HealthResult::KeepGoing:
+                    break;
+            }
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << validatedSeq << " freshened caches";
 
@@ -490,10 +516,15 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
             clearCaches(validatedSeq);
-            if (auto const health = healthWait(); health == HealthResult::Stopping)
-                return;
-            else if (health != HealthResult::KeepGoing)
-                continue;
+            switch (healthWait())
+            {
+                case HealthResult::Stopping:
+                    return;
+                case HealthResult::Expired:
+                    continue;
+                case HealthResult::KeepGoing:
+                    break;
+            }
 
             lastRotated = validatedSeq;
 
@@ -517,8 +548,6 @@ SHAMapStoreImp::run()
                 << ". Updated validated seq is " << currentValidatedSeq << ", " << processingDiff
                 << " ledgers were validated during the rotation processs. Complete ledgers: "
                 << ledgerMaster_->getCompleteLedgers();
-            // NOLINTEND(readability-braces-around-statements)
-            // NOLINTEND(readability-else-after-return)
         }
     }
 }
