@@ -383,6 +383,95 @@ private:
             isRounded(broker.asset, newState.principalOutstanding, originalState.loanScale));
     }
 
+    // Reproduces the scenario raised in PR #7732 review: the §3.11.5
+    // non-full-payment invariant asserts that a successful LoanPay strictly
+    // decreases PaymentRemaining and advances NextPaymentDueDate. doPayment
+    // deliberately leaves those schedule fields unchanged for
+    // PaymentSpecialCase::Extra (an overpayment), so the concern is that an
+    // "extra-only" overpayment - one that does not also cover a scheduled
+    // payment - would reach that branch and trip the invariant.
+    //
+    // The invariant is gated behind featureLendingProtocolV1_1, which
+    // LoanTestBase::all_ excludes, so it is opted back in here.
+    void
+    testLoanPayOverpaymentScheduleInvariant(FeatureBitset features)
+    {
+        testcase("LoanPay overpayment vs non-full-payment invariant");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env{*this, features | featureLendingProtocolV1_1};
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+
+        BrokerInfo const broker = createVaultAndBroker(
+            env,
+            asset,
+            lender,
+            {
+                .vaultDeposit = asset(100'000).value(),
+                .managementFeeRate = TenthBips16(10'000),
+            });
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+
+        // Principal 10,000 over 3 payments, overpayment enabled. One scheduled
+        // payment is ~3,333, so an amount well below that cannot cover one.
+        auto const loanKeylet = nextLoanKeylet(env, broker);
+        env(loan::set(borrower, broker.brokerID, asset(10'000).value(), tfLoanOverpayment),
+            Sig(sfCounterpartySignature, lender),
+            loan::kPaymentInterval(86400 * 30),
+            loan::kPaymentTotal(3),
+            loan::kOverpaymentInterestRate(TenthBips32(percentageToTenthBips(20))),
+            loanSetFee);
+        env.close();
+
+        auto const before = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(before.paymentRemaining == 3);
+
+        STAmount const belowOnePayment = asset(1'000).value();
+        BEAST_EXPECT((belowOnePayment < STAmount{asset, before.periodicPayment}));
+
+        auto const payFee = Fee(env.current()->fees().base * 2);
+
+        // Scenario A - the reviewer's "extra-only" overpayment. The amount does
+        // not cover a scheduled payment, so makeRegularPayment makes zero
+        // scheduled payments and returns tecINSUFFICIENT_PAYMENT before the
+        // Extra branch runs. The invariant is therefore never reached. Were the
+        // payment to succeed while touching only principal, the invariant would
+        // fire instead.
+        env(pay(borrower, loanKeylet.key, belowOnePayment, tfLoanOverpayment),
+            payFee,
+            Ter(tecINSUFFICIENT_PAYMENT));
+        env.close();
+
+        auto const afterReject = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(afterReject.paymentRemaining == before.paymentRemaining);
+        BEAST_EXPECT(afterReject.principalOutstanding == before.principalOutstanding);
+        BEAST_EXPECT(afterReject.nextPaymentDate == before.nextPaymentDate);
+
+        // Scenario B - a valid overpayment that also covers one scheduled
+        // payment. This reaches the §3.11.5 invariant with tesSUCCESS:
+        // PaymentRemaining drops by one, NextPaymentDueDate advances by one
+        // interval, and PrincipalOutstanding strictly decreases (by more than a
+        // plain payment thanks to the extra). The invariant must accept it.
+        STAmount const onePaymentPlusExtra = asset(5'000).value();
+        env(pay(borrower, loanKeylet.key, onePaymentPlusExtra, tfLoanOverpayment), payFee);
+        env.close();
+
+        auto const afterPay = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(afterPay.paymentRemaining == before.paymentRemaining - 1);
+        BEAST_EXPECT(afterPay.principalOutstanding < before.principalOutstanding);
+        BEAST_EXPECT(afterPay.nextPaymentDate == before.nextPaymentDate + before.paymentInterval);
+    }
+
     void
     testAccountSendMptMinAmountInvariant(FeatureBitset features)
     {
@@ -857,6 +946,7 @@ private:
     {
         testLoanPayComputePeriodicPaymentInvariants(features);
         testLoanPayDebtDecreaseInvariant(features);
+        testLoanPayOverpaymentScheduleInvariant(features);
         testAccountSendMptMinAmountInvariant(features);
         testMinimumBrokerCoverConsistency(features);
     }
