@@ -2910,6 +2910,28 @@ class Invariants_test : public beast::unit_test::Suite
                 STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
+
+            // Item 29 (XLS-65 §3.4, XLS-66 §3.4): a VaultDelete transaction
+            // must not touch any loan broker. The pseudo-account
+            // owner-directory residual check in ValidVault (item 9) enforces
+            // the substantive property indirectly; this check catches a
+            // compound transaction that would modify a broker while
+            // deleting a vault. Requires featureLendingProtocolV1_1.
+            doInvariantCheck(
+                makeEnv(defaultAmendments() | featureLendingProtocolV1_1),
+                {"vault operation succeeded without modifying a vault",
+                 "VaultDelete must not touch any loan broker"},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!BEAST_EXPECT(sle))
+                        return false;
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttVAULT_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createLoanBroker);
         }
     }
 
@@ -3481,8 +3503,11 @@ class Invariants_test : public beast::unit_test::Suite
             precloseXrp,
             TxAccount::A2);
 
+        // Under fixCleanup3_4_0 vault immutability is enforced by
+        // NoModifiedUnmodifiableFields (class-1, both passes), which reports
+        // "changed an unchangeable field" and escalates to tef on pass 2.
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -3494,11 +3519,11 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -3510,11 +3535,11 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -3526,7 +3551,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
@@ -3691,6 +3716,31 @@ class Invariants_test : public beast::unit_test::Suite
             precloseXrp,
             TxAccount::A2);
 
+        // Universal share conservation: the issuance's OutstandingAmount
+        // delta must equal the sum of MPToken deltas across all touched
+        // holders. Bump the depositor's holding by 10 but only bump the
+        // issuance by 5, so the aggregate identity is off by 5.
+        doInvariantCheck(
+            {"shares outstanding delta must equal the sum of holder share deltas"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = 10,
+                        .assetsAvailable = 10,
+                        .sharesTotal = 5,
+                        .vaultAssets = 10,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -10},
+                        .accountShares = AccountAmount{.account = a2.id(), .amount = 10}});
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
         testcase << "Vault loan operations";
 
         // ttLOAN_MANAGE (impair): assets outstanding must not change. Only
@@ -3741,7 +3791,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttLOAN_SET: the balance decreases, but not by the principal requested
@@ -3769,7 +3819,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx.at(sfPrincipalRequested) = Number(200);
                     tx.makeFieldPresent(sfCounterpartySignature);
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttLOAN_SET: vault balance decreases by the principal requested, but
@@ -3799,12 +3849,12 @@ class Invariants_test : public beast::unit_test::Suite
                     tx.at(sfPrincipalRequested) = Number(200);
                     tx.makeFieldPresent(sfCounterpartySignature);
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttLOAN_SET: principal matches, but no loan object is created
         doInvariantCheck(
-            {"loan set must create exactly one loan"},
+            {"lending transaction must touch exactly one loan"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(
@@ -3822,7 +3872,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // ttLOAN_SET: principal matches, but more than one loan is created
         doInvariantCheck(
-            {"loan set must create exactly one loan"},
+            {"lending transaction must touch exactly one loan"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(
@@ -3842,8 +3892,73 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
+
+        // ttLOAN_SET: no new loan is created, but an existing loan is modified
+        // instead. The cardinality helper distinguishes create from modify;
+        // a set that touches a pre-existing loan is spurious.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            BEAST_EXPECT(precloseXrp(a1, a2, env));
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            // Pre-existing loan in the base view; modifying it in the apply
+            // view is what the cardinality check must reject for a set.
+            {
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(100);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ov.rawInsert(sleLoan);
+            }
+
+            STTx const tx{
+                ttLOAN_SET, [](STObject& t) { t.at(sfPrincipalRequested) = Number(200); }};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // Move the vault balance and available assets to match the
+            // principal requested, so the funding checks pass and only the
+            // cardinality shape is left to trip.
+            if (!BEAST_EXPECT(kAdjust(
+                    ac.view(),
+                    vaultKeylet,
+                    Adjustments{
+                        .assetsAvailable = -200,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200}})))
+                return;
+            // Modify the pre-existing loan so afterLoan_ has one entry with a
+            // non-empty beforeLoan_ counterpart: this is the "modify" shape
+            // that a set transaction must never produce.
+            auto sleLoan = ac.view().peek(loanKeylet);
+            if (!BEAST_EXPECT(sleLoan))
+                return;
+            sleLoan->at(sfPrincipalOutstanding) = Number(50);
+            ac.view().update(sleLoan);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "lending transaction must not modify an existing loan"));
+        }
 
         // ttLOAN_SET: principal matches, but shares outstanding changes
         doInvariantCheck(
@@ -3872,7 +3987,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx.at(sfPrincipalRequested) = Number(200);
                     tx.makeFieldPresent(sfCounterpartySignature);
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttLOAN_SET: everything balances (principal released, exactly one loan
@@ -3901,7 +4016,41 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE: no loan is touched at all. Every lending transaction
+        // must operate on exactly one loan; a manage with none is spurious.
+        doInvariantCheck(
+            {"lending transaction must touch exactly one loan"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, Adjustments{});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanImpair); }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE: a loan is created rather than modified. The cardinality
+        // helper distinguishes create from modify and rejects the wrong shape.
+        doInvariantCheck(
+            {"lending transaction must modify exactly one loan"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 100,
+                            .totalValueOutstanding = 100,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanImpair); }},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttLOAN_MANAGE: vault balance and assets available do not add up
@@ -4001,6 +4150,90 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
+        // ttLOAN_MANAGE (unimpair): loss unrealized must not increase. Bumping
+        // loss unrealized upward is the wrong direction for unimpair, which
+        // reverses a paper loss.
+        doInvariantCheck(
+            {"loan impair must not decrease, and loan unimpair must not "
+             "increase, loss unrealized"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, Adjustments{.lossUnrealized = 5});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanUnimpair); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE (impair): loss unrealized must not decrease. The base
+        // ledger cannot express a nonzero prior lossUnrealized through the
+        // shared harness, so the setup is bespoke: seed the vault with a small
+        // paper loss and then drop it back to zero under an impair — the
+        // wrong direction for impair, which only ever grows the paper loss.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            BEAST_EXPECT(precloseXrp(a1, a2, env));
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+            // Seed the vault with a paper loss in the base view so a
+            // decrease in the apply view registers as a negative delta. The
+            // SLE is cloned so the base and apply views hold separate copies.
+            {
+                auto const sleVaultRead = ov.read(vaultKeylet);
+                if (!BEAST_EXPECT(sleVaultRead))
+                    return;
+                auto sleVault = std::make_shared<SLE>(*sleVaultRead);
+                sleVault->at(sfLossUnrealized) = Number(5);
+                ov.rawReplace(sleVault);
+            }
+
+            STTx const tx{
+                ttLOAN_MANAGE, [](STObject& t) { t.setFieldU32(sfFlags, tfLoanImpair); }};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // Reset lossUnrealized to zero under an impair: after (0) < before
+            // (5), so the delta is negative and the sign check must reject.
+            auto sleVault = ac.view().peek(vaultKeylet);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            sleVault->at(sfLossUnrealized) = Number(0);
+            ac.view().update(sleVault);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "loan impair must not decrease, and loan unimpair must not "
+                "increase, loss unrealized"));
+        }
+
+        // ttLOAN_MANAGE (default): loss unrealized must not increase. A default
+        // realizes the paper loss (or leaves it at zero for a non-impaired
+        // loan); it can never grow it.
+        doInvariantCheck(
+            {"loan default must not increase loss unrealized"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, Adjustments{.lossUnrealized = 5});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanDefault); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
         // ttLOAN_PAY: the vault (pseudo-account) balance must change
         doInvariantCheck(
             {"loan pay must change vault balance"},
@@ -4011,6 +4244,54 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{},
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: cash is credited to the vault but no loan is touched.
+        // The vault-balance check passes because a real inflow was recorded;
+        // it is the cardinality helper that must catch the missing loan.
+        doInvariantCheck(
+            {"lending transaction must touch exactly one loan"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = 50,
+                        .assetsAvailable = 50,
+                        .vaultAssets = 50,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -50}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(50)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: cash is credited to the vault and a loan is created
+        // rather than modified. A payment services an existing loan, so a
+        // create is the wrong shape and the cardinality helper must reject
+        // it.
+        doInvariantCheck(
+            {"lending transaction must modify exactly one loan"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = 50,
+                        .assetsAvailable = 50,
+                        .vaultAssets = 50,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -50},
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 100,
+                            .totalValueOutstanding = 100,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(50)); }},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttLOAN_PAY: assets available must track the real vault balance. The
@@ -4175,11 +4456,84 @@ class Invariants_test : public beast::unit_test::Suite
             auto transactor = makeTransactor(ac);
             if (!BEAST_EXPECT(transactor))
                 return;
-            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(sink.messages().str().contains(
                 "loan pay assets outstanding must match the cash received and "
                 "the change in the loan claim"));
+            // The pre-inserted loan carries a default (zero) sfLoanBrokerID,
+            // which does not resolve to a live broker; the broker-existence
+            // check must therefore also fire in the same walk.
+            BEAST_EXPECT(sink.messages().str().contains(
+                "loan pay loan broker must exist"));
+        }
+
+        // ttLOAN_PAY: the vault's claim on the loan may only shrink. A payment
+        // pays the loan down, so total value outstanding (net of management
+        // fee) can only fall. The bespoke setup mirrors the conservation test
+        // above: a pre-existing loan is inserted so modifying it registers as a
+        // before/after change.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            BEAST_EXPECT(precloseXrp(a1, a2, env));
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            {
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ov.rawInsert(sleLoan);
+            }
+
+            STTx const tx{
+                ttLOAN_PAY, [](STObject& t) { t.setFieldAmount(sfAmount, XRPAmount(50)); }};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // Cash inflow of 50 (paid by a2), assets outstanding grows by 100
+            // to keep the conservation identity honest (Δtotal - Δavailable -
+            // Δclaim = 100 - 50 - 50 = 0). Push both principal (100 → 150)
+            // and total value (150 → 200): under either accounting basis the
+            // vault's claim grows by 50, which the sign check must reject.
+            if (!BEAST_EXPECT(kAdjust(
+                    ac.view(),
+                    vaultKeylet,
+                    Adjustments{
+                        .assetsTotal = 100,
+                        .assetsAvailable = 50,
+                        .vaultAssets = 50,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -50}})))
+                return;
+
+            auto sleLoan = ac.view().peek(loanKeylet);
+            if (!BEAST_EXPECT(sleLoan))
+                return;
+            sleLoan->at(sfPrincipalOutstanding) = Number(150);
+            sleLoan->at(sfTotalValueOutstanding) = Number(200);
+            ac.view().update(sleLoan);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "loan pay must not increase the vault's claim on the loan"));
         }
 
         // ttLOAN_PAY: the vault, the loan-broker pseudo-account and the
@@ -4266,10 +4620,158 @@ class Invariants_test : public beast::unit_test::Suite
             auto transactor = makeTransactor(ac);
             if (!BEAST_EXPECT(transactor))
                 return;
-            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(sink.messages().str().contains(
                 "loan pay vault and broker must not receive more than the amount paid"));
+        }
+
+        // ttLOAN_MANAGE (default): the first-loss capital the vault receives
+        // comes out of the loan-broker pseudo-account, so the two balances
+        // must move by exactly opposite amounts. Credit the vault by 50 while
+        // leaving the broker pseudo-account untouched: the residual is 50,
+        // not zero, and the cover-conservation check must fire. The setup is
+        // bespoke to give the invariant a real broker for the loan lookup.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                return;
+            env.close();
+
+            auto const sleBrokerBase = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBrokerBase))
+                return;
+            auto const vaultKeylet = keylet::vault(sleBrokerBase->at(sfVaultID));
+
+            Vault const vault{env};
+            env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = XRP(500)}));
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            {
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ov.rawInsert(sleLoan);
+            }
+
+            STTx const tx{
+                ttLOAN_MANAGE, [](STObject& t) { t.setFieldU32(sfFlags, tfLoanDefault); }};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // Vault balance and assetsAvailable both +50 (as if first-loss
+            // capital were returned), sourced from a2 rather than the broker
+            // pseudo-account. The broker balance stays put, so the two
+            // deltas do not cancel.
+            if (!BEAST_EXPECT(kAdjust(
+                    ac.view(),
+                    vaultKeylet,
+                    Adjustments{
+                        .assetsAvailable = 50,
+                        .vaultAssets = 50,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -50}})))
+                return;
+
+            // Modify the loan (before/after) so exactlyOneLoan passes.
+            auto sleLoan = ac.view().peek(loanKeylet);
+            if (!BEAST_EXPECT(sleLoan))
+                return;
+            sleLoan->at(sfPrincipalOutstanding) = Number(0);
+            sleLoan->at(sfTotalValueOutstanding) = Number(0);
+            sleLoan->setFieldU32(sfPaymentRemaining, 0);
+            ac.view().update(sleLoan);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "loan default must move the first-loss capital from the loan "
+                "broker to the vault"));
+        }
+
+        // ttLOAN_MANAGE (default): the invariant reads the broker through the
+        // defaulted loan. If the loan carries a stale or zero LoanBrokerID
+        // the lookup fails, so the check that guards the cover-conservation
+        // step must report it explicitly rather than silently skip.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            BEAST_EXPECT(precloseXrp(a1, a2, env));
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            // Pre-insert a loan carrying a default (zero) sfLoanBrokerID so
+            // the invariant's broker lookup returns nullopt.
+            {
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(100);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ov.rawInsert(sleLoan);
+            }
+
+            STTx const tx{
+                ttLOAN_MANAGE, [](STObject& t) { t.setFieldU32(sfFlags, tfLoanDefault); }};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // Touch the vault so ValidVault::finalize enters
+            // finalizeLoanManage; the tfLoanDefault path is what carries the
+            // "loan default loan broker must exist" check we are asserting.
+            auto sleVault = ac.view().peek(vaultKeylet);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            ac.view().update(sleVault);
+
+            // Modify the loan (before/after) so exactlyOneLoan passes and the
+            // broker lookup is actually reached.
+            auto sleLoan = ac.view().peek(loanKeylet);
+            if (!BEAST_EXPECT(sleLoan))
+                return;
+            sleLoan->at(sfPrincipalOutstanding) = Number(0);
+            sleLoan->at(sfTotalValueOutstanding) = Number(0);
+            sleLoan->setFieldU32(sfPaymentRemaining, 0);
+            ac.view().update(sleLoan);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "loan default loan broker must exist"));
         }
 
         // A loan may only be deleted by a LoanDelete transaction, and only once
@@ -4339,6 +4841,27 @@ class Invariants_test : public beast::unit_test::Suite
                 XRPAmount{},
                 STTx{ttLOAN_DELETE, [](STObject&) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLoan);
+
+            // Item 54 (XLS-66 §3.1.5 precondition 1): a LoanBrokerDelete
+            // transaction must not touch any loan. Broker delete requires
+            // OwnerCount == 0 (no loans reference the broker); touching a
+            // loan alongside the delete points at either an
+            // OwnerCount-tracking bug or a spurious cascading write.
+            // Requires featureLendingProtocolV1_1.
+            doInvariantCheck(
+                makeEnv(defaultAmendments() | featureLendingProtocolV1_1),
+                {"LoanBrokerDelete must not touch any loan"},
+                [&loanKeylet](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanKeylet);
+                    if (!sle)
+                        return false;
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 precloseLoan);
         }
 
@@ -4421,9 +4944,10 @@ class Invariants_test : public beast::unit_test::Suite
                 return true;
             });
 
-        // ttVAULT_SET: owner is immutable
+        // ttVAULT_SET: owner is immutable (enforced by
+        // NoModifiedUnmodifiableFields under fixCleanup3_4_0).
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -4435,12 +4959,12 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttVAULT_SET: withdrawal policy is immutable
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -4454,12 +4978,12 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         // ttVAULT_SET: scale is immutable
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -4472,7 +4996,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         testcase << "Vault create";

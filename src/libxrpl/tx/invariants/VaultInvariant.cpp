@@ -64,6 +64,12 @@ ValidVault::Vault::make(SLE const& from)
     self.lossUnrealized = from.at(sfLossUnrealized);
     self.withdrawalPolicy = from.at(sfWithdrawalPolicy);
     self.scale = from.at(sfScale);
+    self.flags = from.getFlags();
+    // Mirrors getVaultVersion: an absent or unrecognised sfLEVersion resolves
+    // to the legacy, accrual-basis model.
+    self.version = from[~sfLEVersion] == std::to_underlying(VaultVersion::CashBasis)
+        ? VaultVersion::CashBasis
+        : VaultVersion::Legacy;
     self.vaultKind = from[~sfVaultKind];
     self.subscriptionDate = from[~sfSubscriptionDate];
     self.redemptionDate = from[~sfRedemptionDate];
@@ -81,6 +87,9 @@ ValidVault::Shares::make(SLE const& from)
     self.share = MPTIssue(makeMptID(from.getFieldU32(sfSequence), from.getAccountID(sfIssuer)));
     self.sharesTotal = from.at(sfOutstandingAmount);
     self.sharesMaximum = from[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
+    self.transferFee = from[~sfTransferFee].value_or(0);
+    self.assetScale = from[~sfAssetScale].value_or(0);
+    self.flags = from.getFlags();
     return self;
 }
 
@@ -91,9 +100,17 @@ ValidVault::Loan::interestDue() const
 }
 
 Number
-ValidVault::Loan::claim() const
+ValidVault::Loan::claim(VaultVersion version) const
 {
+    if (version == VaultVersion::CashBasis)
+        return principalOutstanding;
     return totalValueOutstanding - managementFeeOutstanding;
+}
+
+Number
+ValidVault::Loan::exposure(VaultVersion version) const
+{
+    return claim(version);
 }
 
 ValidVault::Loan
@@ -104,9 +121,30 @@ ValidVault::Loan::make(SLE const& from)
     ValidVault::Loan self;
     self.key = from.key();
     self.loanBrokerID = from.at(sfLoanBrokerID);
+    self.borrower = from.at(sfBorrower);
+    // sfLoanOriginationFee is optional on the ledger entry (absent when zero);
+    // normalize to Number{0} so callers can read it unconditionally.
+    self.originationFee = from[~sfLoanOriginationFee].value_or(Number{});
     self.principalOutstanding = from.at(sfPrincipalOutstanding);
     self.totalValueOutstanding = from.at(sfTotalValueOutstanding);
     self.managementFeeOutstanding = from.at(sfManagementFeeOutstanding);
+    self.impaired = from.isFlag(lsfLoanImpaired);
+    return self;
+}
+
+ValidVault::Broker
+ValidVault::Broker::make(SLE const& from)
+{
+    XRPL_ASSERT(
+        from.getType() == ltLOAN_BROKER, "ValidVault::Broker::make : from LoanBroker object");
+
+    ValidVault::Broker self;
+    self.key = from.key();
+    self.owner = from.at(sfOwner);
+    self.vaultID = from.at(sfVaultID);
+    self.debtTotal = from.at(sfDebtTotal);
+    self.coverAvailable = from.at(sfCoverAvailable);
+    self.ownerCount = from.at(sfOwnerCount);
     return self;
 }
 
@@ -174,6 +212,12 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // vault's claim on the loan.
                 beforeLoan_.push_back(Loan::make(*before));
                 break;
+            case ltLOAN_BROKER:
+                // Snapshot the broker so the lending-side finalizers can compute
+                // deltas on DebtTotal, CoverAvailable and OwnerCount without a
+                // separate read of the after-state.
+                beforeBroker_.push_back(Broker::make(*before));
+                break;
             default:;
         }
     }
@@ -226,6 +270,11 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 // the loan.
                 afterLoan_.push_back(Loan::make(*after));
                 break;
+            case ltLOAN_BROKER:
+                // See beforeBroker_; captured on both sides so the funding
+                // invariants can read `Δ DebtTotal` directly.
+                afterBroker_.push_back(Broker::make(*after));
+                break;
             default:;
         }
     }
@@ -241,6 +290,27 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
         XRPL_ASSERT_PARTS(balanceDelta.scale, "xrpl::ValidVault::visitEntry", "scale initialized");
         balanceDelta.delta *= sign;
         deltas_[key] = balanceDelta;
+    }
+
+    // Record every touched MPToken holding under its issuance so the universal
+    // share-conservation check in finalize can sum across all holders. Uses
+    // whichever of before/after carries the identifying fields.
+    auto const isMPToken = [](SLE::const_ref sle) {
+        return sle && sle->getType() == ltMPTOKEN;
+    };
+    if (isMPToken(before) || isMPToken(after))
+    {
+        auto const& identity = before ? before : after;
+        auto const issuanceID = identity->getFieldH192(sfMPTokenIssuanceID);
+        auto const holder = identity->getAccountID(sfAccount);
+        Number const beforeAmount = before
+            ? Number(static_cast<std::int64_t>(before->getFieldU64(sfMPTAmount)))
+            : kNumZero;
+        Number const afterAmount = (!isDelete && after)
+            ? Number(static_cast<std::int64_t>(after->getFieldU64(sfMPTAmount)))
+            : kNumZero;
+        shareHoldings_[issuanceID].push_back(
+            ShareHoldingDelta{.holder = holder, .delta = afterAmount - beforeAmount});
     }
 }
 
@@ -326,6 +396,10 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
     //
     // 2. The scale may decrease (withdraw/clawback) or increase (deposit). In both cases
     // we ensure the vault is in a legitimate state in the post-transaction scale.
+    XRPL_ASSERT_PARTS(
+        !afterVault_.empty(),
+        "xrpl::ValidVault::computeVaultMinScale",
+        "afterVault_ non-empty");
     auto const& afterVault = afterVault_[0];
     auto const& vaultAsset = afterVault.asset;
     if (rules.enabled(fixCleanup3_2_0))
@@ -334,6 +408,17 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
         return scale(afterVault.assetsTotal, vaultAsset);
     }
 
+    // Pre-fixCleanup3_2_0 the coarsest-scale form dereferences beforeVault_[0].
+    // Every current caller enters this function past a gate that guarantees
+    // beforeVault_ is populated (ttVAULT_CREATE goes down the fixCleanup3_2_0
+    // branch above); the assert makes the precondition explicit so that a
+    // future reuse of this helper - for instance from the eventual LoanAccept
+    // transactor via checkLoanFunding - fails fast in an assert build rather
+    // than dereferencing an empty vector in release.
+    XRPL_ASSERT_PARTS(
+        !beforeVault_.empty(),
+        "xrpl::ValidVault::computeVaultMinScale",
+        "beforeVault_ non-empty");
     auto const& beforeVault = beforeVault_[0];
     auto const totalDelta =
         DeltaInfo::makeDelta(beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
@@ -343,48 +428,74 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
 }
 
 bool
-ValidVault::finalizeLoanSet(STTx const& tx, ReadView const& view, beast::Journal const& j) const
+ValidVault::exactlyOneLoan(bool isCreate, beast::Journal const& j) const
 {
-    if (afterVault_.empty())
+    if (afterLoan_.size() != 1)
     {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::ValidVault::finalizeLoanSet : vault exists");
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: lending transaction must touch exactly one loan";
         return false;
-        // LCOV_EXCL_STOP
     }
 
+    // A created loan has no prior state; a modified one must be the very loan
+    // whose prior state was captured, otherwise the deltas computed from the
+    // two snapshots are meaningless.
+    if (isCreate ? !beforeLoan_.empty()
+                 : (beforeLoan_.size() != 1 || beforeLoan_[0].key != afterLoan_[0].key))
+    {
+        JLOG(j.fatal()) <<  //
+            (isCreate ? "Invariant failed: lending transaction must not modify an existing loan"
+                      : "Invariant failed: lending transaction must modify exactly one loan");
+        return false;
+    }
+
+    return true;
+}
+
+bool
+ValidVault::checkLoanCreation(STTx const&, ReadView const& view, beast::Journal const& j) const
+{
     auto const& afterVault = afterVault_[0];
 
     // Loan origination against a closed-ended vault is only permitted while the vault is in the
     // Investment phase - strictly past SubscriptionDate and before RedemptionDate. Open-ended
-    // vaults have NoPhase and are unaffected.
+    // vaults have NoPhase and are unaffected by the phase gate, but the funding checks below
+    // apply to every vault kind, so NoPhase must fall through rather than return early.
     auto const phase = getVaultPhase(
         view, afterVault.vaultKind, afterVault.subscriptionDate, afterVault.redemptionDate);
-    if (phase == VaultPhase::NoPhase)
-        return true;
-
-    if (phase != VaultPhase::Investment)
+    if (phase != VaultPhase::NoPhase && phase != VaultPhase::Investment)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: loan origination only allowed in Investment phase";
         return false;
     }
 
+    // The cardinality check was introduced with the rest of the loan-set funding
+    // logic under fixCleanup3_4_0; preserve that gating here so pre-amendment
+    // behaviour is unchanged.
     if (!view.rules().enabled(fixCleanup3_4_0))
         return true;
 
-    XRPL_ASSERT(
-        !beforeVault_.empty(), "xrpl::ValidVault::finalizeLoanSet : loan set updated a vault");
-    auto const& vaultAsset = afterVault.asset;
-
     // A loan set must create exactly one loan object; the interest
     // it books is the only permitted change to assets outstanding.
-    if (afterLoan_.size() != 1 || !beforeLoan_.empty())
-    {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: loan set must create exactly one loan";
-        return false;  // That's all we can do
-    }
+    return exactlyOneLoan(/*isCreate=*/true, j);
+}
+
+bool
+ValidVault::checkLoanFunding(
+    STTx const& tx,
+    XRPAmount const fee,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    XRPL_ASSERT(
+        !beforeVault_.empty(), "xrpl::ValidVault::checkLoanFunding : loan set updated a vault");
+    XRPL_ASSERT(
+        !afterLoan_.empty(), "xrpl::ValidVault::checkLoanFunding : loan cardinality enforced");
+
+    auto const& beforeVault = beforeVault_[0];
+    auto const& afterVault = afterVault_[0];
+    auto const& vaultAsset = afterVault.asset;
     auto const& loan = afterLoan_[0];
 
     // Funding a loan moves the requested principal out of the vault
@@ -426,7 +537,145 @@ ValidVault::finalizeLoanSet(STTx const& tx, ReadView const& view, beast::Journal
         result = false;
     }
 
+    // The remaining participant-side checks are new under featureLendingProtocolV1_1
+    // and use the basis-aware exposure / claim accessors; keep them behind that gate
+    // so pre-V1_1 behaviour is unchanged.
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
+        return result;
+
+    // The broker whose DebtTotal must reflect the newly-originated loan is the
+    // one the loan points at. Verify the snapshot corresponds and is populated
+    // on both sides - a loan set that failed to modify the referenced broker
+    // is itself an invariant violation.
+    if (beforeBroker_.size() != 1 || afterBroker_.size() != 1 ||
+        beforeBroker_[0].key != afterBroker_[0].key ||
+        afterBroker_[0].key != loan.loanBrokerID)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set must modify exactly the loan's broker";
+        return false;  // That's all we can do
+    }
+
+    auto const& beforeBroker = beforeBroker_[0];
+    auto const& afterBroker = afterBroker_[0];
+
+    // The broker's DebtTotal tracks the vault's aggregate exposure to its
+    // loans (basis-aware). A new loan's contribution is its exposure at
+    // origination, so `Δ DebtTotal == loan.exposure(version)`. DebtTotal is
+    // written via adjustImpreciseNumber (rounded to the vault scale), so
+    // compare via a once-rounded residual to avoid a false failure from
+    // independently-rounded operands.
+    {
+        auto const expected = loan.exposure(afterVault.version);
+        auto const residual = roundToAsset(
+            vaultAsset,
+            (afterBroker.debtTotal - beforeBroker.debtTotal) - expected,
+            minScale);
+        if (residual != kZero)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan set must increase broker debt total by the new loan's "
+                "exposure";
+            result = false;
+        }
+    }
+
+    // Value routing: the vault pseudo-account paid out `principalRequested`,
+    // split between the borrower (`principalRequested - originationFee`) and
+    // the broker owner (`originationFee`). Verify each participant received
+    // their portion. `deltaAssets` reads the raw balance change; when the
+    // participant also paid the transaction fee (XRP vaults only) that fee
+    // must be added back so the observed delta reflects the vault-side flow
+    // alone.
+    auto const adjustForFee = [&](std::optional<DeltaInfo>& d, AccountID const& id) {
+        if (d && vaultAsset.native() && tx.getFeePayerID() == id)
+            d->delta += fee.drops();
+    };
+
+    auto maybeBorrowerDelta = deltaAssets(loan.borrower);
+    adjustForFee(maybeBorrowerDelta, loan.borrower);
+
+    auto const borrowerExpected =
+        roundToAsset(vaultAsset, tx[sfPrincipalRequested] - loan.originationFee, minScale);
+    auto const borrowerReceived = maybeBorrowerDelta
+        ? roundToAsset(vaultAsset, maybeBorrowerDelta->delta, minScale)
+        : kZero;
+    if (borrowerReceived != borrowerExpected)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set must credit the borrower with the principal net of "
+            "origination fee";
+        result = false;
+    }
+
+    // The broker owner is only touched when a non-zero origination fee is
+    // routed - a zero-fee loan set leaves them unchanged, so a missing delta
+    // is consistent with `originationFee == 0`.
+    auto maybeBrokerOwnerDelta = deltaAssets(afterBroker.owner);
+    adjustForFee(maybeBrokerOwnerDelta, afterBroker.owner);
+
+    auto const brokerOwnerExpected = roundToAsset(vaultAsset, loan.originationFee, minScale);
+    auto const brokerOwnerReceived = maybeBrokerOwnerDelta
+        ? roundToAsset(vaultAsset, maybeBrokerOwnerDelta->delta, minScale)
+        : kZero;
+    if (brokerOwnerReceived != brokerOwnerExpected)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan set must credit the broker owner with the origination fee";
+        result = false;
+    }
+
+    // Vault-side accounting identity at origination, mirroring the one enforced
+    // for loan payments: `Δ AssetsTotal - Δ AssetsAvailable == Δ claim`. Before
+    // the transaction the loan did not exist, so `Δ claim == loan.claim(version)`.
+    // Basis-aware via claim(): under accrual it books the interest into
+    // AssetsTotal, under cash-basis it does not. The residual is rounded once
+    // for the same reason as in finalizeLoanPay - the underlying identity holds
+    // exactly, but a term-wise comparison of independently-rounded operands can
+    // drift by a ULP.
+    {
+        auto const residual = roundToAsset(
+            vaultAsset,
+            (afterVault.assetsTotal - beforeVault.assetsTotal) -
+                (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
+                loan.claim(afterVault.version),
+            minScale);
+        if (residual != kZero)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan set assets outstanding must match the principal released "
+                "and the new loan's claim";
+            result = false;
+        }
+    }
+
     return result;
+}
+
+bool
+ValidVault::finalizeLoanSet(
+    STTx const& tx,
+    XRPAmount const fee,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    if (afterVault_.empty())
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::ValidVault::finalizeLoanSet : vault exists");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    if (!checkLoanCreation(tx, view, j))
+        return false;
+
+    // Pre-fixCleanup3_4_0 the funding-side checks did not run at all; preserve
+    // that behaviour by dispatching only when the amendment is enabled.
+    if (!view.rules().enabled(fixCleanup3_4_0))
+        return true;
+
+    return checkLoanFunding(tx, fee, view, j);
 }
 
 bool
@@ -444,6 +693,12 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
     auto const& afterVault = afterVault_[0];
     auto const& vaultAsset = afterVault.asset;
 
+    // Every sub-operation acts on the single loan named by the transaction. The
+    // vault-only checks below do not read the loan, so they are still performed
+    // when this fails; only the checks which need the loan are skipped.
+    bool const oneLoan = exactlyOneLoan(/*isCreate=*/false, j);
+    result = result && oneLoan;
+
     // Loan management (impair / unimpair / default) never removes
     // assets from the vault. Only a default returns first-loss
     // capital from the broker to the vault pseudo-account; impair
@@ -460,6 +715,10 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
     auto const assetTotalDelta =
         roundToAsset(vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+    // Loss unrealized is maintained at the vault scale, so the delta is rounded
+    // the same way as the asset fields above.
+    auto const lossUnrealizedDelta = roundToAsset(
+        vaultAsset, afterVault.lossUnrealized - beforeVault.lossUnrealized, minScale);
 
     // --- Checks specific to each loan manage sub-operation ---
 
@@ -482,6 +741,43 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                 "change assets outstanding";
             result = false;
         }
+
+        // Impairing records the vault's exposure to the loan as a paper loss,
+        // unimpairing reverses it. The bounds are not strict because either
+        // adjustment can round to nothing at the vault scale.
+        if (tx.isFlag(tfLoanImpair) ? lossUnrealizedDelta < kZero : lossUnrealizedDelta > kZero)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan impair must not decrease, and loan "
+                "unimpair must not increase, loss unrealized";
+            result = false;
+        }
+
+        // Magnitude: LossUnrealized must move by exactly the loan's exposure
+        // snapshotted before this transaction. Impair grows it, unimpair
+        // shrinks it. The residual is rounded once (mirrors the LoanPay
+        // conservation identity in finalizeLoanPay) so that comparing the
+        // two independently-scaled operands cannot drift by a ULP and
+        // produce a false failure.
+        if (oneLoan)
+        {
+            auto const exposure = beforeLoan_[0].exposure(afterVault.version);
+            auto const expectedDelta = tx.isFlag(tfLoanImpair) ? exposure : -exposure;
+            auto const residual = roundToAsset(
+                vaultAsset,
+                (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
+                minScale);
+            if (residual != kZero)
+            {
+                JLOG(j.fatal()) <<  //
+                    (tx.isFlag(tfLoanImpair)
+                         ? "Invariant failed: loan impair must increase loss "
+                           "unrealized by exactly the loan's exposure"
+                         : "Invariant failed: loan unimpair must decrease loss "
+                           "unrealized by exactly the loan's exposure");
+                result = false;
+            }
+        }
     }
     else if (tx.isFlag(tfLoanDefault))
     {
@@ -503,6 +799,150 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                 "Invariant failed: loan default must not increase "
                 "assets outstanding";
             result = false;
+        }
+
+        // A default realizes the loss: any paper loss carried for this loan is
+        // released, and no new paper loss may be recorded. As above, the bound
+        // is not strict - the loan need not have been impaired, in which case
+        // there was no paper loss to release.
+        if (lossUnrealizedDelta > kZero)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan default must not increase loss "
+                "unrealized";
+            result = false;
+        }
+
+        // Magnitude: if the loan was impaired before this transaction its
+        // pre-tx exposure was carried as an unrealized loss, and default
+        // releases exactly that amount (the loss transitions from paper to
+        // realized). If the loan was not impaired there is nothing to
+        // release and LossUnrealized is unchanged. As with impair/unimpair
+        // the residual is rounded once.
+        if (oneLoan)
+        {
+            Number const expectedDelta = beforeLoan_[0].impaired
+                ? -beforeLoan_[0].exposure(afterVault.version)
+                : kZero;
+            auto const residual = roundToAsset(
+                vaultAsset,
+                (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
+                minScale);
+            if (residual != kZero)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan default must decrease loss "
+                    "unrealized by the pre-transaction exposure of an "
+                    "impaired loan, or leave it unchanged otherwise";
+                result = false;
+            }
+        }
+
+        // The first-loss capital the vault receives comes out of the
+        // loan-broker pseudo-account, so the two balances must move by exactly
+        // opposite amounts. A default that credited the vault from anywhere
+        // else would manufacture value. The broker can only be located through
+        // the defaulted loan, so this is skipped when that loan is unknown.
+        if (oneLoan)
+        {
+            auto const brokerSle = view.read(keylet::loanBroker(afterLoan_[0].loanBrokerID));
+            if (!brokerSle)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan default loan broker must exist";
+                result = false;
+            }
+            else
+            {
+                auto const maybeBrokerDelta = deltaAssets(brokerSle->at(sfAccount));
+                auto const brokerDelta = maybeBrokerDelta.value_or(DeltaInfo{
+                    .delta = kZero, .scale = scale(afterVault.assetsTotal, vaultAsset)});
+                auto const coverScale =
+                    std::max(minScale, computeCoarsestScale({vaultDelta, brokerDelta}));
+                auto const coverResidual =
+                    roundToAsset(vaultAsset, vaultDelta.delta + brokerDelta.delta, coverScale);
+                if (coverResidual != kZero)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan default must move the first-loss "
+                        "capital from the loan broker to the vault";
+                    result = false;
+                }
+            }
+        }
+
+        // Under featureLendingProtocolV1_1 the broker snapshot lets us tie the
+        // vault accounting field, the vault balance, and the broker's cover
+        // together as a single identity. The pre-V1_1 cover-residual above only
+        // catches asymmetric movements; a default that touched neither side
+        // would slip through it because both deltas fall back to zero.
+        if (view.rules().enabled(featureLendingProtocolV1_1) && oneLoan)
+        {
+            if (beforeBroker_.size() != 1 || afterBroker_.size() != 1 ||
+                afterBroker_[0].key != afterLoan_[0].loanBrokerID)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan default must modify exactly the loan's broker";
+                result = false;
+            }
+            else
+            {
+                auto const& beforeBroker = beforeBroker_[0];
+                auto const& afterBroker = afterBroker_[0];
+
+                // If the broker returned first-loss capital, the vault balance
+                // ledger entry must reflect it. Redundant with the identity
+                // below when combined with the universal AssetsAvailable / vault
+                // balance check, but stated explicitly to catch the specific
+                // "touched neither" bug.
+                if (beforeBroker.coverAvailable != afterBroker.coverAvailable &&
+                    !maybeVaultDeltaAssets)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan default must change vault balance when first-loss "
+                        "capital is returned";
+                    result = false;
+                }
+
+                // Δ AssetsAvailable == DefaultCovered: the vault credits its
+                // available assets by exactly what the broker released. Rounded
+                // once to avoid a false failure from independently-rounded
+                // operands - beforeBroker.coverAvailable/afterBroker.coverAvailable
+                // are stored at vault scale (adjustImpreciseNumber in LoanManage),
+                // and defaultCovered itself is rounded at loan scale.
+                auto const defaultCovered = beforeBroker.coverAvailable - afterBroker.coverAvailable;
+                auto const availableResidual = roundToAsset(
+                    vaultAsset,
+                    (afterVault.assetsAvailable - beforeVault.assetsAvailable) - defaultCovered,
+                    minScale);
+                if (availableResidual != kZero)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan default must increase assets available by the "
+                        "default covered amount";
+                    result = false;
+                }
+
+                // Broker debt tracks the vault's aggregate exposure: on
+                // default the loan's exposure drops to zero (all balance
+                // fields are zeroed), and DebtTotal drops by the same
+                // amount (LoanManage.cpp:244 decrements by
+                // loanVaultExposure). Same delta identity as finalizeLoanPay
+                // (items 22/23), specialised to the default sub-op.
+                auto const brokerResidual = roundToAsset(
+                    vaultAsset,
+                    (afterBroker.debtTotal - beforeBroker.debtTotal) -
+                        (afterLoan_[0].exposure(afterVault.version) -
+                         beforeLoan_[0].exposure(afterVault.version)),
+                    minScale);
+                if (brokerResidual != kZero)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan default broker debt total must "
+                        "track the change in the loan's exposure";
+                    result = false;
+                }
+            }
         }
     }
     else
@@ -532,6 +972,11 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     auto const& beforeVault = beforeVault_[0];
     auto const& afterVault = afterVault_[0];
     auto const& vaultAsset = afterVault.asset;
+
+    // A payment is made against the single loan named by the transaction. The
+    // cash-flow checks immediately below do not read the loan, so they are still
+    // performed when this fails; the loan-dependent ones are then skipped.
+    bool const oneLoan = exactlyOneLoan(/*isCreate=*/false, j);
 
     // A loan payment moves the paid principal and interest into the
     // vault pseudo-account (fees go to the broker), so the vault
@@ -572,6 +1017,9 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         result = false;
     }
 
+    if (!oneLoan)
+        return false;  // That's all we can do
+
     // The vault, the broker pseudo-account and the broker owner are
     // the only three destinations of a loan payment (the fee goes to
     // either the pseudo-account or the owner, never both).  Their
@@ -585,42 +1033,84 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     // false-positives); the split correctness in that corner case
     // is still policed by the assets-outstanding balance check
     // below.
-    if (!afterLoan_.empty())
+    auto const brokerSle = view.read(keylet::loanBroker(afterLoan_[0].loanBrokerID));
+    if (!brokerSle)
     {
-        auto const brokerSle = view.read(keylet::loanBroker(afterLoan_[0].loanBrokerID));
-        if (!brokerSle)
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan pay loan broker must exist";
+        result = false;
+    }
+    else
+    {
+        auto const brokerPseudoDelta = deltaAssets(brokerSle->at(sfAccount));
+        auto const brokerOwnerDelta = deltaAssets(brokerSle->at(sfOwner));
+
+        std::vector<DeltaInfo> deltas{*maybeVaultDeltaAssets};
+        if (brokerPseudoDelta)
+            deltas.push_back(*brokerPseudoDelta);
+        if (brokerOwnerDelta)
+            deltas.push_back(*brokerOwnerDelta);
+        auto const totalScale = std::max(minScale, computeCoarsestScale(deltas));
+
+        Number totalReceivedRaw = maybeVaultDeltaAssets->delta;
+        if (brokerPseudoDelta)
+            totalReceivedRaw += brokerPseudoDelta->delta;
+        if (brokerOwnerDelta)
+            totalReceivedRaw += brokerOwnerDelta->delta;
+
+        auto const totalReceived = roundToAsset(vaultAsset, totalReceivedRaw, totalScale);
+        auto const totalAmount = roundToAsset(vaultAsset, tx[sfAmount], totalScale);
+        if (totalReceived > totalAmount)
         {
             JLOG(j.fatal()) <<  //
-                "Invariant failed: loan pay loan broker must exist";
+                "Invariant failed: loan pay vault and broker must not "
+                "receive more than the amount paid";
             result = false;
         }
-        else
+    }
+
+    // The vault's claim is accounting-basis dependent, so both checks below are
+    // evaluated with the claim the vault actually recognizes. Under accrual the
+    // claim carries the interest, which assets outstanding already booked at
+    // origination; under cash-basis the claim is principal only and assets
+    // outstanding grow by the interest as it is received.
+    auto const version = afterVault.version;
+    auto const claimDelta = roundToAsset(
+        vaultAsset, afterLoan_[0].claim(version) - beforeLoan_[0].claim(version), minScale);
+
+    // A payment services the loan, so the vault's claim on it can only shrink.
+    // Penalties and fees charged on a late payment or an overpayment are
+    // settled from the same payment rather than added to the loan, so they
+    // cannot grow the claim either.
+    if (claimDelta > kZero)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan pay must not increase the vault's claim on "
+            "the loan";
+        result = false;
+    }
+
+    // LoanPay::doApply calls LoanManage::unimpairLoan before applying the
+    // payment, so a payment on a pre-impaired loan legitimately releases the
+    // paper loss the impairment recorded - LossUnrealized falls by exactly
+    // the pre-transaction exposure. A payment on a non-impaired loan does
+    // not touch LossUnrealized. Mirrors item 12 in finalizeLoanManage; the
+    // residual is rounded once for the same reason.
+    {
+        Number const expectedDelta = beforeLoan_[0].impaired
+            ? -beforeLoan_[0].exposure(version)
+            : kZero;
+        auto const residual = roundToAsset(
+            vaultAsset,
+            (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
+            minScale);
+        if (residual != kZero)
         {
-            auto const brokerPseudoDelta = deltaAssets(brokerSle->at(sfAccount));
-            auto const brokerOwnerDelta = deltaAssets(brokerSle->at(sfOwner));
-
-            std::vector<DeltaInfo> deltas{*maybeVaultDeltaAssets};
-            if (brokerPseudoDelta)
-                deltas.push_back(*brokerPseudoDelta);
-            if (brokerOwnerDelta)
-                deltas.push_back(*brokerOwnerDelta);
-            auto const totalScale = std::max(minScale, computeCoarsestScale(deltas));
-
-            Number totalReceivedRaw = maybeVaultDeltaAssets->delta;
-            if (brokerPseudoDelta)
-                totalReceivedRaw += brokerPseudoDelta->delta;
-            if (brokerOwnerDelta)
-                totalReceivedRaw += brokerOwnerDelta->delta;
-
-            auto const totalReceived = roundToAsset(vaultAsset, totalReceivedRaw, totalScale);
-            auto const totalAmount = roundToAsset(vaultAsset, tx[sfAmount], totalScale);
-            if (totalReceived > totalAmount)
-            {
-                JLOG(j.fatal()) <<  //
-                    "Invariant failed: loan pay vault and broker must not "
-                    "receive more than the amount paid";
-                result = false;
-            }
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: loan pay must decrease loss unrealized by "
+                "the pre-transaction exposure of an impaired loan, or leave "
+                "it unchanged otherwise";
+            result = false;
         }
     }
 
@@ -632,27 +1122,57 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     // received plus the change in the paid loan's claim on the
     // vault. This is an independent check that the borrower's
     // payment was split correctly between principal and interest.
-    if (afterLoan_.size() != 1 || beforeLoan_.size() != 1 ||
-        afterLoan_[0].key != beforeLoan_[0].key)
+    //
+    // The residual is rounded once, rather than comparing three independently
+    // rounded terms: each rounding can move a term by up to one unit in the
+    // last place, so the rounded-terms form can differ by several ULP even when
+    // the underlying identity holds exactly.
+    auto const residual = roundToAsset(
+        vaultAsset,
+        (afterVault.assetsTotal - beforeVault.assetsTotal) -
+            (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
+            (afterLoan_[0].claim(version) - beforeLoan_[0].claim(version)),
+        minScale);
+    if (residual != kZero)
     {
         JLOG(j.fatal()) <<  //
-            "Invariant failed: loan pay must modify exactly one "
-            "loan";
+            "Invariant failed: loan pay assets outstanding must "
+            "match the cash received and the change in the loan "
+            "claim";
         result = false;
     }
-    else
+
+    // Under featureLendingProtocolV1_1, tie the broker's aggregate exposure
+    // (DebtTotal) to the touched loan's exposure delta: since a LoanPay
+    // touches exactly one loan, `Δ DebtTotal == Δ exposure(loan)`. The
+    // universal `DebtTotal == Σ exposure` (item 22) reduces to this delta
+    // check because loans are modified one at a time. Basis-aware via
+    // exposure(); the residual is rounded once for the same reason as the
+    // identity above.
+    if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-        auto const claimDelta =
-            roundToAsset(vaultAsset, afterLoan_[0].claim() - beforeLoan_[0].claim(), minScale);
-        auto const assetsTotalDelta =
-            roundToAsset(vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-        if (assetsTotalDelta != assetAvailableDelta + claimDelta)
+        if (beforeBroker_.size() != 1 || afterBroker_.size() != 1 ||
+            afterBroker_[0].key != afterLoan_[0].loanBrokerID)
         {
             JLOG(j.fatal()) <<  //
-                "Invariant failed: loan pay assets outstanding must "
-                "match the cash received and the change in the loan "
-                "claim";
+                "Invariant failed: loan pay must modify exactly the loan's broker";
             result = false;
+        }
+        else
+        {
+            auto const brokerResidual = roundToAsset(
+                vaultAsset,
+                (afterBroker_[0].debtTotal - beforeBroker_[0].debtTotal) -
+                    (afterLoan_[0].exposure(version) -
+                     beforeLoan_[0].exposure(version)),
+                minScale);
+            if (brokerResidual != kZero)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan pay broker debt total must "
+                    "track the change in the loan's exposure";
+                result = false;
+            }
         }
     }
 
@@ -765,6 +1285,33 @@ ValidVault::finalize(
             result = false;
         }
 
+        // Item 9 (XLS-65 §3.4.2.2): VaultDelete residuals. VaultDelete erases
+        // the share MPTokenIssuance and the pseudo-account (with its owner
+        // directory) as part of doApply; verify no orphan remains on the
+        // after-state ledger. Defence-in-depth against a future refactor
+        // that would skip one of those erases.
+        if (view.rules().enabled(featureLendingProtocolV1_1))
+        {
+            if (view.read(keylet::mptokenIssuance(beforeVault.shareMPTID)))
+            {
+                JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
+                                   "erase share MPTokenIssuance";
+                result = false;
+            }
+            if (view.read(keylet::account(beforeVault.pseudoId)))
+            {
+                JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
+                                   "erase pseudo-account";
+                result = false;
+            }
+            if (view.read(keylet::ownerDir(beforeVault.pseudoId)))
+            {
+                JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
+                                   "erase pseudo-account owner directory";
+                result = false;
+            }
+        }
+
         return result;
     }
     if (txnType == ttVAULT_DELETE)
@@ -851,6 +1398,59 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        // Item 3 (XLS-65 §3.1.6.2.1): share MPTokenIssuance static invariants.
+        // TransferFee, MaximumAmount and AssetScale are set at VaultCreate
+        // and must never drift. Issuer is already checked at create.
+        if (updatedShares->transferFee != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: share MPTokenIssuance "
+                               "TransferFee must be zero";
+            result = false;
+        }
+        if (updatedShares->sharesMaximum != kMaxMpTokenAmount)
+        {
+            JLOG(j.fatal()) << "Invariant failed: share MPTokenIssuance "
+                               "MaximumAmount must be the default maximum";
+            result = false;
+        }
+        std::uint8_t const expectedAssetScale =
+            afterVault.asset.integral() ? 0 : afterVault.scale;
+        if (updatedShares->assetScale != expectedAssetScale)
+        {
+            JLOG(j.fatal()) << "Invariant failed: share MPTokenIssuance "
+                               "AssetScale must match vault Scale (0 for XRP/MPT)";
+            result = false;
+        }
+
+        // Item 4 (XLS-65 §3.1.6.2.1 flags table): the share MPTokenIssuance
+        // flags are determined at VaultCreate by whether the vault is
+        // transferable and public/private. VaultCreate stores only the
+        // sfVaultPrivate bit on the vault; non-transferability is expressed
+        // by the absence of lsfMPTCanTransfer on the share issuance itself.
+        //
+        //   public + transferable      → CanEscrow|CanTrade|CanTransfer
+        //   public + non-transferable  → no flags
+        //   private + transferable     → CanEscrow|CanTrade|CanTransfer|RequireAuth
+        //   private + non-transferable → RequireAuth
+        std::uint32_t const transferableSet =
+            lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer;
+        bool const isTransferable = (updatedShares->flags & lsfMPTCanTransfer) != 0;
+        bool const isPrivate = (afterVault.flags & lsfVaultPrivate) != 0;
+        std::uint32_t const expectedFlags =
+            (isTransferable ? transferableSet : 0u) |
+            (isPrivate ? lsfMPTRequireAuth : 0u);
+        std::uint32_t const relevantFlags =
+            transferableSet | lsfMPTRequireAuth;
+        if ((updatedShares->flags & relevantFlags) != expectedFlags)
+        {
+            JLOG(j.fatal()) << "Invariant failed: share MPTokenIssuance flags "
+                               "do not match the vault transferability/publicity";
+            result = false;
+        }
+    }
+
     if (afterVault.assetsAvailable < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: assets available must not be negative";
@@ -887,6 +1487,38 @@ ValidVault::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: assets maximum must not be negative";
         result = false;
+    }
+
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        // §3.1.2/§3.3.4: AssetsMaximum caps AssetsTotal. Currently only
+        // checked in the ttVAULT_SET and ttVAULT_DEPOSIT branches; the
+        // ttLOAN_SET accrual booking is unchecked without a universal form.
+        // AssetsMaximum == 0 disables the cap by convention.
+        if (afterVault.assetsMaximum > kZero &&
+            afterVault.assetsTotal > afterVault.assetsMaximum)
+        {
+            JLOG(j.fatal()) << "Invariant failed: assets outstanding must "
+                               "not exceed assets maximum";
+            result = false;
+        }
+
+        // §3.1.6.1: Scale is bounded by [0, 18], and must be zero when the
+        // vault asset is integer-only (XRP or MPT). Currently only enforced
+        // at VaultCreate preflight; the universal form catches ledger-import
+        // and forced-mutation paths, and future code that would attempt to
+        // set Scale on an integer-only vault.
+        if (afterVault.scale > 18)
+        {
+            JLOG(j.fatal()) << "Invariant failed: vault scale must not exceed 18";
+            result = false;
+        }
+        if (afterVault.asset.integral() && afterVault.scale != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: vault scale must be zero for "
+                               "XRP and MPT-asset vaults";
+            result = false;
+        }
     }
 
     // Thanks to this check we can simply do `assert(!beforeVault_.empty()` when
@@ -951,6 +1583,62 @@ ValidVault::finalize(
             "Invariant failed: shares outstanding must only change by "
             "deposit, withdraw, or clawback";
         result = false;
+    }
+
+    // Item 5 (XLS-65 §3.1.6.1.3, §3.6): shares of a non-transferable vault
+    // (tfVaultShareNonTransferable → lsfMPTCanTransfer absent on the share
+    // issuance) may only be issued or burned by the vault's own
+    // deposit/withdraw/clawback flow. Any other transaction (notably Payment)
+    // that touches share MPTokens of such an issuance violates the ban.
+    if (view.rules().enabled(featureLendingProtocolV1_1) &&
+        (updatedShares->flags & lsfMPTCanTransfer) == 0 &&
+        txnType != ttVAULT_DEPOSIT && txnType != ttVAULT_WITHDRAW &&
+        txnType != ttVAULT_CLAWBACK && txnType != ttVAULT_CREATE &&
+        txnType != ttVAULT_DELETE)
+    {
+        auto const it = shareHoldings_.find(afterVault.shareMPTID);
+        if (it != shareHoldings_.end() && !it->second.empty())
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: non-transferable vault shares must not "
+                "move outside of deposit, withdraw, or clawback";
+            result = false;
+        }
+    }
+
+    // Universal share conservation: the change in this vault's share
+    // OutstandingAmount must equal the sum of the changes to every touched
+    // MPToken for that same issuance. The per-transaction pairwise checks
+    // downstream cover the single-holder case; this covers the aggregate,
+    // catching a bug that split shares across more than one holder or
+    // credited a different holder than the transaction's primary account.
+    // Shares are integral MPT, so no rounding is needed. An unchanged
+    // issuance (no beforeShares entry) contributes a zero delta, which lets
+    // this catch a movement between holders that skipped the issuance.
+    if (sharesCheckActive)
+    {
+        auto const it = shareHoldings_.find(afterVault.shareMPTID);
+        bool const anyHolderChange = it != shareHoldings_.end() && !it->second.empty();
+        if (beforeShares || anyHolderChange)
+        {
+            Number const outstandingDelta = (beforeShares && updatedShares)
+                ? Number(static_cast<std::int64_t>(updatedShares->sharesTotal)) -
+                    Number(static_cast<std::int64_t>(beforeShares->sharesTotal))
+                : kNumZero;
+            Number holdersDelta = kNumZero;
+            if (anyHolderChange)
+            {
+                for (auto const& hd : it->second)
+                    holdersDelta += hd.delta;
+            }
+            if (outstandingDelta != holdersDelta)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: shares outstanding delta must equal the "
+                    "sum of holder share deltas";
+                result = false;
+            }
+        }
     }
 
     auto const& vaultAsset = afterVault.asset;
@@ -1025,6 +1713,19 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // A vault creation must not simultaneously touch any loan; the
+                // existing emptiness check above covers the vault fields but
+                // says nothing about lending state. Gated on
+                // featureLendingProtocolV1_1 as a new invariant.
+                if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                    (!beforeLoan_.empty() || !afterLoan_.empty()))
+                {
+                    JLOG(j.fatal())  //
+                        << "Invariant failed: vault create must not touch any "
+                           "loan";
+                    result = false;
+                }
+
                 if (afterVault.pseudoId != updatedShares->share.getIssuer())
                 {
                     JLOG(j.fatal())  //
@@ -1096,6 +1797,12 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // VaultSet is defined to be balance-neutral; the exact `!=`
+                // comparison here (and on assetsAvailable below) is
+                // deliberately stricter than the roundToAsset-based delta
+                // checks used by the other branches. Rounding would weaken it
+                // by permitting sub-scale drift on a transaction that must
+                // not change these fields at all.
                 if (beforeVault.assetsTotal != afterVault.assetsTotal)
                 {
                     JLOG(j.fatal()) <<  //
@@ -1280,6 +1987,88 @@ ValidVault::finalize(
                 {
                     JLOG(j.fatal()) << "Invariant failed: deposit and assets available must add up";
                     result = false;
+                }
+
+                // Item 6 (XLS-65 §3.2 share-price safety): deposit must not
+                // decrease the exchange rate `AssetsTotal / SharesTotal`. Skip
+                // the empty-vault seed (before or after) where the ratio is
+                // undefined. Compare via cross-multiplication and normalise
+                // the residual to the vault asset scale so sub-ULP drift is
+                // tolerated.
+                if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                    beforeShares && updatedShares &&
+                    beforeShares->sharesTotal > 0 && updatedShares->sharesTotal > 0)
+                {
+                    Number const beforeS(
+                        static_cast<std::int64_t>(beforeShares->sharesTotal));
+                    Number const afterS(
+                        static_cast<std::int64_t>(updatedShares->sharesTotal));
+                    Number const residual =
+                        (afterVault.assetsTotal * beforeS -
+                         beforeVault.assetsTotal * afterS) /
+                        beforeS;
+                    auto const roundedResidual = roundToAsset(vaultAsset, residual, minScale);
+                    if (roundedResidual < kZero)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: deposit must not decrease "
+                               "vault exchange rate";
+                        result = false;
+                    }
+                }
+
+                // Item 7 (XLS-65 §3.1.7.2.1): deposit share ratio.
+                //   - Non-empty vault: Δshares * beforeAssetsTotal <=
+                //       Δassets * beforeSharesTotal (share amount is rounded
+                //       down, so it cannot exceed the ideal proportional
+                //       value).
+                //   - Initial deposit into an empty vault: Δshares equals
+                //       Δassets * 10^Scale.
+                // Δshares and Δassets are the positive magnitudes of the
+                // outstanding-shares and AssetsTotal changes.
+                if (view.rules().enabled(featureLendingProtocolV1_1) && updatedShares)
+                {
+                    Number const beforeS =
+                        beforeShares
+                        ? Number(static_cast<std::int64_t>(beforeShares->sharesTotal))
+                        : Number{};
+                    Number const afterS(
+                        static_cast<std::int64_t>(updatedShares->sharesTotal));
+                    Number const deltaShares = afterS - beforeS;
+                    Number const deltaAssets =
+                        afterVault.assetsTotal - beforeVault.assetsTotal;
+
+                    if (beforeS == Number{})
+                    {
+                        // Initial deposit: Δshares == Δassets * 10^Scale
+                        Number const sigma(1, afterVault.scale);
+                        Number const expected = deltaAssets * sigma;
+                        auto const residual =
+                            roundToAsset(vaultAsset, deltaShares - expected, minScale);
+                        if (residual != kZero)
+                        {
+                            JLOG(j.fatal())
+                                << "Invariant failed: initial deposit shares must "
+                                   "equal assets deposited scaled by 10^Scale";
+                            result = false;
+                        }
+                    }
+                    else
+                    {
+                        // Subsequent deposit: shares rounded down implies
+                        // Δshares * beforeAssetsTotal <= Δassets * beforeSharesTotal.
+                        Number const lhs = deltaShares * beforeVault.assetsTotal;
+                        Number const rhs = deltaAssets * beforeS;
+                        auto const residual =
+                            roundToAsset(vaultAsset, (lhs - rhs) / beforeS, minScale);
+                        if (residual > kZero)
+                        {
+                            JLOG(j.fatal())
+                                << "Invariant failed: deposit shares issued exceed "
+                                   "proportional share of vault assets";
+                            result = false;
+                        }
+                    }
                 }
 
                 return result;
@@ -1486,6 +2275,65 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // Item 6 (XLS-65 §3.2 share-price safety): withdrawal must not
+                // increase the exchange rate `AssetsTotal / SharesTotal`. Skip
+                // when the after-state has zero shares (full drain); the
+                // ratio is undefined there and other checks already require
+                // AssetsTotal to be zero as well. Sub-ULP drift is tolerated
+                // via roundToAsset on the residual.
+                if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                    beforeShares && updatedShares &&
+                    beforeShares->sharesTotal > 0 && updatedShares->sharesTotal > 0)
+                {
+                    Number const beforeS(
+                        static_cast<std::int64_t>(beforeShares->sharesTotal));
+                    Number const afterS(
+                        static_cast<std::int64_t>(updatedShares->sharesTotal));
+                    Number const residual =
+                        (afterVault.assetsTotal * beforeS -
+                         beforeVault.assetsTotal * afterS) /
+                        beforeS;
+                    auto const roundedResidual = roundToAsset(vaultAsset, residual, minScale);
+                    if (roundedResidual > kZero)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: withdrawal must not increase "
+                               "vault exchange rate";
+                        result = false;
+                    }
+                }
+
+                // Item 8 (XLS-65 §3.1.7.2.2 / §3.1.7.2.3): withdraw / redeem
+                // share ratio. Assets paid out are rounded down, hence:
+                //   Δassets * beforeSharesTotal
+                //     <= Δshares * (beforeAssetsTotal - beforeLossUnrealized)
+                // where Δassets and Δshares are the positive magnitudes of
+                // the outstanding-asset and outstanding-shares decreases.
+                if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                    beforeShares && updatedShares &&
+                    beforeShares->sharesTotal > 0)
+                {
+                    Number const beforeS(
+                        static_cast<std::int64_t>(beforeShares->sharesTotal));
+                    Number const afterS(
+                        static_cast<std::int64_t>(updatedShares->sharesTotal));
+                    Number const deltaShares = beforeS - afterS;
+                    Number const deltaAssets =
+                        beforeVault.assetsTotal - afterVault.assetsTotal;
+                    Number const effectiveValue =
+                        beforeVault.assetsTotal - beforeVault.lossUnrealized;
+                    Number const lhs = deltaAssets * beforeS;
+                    Number const rhs = deltaShares * effectiveValue;
+                    auto const residual = roundToAsset(vaultAsset, (lhs - rhs) / beforeS, minScale);
+                    if (residual > kZero)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: withdrawal assets exceed the "
+                               "proportional share of vault net value";
+                        result = false;
+                    }
+                }
+
                 return result;
             }
             case ttVAULT_CLAWBACK: {
@@ -1542,8 +2390,18 @@ ValidVault::finalize(
                         result = false;
                     }
                 }
-                else if (!isVaultEmpty(beforeVault))
+                else if (
+                    !isVaultEmpty(beforeVault) &&
+                    beforeVault.assetsTotal != beforeVault.lossUnrealized)
                 {
+                    // A fully-impaired pool (assetsTotal == lossUnrealized) has
+                    // no effective value backing its shares, so a clawback
+                    // against it legitimately moves zero assets - mirrors the
+                    // withdrawal branch above. VaultClawback::doApply blocks
+                    // the "positive value rounds down to zero" case with
+                    // tecPRECISION_LOSS under fixCleanup3_4_0, so a missing
+                    // delta while the pool still held positive effective value
+                    // remains an invariant failure.
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault balance";
                     return false;  // That's all we can do
@@ -1584,7 +2442,7 @@ ValidVault::finalize(
             }
 
             case ttLOAN_SET:
-                return finalizeLoanSet(tx, view, j);
+                return finalizeLoanSet(tx, fee, view, j);
 
             case ttLOAN_MANAGE:
                 return finalizeLoanManage(tx, view, j);

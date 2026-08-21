@@ -14,6 +14,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -107,6 +108,104 @@ ValidLoan::finalize(
             JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
             return false;
         }
+        // LoanManage sub-operation flag preconditions. These are transaction
+        // post-conditions, so they only apply on a successful apply: after a
+        // reset the ledger flags revert and the checks would spuriously fail.
+        if (before && isTesSuccess(result) && txType == ttLOAN_MANAGE &&
+            view.rules().enabled(fixCleanup3_4_0))
+        {
+            bool const wasImpaired = before->isFlag(lsfLoanImpaired);
+            bool const isImpaired = after->isFlag(lsfLoanImpaired);
+            bool const wasDefaulted = before->isFlag(lsfLoanDefault);
+            bool const isDefaulted = after->isFlag(lsfLoanDefault);
+
+            if (tx.isFlag(tfLoanImpair) && (wasImpaired || !isImpaired))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanManage(tfLoanImpair) "
+                                   "must set lsfLoanImpaired on a non-impaired loan";
+                return false;
+            }
+            if (tx.isFlag(tfLoanUnimpair) && (!wasImpaired || isImpaired))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanManage(tfLoanUnimpair) "
+                                   "must clear lsfLoanImpaired on an impaired loan";
+                return false;
+            }
+            if (tx.isFlag(tfLoanDefault) && (wasDefaulted || !isDefaulted))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanManage(tfLoanDefault) "
+                                   "must newly set lsfLoanDefault";
+                return false;
+            }
+
+            // Item 19 (XLS-66 §3.10.5 default): a defaulted loan transitions to a
+            // terminal state atomically. The lsfLoanDefault transition is
+            // covered above; balance zeroing is covered by the
+            // PaymentRemaining==0 rule higher up. What remains is
+            // NextPaymentDueDate: LoanManage::defaultLoan clears it (sets to 0)
+            // so it is dropped from the ledger entry.
+            if (view.rules().enabled(featureLendingProtocolV1_1) &&
+                tx.isFlag(tfLoanDefault) &&
+                after->at(~sfNextPaymentDueDate).value_or(0) != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: defaulted loan must have zero "
+                                   "next payment due date";
+                return false;
+            }
+        }
+
+        // Item 20 (XLS-66 §3.2.3): lsfLoanDefault is set-once - never cleared,
+        // only ever set (by ttLOAN_MANAGE(tfLoanDefault), gated above). The
+        // LoanManage-scoped block already verifies the specific transition;
+        // this universal form catches any other transaction path that would
+        // clear the flag. Class-2 (transaction post-condition on a specific
+        // before→after transition); gate on isTesSuccess.
+        if (before && isTesSuccess(result) &&
+            view.rules().enabled(featureLendingProtocolV1_1) &&
+            before->isFlag(lsfLoanDefault) && !after->isFlag(lsfLoanDefault))
+        {
+            JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault must never be cleared";
+            return false;
+        }
+
+        // Item 21 (XLS-66 §3.11.5 non-full payment): after a LoanPay that did
+        // not fully repay the loan, PrincipalOutstanding strictly decreases,
+        // PaymentRemaining decreases by at least 1, and NextPaymentDueDate
+        // advances by a positive multiple of PaymentInterval. Class-2. Skip
+        // the check when the payment fully repaid the loan (PaymentRemaining
+        // and balances go to zero - covered by the fully-paid-off rule
+        // above).
+        if (before && isTesSuccess(result) && txType == ttLOAN_PAY &&
+            view.rules().enabled(featureLendingProtocolV1_1) &&
+            after->at(sfPaymentRemaining) != 0)
+        {
+            if (!(after->at(sfPrincipalOutstanding) < before->at(sfPrincipalOutstanding)))
+            {
+                JLOG(j.fatal()) << "Invariant failed: loan pay must strictly decrease "
+                                   "PrincipalOutstanding on a non-full-repayment";
+                return false;
+            }
+            if (!(after->at(sfPaymentRemaining) < before->at(sfPaymentRemaining)))
+            {
+                JLOG(j.fatal()) << "Invariant failed: loan pay must decrease "
+                                   "PaymentRemaining on a non-full-repayment";
+                return false;
+            }
+            // NextPaymentDueDate advances by a positive multiple of
+            // PaymentInterval. PaymentInterval is immutable so before/after
+            // agree; use after's value.
+            std::uint32_t const beforeDue = before->at(~sfNextPaymentDueDate).value_or(0);
+            std::uint32_t const afterDue = after->at(~sfNextPaymentDueDate).value_or(0);
+            std::uint32_t const interval = after->at(sfPaymentInterval);
+            if (afterDue <= beforeDue || interval == 0 ||
+                (afterDue - beforeDue) % interval != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: loan pay must advance "
+                                   "NextPaymentDueDate by a positive multiple of "
+                                   "PaymentInterval on a non-full-repayment";
+                return false;
+            }
+        }
         // Must not be negative - STNumber
         for (auto const field :
              {&sfLoanServiceFee,
@@ -169,6 +268,21 @@ ValidLoan::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: Loan deleted by a transaction "
                                "other than LoanDelete";
+            return false;
+        }
+
+        // Item 54 (XLS-66 §3.1.5 precondition 1): LoanBrokerDelete's preclaim
+        // rejects a broker with OwnerCount != 0, so no loan should exist that
+        // references it; touching any loan alongside the delete is
+        // inconsistent with that precondition and points at either an
+        // OwnerCount-tracking bug or a spurious cascading write. Class-2
+        // (transaction post-condition); gate on isTesSuccess.
+        if (isTesSuccess(result) &&
+            view.rules().enabled(featureLendingProtocolV1_1) &&
+            txType == ttLOAN_BROKER_DELETE && !loans_.empty())
+        {
+            JLOG(j.fatal()) << "Invariant failed: LoanBrokerDelete must not "
+                               "touch any loan";
             return false;
         }
 

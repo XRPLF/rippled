@@ -1026,6 +1026,8 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
         }();
         if (isPseudo)
         {
+            // Snapshot for finalize-time owner-field resolution (item 28).
+            pseudoAccounts_.push_back(after);
             // Pseudo accounts must have the following properties:
             // 1. Exactly one of the pseudo-account fields is set.
             // 2. The sequence number is not changed.
@@ -1090,6 +1092,43 @@ ValidPseudoAccounts::finalize(
         }
         if (enforce)
             return false;
+    }
+
+    // Item 28: for every pseudo-account touched, verify that the owner field
+    // resolves to an object whose sfAccount points back to the pseudo-account.
+    // Prevents a dangling pseudo-account from surviving a partial deletion.
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        for (auto const& sle : pseudoAccounts_)
+        {
+            if (!sle)
+                continue;
+            AccountID const accID = sle->at(sfAccount);
+            if (auto const vaultID = (*sle)[~sfVaultID])
+            {
+                auto const vault = view.read(keylet::vault(*vaultID));
+                if (!vault || vault->at(sfAccount) != accID)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: pseudo-account VaultID does not "
+                           "resolve to a vault referencing this account";
+                    if (enforce)
+                        return false;
+                }
+            }
+            if (auto const brokerID = (*sle)[~sfLoanBrokerID])
+            {
+                auto const broker = view.read(keylet::loanBroker(*brokerID));
+                if (!broker || broker->at(sfAccount) != accID)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: pseudo-account LoanBrokerID does "
+                           "not resolve to a broker referencing this account";
+                    if (enforce)
+                        return false;
+                }
+            }
+        }
     }
     return true;
 }

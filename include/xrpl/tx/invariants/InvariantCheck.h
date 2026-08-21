@@ -365,6 +365,11 @@ public:
 class ValidPseudoAccounts
 {
     std::vector<std::string> errors_;
+    // Live pseudo-account entries touched by the transaction. Populated in
+    // visitEntry and consumed by finalize to cross-check owner-field
+    // resolution (e.g. VaultID -> vault whose sfAccount matches the
+    // pseudo-account).
+    std::vector<SLE::const_pointer> pseudoAccounts_;
 
 public:
     void
