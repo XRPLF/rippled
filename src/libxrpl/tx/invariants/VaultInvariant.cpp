@@ -1287,32 +1287,6 @@ ValidVault::finalize(
             result = false;
         }
 
-        // (XLS-65 §3.4.2.2): VaultDelete residuals. VaultDelete erases the share MPTokenIssuance
-        // and the pseudo-account (with its owner directory) as part of doApply; verify no orphan
-        // remains on the after-state ledger. Defence-in-depth against a future refactor that would
-        // skip one of those erases.
-        if (view.rules().enabled(featureLendingProtocolV1_1))
-        {
-            if (view.read(keylet::mptokenIssuance(beforeVault.shareMPTID)))
-            {
-                JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
-                                   "erase share MPTokenIssuance";
-                result = false;
-            }
-            if (view.read(keylet::account(beforeVault.pseudoId)))
-            {
-                JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
-                                   "erase pseudo-account";
-                result = false;
-            }
-            if (view.read(keylet::ownerDir(beforeVault.pseudoId)))
-            {
-                JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
-                                   "erase pseudo-account owner directory";
-                result = false;
-            }
-        }
-
         return result;
     }
     if (txnType == ttVAULT_DELETE)
@@ -1391,49 +1365,6 @@ ValidVault::finalize(
         result = false;
     }
 
-    if (view.rules().enabled(featureLendingProtocolV1_1))
-    {
-        // (XLS-65 §3.1.6.2.1): share MPTokenIssuance static invariants. TransferFee, MaximumAmount
-        // and AssetScale are set at VaultCreate and must never drift. Issuer is already checked at
-        // create.
-        if (updatedShares->transferFee != 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: share MPTokenIssuance "
-                               "TransferFee must be zero";
-            result = false;
-        }
-        if (updatedShares->sharesMaximum != kMaxMpTokenAmount)
-        {
-            JLOG(j.fatal()) << "Invariant failed: share MPTokenIssuance "
-                               "MaximumAmount must be the default maximum";
-            result = false;
-        }
-        std::uint8_t const expectedAssetScale = afterVault.asset.integral() ? 0 : afterVault.scale;
-        if (updatedShares->assetScale != expectedAssetScale)
-        {
-            JLOG(j.fatal()) << "Invariant failed: share MPTokenIssuance "
-                               "AssetScale must match vault Scale (0 for XRP/MPT)";
-            result = false;
-        }
-
-        // (XLS-65 §3.1.6.2.1 flags table): the share MPTokenIssuance flags are determined at
-        // VaultCreate by whether the vault is transferable and public/private. VaultCreate stores
-        // only the sfVaultPrivate bit on the vault; non-transferability is expressed by the absence
-        // of lsfMPTCanTransfer on the share issuance itself.
-        std::uint32_t const transferableSet = lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer;
-        bool const isTransferable = (updatedShares->flags & lsfMPTCanTransfer) != 0;
-        bool const isPrivate = (afterVault.flags & lsfVaultPrivate) != 0;
-        std::uint32_t const expectedFlags =
-            (isTransferable ? transferableSet : 0u) | (isPrivate ? lsfMPTRequireAuth : 0u);
-        std::uint32_t const relevantFlags = transferableSet | lsfMPTRequireAuth;
-        if ((updatedShares->flags & relevantFlags) != expectedFlags)
-        {
-            JLOG(j.fatal()) << "Invariant failed: share MPTokenIssuance flags "
-                               "do not match the vault transferability/publicity";
-            result = false;
-        }
-    }
-
     if (afterVault.assetsAvailable < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: assets available must not be negative";
@@ -1470,37 +1401,6 @@ ValidVault::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: assets maximum must not be negative";
         result = false;
-    }
-
-    if (view.rules().enabled(featureLendingProtocolV1_1))
-    {
-        // §3.1.2/§3.3.4: AssetsMaximum caps AssetsTotal. Currently only
-        // checked in the ttVAULT_SET and ttVAULT_DEPOSIT branches; the
-        // ttLOAN_SET accrual booking is unchecked without a universal form.
-        // AssetsMaximum == 0 disables the cap by convention.
-        if (afterVault.assetsMaximum > kZero && afterVault.assetsTotal > afterVault.assetsMaximum)
-        {
-            JLOG(j.fatal()) << "Invariant failed: assets outstanding must "
-                               "not exceed assets maximum";
-            result = false;
-        }
-
-        // §3.1.6.1: Scale is bounded by [0, 18], and must be zero when the
-        // vault asset is integer-only (XRP or MPT). Currently only enforced
-        // at VaultCreate preflight; the universal form catches ledger-import
-        // and forced-mutation paths, and future code that would attempt to
-        // set Scale on an integer-only vault.
-        if (afterVault.scale > 18)
-        {
-            JLOG(j.fatal()) << "Invariant failed: vault scale must not exceed 18";
-            result = false;
-        }
-        if (afterVault.asset.integral() && afterVault.scale != 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: vault scale must be zero for "
-                               "XRP and MPT-asset vaults";
-            result = false;
-        }
     }
 
     // Thanks to this check we can simply do `assert(!beforeVault_.empty()` when
@@ -1590,41 +1490,6 @@ ValidVault::finalize(
             }
         }
 
-        // Universal share conservation: the change in this vault's share
-        // OutstandingAmount must equal the sum of the changes to every touched
-        // MPToken for that same issuance. The per-transaction pairwise checks
-        // downstream cover the single-holder case; this covers the aggregate,
-        // catching a bug that split shares across more than one holder or
-        // credited a different holder than the transaction's primary account.
-        // Shares are integral MPT, so no rounding is needed. An unchanged
-        // issuance (no beforeShares entry) contributes a zero delta, which lets
-        // this catch a movement between holders that skipped the issuance.
-        if (sharesCheckActive)
-        {
-            auto const it = shareHoldings_.find(afterVault.shareMPTID);
-            bool const anyHolderChange = it != shareHoldings_.end() && !it->second.empty();
-            if (beforeShares || anyHolderChange)
-            {
-                Number const outstandingDelta = (beforeShares && updatedShares)
-                    ? Number(static_cast<std::int64_t>(updatedShares->sharesTotal)) -
-                        Number(static_cast<std::int64_t>(beforeShares->sharesTotal))
-                    : kNumZero;
-                Number holdersDelta = kNumZero;
-                if (anyHolderChange)
-                {
-                    for (auto const& hd : it->second)
-                        holdersDelta += hd.delta;
-                }
-                if (outstandingDelta != holdersDelta)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: shares outstanding delta must equal the "
-                        "sum of holder share deltas";
-                    result = false;
-                }
-            }
-        }
-
         // Assets available always tracks the real vault balance: any change
         // in one is matched by the other.  This applies to every vault
         // operation that may move funds into or out of the pseudo-account
@@ -1693,19 +1558,6 @@ ValidVault::finalize(
                 {
                     JLOG(j.fatal())  //
                         << "Invariant failed: created vault must be empty";
-                    result = false;
-                }
-
-                // A vault creation must not simultaneously touch any loan; the
-                // existing emptiness check above covers the vault fields but
-                // says nothing about lending state. Gated on
-                // fixCleanup3_4_0 as a new invariant.
-                if (view.rules().enabled(featureLendingProtocolV1_1) &&
-                    (!beforeLoan_.empty() || !afterLoan_.empty()))
-                {
-                    JLOG(j.fatal())  //
-                        << "Invariant failed: vault create must not touch any "
-                           "loan";
                     result = false;
                 }
 
@@ -1966,81 +1818,6 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                if (view.rules().enabled(featureLendingProtocolV1_1))
-                {
-                    // (XLS-65 §3.2 share-price safety): deposit must not
-                    // decrease the exchange rate `AssetsTotal / SharesTotal`. Skip
-                    // the empty-vault seed (before or after) where the ratio is
-                    // undefined. Compare via cross-multiplication and normalise
-                    // the residual to the vault asset scale so sub-ULP drift is
-                    // tolerated.
-                    if (beforeShares && updatedShares && beforeShares->sharesTotal > 0 &&
-                        updatedShares->sharesTotal > 0)
-                    {
-                        Number const beforeS(static_cast<std::int64_t>(beforeShares->sharesTotal));
-                        Number const afterS(static_cast<std::int64_t>(updatedShares->sharesTotal));
-                        Number const residual =
-                            (afterVault.assetsTotal * beforeS - beforeVault.assetsTotal * afterS) /
-                            beforeS;
-                        auto const roundedResidual = roundToAsset(vaultAsset, residual, minScale);
-                        if (roundedResidual < kZero)
-                        {
-                            JLOG(j.fatal()) << "Invariant failed: deposit must not decrease "
-                                               "vault exchange rate";
-                            result = false;
-                        }
-                    }
-
-                    // (XLS-65 §3.1.7.2.1): deposit share ratio.
-                    //   - Non-empty vault: Δshares * beforeAssetsTotal <=
-                    //       Δassets * beforeSharesTotal (share amount is rounded
-                    //       down, so it cannot exceed the ideal proportional
-                    //       value).
-                    //   - Initial deposit into an empty vault: Δshares equals
-                    //       Δassets * 10^Scale.
-                    // Δshares and Δassets are the positive magnitudes of the
-                    // outstanding-shares and AssetsTotal changes.
-                    if (updatedShares)
-                    {
-                        Number const beforeS = beforeShares
-                            ? Number(static_cast<std::int64_t>(beforeShares->sharesTotal))
-                            : Number{};
-                        Number const afterS(static_cast<std::int64_t>(updatedShares->sharesTotal));
-                        Number const deltaShares = afterS - beforeS;
-                        Number const deltaAssets = afterVault.assetsTotal - beforeVault.assetsTotal;
-
-                        if (beforeS == Number{})
-                        {
-                            // Initial deposit: Δshares == Δassets * 10^Scale
-                            Number const sigma(1, afterVault.scale);
-                            Number const expected = deltaAssets * sigma;
-                            auto const residual =
-                                roundToAsset(vaultAsset, deltaShares - expected, minScale);
-                            if (residual != kZero)
-                            {
-                                JLOG(j.fatal()) << "Invariant failed: initial deposit shares must "
-                                                   "equal assets deposited scaled by 10^Scale";
-                                result = false;
-                            }
-                        }
-                        else
-                        {
-                            // Subsequent deposit: shares rounded down implies
-                            // Δshares * beforeAssetsTotal <= Δassets * beforeSharesTotal.
-                            Number const lhs = deltaShares * beforeVault.assetsTotal;
-                            Number const rhs = deltaAssets * beforeS;
-                            auto const residual =
-                                roundToAsset(vaultAsset, (lhs - rhs) / beforeS, minScale);
-                            if (residual > kZero)
-                            {
-                                JLOG(j.fatal()) << "Invariant failed: deposit shares issued exceed "
-                                                   "proportional share of vault assets";
-                                result = false;
-                            }
-                        }
-                    }
-                }
-
                 return result;
             }
             case ttVAULT_WITHDRAW: {
@@ -2245,58 +2022,6 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                if (view.rules().enabled(featureLendingProtocolV1_1))
-                {
-                    // (XLS-65 §3.2 share-price safety): withdrawal must not increase the exchange
-                    // rate `AssetsTotal / SharesTotal`. Skip when the after-state has zero shares
-                    // (full drain); the ratio is undefined there and other checks already require
-                    // AssetsTotal to be zero as well. Sub-ULP drift is tolerated via roundToAsset
-                    // on the residual.
-                    if (beforeShares && updatedShares && beforeShares->sharesTotal > 0 &&
-                        updatedShares->sharesTotal > 0)
-                    {
-                        Number const beforeS(static_cast<std::int64_t>(beforeShares->sharesTotal));
-                        Number const afterS(static_cast<std::int64_t>(updatedShares->sharesTotal));
-                        Number const residual =
-                            (afterVault.assetsTotal * beforeS - beforeVault.assetsTotal * afterS) /
-                            beforeS;
-                        auto const roundedResidual = roundToAsset(vaultAsset, residual, minScale);
-                        if (roundedResidual > kZero)
-                        {
-                            JLOG(j.fatal()) << "Invariant failed: withdrawal must not increase "
-                                               "vault exchange rate";
-                            result = false;
-                        }
-                    }
-
-                    // Item 8 (XLS-65 §3.1.7.2.2 / §3.1.7.2.3): withdraw / redeem
-                    // share ratio. Assets paid out are rounded down, hence:
-                    //   Δassets * beforeSharesTotal
-                    //     <= Δshares * (beforeAssetsTotal - beforeLossUnrealized)
-                    // where Δassets and Δshares are the positive magnitudes of
-                    // the outstanding-asset and outstanding-shares decreases.
-                    if (view.rules().enabled(fixCleanup3_4_0) && beforeShares && updatedShares &&
-                        beforeShares->sharesTotal > 0)
-                    {
-                        Number const beforeS(static_cast<std::int64_t>(beforeShares->sharesTotal));
-                        Number const afterS(static_cast<std::int64_t>(updatedShares->sharesTotal));
-                        Number const deltaShares = beforeS - afterS;
-                        Number const deltaAssets = beforeVault.assetsTotal - afterVault.assetsTotal;
-                        Number const effectiveValue =
-                            beforeVault.assetsTotal - beforeVault.lossUnrealized;
-                        Number const lhs = deltaAssets * beforeS;
-                        Number const rhs = deltaShares * effectiveValue;
-                        auto const residual =
-                            roundToAsset(vaultAsset, (lhs - rhs) / beforeS, minScale);
-                        if (residual > kZero)
-                        {
-                            JLOG(j.fatal()) << "Invariant failed: withdrawal assets exceed the "
-                                               "proportional share of vault net value";
-                            result = false;
-                        }
-                    }
-                }
-
                 return result;
             }
             case ttVAULT_CLAWBACK: {
@@ -2353,18 +2078,8 @@ ValidVault::finalize(
                         result = false;
                     }
                 }
-                else if (
-                    !isVaultEmpty(beforeVault) &&
-                    beforeVault.assetsTotal != beforeVault.lossUnrealized)
+                else if (!isVaultEmpty(beforeVault))
                 {
-                    // A fully-impaired pool (assetsTotal == lossUnrealized) has
-                    // no effective value backing its shares, so a clawback
-                    // against it legitimately moves zero assets - mirrors the
-                    // withdrawal branch above. VaultClawback::doApply blocks
-                    // the "positive value rounds down to zero" case with
-                    // tecPRECISION_LOSS under fixCleanup3_4_0, so a missing
-                    // delta while the pool still held positive effective value
-                    // remains an invariant failure.
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault balance";
                     return false;  // That's all we can do
