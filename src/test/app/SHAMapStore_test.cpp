@@ -698,6 +698,9 @@ public:
             if (!BEAST_EXPECT(lm.haveLedger(deleteSeq)))
                 return 0;
 
+            // This test may be timing sensitive, because it's messing with server internals in ways
+            // that they can't be messed with normally. Sleep a little bit to give the server time
+            // to finish any internal work before we delete the ledger.
             std::this_thread::sleep_for(250ms);
 
             lm.clearLedger(deleteSeq);
