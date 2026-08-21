@@ -9,7 +9,7 @@ mod support;
 use support::{
     FakeHost, ONE_PAGE, PLENTY_OF_GAS, failure, import, module, run, run_entry, run_with_gas,
 };
-use xrpl_wasm_vm::{MAX_MEMORY_PAGES, RunError};
+use xrpl_wasm_vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, RunError};
 
 /// Assert which stage a run failed at, because the caller maps the stages to
 /// different outcomes. A stage is one `RunError` variant, so the expectation is a
@@ -97,6 +97,68 @@ fn a_declared_maximum_past_the_cap_is_allowed_but_unreachable() {
         &format!("(memory.grow (i32.const {MAX_MEMORY_PAGES}))"),
     );
     assert_stage!(failure(&wat, &host), RunError::Trap(_));
+}
+
+// ---------------------------------------------------------------------------
+// Tables
+// ---------------------------------------------------------------------------
+
+/// A table's whole cost is paid at instantiation: wasmi writes all 8 bytes of every
+/// element before the guest's first instruction, so a module declaring more than the
+/// cap must be refused there rather than charged for it.
+#[test]
+fn an_initial_table_past_the_cap_is_refused() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[&format!("(table {} funcref)", MAX_TABLE_ELEMENTS + 1)],
+        "(i32.const 0)",
+    );
+    assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
+}
+
+/// The cap itself is allowed.
+#[test]
+fn an_initial_table_at_the_cap_is_allowed() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[&format!("(table {MAX_TABLE_ELEMENTS} funcref)")],
+        "(i32.const 0)",
+    );
+    assert_eq!(run(&wat, &host).expect("should run").result, 0);
+}
+
+/// The cap binds a table the module keeps to itself, which is the case that matters:
+/// a contract has no reason to export its table, so screening never sees the one a
+/// hostile module declares.
+#[test]
+fn the_table_cap_binds_an_unexported_table() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[&format!("(table {} funcref)", u32::from(u16::MAX) * 100)],
+        "(i32.const 0)",
+    );
+    assert_stage!(failure(&wat, &host), RunError::Instantiate(_));
+}
+
+/// A declared *maximum* past the cap is legal and simply unreachable, mirroring what
+/// linear memory allows. Nothing can reach it: `table.grow` is a reference-types
+/// instruction and the engine turns that feature off, so a table's declared minimum
+/// is also its final size.
+#[test]
+fn a_declared_table_maximum_past_the_cap_is_allowed_but_unreachable() {
+    let host = FakeHost::new();
+
+    let wat = module(
+        &[&format!(
+            "(table 1 {} funcref)",
+            u64::try_from(MAX_TABLE_ELEMENTS).expect("fits") + 1
+        )],
+        "(i32.const 0)",
+    );
+    assert_eq!(run(&wat, &host).expect("should run").result, 0);
 }
 
 // ---------------------------------------------------------------------------

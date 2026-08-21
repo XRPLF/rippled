@@ -97,6 +97,8 @@ mod ffi {
         EntryPoint,
         /// The module asks for more linear memory than the engine grants.
         Memory,
+        /// The module asks for a larger table than the engine grants.
+        Table,
         /// The engine panicked. A defect in this crate or the one below it, and
         /// not a fault in the module — which is why it is a status of its own
         /// rather than one more way a contract can be malformed.
@@ -1036,6 +1038,7 @@ impl From<&CheckError> for ffi::CheckStatus {
             CheckError::Import(_) => ffi::CheckStatus::Import,
             CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
             CheckError::Memory(_) => ffi::CheckStatus::Memory,
+            CheckError::Table(_) => ffi::CheckStatus::Table,
         }
     }
 }
@@ -1242,6 +1245,7 @@ mod tests {
             CheckError::Import(String::new()),
             CheckError::EntryPoint(String::new()),
             CheckError::Memory(String::new()),
+            CheckError::Table(String::new()),
         ]
     }
 

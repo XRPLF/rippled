@@ -127,6 +127,31 @@ TEST_F(PreflightTest, MemoryPastTheCapIsRefused)
     EXPECT_EQ(preflight(atTheCap), tesSUCCESS);
 }
 
+// A table is allocated in full at instantiation, before any gas is charged, so an oversized
+// one is refused before it can be escrowed. Screening sees only an *exported* table; the
+// store's limiter is what refuses the table a contract keeps to itself.
+TEST_F(PreflightTest, TablePastTheCapIsRefused)
+{
+    constexpr std::string_view tooMuch = R"wat(
+    (module
+      (memory (export "memory") 1)
+      (table (export "t") 1025 funcref)
+      (func (export "escrow_finish") (result i32) (i32.const 0)))
+    )wat";
+
+    EXPECT_EQ(preflight(tooMuch), temBAD_WASM);
+    EXPECT_THAT(logged(), testing::HasSubstr("table: initial table of 1025 elements"));
+
+    constexpr std::string_view atTheCap = R"wat(
+    (module
+      (memory (export "memory") 1)
+      (table (export "t") 1024 funcref)
+      (func (export "escrow_finish") (result i32) (i32.const 0)))
+    )wat";
+
+    EXPECT_EQ(preflight(atTheCap), tesSUCCESS);
+}
+
 TEST_F(PreflightTest, MissingEntryPointIsRefused)
 {
     constexpr std::string_view wat = R"wat(

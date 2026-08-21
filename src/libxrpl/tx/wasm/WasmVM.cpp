@@ -96,12 +96,13 @@ verdict(CheckStatus status)
             return tesSUCCESS;
 
         // The module will not compile, imports what no engine of this ABI serves, does
-        // not export the entry point as `() -> i32`, or asks for more linear memory than
-        // it may have.
+        // not export the entry point as `() -> i32`, or asks for more linear memory or
+        // table than it may have.
         case CheckStatus::Compile:
         case CheckStatus::Import:
         case CheckStatus::EntryPoint:
         case CheckStatus::Memory:
+        case CheckStatus::Table:
             return temBAD_WASM;
 
         // The engine panicked: a defect in the engine, reported rather than fatal to
