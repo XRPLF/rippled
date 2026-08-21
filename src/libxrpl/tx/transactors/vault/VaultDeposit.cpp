@@ -2,12 +2,15 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -45,6 +48,39 @@ roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
         return scale(vault->at(sfAssetsTotal) + amount, vault->at(sfAsset));
     }();
     return roundToScale(amount, postScale, Number::RoundingMode::Downward);
+}
+
+// True if debiting `assets` would leave the depositor's balance where it started, so the deposit
+// would mint shares against a transfer that never happened. Asking the balance directly whether it
+// notices the debit avoids having to infer the rounding step: it has to be the stored balance that
+// answers, because that magnitude is what governs the rounding, and it is not the same as the
+// spendable amount, which also counts what the counterparty's limit allows.
+[[nodiscard]]
+static bool
+roundsToZeroForDepositor(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& assets,
+    beast::Journal j)
+{
+    if (assets.integral())
+        return false;
+
+    auto const balance = accountHolds(
+        view,
+        account,
+        assets.asset(),
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
+        j,
+        SpendableHandling::SimpleBalance);
+
+    if (balance - assets != balance)
+        return false;
+
+    JLOG(j.warn()) << "VaultDeposit: amount " << assets.getFullText()
+                   << " leaves the depositor's balance " << balance.getFullText() << " unchanged";
+    return true;
 }
 
 NotTEC
@@ -208,6 +244,7 @@ TER
 VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
+    bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -308,6 +345,12 @@ VaultDeposit::doApply()
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
+        // What a deposit transfers is not the requested amount but that amount truncated to a
+        // whole number of shares and converted back, which can be smaller. Only here is that
+        // value known rather than recomputed, so this is where it can be checked against the
+        // depositor's balance before anything moves.
+        if (fix340Enabled && roundsToZeroForDepositor(view(), accountID_, *maybeAssets, j_))
+            return tecPRECISION_LOSS;
         assetsDeposited = *maybeAssets;
     }
     catch (std::overflow_error const&)
