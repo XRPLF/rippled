@@ -117,14 +117,13 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 std::cout << "Ledger state is not array!" << std::endl;
                 return;
             }
-            for (auto & i : state)
+            for (auto& i : state)
             {
-                if (i.isMember(sfNFTokens.jsonName) &&
-                    i[sfNFTokens.jsonName].isArray())
+                if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
                 {
                     std::uint32_t const tokenCount = i[sfNFTokens.jsonName].size();
-                    std::cout << tokenCount << " NFtokens in page "
-                              << i[jss::index].asString() << std::endl;
+                    std::cout << tokenCount << " NFtokens in page " << i[jss::index].asString()
+                              << std::endl;
 
                     if (vol == Volume::Noisy)
                     {
@@ -134,16 +133,14 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                     {
                         if (tokenCount > 0)
                         {
-                            std::cout
-                                << "first: " << i[sfNFTokens.jsonName][0u].toStyledString()
-                                << std::endl;
+                            std::cout << "first: " << i[sfNFTokens.jsonName][0u].toStyledString()
+                                      << std::endl;
                         }
                         if (tokenCount > 1)
                         {
-                            std::cout
-                                << "last: "
-                                << i[sfNFTokens.jsonName][tokenCount - 1].toStyledString()
-                                << std::endl;
+                            std::cout << "last: "
+                                      << i[sfNFTokens.jsonName][tokenCount - 1].toStyledString()
+                                      << std::endl;
                         }
                     }
                 }
@@ -419,10 +416,9 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 json::Value& state = jrr[jss::result][jss::state];
 
                 int pageCount = 0;
-                for (auto & i : state)
+                for (auto& i : state)
                 {
-                    if (i.isMember(sfNFTokens.jsonName) &&
-                        i[sfNFTokens.jsonName].isArray())
+                    if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
                     {
                         BEAST_EXPECT(i[sfNFTokens.jsonName].size() == 32);
                         ++pageCount;
@@ -461,7 +457,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
                 json::Value const& state = jrr[jss::result][jss::state];
 
-                for (const auto & i : state)
+                for (auto const& i : state)
                 {
                     BEAST_EXPECT(!i.isMember(sfNFTokens.jsonName));
                 }
@@ -1076,10 +1072,9 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 json::Value& state = jrr[jss::result][jss::state];
 
                 int pageCount = 0;
-                for (auto & i : state)
+                for (auto& i : state)
                 {
-                    if (i.isMember(sfNFTokens.jsonName) &&
-                        i[sfNFTokens.jsonName].isArray())
+                    if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
                     {
                         BEAST_EXPECT(i[sfNFTokens.jsonName].size() == 32);
                         ++pageCount;
