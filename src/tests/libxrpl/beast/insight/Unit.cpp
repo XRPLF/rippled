@@ -70,6 +70,14 @@ TEST(InsightUnit, otelCodeIsTheUcumCodeForEachUnit)
     EXPECT_STREQ(otelUnitCode(Unit::Bytes), "By");
 }
 
+// The description is what an operator reads in the metric catalogue, so a
+// byte-valued instrument must not describe itself as a duration.
+TEST(InsightUnit, descriptionMatchesWhatTheUnitActuallyMeasures)
+{
+    EXPECT_STREQ(otelUnitDescription(Unit::Millis), "Duration in ms");
+    EXPECT_STREQ(otelUnitDescription(Unit::Bytes), "Size in bytes");
+}
+
 TEST(InsightUnit, defaultEventUnitIsMillisForBackwardCompatibility)
 {
     // Every pre-existing makeEvent(name) call site records a duration, so the
