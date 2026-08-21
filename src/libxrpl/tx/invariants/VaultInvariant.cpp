@@ -1440,15 +1440,7 @@ ValidVault::finalize(
 
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-        // ttLOAN_* transactions only exist under featureLendingProtocol, and their
-        // vault-side checks are otherwise gated by featureLendingProtocolV1_1;
-        // keep the same gate here so pre-V1_1 behaviour is unchanged.
-        bool const isLoanTxn = txnType == ttLOAN_SET ||  //
-            txnType == ttLOAN_MANAGE ||                  //
-            txnType == ttLOAN_PAY;
-        bool const sharesCheckActive = !isLoanTxn;
-
-        if (sharesCheckActive && beforeShares &&
+        if (beforeShares &&
             beforeShares->sharesTotal != updatedShares->sharesTotal && txnType != ttVAULT_DEPOSIT &&
             txnType != ttVAULT_WITHDRAW && txnType != ttVAULT_CLAWBACK)
         {
@@ -1481,10 +1473,8 @@ ValidVault::finalize(
         // operation that may move funds into or out of the pseudo-account
         // (deposit, withdraw, clawback, and every loan-* sub-operation);
         // vault set is excluded because it may never change either, and
-        // vault create has nothing to compare against.  The gate is shared
-        // with the shares-outstanding check above so that pre-V1_1 loan
-        // behaviour is unchanged.
-        if (sharesCheckActive && txnType != ttVAULT_CREATE && txnType != ttVAULT_SET)
+        // vault create has nothing to compare against.
+        if (txnType != ttVAULT_CREATE && txnType != ttVAULT_SET)
         {
             auto const& beforeVault = beforeVault_[0];
             auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);

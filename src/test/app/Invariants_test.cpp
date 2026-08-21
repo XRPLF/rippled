@@ -3552,10 +3552,11 @@ class Invariants_test : public beast::unit_test::Suite
 
         // Pre-featureLendingProtocolV1_1 the immutability of sfAsset, sfAccount
         // and sfShareMPTID is enforced by ValidVault directly, which reports
-        // "violation of vault immutable data" and escalates tec -> tef. Once
-        // V1_1 activates, the same fields are covered by
-        // NoModifiedUnmodifiableFields (see the three cases above); the two
-        // paths are mutually exclusive so both need coverage.
+        // "violation of vault immutable data" on the first pass. ValidVault
+        // returns early on the second pass (result already tec), so the check
+        // does not escalate to tef. Once V1_1 activates, the same fields are
+        // covered by NoModifiedUnmodifiableFields (see the three cases above);
+        // the two paths are mutually exclusive so both need coverage.
         auto const preLendingV11Amendments = defaultAmendments() - featureLendingProtocolV1_1;
         doInvariantCheck(
             makeEnv(preLendingV11Amendments),
@@ -3571,7 +3572,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
@@ -3588,7 +3589,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
@@ -3605,7 +3606,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
@@ -3660,9 +3661,12 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         // Without fixCleanup3_4_0 the same state must NOT trip the invariant,
-        // preserving pre-amendment behavior (no fork risk).
+        // preserving pre-amendment behavior (no fork risk). Also remove
+        // featureLendingProtocolV1_1 so finalizeLoanManage's stricter checks
+        // (exactly one loan touched) do not fire from a bare vault mutation
+        // that does not touch a loan.
         doInvariantCheck(
-            makeEnv(defaultAmendments() - fixCleanup3_4_0),
+            makeEnv(defaultAmendments() - fixCleanup3_4_0 - featureLendingProtocolV1_1),
             {},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
@@ -4501,7 +4505,7 @@ class Invariants_test : public beast::unit_test::Suite
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(sink.messages().str().contains(
                 "loan pay assets outstanding must match the cash received and "
-                "the change in the loan claim"));
+                "the change in the amount the loan owes to the vault"));
             // The pre-inserted loan carries a default (zero) sfLoanBrokerID,
             // which does not resolve to a live broker; the broker-existence
             // check must therefore also fire in the same walk.
@@ -4573,7 +4577,7 @@ class Invariants_test : public beast::unit_test::Suite
                 tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(sink.messages().str().contains(
-                "loan pay must not increase the vault's claim on the loan"));
+                "loan pay must not increase the amount the loan owes to the vault"));
         }
 
         // ttLOAN_PAY: the vault, the loan-broker pseudo-account and the
@@ -4981,6 +4985,50 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().insert(sleLoan);
                 return true;
             });
+
+        // A loan's broker must in turn reference a live vault. A real broker
+        // is created in the preclose so its sfVaultID points at an existing
+        // vault; the precheck then erases that vault and inserts a loan
+        // referencing the broker, so the broker-existence check passes and
+        // the broker-vault-existence check trips.
+        {
+            Keylet brokerKeylet = keylet::amendments();
+            auto const precloseBroker =
+                [&brokerKeylet, this](Account const& a1, Account const&, Env& env) -> bool {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                brokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
+                env.close();
+                return BEAST_EXPECT(env.le(brokerKeylet));
+            };
+
+            doInvariantCheck(
+                {"Loan broker vault does not exist"},
+                [&brokerKeylet](Account const&, Account const&, ApplyContext& ac) {
+                    auto sleBroker = ac.view().peek(brokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    auto sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
+                    if (!sleVault)
+                        return false;
+                    ac.view().erase(sleVault);
+
+                    auto const loanKeylet =
+                        keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                    sleLoan->at(sfPrincipalOutstanding) = Number(0);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(0);
+                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                    sleLoan->at(sfPeriodicPayment) = Number(1);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 0);
+                    ac.view().insert(sleLoan);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseBroker);
+        }
 
         // ttVAULT_SET: owner is immutable (enforced by
         // NoModifiedUnmodifiableFields under featureLendingProtocolV1_1).
