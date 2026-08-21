@@ -17,6 +17,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Asset.h>
@@ -28,7 +29,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -1093,17 +1093,17 @@ private:
             Number const assetsRecovered = initialAssetsTotal - finalAssetsTotal;
             Number const clawbackNum = clawbackAmount.number();
 
-            Number const expected2_8{28LL, -1};
-            Number const expected4_2{42LL, -1};
+            Number const expectedPost{28LL, -1};
+            Number const expectedPre{42LL, -1};
             if (withFix)
             {
                 BEAST_EXPECT(assetsRecovered <= clawbackNum);
-                BEAST_EXPECT(assetsRecovered == expected2_8);
+                BEAST_EXPECT(assetsRecovered == expectedPost);
             }
             else
             {
                 BEAST_EXPECT(assetsRecovered > clawbackNum);
-                BEAST_EXPECT(assetsRecovered == expected4_2);
+                BEAST_EXPECT(assetsRecovered == expectedPre);
             }
         };
 
@@ -1225,17 +1225,17 @@ private:
             Number const assetsWithdrawn = initialAssetsTotal - finalAssetsTotal;
             Number const requestedNum = requested.number();
 
-            Number const expected2_8{28LL, -1};
-            Number const expected4_2{42LL, -1};
+            Number const expectedPost{28LL, -1};
+            Number const expectedPre{42LL, -1};
             if (withFix)
             {
                 BEAST_EXPECT(assetsWithdrawn <= requestedNum);
-                BEAST_EXPECT(assetsWithdrawn == expected2_8);
+                BEAST_EXPECT(assetsWithdrawn == expectedPost);
             }
             else
             {
                 BEAST_EXPECT(assetsWithdrawn > requestedNum);
-                BEAST_EXPECT(assetsWithdrawn == expected4_2);
+                BEAST_EXPECT(assetsWithdrawn == expectedPre);
             }
         };
 
