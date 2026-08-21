@@ -1211,6 +1211,33 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
+                // Flag-bit immutability relocated from ValidLoan.
+                //
+                // lsfLoanOverpayment is set-once at creation and must never
+                // toggle; this is ungated to match its previous coverage in
+                // LoanInvariant, which pre-dates fixCleanup3_4_0. The
+                // enforcement gate is the outer featureLendingProtocol -
+                // ltLOAN entries only exist under that amendment.
+                //
+                // lsfLoanDefault is set-once too, but weakly: it may transition
+                // from unset to set (via a successful tfLoanDefault), so only
+                // the reverse transition is a violation. Gated on
+                // featureLendingProtocolV1_1 to match its previous placement
+                // in LoanInvariant.
+                {
+                    std::uint32_t const beforeFlags = before->getFlags();
+                    std::uint32_t const afterFlags = after->getFlags();
+                    bool const overpaymentChanged =
+                        (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
+                    bad = bad || overpaymentChanged;
+                    if (view.rules().enabled(featureLendingProtocolV1_1))
+                    {
+                        bool const defaultCleared =
+                            (beforeFlags & lsfLoanDefault) != 0 &&
+                            (afterFlags & lsfLoanDefault) == 0;
+                        bad = bad || defaultCleared;
+                    }
+                }
                 break;
             case ltVAULT:
                 /*

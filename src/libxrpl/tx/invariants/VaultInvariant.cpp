@@ -703,8 +703,19 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
     // assets from the vault. Only a default returns first-loss
     // capital from the broker to the vault pseudo-account; impair
     // and unimpair merely adjust the paper (unrealized) loss and
-    // touch no balances.
+    // touch no balances. A missing vault-balance delta is a legitimate
+    // outcome for impair / unimpair (they move no funds), but on default
+    // the broker returns first-loss capital, so the vault balance ledger
+    // entry must have moved - a missing delta indicates a real accounting
+    // bug and is called out below rather than silently absorbed by the
+    // value_or fallback.
     auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+    if (tx.isFlag(tfLoanDefault) && !maybeVaultDeltaAssets)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: loan default must change vault balance";
+        result = false;
+    }
     auto const vaultDelta = maybeVaultDeltaAssets.value_or(
         DeltaInfo{.delta = kZero, .scale = scale(afterVault.assetsTotal, vaultAsset)});
 
@@ -799,6 +810,35 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                 "Invariant failed: loan default must not increase "
                 "assets outstanding";
             result = false;
+        }
+
+        // Vault-side conservation identity, mirroring the ones enforced for
+        // loan origination (checkLoanFunding) and loan payment
+        // (finalizeLoanPay): `Δ AssetsTotal - Δ AssetsAvailable - Δ claim(version)
+        // == 0`. On default the loan zeroes, so `Δ claim == -beforeLoan.claim(version)`,
+        // which under cash-basis is `-PrincipalOutstanding` and under accrual is
+        // `-(TotalValueOutstanding - ManagementFeeOutstanding)`, matching
+        // XLS-66 §3.10.5 / §3.10.5.1. The residual is rounded once for the same
+        // reason as the other two identities - term-wise comparison of
+        // independently-rounded operands can drift by a ULP. Basis-aware via
+        // claim(). Depends on the loan cardinality, so guarded by oneLoan.
+        if (oneLoan)
+        {
+            auto const residual = roundToAsset(
+                vaultAsset,
+                (afterVault.assetsTotal - beforeVault.assetsTotal) -
+                    (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
+                    (afterLoan_[0].claim(afterVault.version) -
+                     beforeLoan_[0].claim(afterVault.version)),
+                minScale);
+            if (residual != kZero)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan default assets outstanding must "
+                    "match the first-loss capital received and the change in "
+                    "the loan claim";
+                result = false;
+            }
         }
 
         // A default realizes the loss: any paper loss carried for this loan is

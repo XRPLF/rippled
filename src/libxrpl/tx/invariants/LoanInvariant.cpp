@@ -103,11 +103,10 @@ ValidLoan::finalize(
             JLOG(j.fatal()) << "Invariant failed: Fully paid off Loan still has payments remaining";
             return false;
         }
-        if (before && (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment)))
-        {
-            JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
-            return false;
-        }
+        // Note: lsfLoanOverpayment set-once immutability and lsfLoanDefault
+        // set-once (never cleared) live in NoModifiedUnmodifiableFields, next
+        // to the other loan-object constant-field immutability checks.
+
         // LoanManage sub-operation flag preconditions. These are transaction
         // post-conditions, so they only apply on a successful apply: after a
         // reset the ledger flags revert and the checks would spuriously fail.
@@ -152,20 +151,6 @@ ValidLoan::finalize(
                                    "next payment due date";
                 return false;
             }
-        }
-
-        // Item 20 (XLS-66 §3.2.3): lsfLoanDefault is set-once - never cleared,
-        // only ever set (by ttLOAN_MANAGE(tfLoanDefault), gated above). The
-        // LoanManage-scoped block already verifies the specific transition;
-        // this universal form catches any other transaction path that would
-        // clear the flag. Class-2 (transaction post-condition on a specific
-        // before→after transition); gate on isTesSuccess.
-        if (before && isTesSuccess(result) &&
-            view.rules().enabled(featureLendingProtocolV1_1) &&
-            before->isFlag(lsfLoanDefault) && !after->isFlag(lsfLoanDefault))
-        {
-            JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault must never be cleared";
-            return false;
         }
 
         // Item 21 (XLS-66 §3.11.5 non-full payment): after a LoanPay that did
