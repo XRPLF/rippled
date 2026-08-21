@@ -2,6 +2,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/ticket.h>
@@ -9,17 +10,18 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
@@ -149,7 +151,7 @@ ownerDirKeys(ReadView const& view, AccountID const& account)
 {
     std::map<uint256, std::uint64_t> keys;
 
-    Keylet const root = keylet::ownerDir(account);
+    auto const root = keylet::ownerDir(account);
     std::uint64_t page = 0;
     for (auto sle = view.read(root); sle;)
     {
@@ -201,7 +203,7 @@ verify::Create::operator()(Env& env, JTx& jt) const
 
     // Funclets run before the transaction is applied, so everything read here
     // is the state the effects are measured against.
-    json::Value const& proposedTx = jt.jv[sfProposedTransaction.jsonName];
+    auto const& proposedTx = jt.jv[sfProposedTransaction.jsonName];
     auto const parsedTarget = parseBase58<AccountID>(proposedTx[jss::Account].asString());
 
     // A payload naming no usable target is a malformed case a test is making
@@ -209,48 +211,69 @@ verify::Create::operator()(Env& env, JTx& jt) const
     if (!parsedTarget)
         return;
 
-    AccountID const target = *parsedTarget;
-    Account const proposer = env.lookup(jt.jv[jss::Account].asString());
-    std::uint32_t const ticketSeq = proposedTx[sfTicketSequence.jsonName].asUInt();
-    std::uint32_t const expiration = jt.jv[sfExpiration.jsonName].asUInt();
-    std::uint32_t const cost = proposedTx[jss::TransactionType].asString() == jss::Batch.cStr()
+    auto const target = *parsedTarget;
+    auto const proposer = env.lookup(jt.jv[jss::Account].asString());
+    auto const ticketSeq = proposedTx[sfTicketSequence.jsonName].asUInt();
+    auto const expiration = jt.jv[sfExpiration.jsonName].asUInt();
+    auto const cost = proposedTx[jss::TransactionType].asString() == jss::Batch.cStr()
         ? kBatchProposalOwnerCount
         : kProposalOwnerCount;
 
+    std::optional<Account> reserveSponsor;
+    if (jt.jv.isMember(sfSponsor.jsonName) &&
+        (jt.jv[sfSponsorFlags.jsonName].asUInt() & spfSponsorReserve) != 0)
+        reserveSponsor.emplace(env.lookup(jt.jv[sfSponsor.jsonName].asString()));
+
     // Every entry the transaction could touch, read whole, so what follows can
     // say that nothing moved rather than that the fields we named did not.
-    ReadView const& view = *env.current();
-    Keylet const proposalKeylet = keylet::txProposal(target, ticketSeq);
-    std::uint32_t const ownerCountBefore = env.ownerCount(proposer);
-    SLE::const_pointer const proposalBefore = view.read(proposalKeylet);
-    SLE::const_pointer const targetBefore = view.read(keylet::account(target));
-    SLE::const_pointer const ticketBefore = view.read(keylet::ticket(target, ticketSeq));
-    std::map<uint256, std::uint64_t> const proposerDirBefore = ownerDirKeys(view, proposer.id());
-    std::map<uint256, std::uint64_t> const targetDirBefore = ownerDirKeys(view, target);
+    auto const& view = *env.current();
+    auto const proposalKeylet = keylet::txProposal(target, ticketSeq);
+    auto const ownerCountBefore = env.ownerCount(proposer);
+    auto const sponsoredOwnerCountBefore = env.sponsoredOwnerCount(proposer);
+    auto const sponsoringOwnerCountBefore =
+        reserveSponsor ? std::optional{env.sponsoringOwnerCount(*reserveSponsor)} : std::nullopt;
+    auto const proposalBefore = view.read(proposalKeylet);
+    auto const targetBefore = view.read(keylet::account(target));
+    auto const ticketBefore = view.read(keylet::ticket(target, ticketSeq));
+    auto const proposerDirBefore = ownerDirKeys(view, proposer.id());
+    auto const targetDirBefore = ownerDirKeys(view, target);
 
     jt.require.emplace_back([=](Env& applied) {
         auto& test = applied.test;
-        ReadView const& view = *applied.current();
+        auto const& view = *applied.current();
 
-        bool const created = isTesSuccess(applied.ter());
+        auto const created = isTesSuccess(applied.ter());
 
-        // A proposal holds owner-reserve increments against its proposer, more
-        // of them for a proposed Batch than for anything else.
+        // The proposer owns the proposal even when another account covers its
+        // reserve. A proposed Batch costs more owner-count increments.
         test.expect(
             applied.ownerCount(proposer) == ownerCountBefore + (created ? cost : 0),
             "proposal reserve");
+        test.expect(
+            applied.sponsoredOwnerCount(proposer) ==
+                sponsoredOwnerCountBefore + (created && reserveSponsor ? cost : 0),
+            "proposal sponsored owner count");
+        if (reserveSponsor)
+        {
+            test.expect(
+                applied.sponsoringOwnerCount(*reserveSponsor) ==
+                    *sponsoringOwnerCountBefore + (created ? cost : 0),
+                "proposal sponsoring owner count");
+        }
 
-        // Nothing of the target's moves, whatever the outcome: the proposal is
-        // the proposer's object and the ticket is left for the proposed
-        // transaction. A proposer proposing for its own account is exempt.
+        // The target's ticket is left for the proposed transaction, including
+        // when the target is also the proposer.
+        test.expect(
+            unchanged(ticketBefore, view.read(keylet::ticket(target, ticketSeq))),
+            "proposal target ticket");
+
+        // Nothing else of a distinct target's moves: the proposal belongs in
+        // the proposer's account and owner directory.
         if (target != proposer.id())
         {
             test.expect(
                 unchanged(targetBefore, view.read(keylet::account(target))),
                 "proposal target account");
-            test.expect(
-                unchanged(ticketBefore, view.read(keylet::ticket(target, ticketSeq))),
-                "proposal target ticket");
             test.expect(ownerDirKeys(view, target) == targetDirBefore, "proposal target directory");
         }
 
@@ -281,8 +304,13 @@ verify::Create::operator()(Env& env, JTx& jt) const
         // proposed, so the payload is compared whole.
         test.expect(sleProposal->getAccountID(sfOwner) == proposer.id(), "proposal owner");
         test.expect(sleProposal->getFieldU32(sfExpiration) == expiration, "proposal expiration");
+        test.expect(
+            reserveSponsor ? sleProposal->isFieldPresent(sfSponsor) &&
+                    sleProposal->getAccountID(sfSponsor) == reserveSponsor->id()
+                           : !sleProposal->isFieldPresent(sfSponsor),
+            "proposal sponsor");
 
-        STObject const& stored = sleProposal->getFieldObject(sfProposedTransaction);
+        auto const& stored = sleProposal->getFieldObject(sfProposedTransaction);
         test.expect(stored == parse(proposedTx), "proposal payload");
 
         // Unsigned canonical form, keyed by the target and ticket the payload
