@@ -46,6 +46,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
 
+#include <stdexcept>
 #include <tuple>
 #include <type_traits>
 
@@ -398,7 +399,7 @@ class SLEBase_test : public beast::unit_test::Suite
         testcase("throws on missing entry");
 
         using namespace jtx;
-        Env env(*this);
+        Env const env(*this);
         Account const bob("bob");
 
         // A generic read-only entry has no static type to fall back on, so
