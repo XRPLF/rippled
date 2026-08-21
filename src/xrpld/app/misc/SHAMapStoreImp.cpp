@@ -362,13 +362,26 @@ SHAMapStoreImp::run()
             canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 
         {
-            JLOG(journal_.trace()) << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
             // Note that this is set after the healthWait() check, so that we
             // don't start the rotation until the validated ledger is fully
             // processed. It is not guaranteed to be done at this point. It also
             // allows the testLedgerGaps unit test to work.
-            std::unique_lock<std::mutex> const lock(mutex_);
-            lastGoodValidatedLedger_ = validatedSeq;
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (newLedger_)
+            {
+                // It is possible, though very unlikely outside of tests which manipulate internals,
+                // that healthWait() took so long that the validated ledger (newLedger_) has moved
+                // on from where we started. If that's the case, update lastGoodValidatedLedger_
+                // to that ledger's sequence number.
+                lastGoodValidatedLedger_ = newLedger_->header().seq;
+            }
+            else
+            {
+                lastGoodValidatedLedger_ = validatedSeq;
+            }
+            auto const l = lastGoodValidatedLedger_;
+            lock.unlock();
+            JLOG(journal_.trace()) << "run: Set lastGoodValidatedLedger_ to " << l;
         }
 
         // will delete up to (not including) lastRotated

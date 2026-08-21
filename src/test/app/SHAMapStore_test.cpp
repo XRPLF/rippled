@@ -24,6 +24,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <atomic>
 #include <cstddef>
@@ -636,6 +637,7 @@ public:
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
         LedgerIndex lastRotated = store.getLastRotated();
+        auto& netOPs = env.app().getOPs();
         while (lastRotated != 3)
         {
             BEAST_EXPECT(store.rendezvous());
@@ -671,7 +673,7 @@ public:
             };
 
         auto deleteLedgerSeq =
-            [&lm, &store, &minSeq, &lastRotated, &expectedRange, &failureMessage, this](
+            [&lm, &store, &netOPs, &minSeq, &lastRotated, &expectedRange, &failureMessage, this](
                 Env& env,
                 LedgerIndex& maxSeq,
                 std::vector<LedgerIndex>& deleteSeqs) -> LedgerIndex {
@@ -679,6 +681,8 @@ public:
 
             // The next ledger will trigger a rotation. Delete the
             // current ledger from LedgerMaster.
+
+            netOPs.setMode(OperatingMode::CONNECTED);
 
             LedgerIndex const deleteSeq = maxSeq;
             std::size_t iterations = 30;
@@ -712,6 +716,11 @@ public:
             // ledger is backfilled. That will not happen automatically. It's a manual step that
             // is done later in this test.
             ++maxSeq;
+
+            netOPs.setMode(OperatingMode::FULL);
+
+            BEAST_EXPECT(!store.rendezvous(10ms));
+            BEAST_EXPECT(netOPs.getOperatingMode() == OperatingMode::FULL);
 
             // Nothing has changed
             BEAST_EXPECTS(
@@ -756,7 +765,7 @@ public:
                     // simulate the ledger making progress while online delete waits
                     // for the missing ledger to be filled in.
                     // After the 7th ledger, the circuit breaker will trigger and abort the attempt.
-                    for (int l = 0; l < 7; ++l)
+                    while (maxSeq < lastRotated + (kDeleteInterval * 2) - 2)
                     {
                         env.close();
                         ++maxSeq;
@@ -772,8 +781,16 @@ public:
                                 lm.getCompleteLedgers()));
                         // The Store is "stuck" in healthWait() and won't finish the run() loop
                         // until it's backfilled
-                        BEAST_EXPECT(!store.rendezvous(10ms));
                     }
+
+                    // Close one more ledger, which will NOT trigger the circuit breaker. Wait for
+                    // the full 1 second recovery wait timeout to ensure the circuit breaker is not
+                    // triggered.
+                    env.close();
+                    ++maxSeq;
+                    // The Store is "stuck" in healthWait() and won't finish the run() loop
+                    // until it's backfilled
+                    BEAST_EXPECT(!store.rendezvous(1s));
 
                     // Close one more ledger, which will trigger the circuit breaker and abort the
                     // attempt to rotate.
@@ -818,10 +835,13 @@ public:
                                 "Complete Ledgers",
                                 expectedRange(minSeq, deleteSeqs, maxSeq),
                                 lm.getCompleteLedgers()));
-                        // The Store is "stuck" in healthWait() and won't finish the run() loop
-                        // until it's backfilled
-                        BEAST_EXPECT(!store.rendezvous(10ms));
                     }
+
+                    // The Store is "stuck" in healthWait() and won't finish the run() loop
+                    // until it's backfilled
+                    // Wait for the full 1 second recovery wait timeout to ensure the circuit
+                    // breaker is not triggered, and this isn't some other timing fluke.
+                    BEAST_EXPECT(!store.rendezvous(1s));
 
                     // Put the missing ledger back in LedgerMaster
                     lm.setLedgerRangePresent(deleteSeq, deleteSeq);
