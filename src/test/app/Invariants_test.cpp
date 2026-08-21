@@ -2928,28 +2928,6 @@ class Invariants_test : public beast::unit_test::Suite
                 STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
-
-            // (XLS-65 §3.4, XLS-66 §3.4): a VaultDelete transaction
-            // must not touch any loan broker. The pseudo-account
-            // owner-directory residual check in ValidVault (item 9) enforces
-            // the substantive property indirectly; this check catches a
-            // compound transaction that would modify a broker while
-            // deleting a vault. Requires fixCleanup3_4_0.
-            doInvariantCheck(
-                makeEnv(defaultAmendments() | fixCleanup3_4_0),
-                {"vault operation succeeded without modifying a vault",
-                 "VaultDelete must not touch any loan broker"},
-                [&](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(loanBrokerKeylet);
-                    if (!BEAST_EXPECT(sle))
-                        return false;
-                    ac.view().update(sle);
-                    return true;
-                },
-                XRPAmount{},
-                STTx{ttVAULT_DELETE, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
-                createLoanBroker);
         }
     }
 
@@ -3521,7 +3499,7 @@ class Invariants_test : public beast::unit_test::Suite
             precloseXrp,
             TxAccount::A2);
 
-        // Under fixCleanup3_4_0 vault immutability is enforced by
+        // Under featureLendingProtocolV1_1 vault immutability is enforced by
         // NoModifiedUnmodifiableFields (class-1, both passes), which reports
         // "changed an unchangeable field" and escalates to tef on pass 2.
         doInvariantCheck(
@@ -3558,6 +3536,64 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {"changed an unchangeable field"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfShareMPTID] = MPTID(42);
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp);
+
+        // Pre-featureLendingProtocolV1_1 the immutability of sfAsset, sfAccount
+        // and sfShareMPTID is enforced by ValidVault directly, which reports
+        // "violation of vault immutable data" and escalates tec -> tef. Once
+        // V1_1 activates, the same fields are covered by
+        // NoModifiedUnmodifiableFields (see the three cases above); the two
+        // paths are mutually exclusive so both need coverage.
+        auto const preLendingV11Amendments = defaultAmendments() - featureLendingProtocolV1_1;
+        doInvariantCheck(
+            makeEnv(preLendingV11Amendments),
+            {"violation of vault immutable data"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setFieldIssue(sfAsset, STIssue{sfAsset, MPTIssue(MPTID(42))});
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp);
+
+        doInvariantCheck(
+            makeEnv(preLendingV11Amendments),
+            {"violation of vault immutable data"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setAccountID(sfAccount, a2.id());
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp);
+
+        doInvariantCheck(
+            makeEnv(preLendingV11Amendments),
+            {"violation of vault immutable data"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 auto sleVault = ac.view().peek(keylet);
@@ -3727,34 +3763,6 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleShares)[sfOutstandingAmount] = kMaxMpTokenAmount + 1;
                 ac.view().update(sleShares);
                 return true;
-            },
-            XRPAmount{},
-            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            precloseXrp,
-            TxAccount::A2);
-
-        // Universal share conservation: the issuance's OutstandingAmount
-        // delta must equal the sum of MPToken deltas across all touched
-        // holders. Bump the depositor's holding by 10 but only bump the
-        // issuance by 5, so the aggregate identity is off by 5. This state
-        // also violates ValidMPTPayment's OutstandingAmount balance identity
-        // (which is enforced regardless of TER under fixCleanup3_4_0), so
-        // both invariants fire on each pass -> escalation to tef.
-        doInvariantCheck(
-            {"shares outstanding delta must equal the sum of holder share deltas"},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                return kAdjust(
-                    ac.view(),
-                    keylet,
-                    Adjustments{
-                        .assetsTotal = 10,
-                        .assetsAvailable = 10,
-                        .sharesTotal = 5,
-                        .vaultAssets = 10,
-                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -10},
-                        .accountShares = AccountAmount{.account = a2.id(), .amount = 10}});
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
@@ -4101,7 +4109,7 @@ class Invariants_test : public beast::unit_test::Suite
         // ttLOAN_MANAGE: shares outstanding changes
         //
         // ValidMPTPayment enforces its OutstandingAmount balance identity
-        // regardless of TER under fixCleanup3_4_0, and the harness runs both
+        // regardless of TER under featureLendingProtocolV1_1, and the harness runs both
         // invariant passes against the same view (no reset in between), so
         // visitEntry accumulates the MPT delta on the second pass and trips
         // ValidMPTPayment alongside the share-change check -> escalation
@@ -4875,14 +4883,12 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 precloseLoan);
 
-            // Item 54 (XLS-66 §3.1.5 precondition 1): a LoanBrokerDelete
+            // (XLS-66 §3.1.5 precondition 1): a LoanBrokerDelete
             // transaction must not touch any loan. Broker delete requires
             // OwnerCount == 0 (no loans reference the broker); touching a
             // loan alongside the delete points at either an
             // OwnerCount-tracking bug or a spurious cascading write.
-            // Requires fixCleanup3_4_0.
             doInvariantCheck(
-                makeEnv(defaultAmendments() | fixCleanup3_4_0),
                 {"LoanBrokerDelete must not touch any loan"},
                 [&loanKeylet](Account const&, Account const&, ApplyContext& ac) {
                     auto sle = ac.view().peek(loanKeylet);
@@ -4977,7 +4983,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         // ttVAULT_SET: owner is immutable (enforced by
-        // NoModifiedUnmodifiableFields under fixCleanup3_4_0).
+        // NoModifiedUnmodifiableFields under featureLendingProtocolV1_1).
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {

@@ -55,12 +55,11 @@ namespace xrpl {
  *   available (and the vault balance) increase by the same amount, which is at
  *   most the amount paid; the combined inflow to the vault pseudo-account, the
  *   loan-broker pseudo-account and the loan-broker owner never exceeds the
- *   amount paid (no value is manufactured); the vault's claim on the paid loan
- *   may only shrink; and assets outstanding move in lock-step: their change
- *   equals the cash received plus the change in the paid loan's claim on the
- *   vault (the claim being the exposure the vault recognizes under its
- *   accounting basis), which verifies the payment was split correctly between
- *   principal and interest
+ *   amount paid (no value is manufactured); the amount the paid loan owes to
+ *   the vault may only shrink; and assets outstanding move in lock-step: their
+ *   change equals the cash received plus the change in the paid loan's amount
+ *   owed to the vault (under the vault's accounting basis), which verifies the
+ *   payment was split correctly between principal and interest
  * - shares outstanding may only change through deposit, withdraw, or clawback
  * - no vault transaction can change loss unrealized (it's updated by loan
  *   transactions)
@@ -131,22 +130,14 @@ class ValidVault
         // on the pre-transaction impairment state of a defaulted loan.
         bool impaired = false;
 
-        // The vault's claim on the loan, i.e. its exposure to the loan. This is
-        // accounting-basis dependent: under accrual it is the total value owed
-        // less the broker's management fee (which belongs to the broker, not
-        // the vault); under cash-basis, where interest is only recognised once
-        // received, it is the outstanding principal alone. Mirrors
+        // The value this loan owes to the vault, from the loan's perspective.
+        // Accounting-basis dependent: under accrual it is the total value
+        // owed less the broker's management fee (which belongs to the broker,
+        // not the vault); under cash-basis, where interest is only recognised
+        // once received, it is the outstanding principal alone. Mirrors
         // loanVaultExposure in LendingHelpers.cpp.
         [[nodiscard]] Number
-        claim(VaultVersion version) const;
-
-        // The vault's exposure to the loan, used by the LossUnrealized
-        // bookkeeping checks. Numerically identical to claim() under either
-        // basis (see the note above), but named separately so that
-        // impair / unimpair / default / pay checks read as "exposure" while
-        // the LoanPay assets-outstanding identity reads as "claim".
-        [[nodiscard]] Number
-        exposure(VaultVersion version) const;
+        ownedToVault(VaultVersion version) const;
 
         Loan static make(SLE const&);
     };
@@ -291,9 +282,10 @@ private:
      * Verifies that the transaction moved the requested principal out of the vault
      * pseudo-account, and that the created loan records exactly that principal. Under
      * @c featureLendingProtocolV1_1 also verifies the participant-side accounting: the broker's
-     * @c DebtTotal grows by the new loan's exposure (basis-aware), the borrower and broker owner
-     * receive their respective portions of the principal, and the vault's @c AssetsTotal /
-     * @c AssetsAvailable / claim identity holds at origination. Assumes @c exactlyOneLoan has
+     * @c DebtTotal grows by the amount the new loan owes to the vault (basis-aware), the
+     * borrower and broker owner receive their respective portions of the principal, and the
+     * vault's @c AssetsTotal / @c AssetsAvailable identity holds at origination. Assumes
+     * @c exactlyOneLoan has
      * already returned @c true, so it may index @c afterLoan_[0] directly. Extracted so a future
      * @c LoanAccept transactor can reuse the funding checks independently of the creation-side
      * phase gate.

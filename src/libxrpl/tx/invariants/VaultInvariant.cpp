@@ -89,17 +89,11 @@ ValidVault::Shares::make(SLE const& from)
 }
 
 Number
-ValidVault::Loan::claim(VaultVersion version) const
+ValidVault::Loan::ownedToVault(VaultVersion version) const
 {
     if (version == VaultVersion::CashBasis)
         return principalOutstanding;
     return totalValueOutstanding - managementFeeOutstanding;
-}
-
-Number
-ValidVault::Loan::exposure(VaultVersion version) const
-{
-    return claim(version);
 }
 
 ValidVault::Loan
@@ -197,7 +191,7 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
             case ltLOAN:
                 // A loan carries no vault balance of its own; capture its prior
                 // state so the loan pay invariant can verify the change in the
-                // vault's claim on the loan.
+                // amount this loan owes to the vault.
                 beforeLoan_.push_back(Loan::make(*before));
                 break;
             case ltLOAN_BROKER:
@@ -254,8 +248,8 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
             case ltLOAN:
                 // A loan carries no vault balance of its own; capture it so the
                 // loan set and loan pay invariants can verify the interest
-                // booked to the vault and the change in the vault's claim on
-                // the loan.
+                // booked to the vault and the change in the amount this loan
+                // owes to the vault.
                 afterLoan_.push_back(Loan::make(*after));
                 break;
             case ltLOAN_BROKER:
@@ -436,9 +430,10 @@ ValidVault::checkLoanFunding(
     }
 
     // The created loan must record exactly the principal the vault
-    // released. Otherwise the borrower's claim (and thus the assets
-    // booked back to the vault on repayment) is decoupled from the
-    // assets actually lent, which would skew the vault's share price.
+    // released. Otherwise the amount the loan owes to the vault (and
+    // thus the assets booked back to the vault on repayment) is
+    // decoupled from the assets actually lent, which would skew the
+    // vault's share price.
     if (loan.principalOutstanding != tx[sfPrincipalRequested])
     {
         JLOG(j.fatal()) <<  //
@@ -447,9 +442,9 @@ ValidVault::checkLoanFunding(
     }
 
     // The remaining participant-side checks are new under featureLendingProtocolV1_1
-    // and use the basis-aware exposure / claim accessors; keep them behind that gate
+    // and use the basis-aware ownedToVault() accessor; keep them behind that gate
     // so pre-V1_1 behaviour is unchanged.
-    if (!view.rules().enabled(fixCleanup3_4_0))
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
         return result;
 
     // The broker whose DebtTotal must reflect the newly-originated loan is the
@@ -467,21 +462,21 @@ ValidVault::checkLoanFunding(
     auto const& beforeBroker = beforeBroker_[0];
     auto const& afterBroker = afterBroker_[0];
 
-    // The broker's DebtTotal tracks the vault's aggregate exposure to its
-    // loans (basis-aware). A new loan's contribution is its exposure at
-    // origination, so `Δ DebtTotal == loan.exposure(version)`. DebtTotal is
-    // written via adjustImpreciseNumber (rounded to the vault scale), so
-    // compare via a once-rounded residual to avoid a false failure from
-    // independently-rounded operands.
+    // The broker's DebtTotal tracks the aggregate amount its loans owe to the
+    // vault (basis-aware). A new loan's contribution is what it owes to the
+    // vault at origination, so `Δ DebtTotal == loan.ownedToVault(version)`.
+    // DebtTotal is written via adjustImpreciseNumber (rounded to the vault
+    // scale), so compare via a once-rounded residual to avoid a false failure
+    // from independently-rounded operands.
     {
-        auto const expected = loan.exposure(afterVault.version);
+        auto const expected = loan.ownedToVault(afterVault.version);
         auto const residual = roundToAsset(
             vaultAsset, (afterBroker.debtTotal - beforeBroker.debtTotal) - expected, minScale);
         if (residual != kZero)
         {
             JLOG(j.fatal()) <<  //
-                "Invariant failed: loan set must increase broker debt total by the new loan's "
-                "exposure";
+                "Invariant failed: loan set must increase broker debt total by the amount the "
+                "new loan owes to the vault";
             result = false;
         }
     }
@@ -531,25 +526,26 @@ ValidVault::checkLoanFunding(
     }
 
     // Vault-side accounting identity at origination, mirroring the one enforced
-    // for loan payments: `Δ AssetsTotal - Δ AssetsAvailable == Δ claim`. Before
-    // the transaction the loan did not exist, so `Δ claim == loan.claim(version)`.
-    // Basis-aware via claim(): under accrual it books the interest into
-    // AssetsTotal, under cash-basis it does not. The residual is rounded once
-    // for the same reason as in finalizeLoanPay - the underlying identity holds
-    // exactly, but a term-wise comparison of independently-rounded operands can
-    // drift by a ULP.
+    // for loan payments: `Δ AssetsTotal - Δ AssetsAvailable == Δ ownedToVault`.
+    // Before the transaction the loan did not exist, so
+    // `Δ ownedToVault == loan.ownedToVault(version)`. Basis-aware via
+    // ownedToVault(): under accrual it books the interest into AssetsTotal,
+    // under cash-basis it does not. The residual is rounded once for the same
+    // reason as in finalizeLoanPay - the underlying identity holds exactly, but
+    // a term-wise comparison of independently-rounded operands can drift by a
+    // ULP.
     {
         auto const residual = roundToAsset(
             vaultAsset,
             (afterVault.assetsTotal - beforeVault.assetsTotal) -
                 (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
-                loan.claim(afterVault.version),
+                loan.ownedToVault(afterVault.version),
             minScale);
         if (residual != kZero)
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan set assets outstanding must match the principal released "
-                "and the new loan's claim";
+                "and the amount the new loan owes to the vault";
             result = false;
         }
     }
@@ -701,9 +697,9 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
             result = false;
         }
 
-        // Impairing records the vault's exposure to the loan as a paper loss,
-        // unimpairing reverses it. The bounds are not strict because either
-        // adjustment can round to nothing at the vault scale.
+        // Impairing records the amount the loan owes to the vault as a paper
+        // loss, unimpairing reverses it. The bounds are not strict because
+        // either adjustment can round to nothing at the vault scale.
         if (tx.isFlag(tfLoanImpair) ? lossUnrealizedDelta < kZero : lossUnrealizedDelta > kZero)
         {
             JLOG(j.fatal()) <<  //
@@ -712,16 +708,16 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
             result = false;
         }
 
-        // Magnitude: LossUnrealized must move by exactly the loan's exposure
-        // snapshotted before this transaction. Impair grows it, unimpair
-        // shrinks it. The residual is rounded once (mirrors the LoanPay
-        // conservation identity in finalizeLoanPay) so that comparing the
-        // two independently-scaled operands cannot drift by a ULP and
+        // Magnitude: LossUnrealized must move by exactly the amount the loan
+        // owed to the vault snapshotted before this transaction. Impair grows
+        // it, unimpair shrinks it. The residual is rounded once (mirrors the
+        // LoanPay conservation identity in finalizeLoanPay) so that comparing
+        // the two independently-scaled operands cannot drift by a ULP and
         // produce a false failure.
         if (oneLoan)
         {
-            auto const exposure = beforeLoan_[0].exposure(afterVault.version);
-            auto const expectedDelta = tx.isFlag(tfLoanImpair) ? exposure : -exposure;
+            auto const owed = beforeLoan_[0].ownedToVault(afterVault.version);
+            auto const expectedDelta = tx.isFlag(tfLoanImpair) ? owed : -owed;
             auto const residual = roundToAsset(
                 vaultAsset,
                 (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
@@ -729,10 +725,11 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
             if (residual != kZero)
             {
                 JLOG(j.fatal()) <<  //
-                    (tx.isFlag(tfLoanImpair) ? "Invariant failed: loan impair must increase loss "
-                                               "unrealized by exactly the loan's exposure"
-                                             : "Invariant failed: loan unimpair must decrease loss "
-                                               "unrealized by exactly the loan's exposure");
+                    (tx.isFlag(tfLoanImpair)
+                         ? "Invariant failed: loan impair must increase loss unrealized "
+                           "by exactly the amount the loan owes to the vault"
+                         : "Invariant failed: loan unimpair must decrease loss unrealized "
+                           "by exactly the amount the loan owes to the vault");
                 result = false;
             }
         }
@@ -761,29 +758,32 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
 
         // Vault-side conservation identity, mirroring the ones enforced for
         // loan origination (checkLoanFunding) and loan payment
-        // (finalizeLoanPay): `Δ AssetsTotal - Δ AssetsAvailable - Δ claim(version)
-        // == 0`. On default the loan zeroes, so `Δ claim == -beforeLoan.claim(version)`,
-        // which under cash-basis is `-PrincipalOutstanding` and under accrual is
+        // (finalizeLoanPay):
+        // `Δ AssetsTotal - Δ AssetsAvailable - Δ ownedToVault(version) == 0`.
+        // On default the loan zeroes, so
+        // `Δ ownedToVault == -beforeLoan.ownedToVault(version)`, which under
+        // cash-basis is `-PrincipalOutstanding` and under accrual is
         // `-(TotalValueOutstanding - ManagementFeeOutstanding)`, matching
         // XLS-66 §3.10.5 / §3.10.5.1. The residual is rounded once for the same
         // reason as the other two identities - term-wise comparison of
         // independently-rounded operands can drift by a ULP. Basis-aware via
-        // claim(). Depends on the loan cardinality, so guarded by oneLoan.
+        // ownedToVault(). Depends on the loan cardinality, so guarded by
+        // oneLoan.
         if (oneLoan)
         {
             auto const residual = roundToAsset(
                 vaultAsset,
                 (afterVault.assetsTotal - beforeVault.assetsTotal) -
                     (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
-                    (afterLoan_[0].claim(afterVault.version) -
-                     beforeLoan_[0].claim(afterVault.version)),
+                    (afterLoan_[0].ownedToVault(afterVault.version) -
+                     beforeLoan_[0].ownedToVault(afterVault.version)),
                 minScale);
             if (residual != kZero)
             {
                 JLOG(j.fatal()) <<  //
                     "Invariant failed: loan default assets outstanding must "
                     "match the first-loss capital received and the change in "
-                    "the loan claim";
+                    "the amount the loan owes to the vault";
                 result = false;
             }
         }
@@ -800,16 +800,17 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
             result = false;
         }
 
-        // Magnitude: if the loan was impaired before this transaction its
-        // pre-tx exposure was carried as an unrealized loss, and default
-        // releases exactly that amount (the loss transitions from paper to
-        // realized). If the loan was not impaired there is nothing to
-        // release and LossUnrealized is unchanged. As with impair/unimpair
-        // the residual is rounded once.
+        // Magnitude: if the loan was impaired before this transaction the
+        // amount it owed to the vault (pre-tx) was carried as an unrealized
+        // loss, and default releases exactly that amount (the loss transitions
+        // from paper to realized). If the loan was not impaired there is
+        // nothing to release and LossUnrealized is unchanged. As with
+        // impair/unimpair the residual is rounded once.
         if (oneLoan)
         {
-            Number const expectedDelta =
-                beforeLoan_[0].impaired ? -beforeLoan_[0].exposure(afterVault.version) : kZero;
+            Number const expectedDelta = beforeLoan_[0].impaired
+                ? -beforeLoan_[0].ownedToVault(afterVault.version)
+                : kZero;
             auto const residual = roundToAsset(
                 vaultAsset,
                 (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
@@ -818,8 +819,8 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
             {
                 JLOG(j.fatal()) <<  //
                     "Invariant failed: loan default must decrease loss "
-                    "unrealized by the pre-transaction exposure of an "
-                    "impaired loan, or leave it unchanged otherwise";
+                    "unrealized by the pre-transaction amount the loan owed to "
+                    "the vault when impaired, or leave it unchanged otherwise";
                 result = false;
             }
         }
@@ -910,23 +911,24 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                     result = false;
                 }
 
-                // Broker debt tracks the vault's aggregate exposure: on
-                // default the loan's exposure drops to zero (all balance
-                // fields are zeroed), and DebtTotal drops by the same
-                // amount (LoanManage.cpp:244 decrements by
+                // Broker debt tracks the aggregate amount the broker's loans
+                // owe to the vault: on default the loan's amount owed drops to
+                // zero (all balance fields are zeroed), and DebtTotal drops by
+                // the same amount (LoanManage.cpp:244 decrements by
                 // loanVaultExposure). Same delta identity as finalizeLoanPay
                 // (items 22/23), specialised to the default sub-op.
                 auto const brokerResidual = roundToAsset(
                     vaultAsset,
                     (afterBroker.debtTotal - beforeBroker.debtTotal) -
-                        (afterLoan_[0].exposure(afterVault.version) -
-                         beforeLoan_[0].exposure(afterVault.version)),
+                        (afterLoan_[0].ownedToVault(afterVault.version) -
+                         beforeLoan_[0].ownedToVault(afterVault.version)),
                     minScale);
                 if (brokerResidual != kZero)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: loan default broker debt total must "
-                        "track the change in the loan's exposure";
+                        "track the change in the amount the loan owes to the "
+                        "vault";
                     result = false;
                 }
             }
@@ -1056,36 +1058,39 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         }
     }
 
-    // The vault's claim is accounting-basis dependent, so both checks below are
-    // evaluated with the claim the vault actually recognizes. Under accrual the
-    // claim carries the interest, which assets outstanding already booked at
-    // origination; under cash-basis the claim is principal only and assets
-    // outstanding grow by the interest as it is received.
+    // The amount the loan owes to the vault is accounting-basis dependent, so
+    // both checks below are evaluated with the value the vault actually
+    // recognises. Under accrual it carries the interest, which assets
+    // outstanding already booked at origination; under cash-basis it is
+    // principal only and assets outstanding grow by the interest as it is
+    // received.
     auto const version = afterVault.version;
-    auto const claimDelta = roundToAsset(
-        vaultAsset, afterLoan_[0].claim(version) - beforeLoan_[0].claim(version), minScale);
+    auto const owedDelta = roundToAsset(
+        vaultAsset,
+        afterLoan_[0].ownedToVault(version) - beforeLoan_[0].ownedToVault(version),
+        minScale);
 
-    // A payment services the loan, so the vault's claim on it can only shrink.
-    // Penalties and fees charged on a late payment or an overpayment are
-    // settled from the same payment rather than added to the loan, so they
-    // cannot grow the claim either.
-    if (claimDelta > kZero)
+    // A payment services the loan, so the amount the loan owes to the vault
+    // can only shrink. Penalties and fees charged on a late payment or an
+    // overpayment are settled from the same payment rather than added to the
+    // loan, so they cannot grow the amount owed either.
+    if (owedDelta > kZero)
     {
         JLOG(j.fatal()) <<  //
-            "Invariant failed: loan pay must not increase the vault's claim on "
-            "the loan";
+            "Invariant failed: loan pay must not increase the amount the loan "
+            "owes to the vault";
         result = false;
     }
 
     // LoanPay::doApply calls LoanManage::unimpairLoan before applying the
     // payment, so a payment on a pre-impaired loan legitimately releases the
     // paper loss the impairment recorded - LossUnrealized falls by exactly
-    // the pre-transaction exposure. A payment on a non-impaired loan does
-    // not touch LossUnrealized. Mirrors item 12 in finalizeLoanManage; the
-    // residual is rounded once for the same reason.
+    // the pre-transaction amount the loan owed to the vault. A payment on a
+    // non-impaired loan does not touch LossUnrealized. Mirrors item 12 in
+    // finalizeLoanManage; the residual is rounded once for the same reason.
     {
         Number const expectedDelta =
-            beforeLoan_[0].impaired ? -beforeLoan_[0].exposure(version) : kZero;
+            beforeLoan_[0].impaired ? -beforeLoan_[0].ownedToVault(version) : kZero;
         auto const residual = roundToAsset(
             vaultAsset,
             (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
@@ -1094,20 +1099,19 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan pay must decrease loss unrealized by "
-                "the pre-transaction exposure of an impaired loan, or leave "
-                "it unchanged otherwise";
+                "the pre-transaction amount the loan owed to the vault when "
+                "impaired, or leave it unchanged otherwise";
             result = false;
         }
     }
 
-    // The vault's total assets equal its available cash plus the
-    // claim it holds on outstanding loans (each loan's total value
-    // owed, less the broker's management fee, which belongs to the
-    // broker). A payment only moves value between those two pools,
-    // so the change in assets outstanding must equal the cash
-    // received plus the change in the paid loan's claim on the
-    // vault. This is an independent check that the borrower's
-    // payment was split correctly between principal and interest.
+    // The vault's total assets equal its available cash plus the amount its
+    // outstanding loans owe to it (each loan's total value owed, less the
+    // broker's management fee, which belongs to the broker). A payment only
+    // moves value between those two pools, so the change in assets
+    // outstanding must equal the cash received plus the change in the amount
+    // the paid loan owes to the vault. This is an independent check that the
+    // borrower's payment was split correctly between principal and interest.
     //
     // The residual is rounded once, rather than comparing three independently
     // rounded terms: each rounding can move a term by up to one unit in the
@@ -1117,24 +1121,25 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         vaultAsset,
         (afterVault.assetsTotal - beforeVault.assetsTotal) -
             (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
-            (afterLoan_[0].claim(version) - beforeLoan_[0].claim(version)),
+            (afterLoan_[0].ownedToVault(version) - beforeLoan_[0].ownedToVault(version)),
         minScale);
     if (residual != kZero)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: loan pay assets outstanding must "
-            "match the cash received and the change in the loan "
-            "claim";
+            "match the cash received and the change in the amount "
+            "the loan owes to the vault";
         result = false;
     }
 
-    // Under featureLendingProtocolV1_1, tie the broker's aggregate exposure
-    // (DebtTotal) to the touched loan's exposure delta: since a LoanPay
-    // touches exactly one loan, `Δ DebtTotal == Δ exposure(loan)`. The
-    // universal `DebtTotal == Σ exposure` (item 22) reduces to this delta
-    // check because loans are modified one at a time. Basis-aware via
-    // exposure(); the residual is rounded once for the same reason as the
-    // identity above.
+    // Under featureLendingProtocolV1_1, tie the broker's aggregate amount owed
+    // to the vault (DebtTotal) to the touched loan's `ownedToVault` delta:
+    // since a LoanPay touches exactly one loan,
+    // `Δ DebtTotal == Δ ownedToVault(loan)`. The universal
+    // `DebtTotal == Σ ownedToVault` (item 22) reduces to this delta check
+    // because loans are modified one at a time. Basis-aware via
+    // ownedToVault(); the residual is rounded once for the same reason as
+    // the identity above.
     if (beforeBroker_.size() != 1 || afterBroker_.size() != 1 ||
         afterBroker_[0].key != afterLoan_[0].loanBrokerID)
     {
@@ -1147,13 +1152,14 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         auto const brokerResidual = roundToAsset(
             vaultAsset,
             (afterBroker_[0].debtTotal - beforeBroker_[0].debtTotal) -
-                (afterLoan_[0].exposure(version) - beforeLoan_[0].exposure(version)),
+                (afterLoan_[0].ownedToVault(version) - beforeLoan_[0].ownedToVault(version)),
             minScale);
         if (brokerResidual != kZero)
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan pay broker debt total must "
-                "track the change in the loan's exposure";
+                "track the change in the amount the loan owes to "
+                "the vault";
             result = false;
         }
     }
@@ -1440,7 +1446,7 @@ ValidVault::finalize(
         bool const isLoanTxn = txnType == ttLOAN_SET ||  //
             txnType == ttLOAN_MANAGE ||                  //
             txnType == ttLOAN_PAY;
-        bool const sharesCheckActive = !isLoanTxn || view.rules().enabled(fixCleanup3_4_0);
+        bool const sharesCheckActive = !isLoanTxn;
 
         if (sharesCheckActive && beforeShares &&
             beforeShares->sharesTotal != updatedShares->sharesTotal && txnType != ttVAULT_DEPOSIT &&
@@ -1498,8 +1504,9 @@ ValidVault::finalize(
             // For deposit / withdraw / clawback the vault's assets outstanding
             // must also track the vault balance in lock-step: no loan-side
             // activity is present to legitimately move `assetsTotal`
-            // independently (interest booking, default write-off, or claim
-            // change on repayment all belong to loan-* transactions).
+            // independently (interest booking, default write-off, or change
+            // in what a loan owes to the vault on repayment all belong to
+            // loan-* transactions).
             if (txnType == ttVAULT_DEPOSIT || txnType == ttVAULT_WITHDRAW ||
                 txnType == ttVAULT_CLAWBACK)
             {

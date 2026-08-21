@@ -107,10 +107,8 @@ ValidLoan::finalize(
         {
             if (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment))
             {
-                {
-                    JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
-                    return false;
-                }
+                JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
+                return false;
             }
         }
         else
