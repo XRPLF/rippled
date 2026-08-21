@@ -1088,8 +1088,9 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     // payment, so a payment on a pre-impaired loan legitimately releases the
     // paper loss the impairment recorded - LossUnrealized falls by exactly
     // the pre-transaction amount the loan owed to the vault. A payment on a
-    // non-impaired loan does not touch LossUnrealized. Mirrors item 12 in
-    // finalizeLoanManage; the residual is rounded once for the same reason.
+    // non-impaired loan does not touch LossUnrealized. Mirrors the LossUnrealized
+    // magnitude check in finalizeLoanManage; the residual is rounded once for
+    // the same reason.
     {
         Number const expectedDelta =
             beforeLoan_[0].impaired ? -beforeLoan_[0].ownedToVault(version) : kZero;
@@ -1138,7 +1139,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     // to the vault (DebtTotal) to the touched loan's `ownedToVault` delta:
     // since a LoanPay touches exactly one loan,
     // `Δ DebtTotal == Δ ownedToVault(loan)`. The universal
-    // `DebtTotal == Σ ownedToVault` (item 22) reduces to this delta check
+    // `DebtTotal == Σ ownedToVault` identity reduces to this delta check
     // because loans are modified one at a time. Basis-aware via
     // ownedToVault(); the residual is rounded once for the same reason as
     // the identity above.

@@ -1033,7 +1033,7 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
         }();
         if (isPseudo)
         {
-            // Snapshot for finalize-time owner-field resolution (item 28).
+            // Snapshot for finalize-time owner-field resolution.
             pseudoAccounts_.push_back(after);
             // Pseudo accounts must have the following properties:
             // 1. Exactly one of the pseudo-account fields is set.
