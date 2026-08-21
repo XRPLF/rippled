@@ -459,6 +459,28 @@ MPTTester::setJV(MPTSet const& arg)
         jv[sfIssuerEncryptionKey] = strHex(*arg.issuerPubKey);
     if (arg.auditorPubKey)
         jv[sfAuditorEncryptionKey] = strHex(*arg.auditorPubKey);
+    if (arg.holderPubKey)
+    {
+        // If setting holder-specific fields but no holder specified,
+        // use the account as the holder
+        if (!arg.holder)
+        {
+            jv[sfHolder] = arg.account->human();
+        }
+
+        // TEMPORARY: Send the holder public key in the appropriate field
+        // TODO: Remove when ConfidentialMPTHolderKeyUpdate is implemented
+        if (arg.recoveryKey)
+        {
+            // For recovery key setup, send it in sfRecoveryKey field
+            jv[sfRecoveryKey] = strHex(*arg.holderPubKey);
+        }
+        else
+        {
+            // For normal holder key update, send it in sfHolderEncryptionKey field
+            jv[sfHolderEncryptionKey] = strHex(*arg.holderPubKey);
+        }
+    }
     jv[sfTransactionType] = jss::MPTokenIssuanceSet;
 
     return jv;
@@ -479,7 +501,9 @@ MPTTester::set(MPTSet const& arg, std::source_location const& loc)
          .delegate = arg.delegate,
          .domainID = arg.domainID,
          .issuerPubKey = arg.issuerPubKey,
-         .auditorPubKey = arg.auditorPubKey});
+         .auditorPubKey = arg.auditorPubKey,
+         .holderPubKey = arg.holderPubKey,
+         .recoveryKey = arg.recoveryKey});
     if (submit(arg, {jv, loc}) == tesSUCCESS && arg.flags.value_or(0) != 0u)
     {
         auto require = [&](std::optional<Account> const& holder, bool unchanged) {
@@ -1907,6 +1931,107 @@ computeNextSendChainState(
 }
 
 void
+MPTTester::recover(MPTConfidentialRecover const& arg, std::source_location const& loc)
+{
+    json::Value jv;
+    auto const account = arg.account ? *arg.account : issuer_;
+    jv[sfAccount] = account.human();
+
+    if (arg.holder)
+    {
+        jv[sfHolder] = arg.holder->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Holder not specified");
+    }
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else if (id_)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+    else
+    {
+        Throw<std::runtime_error>("MPT has not been created");
+    }
+
+    // Get the holder's issuer mirror (encrypted balance)
+    auto const sleHolder =
+        env_.le(keylet::mptoken(issuanceID(), requireValue(arg.holder, "holder").id()));
+    if (!sleHolder)
+        Throw<std::runtime_error>("Holder MPToken not found");
+
+    auto const issuerEncryptedBalanceBlob = sleHolder->getFieldVL(sfIssuerEncryptedBalance);
+    Buffer const issuerEncryptedBalance(
+        issuerEncryptedBalanceBlob.data(), issuerEncryptedBalanceBlob.size());
+
+    // Get issuer's private key to decrypt the mirror
+    auto const issuerPrivKey = getPrivKey(account);
+    if (!issuerPrivKey || issuerPrivKey->size() != kEcPrivKeyLength)
+        Throw<std::runtime_error>("Failed to get issuer private key");
+
+    // Decrypt the balance using issuer's key
+    auto const decryptedBalance = decryptAmount(*issuerPrivKey, issuerEncryptedBalance);
+    if (!decryptedBalance)
+        Throw<std::runtime_error>("Failed to decrypt holder's balance");
+
+    // Get recovery public key (or use provided recovery key)
+    Buffer recoveryPubKey;
+    if (arg.recoveryPrivKey)
+    {
+        // Derive public key from private key
+        secp256k1_pubkey pubKey;
+        if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubKey, arg.recoveryPrivKey->data()) ==
+            0)
+        {
+            Throw<std::runtime_error>("Failed to derive recovery public key from private key");
+        }
+
+        // Serialize public key
+        unsigned char compressedPubKey[kEcPubKeyLength];
+        size_t outLen = kEcPubKeyLength;
+        if (secp256k1_ec_pubkey_serialize(
+                secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) !=
+                1 ||
+            outLen != kEcPubKeyLength)
+        {
+            Throw<std::runtime_error>("Failed to serialize recovery public key");
+        }
+        recoveryPubKey = Buffer{compressedPubKey, kEcPubKeyLength};
+    }
+    else
+    {
+        Throw<std::runtime_error>("Recovery private key not specified");
+    }
+
+    // Re-encrypt the balance under recovery key
+    auto const blindingFactor = generateBlindingFactor();
+    auto const newCiphertext =
+        encryptAmountWithPubKey(recoveryPubKey, *decryptedBalance, blindingFactor);
+
+    jv[sfConfidentialBalanceSpending] = strHex(newCiphertext);
+
+    // TODO: Generate Chaum-Pedersen equality proof
+    // For now, use a placeholder proof
+    if (arg.proof)
+    {
+        jv[sfZKProof] = *arg.proof;
+    }
+    else
+    {
+        // Placeholder: use zero buffer for proof (crypto function not yet available)
+        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcGamalEncryptedTotalLength));
+    }
+
+    submit(arg, {jv, loc});
+}
+
+void
 MPTTester::confidentialClaw(MPTConfidentialClawback const& arg, std::source_location const& loc)
 {
     json::Value jv;
@@ -2030,6 +2155,27 @@ MPTTester::generateKeyPair(Account const& account)
     privKeys_.insert({account.id(), Buffer{privKey, kEcPrivKeyLength}});
 }
 
+std::pair<Buffer, Buffer>
+MPTTester::generateKeyPair()
+{
+    unsigned char privKey[kEcPrivKeyLength];
+    secp256k1_pubkey pubKey;
+    if (secp256k1_elgamal_generate_keypair(secp256k1Context(), privKey, &pubKey) == 0)
+        Throw<std::runtime_error>("failed to generate key pair");
+
+    // Serialize public key to compressed format (33 bytes)
+    unsigned char compressedPubKey[kEcPubKeyLength];
+    size_t outLen = kEcPubKeyLength;
+    if (secp256k1_ec_pubkey_serialize(
+            secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) != 1 ||
+        outLen != kEcPubKeyLength)
+    {
+        Throw<std::runtime_error>("failed to serialize public key");
+    }
+
+    return {Buffer{compressedPubKey, kEcPubKeyLength}, Buffer{privKey, kEcPrivKeyLength}};
+}
+
 std::optional<Buffer>
 MPTTester::getPubKey(Account const& account) const
 {
@@ -2057,6 +2203,20 @@ MPTTester::encryptAmount(Account const& account, uint64_t const amt, Buffer cons
         if (auto const result = xrpl::encryptAmount(amt, *pubKey, blindingFactor))
             return *result;
     }
+
+    // Return a dummy buffer on failure to allow testing of
+    // failures that occur prior to encryption.
+    return gMakeZeroBuffer(kEcGamalEncryptedTotalLength);
+}
+
+Buffer
+MPTTester::encryptAmountWithPubKey(
+    Buffer const& pubKey,
+    uint64_t const amt,
+    Buffer const& blindingFactor)
+{
+    if (auto const result = xrpl::encryptAmount(amt, pubKey, blindingFactor))
+        return *result;
 
     // Return a dummy buffer on failure to allow testing of
     // failures that occur prior to encryption.
@@ -2094,6 +2254,35 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
 }
 
 std::optional<uint64_t>
+MPTTester::decryptAmount(Buffer const& privKey, Buffer const& amt)
+{
+    if (amt.size() != kEcGamalEncryptedTotalLength)
+        return std::nullopt;
+
+    auto const pair = makeEcPair(amt);
+    if (!pair)
+        return std::nullopt;
+
+    if (privKey.size() != kEcPrivKeyLength)
+        return std::nullopt;
+
+    uint64_t decryptedAmt = 0;
+    if (secp256k1_elgamal_decrypt(
+            secp256k1Context(),
+            &decryptedAmt,
+            &pair->c1,
+            &pair->c2,
+            privKey.data(),
+            kElGamalDecryptRangeLow,
+            kElGamalDecryptRangeHigh) == 0)
+    {
+        return std::nullopt;
+    }
+
+    return decryptedAmt;
+}
+
+std::optional<uint64_t>
 MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const
 {
     auto const encryptedAmt = getEncryptedBalance(account, balanceType);
@@ -2117,6 +2306,22 @@ MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType bala
     }
 
     return decryptAmount(decryptor, *encryptedAmt);
+}
+
+std::optional<uint64_t>
+MPTTester::getDecryptedBalance(
+    Account const& account,
+    EncryptedBalanceType balanceType,
+    Buffer const& privKey) const
+{
+    auto const encryptedAmt = getEncryptedBalance(account, balanceType);
+
+    // Return zero to test cases like Feature Disabled, where the ledger object
+    // does not exist.
+    if (!encryptedAmt)
+        return 0;
+
+    return decryptAmount(privKey, *encryptedAmt);
 };
 
 json::Value

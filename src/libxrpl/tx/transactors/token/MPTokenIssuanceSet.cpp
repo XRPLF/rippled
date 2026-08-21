@@ -53,6 +53,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     bool const enablePrivacy = (enableFlags & tfMPTSetCanHoldConfidentialBalance) != 0u;
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
+    auto const hasHolderElGamalKey = ctx.tx.isFieldPresent(sfHolderEncryptionKey);
+    auto const hasRecoveryKey = ctx.tx.isFieldPresent(sfRecoveryKey);
 
     if (isMutate && !ctx.rules.enabled(featureDynamicMPT))
         return temDISABLED;
@@ -84,7 +86,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     {
         // Is this transaction actually changing anything ?
         if (txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey &&
-            !isMutate)
+            !hasHolderElGamalKey && !hasRecoveryKey && !isMutate)
             return temMALFORMED;
     }
 
@@ -134,6 +136,22 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     if (hasAuditorElGamalKey && !isValidCompressedECPoint(ctx.tx[sfAuditorEncryptionKey]))
+        return temMALFORMED;
+
+    // TEMPORARY: Allow holder encryption key when holder is present (for testing recovery)
+    // TODO: Remove when ConfidentialMPTHolderKeyUpdate is implemented
+    if (hasHolderElGamalKey && !hasHolder)
+        return temMALFORMED;
+
+    if (hasHolderElGamalKey && !isValidCompressedECPoint(ctx.tx[sfHolderEncryptionKey]))
+        return temMALFORMED;
+
+    // TEMPORARY: Allow recovery key when holder is present (for testing recovery)
+    // TODO: Remove when ConfidentialMPTHolderKeyUpdate is implemented
+    if (hasRecoveryKey && !hasHolder)
+        return temMALFORMED;
+
+    if (hasRecoveryKey && !isValidCompressedECPoint(ctx.tx[sfRecoveryKey]))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -443,6 +461,26 @@ MPTokenIssuanceSet::doApply()
 
     setEncryptionKey(sfIssuerEncryptionKey, sfIssuerKeyEpoch);
     setEncryptionKey(sfAuditorEncryptionKey, sfAuditorKeyEpoch);
+
+    // TEMPORARY CODE: Handle holder-specific confidential fields for testing
+    // TODO: Remove this when ConfidentialMPTHolderKeyUpdate is implemented
+    if (holderID)
+    {
+        // Check if sfRecoveryKey is present in the transaction
+        if (ctx_.tx.isFieldPresent(sfRecoveryKey))
+        {
+            // Set the recovery key field on the MPToken ledger object
+            auto const recoveryPubKey = ctx_.tx.getFieldVL(sfRecoveryKey);
+            sle->setFieldVL(sfRecoveryKey, recoveryPubKey);
+        }
+        // Check if normal holder encryption key is present
+        else if (ctx_.tx.isFieldPresent(sfHolderEncryptionKey))
+        {
+            // Normal holder key update
+            auto const holderPubKey = ctx_.tx.getFieldVL(sfHolderEncryptionKey);
+            sle->setFieldVL(sfHolderEncryptionKey, holderPubKey);
+        }
+    }
 
     view().update(sle);
 

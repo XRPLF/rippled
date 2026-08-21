@@ -410,6 +410,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfAuditorEncryptionKey,     SoeOptional},
     {sfIssuerKeyEpoch,           SoeOptional},
     {sfAuditorKeyEpoch,          SoeOptional},
+    {sfHolderCount,              SoeDefault},
     {sfConfidentialOutstandingAmount, SoeDefault},
 }))
 
@@ -430,6 +431,9 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfIssuerEncryptedBalance,      SoeOptional},
     {sfAuditorEncryptedBalance,     SoeOptional},
     {sfHolderEncryptionKey,         SoeOptional},
+    {sfIssuerKeyMirrorEpoch,        SoeOptional},
+    {sfAuditorKeyMirrorEpoch,       SoeOptional},
+    {sfRecoveryKey,                 SoeOptional},
 }))
 
 /** A ledger object which tracks Oracle

@@ -138,6 +138,7 @@ TYPED_SFIELD(sfCookie,                   UINT64,    10)
 TYPED_SFIELD(sfServerVersion,            UINT64,    11)
 TYPED_SFIELD(sfNFTokenOfferNode,         UINT64,    12)
 TYPED_SFIELD(sfEmitBurden,               UINT64,    13)
+TYPED_SFIELD(sfHolderCount,              UINT64,    14)
 
 // 64-bit integers (uncommon)
 // 16 to 18 unused
@@ -322,6 +323,7 @@ TYPED_SFIELD(sfAuditorEncryptedAmount,      VL,     43)
 TYPED_SFIELD(sfAuditorEncryptionKey,        VL,     44)
 TYPED_SFIELD(sfAmountCommitment,            VL,     45)
 TYPED_SFIELD(sfBalanceCommitment,           VL,     46)
+TYPED_SFIELD(sfRecoveryKey,                 VL,     47)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)

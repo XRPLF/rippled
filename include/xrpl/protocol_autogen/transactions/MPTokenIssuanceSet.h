@@ -215,6 +215,32 @@ public:
     }
 
     /**
+     * @brief Get sfHolderEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getHolderEncryptionKey() const
+    {
+        if (hasHolderEncryptionKey())
+        {
+            return this->tx_->at(sfHolderEncryptionKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHolderEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHolderEncryptionKey() const
+    {
+        return this->tx_->isFieldPresent(sfHolderEncryptionKey);
+    }
+
+    /**
      * @brief Get sfAuditorEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -238,6 +264,32 @@ public:
     hasAuditorEncryptionKey() const
     {
         return this->tx_->isFieldPresent(sfAuditorEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfRecoveryKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getRecoveryKey() const
+    {
+        if (hasRecoveryKey())
+        {
+            return this->tx_->at(sfRecoveryKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRecoveryKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRecoveryKey() const
+    {
+        return this->tx_->isFieldPresent(sfRecoveryKey);
     }
 };
 
@@ -363,6 +415,17 @@ public:
     }
 
     /**
+     * @brief Set sfHolderEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setHolderEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfHolderEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfAuditorEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
@@ -370,6 +433,17 @@ public:
     setAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfAuditorEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRecoveryKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setRecoveryKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfRecoveryKey] = value;
         return *this;
     }
 
