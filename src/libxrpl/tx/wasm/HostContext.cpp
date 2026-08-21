@@ -4,6 +4,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
@@ -48,7 +49,9 @@ constexpr std::int32_t kHostInternal = hfErrorToInt(HostFunctionError::InternalF
 std::int32_t
 answer(rust::Slice<std::uint8_t> out, std::uint8_t const* value, std::size_t size)
 {
-    if (size <= out.size())
+    XRPL_ASSERT(
+        value != nullptr || size == 0, "xrpl::answer : nullptr value should have zero size");
+    if (value != nullptr && size <= out.size())
     {
         std::memcpy(out.data(), value, size);
     }
