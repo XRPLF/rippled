@@ -164,6 +164,7 @@ words:
   - itype
   - jemalloc
   - jlog
+  - jmeter
   - jtnofill
   - keylet
   - keylets

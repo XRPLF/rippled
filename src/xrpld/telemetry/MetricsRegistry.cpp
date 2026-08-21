@@ -68,6 +68,8 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
+#include <xrpl/telemetry/HistogramBuckets.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -88,7 +90,6 @@
 #include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -132,35 +133,15 @@ constexpr char kRpcMethodDurationUs[] = "rpc_method_us";
 constexpr char kConsensusRoundDurationMs[] = "consensus_round_duration_ms";
 
 /**
- * Bucket boundaries for microsecond-valued duration instruments.
- *
- * 100 µs, 500 µs, 1 ms, 5 ms, 10 ms, 25 ms, 50 ms, 100 ms, 250 ms, 500 ms,
- * 1 s, 2.5 s, 5 s, 10 s, 30 s, 60 s. Covers sub-millisecond jobs through
- * multi-second stalls without saturating.
- */
-constexpr std::array kMicrosecondBoundaries{
-    100.0,
-    500.0,
-    1'000.0,
-    5'000.0,
-    10'000.0,
-    25'000.0,
-    50'000.0,
-    100'000.0,
-    250'000.0,
-    500'000.0,
-    1'000'000.0,
-    2'500'000.0,
-    5'000'000.0,
-    10'000'000.0,
-    30'000'000.0,
-    60'000'000.0};
-
-/**
  * Register an explicit-bucket histogram view.
  *
  * The SDK's default boundaries top out at 10,000, so any instrument whose
- * values exceed that saturates and every quantile reads as the ceiling.
+ * values exceed that saturates and every quantile reads as the ceiling. The
+ * floor matters just as much and is easier to miss: a ladder whose first edge
+ * sits above the mass of the distribution makes every low quantile an
+ * interpolation inside bucket 0 -- a number derived from the bucket edge
+ * rather than from any sample. Both ends are chosen from measured
+ * distributions in HistogramBuckets.h.
  *
  * @param views      The registry to add the view to.
  * @param name       Instrument name to match (e.g. "job_running_us").
@@ -188,9 +169,7 @@ addHistogramView(
  * Register the microsecond-ladder view for a duration instrument.
  *
  * Job wait/run times and RPC latencies routinely exceed the SDK default
- * ceiling, so they all share `kMicrosecondBoundaries`: 100µs, 500µs, 1ms, 5ms,
- * 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s, 30s, 60s —
- * sub-millisecond jobs through multi-second stalls, without saturating.
+ * ceiling, so they all share `buckets::kMicrosecondBuckets`.
  *
  * @param views The registry to add the view to.
  * @param name  Instrument name to match (e.g. "job_running_us").
@@ -198,7 +177,10 @@ addHistogramView(
 void
 addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
 {
-    addHistogramView(views, name, {kMicrosecondBoundaries.begin(), kMicrosecondBoundaries.end()});
+    addHistogramView(
+        views,
+        name,
+        xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kMicrosecondBuckets));
 }
 
 /**
@@ -266,14 +248,17 @@ MetricsRegistry::~MetricsRegistry()
 }
 
 void
-MetricsRegistry::start(std::string const& endpoint, std::string const& instanceId)
+MetricsRegistry::start(
+    std::string const& endpoint,
+    std::string const& instanceId,
+    std::string const& nodeId)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_)
         return;
 
     JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << endpoint
-                          << ", instanceId=" << instanceId;
+                          << ", instanceId=" << instanceId << ", nodeId=" << nodeId;
 
     // Rule for anything added below: this phase may create only instruments
     // whose recording is PUSHED from app code -- counters and histograms. An
@@ -283,13 +268,14 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     // belongs in startAsyncGauges(), not here. That includes observable
     // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
     // its callback read getOverlay(), which asserts overlay_ is non-null.
-    initExporterAndProvider(endpoint, instanceId);
+    initExporterAndProvider(endpoint, instanceId, nodeId);
     initSyncInstruments();
 
     JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
 #else
     (void)endpoint;
     (void)instanceId;
+    (void)nodeId;
     (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
@@ -320,7 +306,10 @@ MetricsRegistry::startAsyncGauges()
 
 #ifdef XRPL_ENABLE_TELEMETRY
 void
-MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::string const& instanceId)
+MetricsRegistry::initExporterAndProvider(
+    std::string const& endpoint,
+    std::string const& instanceId,
+    std::string const& nodeId)
 {
     // Configure OTLP/HTTP metric exporter.
     otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
@@ -344,6 +333,11 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     attrs[opentelemetry::semconv::service::kServiceName] = std::string("xrpld");
     if (!instanceId.empty())
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
+    // xrpl.node.id: the same per-node key the trace resource carries, so
+    // metrics and traces resolve to one node. std::string for the same
+    // variant reason as service.name above.
+    if (!nodeId.empty())
+        attrs[std::string(attr::nodeId)] = nodeId;
     auto resourceAttrs = otel_resource::Resource::Create(attrs);
 
     // Build a view registry with explicit buckets for the duration
@@ -425,18 +419,13 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     // asks for at most 8, so the low buckets are fine-grained and the upper
     // ones follow the charge size bands (64, 1024) up to the hard cap.
     addHistogramView(
-        *views,
-        kGetObjectRequestObjects,
-        {1.0, 2.0, 4.0, 8.0, 16.0, 64.0, 256.0, 1'024.0, 4'096.0, 12'288.0});
+        *views, kGetObjectRequestObjects, buckets::toVector(buckets::kObjectCountBuckets));
 
     // Charge values span 0 (free tier) to ~99k for a full-size all-miss
     // request. Boundaries bracket the resource thresholds that decide a
     // peer's fate -- kWarningThreshold (5000) and kDropThreshold (25000) --
     // so a dashboard can show how close charges run to each.
-    addHistogramView(
-        *views,
-        kGetObjectCharge,
-        {0.0, 100.0, 500.0, 1'000.0, 5'000.0, 10'000.0, 25'000.0, 50'000.0, 100'000.0});
+    addHistogramView(*views, kGetObjectCharge, buckets::toVector(buckets::kChargeBuckets));
 
     // Create MeterProvider with resource, then attach the metric reader.
     provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);

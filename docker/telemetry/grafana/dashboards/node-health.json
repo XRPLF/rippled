@@ -21,11 +21,28 @@
         "enable": true,
         "hide": false,
         "iconColor": "rgb(70, 70, 70)",
-        "name": "Annotate perf-iac runs",
+        "name": "Perf Runs (JMeter)",
         "target": {
           "limit": 100,
           "matchAny": false,
-          "tags": ["perf-iac"],
+          "tags": ["perf-iac", "jmeter"],
+          "type": "tags"
+        },
+        "type": "tags"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(15, 122, 102)",
+        "name": "Perf Runs (Locust)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "locust"],
           "type": "tags"
         },
         "type": "tags"
@@ -810,7 +827,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Transitions into each operating mode, per interval.*\n\n###### How it's computed:\n*increase() over each per-mode transition counter, so each point is the number of transitions in that bucket and the series stays correct across an xrpld restart (the counters reset to 0).*\n\n###### Reading it:\n*Zero is healthy; each point is a mode change within that bucket. Brief flaps show up here even when they are too short to appear on Operating Mode (State Timeline), which can only sample state once per scrape.*\n\n###### Healthy range:\n*Few transitions once the node is stable in Full mode.*\n\n###### Watch for:\n*Frequent transitions out of Full, or into Disconnected or Syncing, indicate instability.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "description": "###### What this is:\n*Transitions into each operating mode, per interval.*\n\n###### How it's computed:\n*round(increase(...[$__interval])) over each per-mode transition counter. $__interval tiles the buckets exactly, so each bar is the transitions in that bucket and the legend Total is the true count; $__rate_interval would overlap each bucket by one scrape and inflate it (measured +5% at a 36h range, +26% zoomed in). round() removes increase()'s extrapolation, which otherwise reports fractional counts. The series stays correct across an xrpld restart (the counters reset to 0).*\n\n###### Reading it:\n*Zero is healthy; each bar is the mode changes within that bucket. Brief flaps show up here even when they are too short to appear on Operating Mode (State Timeline), which can only sample state once per scrape.*\n\n###### Healthy range:\n*Few transitions once the node is stable in Full mode.*\n\n###### Watch for:\n*Frequent transitions out of Full, or into Disconnected or Syncing, indicate instability.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* — the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::Stats`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -824,8 +841,8 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 70,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -834,7 +851,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineWidth": 0,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -864,7 +881,8 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "short",
+          "decimals": 0
         }
       },
       "gridPos": {
@@ -880,8 +898,8 @@
           "multiLane": false
         },
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
+          "calcs": ["sum", "max"],
+          "displayMode": "table",
           "enableFacetedFilter": false,
           "overflow": "ellipsis",
           "placement": "bottom",
@@ -901,7 +919,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(increase(state_accounting_full_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Full\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(round(increase(state_accounting_full_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__interval])), \"series\", \"Full\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "A"
         },
         {
@@ -909,7 +927,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(increase(state_accounting_tracking_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Tracking\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(round(increase(state_accounting_tracking_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__interval])), \"series\", \"Tracking\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "B"
         },
         {
@@ -917,7 +935,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(increase(state_accounting_syncing_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Syncing\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(round(increase(state_accounting_syncing_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__interval])), \"series\", \"Syncing\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "C"
         },
         {
@@ -925,7 +943,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(increase(state_accounting_connected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Connected\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(round(increase(state_accounting_connected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__interval])), \"series\", \"Connected\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "D"
         },
         {
@@ -933,12 +951,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(increase(state_accounting_disconnected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Disconnected\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace(round(increase(state_accounting_disconnected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__interval])), \"series\", \"Disconnected\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "E"
         }
       ],
       "title": "Operating Mode Transitions",
-      "type": "timeseries"
+      "type": "timeseries",
+      "interval": "1m"
     },
     {
       "datasource": {

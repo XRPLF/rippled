@@ -295,9 +295,15 @@ public:
      * attribute. When non-empty, Prometheus metrics
      * carry a service_instance_id label for per-node
      * filtering.
+     * @param nodeId      Value for the xrpl.node.id resource attribute (the
+     * node's base58 public key). When non-empty, metrics
+     * carry the same per-node key that traces do.
      */
     void
-    start(std::string const& endpoint, std::string const& instanceId = {});
+    start(
+        std::string const& endpoint,
+        std::string const& instanceId = {},
+        std::string const& nodeId = {});
 
     /**
      * Register the pull-model observable instruments — the second startup
@@ -1063,9 +1069,13 @@ private:
      *
      * @param endpoint OTLP/HTTP metrics endpoint URL.
      * @param instanceId service.instance.id resource attribute (may be empty).
+     * @param nodeId xrpl.node.id resource attribute (may be empty).
      */
     void
-    initExporterAndProvider(std::string const& endpoint, std::string const& instanceId);
+    initExporterAndProvider(
+        std::string const& endpoint,
+        std::string const& instanceId,
+        std::string const& nodeId);
 
     /**
      * Create the synchronous instruments (RPC and job-queue counters and

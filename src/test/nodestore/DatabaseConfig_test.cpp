@@ -14,12 +14,12 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/rngfill.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
@@ -705,7 +705,7 @@ public:
 
         DummyScheduler scheduler;
 
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set(Keys::kType, "memory");
         nodeParams.set(Keys::kPath, nodeDb.path());
@@ -774,7 +774,7 @@ public:
 
         CountingScheduler scheduler;
 
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set(Keys::kType, "nudb");
         nodeParams.set(Keys::kPath, nodeDb.path());
@@ -863,8 +863,8 @@ public:
     std::unique_ptr<DatabaseRotatingImp>
     makeRotatingDatabase(
         Scheduler& scheduler,
-        beast::TempDir const& writableDir,
-        beast::TempDir const& archiveDir)
+        TempDir const& writableDir,
+        TempDir const& archiveDir)
     {
         Section writableParams;
         writableParams.set(Keys::kType, "nudb");
@@ -907,8 +907,8 @@ public:
 
         CountingScheduler scheduler;
 
-        beast::TempDir const writableDir;
-        beast::TempDir const archiveDir;
+        TempDir const writableDir;
+        TempDir const archiveDir;
 
         auto rotating = makeRotatingDatabase(scheduler, writableDir, archiveDir);
         if (!BEAST_EXPECT(rotating))
@@ -1037,7 +1037,7 @@ public:
      * @return The database, or nullptr on failure.
      */
     std::unique_ptr<Database>
-    makeMeasuredDatabase(beast::TempDir const& dir, Scheduler& scheduler, int readThreads)
+    makeMeasuredDatabase(TempDir const& dir, Scheduler& scheduler, int readThreads)
     {
         Section params;
         params.set(Keys::kType, "nudb");
@@ -1064,7 +1064,7 @@ public:
         testcase("nodestore_state totals labels");
 
         DummyScheduler scheduler;
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set(Keys::kType, "nudb");
         nodeParams.set(Keys::kPath, nodeDb.path());
@@ -1182,7 +1182,7 @@ public:
         // publish NOTHING. Zeros here would read as a perfectly idle write
         // path on a node whose write path is simply not instrumented.
         {
-            beast::TempDir const memDb;
+            TempDir const memDb;
             Section memParams;
             memParams.set(Keys::kType, "memory");
             memParams.set(Keys::kPath, memDb.path());
@@ -1203,7 +1203,7 @@ public:
             BEAST_EXPECT(mem->getStoreCount() == 8);
         }
 
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set(Keys::kType, "nudb");
         nodeParams.set(Keys::kPath, nodeDb.path());
@@ -1336,7 +1336,7 @@ public:
         testcase("nodestore_state read-queue labels");
 
         DummyScheduler scheduler;
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         // Three read threads and a bundle of 7, neither of which is the
         // default (the bundle default is 4), so a helper reading the wrong
         // JSON member cannot agree by coincidence.

@@ -21,11 +21,28 @@
         "enable": true,
         "hide": false,
         "iconColor": "rgb(70, 70, 70)",
-        "name": "Annotate perf-iac runs",
+        "name": "Perf Runs (JMeter)",
         "target": {
           "limit": 100,
           "matchAny": false,
-          "tags": ["perf-iac"],
+          "tags": ["perf-iac", "jmeter"],
+          "type": "tags"
+        },
+        "type": "tags"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(15, 122, 102)",
+        "name": "Perf Runs (Locust)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "locust"],
           "type": "tags"
         },
         "type": "tags"

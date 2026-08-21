@@ -143,8 +143,16 @@ curl -s http://localhost:5015 -d '{"method":"server_info"}' |
 | `max_queue_size`           | `2048`                            | Max spans queued before dropping                             |
 | `use_tls`                  | `0`                               | Use TLS for exporter connection                              |
 | `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                                |
-| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS        |
-| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                      |
+| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mTLS; empty = one-way. See note        |
+| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`. See note            |
+
+> **mTLS (mutual TLS) note**: `tls_client_cert` and `tls_client_key` are optional — leaving both empty gives one-way (server-only) TLS. **If either one is set**, `enabled=1` requires both of them **and** `use_tls=1`, or the node exits at startup; see the Troubleshooting entry for `Unable to start ...: [telemetry] ...`. When `enabled=0` they are read but never validated.
+
+> **Traces and metrics also carry `xrpl.node.id`.** xrpld sets it as a resource
+> attribute alongside `service.instance.id`; the value is the node public key
+> (base58, begins with `n`). It comes from the node identity unconditionally, so
+> it is present even when `[telemetry] service_instance_id` is configured.
+> TraceQL filters on it as `resource.xrpl.node.id`.
 
 > **`consensus_trace_strategy` is not validated.** The parser copies the raw
 > string through (`TelemetryConfig.cpp:155-156`) and the only equality test in
@@ -2004,6 +2012,55 @@ attributes from their own alloy pipeline. Outside those runs the labels are
 absent; leaving the filters on **All** keeps every dashboard rendering
 normally.
 
+### Perf Run Annotations
+
+Perf load windows are drawn on the dashboards as shaded region annotations
+rather than single markers. perf-iac's
+`.github/scripts/post_grafana_annotation.sh` opens an annotation when a load
+phase starts and closes it with an end time when that phase finishes, so the
+shaded band covers exactly the interval over which the load was applied.
+
+Every dashboard carries two tag-matched annotation layers, one per load driver:
+
+| Layer                | Tags                  | Color     |
+| -------------------- | --------------------- | --------- |
+| `Perf Runs (JMeter)` | `perf-iac` + `jmeter` | grey      |
+| `Perf Runs (Locust)` | `perf-iac` + `locust` | dark teal |
+
+Both layers set `matchAny: false`, so a region is drawn only if it carries
+**both** of the layer's tags — the tag list is an AND, not an OR. Grafana tag
+matching is a superset AND-match with no negation, so a layer listing only
+`perf-iac` would also match every driver region, and "`perf-iac` but neither
+driver" cannot be expressed at all. That is why there is no catch-all layer
+beside these two: a generic layer could only ever redraw the same regions the
+driver layers already show, giving two overlapping bands and two tooltips for
+one load window.
+
+JMeter posts **two** regions per load job, one around the warm-up phase and one
+around the measured phase. Locust posts **one**, for the measured phase only,
+because it has no warm-up step — so a Locust leg shows a single band where a
+JMeter leg shows two.
+
+The driver tag is not something a run supplies. Each load workflow hardcodes it
+as a `LOAD_DRIVER` environment value (`reusable-jmeter-test.yml` sets `jmeter`,
+`reusable-locust-test.yml` sets `locust`), so it is never a dispatch input and no
+current workflow can omit it; the script warns in CI if one ever does. Alongside
+the driver, each region also carries the ticket (work item), the side (`test` or
+`baseline`), the ref, the commit, and the phase; blank values are dropped. The
+tooltip lists those, which is how one band is told from another when several runs
+overlap. The driver is carried only as a tag, not in the tooltip — which layer
+drew the band is what identifies it.
+
+Two rendering limits are worth knowing. Grafana draws annotations only on time
+series, state timeline and candlestick panels, so on a board of mostly stats and
+gauges most panels show no band. And the shaded fill is rendered at 10% opacity,
+so the two drivers' colours are near-identical inside the band; the region's two
+full-colour dashed edges and the toolbar toggles are what tell them apart. Both
+colours are deliberately muted so a band never competes with the data; the Locust
+teal is the darkest step that still separates from the JMeter grey by a readable
+margin. The grey itself sits below the 3:1 contrast floor on the dark theme, so
+its edges read faint there.
+
 ### Who owns which attribute
 
 - **Node and service** come from xrpld config (`service_instance_id`,
@@ -2160,7 +2217,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Validated Ledger Age                                         | stat       | `ledgermaster_validated_ledger_age`                                                                                                                        | —                |
 | Published Ledger Age                                         | stat       | `ledgermaster_published_ledger_age`                                                                                                                        | —                |
 | Operating Mode (Time Share)                                  | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))`                                                                                                 | —                |
-| Operating Mode Transitions                                   | timeseries | `increase(state_accounting_*_transitions[$__rate_interval])`                                                                                               | —                |
+| Operating Mode Transitions                                   | timeseries | `round(increase(state_accounting_*_transitions[$__interval]))` (bars, Min step 1m)                                                                         | —                |
 | I/O Latency                                                  | timeseries | `histogram_quantile(0.95, ios_latency_milliseconds_bucket)`                                                                                                | —                |
 | Job Queue Depth                                              | timeseries | `jobq_job_count`                                                                                                                                           | —                |
 | Ledger Fetch Rate                                            | stat       | `rate(ledger_fetches[5m])`                                                                                                                                 | —                |
@@ -2232,22 +2289,68 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | ------------------------- | ---------- | ------------------------------------------------------------- | ----------- |
 | RPC Request Rate          | stat       | `rate(rpc_requests[5m])`                                      | —           |
 | RPC Response Time         | timeseries | `histogram_quantile(0.95, rpc_time_milliseconds_bucket)`      | —           |
-| RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_milliseconds_bucket)`      | —           |
+| RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_bytes_bucket)`             | —           |
 | RPC Response Time Heatmap | heatmap    | `rpc_time_milliseconds_bucket`                                | —           |
 | Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, pathfind_fast_milliseconds_bucket)` | —           |
 | Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, pathfind_full_milliseconds_bucket)` | —           |
 | Resource Warnings Rate    | stat       | `rate(warn_total[$__rate_interval])`                          | —           |
 | Resource Drops Rate       | stat       | `rate(drop_total[$__rate_interval])`                          | —           |
 
-> **The `_milliseconds` suffix comes from the exporter, not from xrpld.** These
-> histograms are created with unit `"ms"`
-> ([OTelCollector.cpp:615](../src/libxrpl/beast/insight/OTelCollector.cpp#L615)),
-> so the Prometheus exporter appends the unit to the family name — `rpc_time`
-> becomes `rpc_time_milliseconds_bucket`. Querying the bare `rpc_time_bucket`,
+> **The unit suffix comes from the exporter, not from xrpld.** Each histogram
+> declares a unit, and the Prometheus exporter appends the unit's name to the
+> family name — a `ms` instrument like `rpc_time` becomes
+> `rpc_time_milliseconds_bucket`. Querying the bare `rpc_time_bucket`,
 > `ios_latency_bucket` or `pathfind_fast_bucket` returns no data and no error.
-> **Known issue**: `rpc_size` counts bytes but shares the same `"ms"` histogram
-> constructor, so it is exported as `rpc_size_milliseconds_bucket` — the suffix
-> is wrong, the name is nonetheless the one to query.
+>
+> The unit an `Event` declares also selects its bucket ladder, because the
+> histogram views match on unit. `rpc_size` measures bytes, so it declares
+> `Unit::Bytes` and exports as **`rpc_size_bytes_bucket`** on the byte ladder.
+> It used to share the `ms` constructor and export as
+> `rpc_size_milliseconds_bucket` on a latency ladder — if you find that name in
+> an old query or bookmark, it no longer exists.
+
+#### Reading A Histogram Percentile
+
+Two failure modes make a percentile panel lie, and neither looks like an error —
+both produce a believable number. Check for them before trusting any p95/p99.
+
+**Saturated at the top.** If the quantile falls in the `+Inf` bucket, Prometheus
+returns the **second-highest** bucket edge, not `+Inf`. A panel pinned to a round
+number that happens to equal the ladder's top edge is the signature. Confirm by
+comparing the top finite bucket against the total:
+
+```promql
+1 - (
+  sum(last_over_time(<metric>_bucket{le="<top edge>"}[15m]))
+  / sum(last_over_time(<metric>_bucket{le="+Inf"}[15m]))
+)
+```
+
+A non-trivial result means samples are being censored and the percentile is a
+lower bound, not a measurement.
+
+**Saturated at the bottom.** If nearly every sample lands in the first bucket,
+`histogram_quantile` interpolates _inside_ it and returns
+`quantile / fraction_in_bucket_0 × first_edge`. The signature is a p75/p95/p99
+that sit in near-constant proportion to each other and to the first edge — for
+example 75.5 / 95.7 / 99.7 against a 100 µs floor. Confirm with:
+
+```promql
+sum(last_over_time(<metric>_bucket{le="<first edge>"}[15m]))
+/ sum(last_over_time(<metric>_bucket{le="+Inf"}[15m]))
+```
+
+Anything close to 1 means the panel is reporting arithmetic on the bucket edge.
+
+**After a ladder change, expect a discontinuity.** Existing series keep their old
+`le` values, so a percentile panel shows a step at the restart that introduced
+new edges. That break is the ladder changing, not an incident.
+
+Bucket edges for the native instruments live in one place —
+[`include/xrpl/telemetry/HistogramBuckets.h`](../include/xrpl/telemetry/HistogramBuckets.h).
+The millisecond ladder is required to contain every representable edge of the
+collector's spanmetrics ladder; `.github/scripts/telemetry/check_bucket_parity.py`
+enforces that in CI, because the two silently drifted once already.
 
 ### Span → Metric → Dashboard Summary
 
@@ -3377,6 +3480,30 @@ not a sign the cache is working.
 - Verify endpoint URL matches collector address
 - Check firewall rules for ports 4317/4318
 - If using TLS, verify certificate path with `tls_ca_cert`
+
+### Node exits at startup with `Unable to start ...: [telemetry] ...`
+
+- Symptom: the process exits immediately with a non-zero status (255 on POSIX)
+  — a clean exit, not a crash — after printing that line on stderr. Any
+  exception thrown while the `Application` object is constructed prints the same
+  `Unable to start` prefix, so confirm the text after the colon begins with
+  `[telemetry]` before using this entry
+- Cause: the `[telemetry]` mTLS keys (`tls_client_cert` and `tls_client_key`)
+  contradict each other. Only these two mTLS checks are gated on `enabled=1`;
+  the rest of the section is still read when telemetry is off, so a malformed
+  value in any key — including `enabled` itself, which is read before the gate
+  — still fails startup with a different message
+- Fix: the two checks need different remedies, and the printed message says
+  which one fired
+  - `tls_client_cert and tls_client_key must be set together` — exactly one of
+    the two paths is set. Either delete the one that is set, or add the missing
+    one **and** set `use_tls=1`. Unless `use_tls=1` is already set, adding the
+    missing path on its own just moves the failure to the second check
+  - `tls_client_cert/tls_client_key require use_tls=1` — both paths are set but
+    TLS is off. Either set `use_tls=1`, or delete **both** paths. Deleting only
+    one of them trips the first check
+  - If you did not mean to enable telemetry at all, set `enabled=0` — that
+    clears both checks whichever one fired
 
 ### No trace_id in log output
 

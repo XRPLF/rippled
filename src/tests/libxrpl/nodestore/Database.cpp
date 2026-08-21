@@ -285,7 +285,7 @@ TEST_P(NodeStoreDatabaseTest, write_stats_forwarded_from_backend)
 TEST(NodeStoreDatabase, sub_millisecond_fetch_latency_is_reported)
 {
     CapturingScheduler scheduler;
-    beast::TempDir const nodeDb;
+    TempDir const nodeDb;
     Section nodeParams;
     nodeParams.set("type", "nudb");
     nodeParams.set("path", nodeDb.path());
@@ -490,7 +490,7 @@ TEST(NodeStoreDatabase, import_accumulates_store_duration)
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
 
-    beast::TempDir const srcDir;
+    TempDir const srcDir;
     Section srcParams;
     srcParams.set("type", "nudb");
     srcParams.set("path", srcDir.path());
@@ -504,7 +504,7 @@ TEST(NodeStoreDatabase, import_accumulates_store_duration)
     storeBatch(*src, batch);
     ASSERT_EQ(src->getStoreCount(), batch.size());
 
-    beast::TempDir const destDir;
+    TempDir const destDir;
     Section destParams;
     destParams.set("type", "nudb");
     destParams.set("path", destDir.path());

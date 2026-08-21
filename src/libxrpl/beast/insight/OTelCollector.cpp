@@ -41,6 +41,7 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/MeterImpl.h>
+#include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <opentelemetry/metrics/async_instruments.h>
@@ -57,7 +58,9 @@
 #include <atomic>
 #include <cctype>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -166,10 +169,17 @@ private:
 /**
  * @brief OTel-backed implementation of beast::insight::EventImpl.
  *
- * Wraps an OTel Histogram<double> instrument. Each notify() call
- * records the duration in milliseconds. Uses explicit bucket boundaries
- * matching the SpanMetrics connector configuration:
- *   [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000] ms
+ * Wraps an OTel Histogram<double> instrument. Each notify() call records one
+ * sample, interpreted per the Event's unit().
+ *
+ * The instrument's declared unit is what selects its bucket ladder: the
+ * histogram views registered in Telemetry.cpp match on unit, so a `ms`
+ * instrument gets the millisecond ladder and a `By` instrument the byte
+ * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h --
+ * do not restate them here. An earlier version of this comment listed
+ * `[1, 5, ..., 1000, 5000] ms` as "matching the SpanMetrics connector"; that
+ * was true when written and silently became false when the connector's
+ * ladder was extended, which is why the edges now have one owner.
  *
  * Thread safety: OTel Histogram::Record() is thread-safe by specification.
  */
@@ -181,10 +191,14 @@ public:
      *               formatName() by the collector: lowercase, with `.` and
      *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the histogram instrument.
+     * @param unit   What the samples measure. Selects the instrument's
+     *               declared unit, its description, and through the unit the
+     *               bucket ladder a histogram view applies.
      */
     OTelEventImpl(
         std::string const& name,
-        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter);
+        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
+        Unit unit);
 
     ~OTelEventImpl() override = default;
 
@@ -229,13 +243,9 @@ public:
      * @param name       Export-ready metric name, already run through
      *                   formatName() by the collector: lowercase, with `.`
      *                   and ` ` mapped to `_`.
-     * @param meter      OTel Meter used to create the observable gauge.
      * @param collector  Owning collector, used to invoke hooks before reads.
      */
-    OTelGaugeImpl(
-        std::string const& name,
-        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
-        std::shared_ptr<OTelCollectorImp> const& collector);
+    OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector);
 
     ~OTelGaugeImpl() override;
 
@@ -273,6 +283,25 @@ public:
     static void
     gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state);
 
+    /**
+     * Create the observable instrument and register the callback, once.
+     *
+     * Called when the collector is told collection is ready, because the
+     * callback reads live application state.
+     */
+    void
+    arm();
+
+    /**
+     * Remove the callback, so the reader thread stops observing this gauge.
+     *
+     * RemoveCallback is synchronous: the SDK guards its callback list and the
+     * observe pass with the same mutex, so no callback is running once this
+     * returns. Idempotent.
+     */
+    void
+    disarm();
+
 private:
     /**
      * Current gauge value, updated atomically by set()/increment().
@@ -280,9 +309,19 @@ private:
     std::atomic<int64_t> value_{0};
 
     /**
-     * OTel observable gauge handle (prevents deregistration).
+     * Export-ready metric name, held until arm() creates the instrument.
+     */
+    std::string const name_;
+
+    /**
+     * OTel observable gauge handle, null until arm() runs.
      */
     opentelemetry::nostd::shared_ptr<metrics_api::ObservableInstrument> gauge_;
+
+    /**
+     * Guards gauge_ against concurrent arm()/disarm().
+     */
+    std::mutex armMutex_;
 
     /**
      * Owning collector, used to invoke hooks before reading gauge values.
@@ -447,8 +486,17 @@ public:
     Event
     makeEvent(std::string const& name) override;
 
+    Event
+    makeEvent(std::string const& name, Unit unit) override;
+
     Gauge
     makeGauge(std::string const& name) override;
+
+    void
+    onCollectionReady() override;
+
+    void
+    onCollectionStopping() override;
 
     Meter
     makeMeter(std::string const& name) override;
@@ -502,6 +550,13 @@ public:
     void
     removeGauge(OTelGaugeImpl* gauge);
     /** @} */
+
+    /**
+     * @brief The shared Meter, for gauges creating their instrument in arm().
+     * @return The Meter this collector resolved at construction.
+     */
+    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
+    otelMeter() const;
 
     /**
      * @brief Format a raw metric name for export.
@@ -612,8 +667,10 @@ OTelCounterImpl::increment(value_type amount)
 
 OTelEventImpl::OTelEventImpl(
     std::string const& name,
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter)
-    : histogram_(meter->CreateDoubleHistogram(name, "Duration in ms", "ms"))
+    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
+    Unit unit)
+    : EventImpl(unit)
+    , histogram_(meter->CreateDoubleHistogram(name, otelUnitDescription(unit), otelUnitCode(unit)))
 {
 }
 
@@ -627,14 +684,35 @@ OTelEventImpl::notify(value_type const& value)
 // OTelGaugeImpl
 //------------------------------------------------------------------------------
 
-OTelGaugeImpl::OTelGaugeImpl(
-    std::string const& name,
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
-    std::shared_ptr<OTelCollectorImp> const& collector)
-    : gauge_(meter->CreateInt64ObservableGauge(name)), collector_(collector)
+OTelGaugeImpl::OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector)
+    : name_(std::move(name)), collector_(collector)
 {
     collector_->addGauge(this);
+}
+
+void
+OTelGaugeImpl::arm()
+{
+    // AddCallback arms the SDK reader thread against this gauge, and the
+    // callback runs hook handlers that read application services. The registry
+    // does not de-duplicate callbacks, so arm at most once.
+    std::scoped_lock const lock(armMutex_);
+    if (gauge_)
+        return;
+
+    gauge_ = collector_->otelMeter()->CreateInt64ObservableGauge(name_);
     gauge_->AddCallback(gaugeCallback, this);
+}
+
+void
+OTelGaugeImpl::disarm()
+{
+    std::scoped_lock const lock(armMutex_);
+    if (!gauge_)
+        return;
+
+    gauge_->RemoveCallback(gaugeCallback, this);
+    gauge_ = nullptr;
 }
 
 void
@@ -657,7 +735,8 @@ OTelGaugeImpl::~OTelGaugeImpl()
     // The SDK's ObservableRegistry guards its callback list and the Observe()
     // pass with the same mutex, so RemoveCallback cannot return while a
     // callback for this instrument is in flight — removal is synchronous.
-    gauge_->RemoveCallback(gaugeCallback, this);
+    // A no-op when never armed, or already disarmed at shutdown.
+    disarm();
     collector_->removeGauge(this);
 }
 
@@ -780,13 +859,19 @@ OTelCollectorImp::makeCounter(std::string const& name)
 Event
 OTelCollectorImp::makeEvent(std::string const& name)
 {
-    return Event(std::make_shared<OTelEventImpl>(formatName(name), otelMeter_));
+    return makeEvent(name, Unit::Millis);
+}
+
+Event
+OTelCollectorImp::makeEvent(std::string const& name, Unit unit)
+{
+    return Event(std::make_shared<OTelEventImpl>(formatName(name), otelMeter_, unit));
 }
 
 Gauge
 OTelCollectorImp::makeGauge(std::string const& name)
 {
-    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), otelMeter_, shared_from_this()));
+    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), shared_from_this()));
 }
 
 Meter
@@ -850,6 +935,71 @@ OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
 {
     std::scoped_lock const lock(mutex_);
     std::erase(gauges_, gauge);
+}
+
+void
+OTelCollectorImp::onCollectionReady()
+{
+    // Snapshot under the lock, arm outside it. arm() enters the SDK's
+    // observable registry lock, and the reader thread takes that lock before
+    // calling callHooks(), which wants mutex_. callHooks() copies its hook list
+    // for the same reason.
+    std::vector<OTelGaugeImpl*> gauges;
+    {
+        std::scoped_lock const lock(mutex_);
+        gauges = gauges_;
+    }
+
+    std::size_t armed = 0;
+    for (auto* gauge : gauges)
+    {
+        // Telemetry must never stop the node, so one bad instrument costs only
+        // its own metric.
+        try
+        {
+            gauge->arm();
+            ++armed;
+        }
+        catch (std::exception const& e)
+        {
+            if (auto stream = journal_.error())
+            {
+                stream << "OTelCollector: could not register an observable gauge, so that "
+                          "metric will not be exported: "
+                       << e.what();
+            }
+        }
+    }
+
+    if (auto stream = journal_.info())
+    {
+        stream << "OTelCollector: registered " << armed << " of " << gauges.size()
+               << " observable gauges";
+    }
+}
+
+void
+OTelCollectorImp::onCollectionStopping()
+{
+    // Same lock discipline as onCollectionReady(): snapshot, then act outside
+    // the lock, because disarm() enters the SDK's observable registry lock.
+    std::vector<OTelGaugeImpl*> gauges;
+    {
+        std::scoped_lock const lock(mutex_);
+        gauges = gauges_;
+    }
+
+    for (auto* gauge : gauges)
+        gauge->disarm();
+
+    if (auto stream = journal_.info())
+        stream << "OTelCollector: stopped observing " << gauges.size() << " gauges";
+}
+
+opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
+OTelCollectorImp::otelMeter() const
+{
+    return otelMeter_;
 }
 
 std::string

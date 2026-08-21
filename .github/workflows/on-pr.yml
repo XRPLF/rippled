@@ -72,6 +72,7 @@ jobs:
             .github/scripts/levelization/**
             .github/scripts/otel-naming/**
             .github/scripts/rename/**
+            .github/scripts/telemetry/**
             .github/workflows/reusable-check-levelization.yml
             .github/workflows/reusable-check-otel-naming.yml
             .github/workflows/reusable-check-rename.yml

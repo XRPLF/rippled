@@ -1,6 +1,53 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Perf Runs (JMeter)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "jmeter"],
+          "type": "tags"
+        },
+        "type": "tags"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(15, 122, 102)",
+        "name": "Perf Runs (Locust)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "locust"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "description": "What this shows: Per-job-type throughput, queue wait times, and execution times for the node's internal worker job queue.\nUse it to: Find job types that are backing up or running slowly and causing internal processing delays.",
   "editable": true,

@@ -83,7 +83,8 @@
  *
  * @note Thread safety: The Telemetry interface is safe for concurrent reads
  * (isEnabled, shouldTrace*, getTracer, startSpan) after start() completes.
- * setServiceInstanceId() must be called before start() and is not thread-safe.
+ * setServiceInstanceId() and setNodeId() must be called before start() and
+ * are not thread-safe.
  * The OTel SDK's TracerProvider and Tracer are internally thread-safe.
  */
 
@@ -192,6 +193,14 @@ public:
          * public key).
          */
         std::string serviceInstanceId;
+
+        /**
+         * OTel resource attribute `xrpl.node.id`: the node's base58-encoded
+         * public key. Always the node identity, never config-supplied, so it
+         * stays a stable per-node key even when serviceInstanceId is
+         * overridden by [telemetry] service_instance_id.
+         */
+        std::string nodeId;
 
         /**
          * OTLP/HTTP endpoint URL where spans are sent.
@@ -308,6 +317,24 @@ public:
      */
     virtual void
     setServiceInstanceId(std::string const& id)
+    {
+        // Default no-op for NullTelemetry implementations.
+        (void)id;
+    }
+
+    /**
+     * Update the node ID (OTel resource attribute `xrpl.node.id`).
+     *
+     * Must be called before start(). A setter is needed for the same reason
+     * setServiceInstanceId() needs one: the node public key is not available
+     * when Telemetry is constructed (during the ApplicationImp member
+     * initializer list), so Application::setup() injects it once
+     * nodeIdentity_ is known.
+     *
+     * @param id  The node's base58-encoded public key.
+     */
+    virtual void
+    setNodeId(std::string const& id)
     {
         // Default no-op for NullTelemetry implementations.
         (void)id;
@@ -436,8 +463,10 @@ public:
 /**
  * Create a Telemetry instance.
  *
- * Returns a TelemetryImpl when setup.enabled is true, or a
- * NullTelemetry no-op stub otherwise.
+ * With XRPL_ENABLE_TELEMETRY defined, returns a TelemetryImpl when
+ * setup.enabled is true, or a no-op stub otherwise. Without it, the only
+ * definition of this factory always returns the no-op stub and never reads
+ * setup.enabled.
  *
  * @param setup    Configuration from the [telemetry] config section.
  * @param journal  Journal for log output during initialization.
@@ -454,6 +483,14 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
  * @param networkId      Network identifier from [network_id] config
  * (0 = mainnet, 1 = testnet, 2 = devnet).
  * @return A populated Setup struct with defaults for missing values.
+ * @throws std::runtime_error  If `enabled` is set and the mutual TLS (mTLS)
+ * settings contradict each other: only one of `tls_client_cert`/`tls_client_key`
+ * is given, or a client certificate is given while `use_tls` is 0. Those two
+ * checks are skipped when `enabled` is 0.
+ * @throws boost::bad_lexical_cast  If any numeric key (`enabled`, `use_tls`,
+ * `batch_size`, the trace switches, ...) holds a value Section::valueOr cannot
+ * convert. None of the numeric reads sit inside the `enabled` branch, so this
+ * escapes whether telemetry is on or off.
  */
 Telemetry::Setup
 makeTelemetrySetup(

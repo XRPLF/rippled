@@ -35,6 +35,7 @@ import asyncio
 import fnmatch
 import json
 import logging
+import re
 import sys
 import time
 from dataclasses import dataclass, field
@@ -42,6 +43,11 @@ from pathlib import Path
 from typing import Any
 
 import aiohttp
+
+# Loki's default query window is the last hour. A validation run finishes in
+# minutes, but bounding the range explicitly keeps the query reproducible when
+# someone re-runs it later to investigate a result.
+LOG_QUERY_WINDOW_SECONDS = 4 * 60 * 60
 
 logger = logging.getLogger("validate_telemetry")
 
@@ -173,6 +179,19 @@ class ValidationReport:
 # ---------------------------------------------------------------------------
 # Tempo API helpers
 # ---------------------------------------------------------------------------
+
+
+def _log_query_window() -> dict[str, str]:
+    """Loki query_range bounds covering a validation run.
+
+    Returns:
+        start/end parameters in nanoseconds since the epoch.
+    """
+    now = time.time()
+    return {
+        "start": str(int((now - LOG_QUERY_WINDOW_SECONDS) * 1_000_000_000)),
+        "end": str(int(now * 1_000_000_000)),
+    }
 
 
 async def _tempo_search(
@@ -1092,9 +1111,13 @@ async def validate_log_trace_correlation(
     # Check 1: Any logs with trace_id exist.
     try:
         params = {
-            "query": '{job="xrpld"} |= "trace_id="',
+            # Loki's OTLP ingestion promotes service.name to the label
+            # `service_name`. A `job` attribute is structured metadata, which a
+            # stream selector cannot match — see otel-collector-config.yaml.
+            "query": '{service_name="xrpld"} |= "trace_id="',
             "limit": 5,
             "direction": "backward",
+            **_log_query_window(),
         }
         async with session.get(
             f"{loki_url}/loki/api/v1/query_range", params=params
@@ -1125,56 +1148,79 @@ async def validate_log_trace_correlation(
             )
         )
 
-    # Check 2: Cross-reference a trace_id from Tempo to Loki.
+    # Check 2: Cross-reference a trace_id from a log line back to Tempo.
+    #
+    # Driven from the log side on purpose. A trace_id only reaches a log line
+    # when that line is emitted inside a sampled span, and at `warning` level
+    # most spans produce no log output at all — so picking an arbitrary trace
+    # from Tempo and expecting it in Loki fails even when correlation works.
+    # Starting from a logged trace_id tests the invariant that matters: an id
+    # written to a log must resolve to a trace that was actually exported.
     try:
-        # Get a recent trace from Tempo.
-        traces = await _tempo_search(
-            session,
-            tempo_url,
-            '{resource.service.name="xrpld"}',
-            limit=1,
-        )
+        loki_params = {
+            "query": '{service_name="xrpld"} |= "trace_id="',
+            "limit": 5,
+            "direction": "backward",
+            **_log_query_window(),
+        }
+        async with session.get(
+            f"{loki_url}/loki/api/v1/query_range", params=loki_params
+        ) as resp:
+            data = await resp.json()
+            streams = data.get("data", {}).get("result", [])
 
-        if traces:
-            trace_id = traces[0].get("traceID", "")
-            if trace_id:
-                # Search Loki for this trace_id.
-                loki_params = {
-                    "query": f'{{job="xrpld"}} |= "{trace_id}"',
-                    "limit": 5,
-                    "direction": "backward",
-                }
-                async with session.get(
-                    f"{loki_url}/loki/api/v1/query_range",
-                    params=loki_params,
-                ) as loki_resp:
-                    loki_data = await loki_resp.json()
-                    loki_streams = loki_data.get("data", {}).get("result", [])
-                    loki_count = sum(len(s.get("values", [])) for s in loki_streams)
-                    report.add(
-                        CheckResult(
-                            name="log.trace_id_cross_reference",
-                            category="log",
-                            passed=loki_count > 0,
-                            message=(
-                                f"trace_id {trace_id[:16]}... found in "
-                                f"{loki_count} Loki entries"
-                                if loki_count > 0
-                                else f"trace_id {trace_id[:16]}... not found " "in Loki"
-                            ),
-                            details={
-                                "trace_id": trace_id,
-                                "loki_count": loki_count,
-                            },
-                        )
-                    )
-        else:
+        logged_ids = [
+            match.group(1)
+            for stream in streams
+            for _, line in stream.get("values", [])
+            if (match := re.search(r"trace_id=([0-9a-f]{32})", line))
+        ]
+
+        if not logged_ids:
             report.add(
                 CheckResult(
                     name="log.trace_id_cross_reference",
                     category="log",
                     passed=False,
-                    message="No traces in Tempo to cross-reference",
+                    message=(
+                        "No logged trace_id to cross-reference. Log lines carry one only "
+                        "when emitted inside a sampled span; raise the log level or widen "
+                        "the workload if this persists."
+                    ),
+                )
+            )
+        else:
+            # Try every id found, not just the first: one unexported trace
+            # should not fail the check while correlation demonstrably works.
+            resolved: str | None = None
+            span_count = 0
+            unique_ids = list(dict.fromkeys(logged_ids))
+            for candidate in unique_ids:
+                try:
+                    spans = await _tempo_get_trace(session, tempo_url, candidate)
+                except Exception:  # noqa: BLE001 - a 404 is "not found", not an error
+                    continue
+                if spans:
+                    resolved, span_count = candidate, len(spans)
+                    break
+
+            report.add(
+                CheckResult(
+                    name="log.trace_id_cross_reference",
+                    category="log",
+                    passed=resolved is not None,
+                    message=(
+                        f"logged trace_id {resolved[:16]}... resolves to "
+                        f"{span_count} spans in Tempo"
+                        if resolved
+                        else f"none of {len(unique_ids)} logged trace_id(s) resolve in "
+                        "Tempo; the spans they name were not exported"
+                    ),
+                    details={
+                        "trace_id": resolved,
+                        "span_count": span_count,
+                        "candidates": len(unique_ids),
+                    },
                 )
             )
     except Exception as exc:
