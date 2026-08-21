@@ -757,8 +757,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // We're going to fire an Invariant failure that is difficult to
             // cause.  We do it here because the tools are here.
             //
-            // See Invariants_test.cpp for examples of other invariant tests
-            // that this one is modeled after.
+            // See InvariantsMisc_test.cpp for examples of other invariant
+            // tests that this one is modeled after.
 
             // Generate three closely packed NFTokenPages.
             std::vector<uint256> nfts = genPackedTokens();
