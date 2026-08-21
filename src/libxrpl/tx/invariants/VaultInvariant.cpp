@@ -811,9 +811,8 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         // impair/unimpair the residual is rounded once.
         if (oneLoan)
         {
-            Number const expectedDelta = beforeLoan_[0].impaired
-                ? -beforeLoan_[0].ownedToVault(afterVault.version)
-                : kZero;
+            Number const expectedDelta =
+                beforeLoan_[0].impaired ? -beforeLoan_[0].ownedToVault(afterVault.version) : kZero;
             auto const residual = roundToAsset(
                 vaultAsset,
                 (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
@@ -919,7 +918,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                 // zero (all balance fields are zeroed), and DebtTotal drops by
                 // the same amount (LoanManage.cpp:244 decrements by
                 // loanVaultExposure). Same delta identity as finalizeLoanPay
-                // (items 22/23), specialised to the default sub-op.
+                // (items 22/23), specialized to the default sub-op.
                 auto const brokerResidual = roundToAsset(
                     vaultAsset,
                     (afterBroker.debtTotal - beforeBroker.debtTotal) -
@@ -1063,7 +1062,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
 
     // The amount the loan owes to the vault is accounting-basis dependent, so
     // both checks below are evaluated with the value the vault actually
-    // recognises. Under accrual it carries the interest, which assets
+    // recognizes. Under accrual it carries the interest, which assets
     // outstanding already booked at origination; under cash-basis it is
     // principal only and assets outstanding grow by the interest as it is
     // received.
@@ -1443,9 +1442,9 @@ ValidVault::finalize(
 
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-        if (beforeShares &&
-            beforeShares->sharesTotal != updatedShares->sharesTotal && txnType != ttVAULT_DEPOSIT &&
-            txnType != ttVAULT_WITHDRAW && txnType != ttVAULT_CLAWBACK)
+        if (beforeShares && beforeShares->sharesTotal != updatedShares->sharesTotal &&
+            txnType != ttVAULT_DEPOSIT && txnType != ttVAULT_WITHDRAW &&
+            txnType != ttVAULT_CLAWBACK)
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: shares outstanding must only change by "

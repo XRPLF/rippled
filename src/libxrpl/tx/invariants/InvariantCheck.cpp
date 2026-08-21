@@ -1109,7 +1109,7 @@ ValidPseudoAccounts::finalize(
         for (auto const& sle : pseudoAccounts_)
         {
             if (!sle)
-                continue;    // LCOV_EXCL_LINE
+                continue;  // LCOV_EXCL_LINE
             AccountID const accID = sle->at(sfAccount);
             if (auto const vaultID = (*sle)[~sfVaultID])
             {

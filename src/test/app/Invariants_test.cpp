@@ -2012,12 +2012,11 @@ class Invariants_test : public beast::unit_test::Suite
         // whose sfAccount points back at the pseudo. Repoint the pseudo-account
         // at a keylet with no broker so the lookup returns nothing.
         Keylet loanBrokerKeylet = keylet::amendments();
-        Preclose const createBroker =
-            [&, this](Account const& a, Account const&, Env& env) {
-                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-                loanBrokerKeylet = this->createLoanBroker(a, env, xrpAsset);
-                return BEAST_EXPECT(env.le(loanBrokerKeylet));
-            };
+        Preclose const createBroker = [&, this](Account const& a, Account const&, Env& env) {
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            loanBrokerKeylet = this->createLoanBroker(a, env, xrpAsset);
+            return BEAST_EXPECT(env.le(loanBrokerKeylet));
+        };
 
         doInvariantCheck(
             {{"pseudo-account LoanBrokerID does not resolve to a broker "
@@ -2026,8 +2025,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleBroker = ac.view().peek(loanBrokerKeylet);
                 if (!BEAST_EXPECT(sleBroker))
                     return false;
-                auto slePseudo =
-                    ac.view().peek(keylet::account(sleBroker->at(sfAccount)));
+                auto slePseudo = ac.view().peek(keylet::account(sleBroker->at(sfAccount)));
                 if (!BEAST_EXPECT(slePseudo))
                     return false;
                 // Point the pseudo-account at a keylet with no broker.
@@ -2646,16 +2644,13 @@ class Invariants_test : public beast::unit_test::Suite
             auto const cases = std::to_array<Case>({
                 {.before = lsfLoanOverpayment,
                  .after = 0,
-                 .expected =
-                     "lsfLoanOverpayment flag toggled on immutable ledger entry"},
+                 .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry"},
                 {.before = 0,
                  .after = lsfLoanOverpayment,
-                 .expected =
-                     "lsfLoanOverpayment flag toggled on immutable ledger entry"},
+                 .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry"},
                 {.before = lsfLoanDefault,
                  .after = 0,
-                 .expected =
-                     "lsfLoanDefault flag cleared on immutable ledger entry"},
+                 .expected = "lsfLoanDefault flag cleared on immutable ledger entry"},
             });
 
             for (auto const& c : cases)
@@ -2667,10 +2662,8 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -2686,13 +2679,7 @@ class Invariants_test : public beast::unit_test::Suite
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(),
-                    ov,
-                    tx,
-                    tesSUCCESS,
-                    env.current()->fees().base,
-                    TapNone,
-                    jlog};
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 auto sleLoan = ac.view().peek(loanKeylet);
@@ -2731,10 +2718,8 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -2750,13 +2735,7 @@ class Invariants_test : public beast::unit_test::Suite
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(),
-                    ov,
-                    tx,
-                    tesSUCCESS,
-                    env.current()->fees().base,
-                    TapNone,
-                    jlog};
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 auto sleLoan = ac.view().peek(loanKeylet);
@@ -2771,8 +2750,7 @@ class Invariants_test : public beast::unit_test::Suite
                 TER const result = transactor->checkInvariants(
                     tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
                 BEAST_EXPECT(result == tecINVARIANT_FAILED);
-                BEAST_EXPECT(sink.messages().str().contains(
-                    "Loan Overpayment flag changed"));
+                BEAST_EXPECT(sink.messages().str().contains("Loan Overpayment flag changed"));
             }
         }
 
@@ -4245,8 +4223,7 @@ class Invariants_test : public beast::unit_test::Suite
             makeEnv(defaultAmendments() - featureLendingProtocolV1_1),
             {},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(
                     ac.view(),
                     keylet,
@@ -4297,12 +4274,10 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            STTx const tx{
-                ttLOAN_SET,
-                [&](STObject& t) {
-                    t.at(sfPrincipalRequested) = Number(100);
-                    t.at(sfLoanBrokerID) = brokerKeylet.key;
-                }};
+            STTx const tx{ttLOAN_SET, [&](STObject& t) {
+                              t.at(sfPrincipalRequested) = Number(100);
+                              t.at(sfLoanBrokerID) = brokerKeylet.key;
+                          }};
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
@@ -4387,12 +4362,10 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            STTx const tx{
-                ttLOAN_SET,
-                [&](STObject& t) {
-                    t.at(sfPrincipalRequested) = Number(100);
-                    t.at(sfLoanBrokerID) = brokerKeylet.key;
-                }};
+            STTx const tx{ttLOAN_SET, [&](STObject& t) {
+                              t.at(sfPrincipalRequested) = Number(100);
+                              t.at(sfLoanBrokerID) = brokerKeylet.key;
+                          }};
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
@@ -4487,12 +4460,10 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            STTx const tx{
-                ttLOAN_SET,
-                [&](STObject& t) {
-                    t.at(sfPrincipalRequested) = Number(100);
-                    t.at(sfLoanBrokerID) = brokerKeylet.key;
-                }};
+            STTx const tx{ttLOAN_SET, [&](STObject& t) {
+                              t.at(sfPrincipalRequested) = Number(100);
+                              t.at(sfLoanBrokerID) = brokerKeylet.key;
+                          }};
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
@@ -4587,12 +4558,10 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            STTx const tx{
-                ttLOAN_SET,
-                [&](STObject& t) {
-                    t.at(sfPrincipalRequested) = Number(100);
-                    t.at(sfLoanBrokerID) = brokerKeylet.key;
-                }};
+            STTx const tx{ttLOAN_SET, [&](STObject& t) {
+                              t.at(sfPrincipalRequested) = Number(100);
+                              t.at(sfLoanBrokerID) = brokerKeylet.key;
+                          }};
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
@@ -4828,8 +4797,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ov.rawReplace(sleVault);
             }
 
-            STTx const tx{
-                ttLOAN_MANAGE, [](STObject& t) { t.setFieldU32(sfFlags, tfLoanImpair); }};
+            STTx const tx{ttLOAN_MANAGE, [](STObject& t) { t.setFieldU32(sfFlags, tfLoanImpair); }};
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
@@ -4900,8 +4868,7 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 // Seed the vault with the initial lossUnrealized so the
                 // apply-view mutation registers as a bounded delta.
                 {
@@ -4915,8 +4882,7 @@ class Invariants_test : public beast::unit_test::Suite
 
                 // Seed a loan in the base view with `ownedToVault` == 100 so
                 // the magnitude check has a definite target.
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -4933,13 +4899,7 @@ class Invariants_test : public beast::unit_test::Suite
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(),
-                    ov,
-                    tx,
-                    tesSUCCESS,
-                    env.current()->fees().base,
-                    TapNone,
-                    jlog};
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 // Modify lossUnrealized by the wrong delta (50 instead of 100).
@@ -5003,10 +4963,8 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -5023,13 +4981,7 @@ class Invariants_test : public beast::unit_test::Suite
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(),
-                    ov,
-                    tx,
-                    tesSUCCESS,
-                    env.current()->fees().base,
-                    TapNone,
-                    jlog};
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 auto sleLoan = ac.view().peek(loanKeylet);
@@ -5083,10 +5035,8 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -5103,13 +5053,7 @@ class Invariants_test : public beast::unit_test::Suite
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(),
-                    ov,
-                    tx,
-                    tesSUCCESS,
-                    env.current()->fees().base,
-                    TapNone,
-                    jlog};
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 auto sleLoan = ac.view().peek(loanKeylet);
@@ -5219,8 +5163,7 @@ class Invariants_test : public beast::unit_test::Suite
             makeEnv(defaultAmendments() - featureLendingProtocolV1_1),
             {},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, Adjustments{});
             },
             XRPAmount{},
@@ -5451,8 +5394,7 @@ class Invariants_test : public beast::unit_test::Suite
             // The pre-inserted loan carries a default (zero) sfLoanBrokerID,
             // which does not resolve to a live broker; the broker-existence
             // check must therefore also fire in the same walk.
-            BEAST_EXPECT(sink.messages().str().contains(
-                "loan pay loan broker must exist"));
+            BEAST_EXPECT(sink.messages().str().contains("loan pay loan broker must exist"));
         }
 
         // ttLOAN_PAY: the vault's claim on the loan may only shrink. A payment
@@ -5552,10 +5494,8 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -5573,13 +5513,7 @@ class Invariants_test : public beast::unit_test::Suite
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(),
-                    ov,
-                    tx,
-                    tesSUCCESS,
-                    env.current()->fees().base,
-                    TapNone,
-                    jlog};
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 // Cash inflow of 50 with matching bookkeeping so the earlier
@@ -5795,8 +5729,7 @@ class Invariants_test : public beast::unit_test::Suite
                     sleBroker->at(sfDebtTotal) = Number(150);
                     ov.rawReplace(sleBroker);
                 }
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
@@ -5812,18 +5745,11 @@ class Invariants_test : public beast::unit_test::Suite
                 }
 
                 STTx const tx{
-                    ttLOAN_PAY,
-                    [](STObject& t) { t.setFieldAmount(sfAmount, XRPAmount(50)); }};
+                    ttLOAN_PAY, [](STObject& t) { t.setFieldAmount(sfAmount, XRPAmount(50)); }};
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(),
-                    ov,
-                    tx,
-                    tesSUCCESS,
-                    env.current()->fees().base,
-                    TapNone,
-                    jlog};
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 // Cash inflow of 50 with matching bookkeeping: vault balance
@@ -5836,8 +5762,7 @@ class Invariants_test : public beast::unit_test::Suite
                         Adjustments{
                             .assetsAvailable = 50,
                             .vaultAssets = 50,
-                            .accountAssets =
-                                AccountAmount{.account = a2.id(), .amount = -50}})))
+                            .accountAssets = AccountAmount{.account = a2.id(), .amount = -50}})))
                     continue;
 
                 auto sleLoan = ac.view().peek(loanKeylet);
@@ -5998,29 +5923,25 @@ class Invariants_test : public beast::unit_test::Suite
             Preclose const createNonTransferableVault =
                 [&mptokenKeylet, &vaultKeylet, this](
                     Account const& a1, Account const& a2, Env& env) -> bool {
-                    Vault const vault{env};
-                    auto [tx, vk] = vault.create(
-                        {.owner = a1,
-                         .asset = xrpIssue(),
-                         .flags = tfVaultShareNonTransferable});
-                    vaultKeylet = vk;
-                    env(tx);
-                    env.close();
-                    if (!BEAST_EXPECT(env.le(vaultKeylet)))
-                        return false;
-                    // a2 deposits so a share MPToken position exists for
-                    // that holder in the base view.
-                    env(vault.deposit(
-                        {.depositor = a2, .id = vaultKeylet.key, .amount = XRP(100)}));
-                    env.close();
+                Vault const vault{env};
+                auto [tx, vk] = vault.create(
+                    {.owner = a1, .asset = xrpIssue(), .flags = tfVaultShareNonTransferable});
+                vaultKeylet = vk;
+                env(tx);
+                env.close();
+                if (!BEAST_EXPECT(env.le(vaultKeylet)))
+                    return false;
+                // a2 deposits so a share MPToken position exists for
+                // that holder in the base view.
+                env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = XRP(100)}));
+                env.close();
 
-                    auto const sleVault = env.le(vaultKeylet);
-                    if (!BEAST_EXPECT(sleVault))
-                        return false;
-                    mptokenKeylet =
-                        keylet::mptoken(sleVault->at(sfShareMPTID), a2.id());
-                    return BEAST_EXPECT(env.le(mptokenKeylet));
-                };
+                auto const sleVault = env.le(vaultKeylet);
+                if (!BEAST_EXPECT(sleVault))
+                    return false;
+                mptokenKeylet = keylet::mptoken(sleVault->at(sfShareMPTID), a2.id());
+                return BEAST_EXPECT(env.le(mptokenKeylet));
+            };
 
             // Touch the share MPToken under a ttVAULT_SET (MustModifyVault
             // txn not excluded from the non-transferable check). The vault
@@ -6222,9 +6143,7 @@ class Invariants_test : public beast::unit_test::Suite
             if (!BEAST_EXPECT(kAdjust(
                     ac.view(),
                     vaultKeylet,
-                    Adjustments{
-                        .assetsAvailable = 100,
-                        .vaultAssets = 100})))
+                    Adjustments{.assetsAvailable = 100, .vaultAssets = 100})))
                 return;
 
             // Broker pseudo-account -100 mirrors the vault gain (cover
@@ -6358,9 +6277,7 @@ class Invariants_test : public beast::unit_test::Suite
             if (!BEAST_EXPECT(kAdjust(
                     ac.view(),
                     vaultKeylet,
-                    Adjustments{
-                        .assetsAvailable = 100,
-                        .vaultAssets = 100})))
+                    Adjustments{.assetsAvailable = 100, .vaultAssets = 100})))
                 return;
 
             {
@@ -6673,9 +6590,7 @@ class Invariants_test : public beast::unit_test::Suite
             if (!BEAST_EXPECT(kAdjust(
                     ac.view(),
                     vaultKeylet,
-                    Adjustments{
-                        .assetsAvailable = 50,
-                        .vaultAssets = 100})))
+                    Adjustments{.assetsAvailable = 50, .vaultAssets = 100})))
                 return;
 
             // Broker pseudo-account -100 mirrors the vault gain (cover
@@ -6788,9 +6703,7 @@ class Invariants_test : public beast::unit_test::Suite
             if (!BEAST_EXPECT(kAdjust(
                     ac.view(),
                     vaultKeylet,
-                    Adjustments{
-                        .assetsAvailable = 100,
-                        .vaultAssets = 100})))
+                    Adjustments{.assetsAvailable = 100, .vaultAssets = 100})))
                 return;
 
             // Broker pseudo-account -100 (cover conservation).
@@ -6893,8 +6806,7 @@ class Invariants_test : public beast::unit_test::Suite
             TER const result = transactor->checkInvariants(
                 tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
-            BEAST_EXPECT(sink.messages().str().contains(
-                "loan default loan broker must exist"));
+            BEAST_EXPECT(sink.messages().str().contains("loan default loan broker must exist"));
         }
 
         // A loan may only be deleted by a LoanDelete transaction, and only once
@@ -7023,8 +6935,7 @@ class Invariants_test : public beast::unit_test::Suite
             TER const result = transactor->checkInvariants(
                 tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
-            BEAST_EXPECT(sink.messages().str().contains(
-                "Loan deleted while not fully paid off"));
+            BEAST_EXPECT(sink.messages().str().contains("Loan deleted while not fully paid off"));
         }
 
         {
@@ -7172,8 +7083,7 @@ class Invariants_test : public beast::unit_test::Suite
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 auto const vaultKeylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 auto sleLoan = std::make_shared<SLE>(loanKeylet);
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
@@ -7192,8 +7102,7 @@ class Invariants_test : public beast::unit_test::Suite
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 auto const vaultKeylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto const loanKeylet =
-                    keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 auto sleLoan = std::make_shared<SLE>(loanKeylet);
                 sleLoan->at(sfPrincipalOutstanding) = Number(0);
                 sleLoan->at(sfTotalValueOutstanding) = Number(0);
@@ -7231,8 +7140,8 @@ class Invariants_test : public beast::unit_test::Suite
         // the broker-vault-existence check trips.
         {
             Keylet brokerKeylet = keylet::amendments();
-            auto const precloseBroker =
-                [&brokerKeylet, this](Account const& a1, Account const&, Env& env) -> bool {
+            auto const precloseBroker = [&brokerKeylet, this](
+                                            Account const& a1, Account const&, Env& env) -> bool {
                 PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
                 brokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
                 env.close();

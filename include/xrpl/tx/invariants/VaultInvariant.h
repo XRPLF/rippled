@@ -298,11 +298,8 @@ private:
      * @return @c true when the funding-side invariants hold.
      */
     [[nodiscard]] bool
-    checkLoanFunding(
-        STTx const& tx,
-        XRPAmount fee,
-        ReadView const& view,
-        beast::Journal const& j) const;
+    checkLoanFunding(STTx const& tx, XRPAmount fee, ReadView const& view, beast::Journal const& j)
+        const;
 
     /**
      * @brief Invariant check for @c ttLOAN_SET.
@@ -320,11 +317,8 @@ private:
      * @return @c true when all @c ttLOAN_SET invariants hold.
      */
     [[nodiscard]] bool
-    finalizeLoanSet(
-        STTx const& tx,
-        XRPAmount fee,
-        ReadView const& view,
-        beast::Journal const& j) const;
+    finalizeLoanSet(STTx const& tx, XRPAmount fee, ReadView const& view, beast::Journal const& j)
+        const;
 
     /**
      * @brief Enforce the invariants specific to a @c ttLOAN_MANAGE
