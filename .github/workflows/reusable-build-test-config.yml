@@ -336,14 +336,6 @@ jobs:
         run: |
           ./xrpld --version | grep libvoidstar
 
-      - name: Run Rust tests
-        if: ${{ !inputs.build_only }}
-        working-directory: crates
-        # `xrpl-wasm-vm-ffi` is left out on Windows: its tests link as an executable, and
-        # MSVC - unlike the Unix linkers - will not dead-strip the never-called cxx wrappers
-        # whose C++ shims only the CMake build defines. The other runners cover these tests.
-        run: cargo nextest run --workspace --all-features --locked --no-tests=warn ${{ runner.os == 'Windows' && '--exclude xrpl-wasm-vm-ffi' || '' }}
-
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
@@ -381,7 +373,10 @@ jobs:
       - name: Run Rust tests
         if: ${{ !inputs.build_only }}
         working-directory: crates
-        run: cargo nextest run --workspace --all-features --locked --no-tests=warn
+        # `xrpl-wasm-vm-ffi` is left out on Windows: its tests link as an executable, and
+        # MSVC - unlike the Unix linkers - will not dead-strip the never-called cxx wrappers
+        # whose C++ shims only the CMake build defines. The other runners cover these tests.
+        run: cargo nextest run --workspace --all-features --locked --no-tests=warn ${{ runner.os == 'Windows' && '--exclude xrpl-wasm-vm-ffi' || '' }}
 
       # Smoke-run every benchmark module with a single repetition to confirm the
       # benchmarks still build and execute. This is a correctness check, not a
