@@ -31,9 +31,9 @@
 
 namespace xrpl::test {
 
-// Shared fixture for VaultInvariantPrecision_test and
-// VaultTransactorPrecision_test (PR 2).  Both PRs land this file identically;
-// whichever merges second will need to reconcile this copy at rebase time.
+// Shared fixture for VaultInvariantPrecision_test and VaultTransactorPrecision_test.
+// Also landed identically on the companion invariant-fix branch; reconcile this copy
+// against that branch's version on rebase.
 //
 // Layout:
 //   - A-1 (impairAndPaySibling=false): 1000 USD vault + one ordinary loan.

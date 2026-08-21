@@ -780,6 +780,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(VaultTransactorPrecision, tx, xrpl);
+BEAST_DEFINE_TESTSUITE(VaultTransactorPrecision, app, xrpl);
 
 }  // namespace xrpl::test

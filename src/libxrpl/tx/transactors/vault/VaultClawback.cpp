@@ -409,13 +409,42 @@ VaultClawback::doApply()
     // Even a non-zero recovery can be too small to change the stored sfAssetsTotal or
     // sfAssetsAvailable at STAmount's precision. Shares would still be burned, so ValidVault
     // would fail after apply with "clawback must decrease vault balance"; reject here instead.
-    if (view().rules().enabled(fixCleanup3_4_0) &&
-        (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered) ||
-         debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsRecovered)))
+    // On the issuer-clawback path this is effectively unreachable once fixCleanup3_4_0 is
+    // active, since assetsToClawback's own clampToAssetsTotalScale already snapped
+    // assetsRecovered to the grid; kept as defense in depth and to cover the owner-burn path,
+    // where assetsRecovered is not put through that clamp.
+    //
+    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught
+    // below. debitIsNonZeroDust converts assetsTotal/assetsAvailable to STAmount, which is
+    // exactly what a sufficiently abused sfScale can push out of STAmount's representable
+    // range.
+    if (view().rules().enabled(fixCleanup3_4_0))
     {
-        JLOG(j_.debug()) << "VaultClawback: clawback amount too small to change stored vault"
-                            " balance";
-        return tecPRECISION_LOSS;
+        try
+        {
+            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered) ||
+                debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsRecovered))
+            {
+                JLOG(j_.debug())
+                    << "VaultClawback: clawback amount too small to change stored vault"
+                       " balance";
+                return tecPRECISION_LOSS;
+            }
+        }
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultClawback: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            // Overflow means this transaction cannot apply, but ledger state is still
+            // consistent. Return tecPATH_DRY rather than a hard internal error.
+            return tecPATH_DRY;
+        }
     }
 
     // Debit both rails by the same delta so sfAssetsTotal and sfAssetsAvailable stay in step,

@@ -44,14 +44,18 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
 
 /**
- * Rounds the magnitude of `delta` to the sfAssetsTotal STAmount scale and
- * returns it as a non-negative STAmount. `delta` is positive when
- * crediting the vault and negative when debiting it; only its sign is
- * used to select the rounding direction. The caller adds the returned
- * magnitude to sfAssetsTotal for credits, or subtracts it for debits, and
- * applies it the same way to any related field (for example
- * sfAssetsAvailable) so all rails stay in sync; the other fields' scale is
- * at least as fine as sfAssetsTotal's.
+ * Returns the effective change to sfAssetsTotal after canonicalizing
+ * `sfAssetsTotal + delta` under `mode`, as a non-negative magnitude.
+ * `delta` is positive when crediting the vault and negative when debiting
+ * it; only its sign is used to select the rounding direction. This is not
+ * the same as simply rounding `delta`'s magnitude to sfAssetsTotal's
+ * scale: both the before and after totals are canonicalized under `mode`
+ * before subtracting, so the result also accounts for sfAssetsTotal
+ * itself sitting mid-grid. The caller adds the returned magnitude to
+ * sfAssetsTotal for credits, or subtracts it for debits, and applies it
+ * the same way to any related field (for example sfAssetsAvailable) so
+ * all rails stay in sync; the other fields' scale is at least as fine as
+ * sfAssetsTotal's.
  *
  * @param vault The vault SLE.
  * @param delta The signed amount by which sfAssetsTotal will change; only
