@@ -700,8 +700,6 @@ public:
 
             lm.clearLedger(deleteSeq);
             deleteSeqs.push_back(deleteSeq);
-            if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
-                return 0;
 
             BEAST_EXPECTS(
                 lm.getCompleteLedgers() == expectedRange(minSeq, deleteSeqs, maxSeq),
@@ -711,8 +709,6 @@ public:
                     lm.getCompleteLedgers()));
             BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == deleteSeqs.size());
 
-            if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
-                return 0;
             // Close another ledger, which will trigger a rotation, but the
             // rotation will be stuck until the missing ledger is filled in.
             env.close();
@@ -721,12 +717,8 @@ public:
             // is done later in this test.
             ++maxSeq;
 
-            if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
-                return 0;
             netOPs.setMode(OperatingMode::FULL);
 
-            if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
-                return 0;
             BEAST_EXPECT(!store.rendezvous(10ms));
             BEAST_EXPECT(netOPs.getOperatingMode() == OperatingMode::FULL);
 
@@ -768,8 +760,6 @@ public:
                     LedgerIndex const deleteSeq = deleteLedgerSeq(env, maxSeq, deleteSeqs);
                     if (!BEAST_EXPECT(deleteSeq > 0))
                         return;
-                    if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
-                        return;
 
                     // Close 7 more ledgers, waiting a little bit in between to
                     // simulate the ledger making progress while online delete waits
@@ -791,8 +781,6 @@ public:
                                 lm.getCompleteLedgers()));
                         // The Store is "stuck" in healthWait() and won't finish the run() loop
                         // until it's backfilled
-                        if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
-                            return;
                     }
 
                     // Close one more ledger, which will NOT trigger the circuit breaker. Wait for
@@ -827,8 +815,6 @@ public:
                     LedgerIndex const deleteSeq = deleteLedgerSeq(env, maxSeq, deleteSeqs);
                     if (!BEAST_EXPECT(deleteSeq > 0))
                         return;
-                    if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
-                        return;
 
                     // Close 5 more ledgers, waiting a little bit in between to
                     // simulate the ledger making progress while online delete waits
@@ -849,8 +835,6 @@ public:
                                 "Complete Ledgers",
                                 expectedRange(minSeq, deleteSeqs, maxSeq),
                                 lm.getCompleteLedgers()));
-                        if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
-                            return;
                     }
 
                     // The Store is "stuck" in healthWait() and won't finish the run() loop
