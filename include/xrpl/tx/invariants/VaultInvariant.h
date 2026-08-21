@@ -288,6 +288,11 @@ private:
     [[nodiscard]] static bool
     isVaultEmpty(Vault const& vault);
 
+    // Distinguishes the two cardinality patterns @c exactlyOneLoan checks.
+    // Named enum used at the call site so the intent is legible without a
+    // comment.
+    enum class LoanOp { Create, Modify };
+
     /**
      * @brief Verify that the transaction touched exactly one loan.
      *
@@ -295,12 +300,12 @@ private:
      * @c ttLOAN_MANAGE and @c ttLOAN_PAY each modify one. The per-transaction checks below index
      * the loan snapshots directly, so this must hold before they run.
      *
-     * @param isCreate      Whether the loan is expected to be created (rather than modified).
+     * @param op            Whether the loan is expected to be created or modified.
      * @param j             Journal for logging invariant failures.
      * @return @c true when exactly one loan was created, respectively modified.
      */
     [[nodiscard]] bool
-    exactlyOneLoan(bool isCreate, beast::Journal const& j) const;
+    exactlyOneLoan(LoanOp op, beast::Journal const& j) const;
 
     /**
      * @brief Creation-side invariants of a loan-origination transaction.

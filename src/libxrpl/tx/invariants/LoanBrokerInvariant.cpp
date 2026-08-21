@@ -183,29 +183,27 @@ ValidLoanBroker::finalize(
         }
     }
 
-    // Item 29 (XLS-65 §3.4, XLS-66 §3.4): VaultDelete requires the vault's
-    // pseudo-account owner directory to be empty; a broker referencing the
-    // vault would still be on that directory, so a successful VaultDelete
-    // implies no broker was touched. The pseudo-account owner-directory
-    // residual check in ValidVault enforces this indirectly (item 9); this
-    // check catches a compound transaction that would modify a broker while
-    // deleting a vault. Class-2 (transaction post-condition); gate on
-    // isTesSuccess.
-    if (isTesSuccess(result) &&
-        view.rules().enabled(fixCleanup3_4_0) &&
-        tx.getTxnType() == ttVAULT_DELETE &&
-        (!brokers_.empty() || !deletedBrokers_.empty()))
+    if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-        JLOG(j.fatal()) << "Invariant failed: VaultDelete must not touch any "
-                           "loan broker";
-        return false;
-    }
+        // (XLS-65 §3.4, XLS-66 §3.4): VaultDelete requires the vault's
+        // pseudo-account owner directory to be empty; a broker referencing the
+        // vault would still be on that directory, so a successful VaultDelete
+        // implies no broker was touched. The pseudo-account owner-directory
+        // residual check in ValidVault enforces this indirectly (item 9); this
+        // check catches a compound transaction that would modify a broker while
+        // deleting a vault. Class-2 (transaction post-condition); gate on
+        // isTesSuccess.
+        if (isTesSuccess(result) && tx.getTxnType() == ttVAULT_DELETE &&
+            (!brokers_.empty() || !deletedBrokers_.empty()))
+        {
+            JLOG(j.fatal()) << "Invariant failed: VaultDelete must not touch any "
+                               "loan broker";
+            return false;
+        }
 
-    // Deletion-time preconditions (XLS-66 §3.1.5), stated positively over
-    // deletedBrokers_ rather than by exempting the delete case from the live
-    // check loop below. Gated on fixCleanup3_4_0 as new invariants.
-    if (view.rules().enabled(fixCleanup3_4_0))
-    {
+        // Deletion-time preconditions (XLS-66 §3.1.5), stated positively over
+        // deletedBrokers_ rather than by exempting the delete case from the live
+        // check loop below. Gated on fixCleanup3_4_0 as new invariants.
         for (auto const& deletedBroker : deletedBrokers_)
         {
             // §3.1.5 precondition 1: all Loans associated with the LoanBroker
@@ -277,8 +275,8 @@ ValidLoanBroker::finalize(
             }
 
             auto const& [beforeSle, afterSle] = it->second;
-            auto delta = balanceOf(afterSle, owner, vaultAsset) -
-                balanceOf(beforeSle, owner, vaultAsset);
+            auto delta =
+                balanceOf(afterSle, owner, vaultAsset) - balanceOf(beforeSle, owner, vaultAsset);
 
             // Fee-adjust: if the owner also paid the transaction fee (XRP
             // vaults only), their ACCOUNT_ROOT balance dropped by the fee in
@@ -331,8 +329,7 @@ ValidLoanBroker::finalize(
             // slip past the preclaim in LoanBrokerDelete and let a broker be
             // deleted while still owing the vault. Class-1 (pure after-state
             // implication); safe to place without a TER guard.
-            if (view.rules().enabled(fixCleanup3_4_0) &&
-                after->at(sfDebtTotal) != 0)
+            if (view.rules().enabled(featureLendingProtocolV1_1) && after->at(sfDebtTotal) != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
                                    "OwnerCount must have zero DebtTotal";
@@ -362,16 +359,15 @@ ValidLoanBroker::finalize(
             return false;
         }
 
-        // Item 16 (XLS-66 §3.7.1): reverse directory linkage. The broker
+        // (XLS-66 §3.7.1): reverse directory linkage. The broker
         // must appear in the vault pseudo-account's owner directory at page
         // LoanBroker.VaultNode. The forward Broker→Vault link is checked
         // above; this catches a bug that would leave the page pointer
         // pointing at a page that no longer references the broker.
-        if (view.rules().enabled(fixCleanup3_4_0))
+        if (view.rules().enabled(featureLendingProtocolV1_1))
         {
-            auto const dirPage = view.read(keylet::page(
-                keylet::ownerDir(vault->at(sfAccount)),
-                after->at(sfVaultNode)));
+            auto const dirPage = view.read(
+                keylet::page(keylet::ownerDir(vault->at(sfAccount)), after->at(sfVaultNode)));
             if (!dirPage)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker VaultNode "
@@ -380,8 +376,7 @@ ValidLoanBroker::finalize(
                 return false;
             }
             auto const& indexes = dirPage->getFieldV256(sfIndexes);
-            if (std::find(indexes.begin(), indexes.end(), after->key()) ==
-                indexes.end())
+            if (std::find(indexes.begin(), indexes.end(), after->key()) == indexes.end())
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker VaultNode "
                                    "page does not reference the broker";
@@ -419,14 +414,13 @@ ValidLoanBroker::finalize(
             }
         }
 
-        if (view.rules().enabled(fixCleanup3_4_0))
+        if (view.rules().enabled(featureLendingProtocolV1_1))
         {
             // §3.1.10: DebtTotal must not exceed DebtMaximum. Currently only
             // enforced at LoanBrokerSet / LoanSet preclaim; making it universal
             // catches an accrual booking that would otherwise sneak through.
             // DebtMaximum == 0 disables the cap.
-            if (after->at(sfDebtMaximum) != 0 &&
-                after->at(sfDebtTotal) > after->at(sfDebtMaximum))
+            if (after->at(sfDebtMaximum) != 0 && after->at(sfDebtTotal) > after->at(sfDebtMaximum))
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker debt total exceeds "
                                    "debt maximum";
