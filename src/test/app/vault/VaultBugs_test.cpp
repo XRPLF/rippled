@@ -19,9 +19,11 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -621,6 +623,164 @@ private:
         }
     }
 
+    // Bug: an IOU VaultDeposit can credit the vault (and its pseudo-account trust line) with
+    // more than the depositor paid, when the exact new total needs 17 significant digits but
+    // STAmount only keeps 16. The pseudo-account trust line (accountSend) and sfAssetsTotal
+    // (associateAsset) both independently round the 17-digit sum UP to the nearest 16-digit
+    // value -- the same direction on both rails, so no invariant catches the mismatch.
+    //
+    // seed 9.999999999999999 at scale 15 (1 share = 1e-15 asset); depositing 5 buys exactly
+    // 5e15 shares.
+    //   exact new total   9.999999999999999 + 5 = 14.999999999999999   (17 digits)
+    //   stored            15                        (rounds UP to the nearest 16-digit value)
+    //   credited          more than the depositor actually paid in -- value issued out of
+    //                      nothing
+    //
+    // Fix (fixCleanup3_4_0): VaultDeposit rounds the credited amount DOWN to what's exactly
+    // representable at the vault's sfAssetsTotal scale before storing it, so the vault (and
+    // its pseudo-account) can never be credited more than the depositor paid.
+    void
+    testBugVaultDepositOvercreditsAcrossScaleBoundary()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool expectOvercredit) {
+            Env env(*this, features);
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(1'000'000), owner, issuer, depositor);
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Number const seed{9'999'999'999'999'999LL, -15};
+            Number const deposit{5};
+
+            env(trust(depositor, usd(1'000'000'000)));
+            env.close();
+            env(pay(issuer, depositor, usd(deposit)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            tx[sfScale] = 15;
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = issuer, .id = keylet.key, .amount = usd(seed)}));
+            env.close();
+
+            Number const totalBefore = env.le(keylet)->at(sfAssetsTotal);
+            Number const depositorBefore = env.balance(depositor, usd.raw()).number();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = usd(deposit)}));
+            env.close();
+
+            Number const totalAfter = env.le(keylet)->at(sfAssetsTotal);
+            Number const depositorAfter = env.balance(depositor, usd.raw()).number();
+            Number const paid = depositorBefore - depositorAfter;
+            Number const credited = totalAfter - totalBefore;
+
+            if (expectOvercredit)
+            {
+                BEAST_EXPECTS(
+                    credited > paid,
+                    "AssetsTotal credited " + to_string(credited) + " for a payment of " +
+                        to_string(paid) + ", expected an overcredit");
+            }
+            else
+            {
+                BEAST_EXPECTS(
+                    credited <= paid,
+                    "AssetsTotal credited " + to_string(credited) + " for a payment of " +
+                        to_string(paid));
+            }
+        };
+
+        // Also remove fixCleanup3_2_0: its roundToVaultScale trims the requested amount
+        // down to the vault's current scale before this bug's own 17-digit-sum boundary is
+        // ever reached, which would otherwise mask the overcredit behind a different
+        // (already-fixed) rounding path instead of reproducing it.
+        testcase(
+            "bug: VaultDeposit overcredits across an IOU scale boundary "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_2_0 - fixCleanup3_4_0, true);
+
+        testcase(
+            "bug: VaultDeposit no longer overcredits across an IOU scale boundary "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, false);
+    }
+
+    // Bug: a partial VaultWithdraw can permanently lock a large IOU vault. IOU amounts hold
+    // 16 significant digits, so once sfAssetsTotal grows large enough it's stored in steps of
+    // 1 ULP (e.g. steps of 100 at 1e17). If a single share is worth less than that step,
+    // withdrawing all-but-one share overpays: the payout rounds UP to the entire remaining
+    // balance, draining sfAssetsTotal to exactly zero while the last share stays outstanding.
+    // The vault is then insolvent (AssetsTotal == 0, sharesTotal > 0) and permanently stuck --
+    // withdrawing the last share pays 0 and can't change the balance (tecINVARIANT_FAILED),
+    // depositing to refill is blocked because the vault is insolvent (tecLOCKED), and deleting
+    // is impossible while a share is outstanding (tecHAS_OBLIGATIONS). A full withdrawal from
+    // the start would have emptied the vault cleanly; once this partial-withdrawal state is
+    // reached, no sequence of ordinary transactions recovers it.
+    //
+    // Fix (fixCleanup3_4_0): VaultWithdraw rounds the payout DOWN to what's exactly
+    // representable at the vault's sfAssetsTotal scale, so a partial withdrawal can never
+    // drain the vault to zero while shares remain outstanding.
+    void
+    testBugVaultLockedByPartialWithdraw()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            env.fund(XRP(1'000'000), owner, issuer, holder);
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(holder, usd(Number{1, 18})));
+            env.close();
+            env(pay(issuer, holder, usd(Number{1, 17})));
+            env.close();
+
+            Vault const vault{env};
+            // scale=0: 1 share == 1 asset unit, so sharesTotal == assetsTotal == 1e17.
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            tx[sfScale] = 0;
+            env(tx);
+            env.close();
+            env(vault.deposit(
+                {.depositor = holder, .id = keylet.key, .amount = usd(Number{1, 17})}));
+            env.close();
+
+            MPTIssue const share{env.le(keylet)->at(sfShareMPTID)};
+            std::int64_t const allButOne = 100'000'000'000'000'000LL - 1;
+            env(vault.withdraw(
+                {.depositor = holder, .id = keylet.key, .amount = STAmount{share, allButOne}}));
+            env.close();
+
+            // The holder now tries to withdraw the one remaining share. Pre-fix, the vault is
+            // already insolvent (AssetsTotal == 0, one share outstanding) and this fails with
+            // tecINVARIANT_FAILED forever. Post-fix, the earlier partial withdrawal never
+            // drained the vault, so this succeeds and empties it cleanly.
+            env(vault.withdraw(
+                    {.depositor = holder, .id = keylet.key, .amount = STAmount{share, 1}}),
+                Ter(expected));
+            env.close();
+        };
+
+        testcase(
+            "bug: VaultWithdraw permanently locks a large IOU vault "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        testcase(
+            "bug: VaultWithdraw no longer locks a large IOU vault "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS);
+    }
+
     // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
     // shFULL_BALANCE), which for an IOU asset adds the counterparty's
     // LowLimit/HighLimit to the depositor's raw balance (TokenHelpers.cpp:
@@ -807,6 +967,8 @@ public:
         testVaultDepositCanonicalizeToZero();
         testVaultWithdrawCanonicalizeToZero();
         testBugVaultDustDebitCanonicalizesToNoOp();
+        testBugVaultDepositOvercreditsAcrossScaleBoundary();
+        testBugVaultLockedByPartialWithdraw();
         testVaultDepositNegativeBalanceFromOppositeLimit();
         testBug6LimitBypassWithShares();
     }
