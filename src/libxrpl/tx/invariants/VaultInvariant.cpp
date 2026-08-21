@@ -312,6 +312,13 @@ ValidVault::deltaAssets(AccountID const& id) const
             }
             else if constexpr (std::is_same_v<TIss, MPTIssue>)
             {
+                // The MPT issuer holds no MPToken for their own issuance;
+                // their balance moves are reflected as OutstandingAmount
+                // changes on the MPTokenIssuance itself, which visitEntry
+                // records under keylet::mptokenIssuance with a sign that
+                // already matches the issuer's balance change.
+                if (id == issue.getIssuer())
+                    return lookup(keylet::mptokenIssuance(issue.getMptID()).key);
                 return lookup(keylet::mptoken(issue.getMptID(), id).key);
             }
         },
@@ -496,36 +503,86 @@ ValidVault::checkLoanFunding(
             d->delta += fee.drops();
     };
 
-    auto maybeBorrowerDelta = deltaAssets(loan.borrower);
-    adjustForFee(maybeBorrowerDelta, loan.borrower);
+    // The IOU issuer of the vault asset has no trust line against
+    // themselves; a credit into the issuer manifests only as the
+    // vault-side counterparty's trust line balance moving toward zero,
+    // which is already covered by the vault-balance check above.
+    // deltaAssets() cannot observe the issuer's own delta in that case,
+    // so skip the per-participant credit checks when the participant is
+    // the vault asset's issuer.
+    auto const isVaultIssuer = [&](AccountID const& id) {
+        return !vaultAsset.native() && !vaultAsset.holds<MPTIssue>() &&
+            id == vaultAsset.getIssuer();
+    };
 
-    auto const borrowerExpected =
-        roundToAsset(vaultAsset, tx[sfPrincipalRequested] - loan.originationFee, minScale);
-    auto const borrowerReceived =
-        maybeBorrowerDelta ? roundToAsset(vaultAsset, maybeBorrowerDelta->delta, minScale) : kZero;
-    if (borrowerReceived != borrowerExpected)
+    // When the borrower and the broker owner are the same account, both
+    // credits (principal net of origination fee, and the origination fee)
+    // land on a single balance and are only observable as their sum. Fold
+    // the two checks into one combined credit of `principalRequested` in
+    // that case; otherwise verify each participant's portion separately.
+    if (loan.borrower == afterBroker.owner)
     {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: loan set must credit the borrower with the principal net of "
-            "origination fee";
-        result = false;
+        if (!isVaultIssuer(loan.borrower))
+        {
+            auto maybeCombinedDelta = deltaAssets(loan.borrower);
+            adjustForFee(maybeCombinedDelta, loan.borrower);
+
+            auto const combinedExpected =
+                roundToAsset(vaultAsset, tx[sfPrincipalRequested], minScale);
+            auto const combinedReceived = maybeCombinedDelta
+                ? roundToAsset(vaultAsset, maybeCombinedDelta->delta, minScale)
+                : kZero;
+            if (combinedReceived != combinedExpected)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan set must credit the borrower (who is also the broker "
+                    "owner) with the full principal";
+                result = false;
+            }
+        }
     }
-
-    // The broker owner is only touched when a non-zero origination fee is
-    // routed - a zero-fee loan set leaves them unchanged, so a missing delta
-    // is consistent with `originationFee == 0`.
-    auto maybeBrokerOwnerDelta = deltaAssets(afterBroker.owner);
-    adjustForFee(maybeBrokerOwnerDelta, afterBroker.owner);
-
-    auto const brokerOwnerExpected = roundToAsset(vaultAsset, loan.originationFee, minScale);
-    auto const brokerOwnerReceived = maybeBrokerOwnerDelta
-        ? roundToAsset(vaultAsset, maybeBrokerOwnerDelta->delta, minScale)
-        : kZero;
-    if (brokerOwnerReceived != brokerOwnerExpected)
+    else
     {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: loan set must credit the broker owner with the origination fee";
-        result = false;
+        if (!isVaultIssuer(loan.borrower))
+        {
+            auto maybeBorrowerDelta = deltaAssets(loan.borrower);
+            adjustForFee(maybeBorrowerDelta, loan.borrower);
+
+            auto const borrowerExpected =
+                roundToAsset(vaultAsset, tx[sfPrincipalRequested] - loan.originationFee, minScale);
+            auto const borrowerReceived = maybeBorrowerDelta
+                ? roundToAsset(vaultAsset, maybeBorrowerDelta->delta, minScale)
+                : kZero;
+            if (borrowerReceived != borrowerExpected)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan set must credit the borrower with the principal net "
+                    "of origination fee";
+                result = false;
+            }
+        }
+
+        // The broker owner is only touched when a non-zero origination fee is
+        // routed - a zero-fee loan set leaves them unchanged, so a missing delta
+        // is consistent with `originationFee == 0`.
+        if (!isVaultIssuer(afterBroker.owner))
+        {
+            auto maybeBrokerOwnerDelta = deltaAssets(afterBroker.owner);
+            adjustForFee(maybeBrokerOwnerDelta, afterBroker.owner);
+
+            auto const brokerOwnerExpected =
+                roundToAsset(vaultAsset, loan.originationFee, minScale);
+            auto const brokerOwnerReceived = maybeBrokerOwnerDelta
+                ? roundToAsset(vaultAsset, maybeBrokerOwnerDelta->delta, minScale)
+                : kZero;
+            if (brokerOwnerReceived != brokerOwnerExpected)
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: loan set must credit the broker owner with the origination "
+                    "fee";
+                result = false;
+            }
+        }
     }
 
     // Vault-side accounting identity at origination, mirroring the one enforced
@@ -650,19 +707,11 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
     // assets from the vault. Only a default returns first-loss
     // capital from the broker to the vault pseudo-account; impair
     // and unimpair merely adjust the paper (unrealized) loss and
-    // touch no balances. A missing vault-balance delta is a legitimate
-    // outcome for impair / unimpair (they move no funds), but on default
-    // the broker returns first-loss capital, so the vault balance ledger
-    // entry must have moved - a missing delta indicates a real accounting
-    // bug and is called out below rather than silently absorbed by the
-    // value_or fallback.
+    // touch no balances. Even a default may leave the vault balance
+    // untouched when the broker holds no cover to release; the
+    // stronger identity below (gated on a non-zero broker cover
+    // delta) catches the real "cover moved but vault didn't" bug.
     auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-    if (tx.isFlag(tfLoanDefault) && !maybeVaultDeltaAssets)
-    {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: loan default must change vault balance";
-        result = false;
-    }
     auto const vaultDelta = maybeVaultDeltaAssets.value_or(
         DeltaInfo{.delta = kZero, .scale = scale(afterVault.assetsTotal, vaultAsset)});
 

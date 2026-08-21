@@ -27,9 +27,15 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
     // ttLOAN_BROKER_DELETE removes a broker and (b) that the broker's
     // pre-state DebtTotal and OwnerCount were zero at deletion. `before`
     // holds the entry's state prior to erasure.
-    if (isDelete && before && before->getType() == ltLOAN_BROKER)
+    //
+    // On deletion, `after` still carries the erased SLE (see
+    // ApplyStateTable::visit), so the non-delete branch must be gated by
+    // !isDelete to avoid mistaking an erased pseudo-account, trust line or
+    // MPToken for a live reference to a broker.
+    if (isDelete)
     {
-        deletedBrokers_.emplace_back(before);
+        if (before && before->getType() == ltLOAN_BROKER)
+            deletedBrokers_.emplace_back(before);
         return;
     }
 
