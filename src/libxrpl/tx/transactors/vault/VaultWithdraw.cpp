@@ -317,15 +317,36 @@ VaultWithdraw::doApply()
             return tecPRECISION_LOSS;
         }
 
-        // Even a non-zero withdrawal can be too small to change the stored sfAssetsTotal or
-        // sfAssetsAvailable at STAmount's precision. Shares would still move, so ValidVault
-        // would fail after apply; reject here instead.
-        if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn) ||
-            debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsWithdrawn))
+        // Number arithmetic can throw overflow_error when Scale and totals are large. Caught
+        // below. debitIsNonZeroDust converts assetsTotal/assetsAvailable to STAmount, which is
+        // exactly what a sufficiently abused sfScale can push out of STAmount's representable
+        // range.
+        try
         {
-            JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
-                                " vault balance";
-            return tecPRECISION_LOSS;
+            // Even a non-zero withdrawal can be too small to change the stored sfAssetsTotal or
+            // sfAssetsAvailable at STAmount's precision. Shares would still move, so ValidVault
+            // would fail after apply; reject here instead.
+            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn) ||
+                debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsWithdrawn))
+            {
+                JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
+                                    " vault balance";
+                return tecPRECISION_LOSS;
+            }
+        }
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultWithdraw: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            // Overflow means this transaction cannot apply, but ledger state is still consistent.
+            // Return tecPATH_DRY rather than a hard internal error.
+            return tecPATH_DRY;
         }
     }
 
@@ -351,7 +372,13 @@ VaultWithdraw::doApply()
     // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
     if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
     {
-        // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
+        // Number arithmetic can throw overflow_error when Scale and totals are large. The
+        // debitIsNonZeroDust check above already performs the same STAmount conversion of
+        // assetsTotal/assetsAvailable under the ambient rounding mode and would have thrown
+        // (and been caught) first for any value that overflows under that mode. Only reachable
+        // if RoundingMode::Upward -- forced below to keep the clamp conservative -- carries a
+        // value that was in range under the ambient mode just past the max representable
+        // exponent. Kept for defense in depth; not realistically triggerable from a test.
         try
         {
             // Round Upward on the negative delta: the stored total is decremented by no more than
@@ -364,6 +391,7 @@ VaultWithdraw::doApply()
             if (assetsWithdrawn <= beast::kZero)
                 return tecPRECISION_LOSS;
         }
+        // LCOV_EXCL_START
         catch (std::overflow_error const&)
         {
             // It's easy to hit this exception from Number with large enough Scale
@@ -378,6 +406,7 @@ VaultWithdraw::doApply()
             // Return tecPATH_DRY rather than a hard internal error.
             return tecPATH_DRY;
         }
+        // LCOV_EXCL_STOP
     }
 
     // The vault must have enough assets on hand.
