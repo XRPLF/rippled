@@ -492,10 +492,12 @@ SHAMapStoreImp::run()
                 case HealthResult::KeepGoing:
                     break;
             }
-            // Only log if we completed without a "health" abort
-            JLOG(journal_.debug())
-                << "copied ledger " << validatedSeq << " duplicated "
-                << dbRotating_->getAndResetDuplicationCount() << " / " << nodeCount << " nodes";
+            {
+                // Only log if we completed without a "health" abort
+                auto const copyDuplications = dbRotating_->getAndResetDuplicationCount();
+                JLOG(journal_.debug()) << "copied ledger " << validatedSeq << " duplicated "
+                                       << copyDuplications << " / " << nodeCount << " nodes";
+            }
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
