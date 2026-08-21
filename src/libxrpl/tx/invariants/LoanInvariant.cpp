@@ -105,7 +105,8 @@ ValidLoan::finalize(
         }
         if (!view.rules().enabled(featureLendingProtocolV1_1))
         {
-            if (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment))
+            if (before &&
+                before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment))
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
                 return false;

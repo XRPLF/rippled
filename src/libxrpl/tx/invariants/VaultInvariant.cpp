@@ -443,9 +443,12 @@ ValidVault::checkLoanFunding(
 
     // The remaining participant-side checks are new under featureLendingProtocolV1_1
     // and use the basis-aware ownedToVault() accessor; keep them behind that gate
-    // so pre-V1_1 behaviour is unchanged.
+    // so pre-V1_1 behaviour is unchanged. The sole caller (finalizeLoanSet) already
+    // returns early on the same gate, so this branch is defensive only.
+    // LCOV_EXCL_START
     if (!view.rules().enabled(featureLendingProtocolV1_1))
         return result;
+    // LCOV_EXCL_STOP
 
     // The broker whose DebtTotal must reflect the newly-originated loan is the
     // one the loan points at. Verify the snapshot corresponds and is populated
