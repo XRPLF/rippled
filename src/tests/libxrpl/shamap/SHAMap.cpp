@@ -418,4 +418,81 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
     EXPECT_FALSE(SHAMap::verifyProofPath(childHash.asUInt256(), kTestKey, path));
 }
 
+/**
+ * Wrap a leaf blob in a forged root inner node whose branch for `key` carries that leaf's hash.
+ *
+ * The resulting two-element path hash-chains for `key` no matter which leaf sits at the bottom,
+ * which is exactly the substitution a peer could attempt.
+ *
+ * @param leafBlob the wire form of the leaf to place at the bottom of the path.
+ * @param key the key the forged path claims to prove.
+ * @return the path (deepest element first) and the forged root hash, or an empty path if the leaf
+ *         blob does not parse.
+ */
+static std::pair<std::vector<Blob>, uint256>
+forgeRootOverLeaf(Blob const& leafBlob, uint256 const& key)
+{
+    auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(leafBlob));
+    if (!leaf || !leaf->isLeaf())
+        return {};
+    leaf->updateHash();
+
+    auto const branch = selectBranch(SHAMapNodeID::createID(0, key), key);
+    Serializer s;
+    for (auto i = 0u; i < SHAMap::kBranchFactor; ++i)
+        s.addBitString(i == branch ? leaf->getHash().asUInt256() : uint256{});
+    s.add8(kWireTypeInner);
+
+    auto root = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
+    if (!root)
+        return {};
+    root->updateHash();
+
+    return {std::vector<Blob>{leafBlob, s.getData()}, root->getHash().asUInt256()};
+}
+
+// The hash chain above a leaf proves nothing about which key that leaf holds, so a peer can graft a
+// genuine leaf from elsewhere in the map onto a path forged for another key. Comparing the terminal
+// leaf's own key against the key being proved is what rejects it.
+TEST_F(SHAMapPathProof, substituted_leaf_for_other_key_is_rejected)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};
+    map.setUnbacked();
+
+    // Two arbitrary keys differing in their first nibble, so each leaf hangs off the root directly.
+    constexpr uint256 kKey("1c8cec8e5e9b0e5e0e0f5b3e2c9f7a1d6b4e8c2a0d7f3b9e5c1a8d4f2b6e0c93");
+    constexpr uint256 kOtherKey("e3f1a7d5b9c2e8f406a1d3b5c7e9f2a4d6b8c0e2f4a6d8b0c2e4f6a8d0b2c4e6");
+
+    for (auto const& k : {kKey, kOtherKey})
+    {
+        ASSERT_TRUE(map.addItem(
+            SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()})));
+    }
+    map.invariants();
+
+    auto const ownPath = map.getProofPath(kKey);
+    auto const otherPath = map.getProofPath(kOtherKey);
+    ASSERT_TRUE(ownPath.has_value());
+    ASSERT_TRUE(otherPath.has_value());
+
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) has_value() checked above
+    // The genuine leaf blobs, deepest element first.
+    auto const& ownLeaf = ownPath->front();
+    auto const& otherLeaf = otherPath->front();
+    // NOLINTEND(bugprone-unchecked-optional-access)
+
+    // Control: the forged root is accepted when the leaf below it really is kKey's leaf, so the
+    // rejection below can only come from the leaf key comparison.
+    auto const [goodPath, goodRoot] = forgeRootOverLeaf(ownLeaf, kKey);
+    ASSERT_EQ(goodPath.size(), 2u);
+    EXPECT_TRUE(SHAMap::verifyProofPath(goodRoot, kKey, goodPath));
+
+    // Same forged root, but kOtherKey's leaf substituted at the bottom: the hash chain still
+    // validates, yet the path does not prove anything about kKey.
+    auto const [badPath, badRoot] = forgeRootOverLeaf(otherLeaf, kKey);
+    ASSERT_EQ(badPath.size(), 2u);
+    EXPECT_FALSE(SHAMap::verifyProofPath(badRoot, kKey, badPath));
+}
+
 }  // namespace xrpl::tests
