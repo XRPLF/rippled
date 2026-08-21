@@ -211,7 +211,7 @@ ValidMPTIssuance::finalize(
         }
 
         auto const txnType = tx.getTxnType();
-        if (hasPrivilege(tx, CreateMptIssuance))
+        if (hasPrivilege(tx, Privilege::CreateMptIssuance))
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -232,7 +232,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (hasPrivilege(tx, DestroyMptIssuance))
+        if (hasPrivilege(tx, Privilege::DestroyMptIssuance))
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -259,7 +259,8 @@ ValidMPTIssuance::finalize(
         // non-amendment-gated side effects.
         bool const enforceEscrowFinish = (txnType == ttESCROW_FINISH) &&
             (rules.enabled(featureSingleAssetVault) || lendingProtocolEnabled);
-        if (hasPrivilege(tx, MustAuthorizeMpt | MayAuthorizeMpt) || enforceEscrowFinish)
+        if (hasPrivilege(tx, Privilege::MustAuthorizeMpt | Privilege::MayAuthorizeMpt) ||
+            enforceEscrowFinish)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -275,7 +276,7 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
-            if (mptV2Enabled && hasPrivilege(tx, MayAuthorizeMpt) &&
+            if (mptV2Enabled && hasPrivilege(tx, Privilege::MayAuthorizeMpt) &&
                 (txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK))
             {
                 if (submittedByIssuer && txnType == ttAMM_WITHDRAW && mptokensCreated_ > 0)
@@ -311,7 +312,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer && hasPrivilege(tx, MustAuthorizeMpt) &&
+                !submittedByIssuer && hasPrivilege(tx, Privilege::MustAuthorizeMpt) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -324,7 +325,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, MayCreateMpt))
+        if (hasPrivilege(tx, Privilege::MayCreateMpt))
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -379,7 +380,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, MayDeleteMpt) &&
+        if (hasPrivilege(tx, Privilege::MayDeleteMpt) &&
             ((txnType == ttAMM_DELETE && mptokensDeleted_ <= 2) || mptokensDeleted_ == 1) &&
             mptokensCreated_ == 0 && mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
             return true;
@@ -856,7 +857,7 @@ ValidMPTTransfer::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (hasPrivilege(tx, OverrideFreeze))
+    if (hasPrivilege(tx, Privilege::OverrideFreeze))
         return true;
 
     // XLS-0066: a broker must be able to default an already-late loan
