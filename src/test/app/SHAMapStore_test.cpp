@@ -698,6 +698,8 @@ public:
             if (!BEAST_EXPECT(lm.haveLedger(deleteSeq)))
                 return 0;
 
+            std::this_thread::sleep_for(250ms);
+
             lm.clearLedger(deleteSeq);
             deleteSeqs.push_back(deleteSeq);
             if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
