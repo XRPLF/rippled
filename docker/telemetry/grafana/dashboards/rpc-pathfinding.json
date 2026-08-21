@@ -114,7 +114,7 @@
     },
     {
       "title": "RPC Response Size",
-      "description": "**⚠ Instrument mismatch — values unreliable.** Response size is recorded through the millisecond-scaled event histogram (rpc_size_milliseconds_bucket), so byte values saturate at the top time bucket (5000) and the percentiles are not true byte sizes. A dedicated byte-unit histogram is needed to fix this; tracked separately. Treat this panel as indicative only until then.\n\n**What:** P95 and P50 of RPC response payload size in bytes.\n**How it's computed:** 95th and 50th percentiles over the dashboard rate interval.\n**Reading it:** Larger responses cost more bandwidth and CPU to build.\n**Healthy range:** workload-dependent.\n**Watch for:** Large P95 (result-heavy queries such as broad account_tx, or API misuse).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "description": "**⚠ Instrument mismatch — values unreliable.** Response size is recorded through the millisecond-scaled event histogram (rpc_size_bytes_bucket), so byte values saturate at the top time bucket (5000) and the percentiles are not true byte sizes. A dedicated byte-unit histogram is needed to fix this; tracked separately. Treat this panel as indicative only until then.\n\n**What:** P95 and P50 of RPC response payload size in bytes.\n**How it's computed:** 95th and 50th percentiles over the dashboard rate interval.\n**Reading it:** Larger responses cost more bandwidth and CPU to build.\n**Healthy range:** workload-dependent.\n**Watch for:** Large P95 (result-heavy queries such as broad account_tx, or API misuse).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -134,7 +134,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_size_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_size_bytes_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "interval": "15s",
           "legendFormat": "P95 Response Size [{{service_instance_id}}]"
         },
@@ -142,7 +142,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_size_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_size_bytes_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "interval": "15s",
           "legendFormat": "P50 Response Size [{{service_instance_id}}]"
         }
