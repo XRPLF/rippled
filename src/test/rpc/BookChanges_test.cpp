@@ -309,8 +309,8 @@ public:
             Account const gwB{"gwB"};
             // Mantissa in range, exponent at the maximum: two of these sum to
             // one exponent past it.
-            STAmount const bigA{gwA["USD"].issue(), 9'000'000'000'000'000ull, 80};
-            STAmount const bigB{gwB["EUR"].issue(), 9'000'000'000'000'000ull, 80};
+            STAmount const bigA{gwA["USD"].issue(), UINT64_C(9'000'000'000'000'000), 80};
+            STAmount const bigB{gwB["EUR"].issue(), UINT64_C(9'000'000'000'000'000), 80};
 
             try
             {
