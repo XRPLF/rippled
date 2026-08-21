@@ -166,7 +166,7 @@ pub(crate) fn read_borrowed<'a>(
 ///
 /// The ABI transports these as a 4-byte region rather than a wasm scalar (the guest
 /// SDK passes `seq.to_le_bytes()`), so the region must be exactly four bytes;
-/// `InvalidParams` otherwise, matching the C-ABI wrapper's `getDataUInt32`.
+/// `InvalidParams` otherwise.
 pub(crate) fn read_u32_arg(bytes: &[u8]) -> HostResult<i32> {
     let arr: [u8; 4] = bytes.try_into().map_err(|_| HostError::InvalidParams)?;
     Ok(i32::from_le_bytes(arr))

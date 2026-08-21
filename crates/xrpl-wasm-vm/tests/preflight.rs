@@ -566,10 +566,10 @@ fn what_static_screening_cannot_see() {
     }
 }
 
-/// A start section is guest code, so screening cannot see whether it traps — but it
-/// no longer has to. A trap is the guest's fault wherever it happens, so the run
-/// charges the contract for what it burned instead of reporting a module the node
-/// should have screened.
+/// A start section is guest code, so screening cannot see whether it traps — and does
+/// not have to. A trap is the guest's fault wherever it happens, so the run charges the
+/// contract for what it burned instead of reporting a module the node should have
+/// screened.
 #[test]
 fn a_start_section_screening_cannot_see_is_charged_as_a_trap() {
     let host = FakeHost::new();

@@ -126,6 +126,13 @@ fn is_entry_point(ty: &FuncType) -> bool {
 /// engine grants. One pass over the exports, since both rules read the same list and
 /// the export table is the only place either is visible.
 ///
+/// **A memory or table the module keeps to itself is therefore not screened**: it is
+/// absent from the exports, and the store's limiter is what refuses it, at
+/// instantiation. That gap is wide for tables — Rust exports
+/// `__indirect_function_table` only under `--export-table`, so unexported is the
+/// normal shape — and narrow for memories, since a contract needs an exported one to
+/// make any host call at all.
+///
 /// A module faulting on both is reported by whichever it declares first. Neither
 /// fault explains the other, so there is no precedence to preserve — only the need
 /// for every node to reach the same verdict, which export order already gives.

@@ -16,10 +16,10 @@ namespace xrpl::test {
 
 // A mock of the host the wasm engine calls back into.
 //
-// Only the methods the ABI currently declares are mocked, and that is deliberate: the ~60
-// others keep `HostFunctions`' own `std::unexpected(Unimplemented)`, so a contract reaching
-// for something the ABI has not declared yet fails the way production would. Add a
-// `MOCK_METHOD` here when the matching entry is added to `host_functions!`.
+// Only the methods the tests beside it exercise are mocked, and that is deliberate: the
+// rest keep `HostFunctions`' own `std::unexpected(Unimplemented)`, so a contract reaching
+// for one fails the way production would. Add a `MOCK_METHOD` here when a test needs to
+// say what that host function answers.
 struct MockHostFunctions : HostFunctions
 {
     explicit MockHostFunctions(beast::Journal journal) : HostFunctions(journal)

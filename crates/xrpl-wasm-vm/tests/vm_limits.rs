@@ -1,5 +1,5 @@
 //! What the engine refuses outright: modules it will not compile, will not
-//! instantiate, or cannot find an entry point in — plus the linear-memory cap.
+//! instantiate, or cannot find an entry point in — plus the memory and table caps.
 //!
 //! These are the sandbox's outer wall. Everything here fails the run rather than
 //! returning a code to the guest, so each test reads the failure's message.
@@ -262,7 +262,7 @@ fn disabled_features() -> Vec<(&'static str, Vec<&'static str>, &'static str, &'
 ///
 /// `wasm_custom_page_sizes` and `wasm_wide_arithmetic` are off by default in wasmi
 /// 1.1 (`engine/config.rs:72,74`), so their rows guard against wasmi changing that
-/// default rather than against our own config.
+/// default rather than against this engine's own config.
 #[test]
 fn every_disabled_feature_is_refused_by_name() {
     let host = FakeHost::new();
@@ -279,9 +279,9 @@ fn every_disabled_feature_is_refused_by_name() {
 }
 
 /// The three knobs [`every_disabled_feature_is_refused_by_name`] cannot cover. The
-/// engine is a process-wide `LazyLock`, so a test observes the one configuration we
-/// build: a knob masked by another, or with no caller-visible effect, has no
-/// distinguishing module.
+/// engine is a process-wide `LazyLock`, so a test observes the one configuration
+/// `build_wasm_engine` makes: a knob masked by another, or with no caller-visible
+/// effect, has no distinguishing module.
 #[test]
 fn the_knobs_without_a_module_of_their_own() {
     let host = FakeHost::new();
