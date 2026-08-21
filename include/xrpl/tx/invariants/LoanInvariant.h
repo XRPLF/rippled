@@ -15,19 +15,47 @@ namespace xrpl {
 /**
  * @brief Invariants: Loans are internally consistent
  *
- * 1. If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
- * 2. A newly-created Loan against a closed-ended vault must satisfy
- *    `StartDate + PaymentInterval * PaymentRemaining < Vault.RedemptionDate`.
+ * Balance / payment bookkeeping:
+ * - PaymentRemaining == 0 iff the loan is fully paid off (all of
+ *   PrincipalOutstanding, TotalValueOutstanding and ManagementFeeOutstanding
+ *   are zero).
+ * - The STNumber fields LoanServiceFee, LatePaymentFee, ClosePaymentFee,
+ *   PrincipalOutstanding, TotalValueOutstanding and ManagementFeeOutstanding
+ *   must be non-negative; PeriodicPayment must be positive.
+ * - Under featureLendingProtocolV1_1, interest due
+ *   (TotalValueOutstanding - PrincipalOutstanding - ManagementFeeOutstanding)
+ *   must be non-negative.
  *
- * A loan may only be deleted once it is fully paid off (no payments
- * remaining):
+ * Creation:
+ * - A newly-created loan against a closed-ended vault must satisfy
+ *   `StartDate + PaymentInterval * PaymentRemaining < Vault.RedemptionDate`.
  *
- * 2. A loan may only be deleted by a `LoanDelete` transaction.
- * 3. A loan that is not fully paid off must not be deleted.
+ * LoanManage (featureLendingProtocolV1_1, on tesSUCCESS):
+ * - The tfLoanImpair, tfLoanUnimpair and tfLoanDefault sub-operation flags
+ *   must transition the corresponding ledger flags in the expected
+ *   direction (impair sets lsfLoanImpaired on a non-impaired loan,
+ *   unimpair clears it, default sets lsfLoanDefault on a non-defaulted loan).
+ * - A defaulted loan must have zero NextPaymentDueDate.
  *
- * 4. Every loan must reference a live loan broker, and that broker must
- *    reference a live vault.
+ * LoanPay (featureLendingProtocolV1_1, on tesSUCCESS, non-full repayment):
+ * - PrincipalOutstanding strictly decreases, PaymentRemaining decreases,
+ *   and NextPaymentDueDate advances by a positive multiple of
+ *   PaymentInterval.
  *
+ * Flag immutability:
+ * - Pre-featureLendingProtocolV1_1: lsfLoanOverpayment is set-once.
+ *   Under featureLendingProtocolV1_1 the equivalent set-once check for
+ *   lsfLoanOverpayment and the weakly-set-once check for lsfLoanDefault
+ *   (may transition from unset to set only) live in
+ *   NoModifiedUnmodifiableFields.
+ *
+ * Broker / vault linkage and deletion (featureLendingProtocolV1_1):
+ * - Every loan must reference a live loan broker, and that broker must
+ *   reference a live vault.
+ * - A loan may only be deleted by a LoanDelete transaction, and only once
+ *   it is fully paid off.
+ * - A successful LoanBrokerDelete must not touch any loan (its preclaim
+ *   requires OwnerCount == 0, so no loan should reference the broker).
  */
 class ValidLoan
 {

@@ -62,9 +62,6 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
-    self.withdrawalPolicy = from.at(sfWithdrawalPolicy);
-    self.scale = from.at(sfScale);
-    self.flags = from.getFlags();
     // Mirrors getVaultVersion: an absent or unrecognised sfLEVersion resolves
     // to the legacy, accrual-basis model.
     self.version = from[~sfLEVersion] == std::to_underlying(VaultVersion::CashBasis)
@@ -87,16 +84,8 @@ ValidVault::Shares::make(SLE const& from)
     self.share = MPTIssue(makeMptID(from.getFieldU32(sfSequence), from.getAccountID(sfIssuer)));
     self.sharesTotal = from.at(sfOutstandingAmount);
     self.sharesMaximum = from[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
-    self.transferFee = from[~sfTransferFee].value_or(0);
-    self.assetScale = from[~sfAssetScale].value_or(0);
     self.flags = from.getFlags();
     return self;
-}
-
-Number
-ValidVault::Loan::interestDue() const
-{
-    return totalValueOutstanding - principalOutstanding - managementFeeOutstanding;
 }
 
 Number
@@ -144,7 +133,6 @@ ValidVault::Broker::make(SLE const& from)
     self.vaultID = from.at(sfVaultID);
     self.debtTotal = from.at(sfDebtTotal);
     self.coverAvailable = from.at(sfCoverAvailable);
-    self.ownerCount = from.at(sfOwnerCount);
     return self;
 }
 
@@ -292,22 +280,15 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
         deltas_[key] = balanceDelta;
     }
 
-    // Record every touched MPToken holding under its issuance so the universal
-    // share-conservation check in finalize can sum across all holders. Uses
-    // whichever of before/after carries the identifying fields.
+    // Record every touched MPToken's issuance so the non-transferable
+    // vault-shares check in finalize can tell whether any holder of the
+    // issuance was moved. Uses whichever of before/after carries the
+    // identifying field.
     auto const isMPToken = [](SLE::const_ref sle) { return sle && sle->getType() == ltMPTOKEN; };
     if (isMPToken(before) || isMPToken(after))
     {
         auto const& identity = before ? before : after;
-        auto const issuanceID = identity->getFieldH192(sfMPTokenIssuanceID);
-        auto const holder = identity->getAccountID(sfAccount);
-        Number const beforeAmount =
-            before ? Number(static_cast<std::int64_t>(before->getFieldU64(sfMPTAmount))) : kNumZero;
-        Number const afterAmount = (!isDelete && after)
-            ? Number(static_cast<std::int64_t>(after->getFieldU64(sfMPTAmount)))
-            : kNumZero;
-        shareHoldings_[issuanceID].push_back(
-            ShareHoldingDelta{.holder = holder, .delta = afterAmount - beforeAmount});
+        touchedShareIssuances_.insert(identity->getFieldH192(sfMPTokenIssuanceID));
     }
 }
 
@@ -465,7 +446,7 @@ ValidVault::checkLoanFunding(
         result = false;
     }
 
-    // The remaining participant-side checks are new under fixCleanup3_4_0
+    // The remaining participant-side checks are new under featureLendingProtocolV1_1
     // and use the basis-aware exposure / claim accessors; keep them behind that gate
     // so pre-V1_1 behaviour is unchanged.
     if (!view.rules().enabled(fixCleanup3_4_0))
@@ -1147,7 +1128,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         result = false;
     }
 
-    // Under fixCleanup3_4_0, tie the broker's aggregate exposure
+    // Under featureLendingProtocolV1_1, tie the broker's aggregate exposure
     // (DebtTotal) to the touched loan's exposure delta: since a LoanPay
     // touches exactly one loan, `Δ DebtTotal == Δ exposure(loan)`. The
     // universal `DebtTotal == Σ exposure` (item 22) reduces to this delta
@@ -1454,7 +1435,7 @@ ValidVault::finalize(
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
         // ttLOAN_* transactions only exist under featureLendingProtocol, and their
-        // vault-side checks are otherwise gated by fixCleanup3_4_0;
+        // vault-side checks are otherwise gated by featureLendingProtocolV1_1;
         // keep the same gate here so pre-V1_1 behaviour is unchanged.
         bool const isLoanTxn = txnType == ttLOAN_SET ||  //
             txnType == ttLOAN_MANAGE ||                  //
@@ -1480,8 +1461,7 @@ ValidVault::finalize(
             txnType != ttVAULT_WITHDRAW && txnType != ttVAULT_CLAWBACK &&
             txnType != ttVAULT_CREATE && txnType != ttVAULT_DELETE)
         {
-            auto const it = shareHoldings_.find(afterVault.shareMPTID);
-            if (it != shareHoldings_.end() && !it->second.empty())
+            if (touchedShareIssuances_.contains(afterVault.shareMPTID))
             {
                 JLOG(j.fatal()) <<  //
                     "Invariant failed: non-transferable vault shares must not "
@@ -1844,7 +1824,7 @@ ValidVault::finalize(
 
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
 
-                // Post-fixCleanup3_4_0: a withdrawal that redeems shares from a
+                // Post-featureLendingProtocolV1_1: a withdrawal that redeems shares from a
                 // pool with no effective value left to back them (e.g. fully
                 // impaired/insolvent) legitimately moves zero assets on both
                 // sides — VaultWithdraw::doApply does not touch either

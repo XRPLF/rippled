@@ -1224,7 +1224,7 @@ NoModifiedUnmodifiableFields::finalize(
                 //
                 // lsfLoanOverpayment is set-once at creation and must never
                 // toggle; this is ungated to match its previous coverage in
-                // LoanInvariant, which pre-dates fixCleanup3_4_0. The
+                // LoanInvariant, which pre-dates featureLendingProtocolV1_1. The
                 // enforcement gate is the outer featureLendingProtocol -
                 // ltLOAN entries only exist under that amendment.
                 //

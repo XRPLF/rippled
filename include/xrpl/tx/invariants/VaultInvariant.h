@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace xrpl {
@@ -90,9 +91,6 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
-        std::uint32_t flags = 0;
-        std::uint8_t withdrawalPolicy = 0;
-        std::uint8_t scale = 0;
         // Recognition model (accrual vs. cash-basis) this vault was created
         // with; absent sfLEVersion means the legacy, accrual-basis model.
         VaultVersion version = VaultVersion::Legacy;
@@ -108,23 +106,9 @@ class ValidVault
         MPTIssue share;
         std::uint64_t sharesTotal = 0;
         std::uint64_t sharesMaximum = 0;
-        // Static share MPTokenIssuance fields snapshotted for post-creation
-        // invariants (Items 3, 4). These are all set at VaultCreate time and
-        // must not drift on any subsequent transaction.
-        std::uint16_t transferFee = 0;
-        std::uint8_t assetScale = 0;
         std::uint32_t flags = 0;
 
         Shares static make(SLE const&);
-    };
-
-    // Change in an MPToken holder's balance for a single share issuance. The
-    // holder is preserved so a future check can point at the offending
-    // account rather than just reporting an aggregate mismatch.
-    struct ShareHoldingDelta final
-    {
-        AccountID holder;
-        Number delta = kNumZero;
     };
 
     struct Loan final
@@ -146,11 +130,6 @@ class ValidVault
         // LossUnrealized magnitude checks in finalizeLoanManage, which switch
         // on the pre-transaction impairment state of a defaulted loan.
         bool impaired = false;
-
-        // Interest booked to the vault at loan creation: the portion of the
-        // total value owed that is neither principal nor broker management fee.
-        [[nodiscard]] Number
-        interestDue() const;
 
         // The vault's claim on the loan, i.e. its exposure to the loan. This is
         // accounting-basis dependent: under accrual it is the total value owed
@@ -174,8 +153,8 @@ class ValidVault
 
     // Snapshot of a LoanBroker ledger entry. Populated by visitEntry whenever a
     // broker is touched by the transaction, so the lending-side finalizers can
-    // compute deltas on DebtTotal, CoverAvailable and OwnerCount without a
-    // separate read of the after-state.
+    // compute deltas on DebtTotal and CoverAvailable without a separate read of
+    // the after-state.
     struct Broker final
     {
         uint256 key = beast::kZero;
@@ -183,7 +162,6 @@ class ValidVault
         uint256 vaultID = beast::kZero;
         Number debtTotal = 0;
         Number coverAvailable = 0;
-        std::uint32_t ownerCount = 0;
 
         Broker static make(SLE const&);
     };
@@ -209,11 +187,11 @@ private:
     std::vector<Loan> beforeLoan_;
     std::vector<Broker> beforeBroker_;
     std::unordered_map<uint256, DeltaInfo> deltas_;
-    // Per-issuance holder-side share deltas, populated for every touched
-    // ltMPTOKEN. The universal share-conservation check in finalize sums
-    // these for the vault's own share issuance and matches the total against
-    // the issuance's OutstandingAmount delta.
-    std::unordered_map<uint192, std::vector<ShareHoldingDelta>> shareHoldings_;
+    // Share issuance IDs whose MPTokens were touched by this transaction.
+    // Populated for every ltMPTOKEN visited. Consumed by the non-transferable
+    // vault-shares check in finalize, which needs only to know whether any
+    // holder was touched for a given issuance.
+    std::unordered_set<uint192> touchedShareIssuances_;
 
     /**
      * @brief Compute the minimum STAmount scale for rounding invariant
@@ -308,34 +286,17 @@ private:
     exactlyOneLoan(LoanOp op, beast::Journal const& j) const;
 
     /**
-     * @brief Creation-side invariants of a loan-origination transaction.
-     *
-     * Enforces the phase gate (closed-ended vaults must be in the Investment phase to originate a
-     * loan; open-ended vaults fall through) and, under @c fixCleanup3_4_0, the exactly-one-loan
-     * cardinality expected of a creation. Extracted so the checks are callable from any transactor
-     * that ends up creating a loan (see the eventual @c LoanAccept split); reads the transaction's
-     * effect on the vault and loan snapshots directly from @c this.
-     *
-     * @param tx            The transaction being applied.
-     * @param view          Active ledger view (used for rules).
-     * @param j             Journal for logging invariant failures.
-     * @return @c true when the creation-side invariants hold.
-     */
-    [[nodiscard]] bool
-    checkLoanCreation(STTx const& tx, ReadView const& view, beast::Journal const& j) const;
-
-    /**
      * @brief Funding-side invariants of a loan-origination transaction.
      *
      * Verifies that the transaction moved the requested principal out of the vault
      * pseudo-account, and that the created loan records exactly that principal. Under
-     * @c fixCleanup3_4_0 also verifies the participant-side accounting: the broker's
+     * @c featureLendingProtocolV1_1 also verifies the participant-side accounting: the broker's
      * @c DebtTotal grows by the new loan's exposure (basis-aware), the borrower and broker owner
      * receive their respective portions of the principal, and the vault's @c AssetsTotal /
-     * @c AssetsAvailable / claim identity holds at origination. Assumes @c checkLoanCreation has
-     * already run and returned @c true (in particular that the loan cardinality is one), so it may
-     * index @c afterLoan_[0] directly. Extracted so a future @c LoanAccept transactor can reuse
-     * the funding checks independently of the creation ones.
+     * @c AssetsAvailable / claim identity holds at origination. Assumes @c exactlyOneLoan has
+     * already returned @c true, so it may index @c afterLoan_[0] directly. Extracted so a future
+     * @c LoanAccept transactor can reuse the funding checks independently of the creation-side
+     * phase gate.
      *
      * @param tx            The transaction being applied.
      * @param fee           Fee charged by this transaction; added back when the fee-payer is one

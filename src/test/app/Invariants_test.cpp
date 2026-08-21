@@ -2929,7 +2929,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
 
-            // Item 29 (XLS-65 §3.4, XLS-66 §3.4): a VaultDelete transaction
+            // (XLS-65 §3.4, XLS-66 §3.4): a VaultDelete transaction
             // must not touch any loan broker. The pseudo-account
             // owner-directory residual check in ValidVault (item 9) enforces
             // the substantive property indirectly; this check catches a
