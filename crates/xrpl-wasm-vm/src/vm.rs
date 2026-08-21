@@ -28,8 +28,13 @@ pub const MAX_MEMORY_BYTES: usize = (MAX_MEMORY_PAGES * WASM_PAGE_BYTES) as usiz
 /// entries, which a module asks for in five bytes of LEB128 and pays for in ~34 GiB.
 pub const MAX_TABLE_ELEMENTS: usize = 1024;
 
-/// Total bytes that may cross the host/guest boundary in one [`run`], separate
-/// from gas.
+/// Total bytes the host may write into guest memory in one [`run`], separate from
+/// gas.
+///
+/// One direction only. What the guest passes in is not charged: it reaches the host
+/// as a borrowed slice of guest memory, capped per value at [`MAX_FIELD_BYTES`] by
+/// `Region::read` and in number by gas, and a host that keeps a copy (`update_data`)
+/// bounds it on its own side.
 pub const TRANSFER_LIMIT_BYTES: u64 = 1 << 20;
 
 /// Size cap on any single value crossing the boundary, in either direction; over

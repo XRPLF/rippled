@@ -226,22 +226,6 @@ cmake --build build/codegen --target code_gen
 The regenerated files should be committed alongside your changes. CI verifies
 that they are up-to-date.
 
-## Rust crates
-
-The build compiles the Rust workspace in `crates/` and generates the cxxbridge
-bindings the C++ side includes, so it needs a Rust toolchain (`cargo`, `rustc`)
-at the channel pinned in [`rust-toolchain.toml`](./rust-toolchain.toml). The
-[Nix development shell](./docs/build/nix.md) provides one; otherwise install it
-as described in [Rust](./docs/build/environment.md#rust).
-
-The crates also have their own Rust unit tests. Those are run with `cargo` and
-need only the Rust toolchain, independently of CMake (CI runs them with
-`cargo nextest`):
-
-```bash
-cargo test --manifest-path crates/Cargo.toml --workspace
-```
-
 ## Coverage report
 
 The coverage report is intended for developers using compilers GCC
@@ -331,6 +315,22 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 memory) since they concatenate sources into fewer translation units. Non-unity
 builds may be faster for incremental builds, and can be helpful for detecting
 `#include` omissions.
+
+### Rust crates
+
+The build compiles the Rust workspace in `crates/` and generates the cxxbridge
+bindings the C++ side includes, so it needs a Rust toolchain (`cargo`, `rustc`)
+at the channel pinned in [`rust-toolchain.toml`](./rust-toolchain.toml). The
+[Nix development shell](./docs/build/nix.md) provides one; otherwise install it
+as described in [Rust](./docs/build/environment.md#rust).
+
+The crates also have their own Rust unit tests. Those are run with `cargo` and
+need only the Rust toolchain, independently of CMake (CI runs them with
+`cargo nextest`):
+
+```bash
+cargo test --manifest-path crates/Cargo.toml --workspace
+```
 
 ### Verifying headers
 
