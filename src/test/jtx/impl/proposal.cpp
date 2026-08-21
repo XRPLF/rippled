@@ -3,6 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/batch.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/utility.h>
 
@@ -93,6 +94,13 @@ unsignedBatch(
         rawTransactions[rawTransactions.size()][jss::RawTransaction] = inner;
 
     return unsignedPayload(env, std::move(jv), ticketSeq);
+}
+
+void
+authorizeProposer(Env& env, Account const& target, Account const& proposer)
+{
+    env(signers(target, 1, {{proposer, 1}}));
+    env.close();
 }
 
 std::uint32_t

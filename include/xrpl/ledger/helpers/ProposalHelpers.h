@@ -9,6 +9,28 @@
 namespace xrpl::proposal {
 
 /**
+ * Owner-reserve increments held by a proposal of an ordinary transaction.
+ */
+constexpr std::uint32_t kProposalOwnerCount = 5;
+
+/**
+ * Owner-reserve increments held by a proposal of a Batch transaction. A
+ * proposed Batch stores up to eight inner transactions plus multi-account
+ * signatures, so it reserves more than an ordinary proposed transaction.
+ */
+constexpr std::uint32_t kBatchProposalOwnerCount = 10;
+
+/**
+ * Owner-reserve increments held by a proposal of the given transaction.
+ */
+inline std::uint32_t
+proposalOwnerCount(STObject const& proposedTx)
+{
+    return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? kBatchProposalOwnerCount
+                                                                : kProposalOwnerCount;
+}
+
+/**
  * Whether the proposed transaction is itself a proposal transaction, which
  * would nest one proposal inside another.
  *
@@ -20,6 +42,19 @@ isProposalTx(STObject const& proposedTx)
 {
     return proposedTx.getFieldU16(sfTransactionType) == ttTRANSACTION_PROPOSAL_CREATE;
 }
+
+/**
+ * Whether the proposed transaction is independently submittable through the
+ * ordinary multi-sign path: not a nested proposal, not a pseudo-transaction,
+ * not itself flagged as someone else's inner batch transaction, and — if it
+ * is a Batch — none of its own inner transactions is a nested proposal or a
+ * pseudo-transaction either. A Batch inner transaction cannot itself be
+ * pseudo (preflight0 rejects the pseudo/tfInnerBatchTxn combination
+ * generically), but that guard lives outside this feature, so it is checked
+ * again here rather than relied upon.
+ */
+bool
+isValidProposal(STObject const& proposedTx);
 
 /**
  * Whether the proposed transaction carries any signature field.
@@ -47,28 +82,6 @@ hasEmptySigningPubKey(STObject const& proposedTx)
 {
     return proposedTx.isFieldPresent(sfSigningPubKey) &&
         proposedTx.getFieldVL(sfSigningPubKey).empty();
-}
-
-/**
- * Owner-reserve increments held by a proposal of an ordinary transaction.
- */
-constexpr std::uint32_t kProposalOwnerCount = 5;
-
-/**
- * Owner-reserve increments held by a proposal of a Batch transaction. A
- * proposed Batch stores up to eight inner transactions plus multi-account
- * signatures, so it reserves more than an ordinary proposed transaction.
- */
-constexpr std::uint32_t kBatchProposalOwnerCount = 10;
-
-/**
- * Owner-reserve increments held by a proposal of the given transaction.
- */
-inline std::uint32_t
-proposalOwnerCount(STObject const& proposedTx)
-{
-    return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? kBatchProposalOwnerCount
-                                                                : kProposalOwnerCount;
 }
 
 }  // namespace xrpl::proposal
