@@ -479,7 +479,9 @@ fn an_exported_table_past_the_cap_does_not_pass() {
     assert!(refusal.contains("past the 1024-element cap"), "{refusal}");
 
     passes(&module(
-        &[&format!(r#"(table (export "t") {MAX_TABLE_ELEMENTS} funcref)"#)],
+        &[&format!(
+            r#"(table (export "t") {MAX_TABLE_ELEMENTS} funcref)"#
+        )],
         "(i32.const 0)",
     ));
 }

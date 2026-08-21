@@ -20,11 +20,13 @@
 // For `TraceDataType`, which the bridge declares and this header defines.
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <exception>
 #include <expected>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
