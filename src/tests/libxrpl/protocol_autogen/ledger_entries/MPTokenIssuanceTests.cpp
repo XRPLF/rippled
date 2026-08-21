@@ -38,6 +38,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const auditorEncryptionKeyValue = canonical_VL();
     auto const issuerKeyEpochValue = canonical_UINT32();
     auto const auditorKeyEpochValue = canonical_UINT32();
+    auto const holderCountValue = canonical_UINT64();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
 
     MPTokenIssuanceBuilder builder{
@@ -61,6 +62,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
     builder.setIssuerKeyEpoch(issuerKeyEpochValue);
     builder.setAuditorKeyEpoch(auditorKeyEpochValue);
+    builder.setHolderCount(holderCountValue);
     builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
 
     builder.setLedgerIndex(index);
@@ -205,6 +207,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = holderCountValue;
+        auto const actualOpt = entry.getHolderCount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfHolderCount");
+        EXPECT_TRUE(entry.hasHolderCount());
+    }
+
+    {
         auto const& expected = confidentialOutstandingAmountValue;
         auto const actualOpt = entry.getConfidentialOutstandingAmount();
         ASSERT_TRUE(actualOpt.has_value());
@@ -243,6 +253,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const auditorEncryptionKeyValue = canonical_VL();
     auto const issuerKeyEpochValue = canonical_UINT32();
     auto const auditorKeyEpochValue = canonical_UINT32();
+    auto const holderCountValue = canonical_UINT64();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
 
     auto sle = std::make_shared<SLE>(MPTokenIssuance::entryType, index);
@@ -265,6 +276,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfAuditorEncryptionKey) = auditorEncryptionKeyValue;
     sle->at(sfIssuerKeyEpoch) = issuerKeyEpochValue;
     sle->at(sfAuditorKeyEpoch) = auditorKeyEpochValue;
+    sle->at(sfHolderCount) = holderCountValue;
     sle->at(sfConfidentialOutstandingAmount) = confidentialOutstandingAmountValue;
 
     MPTokenIssuanceBuilder builderFromSle{sle};
@@ -493,6 +505,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = holderCountValue;
+
+        auto const fromSleOpt = entryFromSle.getHolderCount();
+        auto const fromBuilderOpt = entryFromBuilder.getHolderCount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfHolderCount");
+        expectEqualField(expected, *fromBuilderOpt, "sfHolderCount");
+    }
+
+    {
         auto const& expected = confidentialOutstandingAmountValue;
 
         auto const fromSleOpt = entryFromSle.getConfidentialOutstandingAmount();
@@ -593,6 +618,8 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getIssuerKeyEpoch().has_value());
     EXPECT_FALSE(entry.hasAuditorKeyEpoch());
     EXPECT_FALSE(entry.getAuditorKeyEpoch().has_value());
+    EXPECT_FALSE(entry.hasHolderCount());
+    EXPECT_FALSE(entry.getHolderCount().has_value());
     EXPECT_FALSE(entry.hasConfidentialOutstandingAmount());
     EXPECT_FALSE(entry.getConfidentialOutstandingAmount().has_value());
 }
