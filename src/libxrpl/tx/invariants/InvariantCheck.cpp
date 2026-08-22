@@ -188,22 +188,26 @@ FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_r
         if (format == nullptr)
         {
             // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::FailedTransaction::visitEntry : account root has no known ledger format");
+            UNREACHABLE("xrpl::FailedTransaction::visitEntry : object has no known ledger format");
             return true;
             // LCOV_EXCL_STOP
         }
 
+        auto const allowedFields = std::to_array<SField const*>(
+            {&sfSequence,
+             &sfBalance,
+             &sfOwnerCount,
+             &sfTicketCount,
+             &sfFeeAmount,
+             &sfPreviousTxnID,
+             &sfPreviousTxnLgrSeq});
         for (auto const& elem : format->getSOTemplate())
         {
-            // skip this for now
-
-            break;
-
             auto const& sf = elem.sField();
 
-            // No fields other than sfSequence, sfBalance, or sfFeeAmount may change
-            if (&sf == &sfSequence || &sf == &sfBalance || &sf == &sfFeeAmount)
+            // No fields other than allowedFields may change
+            if (std::ranges::any_of(
+                    allowedFields, [&sf](auto const* allowedField) { return allowedField == &sf; }))
                 continue;
 
             auto const* bField = before->peekAtPField(sf);
@@ -212,13 +216,10 @@ FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_r
             bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
             if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
             {
-                err << "At least one " << desc << " field modified: " << label
+                err << "At least one unexpected " << desc << " field modified: " << label
                     << ", field: " << sf.getName()
-                    /*
-                        << ", before: " << (bPresent ? bField->getText() : "(absent)")
-                        << ", after: " << (aPresent ? aField->getText() : "(absent)")
-                        */
-                    ;
+                    << ", before: " << (bPresent ? bField->getText() : "(absent)")
+                    << ", after: " << (aPresent ? aField->getText() : "(absent)");
                 errors_.emplace_back(err.str());
                 return true;
             }
@@ -236,6 +237,34 @@ FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_r
             "Account root",
             [](SLE::const_ref sle) { return to_string(sle->at(sfAccount)); }))
     {
+        auto const beforeOwnerCount = before->at(~sfOwnerCount).value_or(0);
+        auto const afterOwnerCount = after->at(~sfOwnerCount).value_or(0);
+        if (afterOwnerCount != beforeOwnerCount)
+        {
+            if (afterOwnerCount > beforeOwnerCount)
+            {
+                err << "Account root OwnerCount increased: " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+            }
+            // The fields are uints, so do the math in two steps.
+            netOwnerCountChange_ += afterOwnerCount;
+            netOwnerCountChange_ -= beforeOwnerCount;
+        }
+
+        auto const beforeTicketCount = before->at(~sfTicketCount).value_or(0);
+        auto const afterTicketCount = after->at(~sfTicketCount).value_or(0);
+        if (afterTicketCount != beforeTicketCount)
+        {
+            if (afterTicketCount > beforeTicketCount)
+            {
+                err << "Account root TicketCount increased: " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+            }
+            // The fields are uints, so do the math in two steps.
+            netTicketCountChange_ += afterTicketCount;
+            netTicketCountChange_ -= beforeTicketCount;
+        }
+
         auto const beforeSequence = before->at(sfSequence);
         auto const afterSequence = after->at(sfSequence);
         if (afterSequence != beforeSequence)
@@ -410,6 +439,24 @@ FailedTransaction::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: " << directorySideEffects_.size()
                         << " directory side effects without any deleted objects";
+        result = false;
+    }
+
+    auto const expectedTicketChange = deletedTicket_ ? -1 : 0;
+    if (expectedTicketChange != netTicketCountChange_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: ticket deletions (" << expectedTicketChange
+                        << ") does not match net ticket count change (" << netTicketCountChange_
+                        << ")";
+        result = false;
+    }
+
+    auto const expectedOwnerChanges = -deletedObjects_.size() + expectedTicketChange;
+    if (expectedOwnerChanges != netOwnerCountChange_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: total deletions (" << expectedOwnerChanges
+                        << ") does not match net owner count change (" << netOwnerCountChange_
+                        << ")";
         result = false;
     }
 

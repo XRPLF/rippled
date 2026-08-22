@@ -123,7 +123,11 @@ public:
  *      For tecOVERSIZE and tecKILLED, ltOFFER
  *      For tecINCOMPLETE, ltRIPPLE_STATE
  *      For tecEXPIRED, ltNFTOKEN_OFFER or ltCREDENTIAL
- * 4. Modify or delete Directory Nodes, only if expired objects were deleted.
+ * 4. AccountRoot owner counts may be decreased. The net change must equal to the number of deleted
+ *    objects.
+ * 5. Ticket counts may be decreased. The net change must equal to the number of deleted tickets
+ *    (which should be at most 1).
+ * 6. Modify or delete Directory Nodes, only if expired objects were deleted.
  *
  * Anything outside of that is bad.
  *
@@ -148,6 +152,8 @@ class FailedTransaction
     SLE::const_pointer sponsorPaidFee_;
     SLE::const_pointer accountIncreasedSequence_;
     SLE::const_pointer deletedTicket_;
+    int netOwnerCountChange_ = 0;
+    int netTicketCountChange_ = 0;
     std::vector<DeletedEntry> deletedObjects_;
     std::vector<SLE::const_pointer> directorySideEffects_;
     std::vector<std::string> errors_;
