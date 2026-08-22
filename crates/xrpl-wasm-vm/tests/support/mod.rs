@@ -31,6 +31,11 @@ pub enum Answer {
     /// test can reach the over-cap and buffer-fit rules without a value that
     /// large.
     Value { bytes: Vec<u8>, len: usize },
+    /// Fills the output region with `mark` and reports its length: a host whose
+    /// value is as large as the room it is given. What it writes and what it
+    /// reports are then both the width of the window the engine opened, which is
+    /// how a test observes that width rather than inferring it from a refusal.
+    AsMuchAsOffered { mark: u8 },
     /// Fails without touching the output region.
     Fail(HostError),
 }
@@ -70,6 +75,12 @@ impl Answer {
         Answer::bytes((0..len).map(|i| i as u8).collect::<Vec<u8>>())
     }
 
+    /// A `mark` in every byte it is offered, reporting that many. See
+    /// [`Answer::AsMuchAsOffered`].
+    pub fn as_much_as_offered(mark: u8) -> Answer {
+        Answer::AsMuchAsOffered { mark }
+    }
+
     fn fill(&self, out: &mut [u8]) -> HostResult<usize> {
         match self {
             Answer::Value { bytes, len } => {
@@ -77,6 +88,10 @@ impl Answer {
                     out[..bytes.len()].copy_from_slice(bytes);
                 }
                 Ok(*len)
+            }
+            Answer::AsMuchAsOffered { mark } => {
+                out.fill(*mark);
+                Ok(out.len())
             }
             Answer::Fail(error) => Err(*error),
         }

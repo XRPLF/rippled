@@ -18,11 +18,12 @@ bridge.
   `ApplyContext&`. Bodies are split across `HostFuncImpl*.cpp` by category.
 - **`HostContext.h`** — the bridge's C++ half: an ABI-shaped, `noexcept` view of
   `HostFunctions` that the engine calls back into. Nothing may unwind into Rust, so every
-  method routes through `guarded()`.
+  method catches everything — through `guarded()`, except `trace`, which answers the guest
+  nothing and so has its own catch that only logs.
 - **`WasmCommon.h`** — the shared vocabulary: `HostFunctionError` (the codes a contract
   sees), `Bytes`, `FieldLocator`, `WasmTER`, `adjustWasmEndianess`, which is where the
-  boundary's byte order is decided, and `guarded()`, the one catch every crossing of the
-  bridge's C++ half goes through.
+  boundary's byte order is decided, and `guarded()`, the catch that turns a throwing host
+  body into a code the engine can read.
 
 ## Host functions
 

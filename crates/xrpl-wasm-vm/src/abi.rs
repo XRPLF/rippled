@@ -166,7 +166,7 @@ pub(crate) fn read_borrowed<'a>(
 ///
 /// The ABI transports these as a 4-byte region rather than a wasm scalar (the guest
 /// SDK passes `seq.to_le_bytes()`), so the region must be exactly four bytes;
-/// `InvalidParams` otherwise, matching the C-ABI wrapper's `getDataUInt32`.
+/// `InvalidParams` otherwise.
 pub(crate) fn read_u32_arg(bytes: &[u8]) -> HostResult<i32> {
     let arr: [u8; 4] = bytes.try_into().map_err(|_| HostError::InvalidParams)?;
     Ok(i32::from_le_bytes(arr))
@@ -177,8 +177,8 @@ pub(crate) fn read_u32_arg(bytes: &[u8]) -> HostResult<i32> {
 ///
 /// **`fill` returns the value's true length, not what it wrote**: a host holding 64
 /// bytes and offered room for 4 writes nothing and answers `64`, which is how the
-/// guest learns the size to ask for. So `n` is bounded by neither the region nor the
-/// cap, and both checks below are reachable.
+/// guest learns the size to ask for. So `n` is bounded by neither the region, the
+/// cap, nor the budget, and all three checks below are reachable.
 pub(crate) fn write_into(
     caller: &mut Caller<'_, VmState<'_>>,
     out: Region,
@@ -188,15 +188,12 @@ pub(crate) fn write_into(
     let cap = range.len();
     let mem = memory(caller)?;
     let host: &dyn HostFunctions = caller.data().host;
-    // Bounds-checked over the guest's whole declared region, so a buffer running
-    // past memory is a wrong pointer rather than a truncated prefix being served…
+    let budget = usize::try_from(caller.data().transfer_budget.get()).unwrap_or(usize::MAX);
     let buf = mem
         .data_mut(&mut *caller)
         .get_mut(range)
         .ok_or(HostError::PointerOutOfBounds)?;
-    // …of which only the field cap is writable, so no call can exceed it whatever
-    // the guest declared.
-    let buf = &mut buf[..cap.min(MAX_FIELD_BYTES)];
+    let buf = &mut buf[..cap.min(MAX_FIELD_BYTES).min(budget)];
 
     let n = fill(host, buf)?;
 

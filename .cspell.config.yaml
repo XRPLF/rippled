@@ -376,6 +376,7 @@ words:
   - vfalco
   - vinnie
   - wasmi
+  - wasmparser
   - Werror
   - wextra
   - wptr

@@ -4,6 +4,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
@@ -17,14 +18,16 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <rust/cxx.h>
-// For `TraceDataType`, which the bridge declares and this header defines.
+// For `TraceDataType`: declared in the cxx bridge, defined in the header it generates.
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <exception>
 #include <expected>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -46,7 +49,9 @@ constexpr std::int32_t kHostInternal = hfErrorToInt(HostFunctionError::InternalF
 std::int32_t
 answer(rust::Slice<std::uint8_t> out, std::uint8_t const* value, std::size_t size)
 {
-    if (size <= out.size())
+    XRPL_ASSERT(
+        value != nullptr || size == 0, "xrpl::answer : nullptr value should have zero size");
+    if (value != nullptr && size <= out.size())
     {
         std::memcpy(out.data(), value, size);
     }
@@ -71,8 +76,7 @@ answerScalar(rust::Slice<std::uint8_t> out, T value)
 
 // Decode an asset from its wire bytes, whose length selects the kind: an MPT id, a
 // bare currency (which must be XRP), or a currency followed by an issuer (which must
-// not be XRP). Any other length is malformed. This mirrors `getDataAsset` in the
-// C-ABI wrapper the wasm engine replaces.
+// not be XRP). Any other length is malformed.
 std::expected<Asset, HostFunctionError>
 parseAsset(rust::Slice<std::uint8_t const> bytes)
 {
@@ -106,7 +110,7 @@ parseAsset(rust::Slice<std::uint8_t const> bytes)
 }
 
 // Decode a `uint64` from its eight wire bytes, in the wire's byte order. The region
-// must be exactly eight bytes, mirroring `getDataUnsigned` in the C-ABI wrapper.
+// must be exactly eight bytes, else `InvalidParams`.
 std::expected<std::uint64_t, HostFunctionError>
 parseUint64(rust::Slice<std::uint8_t const> bytes)
 {
@@ -121,7 +125,7 @@ parseUint64(rust::Slice<std::uint8_t const> bytes)
 }
 
 // Deserialize an `ST` object from its wire bytes; `InvalidParams` if the bytes are not
-// a well-formed one. Mirrors the try/catch around `SerialIter` in the C-ABI wrapper.
+// a well-formed one, which `SerialIter` reports by throwing.
 template <class T>
 std::expected<T, HostFunctionError>
 parseST(rust::Slice<std::uint8_t const> bytes)

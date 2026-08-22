@@ -176,8 +176,7 @@ fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
         /// handing over a region clamped to the field cap — but it cannot take
         /// back what a method already put there. A host that wrote a truncated
         /// prefix and then reported the larger length would leave those bytes in
-        /// guest memory behind a refusal the guest is told to ignore. C++'s
-        /// `setData` is the reference point: it wrote only on a value that fit.
+        /// guest memory behind a refusal the guest is told to ignore.
         pub trait HostFunctions {
             #(#trait_methods)*
         }
