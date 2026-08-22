@@ -683,10 +683,15 @@ struct FlowMPT_test : public beast::unit_test::Suite
         {
             // Regression: an extreme transfer-fee-adjusted MPT amount used to
             // throw from MPTAmount::mulRatio during the endpoint reverse pass.
-            // It should now make the strand dry without mutating the offer.
+            // The reverse pass now caps srcToDst at the largest amount whose
+            // transfer-fee-adjusted input is representable, so the offer limits
+            // the strand and a partial payment goes through.
             Env env(*this, features);
 
             std::int64_t constexpr overflowAmount = 7'000'000'000'000'000'000LL;
+            // The offer caps the input at overflowAmount, which the maximum
+            // transfer rate of 1.5 scales down to 7e18 * 2 / 3, rounded down
+            std::int64_t constexpr deliveredAmount = 4'666'666'666'666'666'666LL;
 
             env.fund(XRP(10'000), iouGW, mptGW, alice, bob);
             env.close();
@@ -704,12 +709,77 @@ struct FlowMPT_test : public beast::unit_test::Suite
             env(pay(alice, bob, mpt(overflowAmount)),
                 Path(~mpt),
                 Sendmax(usd(overflowAmount)),
-                Txflags(tfNoRippleDirect | tfPartialPayment),
-                Ter(tecPATH_DRY));
+                Txflags(tfNoRippleDirect | tfPartialPayment));
 
-            env.require(Balance(alice, usd(overflowAmount)), Balance(bob, mpt(0)));
-            BEAST_EXPECT(isOffer(env, mptGW, usd(overflowAmount), mpt(overflowAmount)));
+            env.require(Balance(alice, usd(0)), Balance(bob, mpt(deliveredAmount)));
+            BEAST_EXPECT(!isOffer(env, mptGW, usd(overflowAmount), mpt(overflowAmount)));
         }
+    }
+
+    void
+    testMPTEndpointRipplingInputOverflow(FeatureBitset features)
+    {
+        // A payment between the holders of an MPT with a transfer fee ripples
+        // through the issuer, and the issuing step has to charge the transfer
+        // rate on the amount it receives. maxPaymentFlow() returns the issuance
+        // maximum for that step, so srcToDst * transferRate is not necessarily
+        // representable as an MPT amount. The reverse pass must cap the flow at
+        // the largest representable input instead of declaring the strand dry,
+        // otherwise a deliverable partial payment fails with tecPATH_DRY.
+        //
+        // Same defect as the case above, reached without an offer: holder ->
+        // issuer -> holder, one case per branch of the pre-fix revImp.
+        testcase("MPT Endpoint rippling input overflow");
+
+        using namespace jtx;
+
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+
+        // The maximum transfer fee gives a transfer rate of 1.5, so an input of
+        // kMaxMpTokenAmount covers at most kMaxMpTokenAmount * 2 / 3 of output.
+        std::int64_t constexpr maxRepresentable = 6'148'914'691'236'517'204LL;
+        std::int64_t constexpr aliceBalance = 1'000;
+        // The forward pass rounds the delivered amount down: 1000 / 1.5
+        std::int64_t constexpr bobBalance = 666;
+
+        auto const test =
+            [&](std::uint64_t maxAmt, std::int64_t deliver, std::string const& label) {
+                Env env(*this, features);
+                env.fund(XRP(10'000), gw, alice, bob);
+                env.close();
+
+                auto mpt = MPTTester(
+                    {.env = env,
+                     .issuer = gw,
+                     .holders = {alice, bob},
+                     .transferFee = kMaxTransferFee,
+                     .maxAmt = maxAmt});
+
+                env(pay(gw, alice, mpt(aliceBalance)));
+                env.close();
+
+                // alice asks to deliver more than the transfer rate can scale,
+                // so the issuing step caps the flow and her balance limits it
+                // further
+                env(pay(alice, bob, mpt(deliver)),
+                    Sendmax(mpt(kMaxMpTokenAmount)),
+                    Txflags(tfPartialPayment));
+                BEAST_EXPECTS(env.ter() == tesSUCCESS, label);
+                BEAST_EXPECTS(env.balance(alice, mpt) == mpt(0), label);
+                BEAST_EXPECTS(env.balance(bob, mpt) == mpt(bobBalance), label);
+                BEAST_EXPECTS(mpt.checkMPTokenOutstandingAmount(bobBalance), label);
+            };
+
+        // The requested amount is below MaximumAmount, so the reverse pass
+        // takes the non-limiting branch and overflows on the requested amount
+        test(kMaxMpTokenAmount, maxRepresentable + 1, "non-limiting");
+
+        // MaximumAmount is below the requested amount but still large enough
+        // that scaling it by the transfer rate is not representable, so the
+        // reverse pass takes the limiting branch and overflows on the maximum
+        test(maxRepresentable + 1, kMaxMpTokenAmount, "limiting");
     }
 
     void
@@ -2454,6 +2524,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testOfferOwnerMPTCreation(features);
         testTransferRate(features);
         testMPTEndpointTransferRateOverflow(features);
+        testMPTEndpointRipplingInputOverflow(features);
         testSelfPayment1(features);
         testSelfPayment2(features);
         testSelfFundedXRPEndpoint(false, features);

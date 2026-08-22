@@ -13,6 +13,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -526,76 +527,41 @@ MPTEndpointStep<TDerived>::revImp(
         return {beast::kZero, beast::kZero};
     }
 
+    // When a previous step feeds this issuing step, srcQOut is the issuer's
+    // transfer rate and maxPaymentFlow() returns the issuance maximum rather
+    // than a real limit, so srcToDst * srcQOut need not be representable. Cap
+    // srcToDst at the largest amount whose input is; the previous step then
+    // limits the flow to what the source actually holds.
+    MPTAmount const maxRepresentable =
+        mulRatio(MPTAmount(kMaxMpTokenAmount), QUALITY_ONE, srcQOut, /*roundUp*/ false);
+
     // Don't have to factor in dstQIn since it is always QUALITY_ONE
-    MPTAmount const srcToDst = out;
+    MPTAmount const srcToDst = std::min({out, maxSrcToDst, maxRepresentable});
 
-    if (srcToDst <= maxSrcToDst)
-    {
-        auto const maybeIn = tryMulRatio(srcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
-        if (!maybeIn)
-        {
-            JLOG(j_.trace()) << "MPTEndpointStep::rev: overflow";
-            resetCache(srcDebtDir);
-            return {beast::kZero, beast::kZero};
-        }
+    // Can't overflow: srcToDst <= kMaxMpTokenAmount * QUALITY_ONE / srcQOut,
+    // so the rounded up product is at most kMaxMpTokenAmount.
+    MPTAmount const in = mulRatio(srcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
 
-        MPTAmount const in = *maybeIn;
+    cache_.emplace(in, srcToDst, srcToDst, srcDebtDir);
 
-        cache_.emplace(in, srcToDst, srcToDst, srcDebtDir);
-        auto const ter = sendWithMPTCreate(sb, src_, dst_, srcToDst);
-        if (!isTesSuccess(ter))
-        {
-            // Unreachable: send fails only on funds/auth/overflow, precluded by
-            // maxPaymentFlow, check() requireAuth, and 2*kMaxMpTokenAmount < 2^64.
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::MPTEndpointStep::revImp : non-limiting send failed");
-            JLOG(j_.trace()) << "MPTEndpointStep::rev: error " << ter;
-            resetCache(srcDebtDir);
-            return {beast::kZero, beast::kZero};
-            // LCOV_EXCL_STOP
-        }
-        JLOG(j_.trace()) << "MPTEndpointStep::rev: Non-limiting"
-                         << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
-                         << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
-        return {in, out};
-    }
-
-    // limiting node
-    auto const maybeIn = tryMulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
-    if (!maybeIn)
-    {
-        // Unreachable: the limiting branch always runs with srcQOut ==
-        // QUALITY_ONE, so this identity can't overflow (see qualitiesSrcIssues).
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::MPTEndpointStep::revImp : limiting input overflow");
-        JLOG(j_.trace()) << "MPTEndpointStep::rev: overflow";
-        resetCache(srcDebtDir);
-        return {beast::kZero, beast::kZero};
-        // LCOV_EXCL_STOP
-    }
-
-    MPTAmount const in = *maybeIn;
-
-    // Don't have to factor in dsqQIn since it's always QUALITY_ONE
-    MPTAmount const actualOut = maxSrcToDst;
-    cache_.emplace(in, maxSrcToDst, actualOut, srcDebtDir);
-
-    auto const ter = sendWithMPTCreate(sb, src_, dst_, maxSrcToDst);
+    auto const ter = sendWithMPTCreate(sb, src_, dst_, srcToDst);
     if (!isTesSuccess(ter))
     {
         // Unreachable: send fails only on funds/auth/overflow, precluded by
         // maxPaymentFlow, check() requireAuth, and 2*kMaxMpTokenAmount < 2^64.
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::MPTEndpointStep::revImp : limiting send failed");
+        UNREACHABLE("xrpl::MPTEndpointStep::revImp : send failed");
         JLOG(j_.trace()) << "MPTEndpointStep::rev: error " << ter;
         resetCache(srcDebtDir);
         return {beast::kZero, beast::kZero};
         // LCOV_EXCL_STOP
     }
-    JLOG(j_.trace()) << "MPTEndpointStep::rev: Limiting"
+
+    JLOG(j_.trace()) << "MPTEndpointStep::rev: " << (srcToDst < out ? "Limiting" : "Non-limiting")
                      << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
-                     << " srcToDst: " << to_string(maxSrcToDst) << " out: " << to_string(out);
-    return {in, actualOut};
+                     << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
+
+    return {in, srcToDst};
 }
 
 // The forward pass should never have more liquidity than the reverse
