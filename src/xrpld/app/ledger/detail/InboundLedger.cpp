@@ -509,9 +509,13 @@ InboundLedger::done()
 
     // mtx_ is held, so this may only post the work rather than do it.
     app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()]() {
-        if (self->complete_ && !self->failed_)
+        // The flag is read once. getLedger() consults failed_ itself, so testing it separately
+        // first would read it twice, and a flip in between hands checkAccept() a null ledger,
+        // whose canBeCurrent() asserts non-null and then dereferences. Asking for the ledger
+        // rather than for the flag also refuses a null ledger_ by any other route.
+        if (auto const ledger = self->getLedger(); self->complete_ && ledger)
         {
-            self->app_.getLedgerMaster().checkAccept(self->getLedger());
+            self->app_.getLedgerMaster().checkAccept(ledger);
             self->app_.getLedgerMaster().tryAdvance();
         }
         else

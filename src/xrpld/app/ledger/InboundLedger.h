@@ -91,7 +91,7 @@ public:
     }
 
     /**
-     * Returns false if we failed to get the data.
+     * @return Whether the acquisition has failed.
      */
     bool
     isFailed() const
@@ -99,10 +99,20 @@ public:
         return failed_;
     }
 
+    /**
+     * The acquired ledger, or nullptr if it is not yet available.
+     *
+     * Nullptr both before a header has been obtained, since there is
+     * nothing built yet to hand out, and once the acquisition has failed.
+     * A failed acquisition may still hold a partially built ledger, which
+     * must never be used, so failure reports nothing rather than relying on
+     * every caller to check isFailed() first. The pointer itself is kept,
+     * since getJson() reports on the partial maps of a failed acquire.
+     */
     std::shared_ptr<Ledger const>
     getLedger() const
     {
-        return ledger_;
+        return failed_ ? nullptr : ledger_;
     }
 
     std::uint32_t

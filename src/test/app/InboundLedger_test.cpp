@@ -542,6 +542,9 @@ struct InboundLedger_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(acquire->isFailed());
         BEAST_EXPECT(!acquire->isComplete());
+
+        // A failed acquisition must not hand back the partial ledger it built.
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
     }
 
     /**
@@ -801,7 +804,11 @@ struct InboundLedger_test : public beast::unit_test::Suite
         BEAST_EXPECT(!acquire->isComplete());
         BEAST_EXPECT(peerSetPtr->requests() > requestsFromInit);
 
-        // done() remembered the hash, which is what stops the next round asking again.
+        // done() remembered the hash. The getLedger() check is not the cover for the failed_ gate
+        // it reads through: nothing here ever built a ledger, so both arms of that gate are null.
+        // The cover is the same assertion in the local-chain case above, where tryDB() builds a
+        // partial ledger and then fails, so the gate is the only reason the answer is null.
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
         BEAST_EXPECT(
             waitFor([&] { return env.app().getInboundLedgers().isFailure(kUnknownLedger); }));
     }
