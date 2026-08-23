@@ -13,6 +13,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
@@ -190,7 +191,7 @@ public:
             metadata->add(*metaSerializer);
 
             ledger->rawTxInsert(uint256{1}, txSerializer, metaSerializer);
-            ledger->setImmutable();
+            BEAST_EXPECT(ledger->setImmutable());
             ledger->setValidated();
 
             try
@@ -260,7 +261,12 @@ public:
             ledger->rawTxInsert(uint256{seq}, txSerializer, metaSerializer);
         }
 
-        ledger->setImmutable();
+        // Thrown rather than asserted because a refusal leaves the ledger unusable, and this
+        // helper is static, so BEAST_EXPECT is out of reach; the suite runner reports the throw.
+        if (!ledger->setImmutable())
+        {
+            Throw<std::runtime_error>("bookChangesFor: ledger could not be made immutable");
+        }
         ledger->setValidated();
 
         return xrpl::rpc::computeBookChanges(std::static_pointer_cast<Ledger const>(ledger));

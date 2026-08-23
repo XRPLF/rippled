@@ -207,7 +207,10 @@ TxTest::close()
         accum.apply(*newLedger);
     }
 
-    newLedger->setAccepted(ledgerCloseTime, newLedger->header().closeTimeResolution, true);
+    if (!newLedger->setAccepted(ledgerCloseTime, newLedger->header().closeTimeResolution, true))
+    {
+        Throw<std::runtime_error>("TxTest::close: ledger has an invalid map");
+    }
 
     closedLedger_ = newLedger;
 
