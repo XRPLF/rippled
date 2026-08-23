@@ -388,6 +388,11 @@ public:
      * is inserted at the position specified by nodeID. The node must already have been
      * deserialized.
      *
+     * A node no valid tree could hold makes the map Invalid, which is
+     * terminal: the root hash committed to an impossible shape, so no peer
+     * can satisfy it. An acquisition reaching this verdict must give up
+     * rather than retry; nothing may promote the map back to a valid state.
+     *
      * @param nodeID The position in the tree where this node belongs.
      * @param treeNode A deserialized tree node to add.
      * @param filter Optional sync filter to track received nodes.
