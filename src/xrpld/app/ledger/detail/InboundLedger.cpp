@@ -458,9 +458,14 @@ InboundLedger::done()
     signaled_ = true;
     touch();
 
-    // Settled before the outcome below is logged or acted on, so nothing reports a ledger this
-    // function has since refused.
-    if (complete_ && !failed_ && ledger_)
+    // Settled here, and complete_ published only once it is settled. isComplete() is read without
+    // mtx_, by InboundLedgers::acquire() among others, so a ledger published as complete before
+    // setImmutable() succeeded could be taken by another thread while still mutable - and a mutable
+    // ledger reaching LedgerHistory::insert() or LedgerHolder::set() calls logicError(), which
+    // aborts a Release build. tryDB() already settles its own result and sets complete_ itself, so
+    // that path arrives here with the ledger immutable and only the reporting below left to do.
+    bool const haveEverything = haveHeader_ && haveState_ && haveTransactions_;
+    if (!failed_ && ledger_ && (complete_ || haveEverything))
     {
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
@@ -482,6 +487,7 @@ InboundLedger::done()
         }
         else
         {
+            complete_ = true;
             switch (reason_)
             {
                 case Reason::HISTORY:
@@ -623,11 +629,12 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             }
             else
             {
+                // The tail of this function turns having every part into a completed acquisition,
+                // once done() has settled the ledger.
                 JLOG(journal_.info()) << "getNeededHashes says acquire is complete";
                 haveHeader_ = true;
                 haveTransactions_ = true;
                 haveState_ = true;
-                complete_ = true;
             }
         }
     }
@@ -690,7 +697,11 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             AccountStateSF filter(ledger_->stateMap().family().db(), app_.getLedgerMaster());
 
-            // Release the lock while we process the large state map
+            // Release the lock while we process the large state map. This is the only walk in this
+            // class that runs unlocked: onTimer() and the addPeers() callback both hold mtx_
+            // further up, and mtx_ is recursive, so their sl.unlock() releases nothing. So a
+            // second packet can be processed while this walk runs, which is why the map's own
+            // state is atomic and why the flags are re-read below.
             sl.unlock();
             auto nodes = ledger_->stateMap().getMissingNodes(kMissingNodesFind, &filter);
             sl.lock();
@@ -714,9 +725,6 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                     // Sound rather than merely finished: the walk above cannot have abandoned the
                     // map without the test ahead of this one having caught it.
                     haveState_ = true;
-
-                    if (haveTransactions_)
-                        complete_ = true;
                 }
                 else
                 {
@@ -778,9 +786,6 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 else
                 {
                     haveTransactions_ = true;
-
-                    if (haveState_)
-                        complete_ = true;
                 }
             }
             else
@@ -805,12 +810,14 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         }
     }
 
-    if (complete_ || failed_)
+    // Having every part is not yet a completed acquisition: done() settles the ledger first and
+    // only then publishes complete_. Called with mtx_ still held, as done() documents, so the flags
+    // it writes are not written unlocked; mtx_ is recursive, so a caller that already holds it is
+    // unaffected.
+    if (failed_ || (haveHeader_ && haveState_ && haveTransactions_))
     {
-        JLOG(journal_.debug()) << "Done:" << (complete_ ? " complete" : "")
-                               << (failed_ ? " failed " : " ") << ledger_->header().seq;
-        // Called with mtx_ still held, so the flags done() writes are not written unlocked; mtx_
-        // is recursive, so a caller that already holds it further up is unaffected.
+        JLOG(journal_.debug()) << "Done:" << (failed_ ? " failed " : " have everything ")
+                               << ledger_->header().seq;
         done();
     }
 }
@@ -1008,11 +1015,10 @@ InboundLedger::receiveNode(
             haveState_ = true;
         }
 
+        // done() settles the ledger before publishing complete_, so having every part is reported
+        // there rather than here.
         if (haveTransactions_ && haveState_)
-        {
-            complete_ = true;
             done();
-        }
     }
 }
 
