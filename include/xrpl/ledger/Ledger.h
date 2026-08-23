@@ -105,6 +105,18 @@ public:
         std::vector<uint256> const& amendments,
         Family& family);
 
+    /**
+     * Create a ledger from a header whose maps are filled in afterwards.
+     *
+     * Both maps start Synching against the hashes the header carries, so the
+     * ledger is mutable until setImmutable() finds them both sound. Those
+     * hashes are input rather than derived, so setImmutable() leaves them
+     * alone.
+     *
+     * @param info The header to build from.
+     * @param rules The rules in force.
+     * @param family The SHAMap family the maps belong to.
+     */
     Ledger(LedgerHeader const& info, Rules rules, Family& family);
 
     /**
@@ -286,7 +298,8 @@ public:
      *
      * @param rehash Whether to recompute the ledger hash from the header
      *        fields. The transaction and account hashes are recomputed from the
-     *        maps too, but only the first time.
+     *        maps too, but only the first time and only if the header did not
+     *        supply them.
      * @return false if either map is Invalid, leaving the immutable flag unset
      *         and the header untouched. A map invalidated partway through can
      *         still leave the other one immutable, so a false return means the
@@ -295,6 +308,11 @@ public:
     [[nodiscard]] bool
     setImmutable(bool rehash = true);
 
+    /**
+     * @return Whether both maps have been settled, so the ledger can no longer
+     *         change. False for a ledger built from a header until
+     *         setImmutable() has succeeded.
+     */
     bool
     isImmutable() const
     {
@@ -475,6 +493,17 @@ private:
     }
 
     bool immutable_;
+
+    /**
+     * Whether the header's transaction and account hashes came from outside and
+     * so must not be derived from the maps.
+     *
+     * True only for a ledger built from a header, whose maps are then
+     * synced against the hashes it carries. Deriving them would turn a
+     * ledger verified against a hash we asked for into one that is merely
+     * self-consistent. Fixed at construction, unlike immutable_.
+     */
+    bool const mapHashesFromHeader_ = false;
 
     // A SHAMap containing the transactions associated with this ledger.
     SHAMap mutable txMap_;
