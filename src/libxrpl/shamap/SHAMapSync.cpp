@@ -227,7 +227,13 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             // we already know this child node is missing
             fullBelow = false;
         }
-        else if (!backed_ || !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
+        // The depth test precedes the cache lookup for the same reason it does in addKnownNode():
+        // the cache is keyed by node hash and shared across maps, and a hash covers a node's
+        // children but not its depth, so a hit would skip the depth guard below. Skipping the
+        // shortcut only forgoes an optimization.
+        else if (
+            !backed_ || isLeafDepth(nodeID.getDepth() + 1) ||
+            !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             bool pending = false;
             auto d = descendAsync(
@@ -257,6 +263,18 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
                 if (--mn.max <= 0)
                     return;
+            }
+            else if (d->isInner() && isLeafDepth(nodeID.getDepth() + 1))
+            {
+                // Only a leaf belongs that deep (see isLeafDepth and SHAMap::addKnownNode). A node
+                // resolved locally never passes through addKnownNode(), so the walk has to reach
+                // this verdict itself. Ordered ahead of the full-below test below, which
+                // canonicalization shares across maps, or a node already marked full below would go
+                // unjudged.
+                JLOG(journal_.warn()) << "Inner node at branch " << branch << " below " << nodeID
+                                      << " makes the map invalid";
+                setInvalid();
+                return;
             }
             else if (d->isInner() && !safeDowncast<SHAMapInnerNode*>(d)->isFullBelow(mn.generation))
             {
@@ -321,6 +339,8 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
         }
         else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
         {
+            // getChildNodeID() is safe here: gmnProcessNodes refuses to descend into an inner node
+            // at kLeafDepth, so a deferred parent never sits deeper than one level above it.
             mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUInt256());
             --mn.max;
         }
@@ -331,16 +351,21 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     mn.deferred = 0;
 }
 
-/**
- * Get a list of node IDs and hashes for nodes that are part of this SHAMap
- * but not available locally.  The filter can hold alternate sources of
- * nodes that are not permanently stored locally
- */
 std::vector<std::pair<SHAMapNodeID, uint256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(root_->getHash().isNonZero(), "xrpl::SHAMap::getMissingNodes : nonzero root hash");
     XRPL_ASSERT(max > 0, "xrpl::SHAMap::getMissingNodes : valid max input");
+
+    // An already-invalid map has nothing left to ask for.
+    if (!isValid())
+    {
+        // journal_ is the family journal, shared by every map, so name which one this is. The root
+        // node's own hash rather than SHAMap::getHash(), which unshares the tree on a zero hash.
+        JLOG(journal_.warn()) << "getMissingNodes called on an invalid map, root hash "
+                              << root_->getHash() << " seq " << ledgerSeq();
+        return {};
+    }
 
     MissingNodes mn(
         max,
@@ -374,6 +399,11 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
         {
             gmnProcessNodes(mn, pos);
 
+            // The walk just invalidated the map. Stop descending, but fall through to the drain
+            // below rather than returning, since posted reads hold a reference to mn.
+            if (!isValid())
+                break;
+
             if (mn.max <= 0)
                 break;
 
@@ -402,6 +432,11 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
         // posted as many deferred reads as we can
         if (mn.deferred != 0)
             gmnProcessDeferredReads(mn);
+
+        // Reads are drained, so the map can now be abandoned. Whatever was collected belongs to
+        // a tree that cannot exist, so discard it.
+        if (!isValid())
+            return {};
 
         if (mn.max <= 0)
             return std::move(mn.missingNodes);
@@ -435,6 +470,11 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
         // and we have no nodes to resume
 
     } while (node != nullptr);
+
+    // Re-tested: addKnownNode() on another thread can write the verdict after the loop's own
+    // test, and an empty result would then read as satisfied.
+    if (!isValid())
+        return {};
 
     if (mn.missingNodes.empty())
         clearSynching();
