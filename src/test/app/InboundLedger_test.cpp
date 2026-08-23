@@ -45,6 +45,16 @@ struct TestableInboundLedger final : InboundLedger
         ScopedLockType collectionLock(collectionMutex);
         init(collectionLock);
     }
+
+    /**
+     * Ask for more nodes, or judge what has been collected, as a fresh
+     * acquisition does.
+     */
+    void
+    triggerAdded()
+    {
+        trigger(nullptr, TriggerReason::Added);
+    }
 };
 
 struct InboundLedger_test : public beast::unit_test::Suite
@@ -230,6 +240,61 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * An acquisition that fails on local data must still signal.
+     *
+     * Both entry points that reach tryDB() are covered, since without
+     * done() the object never signals, logFailure() never runs, and the
+     * hash never lands in recentFailures_ - so the same doomed ledger is
+     * asked for again on the next round. recentFailures_ is what the
+     * assertions watch, since it is the caller-visible consequence of
+     * having signalled.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testLocalFailureSignalsDone(jtx::Env& env)
+    {
+        testcase("An acquisition that fails locally still signals");
+
+        // A zero account hash is a ledger no acquisition can ever finish, and tryDB() says so as
+        // soon as it has the header.
+        auto const header = makeHeader(uint256{}, uint256{});
+        storeHeader(env, header);
+
+        BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
+
+        // acquire() is the only caller of init(), and hands back nothing for a failed acquisition.
+        BEAST_EXPECT(
+            env.app().getInboundLedgers().acquire(
+                header.hash, header.seq, InboundLedger::Reason::GENERIC) == nullptr);
+
+        // The failure reached recentFailures_, which is what stops the next round asking again.
+        BEAST_EXPECT(waitFor([&] { return env.app().getInboundLedgers().isFailure(header.hash); }));
+
+        // The other route into tryDB(): a trigger() on an acquisition that has no header yet. A
+        // hash of its own, so the entry above cannot answer for it.
+        auto const otherHeader = makeHeader(uint256{1}, uint256{});
+        storeHeader(env, otherHeader);
+
+        auto viaTrigger = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            otherHeader.hash,
+            otherHeader.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(otherHeader.hash));
+
+        viaTrigger->triggerAdded();
+
+        BEAST_EXPECT(viaTrigger->isFailed());
+        BEAST_EXPECT(!viaTrigger->isComplete());
+        BEAST_EXPECT(
+            waitFor([&] { return env.app().getInboundLedgers().isFailure(otherHeader.hash); }));
+    }
+
+    /**
      * The retry timer re-asks, then gives up and signals.
      *
      * The only case that drives onTimer() rather than trigger() directly,
@@ -298,6 +363,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         jtx::Env env{*this};
 
         testLocalLedgerCompletesAcquire(env);
+        testLocalFailureSignalsDone(env);
 
         // Last: the only case that waits out a whole timeout chain.
         testTimerRetriesThenGivesUp(env);
