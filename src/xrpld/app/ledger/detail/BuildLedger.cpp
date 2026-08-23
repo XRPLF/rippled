@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -76,7 +77,23 @@ buildLedgerImpl(
     XRPL_ASSERT(
         built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
         "xrpl::buildLedgerImpl : valid ledger fees");
-    built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
+    // Built locally; see Ledger::setImmutable(). Both routes to a refusal are closed here. A
+    // concurrent setInvalid() cannot reach built: SHAMap::state_ is per-object and the snapshot
+    // copies it once, so a setInvalid() on the parent after that copy does not propagate, and
+    // built is never published, so no acquisition holds either map. Starting out Invalid needs the
+    // parent's stateMap_ to be Invalid, which needs a root hash committing to an inner node at
+    // SHAMap::kLeafDepth - a shape no correct implementation builds. That rests on the network
+    // having agreed the parent's accountHash, not on anything checked here.
+    //
+    // logicError() rather than UNREACHABLE(): the consensus caller acts on this ledger straight
+    // away, handing it to TxQ::processClosedLedger() before it ever reaches storeLedger(), so a
+    // stop naming this site is what identifies the cause. See RCLConsensus::Adaptor::buildLCL().
+    if (!built->setAccepted(closeTime, closeResolution, closeTimeCorrect))
+    {
+        // LCOV_EXCL_START
+        logicError("buildLedgerImpl: accepted ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
 
     return built;
 }

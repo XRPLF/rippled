@@ -8,6 +8,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -55,7 +56,40 @@ struct TestableInboundLedger final : InboundLedger
     {
         trigger(nullptr, TriggerReason::Added);
     }
+
+    /**
+     * Record that nothing is left to fetch.
+     */
+    void
+    markComplete()
+    {
+        ScopedLockType const sl(mtx_);
+        complete_ = true;
+    }
+
+    /**
+     * Settle the acquisition and signal whatever is waiting on it.
+     */
+    void
+    signalDone()
+    {
+        ScopedLockType const sl(mtx_);
+        done();
+    }
 };
+
+/**
+ * The ledger an acquisition is assembling, as a pointer that can modify it.
+ *
+ * @param acquire The acquisition to read from.
+ * @return The ledger, or nullptr if there is none to report.
+ */
+[[nodiscard]] static std::shared_ptr<Ledger>
+mutableLedger(InboundLedger const& acquire)
+{
+    // Sound because the acquisition holds a non-const ledger and only hands out a const view.
+    return std::const_pointer_cast<Ledger>(acquire.getLedger());
+}
 
 struct InboundLedger_test : public beast::unit_test::Suite
 {
@@ -240,6 +274,71 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * A ledger whose map goes invalid on the way to being settled must be
+     * discarded rather than delivered.
+     *
+     * done() settles the ledger before it logs or acts on the outcome, and a
+     * map abandoned by then makes settling refuse, so the acquisition has to
+     * record a failure instead. Reproduced by setting the flag and then
+     * invalidating the map, which is the order a walk on another thread
+     * produces without the second thread.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testInvalidatedLedgerFailsInDone(jtx::Env& env)
+    {
+        testcase("A ledger invalidated on its way to being settled fails");
+
+        // The fabricated chain, so feeding it to the state map invalidates the map.
+        DeepChain const chain{nextSeed()};
+
+        // Only the header is local, so the acquisition holds a ledger with an empty state map.
+        auto const header = makeHeader(chain);
+        storeHeader(env, header);
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        BEAST_EXPECT(!acquire->checkLocal());
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+
+        auto const ledger = mutableLedger(*acquire);
+        BEAST_EXPECT(ledger != nullptr);
+        if (!ledger)
+            return;
+
+        // The state of affairs done() is handed: nothing left to fetch as far as the caller could
+        // tell.
+        acquire->markComplete();
+
+        // And the walk that has since reached the verdict.
+        auto& stateMap = ledger->stateMap();
+        BEAST_EXPECT(stateMap.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+        for (auto const& [nodeID, node] : chain.nodesBelowRoot())
+            stateMap.addKnownNode(nodeID, node, nullptr);
+        BEAST_EXPECT(!stateMap.isValid());
+
+        acquire->signalDone();
+
+        // complete_ is withdrawn alongside the failure, or every guard that checks it before
+        // failed_ keeps treating this ledger as delivered.
+        BEAST_EXPECT(!acquire->isComplete());
+        BEAST_EXPECT(acquire->isFailed());
+
+        // Nothing was handed to LedgerMaster, and the hash is remembered as a failure so it is not
+        // immediately re-acquired.
+        BEAST_EXPECT(env.app().getLedgerMaster().getLedgerByHash(header.hash) == nullptr);
+        BEAST_EXPECT(waitFor([&] { return env.app().getInboundLedgers().isFailure(header.hash); }));
+    }
+
+    /**
      * An acquisition that fails on local data must still signal.
      *
      * Both entry points that reach tryDB() are covered, since without
@@ -363,6 +462,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         jtx::Env env{*this};
 
         testLocalLedgerCompletesAcquire(env);
+        testInvalidatedLedgerFailsInDone(env);
         testLocalFailureSignalsDone(env);
 
         // Last: the only case that waits out a whole timeout chain.
