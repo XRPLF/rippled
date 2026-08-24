@@ -86,12 +86,16 @@ public:
         requires std::convertible_to<TT*, T*>
     SharedIntrusive(SharedIntrusive<TT> const& rhs);
 
-    SharedIntrusive(SharedIntrusive&& rhs);
+    // noexcept so that a std::vector of these relocates by moving. Without it, move_if_noexcept
+    // copies each element instead, since this type is also copy constructible, and every copy is an
+    // atomic increment on the pointee's refcount followed by a release on the original. The body is
+    // a std::exchange on a raw pointer, so it provably cannot throw.
+    SharedIntrusive(SharedIntrusive&& rhs) noexcept;
 
     template <class TT>
         requires std::convertible_to<TT*, T*>
-    SharedIntrusive(
-        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    SharedIntrusive(SharedIntrusive<TT>&& rhs) noexcept;
 
     SharedIntrusive&
     operator=(SharedIntrusive const& rhs);
@@ -529,11 +533,48 @@ staticPointerCast(TT const& v)
     return SharedPtr<T>(StaticCastTagSharedIntrusive{}, v);
 }
 
+/**
+ * Statically cast an intrusive pointer the caller is giving up, moving out of
+ * it.
+ *
+ * The parameter names the wrapped type rather than taking a bare `TT&&`. A
+ * bare one would be a forwarding reference, so it would also bind to lvalues
+ * in preference to the `const&` overload above and move out of a caller's live
+ * variable on what looks like a copy call.
+ *
+ * @param v the pointer to cast, left empty afterwards.
+ * @return a pointer of the requested type to the same object.
+ */
+template <class T, class TT>
+SharedPtr<T>
+staticPointerCast(SharedIntrusive<TT>&& v)
+{
+    return SharedPtr<T>(StaticCastTagSharedIntrusive{}, std::move(v));
+}
+
 template <class T, class TT>
 SharedPtr<T>
 dynamicPointerCast(TT const& v)
 {
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
+}
+
+/**
+ * Dynamically cast an intrusive pointer the caller is giving up, moving out of
+ * it.
+ *
+ * Tied to `SharedIntrusive<TT>&&` for the reason given above.
+ *
+ * @param v the pointer to cast, left empty afterwards if the cast succeeds and
+ *          left owning the object if it does not.
+ * @return a pointer of the requested type, or an empty one if the object is
+ *         not of that type.
+ */
+template <class T, class TT>
+SharedPtr<T>
+dynamicPointerCast(SharedIntrusive<TT>&& v)
+{
+    return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, std::move(v));
 }
 }  // namespace intr_ptr
 }  // namespace xrpl

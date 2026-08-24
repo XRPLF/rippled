@@ -459,6 +459,39 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     }
 }
 
+TEST_F(SHAMapTraversal, update_give_item_on_absent_key_returns_false)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+
+    // Absent key: walkTowardsKey stops on an inner node with an empty branch, not a leaf, so
+    // updateGiveItem has to answer for a top of the wrong type. The public API permits the call,
+    // so it returns false rather than reporting UNREACHABLE and aborting an instrumented build.
+    auto const absentKey = uint256{std::string_view{std::string(64, '0')}};
+    Buffer vuc{32};
+    std::fill_n(vuc.data(), vuc.size(), std::uint8_t{2});
+    EXPECT_FALSE(map.updateGiveItem(
+        SHAMapNodeType::TnAccountState, makeShamapitem(absentKey, std::move(vuc))));
+
+    // The other shape an absent key takes: a single-item map queried with a key that selects the
+    // same root branch. The walk ends on the leaf it reached, whose key is not the one asked for,
+    // so the top is a leaf that does not hold the tag. Both shapes answer false. The difference
+    // only shows in an instrumented build, where reporting UNREACHABLE would abort.
+    SHAMap single{SHAMapType::FREE, f};
+    fillMap(single, {keys.front()});
+
+    auto probe = keys.front();
+    std::fill_n(probe.begin() + 1, probe.size() - 1, std::uint8_t{0});
+    ASSERT_NE(probe, keys.front());
+
+    Buffer other{32};
+    std::fill_n(other.data(), other.size(), std::uint8_t{3});
+    EXPECT_FALSE(single.updateGiveItem(
+        SHAMapNodeType::TnAccountState, makeShamapitem(probe, std::move(other))));
+}
+
 TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
 {
     tests::TestNodeFamily f{j_};

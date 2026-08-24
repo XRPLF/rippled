@@ -111,10 +111,16 @@ SHAMap::dirtyUp(NodePathStack& stack, uint256 const& target, SHAMapTreeNodePtr c
 
     while (!stack.empty())
     {
-        auto node = intr_ptr::dynamicPointerCast<SHAMapInnerNode>(stack.top().first);
-        SHAMapNodeID const nodeID = stack.top().second;
-        stack.pop();
-        XRPL_ASSERT(node, "xrpl::SHAMap::dirtyUp : non-null node");
+        auto const nodeID = stack.top().second;
+        auto top = stack.releaseNode();
+        if (!top->isInner())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::SHAMap::dirtyUp : node is not inner");
+            Throw<SHAMapMissingNode>(type_, target);
+            // LCOV_EXCL_STOP
+        }
+        auto node = intr_ptr::staticPointerCast<SHAMapInnerNode>(std::move(top));
 
         auto const branch = selectBranch(nodeID, target);
 
@@ -621,7 +627,7 @@ SHAMap::peekNextItem(uint256 const& id, NodePathStack& stack) const
     stack.pop();
     while (!stack.empty())
     {
-        auto const [node, nodeID] = stack.top();
+        auto const& [node, nodeID] = stack.top();
         XRPL_ASSERT(!node->isLeaf(), "xrpl::SHAMap::peekNextItem : another node is not leaf");
         auto& inner = safeDowncast<SHAMapInnerNode&>(*node);
         for (auto i = selectBranch(nodeID, id) + 1; i < kBranchFactor; ++i)
@@ -690,7 +696,7 @@ SHAMap::boundHelper(uint256 const& id, BelowDirection direction) const
 
     while (!stack.empty())
     {
-        auto const [node, nodeID] = stack.top();
+        auto const& [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
             auto const& item = safeDowncast<SHAMapLeafNode const&>(*node).peekItem();
@@ -756,10 +762,15 @@ SHAMap::delItem(uint256 const& id)
     if (stack.empty())
         Throw<SHAMapMissingNode>(type_, id);
 
-    auto leaf = intr_ptr::dynamicPointerCast<SHAMapLeafNode>(stack.top().first);
-    stack.pop();
+    // An absent id leaves an inner node on top rather than a leaf, which is a "not found" answer
+    // and not a fault, so it is tested rather than cast through. Matches the three sibling sites in
+    // this commit, so no traversal path is left paying for a dynamic_cast.
+    auto top = stack.releaseNode();
+    if (!top->isLeaf())
+        return false;
+    auto leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(std::move(top));
 
-    if (!leaf || (leaf->peekItem()->key() != id))
+    if (leaf->peekItem()->key() != id)
         return false;
 
     SHAMapNodeType const type = leaf->getType();
@@ -769,9 +780,16 @@ SHAMap::delItem(uint256 const& id)
 
     while (!stack.empty())
     {
-        auto node = intr_ptr::staticPointerCast<SHAMapInnerNode>(stack.top().first);
-        SHAMapNodeID const nodeID = stack.top().second;
-        stack.pop();
+        auto const nodeID = stack.top().second;
+        auto top = stack.releaseNode();
+        if (!top->isInner())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::SHAMap::delItem : node is not inner");
+            Throw<SHAMapMissingNode>(type_, id);
+            // LCOV_EXCL_STOP
+        }
+        auto node = intr_ptr::staticPointerCast<SHAMapInnerNode>(std::move(top));
 
         node = unshareNode(std::move(node), nodeID);
         node->setChild(
@@ -842,8 +860,8 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
     if (stack.empty())
         Throw<SHAMapMissingNode>(type_, tag);
 
-    auto [node, nodeID] = stack.top();
-    stack.pop();
+    auto nodeID = stack.top().second;
+    auto node = stack.releaseNode();
 
     if (node->isLeaf())
     {
@@ -938,16 +956,26 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
     if (stack.empty())
         Throw<SHAMapMissingNode>(type_, tag);
 
-    auto node = intr_ptr::dynamicPointerCast<SHAMapLeafNode>(stack.top().first);
-    auto nodeID = stack.top().second;
-    stack.pop();
+    auto const nodeID = stack.top().second;
+    auto top = stack.releaseNode();
 
-    if (!node || (node->peekItem()->key() != tag))
+    // walkTowardsKey pushes an inner node's own entry before testing whether the branch it needs
+    // is empty, so a tag absent from the map leaves that inner node on top rather than a leaf.
+    // No in-tree caller reaches this, since each checks the item exists first, but the API is
+    // public and permits the call, which is why it returns false rather than reporting UNREACHABLE.
+    // The static cast below is also safe only once this is confirmed.
+    if (!top->isLeaf())
     {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::SHAMap::updateGiveItem : invalid node");
         return false;
-        // LCOV_EXCL_STOP
+    }
+    auto node = intr_ptr::staticPointerCast<SHAMapLeafNode>(std::move(top));
+
+    // The other shape an absent tag takes: the walk ends on the leaf it reached, whose key need not
+    // be `tag`, which is why findKey discards such a leaf. Both shapes mean the same thing to a
+    // caller, so both answer false rather than reporting UNREACHABLE.
+    if (node->peekItem()->key() != tag)
+    {
+        return false;
     }
 
     if (node->getType() != type)
