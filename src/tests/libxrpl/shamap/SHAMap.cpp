@@ -420,6 +420,52 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     }
 }
 
+TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};
+    map.setUnbacked();
+
+    // The root is a childless inner node, so boundHelper's inner-node branch scans every branch on
+    // the requested side of the one id selects, finds them all empty, and falls through to end()
+    // rather than dereference a child.
+    EXPECT_EQ(map.upperBound(uint256{}), map.end());
+    EXPECT_EQ(map.lowerBound(uint256{}), map.end());
+
+    uint256 probe;
+    std::fill_n(probe.begin(), probe.size(), std::uint8_t{0xff});
+    EXPECT_EQ(map.upperBound(probe), map.end());
+    EXPECT_EQ(map.lowerBound(probe), map.end());
+}
+
+TEST_F(SHAMapTraversal, bounds_on_single_item_map_use_the_leaf_below_the_root)
+{
+    tests::TestNodeFamily f{j_};
+    SHAMap map{SHAMapType::FREE, f};
+
+    auto const key = deepFanOutKeys().front();
+    fillMap(map, {key});
+
+    // root_ can be a leaf, but only after syncing a single-item map from a peer (addRootNode);
+    // fillMap builds this map in-process via addItem, which always leaves root_ as the inner node
+    // it was constructed with, with the single leaf one level below it. So the stack holds that
+    // inner root plus the leaf, and boundHelper examines the leaf first. Only a probe the leaf
+    // qualifies against is answered there; for the rest the leaf is popped and root_'s own
+    // inner-node scan runs, finds nothing on the requested side, and falls through to end().
+    uint256 below = key;
+    --below;
+    uint256 above = key;
+    ++above;
+
+    EXPECT_EQ(map.upperBound(below)->key(), key);
+    EXPECT_EQ(map.upperBound(key), map.end());
+    EXPECT_EQ(map.upperBound(above), map.end());
+
+    EXPECT_EQ(map.lowerBound(above)->key(), key);
+    EXPECT_EQ(map.lowerBound(key), map.end());
+    EXPECT_EQ(map.lowerBound(below), map.end());
+}
+
 TEST_F(SHAMapTraversal, iteration_survives_deletions)
 {
     tests::TestNodeFamily f{j_};
