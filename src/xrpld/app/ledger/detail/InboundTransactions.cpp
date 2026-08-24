@@ -40,6 +40,17 @@ public:
     TransactionAcquire::pointer acquire;
     std::shared_ptr<SHAMap> set;
 
+    /**
+     * Parent-ledger hash of the round that last requested this set. Telemetry
+     * only: it tells getSet() whether a different round is asking now.
+     *
+     * The parent hash rather than `seq`, which is only a height: two rounds
+     * STARTED on different forks at the same height are different rounds that
+     * `seq` cannot separate. It does not help for a mid-round wrong-ledger
+     * recovery -- see the limitation on `RCLConsensus::Adaptor`'s round members.
+     */
+    uint256 lastRoundParentHash;
+
     InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set)
         : seq(seq), set(set)
     {
@@ -70,6 +81,23 @@ public:
         zeroSet_.set->setUnbacked();
     }
 
+    /**
+     * Ends the span of any fetch still in flight.
+     *
+     * stop() normally does this, but it is only reached from
+     * ApplicationImp::run(); a node torn down without run() completing destroys
+     * this container directly. Without this, those fetches would reach
+     * ~TransactionAcquire with an open span and trip its assertion, so the
+     * enumeration of exits would be incomplete by exactly one path.
+     */
+    ~InboundTransactionsImp() override
+    {
+        std::scoped_lock const lock(lock_);
+        abandonAllAcquires();
+        // No map_.clear(): zeroSet_ is a reference into map_, and member
+        // destruction clears it anyway.
+    }
+
     TransactionAcquire::pointer
     getAcquire(uint256 const& hash)
     {
@@ -85,7 +113,11 @@ public:
     }
 
     std::shared_ptr<SHAMap>
-    getSet(uint256 const& hash, bool acquire) override
+    getSet(
+        uint256 const& hash,
+        bool acquire,
+        uint256 const& roundParentHash,
+        std::uint32_t roundLedgerSeq) override
     {
         TransactionAcquire::pointer ta;
 
@@ -96,10 +128,26 @@ public:
             {
                 if (acquire)
                 {
+                    // Read before the store below overwrites it. We are called
+                    // once per peer proposal, so without this a set proposed by
+                    // 35 validators would gain 35 events per round.
+                    bool const newRequester = it->second.lastRoundParentHash != roundParentHash;
+
+                    it->second.lastRoundParentHash = roundParentHash;
+
                     it->second.seq = seq_;
                     if (it->second.acquire)
                     {
                         it->second.acquire->stillNeed();
+
+                        // A fetch is keyed by set hash and refreshed by every
+                        // round that still lacks the set, so it is wanted by
+                        // many rounds. Its span records each of them.
+                        if (newRequester)
+                        {
+                            it->second.acquire->recordRequestingRound(
+                                roundParentHash, roundLedgerSeq);
+                        }
                     }
                 }
                 return it->second.set;
@@ -108,11 +156,18 @@ public:
             if (!acquire || stopping_)
                 return std::shared_ptr<SHAMap>();
 
-            ta = std::make_shared<TransactionAcquire>(app_, hash, peerSetBuilder_->build());
+            // The round identity is copied into the acquire here, under the
+            // lock, because init() below runs after we release it.
+            ta = std::make_shared<TransactionAcquire>(
+                app_, hash, peerSetBuilder_->build(), roundParentHash, roundLedgerSeq);
 
             auto& obj = map_[hash];
             obj.acquire = ta;
             obj.seq = seq_;
+            // Recorded as the last requester because init() below fires this
+            // round's event. Without it, the round that started the fetch would
+            // be counted a second time by its own next proposal.
+            obj.lastRoundParentHash = roundParentHash;
         }
 
         ta->init(kStartPeers);
@@ -200,6 +255,16 @@ public:
                 inboundSet.set = set;
             }
 
+            // End the acquire span here, at the point we stop pursuing the
+            // fetch, rather than leaving it to whenever the last reference to
+            // the object is released -- which may be a JtTxnData worker or a
+            // peer callback, arbitrarily later, and would report that wait as
+            // part of the fetch. Usually a no-op on this path, because the
+            // common caller is the job done() queues after a successful fetch
+            // that already stamped its own outcome.
+            if (inboundSet.acquire)
+                inboundSet.acquire->abandonAcquireSpan();
+
             inboundSet.acquire.reset();
         }
 
@@ -228,6 +293,13 @@ public:
             {
                 if (it->second.seq < minSeq || it->second.seq > maxSeq)
                 {
+                    // The sweep is where a set that never arrived stops being
+                    // pursued, so it is where its span must end. Left to the
+                    // erase below, the span would instead end when the last
+                    // reference dropped.
+                    if (it->second.acquire)
+                        it->second.acquire->abandonAcquireSpan();
+
                     it = map_.erase(it);
                 }
                 else
@@ -243,10 +315,32 @@ public:
     {
         std::scoped_lock const lock(lock_);
         stopping_ = true;
+        abandonAllAcquires();
         map_.clear();
     }
 
 private:
+    /**
+     * Ends the span of every fetch still in flight.
+     *
+     * Shutdown is an exit like any other, so the spans end here rather than
+     * letting the following map_.clear() decide their end time. Not virtual, so
+     * it is safe to call from the destructor.
+     *
+     * @note Caller must hold lock_. abandonAcquireSpan() is noexcept and
+     *       bounded, so this can neither throw out of a destructor nor stall
+     *       teardown.
+     */
+    void
+    abandonAllAcquires()
+    {
+        for (auto& entry : map_)
+        {
+            if (entry.second.acquire)
+                entry.second.acquire->abandonAcquireSpan();
+        }
+    }
+
     using MapType = hash_map<uint256, InboundTransactionSet>;
 
     Application& app_;

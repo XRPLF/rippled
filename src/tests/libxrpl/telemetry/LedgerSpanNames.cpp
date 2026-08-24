@@ -262,6 +262,95 @@ TEST(LedgerSpanNames, txset_acquire_span_name_is_dot_qualified)
     EXPECT_EQ(std::string_view(ledger_span::op::acquire), "acquire");
 }
 
+TEST(LedgerSpanNames, txset_round_request_event_name_is_composed_not_literal)
+{
+    // The event TransactionAcquire fires once per requesting round. Pinned
+    // literally for the same reason the span names are: a TraceQL query for
+    // `event.name = "round.request"` and the runbook both name this exact
+    // string, and neither would break at compile time if it were renamed.
+    EXPECT_EQ(std::string_view(ledger_span::event::roundRequest), "round.request");
+}
+
+TEST(LedgerSpanNames, txset_round_request_event_name_is_one_dotted_pair)
+{
+    // The property, not just the spelling: two lower_snake_case segments joined
+    // by exactly one dot, the same shape as every other event constant. A
+    // camelCase or spaced name would pass the compiler and fail the CI naming
+    // check.
+    auto const name = std::string_view(ledger_span::event::roundRequest);
+    auto const dot = name.find('.');
+    ASSERT_NE(dot, std::string_view::npos);
+    EXPECT_EQ(name.find('.', dot + 1), std::string_view::npos);
+    for (auto const segment : {name.substr(0, dot), name.substr(dot + 1)})
+    {
+        EXPECT_FALSE(segment.empty());
+        for (char const c : segment)
+        {
+            EXPECT_TRUE((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')
+                << "not lower_snake_case: " << name;
+        }
+    }
+}
+
+TEST(LedgerSpanNames, txset_round_request_event_name_is_not_a_span_name)
+{
+    // Negative case. Events and spans live in different TraceQL scopes, so a
+    // name shared with a span would make a query for one silently match the
+    // other.
+    EXPECT_NE(
+        std::string_view(ledger_span::event::roundRequest),
+        std::string_view(ledger_span::acquireFull));
+    EXPECT_NE(
+        std::string_view(ledger_span::event::roundRequest),
+        std::string_view(ledger_span::acquireHeader));
+    EXPECT_NE(
+        std::string_view(ledger_span::event::roundRequest),
+        std::string_view(ledger_span::op::acquire));
+}
+
+TEST(LedgerSpanNames, round_identity_event_attribute_keys_match_the_shared_constants)
+{
+    // The two keys the round.request event carries. Bare underscore, never
+    // dotted -- a dotted key is reserved for resource attributes and fails the
+    // CI naming check.
+    EXPECT_EQ(std::string_view(ledger_span::attr::currentLedgerHash), "current_ledger_hash");
+    EXPECT_EQ(std::string_view(ledger_span::attr::currentLedgerSeq), "current_ledger_seq");
+    for (std::string_view const key :
+         {std::string_view(ledger_span::attr::currentLedgerHash),
+          std::string_view(ledger_span::attr::currentLedgerSeq)})
+    {
+        EXPECT_EQ(key.find('.'), std::string_view::npos) << "dotted span-attr key: " << key;
+        EXPECT_FALSE(key.empty());
+    }
+}
+
+TEST(LedgerSpanNames, round_identity_keys_are_re_exports_not_copies)
+{
+    // The load-bearing assertion behind "no new attribute constants". These are
+    // `using` re-exports of the shared keys in SpanNames.h, so they are the SAME
+    // objects -- assert the addresses, because two separate definitions with
+    // equal text would pass a string comparison and then drift apart the first
+    // time one of them is edited.
+    EXPECT_EQ(
+        static_cast<void const*>(&ledger_span::attr::currentLedgerHash),
+        static_cast<void const*>(&attr::currentLedgerHash));
+    EXPECT_EQ(
+        static_cast<void const*>(&ledger_span::attr::currentLedgerSeq),
+        static_cast<void const*>(&attr::currentLedgerSeq));
+    // Distinct from each other, and from the ledger.acquire keys they read
+    // similarly to: `ledger_hash` is the ledger being fetched, whereas
+    // `current_ledger_hash` is the parent of the round doing the asking.
+    EXPECT_NE(
+        std::string_view(ledger_span::attr::currentLedgerHash),
+        std::string_view(ledger_span::attr::currentLedgerSeq));
+    EXPECT_NE(
+        std::string_view(ledger_span::attr::currentLedgerHash),
+        std::string_view(ledger_span::attr::ledgerHash));
+    EXPECT_NE(
+        std::string_view(ledger_span::attr::currentLedgerSeq),
+        std::string_view(ledger_span::attr::ledgerSeq));
+}
+
 TEST(LedgerSpanNames, phase_child_span_names_are_fully_composed)
 {
     // These are used with childSpan(name, ctx), which takes ONE complete name,
@@ -633,6 +722,16 @@ TEST(LedgerSpanNames, b2_inactive_guard_finalize_sequences_are_no_ops)
     // destructor.
     SpanGuard guard;
     ASSERT_FALSE(static_cast<bool>(guard));
+
+    // TransactionAcquire::addRoundRequestEvent(). The emitter checks the guard
+    // before converting anything, so on the disabled path this call is never
+    // even reached -- driven here anyway to prove the API itself is inert, which
+    // is what makes that check an optimisation rather than the correctness
+    // barrier.
+    guard.addEvent(
+        ledger_span::event::roundRequest,
+        {{ledger_span::attr::currentLedgerHash, "0123456789ABCDEF"},
+         {ledger_span::attr::currentLedgerSeq, "12345"}});
 
     // TransactionAcquire::finalizeAcquireSpan()
     guard.setAttribute(ledger_span::attr::txSetHash, "0123456789ABCDEF");
