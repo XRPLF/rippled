@@ -529,11 +529,30 @@ staticPointerCast(TT const& v)
     return SharedPtr<T>(StaticCastTagSharedIntrusive{}, v);
 }
 
+// A bare `TT&&` here would be a forwarding reference, since TT is deduced directly from this
+// parameter, and would then also bind to lvalues in preference to the `const&` overload above
+// (binding to a plain reference beats binding to a const one), silently moving out of a caller's
+// live variable on what looks like a copy call. Naming the wrapped type keeps TT nested inside
+// SharedIntrusive<TT>, so this only binds to an actual rvalue of that type.
+template <class T, class TT>
+SharedPtr<T>
+staticPointerCast(SharedIntrusive<TT>&& v)
+{
+    return SharedPtr<T>(StaticCastTagSharedIntrusive{}, std::move(v));
+}
+
 template <class T, class TT>
 SharedPtr<T>
 dynamicPointerCast(TT const& v)
 {
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
+}
+
+template <class T, class TT>
+SharedPtr<T>
+dynamicPointerCast(SharedIntrusive<TT>&& v)
+{
+    return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, std::move(v));
 }
 }  // namespace intr_ptr
 }  // namespace xrpl
