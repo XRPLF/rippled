@@ -14,12 +14,8 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -987,14 +983,21 @@ private:
     // Post-fixCleanup3_4_0: truncate shares so assetsRecovered <=
     // clawbackAmount by construction.
     //
-    // The (7, 5) state is injected directly into the open ledger because
-    // an ordinary deposit at scale=0 would mint 7 shares, not 5. Do not
-    // env.close() before the clawback — a close rebuilds the ledger from
-    // real transaction history and discards the injection.
+    // The (7, 5) state is reached through ordinary transactions: a 5 USD
+    // deposit mints 5 shares 1:1, then a loan broker on the vault issues a
+    // single-payment bullet loan for the full 5 USD at 40% interest. When
+    // the borrower repays a year later, LoanPay books the 2 USD of accrued
+    // interest into sfAssetsTotal without minting shares, leaving
+    // assetsTotal=7 against sharesTotal=5 — the same desync the direct
+    // ledger injection previously simulated, produced here by the real
+    // transactor code paths (see testBugDepositShareTruncationSubUlp for
+    // the same technique in more detail).
     void
     testBugClawbackRoundTripOvershoot()
     {
         using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
 
         auto runScenario = [this](FeatureBitset features, bool withFix) {
             Env env{*this, features};
@@ -1002,8 +1005,9 @@ private:
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const holder{"holder"};
+            Account const borrower{"borrower"};
 
-            env.fund(XRP(10'000), issuer, owner, holder);
+            env.fund(XRP(10'000), issuer, owner, holder, borrower);
             env.close();
 
             env(fset(issuer, asfAllowTrustLineClawback));
@@ -1012,9 +1016,11 @@ private:
             PrettyAsset const usd = issuer["USD"];
             env.trust(usd(1'000), owner);
             env.trust(usd(1'000), holder);
+            env.trust(usd(1'000), borrower);
             env.close();
 
             env(pay(issuer, holder, usd(100)));
+            env(pay(issuer, borrower, usd(100)));
             env.close();
 
             Vault const vault{env};
@@ -1023,7 +1029,33 @@ private:
             env(vaultTx);
             env.close();
 
-            env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = usd(7)}));
+            // Holder deposits 5 USD, minting 5 shares 1:1.
+            env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = usd(5)}));
+            env.close();
+
+            // A loan broker on the vault, then a single bullet loan for the
+            // entire deposit at 40% interest, one payment, one year out.
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+            env(set(borrower, brokerKeylet.key, usd(5).value()),
+                loan::kInterestRate(percentageToTenthBips(40)),
+                kGracePeriod(60),
+                kPaymentInterval(365 * 24 * 60 * 60),
+                kPaymentTotal(1),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // Advance to just before the single payment falls due and let
+            // the borrower repay principal plus interest. Share supply
+            // stays at 5, so assetsTotal/sharesTotal becomes 7/5.
+            env.close(std::chrono::seconds{(365 * 24 * 60 * 60) - 3600});
+            env(pay(borrower, loanKeylet.key, usd(10).value()), Ter(tesSUCCESS));
             env.close();
 
             auto const vaultSle = env.le(vaultKeylet);
@@ -1039,46 +1071,9 @@ private:
                 auto const sleIssuance = env.le(keylet::mptokenIssuance(mptIssuanceID));
                 if (!BEAST_EXPECT(sleIssuance))
                     return;
-                BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 7);
-            }
-
-            // Drop sfOutstandingAmount and the holder's sfMPTAmount to 5
-            // so the vault reaches (assetsTotal=7, sharesTotal=5) with
-            // internally consistent bookkeeping.
-            auto const issuanceKeylet = keylet::mptokenIssuance(mptIssuanceID);
-            auto const holderTokenKeylet = keylet::mptoken(mptIssuanceID, holder.id());
-            bool const injected =
-                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
-                    Sandbox sb(&view, TapNone);
-
-                    auto sleIssuance = sb.peek(issuanceKeylet);
-                    if (!sleIssuance)
-                        return false;
-                    sleIssuance->setFieldU64(sfOutstandingAmount, 5);
-                    sb.update(sleIssuance);
-
-                    auto sleHolderToken = sb.peek(holderTokenKeylet);
-                    if (!sleHolderToken)
-                        return false;
-                    sleHolderToken->setFieldU64(sfMPTAmount, 5);
-                    sb.update(sleHolderToken);
-
-                    sb.apply(view);
-                    return true;
-                });
-            if (!BEAST_EXPECT(injected))
-                return;
-
-            {
-                auto const sleIssuance =
-                    env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
-                if (!BEAST_EXPECT(sleIssuance))
-                    return;
                 BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 5);
             }
 
-            // No env.close() here — a close rebuilds the ledger from real
-            // history and discards the injection.
             auto const clawbackAmount = usd(4);
             env(vault.clawback(
                 {.issuer = issuer,
@@ -1132,6 +1127,8 @@ private:
     testBugWithdrawRoundTripOvershoot()
     {
         using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
 
         auto runScenario = [this](FeatureBitset features, bool withFix) {
             Env env{*this, features};
@@ -1139,8 +1136,9 @@ private:
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const holder{"holder"};
+            Account const borrower{"borrower"};
 
-            env.fund(XRP(10'000), issuer, owner, holder);
+            env.fund(XRP(10'000), issuer, owner, holder, borrower);
             env.close();
 
             env(fset(issuer, asfAllowTrustLineClawback));
@@ -1149,9 +1147,11 @@ private:
             PrettyAsset const usd = issuer["USD"];
             env.trust(usd(1'000), owner);
             env.trust(usd(1'000), holder);
+            env.trust(usd(1'000), borrower);
             env.close();
 
             env(pay(issuer, holder, usd(100)));
+            env(pay(issuer, borrower, usd(100)));
             env.close();
 
             Vault const vault{env};
@@ -1160,7 +1160,33 @@ private:
             env(vaultTx);
             env.close();
 
-            env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = usd(7)}));
+            // Holder deposits 5 USD, minting 5 shares 1:1.
+            env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = usd(5)}));
+            env.close();
+
+            // A loan broker on the vault, then a single bullet loan for the
+            // entire deposit at 40% interest, one payment, one year out.
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+            env(set(borrower, brokerKeylet.key, usd(5).value()),
+                loan::kInterestRate(percentageToTenthBips(40)),
+                kGracePeriod(60),
+                kPaymentInterval(365 * 24 * 60 * 60),
+                kPaymentTotal(1),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // Advance to just before the single payment falls due and let
+            // the borrower repay principal plus interest. Share supply
+            // stays at 5, so assetsTotal/sharesTotal becomes 7/5.
+            env.close(std::chrono::seconds{(365 * 24 * 60 * 60) - 3600});
+            env(pay(borrower, loanKeylet.key, usd(10).value()), Ter(tesSUCCESS));
             env.close();
 
             auto const vaultSle = env.le(vaultKeylet);
@@ -1174,46 +1200,9 @@ private:
                 auto const sleIssuance = env.le(keylet::mptokenIssuance(mptIssuanceID));
                 if (!BEAST_EXPECT(sleIssuance))
                     return;
-                BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 7);
-            }
-
-            // Drop sfOutstandingAmount and the holder's sfMPTAmount to 5
-            // so the vault reaches (assetsTotal=7, sharesTotal=5) with
-            // internally consistent bookkeeping.
-            auto const issuanceKeylet = keylet::mptokenIssuance(mptIssuanceID);
-            auto const holderTokenKeylet = keylet::mptoken(mptIssuanceID, holder.id());
-            bool const injected =
-                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
-                    Sandbox sb(&view, TapNone);
-
-                    auto sleIssuance = sb.peek(issuanceKeylet);
-                    if (!sleIssuance)
-                        return false;
-                    sleIssuance->setFieldU64(sfOutstandingAmount, 5);
-                    sb.update(sleIssuance);
-
-                    auto sleHolderToken = sb.peek(holderTokenKeylet);
-                    if (!sleHolderToken)
-                        return false;
-                    sleHolderToken->setFieldU64(sfMPTAmount, 5);
-                    sb.update(sleHolderToken);
-
-                    sb.apply(view);
-                    return true;
-                });
-            if (!BEAST_EXPECT(injected))
-                return;
-
-            {
-                auto const sleIssuance =
-                    env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
-                if (!BEAST_EXPECT(sleIssuance))
-                    return;
                 BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 5);
             }
 
-            // No env.close() here — a close rebuilds the ledger from real
-            // history and discards the injection.
             auto const requested = usd(4);
             env(vault.withdraw(
                 {.depositor = holder, .id = vaultKeylet.key, .amount = requested.value()}));
