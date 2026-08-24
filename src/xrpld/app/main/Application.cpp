@@ -261,7 +261,7 @@ public:
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
 
-    std::optional<SQLiteDatabase> relationalDatabase_;
+    std::unique_ptr<RelationalDatabase> relationalDatabase_;
     std::unique_ptr<DatabaseCon> walletDB_;
     std::unique_ptr<Overlay> overlay_;
     std::optional<uint256> trapTxID_;
@@ -816,7 +816,7 @@ public:
         XRPL_ASSERT(
             relationalDatabase_,
             "xrpl::ApplicationImp::getRelationalDatabase : non-null relational database");
-        return *relationalDatabase_;  // NOLINT(bugprone-unchecked-optional-access) assert above
+        return *relationalDatabase_;
     }
 
     DatabaseCon&
@@ -844,7 +844,7 @@ public:
 
         try
         {
-            relationalDatabase_.emplace(setupRelationalDatabase(*this, *config_, *jobQueue_));
+            relationalDatabase_ = setupRelationalDatabase(*this, *config_, *jobQueue_);
 
             // wallet database
             auto setup = setupDatabaseCon(*config_, journal_);
@@ -1829,9 +1829,9 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             seq, closeTime, Rules{config_->features}, config_->fees.toFees(), nodeFamily_);
         loadLedger->setTotalDrops(totalDrops);
 
-        for (json::UInt index = 0; index < ledger.get().size(); ++index)
+        for (auto& index : ledger.get())
         {
-            json::Value& entry = ledger.get()[index];
+            json::Value& entry = index;
 
             if (!entry.isObjectOrNull())
             {
@@ -1849,7 +1849,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             entry.removeMember(jss::index);
 
-            STParsedJSONObject stp("sle", ledger.get()[index]);
+            STParsedJSONObject stp("sle", index);
 
             if (!stp.object || uIndex.isZero())
             {

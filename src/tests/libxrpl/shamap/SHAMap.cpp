@@ -4,8 +4,11 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
@@ -344,6 +347,140 @@ TEST_F(SHAMapPathProof, verify_proof_path)
     badPath = goodPath;
     badPath.erase(badPath.begin());
     EXPECT_FALSE(map.verifyProofPath(rootHash, key, badPath));
+}
+
+class SHAMapCanonicalizeMerge : public ::testing::Test
+{
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
+    static Buffer
+    intToVuc(std::uint8_t v)
+    {
+        Buffer vuc{32};
+        vuc.fill(v);
+        return vuc;
+    }
+
+    static void
+    populate(SHAMap& map)
+    {
+        constexpr uint256 kH1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 kH2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
+        constexpr uint256 kH3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 kH4("c92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
+        EXPECT_TRUE(map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH1, intToVuc(1))));
+        EXPECT_TRUE(map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH2, intToVuc(2))));
+        EXPECT_TRUE(map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH3, intToVuc(3))));
+        EXPECT_TRUE(map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(kH4, intToVuc(4))));
+    }
+
+    static int
+    occupiedBranches(SHAMapInnerNode const& inner)
+    {
+        int n = 0;
+        for (int b = 0; b < SHAMapInnerNode::kBranchFactor; ++b)
+        {
+            if (!inner.isEmptyBranch(b))
+                ++n;
+        }
+        return n;
+    }
+
+    static int
+    linkedBranches(SHAMapInnerNode& inner)
+    {
+        int n = 0;
+        for (int b = 0; b < SHAMapInnerNode::kBranchFactor; ++b)
+        {
+            if (!inner.isEmptyBranch(b) && (inner.getChildPointer(b) != nullptr))
+                ++n;
+        }
+        return n;
+    }
+
+    static SHAMapInnerNode*
+    cachedInner(TestNodeFamily& f, SHAMapHash const& hash)
+    {
+        auto node = f.getTreeNodeCache()->fetch(hash.asUInt256());
+        if (!node || !node->isInner())
+            return nullptr;
+        return safeDowncast<SHAMapInnerNode*>(node.get());
+    }
+};
+
+TEST_F(SHAMapCanonicalizeMerge, shell_then_rich_harvests_children)
+{
+    // Produce a valid root encoding on a separate family so getHash/unshare
+    // does not clean the map that still has to flush into the contested cache.
+    TestNodeFamily wireFamily{j_};
+    SHAMap wireMap{SHAMapType::FREE, wireFamily};
+    populate(wireMap);
+    ASSERT_GT(wireMap.flushDirty(NodeObjectType::TransactionNode), 0);
+    auto const hash = wireMap.getHash();
+    ASSERT_TRUE(hash.isNonZero());
+    Serializer s;
+    wireMap.serializeRoot(s);
+
+    TestNodeFamily f{j_};
+    auto shell = SHAMapTreeNode::makeFromWire(s.slice());
+    ASSERT_TRUE(shell);
+    ASSERT_TRUE(shell->isInner());
+    EXPECT_EQ(linkedBranches(safeDowncast<SHAMapInnerNode&>(*shell)), 0);
+
+    SHAMap dest{SHAMapType::FREE, hash.asUInt256(), f};
+    dest.setSynching();
+    ASSERT_TRUE(dest.addRootNode(hash, std::move(shell), nullptr).isGood());
+
+    auto* cached = cachedInner(f, hash);
+    ASSERT_TRUE(cached);
+    auto const occupied = occupiedBranches(*cached);
+    ASSERT_GT(occupied, 1);
+    EXPECT_EQ(linkedBranches(*cached), 0);
+
+    SHAMap rich{SHAMapType::FREE, f};
+    populate(rich);
+    auto const harvestedBefore = SHAMap::canonicalInnerBranchesHarvested();
+    EXPECT_GT(rich.flushDirty(NodeObjectType::TransactionNode), 0);
+
+    cached = cachedInner(f, hash);
+    ASSERT_TRUE(cached);
+    EXPECT_EQ(linkedBranches(*cached), occupied);
+    EXPECT_GE(SHAMap::canonicalInnerBranchesHarvested(), harvestedBefore + occupied);
+}
+
+TEST_F(SHAMapCanonicalizeMerge, rich_then_shell_keeps_children)
+{
+    TestNodeFamily f{j_};
+    SHAMap rich{SHAMapType::FREE, f};
+    populate(rich);
+    EXPECT_GT(rich.flushDirty(NodeObjectType::TransactionNode), 0);
+    auto const hash = rich.getHash();
+    ASSERT_TRUE(hash.isNonZero());
+
+    Serializer s;
+    rich.serializeRoot(s);
+
+    auto* cached = cachedInner(f, hash);
+    ASSERT_TRUE(cached);
+    auto const occupied = occupiedBranches(*cached);
+    ASSERT_GT(occupied, 1);
+    EXPECT_EQ(linkedBranches(*cached), occupied);
+
+    auto shell = SHAMapTreeNode::makeFromWire(s.slice());
+    ASSERT_TRUE(shell);
+    ASSERT_TRUE(shell->isInner());
+    EXPECT_EQ(linkedBranches(safeDowncast<SHAMapInnerNode&>(*shell)), 0);
+
+    auto const harvestedBefore = SHAMap::canonicalInnerBranchesHarvested();
+    SHAMap dest{SHAMapType::FREE, hash.asUInt256(), f};
+    dest.setSynching();
+    ASSERT_TRUE(dest.addRootNode(hash, std::move(shell), nullptr).isGood());
+
+    cached = cachedInner(f, hash);
+    ASSERT_TRUE(cached);
+    EXPECT_EQ(linkedBranches(*cached), occupied);
+    EXPECT_EQ(SHAMap::canonicalInnerBranchesHarvested(), harvestedBefore);
 }
 
 }  // namespace xrpl::tests

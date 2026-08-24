@@ -7,6 +7,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
@@ -30,6 +31,26 @@
 #include <vector>
 
 namespace xrpl {
+
+namespace {
+
+// In null-backend mode, disable the SHARED FullBelowCache.  The shared
+// cache is populated by one InboundLedger's SHAMap and read by another;
+// when the second SHAMap sees a cache hit it skips the subtree entirely,
+// never descending into it, so children are never pinned via
+// canonicalizeChild.  Per-inner-node isFullBelowGen (LOCAL state) is
+// still allowed — it only affects the same SHAMap that set it, whose
+// children were pinned during the pass that resolved them.
+//
+// Gated on this SHAMap's Family so a disk-backed Application in the
+// same process is not affected by an RWDB instance.
+bool
+useFullBelowCache(Family const& family)
+{
+    return !family.isNullBackend();
+}
+
+}  // namespace
 
 void
 SHAMap::visitLeaves(
@@ -193,7 +214,9 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             // we already know this child node is missing
             fullBelow = false;
         }
-        else if (!backed_ || !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
+        else if (
+            !backed_ || !useFullBelowCache(f_) ||
+            !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             bool pending = false;
             auto d = descendAsync(
@@ -244,7 +267,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
     if (fullBelow)
     {  // No partial node encountered below this node
         node->setFullBelowGen(mn.generation);
-        if (backed_)
+        if (backed_ && useFullBelowCache(f_))
         {
             f_.getFullBelowCache()->insert(node->getHash().asUInt256());
         }
@@ -584,7 +607,7 @@ SHAMap::addKnownNode(
         }
 
         auto childHash = inner->getChildHash(branch);
-        if (f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
+        if (useFullBelowCache(f_) && f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             return SHAMapAddNode::duplicate();
         }

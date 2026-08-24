@@ -70,6 +70,18 @@ public:
 
     virtual void
     reset() = 0;
+
+    /**
+     * True when this Family's node store cannot re-fetch dropped
+     * objects (e.g. RWDB null backend). Default is false so
+     * disk-backed Families are unaffected. Per-Family so two
+     * Applications in one process can disagree.
+     */
+    [[nodiscard]] [[nodiscard]] virtual bool
+    isNullBackend() const
+    {
+        return false;
+    }
 };
 
 }  // namespace xrpl

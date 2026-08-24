@@ -26,6 +26,7 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <atomic>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -39,6 +40,39 @@
 #include <vector>
 
 namespace xrpl {
+
+namespace {
+
+std::atomic<std::uint64_t> gCanonicalInnerBranchesHarvested{0};
+
+/**
+ * Join linked children from a discarded same-hash inner onto the cache winner.
+ *
+ * Same-hash inners have identical branch masks and child hashes. Installing a
+ * child the winner lacks can only add linkage; it cannot change content.
+ */
+void
+mergeCanonicalInner(SHAMapTreeNodePtr const& canonical, SHAMapTreeNodePtr const& incoming)
+{
+    if (!canonical || !incoming || !canonical->isInner() || !incoming->isInner())
+        return;
+
+    auto* cached = safeDowncast<SHAMapInnerNode*>(canonical.get());
+    auto* other = safeDowncast<SHAMapInnerNode*>(incoming.get());
+
+    for (int branch = 0; branch < SHAMapInnerNode::kBranchFactor; ++branch)
+    {
+        if (cached->isEmptyBranch(branch) || (cached->getChildPointer(branch) != nullptr))
+            continue;
+        auto child = other->getChild(branch);
+        if (!child)
+            continue;
+        cached->canonicalizeChild(branch, std::move(child));
+        gCanonicalInnerBranchesHarvested.fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+}  // namespace
 
 [[nodiscard]] intr_ptr::SharedPtr<SHAMapLeafNode>
 makeTypedLeaf(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t owner)
@@ -1160,7 +1194,16 @@ SHAMap::canonicalize(SHAMapHash const& hash, SHAMapTreeNodePtr& node) const
     XRPL_ASSERT(node->cowid() == 0, "xrpl::SHAMap::canonicalize : valid node input");
     XRPL_ASSERT(node->getHash() == hash, "xrpl::SHAMap::canonicalize : node hash do match");
 
+    auto incoming = node;
     f_.getTreeNodeCache()->canonicalizeReplaceClient(hash.asUInt256(), node);
+    if (incoming && node && incoming.get() != node.get())
+        mergeCanonicalInner(node, incoming);
+}
+
+std::uint64_t
+SHAMap::canonicalInnerBranchesHarvested()
+{
+    return gCanonicalInnerBranchesHarvested.load(std::memory_order_relaxed);
 }
 
 void

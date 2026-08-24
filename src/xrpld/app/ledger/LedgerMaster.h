@@ -31,6 +31,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -104,6 +105,9 @@ public:
 
     bool
     storeLedger(std::shared_ptr<Ledger const> ledger);
+
+    std::shared_ptr<Ledger const>
+    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger);
 
     void
     setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
@@ -338,6 +342,13 @@ private:
     // The last ledger we handled fetching history
     std::shared_ptr<Ledger const> histLedger_;
 
+    // Sliding window of recently accepted ledgers pinned in memory so their
+    // SHAMap state trees remain reachable via shared_ptr. Required when the
+    // node store does not persist state nodes (e.g. RWDB null mode).
+    // Keyed by sequence so eviction drops the oldest ledger, not the
+    // earliest insert. Guarded by mutex_.
+    std::map<LedgerIndex, std::shared_ptr<Ledger const>> retainedLedgers_;
+
     // Fully validated ledger, whether or not we have the ledger resident.
     std::pair<uint256, LedgerIndex> lastValidLedger_{uint256(), 0};
 
@@ -377,6 +388,11 @@ private:
 
     // How much history do we want to keep
     std::uint32_t const ledgerHistorySize_;
+
+    // How many SHAMaps to pin when the node store cannot reload them.
+    // At least ledger_history, and at least online_delete when set, so
+    // the advertised complete range stays inside what we can serve.
+    std::uint32_t const retainWindowSize_;
 
     std::uint32_t const ledgerFetchSize_;
 

@@ -10,6 +10,7 @@
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <array>
@@ -1658,6 +1659,146 @@ r.ripple.com:51235
     }
 
     void
+    testRWDBOnlineDelete()
+    {
+        testcase("rwdb online_delete validation");
+
+        {
+            Config c;
+            c.setupControl(true, true, true);
+            std::string const toLoad =
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n";
+            try
+            {
+                c.loadFromString(toLoad);
+                auto const& section = c.section(Sections::kNodeDatabase);
+                BEAST_EXPECT(boost::iequals(get(section, "type"), "rwdb"));
+                BEAST_EXPECT(!section.exists("online_delete"));
+            }
+            catch (std::runtime_error const&)
+            {
+                fail("Should not throw in standalone mode");
+            }
+        }
+
+        // RWDB without online_delete is now allowed; SHAMapStoreImp
+        // defaults it to ledger_history.
+        {
+            Config c;
+            c.setupControl(true, true, false);
+            std::string const toLoad =
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n";
+            try
+            {
+                c.loadFromString(toLoad);
+                auto const& section = c.section(Sections::kNodeDatabase);
+                BEAST_EXPECT(boost::iequals(get(section, "type"), "rwdb"));
+                BEAST_EXPECT(!section.exists("online_delete"));
+            }
+            catch (std::runtime_error const&)
+            {
+                fail("Should not throw for RWDB without online_delete");
+            }
+        }
+
+        {
+            Config c;
+            c.setupControl(true, true, false);
+            std::string const toLoad =
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n"
+                "online_delete=256\n";
+            try
+            {
+                c.loadFromString(toLoad);
+                auto const& section = c.section(Sections::kNodeDatabase);
+                BEAST_EXPECT(get(section, "online_delete") == "256");
+            }
+            catch (std::runtime_error const&)
+            {
+                fail("Should not throw when online_delete is configured");
+            }
+        }
+
+        {
+            Config c;
+            c.setupControl(true, true, false);
+            std::string const toLoad =
+                "[node_db]\n"
+                "type=nudb\n"
+                "path=main\n";
+            try
+            {
+                c.loadFromString(toLoad);
+                auto const& section = c.section(Sections::kNodeDatabase);
+                BEAST_EXPECT(boost::iequals(get(section, "type"), "nudb"));
+            }
+            catch (std::runtime_error const&)
+            {
+                fail("Should not throw for non-RWDB backends");
+            }
+        }
+
+        // Config::setup() zeros ledger_history in standalone for disk
+        // backends. RWDB must keep a retain window so SHAMapStore can start.
+        {
+            detail::FileCfgGuard const cfg(
+                *this,
+                "testRWDBStandaloneHistory",
+                "",
+                Config::kConfigFileName,
+                "",
+                true,
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n");
+            Config c;
+            c.setup(cfg.configFile(), true, false, true);
+            BEAST_EXPECT(c.standalone());
+            BEAST_EXPECT(c.ledgerHistory == 256);
+        }
+        {
+            detail::FileCfgGuard const cfg(
+                *this,
+                "testRWDBStandaloneHistoryExplicit",
+                "",
+                Config::kConfigFileName,
+                "",
+                true,
+                "[ledger_history]\n"
+                "512\n"
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n");
+            Config c;
+            c.setup(cfg.configFile(), true, false, true);
+            BEAST_EXPECT(c.standalone());
+            BEAST_EXPECT(c.ledgerHistory == 512);
+        }
+        {
+            detail::FileCfgGuard const cfg(
+                *this,
+                "testMemoryStandaloneHistory",
+                "",
+                Config::kConfigFileName,
+                "",
+                true,
+                "[node_db]\n"
+                "type=memory\n"
+                "path=main\n");
+            Config c;
+            c.setup(cfg.configFile(), true, false, true);
+            BEAST_EXPECT(c.standalone());
+            BEAST_EXPECT(c.ledgerHistory == 0);
+        }
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1674,6 +1815,7 @@ r.ripple.com:51235
         testComments();
         testGetters();
         testAmendment();
+        testRWDBOnlineDelete();
         testOverlay();
         testNetworkID();
     }

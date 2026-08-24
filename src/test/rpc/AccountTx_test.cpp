@@ -21,14 +21,17 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 
+#include <xrpld/app/misc/Transaction.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -39,6 +42,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -49,13 +53,26 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl::test {
 
 class AccountTx_test : public beast::unit_test::Suite
 {
+    static std::unique_ptr<Config>
+    enableRWDB(std::unique_ptr<Config> cfg)
+    {
+        // Relational RWDB only. The node store stays as the test default
+        // ("memory") so tx lookup still has a durable backend. Null-backend
+        // node-store coverage lives in SHAMapStore_test / RWDBBackend_test.
+        cfg->section(xrpl::Sections::kRelationalDb).set("backend", "rwdb");
+        return cfg;
+    }
+
     // A data structure used to describe the basic structure of a
     // transactions array node as returned by the account_tx RPC command.
     struct NodeSanity
@@ -1391,11 +1408,763 @@ class AccountTx_test : public beast::unit_test::Suite
         checkTx(sponsor, jss::SponsorshipTransfer);
     }
 
+    void
+    testRWDBAccountTxSmoke(unsigned int apiVersion)
+    {
+        testcase("RWDB account_tx smoke APIv" + std::to_string(apiVersion));
+
+        using namespace test::jtx;
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        auto getTxHash = [](json::Value const& txEntry) -> std::string {
+            if (txEntry.isMember(jss::hash) && txEntry[jss::hash].isString())
+                return txEntry[jss::hash].asString();
+            if (txEntry.isMember(jss::tx) && txEntry[jss::tx].isMember(jss::hash) &&
+                txEntry[jss::tx][jss::hash].isString())
+                return txEntry[jss::tx][jss::hash].asString();
+            if (txEntry.isMember(jss::tx_json) && txEntry[jss::tx_json].isMember(jss::hash) &&
+                txEntry[jss::tx_json][jss::hash].isString())
+                return txEntry[jss::tx_json][jss::hash].asString();
+            return {};
+        };
+
+        json::Value params;
+        params[jss::api_version] = apiVersion;
+        params[jss::account] = a1.human();
+        params[jss::limit] = 1;
+
+        auto first = env.rpc(apiVersion, "json", "account_tx", to_string(params));
+        BEAST_EXPECT(first.isMember(jss::result));
+        BEAST_EXPECT(first[jss::result][jss::status] == "success");
+        BEAST_EXPECT(first[jss::result].isMember(jss::transactions));
+        BEAST_EXPECT(first[jss::result][jss::transactions].size() >= 1);
+
+        json::Value forwardParams = params;
+        forwardParams[jss::forward] = true;
+        auto forwardRes = env.rpc(apiVersion, "json", "account_tx", to_string(forwardParams));
+        BEAST_EXPECT(forwardRes.isMember(jss::result));
+        BEAST_EXPECT(forwardRes[jss::result][jss::status] == "success");
+
+        if (forwardRes[jss::result].isMember(jss::marker))
+        {
+            json::Value nextParams = forwardParams;
+            nextParams[jss::marker] = forwardRes[jss::result][jss::marker];
+            auto next = env.rpc(apiVersion, "json", "account_tx", to_string(nextParams));
+            BEAST_EXPECT(next.isMember(jss::result));
+            BEAST_EXPECT(next[jss::result][jss::status] == "success");
+
+            if (forwardRes[jss::result][jss::transactions].size() > 0 &&
+                next[jss::result][jss::transactions].size() > 0)
+            {
+                auto const firstHash = getTxHash(forwardRes[jss::result][jss::transactions][0u]);
+                auto const nextHash = getTxHash(next[jss::result][jss::transactions][0u]);
+                BEAST_EXPECT(!firstHash.empty());
+                BEAST_EXPECT(!nextHash.empty());
+                BEAST_EXPECT(firstHash != nextHash);
+            }
+        }
+    }
+
+    void
+    testRWDBAccountTxBinary(unsigned int apiVersion)
+    {
+        testcase("RWDB account_tx binary APIv" + std::to_string(apiVersion));
+
+        using namespace test::jtx;
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        json::Value params;
+        params[jss::api_version] = apiVersion;
+        params[jss::account] = a1.human();
+        params[jss::binary] = true;
+        params[jss::limit] = 10;
+
+        auto const res = env.rpc(apiVersion, "json", "account_tx", to_string(params));
+        BEAST_EXPECT(res.isMember(jss::result));
+        BEAST_EXPECT(res[jss::result][jss::status] == "success");
+        BEAST_EXPECT(res[jss::result].isMember(jss::transactions));
+        BEAST_EXPECT(res[jss::result][jss::transactions].size() >= 1);
+
+        auto const& tx0 = res[jss::result][jss::transactions][0u];
+        BEAST_EXPECT(tx0.isMember(jss::tx_blob));
+        BEAST_EXPECT(tx0[jss::tx_blob].isString());
+
+        if (apiVersion > 1)
+        {
+            BEAST_EXPECT(tx0.isMember(jss::meta_blob));
+            BEAST_EXPECT(tx0[jss::meta_blob].isString());
+            BEAST_EXPECT(!tx0.isMember(jss::meta));
+        }
+        else
+        {
+            BEAST_EXPECT(tx0.isMember(jss::meta));
+            BEAST_EXPECT(tx0[jss::meta].isString());
+        }
+    }
+
+    void
+    testRWDBAccountTxIdempotentSave()
+    {
+        testcase("RWDB saveValidatedLedger is idempotent");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        auto const closed = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(closed);
+        if (!closed)
+            return;
+
+        auto collectHashes = [&]() {
+            json::Value params;
+            params[jss::account] = a1.human();
+            params[jss::limit] = 200;
+            auto const res = env.rpc("json", "account_tx", to_string(params));
+            std::vector<std::string> hashes;
+            if (!res.isMember(jss::result) || !res[jss::result].isMember(jss::transactions))
+                return hashes;
+            for (auto const& tx : res[jss::result][jss::transactions])
+            {
+                if (tx.isMember(jss::tx_json) && tx[jss::tx_json].isMember(jss::hash))
+                {
+                    hashes.push_back(tx[jss::tx_json][jss::hash].asString());
+                }
+                else if (tx.isMember(jss::tx) && tx[jss::tx].isMember(jss::hash))
+                {
+                    hashes.push_back(tx[jss::tx][jss::hash].asString());
+                }
+                else if (tx.isMember(jss::hash))
+                {
+                    hashes.push_back(tx[jss::hash].asString());
+                }
+            }
+            return hashes;
+        };
+
+        auto const before = collectHashes();
+        BEAST_EXPECT(!before.empty());
+
+        env.app().getRelationalDatabase().saveValidatedLedger(closed, false);
+        env.app().getRelationalDatabase().saveValidatedLedger(closed, false);
+
+        auto const after = collectHashes();
+        BEAST_EXPECT(after.size() == before.size());
+        std::set<std::string> const unique(after.begin(), after.end());
+        BEAST_EXPECT(unique.size() == after.size());
+    }
+
+    void
+    testRWDBDelegationFilter()
+    {
+        testcase("RWDB delegation filter");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+        env(pay(alice, carol, XRP(10)));
+        env.close();
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+        env(pay(alice, bob, XRP(20)), delegate::As(bob));
+        env.close();
+
+        auto countTxs = [&](Account const& account, json::Value const& delegateParams) {
+            json::Value params;
+            params[jss::account] = account.human();
+            params[jss::ledger_index_min] = -1;
+            params[jss::ledger_index_max] = -1;
+            params[jss::delegate] = delegateParams;
+            auto const res = env.rpc("json", "account_tx", to_string(params));
+            if (!res.isMember(jss::result) || res[jss::result][jss::status] != "success")
+                return -1;
+            return static_cast<int>(res[jss::result][jss::transactions].size());
+        };
+
+        json::Value actor;
+        actor[jss::delegate_filter] = "actor";
+        BEAST_EXPECT(countTxs(alice, actor) == 1);
+
+        actor[jss::counter_party] = bob.human();
+        BEAST_EXPECT(countTxs(alice, actor) == 1);
+
+        json::Value authorizer;
+        authorizer[jss::delegate_filter] = "authorizer";
+        BEAST_EXPECT(countTxs(bob, authorizer) == 1);
+
+        env(pay(alice, carol, XRP(1)), delegate::As(bob));
+        env.close();
+
+        json::Value page;
+        page[jss::account] = alice.human();
+        page[jss::ledger_index_min] = -1;
+        page[jss::ledger_index_max] = -1;
+        page[jss::delegate] = actor;
+        page[jss::limit] = 1;
+        auto const first = env.rpc("json", "account_tx", to_string(page));
+        BEAST_EXPECT(first[jss::result][jss::transactions].size() == 1);
+        BEAST_EXPECT(first[jss::result].isMember(jss::marker));
+        page[jss::marker] = first[jss::result][jss::marker];
+        auto const second = env.rpc("json", "account_tx", to_string(page));
+        BEAST_EXPECT(second[jss::result][jss::transactions].size() == 1);
+        auto hashOf = [](json::Value const& tx) {
+            if (tx.isMember(jss::tx_json) && tx[jss::tx_json].isMember(jss::hash))
+                return tx[jss::tx_json][jss::hash].asString();
+            if (tx.isMember(jss::tx) && tx[jss::tx].isMember(jss::hash))
+                return tx[jss::tx][jss::hash].asString();
+            if (tx.isMember(jss::hash))
+                return tx[jss::hash].asString();
+            return std::string{};
+        };
+        BEAST_EXPECT(
+            hashOf(first[jss::result][jss::transactions][0u]) !=
+            hashOf(second[jss::result][jss::transactions][0u]));
+    }
+
+    void
+    testRWDBUnboundedLedgerRange()
+    {
+        testcase("RWDB account txs honor unbounded ledger max");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        auto& db = env.app().getRelationalDatabase();
+        AccountID const account = a1.id();
+        RelationalDatabase::AccountTxOptions const options{
+            .account = account,
+            .ledgerRange = {.min = 0, .max = 0},
+            .offset = 0,
+            .limit = 20,
+            .bUnlimited = false};
+
+        BEAST_EXPECT(!db.getOldestAccountTxs(options).empty());
+        BEAST_EXPECT(!db.getNewestAccountTxs(options).empty());
+        BEAST_EXPECT(!db.getOldestAccountTxsB(options).empty());
+        BEAST_EXPECT(!db.getNewestAccountTxsB(options).empty());
+
+        RelationalDatabase::AccountTxPageOptions const pageOptions{
+            .account = account,
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = 20,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        BEAST_EXPECT(!db.oldestAccountTxPage(pageOptions).first.empty());
+        BEAST_EXPECT(!db.newestAccountTxPage(pageOptions).first.empty());
+        BEAST_EXPECT(!db.oldestAccountTxPageB(pageOptions).first.empty());
+        BEAST_EXPECT(!db.newestAccountTxPageB(pageOptions).first.empty());
+    }
+
+    void
+    testRWDBAccountTxsHonorLimit()
+    {
+        testcase("RWDB account txs honor limit when unlimited");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        for (int i = 0; i < 5; ++i)
+        {
+            env(noop(a1));
+            env.close();
+        }
+
+        auto& db = env.app().getRelationalDatabase();
+        AccountID const account = a1.id();
+
+        auto const limited = [&](bool unlimited, std::uint32_t limit) {
+            return RelationalDatabase::AccountTxOptions{
+                .account = account,
+                .ledgerRange = {.min = 0, .max = 0},
+                .offset = 0,
+                .limit = limit,
+                .bUnlimited = unlimited};
+        };
+
+        BEAST_EXPECT(db.getOldestAccountTxs(limited(true, 2)).size() == 2);
+        BEAST_EXPECT(db.getNewestAccountTxs(limited(true, 2)).size() == 2);
+        BEAST_EXPECT(db.getOldestAccountTxsB(limited(true, 2)).size() == 2);
+        BEAST_EXPECT(db.getNewestAccountTxsB(limited(true, 2)).size() == 2);
+
+        auto const allOldest = db.getOldestAccountTxs(limited(true, 0));
+        BEAST_EXPECT(allOldest.size() >= 5);
+        BEAST_EXPECT(allOldest.size() <= 200);
+        BEAST_EXPECT(db.getNewestAccountTxs(limited(false, 2)).size() == 2);
+    }
+
+    void
+    testRWDBAdminHugeLimit()
+    {
+        testcase("RWDB admin huge account_tx limit does not exhaust memory");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        // Not UINT32_MAX: that value is treated as "use pageLength".
+        // 4e9 is a raw admin limit that previously reserved ~56 GB.
+        constexpr std::uint32_t kHugeLimit = 4'000'000'000u;
+
+        auto& db = env.app().getRelationalDatabase();
+        AccountID const account = a1.id();
+        RelationalDatabase::AccountTxPageOptions const pageOptions{
+            .account = account,
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = kHugeLimit,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+
+        auto const oldest = db.oldestAccountTxPage(pageOptions);
+        auto const newest = db.newestAccountTxPage(pageOptions);
+        BEAST_EXPECT(!oldest.first.empty());
+        BEAST_EXPECT(!newest.first.empty());
+
+        json::Value params;
+        params[jss::account] = a1.human();
+        params[jss::limit] = kHugeLimit;
+        auto const res = env.rpc("json", "account_tx", to_string(params));
+        BEAST_EXPECT(res.isMember(jss::result));
+        BEAST_EXPECT(res[jss::result][jss::status] == "success");
+        BEAST_EXPECT(res[jss::result][jss::transactions].size() >= 1);
+    }
+
+    void
+    testRWDBTransactionMovesLedger()
+    {
+        testcase("RWDB tx lookup follows ledger relocation");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        auto const txHash = env.tx()->getTransactionID();
+        env.close();
+
+        auto const src = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(src);
+        if (!src)
+            return;
+
+        auto& db = env.app().getRelationalDatabase();
+        ErrorCodeI ec = RpcSuccess;
+        auto found = db.getTransaction(txHash, std::nullopt, ec);
+        auto const* original = std::get_if<RelationalDatabase::AccountTx>(&found);
+        BEAST_EXPECT(original && original->first);
+        if ((original == nullptr) || !original->first)
+            return;
+        auto const oldSeq = original->first->getLedger();
+        BEAST_EXPECT(oldSeq == src->header().seq);
+
+        // Re-record the same transaction under a different ledger sequence,
+        // matching a history-fetch / later validation of the same TransID.
+        LedgerHeader info = src->header();
+        info.seq += 10;
+        bool loaded = false;
+        auto moved = std::make_shared<Ledger>(
+            info,
+            loaded,
+            false,
+            src->rules(),
+            env.app().config().fees.toFees(),
+            env.app().getNodeFamily(),
+            env.app().getJournal("AccountTx"));
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(moved->txExists(txHash));
+        BEAST_EXPECT(db.saveValidatedLedger(moved, false));
+
+        ErrorCodeI ec2 = RpcSuccess;
+        auto relocated = db.getTransaction(txHash, std::nullopt, ec2);
+        auto const* updated = std::get_if<RelationalDatabase::AccountTx>(&relocated);
+        BEAST_EXPECT(updated && updated->first);
+        if ((updated != nullptr) && updated->first)
+            BEAST_EXPECT(updated->first->getLedger() == info.seq);
+
+        // Unbounded page (not the validated RPC range, which would exclude
+        // the relocated sequence). The TransID must appear once.
+        RelationalDatabase::AccountTxPageOptions const pageOptions{
+            .account = a1.id(),
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = 200,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        auto const page = db.oldestAccountTxPage(pageOptions);
+        std::size_t matches = 0;
+        for (auto const& accountTx : page.first)
+        {
+            if (accountTx.first && accountTx.first->getID() == txHash)
+                ++matches;
+        }
+        BEAST_EXPECT(matches == 1);
+    }
+
+    void
+    testRWDBGetTransactionReturnsDetachedCopy()
+    {
+        testcase("RWDB getTransaction does not share store objects");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        auto const txHash = env.tx()->getTransactionID();
+        env.close();
+
+        auto& db = env.app().getRelationalDatabase();
+        ErrorCodeI ec = RpcSuccess;
+        auto found = db.getTransaction(txHash, std::nullopt, ec);
+        auto const* original = std::get_if<RelationalDatabase::AccountTx>(&found);
+        BEAST_EXPECT(original && original->first);
+        if ((original == nullptr) || !original->first)
+            return;
+
+        auto const storedSeq = original->first->getLedger();
+        original->first->setLedger(storedSeq + 99);
+        original->first->setStatus(TransStatus::HELD);
+
+        ErrorCodeI ec2 = RpcSuccess;
+        auto again = db.getTransaction(txHash, std::nullopt, ec2);
+        auto const* second = std::get_if<RelationalDatabase::AccountTx>(&again);
+        BEAST_EXPECT(second && second->first);
+        if ((second != nullptr) && second->first)
+        {
+            BEAST_EXPECT(second->first.get() != original->first.get());
+            BEAST_EXPECT(second->first->getLedger() == storedSeq);
+            BEAST_EXPECT(second->first->getStatus() == TransStatus::COMMITTED);
+        }
+    }
+
+    void
+    testRWDBHashLookupSurvivesOldSeqPrune()
+    {
+        testcase("RWDB hash lookup survives pruning the older sequence");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+
+        auto const src = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(src);
+        if (!src)
+            return;
+
+        auto const hash = src->header().hash;
+        auto const oldSeq = src->header().seq;
+        auto& db = env.app().getRelationalDatabase();
+        BEAST_EXPECT(db.getLedgerInfoByHash(hash));
+
+        // Same header hash under a later sequence, as in a history-fetch /
+        // later validation of a ledger already stored at oldSeq.
+        LedgerHeader info = src->header();
+        info.seq += 10;
+        bool loaded = false;
+        auto moved = std::make_shared<Ledger>(
+            info,
+            loaded,
+            false,
+            src->rules(),
+            env.app().config().fees.toFees(),
+            env.app().getNodeFamily(),
+            env.app().getJournal("AccountTx"));
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(db.saveValidatedLedger(moved, false));
+        BEAST_EXPECT(db.getLedgerInfoByIndex(oldSeq));
+        BEAST_EXPECT(db.getLedgerInfoByIndex(info.seq));
+
+        db.deleteBeforeLedgerSeq(oldSeq + 1);
+
+        BEAST_EXPECT(!db.getLedgerInfoByIndex(oldSeq));
+        auto const bySeq = db.getLedgerInfoByIndex(info.seq);
+        BEAST_EXPECT(bySeq && bySeq->hash == hash);
+        auto const byHash = db.getLedgerInfoByHash(hash);
+        BEAST_EXPECT(byHash);
+        if (byHash)
+            BEAST_EXPECT(byHash->seq == info.seq);
+    }
+
+    void
+    testRWDBHashLookupRepointsAfterOverwrite()
+    {
+        testcase("RWDB hash lookup re-points after sequence overwrite");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+
+        auto const src = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(src);
+        if (!src)
+            return;
+
+        auto const hashH = src->header().hash;
+        auto const seqA = src->header().seq;
+        auto& db = env.app().getRelationalDatabase();
+
+        LedgerHeader relocated = src->header();
+        relocated.seq += 10;
+        bool loaded = false;
+        auto atB = std::make_shared<Ledger>(
+            relocated,
+            loaded,
+            false,
+            src->rules(),
+            env.app().config().fees.toFees(),
+            env.app().getNodeFamily(),
+            env.app().getJournal("AccountTx"));
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(db.saveValidatedLedger(atB, false));
+
+        env(noop(a1));
+        env.close();
+        auto const src2 = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(src2);
+        if (!src2)
+            return;
+
+        LedgerHeader other = src2->header();
+        other.seq = relocated.seq;
+        loaded = false;
+        auto overwrite = std::make_shared<Ledger>(
+            other,
+            loaded,
+            false,
+            src2->rules(),
+            env.app().config().fees.toFees(),
+            env.app().getNodeFamily(),
+            env.app().getJournal("AccountTx"));
+        BEAST_EXPECT(loaded);
+        BEAST_EXPECT(other.hash != hashH);
+        BEAST_EXPECT(db.saveValidatedLedger(overwrite, false));
+
+        BEAST_EXPECT(db.getLedgerInfoByIndex(seqA));
+        auto const byHash = db.getLedgerInfoByHash(hashH);
+        BEAST_EXPECT(byHash);
+        if (byHash)
+            BEAST_EXPECT(byHash->seq == seqA);
+    }
+
+    void
+    testRWDBAccountTxPageStatusValidated()
+    {
+        testcase("RWDB account_tx pages report validated status");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+        env(noop(a1));
+        env.close();
+
+        auto& db = env.app().getRelationalDatabase();
+        RelationalDatabase::AccountTxPageOptions const pageOptions{
+            .account = a1.id(),
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = 20,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+
+        auto const oldest = db.oldestAccountTxPage(pageOptions);
+        BEAST_EXPECT(!oldest.first.empty());
+        for (auto const& accountTx : oldest.first)
+        {
+            BEAST_EXPECT(accountTx.first);
+            if (accountTx.first)
+                BEAST_EXPECT(accountTx.first->getStatus() == TransStatus::COMMITTED);
+        }
+
+        auto const newest = db.newestAccountTxPage(pageOptions);
+        BEAST_EXPECT(!newest.first.empty());
+        for (auto const& accountTx : newest.first)
+        {
+            BEAST_EXPECT(accountTx.first);
+            if (accountTx.first)
+                BEAST_EXPECT(accountTx.first->getStatus() == TransStatus::COMMITTED);
+        }
+    }
+
+    void
+    testRWDBMarkerStaysInsideLedgerRange()
+    {
+        testcase("RWDB account_tx marker stays inside requested ledger range");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
+
+        Account const a1{"A1"};
+        env.fund(XRP(10000), a1);
+        env.close();
+
+        std::vector<std::uint32_t> seqs;
+        for (int i = 0; i < 6; ++i)
+        {
+            env(noop(a1));
+            env.close();
+            seqs.push_back(env.closed()->header().seq);
+        }
+
+        auto& db = env.app().getRelationalDatabase();
+        RelationalDatabase::AccountTxPageOptions const firstPage{
+            .account = a1.id(),
+            .ledgerRange = {.min = 0, .max = 0},
+            .marker = std::nullopt,
+            .limit = 1,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        auto const first = db.oldestAccountTxPage(firstPage);
+        BEAST_EXPECT(first.second);
+        if (!first.second)
+            return;
+
+        auto const markerSeq = first.second->ledgerSeq;
+        auto const laterMin = seqs[seqs.size() - 2];
+        auto const laterMax = seqs.back();
+        BEAST_EXPECT(markerSeq < laterMin);
+
+        RelationalDatabase::AccountTxPageOptions const ranged{
+            .account = a1.id(),
+            .ledgerRange = {.min = laterMin, .max = laterMax},
+            .marker = first.second,
+            .limit = 20,
+            .bAdmin = true,
+            .delegate = std::nullopt};
+        auto const page = db.oldestAccountTxPage(ranged);
+        BEAST_EXPECT(!page.first.empty());
+        for (auto const& accountTx : page.first)
+        {
+            BEAST_EXPECT(accountTx.first);
+            if (accountTx.first)
+            {
+                auto const seq = accountTx.first->getLedger();
+                BEAST_EXPECT(seq >= laterMin && seq <= laterMax);
+            }
+        }
+    }
+
 public:
     void
     run() override
     {
         forAllApiVersions([this](unsigned apiVersion) { testParameters(apiVersion); });
+        forAllApiVersions([this](unsigned apiVersion) { testRWDBAccountTxSmoke(apiVersion); });
+        forAllApiVersions([this](unsigned apiVersion) { testRWDBAccountTxBinary(apiVersion); });
+        testRWDBAccountTxIdempotentSave();
+        testRWDBDelegationFilter();
+        testRWDBUnboundedLedgerRange();
+        testRWDBAccountTxsHonorLimit();
+        testRWDBAdminHugeLimit();
+        testRWDBTransactionMovesLedger();
+        testRWDBGetTransactionReturnsDetachedCopy();
+        testRWDBHashLookupSurvivesOldSeqPrune();
+        testRWDBHashLookupRepointsAfterOverwrite();
+        testRWDBAccountTxPageStatusValidated();
+        testRWDBMarkerStaysInsideLedgerRange();
         testContents();
         testAccountDelete();
         testMPT();

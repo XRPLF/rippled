@@ -419,6 +419,14 @@ public:
     void
     invariants() const;
 
+    /**
+     * Child pointers copied from a discarded same-hash inner onto the
+     * TreeNodeCache winner during canonicalize. Diagnostic for the
+     * richer-loser / shell-winner race.
+     */
+    static std::uint64_t
+    canonicalInnerBranchesHarvested();
+
 private:
     using SharedPtrNodeStack = std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>>;
     using DeltaRef =

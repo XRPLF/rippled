@@ -88,6 +88,7 @@ private:
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
+    bool isNullBackend_ = false;
     mutable std::condition_variable cond_;
     mutable std::condition_variable rendezvous_;
     mutable std::mutex mutex_;
@@ -120,6 +121,20 @@ private:
 
 public:
     SHAMapStoreImp(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
+
+    ~SHAMapStoreImp() override = default;
+
+    bool
+    isNullBackend() const override
+    {
+        return isNullBackend_;
+    }
+
+    std::uint32_t
+    getDeleteInterval() const override
+    {
+        return deleteInterval_;
+    }
 
     std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const override

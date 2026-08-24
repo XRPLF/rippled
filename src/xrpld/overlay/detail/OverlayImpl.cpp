@@ -10,6 +10,8 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/detail/InMemoryStore.h>
+#include <xrpld/peerfinder/detail/StoreSqdb.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
@@ -102,6 +104,14 @@ static constexpr auto kServerCounts = (1 << 2);
 static constexpr auto kUnl = (1 << 3);
 }  // namespace crawl_options
 
+bool
+useSqlitePeerFinderStore(Config const& config)
+{
+    auto const& rdbSection = config.section(xrpl::Sections::kRelationalDb);
+    auto const backend = get(rdbSection, "backend", "sqlite");
+    return !boost::iequals(backend, "rwdb");
+}
+
 //------------------------------------------------------------------------------
 
 OverlayImpl::Child::Child(OverlayImpl& overlay) : overlay_(overlay)
@@ -181,13 +191,21 @@ OverlayImpl::OverlayImpl(
     , journal_(app_.getJournal("Overlay"))
     , serverHandler_(serverHandler)
     , resourceManager_(resourceManager)
-    , store_(app_.getJournal("PeerFinder"))
+    , store_([&]() -> std::unique_ptr<peer_finder::Store> {
+        if (useSqlitePeerFinderStore(app.config()))
+        {
+            auto sqdb = std::make_unique<peer_finder::StoreSqdb>(app.getJournal("PeerFinder"));
+            sqdb->open(config);
+            return sqdb;
+        }
+        return std::make_unique<peer_finder::InMemoryStore>();
+    }())
     , peerFinder_(
           peer_finder::makeManager(
               ioContext,
               stopwatch(),
               app_.getJournal("PeerFinder"),
-              store_,
+              *store_,
               collector))
     , resolver_(resolver)
     , nextId_(1)
@@ -204,7 +222,6 @@ OverlayImpl::OverlayImpl(
               return ret;
           }())
 {
-    store_.open(config);
     beast::PropertyStream::Source::add(peerFinder_.get());
 }
 

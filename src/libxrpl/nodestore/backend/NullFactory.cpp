@@ -1,99 +1,16 @@
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
-#include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/detail/NullBackend.h>
 
 #include <cstddef>
-#include <functional>
 #include <memory>
 #include <string>
 
 namespace xrpl::node_store {
-
-class NullBackend : public Backend
-{
-public:
-    NullBackend() = default;
-
-    ~NullBackend() override = default;
-
-    std::string
-    getName() override
-    {
-        return std::string();
-    }
-
-    void
-    open(bool createIfMissing) override
-    {
-    }
-
-    bool
-    isOpen() override
-    {
-        return false;
-    }
-
-    void
-    close() override
-    {
-    }
-
-    Status
-    fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
-    {
-        return Status::NotFound;
-    }
-
-    void
-    store(std::shared_ptr<NodeObject> const& object) override
-    {
-    }
-
-    void
-    storeBatch(Batch const& batch) override
-    {
-    }
-
-    void
-    sync() override
-    {
-    }
-
-    void
-    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
-    {
-    }
-
-    int
-    getWriteLoad() override
-    {
-        return 0;
-    }
-
-    void
-    setDeletePath() override
-    {
-    }
-
-    /**
-     * Returns the number of file descriptors the backend expects to need
-     */
-    [[nodiscard]] int
-    fdRequired() const override
-    {
-        return 0;
-    }
-
-private:
-};
-
-//------------------------------------------------------------------------------
 
 class NullFactory : public Factory
 {
