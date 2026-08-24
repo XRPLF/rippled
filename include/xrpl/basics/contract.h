@@ -1,7 +1,8 @@
 #pragma once
 
 #include <xrpl/basics/sanitizers.h>
-#include <xrpl/beast/type_name.h>
+
+#include <boost/core/type_name.hpp>
 
 #include <exception>
 #include <string>
@@ -55,7 +56,8 @@ Throw(Args&&... args)
         std::is_convertible_v<E*, std::exception*>, "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
-    logThrow(std::string("Throwing exception of type " + beast::typeName<E>() + ": ") + e.what());
+    logThrow(
+        "Throwing exception of type " + boost::core::type_name<E>() + ": " + e.what());
     throw std::move(e);
 }
 

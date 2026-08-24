@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/beast/type_name.h>
+#include <boost/core/type_name.hpp>
 
 #include <atomic>
 #include <string>
@@ -112,7 +112,7 @@ private:
     static auto&
     getCounter() noexcept
     {
-        static CountedObjects::Counter kC{beast::typeName<Object>()};
+        static CountedObjects::Counter kC{boost::core::type_name<Object>()};
         return kC;
     }
 
