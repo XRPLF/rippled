@@ -529,6 +529,25 @@ staticPointerCast(TT const& v)
     return SharedPtr<T>(StaticCastTagSharedIntrusive{}, v);
 }
 
+/**
+ * Statically cast an intrusive pointer the caller is giving up, moving out of
+ * it.
+ *
+ * The parameter names the wrapped type rather than taking a bare `TT&&`. A
+ * bare one would be a forwarding reference, so it would also bind to lvalues
+ * in preference to the `const&` overload above and move out of a caller's live
+ * variable on what looks like a copy call.
+ *
+ * @param v the pointer to cast, left empty afterwards.
+ * @return a pointer of the requested type to the same object.
+ */
+template <class T, class TT>
+[[nodiscard]] SharedPtr<T>
+staticPointerCast(SharedIntrusive<TT>&& v)
+{
+    return SharedPtr<T>(StaticCastTagSharedIntrusive{}, std::move(v));
+}
+
 template <class T, class TT>
 SharedPtr<T>
 dynamicPointerCast(TT const& v)
