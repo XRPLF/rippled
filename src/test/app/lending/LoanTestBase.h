@@ -496,9 +496,25 @@ protected:
 
         auto const coverRateMinValue = params.coverRateMin;
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
+        // brokers attached to open-ended vaults. Many callers of this
+        // helper leave vaultKind at the OpenEnded default and don't care
+        // about the vault kind per se — they just need a broker on a
+        // vault. When LP V1.1 is enabled, transparently promote to
+        // ClosedEnded so those tests keep working without threading
+        // vaultKind through every call site. Callers that explicitly
+        // asked for ClosedEnded (or specifically want to test the
+        // open-ended rejection with LP V1.1 disabled) are left untouched.
+        auto effectiveVaultKind = params.vaultKind;
+        if (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
+            effectiveVaultKind == VaultKind::OpenEnded)
+        {
+            effectiveVaultKind = VaultKind::ClosedEnded;
+        }
+
         std::optional<std::uint32_t> subscriptionDate;
         std::optional<std::uint32_t> redemptionDate;
-        if (params.vaultKind == VaultKind::ClosedEnded)
+        if (effectiveVaultKind == VaultKind::ClosedEnded)
         {
             auto const nowSec = env.now().time_since_epoch().count();
             subscriptionDate = nowSec + params.subscriptionOffset;
@@ -508,9 +524,9 @@ protected:
         auto [tx, vaultKeylet] = vault.create(
             {.owner = lender,
              .asset = asset,
-             .vaultKind = params.vaultKind == VaultKind::OpenEnded
+             .vaultKind = effectiveVaultKind == VaultKind::OpenEnded
                  ? std::optional<std::uint8_t>{}
-                 : std::optional<std::uint8_t>{std::to_underlying(params.vaultKind)},
+                 : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},
              .subscriptionDate = subscriptionDate,
              .redemptionDate = redemptionDate});
         if (params.vaultScale)

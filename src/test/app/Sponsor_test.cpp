@@ -47,6 +47,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -1877,13 +1878,27 @@ public:
 
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
             Vault const vault{env};
-            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+            // accepts closed-ended vaults; build one and advance past
+            // SubscriptionDate before creating a loan.
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
+            auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 10u;
+            auto const red = sub + 1'000'000u;
+            auto [vaultTx, vaultKeylet] = vault.create(
+                {.owner = alice,
+                 .asset = xrpAsset,
+                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+                 .subscriptionDate = sub,
+                 .redemptionDate = red});
             env(vaultTx);
             env.close();
 
             env(vault.deposit(
                 {.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(1000)}));
             env.close();
+
+            env.close(tp{d{sub + 1}});
 
             auto const brokerKeylet =
                 keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));

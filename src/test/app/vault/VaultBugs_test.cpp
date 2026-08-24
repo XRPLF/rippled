@@ -560,44 +560,49 @@ private:
             env.close();
         };
 
+        // Strip featureLendingProtocolV1_1: this scenario runs an
+        // open-ended vault through deposit/broker/loan/repay/deposit,
+        // which spans both Subscription and post-loan lifetime — a phase
+        // pattern that only makes sense on open-ended vaults. The gate
+        // added by LP V1.1 is unrelated to the truncation bug asserted
+        // here.
+        auto const legacy = testableAmendments() - featureLendingProtocolV1_1;
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(testableAmendments() - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
+            runScenario(legacy - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_2_0 and pre-fixCleanup3_4_0)");
             runScenario(
-                testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0,
-                Line::Holding,
-                tecINVARIANT_FAILED);
+                legacy - fixCleanup3_2_0 - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
-            runScenario(testableAmendments(), Line::Holding, tecPRECISION_LOSS);
+            runScenario(legacy, Line::Holding, tecPRECISION_LOSS);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0, pre-fixCleanup3_2_0)");
-            runScenario(testableAmendments() - fixCleanup3_2_0, Line::Holding, tecPRECISION_LOSS);
+            runScenario(legacy - fixCleanup3_2_0, Line::Holding, tecPRECISION_LOSS);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation against a debt balance "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(testableAmendments() - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
+            runScenario(legacy - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation against a debt balance rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
-            runScenario(testableAmendments(), Line::InDebt, tecPRECISION_LOSS);
+            runScenario(legacy, Line::InDebt, tecPRECISION_LOSS);
         }
     }
 

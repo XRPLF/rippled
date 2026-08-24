@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <ostream>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -411,19 +412,35 @@ private:
         Account const depositor{"depositor"};
         auto const txFee = Fee(XRP(100));
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build one and advance past
+        // SubscriptionDate before creating the broker and the loan.
         Env env(*this);
         Vault const vault(env);
 
         env.fund(XRP(10'000), lender, issuer, borrower, depositor);
         env.close();
 
-        auto [tx, vaultKeyLet] = vault.create({.owner = lender, .asset = xrpIssue()});
+        using d = NetClock::duration;
+        using tp = NetClock::time_point;
+        auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 10u;
+        auto const red = sub + 1'000'000u;
+        auto [tx, vaultKeyLet] = vault.create(
+            {.owner = lender,
+             .asset = xrpIssue(),
+             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+             .subscriptionDate = sub,
+             .redemptionDate = red});
         env(tx, txFee);
         env.close();
 
         env(vault.deposit({.depositor = depositor, .id = vaultKeyLet.key, .amount = XRP(1'000)}),
             txFee);
         env.close();
+
+        // Move into the Investment phase before creating the broker and
+        // the loan.
+        env.close(tp{d{sub + 1}});
 
         auto const brokerKeyLet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));

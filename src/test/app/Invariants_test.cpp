@@ -2520,10 +2520,21 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace jtx;
 
-        // Create vault
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults. Build one with a comfortable
+        // subscription window; LoanBrokerSet itself is not phase-gated,
+        // so leaving the vault in the Subscription phase is fine here.
+        auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60u;
+        auto const red = sub + kMinInvestmentPeriod + 1'000'000u;
+
         uint256 vaultID;
         Vault const vault{env};
-        auto [tx, vKeylet] = vault.create({.owner = a, .asset = asset});
+        auto [tx, vKeylet] = vault.create(
+            {.owner = a,
+             .asset = asset,
+             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+             .subscriptionDate = sub,
+             .redemptionDate = red});
         env(tx);
         BEAST_EXPECT(env.le(vKeylet));
 

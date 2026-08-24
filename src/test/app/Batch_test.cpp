@@ -31,6 +31,7 @@
 #include <xrpld/app/misc/TxQ.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -3169,13 +3170,29 @@ class Batch_test : public beast::unit_test::Suite
         auto const debtMaximumValue = asset(25'000).value();
         auto const coverDepositValue = asset(1000).value();
 
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build one with a subscription
+        // window that lets the lender deposit now, then advance the clock
+        // past SubscriptionDate before creating loans.
+        using d = NetClock::duration;
+        using tp = NetClock::time_point;
+        auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 10u;
+        auto const red = sub + 1'000'000u;
+        auto [tx, vaultKeylet] = vault.create(
+            {.owner = lender,
+             .asset = asset,
+             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+             .subscriptionDate = sub,
+             .redemptionDate = red});
         env(tx);
         env.close();
         BEAST_EXPECT(env.le(vaultKeylet));
 
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
         env.close();
+
+        // Move into the Investment phase before creating loans.
+        env.close(tp{d{sub + 1}});
 
         auto const brokerKeylet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));

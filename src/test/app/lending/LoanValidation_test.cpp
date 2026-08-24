@@ -13,6 +13,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -530,6 +531,60 @@ private:
         env.close();
     }
 
+    // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
+    // attaching a broker to an open-ended vault. Cover both branches: a
+    // pre-existing open-ended vault (LP V1.1 must be disabled at vault
+    // creation, then enabled) is rejected once LP V1.1 turns on, while
+    // the same broker create with LP V1.1 disabled succeeds. The gate
+    // only fires on the create path; existing brokers keep working.
+    void
+    testLoanBrokerRequiresClosedEndedVault()
+    {
+        testcase("LoanBrokerSet requires closed-ended vault under LP V1.1");
+        using namespace jtx;
+
+        Account const owner{"lp11_owner"};
+
+        auto const build = [&](FeatureBitset features,
+                               TER expected,
+                               std::optional<TER> updateExpected = std::nullopt) {
+            Env env(*this, features);
+            env.fund(XRP(1'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = owner, .id = vaultKeylet.key, .amount = XRP(100)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(loan_broker::set(owner, vaultKeylet.key), Ter(expected));
+            env.close();
+
+            // The create-path gate is the only new check; updates to an
+            // existing broker on the same open-ended vault are not
+            // affected. Only exercise the update path when the create
+            // succeeded (so there is a broker to update).
+            if (updateExpected && expected == tesSUCCESS)
+            {
+                env(loan_broker::set(owner, vaultKeylet.key),
+                    loan_broker::kLoanBrokerId(brokerKeylet.key),
+                    loan_broker::kDebtMaximum(XRP(1'000).value()),
+                    Ter(*updateExpected));
+                env.close();
+            }
+        };
+
+        // Baseline: LP V1.1 disabled -> open-ended vault + broker succeeds.
+        build(all_, tesSUCCESS, tesSUCCESS);
+
+        // LP V1.1 enabled -> open-ended vault + broker rejected on create.
+        build(all_ | featureLendingProtocolV1_1, tecNO_PERMISSION);
+    }
+
     void
     runAmendmentIndependent()
     {
@@ -541,6 +596,7 @@ private:
         testInvalidLoanPay();
         testRequireAuth();
         testLimitExceeded();
+        testLoanBrokerRequiresClosedEndedVault();
     }
 
     // Tests run under each entry in amendmentCombinations().

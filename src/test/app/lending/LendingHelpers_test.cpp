@@ -1896,7 +1896,12 @@ public:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        Env env{*this};
+        // featureLendingProtocolV1_1 adds a closed-ended vault gate on
+        // LoanBrokerSet::preclaim (see LoanBrokerSet.cpp). This test uses
+        // an open-ended vault, which is fine under pre-LP V1.1 semantics
+        // but would be rejected under the amendment. Strip the amendment
+        // to preserve the pre-LP V1.1 behaviour this test asserts.
+        Env env{*this, jtx::testableAmendments() - featureLendingProtocolV1_1};
         Vault const vault{env};
         env.fund(XRP(10'000), lender, borrower);
         env.close();

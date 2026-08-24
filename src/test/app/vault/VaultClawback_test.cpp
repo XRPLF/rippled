@@ -14,6 +14,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
@@ -24,6 +25,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -34,6 +36,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
+#include <cstdint>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -68,12 +71,28 @@ private:
             return sleIssuance->at(sfOutstandingAmount);
         };
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build vaults in this suite as
+        // closed-ended and advance past SubscriptionDate before creating
+        // brokers/loans. VaultClawback itself is not phase-gated. The
+        // subscription offset must be large enough that the deposit
+        // ledger close does not accidentally push us past SubscriptionDate
+        // (which would land the deposit in Investment phase and fail).
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
                                     Account const& depositor) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            auto const& [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
+            auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60u;
+            auto const red = sub + 1'000'000u;
+            auto const& [tx, vaultKeylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+                 .subscriptionDate = sub,
+                 .redemptionDate = red});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -86,6 +105,10 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
                 Ter(tesSUCCESS));
             env.close();
+
+            // Move past SubscriptionDate so LoanBrokerSet/LoanSet run in
+            // the Investment phase.
+            env.close(tp{d{sub + 1}});
 
             auto const& [availablePreDefault, totalPreDefault] = vaultAssetBalance(vaultKeylet);
             BEAST_EXPECT(availablePreDefault == totalPreDefault);
@@ -313,13 +336,29 @@ private:
         Env env(*this);
         env.enableFeature(fixCleanup3_1_3);
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults; some tests using this helper later
+        // attach loan brokers to the vault. Build it as closed-ended and
+        // advance past SubscriptionDate so subsequent broker/loan setup
+        // runs in the Investment phase. VaultClawback itself is not
+        // phase-gated. See the other setupVault (share tests) for why the
+        // subscription offset must be generous.
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
                                     Account const& depositor,
                                     Account const& issuer) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            auto const& [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
+            auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60u;
+            auto const red = sub + 1'000'000u;
+            auto const& [tx, vaultKeylet] = vault.create(
+                {.owner = owner,
+                 .asset = asset,
+                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+                 .subscriptionDate = sub,
+                 .redemptionDate = red});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -330,6 +369,8 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
                 Ter(tesSUCCESS));
             env.close();
+
+            env.close(tp{d{sub + 1}});
 
             return std::make_pair(vault, vaultKeylet);
         };
