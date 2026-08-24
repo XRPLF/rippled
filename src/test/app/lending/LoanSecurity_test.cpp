@@ -27,7 +27,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <ostream>
-#include <utility>
 
 namespace xrpl::test {
 
@@ -421,16 +420,8 @@ private:
         env.fund(XRP(10'000), lender, issuer, borrower, depositor);
         env.close();
 
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
-        auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 10u;
-        auto const red = sub + 1'000'000u;
-        auto [tx, vaultKeyLet] = vault.create(
-            {.owner = lender,
-             .asset = xrpIssue(),
-             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-             .subscriptionDate = sub,
-             .redemptionDate = red});
+        auto [tx, vaultKeyLet, subscriptionDate] =
+            vault.createClosedEnded({.owner = lender, .asset = xrpIssue()});
         env(tx, txFee);
         env.close();
 
@@ -440,7 +431,7 @@ private:
 
         // Move into the Investment phase before creating the broker and
         // the loan.
-        env.close(tp{d{sub + 1}});
+        vault.closePastSubscription(subscriptionDate);
 
         auto const brokerKeyLet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));

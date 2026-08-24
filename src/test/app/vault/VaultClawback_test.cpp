@@ -14,7 +14,6 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
@@ -25,7 +24,6 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -36,7 +34,6 @@
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
-#include <cstdint>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -83,16 +80,8 @@ private:
                                     Account const& depositor) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            using d = NetClock::duration;
-            using tp = NetClock::time_point;
-            auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60u;
-            auto const red = sub + 1'000'000u;
-            auto const& [tx, vaultKeylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -108,7 +97,7 @@ private:
 
             // Move past SubscriptionDate so LoanBrokerSet/LoanSet run in
             // the Investment phase.
-            env.close(tp{d{sub + 1}});
+            vault.closePastSubscription(subscriptionDate);
 
             auto const& [availablePreDefault, totalPreDefault] = vaultAssetBalance(vaultKeylet);
             BEAST_EXPECT(availablePreDefault == totalPreDefault);
@@ -349,16 +338,8 @@ private:
                                     Account const& issuer) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            using d = NetClock::duration;
-            using tp = NetClock::time_point;
-            auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60u;
-            auto const red = sub + 1'000'000u;
-            auto const& [tx, vaultKeylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -370,7 +351,7 @@ private:
                 Ter(tesSUCCESS));
             env.close();
 
-            env.close(tp{d{sub + 1}});
+            vault.closePastSubscription(subscriptionDate);
 
             return std::make_pair(vault, vaultKeylet);
         };

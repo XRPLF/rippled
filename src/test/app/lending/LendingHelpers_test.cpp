@@ -1905,22 +1905,14 @@ public:
         // accepts closed-ended vaults, so build one with a near-future
         // SubscriptionDate, deposit while still in the Subscription phase,
         // and advance past SubscriptionDate before creating the broker.
-        using dur = NetClock::duration;
-        using tp = NetClock::time_point;
-        auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 10u;
-        auto const red = sub + 1'000'000u;
-        auto [vaultTx, vaultKeylet] = vault.create(
-            {.owner = lender,
-             .asset = xrpIssue(),
-             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-             .subscriptionDate = sub,
-             .redemptionDate = red});
+        auto [vaultTx, vaultKeylet, subscriptionDate] =
+            vault.createClosedEnded({.owner = lender, .asset = xrpIssue()});
         env(vaultTx);
         env.close();
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = XRP(1'000)}));
         env.close();
 
-        env.close(tp{dur{sub + 1}});
+        vault.closePastSubscription(subscriptionDate);
 
         auto const brokerKeylet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));

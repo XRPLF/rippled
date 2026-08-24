@@ -16,7 +16,6 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
@@ -25,7 +24,6 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -42,7 +40,6 @@
 #include <cstdint>
 #include <map>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -353,16 +350,8 @@ private:
             // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim
             // only accepts closed-ended vaults, so build one and advance
             // past SubscriptionDate before creating broker/loan.
-            using dur = NetClock::duration;
-            using tp = NetClock::time_point;
-            auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 10u;
-            auto const red = sub + 1'000'000u;
-            auto [tx, vaultKeylet] = vault.create(
-                {.owner = broker,
-                 .asset = asset,
-                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto [tx, vaultKeylet, subscriptionDate] =
+                vault.createClosedEnded({.owner = broker, .asset = asset});
             env(tx, txFee);
             env.close();
 
@@ -371,7 +360,7 @@ private:
                 txFee);
             env.close();
 
-            env.close(tp{dur{sub + 1}});
+            vault.closePastSubscription(subscriptionDate);
 
             auto const brokerKeylet =
                 keylet::loanBroker(broker.id(), SeqProxy::rawSequence(env.seq(broker)));

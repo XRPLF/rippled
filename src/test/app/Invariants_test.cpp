@@ -2524,17 +2524,13 @@ class Invariants_test : public beast::unit_test::Suite
         // accepts closed-ended vaults. Build one with a comfortable
         // subscription window; LoanBrokerSet itself is not phase-gated,
         // so leaving the vault in the Subscription phase is fine here.
-        auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60u;
-        auto const red = sub + kMinInvestmentPeriod + 1'000'000u;
-
         uint256 vaultID;
         Vault const vault{env};
-        auto [tx, vKeylet] = vault.create(
+        auto [tx, vKeylet, _] = vault.createClosedEnded(
             {.owner = a,
              .asset = asset,
-             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-             .subscriptionDate = sub,
-             .redemptionDate = red});
+             .subscriptionOffset = std::chrono::seconds{60},
+             .investmentWindow = std::chrono::seconds{kMinInvestmentPeriod + 1'000'000u}});
         env(tx);
         BEAST_EXPECT(env.le(vKeylet));
 
