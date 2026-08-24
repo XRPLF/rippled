@@ -4368,6 +4368,40 @@ panel it reads.
         succeed.
       - **All series flat at zero** — normal. It means this node already held
         every proposed set locally and never had to fetch one.
+      - **Which round was waiting?** Open a slow `txset.acquire` span in Tempo
+        and read its `round.request` **events**:
+
+        ```
+        # tx-set fetches that at least one round asked for
+        {name="txset.acquire" && event:name="round.request"}
+        # the round that asked, by parent-ledger hash off the event
+        {name="consensus.round" && span.consensus_ledger_id = "<current_ledger_hash>"}
+        ```
+
+        Each event carries `current_ledger_hash` and `current_ledger_seq` for
+        one round that asked for the set. The fetch span is **always its own
+        trace root with a random trace id** — nothing is active on the
+        `peerProposal → acquireTxSet → getSet` path for it to attach to, which
+        is why it is recorded with `parent: null`. It therefore never appears in
+        the round's trace, under either `trace_strategy`, and the attribute
+        above is the **only** join between the two. Note the key changes across
+        that join: the fetch calls it `event.current_ledger_hash`,
+        `consensus.round` calls the same value `consensus_ledger_id`. And
+        `current_ledger_seq` is a string on an event, so match it exactly —
+        `event.current_ledger_seq > N` does not work.
+
+        More than one event means the fetch outlived the round that started it.
+        Treat the count as a **lower bound**, valid only while the span is open:
+        once the span closes with an outcome — `timeout` above all — the map
+        entry survives a few more rounds and those later requests add nothing,
+        so a fetch that really kept three rounds waiting can still show a
+        single event. Two further limits: the events record which rounds
+        _asked_, not which round used the result (not knowable at request time,
+        since the fetch does not block the round), and requesters are told apart
+        by parent-ledger hash, which distinguishes rounds _started_ on different
+        forks at the same height but **not** a mid-round wrong-ledger recovery —
+        that path re-enters consensus without re-caching the round identity, so
+        a fetch begun after the switch is attributed to the pre-switch round.
     - **Which peer is the dial failing against?** Panel _Outbound Dial
       Outcomes (span-derived, per attempt)_ (`peer.dial`). The same six
       outcomes as `overlay_connect_total` in Bootstrap step 2, set from the

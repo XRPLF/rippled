@@ -3651,7 +3651,11 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
     JLOG(pJournal_.trace()) << "getTxSet: TX set";
 
     uint256 const txSetHash = uint256::fromRaw(m->ledgerhash());
-    std::shared_ptr<SHAMap> shaMap{app_.getInboundTransactions().getSet(txSetHash, false)};
+    // Zero round identity: acquire=false only looks the set up, and a peer
+    // serving a request is not in a round of its own that could have asked for
+    // it. Nothing is recorded, because no fetch is started.
+    std::shared_ptr<SHAMap> shaMap{
+        app_.getInboundTransactions().getSet(txSetHash, false, uint256{}, 0)};
     if (!shaMap)
     {
         if (m->has_querytype() && !m->has_requestcookie())

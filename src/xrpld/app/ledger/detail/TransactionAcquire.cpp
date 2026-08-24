@@ -9,6 +9,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
@@ -25,6 +26,7 @@
 #include <cstdint>
 #include <exception>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -41,7 +43,9 @@ static constexpr auto kMaxTimeouts = 20;
 TransactionAcquire::TransactionAcquire(
     Application& app,
     uint256 const& hash,
-    std::unique_ptr<PeerSet> peerSet)
+    std::unique_ptr<PeerSet> peerSet,
+    uint256 const& roundParentHash,
+    std::uint32_t roundLedgerSeq)
     : TimeoutCounter(
           app,
           hash,
@@ -49,6 +53,8 @@ TransactionAcquire::TransactionAcquire(
           {.jobType = JtTxnData, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
     , peerSet_(std::move(peerSet))
+    , roundParentHash_(roundParentHash)
+    , roundLedgerSeq_(roundLedgerSeq)
 {
     map_ = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
     map_->setUnbacked();
@@ -56,11 +62,37 @@ TransactionAcquire::TransactionAcquire(
 
 TransactionAcquire::~TransactionAcquire()
 {
-    // Last exit. A set dropped here (swept by newRound because it never
-    // arrived, or torn down at shutdown) reached no result, so this is what
-    // stamps outcome=abandoned instead of exporting a span with no outcome at
-    // all. Already-finalized acquisitions are untouched: the helper is
-    // idempotent.
+    // Not an exit. Every path that stops pursuing a fetch ends the span itself,
+    // through done(), abandonAcquireSpan() or cancel(), so by the time this runs
+    // there is nothing left to finalize. Asserting that is what keeps it true: an
+    // exit added later without a finalize call shows up here instead of silently
+    // reporting a duration that runs on to whenever the last reference dropped.
+    // ~SpanGuard still ends the span in a Release build, so nothing leaks -- the
+    // span would just lose its outcome and its real end time.
+    XRPL_ASSERT(
+        !acquireSpan_,
+        "xrpl::TransactionAcquire::~TransactionAcquire : acquire span already ended");
+}
+
+void
+TransactionAcquire::abandonAcquireSpan() noexcept
+{
+    // Takes mtx_ because acquireSpan_ is only ever written under it, and this
+    // runs on whichever thread swept the set, gave it to us or is shutting the
+    // node down -- not the acquiring thread. Safe under
+    // InboundTransactions::lock_: lock_ then mtx_ is the only order the two are
+    // nested in, since nothing under mtx_ calls back into InboundTransactions
+    // (done() only queues a job, addPeers() / trigger() reach the Overlay).
+    ScopedLockType const sl(mtx_);
+
+    // Set before finalizing so a set dropped in the window between getSet()
+    // inserting it and init() running never opens a span: init() checks this and
+    // skips creation, because by then no exit is left to close one.
+    abandoned_ = true;
+
+    // Stamps outcome=abandoned on a fetch that reached no result. Idempotent, so
+    // a fetch that already finished -- the usual case from giveSet(), which is
+    // the callback done() queues on success -- keeps the outcome it recorded.
     finalizeAcquireSpan();
 }
 
@@ -72,10 +104,11 @@ TransactionAcquire::finalizeAcquireSpan() noexcept
     if (!acquireSpan_)
         return;
 
-    // The attribute writes are wrapped because the destructor is one of the
-    // callers: an exception escaping there during unwinding would terminate the
-    // process. Each setAttribute is itself noexcept today; the try is the
-    // structural guarantee that stays correct if that ever changes.
+    // The attribute writes are wrapped because abandonAcquireSpan() calls this
+    // from the middle of a round sweep and from shutdown, where an escaping
+    // exception would abandon the rest of the loop. Each setAttribute is itself
+    // noexcept today; the try is the structural guarantee that stays correct if
+    // that ever changes.
     try
     {
         if (*acquireSpan_)
@@ -107,9 +140,8 @@ TransactionAcquire::finalizeAcquireSpan() noexcept
     }
     catch (...)  // NOLINT(bugprone-empty-catch)
     {
-        // Telemetry must never break an acquisition, and this also runs from
-        // the destructor. A span missing one attribute is still worth
-        // exporting, so fall through and end it below.
+        // Telemetry must never break an acquisition. A span missing one
+        // attribute is still worth exporting, so fall through and end it below.
     }
 
     // End the span, outside the try so it happens on every path. Unconditional
@@ -117,6 +149,66 @@ TransactionAcquire::finalizeAcquireSpan() noexcept
     // exactly-once: a later exit sees an empty handle and returns above.
     // ~SpanGuard is implicitly noexcept, so this cannot throw out of here.
     acquireSpan_.reset();
+}
+
+void
+TransactionAcquire::addRoundRequestEvent(
+    uint256 const& roundParentHash,
+    std::uint32_t roundLedgerSeq) noexcept
+{
+    // Before the conversions below, so a node with telemetry off or the ledger
+    // category disabled pays one branch. Also the guard for a fetch that has
+    // already ended: a round asking after that has nothing to record against,
+    // and the event must not appear to extend a closed span.
+    if (!acquireSpan_ || !*acquireSpan_)
+        return;
+
+    try
+    {
+        // Event attributes are strings, so both values are converted here and
+        // kept alive across the addEvent call below.
+        auto const parentHashText = to_string(roundParentHash);
+        auto const ledgerSeqText = std::to_string(roundLedgerSeq);
+
+        // This span is its own trace root, so the hash is the only thing that
+        // joins the fetch to the round: consensus.round records the same value
+        // as consensus_ledger_id.
+        acquireSpan_->addEvent(
+            telemetry::ledger_span::event::roundRequest,
+            {{telemetry::ledger_span::attr::currentLedgerHash, parentHashText},
+             {telemetry::ledger_span::attr::currentLedgerSeq, ledgerSeqText}});
+    }
+    catch (...)  // NOLINT(bugprone-empty-catch)
+    {
+        // Telemetry must never break an acquisition. A dropped event costs one
+        // entry in a timeline; letting a bad_alloc out of here would cost the
+        // consensus round that was only asking for a set.
+    }
+}
+
+void
+TransactionAcquire::cancel()
+{
+    ScopedLockType const sl(mtx_);
+    TimeoutCounter::cancel();
+
+    // cancel() sets failed_ without reaching done(), so it is a third exit. The
+    // base takes mtx_ too; it is recursive.
+    finalizeAcquireSpan();
+}
+
+void
+TransactionAcquire::recordRequestingRound(
+    uint256 const& roundParentHash,
+    std::uint32_t roundLedgerSeq) noexcept
+{
+    // Takes mtx_ for the same reason abandonAcquireSpan() does: acquireSpan_ is
+    // only ever written under it, and this runs on the consensus thread while a
+    // JtTxnData worker may be finalizing. Safe under
+    // InboundTransactions::lock_ -- lock_ then mtx_ is the only nesting order,
+    // the same one stillNeed() is already called in.
+    ScopedLockType const sl(mtx_);
+    addRoundRequestEvent(roundParentHash, roundLedgerSeq);
 }
 
 void
@@ -346,29 +438,39 @@ TransactionAcquire::init(int numPeers)
     // a set that resolves immediately.
     acquireStart_ = std::chrono::steady_clock::now();
 
+    // Nothing left to start. getSet() releases its own lock before calling us,
+    // so a round sweep or a shutdown can drop the set in that window. Returning
+    // rather than merely skipping the span also stops us asking peers for a set
+    // nobody wants: those requests would be answered after this object is gone,
+    // and gotData() charges a peer for data no acquire is waiting on.
+    if (abandoned_)
+        return;
+
+    using namespace telemetry;
+
     // Span the acquisition so a proposed tx set that never arrives is
     // traceable. TransactionAcquire had no telemetry at all before this, so a
     // consensus round stalled waiting on a set looked identical to an idle one.
-    // Finalized by finalizeAcquireSpan() on whichever exit this object takes,
-    // including the destructor.
+    // Finalized by finalizeAcquireSpan() on whichever exit this object takes.
+    //
+    // acquireSpan_ is emplaced here but may be reset on a JtTxnData worker
+    // thread. A SpanGuard is thread-free (owns no thread-local Scope), so it can
+    // be created here and destroyed on the worker with no scope to strip.
+    // Category Ledger: a tx set is ledger-fetch traffic, and this shares the
+    // `trace_ledger` flag with ledger.acquire so the two halves of a stuck sync
+    // cannot be enabled apart.
+    acquireSpan_.emplace(
+        SpanGuard::span(
+            TraceCategory::Ledger, ledger_span::prefix::txset, ledger_span::op::acquire));
+    if (*acquireSpan_)
     {
-        using namespace telemetry;
-        // acquireSpan_ is emplaced here but may be reset on a JtTxnData worker
-        // thread. A SpanGuard is thread-free (owns no thread-local Scope), so it
-        // can be created here and destroyed on the worker with no scope to
-        // strip. Category Ledger: a tx set is ledger-fetch traffic, and this
-        // shares the `trace_ledger` flag with ledger.acquire so the two halves
-        // of a stuck sync cannot be enabled apart.
-        acquireSpan_.emplace(
-            SpanGuard::span(
-                TraceCategory::Ledger, ledger_span::prefix::txset, ledger_span::op::acquire));
-        if (*acquireSpan_)
-        {
-            // The set's root hash is the only identity it has -- there is no
-            // sequence number -- so it is what makes a stalled fetch findable
-            // in a trace search.
-            acquireSpan_->setAttribute(ledger_span::attr::txSetHash, to_string(hash_).c_str());
-        }
+        // The set's root hash is the only identity it has -- there is no
+        // sequence number -- so it is what makes a stalled fetch findable
+        // in a trace search.
+        acquireSpan_->setAttribute(ledger_span::attr::txSetHash, to_string(hash_).c_str());
+        // The round that started the fetch, as the first entry in the span's
+        // timeline; later rounds add their own via recordRequestingRound().
+        addRoundRequestEvent(roundParentHash_, roundLedgerSeq_);
     }
 
     addPeers(numPeers);

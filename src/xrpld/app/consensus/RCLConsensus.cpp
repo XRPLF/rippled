@@ -294,7 +294,11 @@ RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 std::optional<RCLTxSet>
 RCLConsensus::Adaptor::acquireTxSet(RCLTxSet::ID const& setId)
 {
-    if (auto txns = inboundTransactions_.getSet(setId, true))
+    // The round identity goes with the request, not onto the fetch's span as a
+    // parent or link: this is called once per peer proposal, and one fetch ends
+    // up wanted by several rounds, so the fetch records its requesters instead
+    // of belonging to one of them.
+    if (auto txns = inboundTransactions_.getSet(setId, true, roundParentHash_, roundLedgerSeq_))
     {
         return RCLTxSet{std::move(txns)};
     }
@@ -1227,6 +1231,13 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
         JLOG(j_.info()) << "Entering consensus process, watching, synced="
                         << (synced ? "yes" : "no");
     }
+
+    // Cache this round's identity for the tx-set fetches it is about to start.
+    // Deliberately here and not in startRoundTracing(), which returns early
+    // when consensus tracing is off: a fetch's round.request event must still
+    // name the round on a node running trace_consensus=0 with trace_ledger=1.
+    roundParentHash_ = prevLgr.id();
+    roundLedgerSeq_ = prevLgr.seq() + 1;
 
     // Notify inbound ledgers that we are starting a new round
     inboundTransactions_.newRound(prevLgr.seq());

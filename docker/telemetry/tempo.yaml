@@ -114,6 +114,13 @@ storage:
       # remain queryable by range (e.g. span.missing_nodes > 0) at no
       # storage cost, which is how they are actually read.
       #
+      # The txset.acquire `round.request` event attributes get no column either,
+      # and cannot: this Tempo (2.9.4, docker-compose.yml) queries them via
+      # event:name / event.<attr>, but a dedicated column accepts only
+      # scope: span or scope: resource -- never event. Those event filters
+      # therefore scan rather than index, which is fine for the per-span lookup
+      # they are used for; do not add an event-scoped column to the list below.
+      #
       # The ledger_hash column below carries a second job as of the per-ledger
       # trace join (WP-B3), which is why it stays the highest-value column here.
       # Every span for one ledger -- ledger.acquire, consensus.validation.accept,

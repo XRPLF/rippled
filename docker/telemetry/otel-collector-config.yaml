@@ -246,6 +246,13 @@ connectors:
       #   missing_nodes   - an arbitrary node count
       #   served_nodes    - an arbitrary reply size
       #   duration_ms     - an arbitrary elapsed time
+      #   current_ledger_hash / current_ledger_seq - the txset.acquire
+      #                     `round.request` event attributes, one value per
+      #                     requesting round. Per-round, so unbounded by the
+      #                     same rule -- but more fundamentally impossible:
+      #                     spanmetrics derives metrics from spans, not span
+      #                     events, so an event attribute cannot be a metric
+      #                     dimension at all. Read them in Tempo only.
       # A dimension on any of these would mint a metric series per round, per
       # peer or per distinct integer. They stay span-only and are searchable in
       # Tempo instead (see parquet_dedicated_columns in tempo.yaml); the

@@ -18,12 +18,19 @@
  *    ledger.serve   (PeerImp — serve a peer's ledger-data request)
  *    tx.apply       (BuildLedger — transaction application)
  *    txset.acquire  (TransactionAcquire — fetch a proposed tx set)
+ *      +-- [event] round.request  (one per consensus round that asked for
+ *                                  this set; see event::roundRequest)
  *
  *  Why the acquire phases are separate child spans: a fresh sync is
  *  dominated by the account-state tree, but the flat parent span cannot
  *  separate it from the (usually tiny) transaction tree or from the header
  *  wait that gates both. Each phase carries its own missing-node count and
  *  timeout flag, so the phase that is stuck names itself.
+ *
+ *  Why the requesting round is an event, not a parent or a link: one round
+ *  starts many fetches and one fetch is wanted by many rounds, so no single
+ *  round owns a txset.acquire span. Events are repeatable and timestamped, so
+ *  the span can record every requester.
  */
 
 #include <xrpl/telemetry/SpanNames.h>
@@ -89,6 +96,15 @@ using ::xrpl::telemetry::attr::ledgerHash;
 using ::xrpl::telemetry::attr::ledgerSeq;
 
 /**
+ * The consensus round's identity, carried by the round.request event on
+ * txset.acquire. Re-exported, not redefined: `currentLedgerHash` is already
+ * documented in SpanNames.h as the current view's parent-ledger hash. Event
+ * attributes only, so neither is a span attribute here nor a metric dimension.
+ */
+using ::xrpl::telemetry::attr::currentLedgerHash;
+using ::xrpl::telemetry::attr::currentLedgerSeq;
+
+/**
  * Domain-owned bare attrs.
  */
 inline constexpr auto txCount = makeStr("tx_count");
@@ -129,6 +145,9 @@ inline constexpr auto timedOut = makeStr("timed_out");
  * explicitly rather than left to the span's own duration because the span is
  * ended from the acquiring thread and its wall time is the number an operator
  * reads directly off a trace.
+ *
+ * Which round(s) asked for the set is not an attribute here -- see
+ * event::roundRequest.
  */
 inline constexpr auto txSetHash = makeStr("txset_hash");
 inline constexpr auto durationMs = makeStr("duration_ms");
@@ -143,6 +162,30 @@ inline constexpr auto durationMs = makeStr("duration_ms");
 inline constexpr auto objectType = makeStr("object_type");
 inline constexpr auto servedNodes = makeStr("served_nodes");
 }  // namespace attr
+
+// ===== Span events ===========================================================
+
+namespace event {
+/**
+ * "round.request" -- one consensus round asked for this transaction set.
+ *
+ * Fired on txset.acquire, once per requesting round, carrying that round's
+ * `currentLedgerHash` / `currentLedgerSeq`. A fetch is wanted by many rounds, so
+ * the span accumulates one event per requester; a single attribute could only
+ * ever name the first. Requesters are told apart by parent-ledger hash -- see
+ * `InboundTransactionSet::lastRoundParentHash`.
+ *
+ * The event count is a LOWER BOUND on the rounds that waited, valid only while
+ * the span is open. Once the span closes with an outcome -- `timeout` in
+ * particular -- the entry survives a few more rounds and their requests add
+ * nothing, so a fetch that kept three rounds waiting can show one event.
+ *
+ * `currentLedgerSeq` is a decimal STRING here, not the int64 every span
+ * attribute uses, because event attributes are string pairs. TraceQL numeric
+ * comparisons such as `event.current_ledger_seq > N` therefore do not work.
+ */
+inline constexpr auto roundRequest = join(makeStr("round"), makeStr("request"));
+}  // namespace event
 
 // ===== Attribute values ======================================================
 
