@@ -27,6 +27,7 @@ whyCloseLedger(
     beast::Journal j,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    // Log text keeps the shouldCloseLedger name: consumers match on it.
     CLOG(clog) << "shouldCloseLedger params anyTransactions: " << anyTransactions
                << ", prevProposers: " << prevProposers << ", proposersClosed: " << proposersClosed
                << ", proposersValidated: " << proposersValidated
