@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -26,6 +27,13 @@
 #include <stdexcept>
 
 namespace xrpl {
+
+bool
+VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        (ctx.rules.enabled(featureCredentials) && ctx.rules.enabled(fixCleanup3_4_0));
+}
 
 static WaiveUnrealizedLoss
 shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
@@ -58,6 +66,9 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
     }
+
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
+        return err;
 
     return tesSUCCESS;
 }
@@ -113,6 +124,12 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
+    // Validate credentials (if any) before canWithdraw, since canWithdraw may
+    // call credentials::authorizedDepositPreauth which assumes credentials
+    // already exist.
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
+        return err;
+
     if (fix313Enabled && amount.asset() == vaultShare)
     {
         // Post-fixCleanup3_1_3: if the user specified shares, convert
@@ -144,7 +161,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
                     account,
                     dstAcct,
                     *maybeAssets,
-                    ctx.tx.isFieldPresent(sfDestinationTag)))
+                    ctx.tx.isFieldPresent(sfDestinationTag),
+                    ctx.tx[~sfCredentialIDs]))
                 return ret;
         }
         catch (std::overflow_error const&)

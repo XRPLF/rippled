@@ -386,7 +386,7 @@ ValidVault::finalize(
 
     if (afterVault_.empty() && beforeVault_.empty())
     {
-        if (hasPrivilege(tx, MustModifyVault))
+        if (hasPrivilege(tx, Privilege::MustModifyVault))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault operation succeeded without modifying "
@@ -397,7 +397,8 @@ ValidVault::finalize(
 
         return true;  // Not a vault operation
     }
-    if (!(hasPrivilege(tx, MustModifyVault) || hasPrivilege(tx, MayModifyVault)))
+    if (!(hasPrivilege(tx, Privilege::MustModifyVault) ||
+          hasPrivilege(tx, Privilege::MayModifyVault)))
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
