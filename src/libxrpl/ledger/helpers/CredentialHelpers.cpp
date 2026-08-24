@@ -5,8 +5,10 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -125,6 +127,36 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
     view.erase(sleCredential);
 
     return tesSUCCESS;
+}
+
+TER
+deletePseudoAccountCredentials(
+    ApplyView& view,
+    AccountID const& pseudoAcct,
+    std::uint16_t maxNodesToDelete,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        isPseudoAccount(view.read(keylet::account(pseudoAcct))),
+        "xrpl::credentials::deletePseudoAccountCredentials : is a pseudo-account");
+
+    // Delete the credentials linked into the pseudo-account's owner directory,
+    // visiting at most maxNodesToDelete entries. Any other object is left in
+    // place; the caller's own checks decide whether the remaining directory
+    // blocks deletion. If the bound is reached, cleanupOnAccountDelete returns
+    // tecINCOMPLETE and the caller propagates it so a later transaction resumes.
+    return cleanupOnAccountDelete(
+        view,
+        keylet::ownerDir(pseudoAcct),
+        [&view, &j](LedgerEntryType nodeType, uint256 const&, SLE::pointer& sleItem)
+            -> std::pair<TER, SkipEntry> {
+            if (nodeType == ltCREDENTIAL)
+                return {deleteSLE(view, sleItem, j), SkipEntry::No};
+
+            return {tesSUCCESS, SkipEntry::Yes};
+        },
+        j,
+        maxNodesToDelete);
 }
 
 NotTEC
