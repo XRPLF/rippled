@@ -53,6 +53,11 @@ TransactionAcquire::done()
 {
     // mtx_ is held, so this may only post real work rather than do it.
 
+    // Runs at most once per outcome, since every caller reaches here only after clearing
+    // TimeoutCounter's isDone() gate and setting complete_ or failed_. It can still run twice for
+    // two outcomes, since stillNeed() revives a timed-out set that can finish later - which is why
+    // this is unlatched, unlike InboundLedger::done() with its signaled_.
+
     if (failed_)
     {
         JLOG(journal_.debug()) << "Failed to acquire TX set " << hash_;
@@ -270,10 +275,20 @@ TransactionAcquire::init(int numPeers)
 void
 TransactionAcquire::stillNeed()
 {
-    ScopedLockType const sl(mtx_);
+    ScopedLockType sl(mtx_);
 
     timeouts_ = std::min<int>(timeouts_, kNormTimeouts);
+
+    // Nothing to revive: leave a running acquisition on the wait it has, rather than restarting it
+    // for every consensus round that asks for the set again.
+    if (!failed_)
+        return;
+
     failed_ = false;
+
+    // Restarting the timer is what resumes the acquisition. expires_after() cancels any pending
+    // wait, so this cannot leave two timer chains running.
+    setTimer(sl);
 }
 
 }  // namespace xrpl

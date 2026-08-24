@@ -59,6 +59,13 @@ public:
     void
     init(int startPeers);
 
+    /**
+     * Resume a timed-out acquisition, or leave a running one alone.
+     *
+     * Always clamps the timeout count. An acquisition that failed has its timer
+     * chain stopped, so this also clears the failed flag and restarts the timer;
+     * one that is still running already has a timer pending.
+     */
     void
     stillNeed();
 
