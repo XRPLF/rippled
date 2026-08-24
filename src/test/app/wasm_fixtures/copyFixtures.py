@@ -185,12 +185,27 @@ def process_c(project_name):
 
 
 def wat_to_wasm(wat_path, wasm_path):
-    build_cmd = ["wat2wasm", wat_path, "-o", wasm_path]
+    build_cmd = ["wat2wasm", "--enable-all", wat_path, "-o", wasm_path]
     try:
         subprocess.run(build_cmd, check=True)
         print(f"WASM file for {os.path.basename(wat_path)} has been built.")
+        return
     except FileNotFoundError:
         print("exec error: wat2wasm is required to build WAT fixtures")
+        sys.exit(1)
+    except subprocess.CalledProcessError:
+        # wat2wasm (wabt) does not support some proposal text syntax such as
+        # the GC instructions, so fall back to wasm-tools which does.
+        pass
+
+    fallback_cmd = ["wasm-tools", "parse", wat_path, "-o", wasm_path]
+    try:
+        subprocess.run(fallback_cmd, check=True)
+        print(
+            f"WASM file for {os.path.basename(wat_path)} has been built with wasm-tools."
+        )
+    except FileNotFoundError:
+        print("exec error: wasm-tools is required to build this WAT fixture")
         sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(f"exec error: {e}")
