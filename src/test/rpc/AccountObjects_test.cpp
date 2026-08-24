@@ -1617,6 +1617,49 @@ public:
                 BEAST_EXPECT(objs.size() == 0);
             }
         }
+
+        // NFTokenPages can never be sponsored (no NFT transaction is
+        // reserve-sponsorable), so sponsored=true must always exclude them
+        // while sponsored=false includes them.
+        {
+            Env env(*this, testableAmendments());
+            Account const minter("minter");
+
+            env.fund(XRP(10000), minter);
+            env.close();
+
+            env(token::mint(minter, 0u));
+            env.close();
+
+            // A single mint produces one page, stored at the account's
+            // maximum possible page keylet.
+            if (!BEAST_EXPECT(env.le(keylet::nftokenPageMax(minter))))
+                return;
+
+            {
+                auto const resp = acctObjsSponsored(env, minter.id(), false, jss::nft_page);
+                auto const& objs = resp[jss::result][jss::account_objects];
+                if (BEAST_EXPECT(objs.size() == 1))
+                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::NFTokenPage);
+            }
+            {
+                auto const resp = acctObjsSponsored(env, minter.id(), true, jss::nft_page);
+                BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
+            }
+
+            // The same holds when no type filter is given: the page is the
+            // minter's only object.
+            {
+                auto const resp = acctObjsSponsored(env, minter.id(), false);
+                auto const& objs = resp[jss::result][jss::account_objects];
+                if (BEAST_EXPECT(objs.size() == 1))
+                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::NFTokenPage);
+            }
+            {
+                auto const resp = acctObjsSponsored(env, minter.id(), true);
+                BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
+            }
+        }
     }
 
     void
