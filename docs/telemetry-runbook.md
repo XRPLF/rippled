@@ -838,12 +838,13 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
   exception thrown while the `Application` object is constructed prints the same
   `Unable to start` prefix, so confirm the text after the colon begins with
   `[telemetry]` before using this entry
-- Cause: the `[telemetry]` mTLS keys (`tls_client_cert` and `tls_client_key`)
-  contradict each other. Only these two mTLS checks are gated on `enabled=1`;
-  the rest of the section is still read when telemetry is off, so a malformed
-  value in any key — including `enabled` itself, which is read before the gate
-  — still fails startup with a different message
-- Fix: the two checks need different remedies, and the printed message says
+- Cause: either the `[telemetry]` mTLS keys (`tls_client_cert` and
+  `tls_client_key`) contradict each other, or one of the TLS certificate paths
+  cannot be read. Only these three checks are gated on `enabled=1`; the rest of
+  the section is still read when telemetry is off, so a malformed value in any
+  key — including `enabled` itself, which is read before the gate — still fails
+  startup with a different message
+- Fix: the three checks need different remedies, and the printed message says
   which one fired
   - `tls_client_cert and tls_client_key must be set together` — exactly one of
     the two paths is set. Either delete the one that is set, or add the missing
@@ -852,8 +853,14 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
   - `tls_client_cert/tls_client_key require use_tls=1` — both paths are set but
     TLS is off. Either set `use_tls=1`, or delete **both** paths. Deleting only
     one of them trips the first check
+  - `<key> cannot be read` — the named key (`tls_ca_cert`, `tls_client_cert` or
+    `tls_client_key`) points at a file the node cannot open; the message also
+    prints the path and the OS error. Fix the path or its permissions — the
+    pairing is not what is wrong here. This check runs only when `use_tls=1`,
+    and an empty `tls_ca_cert` is always accepted (it selects the system CA
+    store)
   - If you did not mean to enable telemetry at all, set `enabled=0` — that
-    clears both checks whichever one fired
+    clears all three checks whichever one fired
 
 ## Performance Tuning
 
