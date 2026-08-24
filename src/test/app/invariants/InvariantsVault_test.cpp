@@ -79,6 +79,13 @@ class InvariantsVault_test : public InvariantsBase
             // NOLINTEND(readability-redundant-member-init)
         };
         constexpr auto kAdjust = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
+            // Avoid uint64 + negative-int wrap (flagged by UBSan
+            // unsigned-integer-overflow) when adjusting UINT64 fields.
+            auto const addSigned = [](std::uint64_t current, int adj) -> std::uint64_t {
+                return adj >= 0  //
+                    ? current + static_cast<std::uint64_t>(adj)
+                    : current - static_cast<std::uint64_t>(-adj);
+            };
             auto sleVault = ac.peek(keylet);
             if (!sleVault)
                 return false;
@@ -107,7 +114,7 @@ class InvariantsVault_test : public InvariantsBase
             if (args.sharesTotal)
             {
                 (*sleShares)[sfOutstandingAmount] =
-                    *(*sleShares)[sfOutstandingAmount] + *args.sharesTotal;
+                    addSigned(*(*sleShares)[sfOutstandingAmount], *args.sharesTotal);
                 ac.update(sleShares);
             }
 
@@ -130,7 +137,8 @@ class InvariantsVault_test : public InvariantsBase
                     auto sleMPToken = ac.peek(keylet::mptoken(mptId, pseudoId));
                     if (!sleMPToken)
                         return false;
-                    (*sleMPToken)[sfMPTAmount] = *(*sleMPToken)[sfMPTAmount] + *args.vaultAssets;
+                    (*sleMPToken)[sfMPTAmount] =
+                        addSigned(*(*sleMPToken)[sfMPTAmount], *args.vaultAssets);
                     ac.update(sleMPToken);
                 }
                 else
@@ -156,7 +164,8 @@ class InvariantsVault_test : public InvariantsBase
                     auto sleMPToken = ac.peek(keylet::mptoken(mptID, pair.account));
                     if (!sleMPToken)
                         return false;
-                    (*sleMPToken)[sfMPTAmount] = *(*sleMPToken)[sfMPTAmount] + pair.amount;
+                    (*sleMPToken)[sfMPTAmount] =
+                        addSigned(*(*sleMPToken)[sfMPTAmount], pair.amount);
                     ac.update(sleMPToken);
                 }
                 else
@@ -171,7 +180,8 @@ class InvariantsVault_test : public InvariantsBase
                 auto sleMPToken = ac.peek(keylet::mptoken(mptIssuanceID, pair.account));
                 if (!sleMPToken)
                     return false;
-                (*sleMPToken)[sfMPTAmount] = *(*sleMPToken)[sfMPTAmount] + pair.amount;
+                (*sleMPToken)[sfMPTAmount] =
+                    addSigned(*(*sleMPToken)[sfMPTAmount], pair.amount);
                 ac.update(sleMPToken);
             }
             return true;
