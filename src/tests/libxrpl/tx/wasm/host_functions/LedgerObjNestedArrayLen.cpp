@@ -21,7 +21,7 @@ struct LedgerObjNestedArrayLenImpl : RealHostFixture
         makeSignerList(acct, 2, {{Account{"alice"}, 1}, {Account{"becky"}, 1}});
         auto assembler = bareTx();
         auto h = makeHost(keylet::account(AccountID{}), assembler.type, std::move(assembler.build));
-        h->cacheLedgerObj(keylet::signerList(acct.id()).key, 1);
+        EXPECT_TRUE(h->cacheLedgerObj(keylet::signerList(acct.id()).key, 1).has_value());
         return h;
     }
 };

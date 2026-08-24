@@ -124,6 +124,9 @@ runEscrowWasm(
     std::int64_t gasLimit,
     std::string_view funcName) noexcept
 {
+    XRPL_ASSERT(
+        gasLimit > 0,
+        "::xrpl::runEscrowWasm : gas limit is positive (should be checked in preflight)");
     // A run needs a budget to spend. Refused here rather than in the engine because what a
     // non-positive limit means is a transaction-validity rule; the engine's own budget is
     // therefore an unsigned quantity with no invalid value to represent.
