@@ -584,9 +584,18 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     {
         if (trustLine)
         {
-            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
-                ? tesSUCCESS
-                : TER{tecNO_AUTH};
+            if (trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                return tesSUCCESS;
+
+            // Authorization is a control over who may hold the issuer's asset, and a
+            // pseudo-account is not a who: it has no signing key, holds only on behalf of the
+            // object it stands for, and cannot opt in or out of anything. A line it already owns
+            // counts as authorized, which is what MPT does too. A line it does not own is a
+            // different matter and still fails below.
+            if (view.rules().enabled(fixCleanup3_4_0) && isPseudoAccount(view, account))
+                return tesSUCCESS;
+
+            return TER{tecNO_AUTH};
         }
         return TER{tecNO_LINE};
     }

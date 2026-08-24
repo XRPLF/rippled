@@ -901,6 +901,13 @@ private:
                 BEAST_EXPECT(
                     (env.balance(brokerPseudo, asset).number() > brokerBefore) ==
                     (payee == UnauthorizedPayee::Broker));
+
+                // The payee is skipped by the check, not authorized by it: the line that just
+                // took the credit is still missing its auth flag.
+                if (payee == UnauthorizedPayee::Vault)
+                    BEAST_EXPECT(!lineIsAuthorized(vaultPseudo));
+                if (payee == UnauthorizedPayee::Broker)
+                    BEAST_EXPECT(!lineIsAuthorized(brokerPseudo));
             }
             else
             {

@@ -620,9 +620,7 @@ LoanPay::doApply()
         ? STAmount{asset, 0}
         : conservationBalance(view, brokerPayee, asset, j_);
 
-    bool const skipPayeeAuth = view.rules().enabled(fixCleanup3_4_0);
-
-    if (!skipPayeeAuth && totalPaidToVaultRounded != beast::kZero)
+    if (totalPaidToVaultRounded != beast::kZero)
     {
         if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
             return ter;
@@ -646,11 +644,8 @@ LoanPay::doApply()
                 return ter;
             }
         }
-        if (!skipPayeeAuth)
-        {
-            if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
-                return ter;
-        }
+        if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
+            return ter;
     }
 
     if (auto const ter = accountSendMulti(
