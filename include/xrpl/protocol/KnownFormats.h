@@ -1,10 +1,10 @@
 #pragma once
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/type_name.h>
 #include <xrpl/protocol/SOTemplate.h>
 
 #include <boost/container/flat_map.hpp>
+#include <boost/core/type_name.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -84,7 +84,7 @@ public:
      * Derived classes will load the object with all the known formats.
      */
 private:
-    KnownFormats() : name_(beast::typeName<Derived>())
+    KnownFormats() : name_(boost::core::type_name<Derived>())
     {
     }
 
