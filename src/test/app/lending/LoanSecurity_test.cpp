@@ -12,12 +12,16 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -30,6 +34,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <ostream>
 
 namespace xrpl::test {
@@ -37,6 +42,30 @@ namespace xrpl::test {
 class LoanSecurity_test : public LoanTestBase
 {
 private:
+    // Env::close() cannot land the ledger's parentCloseTime on an arbitrary
+    // instant: it always rounds the requested time forward to the next
+    // close-time-resolution boundary (see Env::close() and
+    // roundCloseTime()/effCloseTime() in LedgerTiming.h), so it can only be
+    // used to reach times strictly *after* a given due date, never exactly
+    // on it. To pin the exact-boundary behavior of isPaymentLate(), directly
+    // overwrite the loan's NextPaymentDueDate instead, without closing the
+    // ledger again.
+    void
+    setLoanNextPaymentDueDate(jtx::Env& env, Keylet const& loanKeylet, std::uint32_t dueDate)
+    {
+        using namespace jtx;
+        bool const ok = env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            auto const sle = view.read(loanKeylet);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle);
+            (*replacement)[sfNextPaymentDueDate] = dueDate;
+            view.rawReplace(replacement);
+            return true;
+        });
+        BEAST_EXPECT(ok);
+    }
+
     void
     testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(FeatureBitset features)
     {
@@ -559,6 +588,26 @@ private:
 
         // 1. Impairment must fail when payment is not yet late
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+
+        {
+            auto const loan = env.le(loanKeylet);
+            BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == originalNextDueDate);
+        }
+
+        // 1b. Impairment must still fail at the exact due date instant: a
+        // payment due "now" is not yet late (strict/Exclusive comparison).
+        // Temporarily set NextPaymentDueDate to exactly the current
+        // parentCloseTime (without closing the ledger again), exercise the
+        // check, then restore the original due date.
+        {
+            std::uint32_t const exactNow =
+                env.current()->parentCloseTime().time_since_epoch().count();
+            setLoanNextPaymentDueDate(env, loanKeylet, exactNow);
+
+            env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+
+            setLoanNextPaymentDueDate(env, loanKeylet, originalNextDueDate);
+        }
 
         {
             auto const loan = env.le(loanKeylet);

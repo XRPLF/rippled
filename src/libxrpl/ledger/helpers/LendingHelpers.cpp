@@ -172,7 +172,11 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 [[nodiscard]] bool
 isPaymentLate(ReadView const& view, SLE::const_ref loanSle)
 {
-    return hasExpired(view, loanSle->at(sfNextPaymentDueDate));
+    return hasExpired(
+        view,
+        loanSle->at(sfNextPaymentDueDate),
+        view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
+                                              : ExpiryComparison::Inclusive);
 }
 
 namespace accrual {

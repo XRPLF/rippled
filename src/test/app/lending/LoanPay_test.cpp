@@ -14,6 +14,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -834,10 +835,193 @@ private:
             borrowerAfter + vaultAfter + lenderAfter);
     }
 
+    // Env::close() cannot land the ledger's parentCloseTime on an arbitrary
+    // instant: it always rounds the requested time forward to the next
+    // close-time-resolution boundary (see Env::close() and
+    // roundCloseTime()/effCloseTime() in LedgerTiming.h), so it can only be
+    // used to reach times strictly *after* a given due date, never exactly
+    // on it. To pin the exact-boundary behavior of isPaymentLate(), directly
+    // overwrite the loan's NextPaymentDueDate so that it matches the
+    // *current* (already fixed) parentCloseTime of the open ledger, without
+    // closing again. This exercises the same comparison
+    // (parentCloseTime vs. NextPaymentDueDate) at the exact boundary that
+    // env.close() cannot reliably reach.
+    void
+    setLoanNextPaymentDueDate(jtx::Env& env, Keylet const& loanKeylet, std::uint32_t dueDate)
+    {
+        using namespace jtx;
+        bool const ok = env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            auto const sle = view.read(loanKeylet);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle);
+            (*replacement)[sfNextPaymentDueDate] = dueDate;
+            view.rawReplace(replacement);
+            return true;
+        });
+        BEAST_EXPECT(ok);
+    }
+
+    // With fixCleanup3_4_0, isPaymentLate() uses a strict (Exclusive)
+    // comparison: a payment due exactly "now" is not yet late. A plain
+    // (non-late) LoanPay submitted at the exact NextPaymentDueDate instant
+    // must therefore succeed, advance the due date by exactly one
+    // PaymentInterval, and charge only the regular periodic payment amount
+    // (no late interest / late fee).
+    void
+    testLoanPayAtExactDueDateSucceedsPostAmendment()
+    {
+        testcase("LoanPay at exact due date succeeds with fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        // Set a large, non-zero late interest rate and late fee so that if
+        // the late-payment path were incorrectly taken, the extra charge
+        // would be large and easy to detect (far more than any rounding
+        // slack in the regular periodic payment amount).
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            kLateInterestRate(TenthBips32(percentageToTenthBips(24))),
+            kLatePaymentFee(asset(50).value()),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 12);
+
+        STAmount const roundedPeriodicPayment{
+            asset, roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale)};
+
+        // Set NextPaymentDueDate to exactly the current parentCloseTime,
+        // without closing the ledger again.
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        STAmount const payFee{env.current()->fees().base};
+        auto const borrowerBefore = env.balance(borrower, asset).number();
+
+        // A plain payment (no tfLoanLatePayment) for exactly the regular
+        // periodic amount must succeed: at this instant the payment is not
+        // yet late.
+        //
+        // Note: deliberately not calling env.close() after this: closing
+        // the ledger re-derives the resulting state from the last validated
+        // ledger plus the recorded transaction set, which would discard the
+        // direct NextPaymentDueDate override made above via rawReplace().
+        // Reading state from the still-open ledger (as env.le()/env.balance()
+        // do) reflects the transaction as it was actually applied.
+        env(pay(borrower, loanKeylet.key, roundedPeriodicPayment), Fee(payFee), Ter(tesSUCCESS));
+
+        auto const borrowerAfter = env.balance(borrower, asset).number();
+
+        // No more than the regular periodic amount (plus the transaction
+        // fee) was charged: if the late-payment path had wrongly been
+        // taken, the (large, non-zero) late interest and late fee set above
+        // would have pushed the charge well past this bound.
+        Number const charged = borrowerBefore - borrowerAfter - Number{payFee};
+        BEAST_EXPECT(charged > Number{});
+        BEAST_EXPECT(charged <= Number{roundedPeriodicPayment});
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining - 1);
+        BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate + stateBefore.paymentInterval);
+    }
+
+    // Pins the amendment gate itself (as opposed to
+    // testLoanPayAtExactDueDateSucceedsPostAmendment, which pins the
+    // comparison operator): without fixCleanup3_4_0, isPaymentLate() keeps
+    // using the pre-amendment Inclusive comparison, so a payment due exactly
+    // "now" is already considered late, and a plain (non-late) LoanPay is
+    // rejected.
+    void
+    testLoanPayAtExactDueDateFailsPreAmendment()
+    {
+        testcase("LoanPay at exact due date fails without fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_ - fixCleanup3_4_0);
+        BEAST_EXPECT(!env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 12);
+
+        STAmount const roundedPeriodicPayment{
+            asset, roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale)};
+
+        // Set NextPaymentDueDate to exactly the current parentCloseTime,
+        // without closing the ledger again.
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        // Without the amendment, the due date is already considered late at
+        // this exact instant, so a plain payment must be rejected.
+        //
+        // Note: deliberately not calling env.close() after this: closing
+        // the ledger re-derives the resulting state from the last validated
+        // ledger plus the recorded transaction set, which would discard the
+        // direct NextPaymentDueDate override made above via rawReplace().
+        // Reading state from the still-open ledger (as env.le() does)
+        // reflects the transaction as it was actually applied.
+        env(pay(borrower, loanKeylet.key, roundedPeriodicPayment), Ter(tecEXPIRED));
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining);
+        BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
+    }
+
     void
     runAmendmentIndependent()
     {
         testLoanSetNearZeroInterestRateSucceeds();
+        testLoanPayAtExactDueDateSucceedsPostAmendment();
+        testLoanPayAtExactDueDateFailsPreAmendment();
     }
 
     // Tests run under each entry in amendmentCombinations().

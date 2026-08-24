@@ -344,7 +344,12 @@ private:
         env(trust(issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze));
         env.close();
 
-        // The payment is late by this point
+        // The payment is late by this point. With fixCleanup3_4_0,
+        // isPaymentLate() uses a strict (Exclusive) comparison, so advance
+        // one more ledger close to be sure the due date instant itself has
+        // passed, not merely reached.
+        env.close();
+
         env(pay(borrower, loanKeylet.key, debtMaximumRequest), Ter(tecEXPIRED));
         env.close();
         env(pay(borrower, loanKeylet.key, debtMaximumRequest, tfLoanLatePayment));
