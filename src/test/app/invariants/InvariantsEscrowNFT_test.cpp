@@ -1,4 +1,4 @@
-#include <test/app/InvariantsBase.h>
+#include <test/app/invariants/InvariantsBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 
@@ -24,7 +24,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -136,7 +138,8 @@ class InvariantsEscrowNFT_test : public InvariantsBase
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
-                sleNew->setFieldU64(sfOutstandingAmount, -1);
+                sleNew->setFieldU64(
+                    sfOutstandingAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -152,7 +155,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
-                sleNew->setFieldU64(sfLockedAmount, -1);
+                sleNew->setFieldU64(sfLockedAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -185,7 +188,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
-                sleNew->setFieldU64(sfMPTAmount, -1);
+                sleNew->setFieldU64(sfMPTAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -201,7 +204,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
-                sleNew->setFieldU64(sfLockedAmount, -1);
+                sleNew->setFieldU64(sfLockedAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
             });

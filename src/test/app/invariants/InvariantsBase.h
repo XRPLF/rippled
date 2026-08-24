@@ -16,13 +16,11 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 
-#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <memory>
 #include <source_location>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -38,6 +36,13 @@ makeTransactor(ApplyContext& ctx);
 }  // namespace xrpl
 
 namespace xrpl::test {
+
+// The default amendment set used by the invariant test suites. This is not part
+// of the shared Suite base on purpose: it enables specific fix amendments on top
+// of testableAmendments(), so it must be opted into explicitly rather than
+// inherited by unrelated tests that expect the standard testable amendment set.
+FeatureBitset
+defaultAmendments();
 
 class InvariantsBase : public beast::unit_test::Suite
 {
@@ -56,9 +61,6 @@ protected:
         bool(test::jtx::Account const& a, test::jtx::Account const& b, ApplyContext& ac)>;
 
     enum class TxAccount : int { None = 0, A1, A2 };
-
-    static FeatureBitset
-    defaultAmendments();
 
     test::jtx::Env
     makeEnv(FeatureBitset features);
@@ -124,21 +126,6 @@ protected:
 
     Keylet
     createLoanBroker(jtx::Account const& a, jtx::Env& env, jtx::PrettyAsset const& asset);
-
-    static SLE::pointer
-    createPermissionedDomain(
-        ApplyContext& ac,
-        test::jtx::Account const& a1,
-        test::jtx::Account const& a2,
-        std::uint32_t numCreds = 2,
-        std::uint32_t seq = 10);
-
-    static std::pair<std::uint32_t, uint256>
-    createPermissionedDomainEnv(
-        test::jtx::Env& env,
-        test::jtx::Account const& a1,
-        test::jtx::Account const& a2,
-        std::uint32_t numCreds = 2);
 };
 
 }  // namespace xrpl::test

@@ -1,4 +1,4 @@
-#include <test/app/InvariantsBase.h>
+#include <test/app/invariants/InvariantsBase.h>
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -6,12 +6,9 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
-#include <test/jtx/permissioned_domains.h>
-#include <test/jtx/tags.h>
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -22,7 +19,6 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -33,19 +29,16 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <cstddef>
-#include <cstdint>
 #include <initializer_list>
 #include <memory>
 #include <source_location>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace xrpl::test {
 
 FeatureBitset
-InvariantsBase::defaultAmendments()
+defaultAmendments()
 {
     return xrpl::test::jtx::testableAmendments() | fixCleanup3_1_3 | fixCleanup3_2_0;
 }
@@ -207,66 +200,6 @@ InvariantsBase::createLoanBroker(
     env(set(a, vaultID), Fee(kIncrement));
 
     return loanBrokerKeylet;
-};
-
-SLE::pointer
-InvariantsBase::createPermissionedDomain(
-    ApplyContext& ac,
-    test::jtx::Account const& a1,
-    test::jtx::Account const& a2,
-    std::uint32_t numCreds,
-    std::uint32_t seq)
-{
-    Keylet const pdKeylet = keylet::permissionedDomain(a1.id(), SeqProxy::rawSequence(seq));
-    auto sle = std::make_shared<SLE>(pdKeylet);
-
-    sle->setAccountID(sfOwner, a1);
-    sle->setFieldU32(sfSequence, seq);
-
-    if (numCreds != 0u)
-    {
-        // This array is sorted naturally, but if you are going to change
-        // this behavior, don't forget to use credentials::makeSorted
-        STArray credentials(sfAcceptedCredentials, numCreds);
-        for (std::size_t n = 0; n < numCreds; ++n)
-        {
-            auto cred = STObject::makeInnerObject(sfCredential);
-            cred.setAccountID(sfIssuer, a2);
-            auto credType = "cred_type" + std::to_string(n);
-            cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-            credentials.pushBack(std::move(cred));
-        }
-        sle->setFieldArray(sfAcceptedCredentials, credentials);
-    }
-
-    ac.view().insert(sle);
-    return sle;
-}
-
-std::pair<std::uint32_t, uint256>
-InvariantsBase::createPermissionedDomainEnv(
-    test::jtx::Env& env,
-    test::jtx::Account const& a1,
-    test::jtx::Account const& a2,
-    std::uint32_t numCreds)
-{
-    using namespace test::jtx;
-
-    pdomain::Credentials credentials;
-
-    for (std::size_t n = 0; n < numCreds; ++n)
-    {
-        auto credType = "cred_type" + std::to_string(n);
-        credentials.push_back({.issuer = a2, .credType = credType});
-    }
-
-    std::uint32_t const seq = env.seq(a1);
-    env(pdomain::setTx(a1, credentials));
-    uint256 const key = pdomain::getNewDomain(env.meta());
-
-    // std::cout << "PD, acc: " << A1.id() << ", seq: " << seq << ", k: " <<
-    // key << std::endl;
-    return {seq, key};
 }
 
 }  // namespace xrpl::test
