@@ -162,6 +162,8 @@
 - `converge_percent` — on `consensus.establish`, `consensus.update_positions`, `consensus.check`
 - `tx_count` — on `consensus.accept.apply` span (in `doAccept()`)
 - `disputes_count` — on `consensus.update_positions` span (in `updateOurPositions()`)
+- `close_reason` — on `consensus.phase.open`, from `whyCloseLedger()` (`anomaly`, `others_closed`, `idle`, `normal`)
+- `close_time_avalanche_state` — on `consensus.establish`, terminal regime (`init`, `mid`, `late`, `stuck`)
 
 **Design notes**:
 
@@ -809,13 +811,14 @@ and OFF, and don't affect consensus timing.
 
 ### New Spans (Phase 4a)
 
-| Span Name                    | Location           | Key Attributes (actually set)                                                                                                 |
-| ---------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.round`            | `RCLConsensus.cpp` | `xrpl.consensus.round_id`, `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`, `xrpl.consensus.mode`, `trace_strategy`             |
-| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`                                                                            |
-| `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`, `disputes_count`, `avalanche_threshold` |
-| `consensus.check`            | `Consensus.h`      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`     |
-| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode_old`, `mode_new`                                                                                                        |
+| Span Name                    | Location           | Key Attributes (actually set)                                                                                                                                                                                             |
+| ---------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.round`            | `RCLConsensus.cpp` | `xrpl.consensus.round_id`, `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`, `xrpl.consensus.mode`, `trace_strategy`                                                                                                         |
+| `consensus.phase.open`       | `Consensus.h`      | `start_reason`, `previous_close_agree`, `peer_positions_at_open`, `early_close_triggered` (at start); `open_duration_ms`, `peer_positions_at_close`, `tx_sets_acquired`, `close_reason`, `proposers_validated` (at close) |
+| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`, `disputes_count`, `close_time_avalanche_state`                                                                                                                        |
+| `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`, `disputes_count`, `avalanche_threshold`                                                                                             |
+| `consensus.check`            | `Consensus.h`      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`                                                                                                 |
+| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode_old`, `mode_new`                                                                                                                                                                                                    |
 
 ### New Events (Phase 4a)
 
