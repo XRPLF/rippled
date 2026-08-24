@@ -14,6 +14,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <condition_variable>
@@ -420,7 +421,107 @@ public:
     invariants() const;
 
 private:
-    using SharedPtrNodeStack = std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>>;
+    /**
+     * A path from the root of the map down to some node, pairing each node with the ID naming its
+     * position.
+     *
+     * The two halves of an entry must agree, and the only way to get that wrong is to compute an ID
+     * from the wrong branch. So this type does not accept an ID at all: every push takes the branch
+     * being descended and derives the ID itself, so a node and its ID cannot disagree. Reads are
+     * exposed through the same accessors a std::stack would offer.
+     */
+    class NodePathStack
+    {
+    public:
+        [[nodiscard]] bool
+        empty() const
+        {
+            return stack_.empty();
+        }
+
+        [[nodiscard]] std::size_t
+        size() const
+        {
+            return stack_.size();
+        }
+
+        [[nodiscard]] std::pair<SHAMapTreeNodePtr, SHAMapNodeID> const&
+        top() const
+        {
+            XRPL_ASSERT(!stack_.empty(), "xrpl::SHAMap::NodePathStack::top : non-empty stack");
+            return stack_.top();
+        }
+
+        void
+        pop()
+        {
+            XRPL_ASSERT(!stack_.empty(), "xrpl::SHAMap::NodePathStack::pop : non-empty stack");
+            stack_.pop();
+        }
+
+        void
+        clear()
+        {
+            stack_ = {};
+        }
+
+        /**
+         * Start a path at the root of the map, whose ID is the zero-depth ID by definition.
+         */
+        void
+        pushRoot(SHAMapTreeNodePtr node)
+        {
+            XRPL_ASSERT(stack_.empty(), "xrpl::SHAMap::NodePathStack::pushRoot : empty stack");
+            stack_.emplace(std::move(node), SHAMapNodeID{});
+        }
+
+        /**
+         * Extend the path to the child of the current node reached by `branch`.
+         *
+         * A node keeps the depth it was reached at, never a normalized kLeafDepth. Only a leaf may
+         * sit at kLeafDepth, since an inner node there would have no branch left to select.
+         */
+        void
+        pushChild(SHAMapTreeNodePtr node, unsigned int branch)
+        {
+            XRPL_ASSERT(node, "xrpl::SHAMap::NodePathStack::pushChild : non-null node input");
+            XRPL_ASSERT(
+                !stack_.empty(), "xrpl::SHAMap::NodePathStack::pushChild : non-empty stack");
+            auto childID = stack_.top().second.getChildNodeID(branch);
+            XRPL_ASSERT_IF(
+                node->isInner(),
+                childID.getDepth() < kLeafDepth,
+                "xrpl::SHAMap::NodePathStack::pushChild : inner node above leaf depth");
+            XRPL_ASSERT_IF(
+                node->isLeaf(),
+                childID.isPrefixOf(leafKey(*node)),
+                "xrpl::SHAMap::NodePathStack::pushChild : leaf key below branch");
+            stack_.emplace(std::move(node), std::move(childID));
+        }
+
+        /**
+         * Extend the path to a node lying on the path to `target`.
+         *
+         * For nodes not reached by descending a known branch: the walk tracks only the key it is
+         * heading for, or the node is newly created. Either way `target` selects the branch.
+         */
+        void
+        pushNode(SHAMapTreeNodePtr node, uint256 const& target)
+        {
+            if (stack_.empty())
+            {
+                pushRoot(std::move(node));
+            }
+            else
+            {
+                pushChild(std::move(node), selectBranch(stack_.top().second, target));
+            }
+        }
+
+    private:
+        std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>> stack_;
+    };
+
     using DeltaRef =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
 
@@ -447,7 +548,7 @@ private:
      * Update hashes up to the root
      */
     void
-    dirtyUp(SharedPtrNodeStack& stack, uint256 const& target, SHAMapTreeNodePtr terminal);
+    dirtyUp(NodePathStack& stack, uint256 const& target, SHAMapTreeNodePtr terminal);
 
     /**
      * Walk towards the specified id, returning the node.  Caller must check
@@ -455,7 +556,7 @@ private:
      * id
      */
     SHAMapLeafNode*
-    walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack = nullptr) const;
+    walkTowardsKey(uint256 const& id, NodePathStack* stack = nullptr) const;
     /**
      * Return nullptr if key not found
      */
@@ -482,27 +583,15 @@ private:
     SHAMapTreeNodePtr
     writeNode(NodeObjectType t, SHAMapTreeNodePtr node) const;
 
-    // returns the first item at or below this node
-    SHAMapLeafNode*
-    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, unsigned int branch = 0u) const;
-
-    // returns the last item at or below this node
-    SHAMapLeafNode*
-    lastBelow(
-        SHAMapTreeNodePtr node,
-        SharedPtrNodeStack& stack,
-        unsigned int branch = kBranchFactor) const;
-
-    // direction in which belowHelper scans an inner node's branches
+    // direction in which a scan walks an inner node's branches
     enum class BelowDirection { First, Last };
 
-    // helper function for firstBelow and lastBelow
+    /**
+     * Returns the first or last item at or below the node already on top of `stack`, extending
+     * `stack` with the path walked to reach it.
+     */
     SHAMapLeafNode*
-    belowHelper(
-        SHAMapTreeNodePtr node,
-        SharedPtrNodeStack& stack,
-        unsigned int branch,
-        BelowDirection direction) const;
+    belowHelper(NodePathStack& stack, BelowDirection direction) const;
 
     // Simple descent
     // Get a child of the specified node
@@ -550,9 +639,9 @@ private:
     hasLeafNode(uint256 const& tag, SHAMapHash const& hash) const;
 
     SHAMapLeafNode const*
-    peekFirstItem(SharedPtrNodeStack& stack) const;
+    peekFirstItem(NodePathStack& stack) const;
     SHAMapLeafNode const*
-    peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const;
+    peekNextItem(uint256 const& id, NodePathStack& stack) const;
     bool
     walkBranch(
         SHAMapTreeNode* node,
@@ -697,7 +786,7 @@ public:
     using pointer = value_type const*;
 
 private:
-    SharedPtrNodeStack stack_;
+    NodePathStack stack_;
     SHAMap const* map_ = nullptr;
     pointer item_ = nullptr;
 
@@ -723,7 +812,7 @@ public:
 private:
     explicit ConstIterator(SHAMap const* map);
     ConstIterator(SHAMap const* map, std::nullptr_t);
-    ConstIterator(SHAMap const* map, pointer item, SharedPtrNodeStack&& stack);
+    ConstIterator(SHAMap const* map, pointer item, NodePathStack&& stack);
 
     friend bool
     operator==(ConstIterator const& x, ConstIterator const& y);
@@ -742,10 +831,7 @@ inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map, std::nullptr_t) :
 {
 }
 
-inline SHAMap::ConstIterator::ConstIterator(
-    SHAMap const* map,
-    pointer item,
-    SharedPtrNodeStack&& stack)
+inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map, pointer item, NodePathStack&& stack)
     : stack_(std::move(stack)), map_(map), item_(item)
 {
 }
