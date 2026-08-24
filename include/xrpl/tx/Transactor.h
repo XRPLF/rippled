@@ -11,6 +11,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -366,6 +367,10 @@ public:
         AccountID const& account,
         uint256 const& ticketIndex,
         beast::Journal j);
+
+    // Interface used by processPersistentChanges and Invariants
+    static std::unordered_set<LedgerEntryType>
+    typesForResult(TER const ter);
 
 protected:
     TER

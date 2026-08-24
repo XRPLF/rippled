@@ -28,6 +28,7 @@
 #include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <algorithm>
@@ -37,6 +38,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -85,6 +87,382 @@ ledgerEntryTypeName(SLE const& sle)
         // LCOV_EXCL_STOP
     }
     return item->getName();
+}
+
+void
+FailedTransaction::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    std::ostringstream err;
+
+    XRPL_ASSERT(after, "xrpl::FailedTransaction::visitEntry : valid after");
+
+    if (!before)
+    {
+        // Nothing can be created by a failed transaction
+        auto const name = [&after] -> std::string {
+            switch (after->getType())
+            {
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4996)  // 4996 is the standard deprecation warning code
+#elifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+                // These types are deprecated, which is why they are needed here. But builds with
+                // warnings as errors (which includes CI) will fail. So to use them, deprecation
+                // warnings need to be turned off for this block only.
+                case ltNICKNAME:
+                case ltCONTRACT:
+                case ltGENERATOR_MAP:
+#ifdef _MSC_VER
+#pragma warning(pop)
+#elifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+                    return "[DEPRECATED TYPE]";
+                default:
+                    return ledgerEntryTypeName(*after);
+            }
+        };
+        err << "Unexpected ledger entry created: " << name() << ", " << after->key();
+        errors_.emplace_back(err.str());
+        return;
+    }
+
+    // Returns whether the object matched the target type. If it was, the caller may do additional
+    // checks related to that type, and should return.
+    auto validateFeePayer = [isDelete, &err, this](
+                                LedgerEntryType target,
+                                SLE::const_pointer& tracker,
+                                SLE::const_ref before,
+                                SLE::const_ref after,
+                                SF_AMOUNT const& field,
+                                std::string_view desc,
+                                std::function<std::string(SLE::const_ref)> labelMaker) {
+        if (after->getType() != target)
+            return false;
+
+        auto const label = labelMaker(after);
+
+        if (isDelete)
+        {
+            err << desc << " was deleted: " << label;
+            errors_.emplace_back(err.str());
+            return true;
+        }
+
+        auto const beforeOptional = before->at(~field);
+        auto const afterOptional = after->at(~field);
+
+        auto const beforeBalance = beforeOptional.value_or(STAmount{xrpIssue()});
+        auto const afterBalance = afterOptional.value_or(STAmount{xrpIssue()});
+
+        // Check both directions because there's a separate check for "balance increased".
+        if (!canSubtract(beforeBalance, afterBalance) && !canSubtract(afterBalance, beforeBalance))
+        {
+            err << desc << " before and after balances not comparable: " << label;
+            errors_.emplace_back(err.str());
+            return true;
+        }
+
+        if (afterBalance != beforeBalance)
+        {
+            if (afterBalance > beforeBalance)
+            {
+                err << desc << " balance increased: " << label;
+                errors_.emplace_back(err.str());
+                return true;
+            }
+            if (tracker)
+            {
+                err << "Multiple " << desc << "s were charged fees: " << labelMaker(tracker)
+                    << " and " << label;
+                errors_.emplace_back(err.str());
+                return true;
+            }
+            tracker = after;
+        }
+
+        auto const* format = LedgerFormats::getInstance().findByType(target);
+        if (format == nullptr)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::FailedTransaction::visitEntry : object has no known ledger format");
+            return true;
+            // LCOV_EXCL_STOP
+        }
+
+        auto const allowedFields = std::to_array<SField const*>(
+            {&sfSequence,
+             &sfBalance,
+             &sfOwnerCount,
+             &sfTicketCount,
+             &sfFeeAmount,
+             &sfPreviousTxnID,
+             &sfPreviousTxnLgrSeq});
+        for (auto const& elem : format->getSOTemplate())
+        {
+            auto const& sf = elem.sField();
+
+            // No fields other than allowedFields may change
+            if (std::ranges::any_of(
+                    allowedFields, [&sf](auto const* allowedField) { return allowedField == &sf; }))
+                continue;
+
+            auto const* bField = before->peekAtPField(sf);
+            auto const* aField = after->peekAtPField(sf);
+            bool const bPresent = (bField != nullptr) && bField->getSType() != STI_NOTPRESENT;
+            bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
+            if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
+            {
+                err << "At least one unexpected " << desc << " field modified: " << label
+                    << ", field: " << sf.getName()
+                    << ", before: " << (bPresent ? bField->getText() : "(absent)")
+                    << ", after: " << (aPresent ? aField->getText() : "(absent)");
+                errors_.emplace_back(err.str());
+                return true;
+            }
+        }
+
+        return true;
+    };
+
+    if (validateFeePayer(
+            ltACCOUNT_ROOT,
+            accountPaidFee_,
+            before,
+            after,
+            sfBalance,
+            "Account root",
+            [](SLE::const_ref sle) { return to_string(sle->at(sfAccount)); }))
+    {
+        auto const beforeOwnerCount = before->at(~sfOwnerCount).value_or(0);
+        auto const afterOwnerCount = after->at(~sfOwnerCount).value_or(0);
+        if (afterOwnerCount != beforeOwnerCount)
+        {
+            if (afterOwnerCount > beforeOwnerCount)
+            {
+                err << "Account root OwnerCount increased: " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+            }
+            // The fields are uints, so do the math in two steps.
+            netOwnerCountChange_ += afterOwnerCount;
+            netOwnerCountChange_ -= beforeOwnerCount;
+        }
+
+        auto const beforeTicketCount = before->at(~sfTicketCount).value_or(0);
+        auto const afterTicketCount = after->at(~sfTicketCount).value_or(0);
+        if (afterTicketCount != beforeTicketCount)
+        {
+            if (afterTicketCount > beforeTicketCount)
+            {
+                err << "Account root TicketCount increased: " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+            }
+            // The fields are uints, so do the math in two steps.
+            netTicketCountChange_ += afterTicketCount;
+            netTicketCountChange_ -= beforeTicketCount;
+        }
+
+        auto const beforeSequence = before->at(sfSequence);
+        auto const afterSequence = after->at(sfSequence);
+        if (afterSequence != beforeSequence)
+        {
+            if (afterSequence < beforeSequence)
+            {
+                // This is always bad, but we're only checking failed transactions here
+                // TODO: Maybe add a "global failures" check to this Invariant, at the risk of scope
+                // creep.
+                err << "Account root sequence decreased: " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            if (accountIncreasedSequence_)
+            {
+                err << "Multiple Account root sequences were incremented: "
+                    << accountIncreasedSequence_->at(sfAccount) << " and " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            if (afterSequence != beforeSequence + 1)
+            {
+                err << "Account root sequence incremented by " << (afterSequence - beforeSequence)
+                    << ": " << after->at(sfAccount);
+                errors_.emplace_back(err.str());
+                return;
+            }
+            accountIncreasedSequence_ = after;
+        }
+        return;
+    }
+
+    if (validateFeePayer(
+            ltSPONSORSHIP,
+            sponsorPaidFee_,
+            before,
+            after,
+            sfFeeAmount,
+            "Sponsor",
+            [](SLE::const_ref sle) {
+                std::ostringstream l;
+                l << sle->at(sfOwner) << " -> " << sle->at(sfSponsee);
+                return l.str();
+            }))
+        return;
+
+    if (after->getType() == ltTICKET)
+    {
+        if (!isDelete)
+        {
+            err << "Ticket was modified: " << after->at(sfAccount) << ", "
+                << after->at(sfTicketSequence);
+            errors_.emplace_back(err.str());
+            return;
+        }
+        if (deletedTicket_)
+        {
+            err << "Multiple tickets were deleted: " << deletedTicket_->at(sfAccount) << ", "
+                << deletedTicket_->at(sfTicketSequence) << " and " << after->at(sfAccount) << ", "
+                << after->at(sfTicketSequence);
+            errors_.emplace_back(err.str());
+            return;
+        }
+        deletedTicket_ = after;
+
+        return;
+    }
+
+    if (after->getType() == ltDIR_NODE)
+    {
+        // Directory deletions and modifications are a legal side effect of deleting objects. Track
+        // them separately.
+        directorySideEffects_.emplace_back(after);
+        return;
+    }
+
+    if (isDelete)
+    {
+        switch (after->getType())
+        {
+            case ltOFFER:
+            case ltRIPPLE_STATE:
+            case ltNFTOKEN_OFFER:
+            case ltCREDENTIAL:
+                deletedObjects_.emplace_back(before, after);
+                return;
+            default:
+                err << "Unexpected ledger entry deleted: " << ledgerEntryTypeName(*after) << ", "
+                    << after->key();
+                errors_.emplace_back(err.str());
+                return;
+        }
+    }
+
+    err << "Unexpected ledger entry modified: " << ledgerEntryTypeName(*after) << ", "
+        << after->key();
+    errors_.emplace_back(err.str());
+}
+
+bool
+FailedTransaction::finalize(
+    STTx const& tx,
+    TER const ter,
+    XRPAmount const fee,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (isTesSuccess(ter))
+    {
+        return true;
+    }
+
+    bool result = true;
+
+    // Log all the failures regardless of amendment status, but only return false / failure if
+    // featureTecInvariant is enabled
+    for (auto const& err : errors_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: " << err;
+        result = false;
+    }
+
+    if (accountPaidFee_ && sponsorPaidFee_)
+    {
+        // Is this legal?
+        JLOG(j.fatal()) << "Invariant failed: both account and sponsor paid fee";
+        result = false;
+    }
+
+    if (accountIncreasedSequence_ && deletedTicket_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: both account sequence increased and ticket deleted";
+        result = false;
+    }
+
+    if (tx.getSeqProxy().isTicket() && accountIncreasedSequence_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: account sequence increased by a ticket transaction";
+        result = false;
+    }
+
+    if (tx.getSeqProxy().isSeq() && deletedTicket_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: ticket deleted by a sequence transaction";
+        result = false;
+    }
+
+    auto const typesAllowedToDelete = Transactor::typesForResult(ter);
+
+    for (auto const& deleted : deletedObjects_)
+    {
+        auto const type = deleted.after->getType();
+        if (!typesAllowedToDelete.contains(type))
+        {
+            JLOG(j.fatal()) << "Invariant failed: unexpected ledger entry deleted: "
+                            << ledgerEntryTypeName(*deleted.after);
+            result = false;
+        }
+        // For offers, only allow unfunded removals
+        // (where TakerPays is unchanged)
+        if (type == ltOFFER &&
+            deleted.before->getFieldAmount(sfTakerPays) !=
+                deleted.after->getFieldAmount(sfTakerPays))
+        {
+            JLOG(j.fatal()) << "Invariant failed: funded offer deleted: "
+                            << ledgerEntryTypeName(*deleted.after);
+            result = false;
+        }
+    }
+
+    if (!deletedTicket_ && deletedObjects_.empty() && !directorySideEffects_.empty())
+    {
+        JLOG(j.fatal()) << "Invariant failed: " << directorySideEffects_.size()
+                        << " directory side effects without any deleted objects";
+        result = false;
+    }
+
+    auto const expectedTicketChange = deletedTicket_ ? -1 : 0;
+    if (expectedTicketChange != netTicketCountChange_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: ticket deletions (" << expectedTicketChange
+                        << ") does not match net ticket count change (" << netTicketCountChange_
+                        << ")";
+        result = false;
+    }
+
+    auto const expectedOwnerChanges = -deletedObjects_.size() + expectedTicketChange;
+    if (expectedOwnerChanges != netOwnerCountChange_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: total deletions (" << expectedOwnerChanges
+                        << ") does not match net owner count change (" << netOwnerCountChange_
+                        << ")";
+        result = false;
+    }
+
+    bool const enforce = view.rules().enabled(featureTecInvariant);
+    XRPL_ASSERT_IF(!result, enforce, "FailedTransaction::finalize : amendment enabled");
+    return result || !enforce;
 }
 
 void

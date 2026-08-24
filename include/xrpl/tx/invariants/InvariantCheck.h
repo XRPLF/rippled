@@ -114,6 +114,59 @@ public:
 #endif
 
 /**
+ * @brief An unsuccessful transaction claiming a fee can only make a very small set of changes.
+ *
+ * 1. Reduce at most one AccountRoot or Sponsorship's XRP balance (pay a fee). (A transaction may
+ *    pay 0.)
+ * 2. Increment one AccountRoot's sequence or delete a Ticket, not both.
+ * 3. Delete expired objects, depending on the failure code.
+ *      For tecOVERSIZE and tecKILLED, ltOFFER
+ *      For tecINCOMPLETE, ltRIPPLE_STATE
+ *      For tecEXPIRED, ltNFTOKEN_OFFER or ltCREDENTIAL
+ * 4. AccountRoot owner counts may be decreased. The net change must equal to the number of deleted
+ *    objects.
+ * 5. Ticket counts may be decreased. The net change must equal to the number of deleted tickets
+ *    (which should be at most 1).
+ * 6. Modify or delete Directory Nodes, only if expired objects were deleted.
+ *
+ * Anything outside of that is bad.
+ *
+ * Collect change data for the known allowed types, and collect the info in errors_ for anything
+ * else.
+ *
+ * Note that finalize() will always return true on a `tesSUCCESS`, even if there are messages
+ * collected in errors_. The errors_ only apply if the transaction was NOT successful. It will also
+ * do additional checks based on the transaction data.
+ */
+class FailedTransaction
+{
+    struct DeletedEntry
+    {
+        SLE::const_pointer before;
+        SLE::const_pointer after;
+    };
+
+    // accountPaidFee and accountIncreasedSequence are usually the same account, but they don't have
+    // to be.
+    SLE::const_pointer accountPaidFee_;
+    SLE::const_pointer sponsorPaidFee_;
+    SLE::const_pointer accountIncreasedSequence_;
+    SLE::const_pointer deletedTicket_;
+    int netOwnerCountChange_ = 0;
+    int netTicketCountChange_ = 0;
+    std::vector<DeletedEntry> deletedObjects_;
+    std::vector<SLE::const_pointer> directorySideEffects_;
+    std::vector<std::string> errors_;
+
+public:
+    void
+    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+};
+
+/**
  * @brief Invariant: We should never charge a transaction a negative fee or a
  * fee that is larger than what the transaction itself specifies.
  *
@@ -432,6 +485,7 @@ private:
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
+    FailedTransaction,
     TransactionFeeCheck,
     AccountRootsNotDeleted,
     AccountRootsDeletedClean,

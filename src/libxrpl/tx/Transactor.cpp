@@ -1427,6 +1427,26 @@ Transactor::trapTransaction(uint256 txHash) const
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
+std::unordered_set<LedgerEntryType>
+Transactor::typesForResult(TER const ter)
+{
+    std::unordered_set<LedgerEntryType> types;
+    if ((ter == tecOVERSIZE) || (ter == tecKILLED))
+    {
+        types.insert(ltOFFER);
+    }
+    else if (ter == tecINCOMPLETE)
+    {
+        types.insert(ltRIPPLE_STATE);
+    }
+    else if (ter == tecEXPIRED)
+    {
+        types.insert(ltNFTOKEN_OFFER);
+        types.insert(ltCREDENTIAL);
+    }
+    return types;
+}
+
 std::tuple<TER, XRPAmount, bool>
 Transactor::processPersistentChanges(TER result, XRPAmount fee)
 {
@@ -1436,24 +1456,6 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     //        awkward and very limiting. A more general purpose approach
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
-
-    auto typesForResult = [](TER const ter) {
-        std::unordered_set<LedgerEntryType> types;
-        if ((ter == tecOVERSIZE) || (ter == tecKILLED))
-        {
-            types.insert(ltOFFER);
-        }
-        else if (ter == tecINCOMPLETE)
-        {
-            types.insert(ltRIPPLE_STATE);
-        }
-        else if (ter == tecEXPIRED)
-        {
-            types.insert(ltNFTOKEN_OFFER);
-            types.insert(ltCREDENTIAL);
-        }
-        return types;
-    };
 
     // Build a list of ledger entry types to collect, based on the
     // result code. Only deleted objects of these types will be

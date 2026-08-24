@@ -452,7 +452,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         doInvariantCheck(
-            Env{*this, FeatureBitset{featureSponsor}},
+            Env{*this, FeatureBitset{featureSponsor, featureTecInvariant}},
             {{"account deletion left behind a sponsorship field"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
@@ -1528,7 +1528,9 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixEnabled = features[fixCleanup3_1_3];
+        bool const fix313Enabled = features[fixCleanup3_1_3];
+        bool const fixTecEnabled = features[featureTecInvariant];
+        bool const fixEnabled = fix313Enabled || fixTecEnabled;
         std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
@@ -1730,7 +1732,7 @@ class Invariants_test : public beast::unit_test::Suite
             testcase << "PermissionedDomain set 2 domains ";
             doInvariantCheck(
                 makeEnv(features),
-                fixEnabled ? badMoreThan1 : emptyV,
+                fix313Enabled ? badMoreThan1 : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     createPermissionedDomain(ac, a1, a2, 2, 11);
@@ -1738,7 +1740,7 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixEnabled ? failTers : goodTers);
+                fix313Enabled ? failTers : goodTers);
         }
 
         {
@@ -1759,7 +1761,7 @@ class Invariants_test : public beast::unit_test::Suite
                 std::move(env1),
                 a1,
                 a2,
-                fixEnabled ? badMoreThan1 : emptyV,
+                fix313Enabled ? badMoreThan1 : emptyV,
                 [&pd1, &pd2](Account const&, Account const&, ApplyContext& ac) {
                     auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     auto sle2 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd2});
@@ -1769,18 +1771,18 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixEnabled ? failTers : goodTers);
+                fix313Enabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain set 0 domains ";
             doInvariantCheck(
                 makeEnv(features),
-                fixEnabled ? badNoDomains : emptyV,
+                fix313Enabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixEnabled ? badTers : goodTers);
+                fix313Enabled ? badTers : goodTers);
         }
 
         {
@@ -1801,11 +1803,11 @@ class Invariants_test : public beast::unit_test::Suite
                 makeEnv(features),
                 a1,
                 a2,
-                fixEnabled ? badNoDomains : emptyV,
+                fix313Enabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixEnabled ? badTers : goodTers);
+                fix313Enabled ? badTers : goodTers);
         }
 
         {
@@ -1825,7 +1827,7 @@ class Invariants_test : public beast::unit_test::Suite
                 std::move(env1),
                 a1,
                 a2,
-                fixEnabled ? badDeleted : emptyV,
+                fix313Enabled ? badDeleted : emptyV,
                 [&pd1](Account const&, Account const&, ApplyContext& ac) {
                     auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     ac.view().erase(sle1);
@@ -1833,28 +1835,28 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixEnabled ? failTers : goodTers);
+                fix313Enabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain del, create domain ";
             doInvariantCheck(
                 makeEnv(features),
-                fixEnabled ? badNotDeleted : emptyV,
+                fix313Enabled ? badNotDeleted : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     return true;
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixEnabled ? failTers : goodTers);
+                fix313Enabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain invalid tx";
 
             doInvariantCheck(
-                fixEnabled ? badTx : emptyV,
+                fix313Enabled ? badTx : emptyV,
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     return true;
@@ -2031,7 +2033,13 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixEnabled = features[fixCleanup3_1_3];
+        bool const fix313Enabled = features[fixCleanup3_1_3];
+        bool const fixTecEnabled = features[featureTecInvariant];
+        bool const fixEnabled = fix313Enabled || fixTecEnabled;
+
+        std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+        std::initializer_list<TER> const goodTers = {tesSUCCESS, tesSUCCESS};
 
         testcase << "PermissionedDEX" + std::string(fixEnabled ? " fix" : "");
 
@@ -2059,7 +2067,7 @@ class Invariants_test : public beast::unit_test::Suite
                     tx.setFieldAmount(sfTakerPays, a1["USD"](10));
                     tx.setFieldAmount(sfTakerGets, XRP(1));
                 }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         // missing domain ID in offer object
         doInvariantCheck(
@@ -2081,7 +2089,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttOFFER_CREATE, [&](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         // more than one entry in sfAdditionalBooks
         {
@@ -2118,7 +2126,7 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixTecEnabled ? failTers : badTers);
         }
 
         // empty sfAdditionalBooks (size 0)
@@ -2133,12 +2141,19 @@ class Invariants_test : public beast::unit_test::Suite
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
             env1.close();
 
+            auto const expectedTers = std::invoke([&] {
+                if (!fix313Enabled)
+                    return goodTers;
+                if (fixTecEnabled)
+                    return failTers;
+                return badTers;
+            });
             doInvariantCheck(
                 std::move(env1),
                 a1,
                 a2,
-                fixEnabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
-                           : std::vector<std::string>{},
+                fix313Enabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
+                              : std::vector<std::string>{},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
                     auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -2155,8 +2170,7 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                fixEnabled ? std::initializer_list<TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
-                           : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
+                expectedTers);
         }
 
         // hybrid offer missing sfAdditionalBooks
@@ -2189,7 +2203,7 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixTecEnabled ? failTers : badTers);
         }
 
         {
@@ -2227,7 +2241,7 @@ class Invariants_test : public beast::unit_test::Suite
                         tx.setFieldAmount(sfTakerPays, a1["USD"](10));
                         tx.setFieldAmount(sfTakerGets, XRP(1));
                     }},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixTecEnabled ? failTers : badTers);
         }
 
         {
@@ -2264,7 +2278,7 @@ class Invariants_test : public beast::unit_test::Suite
                         tx.setFieldAmount(sfTakerPays, a1["USD"](10));
                         tx.setFieldAmount(sfTakerGets, XRP(1));
                     }},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixTecEnabled ? failTers : badTers);
         }
     }
 
@@ -3080,6 +3094,12 @@ class Invariants_test : public beast::unit_test::Suite
             return true;
         };
 
+        // Most of these tests use default Env, so fixTecInvaraint will always be enabled.
+        // If it's not, the invariant will usually assert.
+        bool const fixTecEnabled = true;
+        std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
         testcase << "Vault general checks";
         doInvariantCheck(
             {"vault deletion succeeded without deleting a vault"},
@@ -3093,7 +3113,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3134,7 +3154,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3157,7 +3177,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         doInvariantCheck(
             {"vault deleted by a wrong transaction type",
@@ -3237,7 +3257,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         doInvariantCheck(
             {"deleted vault must also delete shares",
@@ -3305,7 +3325,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -3414,7 +3434,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3474,7 +3494,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         doInvariantCheck(
@@ -3490,7 +3510,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         doInvariantCheck(
@@ -3506,7 +3526,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         doInvariantCheck(
@@ -3521,7 +3541,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -3556,7 +3576,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_MANAGE, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -3587,7 +3607,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -3601,7 +3621,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -3689,7 +3709,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3715,7 +3735,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3742,7 +3762,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3795,7 +3815,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3823,7 +3843,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3887,7 +3907,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         doInvariantCheck(
             {"shares issuer and vault pseudo-account must be the same",
@@ -3947,7 +3967,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         doInvariantCheck(
             {"shares issuer and vault pseudo-account must be the same", "shares issuer must exist"},
@@ -4001,7 +4021,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         doInvariantCheck(
@@ -4196,7 +4216,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         // Almost identical to the really convoluted test for deposit, where the
@@ -4453,7 +4473,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         // Not the same as above check: attempt to clawback MPT by bad account
@@ -4466,7 +4486,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [&](STObject& tx) { tx[sfAccount] = a4.id(); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseMpt);
 
         doInvariantCheck(
@@ -4737,7 +4757,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseClosedEnded(/*advanceBySub=*/-1, /*doDeposit=*/false));
 
         testcase << "Vault loan set - closed-ended final payment past "
@@ -4785,7 +4805,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const&, Env& env) -> bool {
                 auto const sub = env.now().time_since_epoch().count() + 60;
                 auto const red = sub + kMinInvestmentPeriod + 1'000'000;
@@ -6133,16 +6153,13 @@ class Invariants_test : public beast::unit_test::Suite
             return true;
         };
 
-        auto test = [&](auto const txType,
-                        auto&& update,
-                        bool isMPT,
-                        TER error = tecINVARIANT_FAILED) {
+        auto test = [&](auto const txType, auto&& update, bool isMPT) {
             doInvariantCheck(
                 {{"AMM"}},
                 [&](Account const&, Account const&, ApplyContext& ac) { return update(ac, isMPT); },
                 XRPAmount{},
                 STTx{txType, [&](STObject& tx) {}},
-                {tecINVARIANT_FAILED, error},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 [&](Account const&, Account const&, Env& env) {
                     env.fund(XRP(1'000), gw);
                     poolAsset = [&]() -> PrettyAsset {
@@ -6164,18 +6181,15 @@ class Invariants_test : public beast::unit_test::Suite
 
         for (bool const isMPT : {false, true})
         {
-            // Under fixCleanup3_4_0 the MPT balance invariants also fire on the
-            // second pass, so both IOU and MPT pools now escalate to tef.
-            auto const error = TER(tefINVARIANT_FAILED);
             for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
             {
-                test(txType, deleteAMMAccount, isMPT, tefINVARIANT_FAILED);
+                test(txType, deleteAMMAccount, isMPT);
                 test(txType, updateLPTokensBadAmount, isMPT);
                 test(txType, updateLPTokensBadBalance, isMPT);
             }
             for (auto txType : {ttAMM_BID, ttAMM_VOTE})
             {
-                test(txType, updateAMMPool, isMPT, error);
+                test(txType, updateAMMPool, isMPT);
                 test(txType, updateLPTokensBadAmount, isMPT);
                 test(txType, updateLPTokensBadBalance, isMPT);
             }
@@ -6830,6 +6844,12 @@ class Invariants_test : public beast::unit_test::Suite
             return true;
         };
 
+        // Most of these tests use default Env, so fixTecInvaraint will always be enabled.
+        // If it's not, the invariant will usually assert.
+        bool const fixTecEnabled = true;
+        std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
         // badDelete
         doInvariantCheck(
             {"MPToken deleted with encrypted fields while COA > 0"},
@@ -6860,7 +6880,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         doInvariantCheck(
@@ -6878,7 +6898,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // requiresPrivacyFlag
@@ -6911,7 +6931,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseNoPrivacy);
 
         // badCOA
@@ -6928,7 +6948,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttMPTOKEN_ISSUANCE_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // Conservation Violation
@@ -6948,7 +6968,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // Send/MergeInbox must not change OutstandingAmount (coaDelta == 0)
@@ -6967,7 +6987,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // Send/MergeInbox and zero-COA-delta confidential transactions must not
@@ -7007,7 +7027,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // Skipping Deleted MPTs (Issuance deleted)
@@ -7068,8 +7088,15 @@ public:
         testNFTokenPageInvariants();
         testAMMDeleteInvariants(defaultAmendments());
         testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
-        testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3);
-        testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
+        testPermissionedDomainInvariants(
+            defaultAmendments() | fixCleanup3_1_3 | featureTecInvariant);
+        testPermissionedDomainInvariants(
+            (defaultAmendments() - fixCleanup3_1_3) | featureTecInvariant);
+        // Can't test without featureTecInvariant, because the invariant will assert
+        // testPermissionedDomainInvariants((defaultAmendments() | fixCleanup3_1_3) -
+        //  featureTecInvariant );
+        // testPermissionedDomainInvariants((defaultAmendments() - fixCleanup3_1_3) -
+        //  featureTecInvariant);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEXDeletedOfferFallback();
