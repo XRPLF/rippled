@@ -124,6 +124,9 @@ runEscrowWasm(
     std::int64_t gasLimit,
     std::string_view funcName) noexcept
 {
+    XRPL_ASSERT(
+        gasLimit > 0,
+        "::xrpl::runEscrowWasm : gas limit is positive (should be checked in preflight)");
     // A run needs a budget to spend. Refused here rather than in the engine because what a
     // non-positive limit means is a transaction-validity rule; the engine's own budget is
     // therefore an unsigned quantity with no invalid value to represent.
@@ -136,6 +139,8 @@ runEscrowWasm(
         // The host caches the current ledger object, the slot table and the
         // contract's data for the length of one run, so a reused one would answer a
         // later contract out of an earlier contract's state.
+        XRPL_ASSERT(
+            hfs.checkSelf(), "::xrpl::runEscrowWasm : host functions not clean before the run");
         if (!hfs.checkSelf())
         {
             throw std::runtime_error("host functions not clean before the run");
