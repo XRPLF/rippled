@@ -9,7 +9,8 @@ Validation categories:
   1. Span validation     — Every required span type in expected_spans.json, each
                            carrying its required attributes
   2. Metric validation   — SpanMetrics, StatsD, and MetricsRegistry OTLP metrics
-                           are non-zero
+                           are non-zero, and each group's required_labels reach
+                           Prometheus with non-empty values
   3. Log-trace correlation — Loki logs contain trace_id/span_id fields
   4. Dashboard validation — Every dashboard uid in expected_metrics.json
                            provisions and loads (panel count only, not panel data)
@@ -700,12 +701,52 @@ async def _log_prometheus_metric_names(
         logger.warning("Failed to fetch Prometheus metric names: %s", exc)
 
 
+def _metric_check_targets(
+    expected: dict[str, Any],
+) -> tuple[list[tuple[str, str]], list[tuple[str, str, list[str]]]]:
+    """Flatten expected_metrics.json into the two lists of check targets.
+
+    Args:
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        A (metric targets, label targets) pair. Metric targets are
+        (group, metric selector) for every name under a group's "metrics".
+        Label targets are (group, label, that group's metric selectors) for
+        every name under a group's "required_labels" — read for every group
+        that declares it, not just spanmetrics. Nothing read the key at all
+        until this was added, so the four labels the spanmetrics group
+        documented as required had never actually been checked.
+    """
+    groups = [
+        (category_key, category_data)
+        for category_key, category_data in expected.items()
+        if category_key not in ("description", "grafana_dashboards")
+    ]
+    targets = [
+        (category_key, metric_name)
+        for category_key, category_data in groups
+        for metric_name in category_data.get("metrics", [])
+    ]
+    label_targets = [
+        (category_key, label, category_data.get("metrics", []))
+        for category_key, category_data in groups
+        for label in category_data.get("required_labels", [])
+    ]
+    return targets, label_targets
+
+
 async def validate_metrics(
     session: aiohttp.ClientSession,
     prometheus_url: str,
     report: ValidationReport,
 ) -> None:
     """Validate that expected metrics appear in Prometheus with non-zero values.
+
+    Two kinds of check come out of expected_metrics.json: every name under a
+    group's "metrics" must have at least one series, and every label under a
+    group's "required_labels" must reach at least one of that group's series
+    with a non-empty value.
 
     Args:
         session:        aiohttp client session.
@@ -719,44 +760,86 @@ async def validate_metrics(
     with open(EXPECTED_METRICS_FILE) as f:
         expected = json.load(f)
 
-    # Flatten every (category, metric) pair the contract asserts, then poll
-    # them concurrently against ONE shared deadline. Polling them serially made
-    # each metric own its own timeout, so the waits were additive: 58 metrics x
-    # 45 s = 43.5 min, which overran the CI job budget and lost the
-    # artifact-upload and summary diagnostics. Sharing the deadline bounds the
-    # whole phase to a single poll window.
-    targets = [
-        (category_key, metric_name)
-        for category_key, category_data in expected.items()
-        if category_key not in ("description", "grafana_dashboards")
-        for metric_name in category_data.get("metrics", [])
-    ]
+    # Flatten the contract, then poll every target concurrently against ONE
+    # shared deadline. Polling them serially made each metric own its own
+    # timeout, so the waits were additive: 58 metrics x 45 s = 43.5 min, which
+    # overran the CI job budget and lost the artifact-upload and summary
+    # diagnostics. Sharing the deadline bounds the whole phase to a single
+    # poll window.
+    targets, label_targets = _metric_check_targets(expected)
 
     deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
     sem = asyncio.Semaphore(METRIC_POLL_CONCURRENCY)
-    checks = await asyncio.gather(
-        *(
-            _check_prometheus_metric(
-                session, prometheus_url, metric_name, category, deadline, sem
+    # Both kinds of check share the one deadline and the one concurrency bound,
+    # so the label checks cost no extra poll window and add no extra load.
+    metric_checks, label_checks = await asyncio.gather(
+        asyncio.gather(
+            *(
+                _check_prometheus_metric(
+                    session, prometheus_url, metric_name, category, deadline, sem
+                )
+                for category, metric_name in targets
             )
-            for category, metric_name in targets
-        )
+        ),
+        asyncio.gather(
+            *(
+                _check_metric_label(
+                    session,
+                    prometheus_url,
+                    category,
+                    label,
+                    metric_selectors,
+                    deadline,
+                    sem,
+                )
+                for category, label, metric_selectors in label_targets
+            )
+        ),
     )
 
     # Add in contract order, not completion order, so the report and its log
-    # lines stay deterministic across runs.
-    for check in checks:
+    # lines stay deterministic across runs. Existence checks keep their place
+    # ahead of the label checks, so no existing check's position moves.
+    for check in [*metric_checks, *label_checks]:
         report.add(check)
+
+
+def _selector_with_label(metric_selector: str, label: str) -> str:
+    """Add a "label is present and non-empty" matcher to a metric selector.
+
+    ``<label>!=""`` is the only matcher that expresses the requirement. An
+    absent Prometheus label is indistinguishable from an empty-string one, so
+    ``<label>=~".*"`` matches series that never carried the label at all and a
+    check written that way would pass on a node that lost the attribute
+    entirely. ``!=""`` rejects both the absent and the blank case.
+
+    Selectors in expected_metrics.json are usually bare names, but some already
+    carry a matcher (``ledger_economy{metric="base_fee_xrp"}``), so the matcher
+    is merged into an existing brace group rather than appended after it.
+
+    Args:
+        metric_selector: A metric name, optionally with a brace matcher group.
+        label:           Prometheus label name that must be present, non-empty.
+
+    Returns:
+        The selector with the label matcher merged in.
+    """
+    matcher = label + '!=""'
+    if metric_selector.endswith("}"):
+        head = metric_selector[:-1].rstrip()
+        separator = "" if head.endswith("{") else ", "
+        return head + separator + matcher + "}"
+    return metric_selector + "{" + matcher + "}"
 
 
 async def _poll_series_count(
     session: aiohttp.ClientSession,
     prometheus_url: str,
-    metric_name: str,
+    selectors: list[str],
     deadline: float,
     sem: asyncio.Semaphore,
 ) -> int:
-    """Poll Prometheus until a metric has series or the deadline passes.
+    """Poll Prometheus until a selector has series or the deadline passes.
 
     Uses the /api/v1/series endpoint instead of an instant query.
     Beast::insight StatsD gauges only mark dirty on value *changes*, so a gauge
@@ -771,16 +854,19 @@ async def _poll_series_count(
     Args:
         session:        aiohttp client session.
         prometheus_url: Prometheus base URL.
-        metric_name:    Prometheus metric name.
+        selectors:      One or more Prometheus selectors. /api/v1/series takes
+                        repeated match[] parameters and unions their results,
+                        so several selectors answer "does ANY of these have a
+                        series" in a single request.
         deadline:       Monotonic deadline shared by every metric in the run.
         sem:            Bounds how many requests reach Prometheus at once. It
                         is held only across the request, never across the
                         sleep, so one absent metric cannot starve the others.
 
     Returns:
-        Number of series found, or 0 if the metric never appeared.
+        Number of series found, or 0 if nothing ever appeared.
     """
-    params: dict[str, str] = {"match[]": metric_name}
+    params: list[tuple[str, str]] = [("match[]", s) for s in selectors]
     while True:
         async with sem:
             async with session.get(
@@ -818,7 +904,7 @@ async def _check_prometheus_metric(
     """
     try:
         series_count = await _poll_series_count(
-            session, prometheus_url, metric_name, deadline, sem
+            session, prometheus_url, [metric_name], deadline, sem
         )
         return CheckResult(
             name=f"metric.{category}.{metric_name}",
@@ -837,6 +923,85 @@ async def _check_prometheus_metric(
             category="metric",
             passed=False,
             message=f"{metric_name}: query failed ({exc})",
+        )
+
+
+async def _check_metric_label(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    category: str,
+    label: str,
+    metric_selectors: list[str],
+    deadline: float,
+    sem: asyncio.Semaphore,
+) -> CheckResult:
+    """Check that a group's required label reaches Prometheus non-empty.
+
+    A "required_labels" entry names a label that at least one series of that
+    group must carry with a non-empty value. It is checked per group rather
+    than per metric because the requirement is about the label reaching
+    Prometheus at all, and one series carrying it proves the pipeline works.
+
+    The failure this guards against is a label going missing while every metric
+    in the group still exists, so the existence checks stay green. xrpl_node_id
+    is the case that motivated it: losing it makes Grafana Cloud trace ingest
+    fold distinct nodes into one.
+
+    Args:
+        session:          aiohttp client session.
+        prometheus_url:   Prometheus base URL.
+        category:         Group key from expected_metrics.json.
+        label:            Label name that must be present and non-empty.
+        metric_selectors: The group's asserted metric selectors.
+        deadline:         Monotonic deadline shared by every metric in the run.
+        sem:              Bounds how many requests reach Prometheus at once.
+
+    Returns:
+        The CheckResult for this (group, label) pair. The caller adds it to the
+        report so report order follows the contract file.
+    """
+    check_name = f"metric.{category}.label.{label}"
+
+    if not metric_selectors:
+        # required_labels on a group with no asserted metrics would be a check
+        # that silently never runs — the exact failure mode it exists to catch.
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=False,
+            message=(
+                f"{label}: group '{category}' declares required_labels but no "
+                "metrics, so there is nothing to check the label against"
+            ),
+        )
+
+    selectors = [_selector_with_label(m, label) for m in metric_selectors]
+    try:
+        series_count = await _poll_series_count(
+            session, prometheus_url, selectors, deadline, sem
+        )
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=series_count > 0,
+            message=(
+                f"{label}: present and non-empty on {series_count} "
+                f"{category} series"
+                if series_count > 0
+                else f"{label}: no {category} series carries it with a "
+                "non-empty value (an absent label and an empty one are the "
+                "same thing in Prometheus, so this covers both). If this "
+                "group's own metric checks also failed, the metrics are "
+                "missing rather than the label."
+            ),
+            details={"series_count": series_count, "selectors": selectors},
+        )
+    except Exception as exc:
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=False,
+            message=f"{label}: query failed ({exc})",
         )
 
 

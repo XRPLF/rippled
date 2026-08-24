@@ -416,7 +416,8 @@ them again — load shape comes entirely from `--profile` and
   "description": "Top-level doc string — skipped by the validator.",
   "category_name": {
     "description": "Human-readable description.",
-    "metrics": ["metric_1", "metric_2"]
+    "metrics": ["metric_1", "metric_2"],
+    "required_labels": ["label_1"]
   },
   "grafana_dashboards": {
     "uids": ["rpc-performance", "node-health"]
@@ -429,6 +430,8 @@ them again — load shape comes entirely from `--profile` and
 ```
 
 Every metric listed under a `metrics` array must produce > 0 Prometheus series during the validation run. If a metric doesn't fire, the workload generators need to produce enough load to trigger it.
+
+`required_labels` is optional and read for every category that declares one. Each label becomes one additional check, named `metric.<category>.label.<label>`, that at least one of that category's series carries the label with a non-empty value. It is matched as `<label>!=""` rather than `<label>=~".*"` because Prometheus cannot tell an absent label from an empty one, so a regex match would pass on a node that lost the label entirely. The guarantee rule is the same as for `metrics`: list a label only where the workload guarantees it. Declaring `required_labels` on a category with no `metrics` fails the check rather than skipping it, so the key can never sit unenforced.
 
 Three top-level keys are not metric categories:
 
