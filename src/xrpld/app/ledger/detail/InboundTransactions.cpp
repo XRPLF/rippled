@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
