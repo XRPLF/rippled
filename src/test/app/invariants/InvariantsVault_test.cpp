@@ -180,8 +180,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto sleMPToken = ac.peek(keylet::mptoken(mptIssuanceID, pair.account));
                 if (!sleMPToken)
                     return false;
-                (*sleMPToken)[sfMPTAmount] =
-                    addSigned(*(*sleMPToken)[sfMPTAmount], pair.amount);
+                (*sleMPToken)[sfMPTAmount] = addSigned(*(*sleMPToken)[sfMPTAmount], pair.amount);
                 ac.update(sleMPToken);
             }
             return true;
