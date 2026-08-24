@@ -1,9 +1,120 @@
 {
-  "_note": "PLACEHOLDER -- every entry was voided, and the next telemetry-validation run reprints a fresh block to paste back (see baselines/README.md). Span entries were captured 2026-06-05 against a spanmetrics ladder whose first edge was 1ms. That ladder had no edge below 1ms at all, so for the sub-millisecond spans nearly every sample landed in bucket 0 and their quantiles are interpolation across that single edge, not latencies: span.ledger.store read p50/p95/p99 = 0.5/0.95/0.99, exactly quantile x 1ms, and span.tx.process read 0.50428/0.95813/0.99847 for the same reason. Sub-millisecond edges (floor 0.01ms) landed 2026-08-04 in 3860c93db2, so the ladder those numbers came from no longer exists. The gate is one-sided -- compare_to_baseline.py flags a regression only when current exceeds baseline -- so a stale-high baseline passes everything in silence, including a real 10x regression from 0.05ms to 0.5ms hiding under the 0.95ms entry. The 11 entries at or above 1ms (consensus.accept p50/p95/p99, consensus.ledger_close p95/p99, ledger.build p95/p99, ledger.validate p95/p99, tx.apply p95/p99) were undistorted -- but only because every edge from 1ms to 1s is byte-identical between the two ladders and all 11 happen to fall in that band, NOT because the re-cut spared everything above 1ms. It did not: it also added 2s/3s/4s/10s/30s edges above 1s, so a span whose quantiles reach the second scale is distorted just as much. Those 11 are voided with the rest anyway: a half-filled metrics object is not a placeholder, so the gate would stay half-dead with nothing to signal it. Removed span values, for reference (ms, p50/p95/p99): consensus.accept = 1.059405940594059/9.749999999999996/23.704545454545432; consensus.ledger_close = 0.5284697508896797/1.511111111111103/7.878571428571429; ledger.build = 0.7412060301507538/4.611111111111112/7.541666666666674; ledger.store = 0.5/0.95/0.9900000000000001; ledger.validate = 0.5283687943262412/1.3666666666666627/6.699999999999978; rpc.ws_message = 0.5026522773001647/0.9550393268703128/0.9952515090543261; tx.apply = 0.6330472103004292/4.203389830508474/5.083333333333319; tx.process = 0.5042801992591597/0.9581323781882418/0.998474791584883. job.* entries were removed earlier, on 2026-08-21, for the same reason on the native microsecond ladder: its first edge was 100us with 99.3% of job_queued_us samples beneath it, so job.acceptLedger.queued.p95 = 96.79us was 0.95/0.9926 x 100. That earlier note also claimed the gate then \"gates only the span metrics, which are unaffected\" -- that was wrong, for the reasons recorded above. Removed job values, for reference (us): job.acceptLedger.queued.p95=96.79, job.acceptLedger.running.p95=10562.50, job.transaction.queued.p95=478.97, job.transaction.running.p95=494.14. Both groups need recapture on a node running the re-cut ladders. captured_at, git_sha, profile and window below describe the voided run, not a live baseline.",
-  "captured_at": "2026-06-05T18:41:52Z",
-  "git_sha": "fd1c8c6060f7a15cc9e65b16f99629d9ab7ac7dc",
-  "metrics": {},
-  "placeholder": true,
+  "captured_at": "2026-08-24T21:22:37Z",
+  "git_sha": "6a82fc6f37c9e6cb747722906e83aaf949d100b8",
+  "metrics": {
+    "job.acceptLedger.queued.p95": {
+      "unit": "us",
+      "value": 91.10576923076925
+    },
+    "job.acceptLedger.running.p95": {
+      "unit": "us",
+      "value": 17428.571428571428
+    },
+    "job.transaction.queued.p95": {
+      "unit": "us",
+      "value": 476.6129032258061
+    },
+    "job.transaction.running.p95": {
+      "unit": "us",
+      "value": 427.1084337349388
+    },
+    "span.consensus.accept.p50": {
+      "unit": "ms",
+      "value": 1.7435897435897438
+    },
+    "span.consensus.accept.p95": {
+      "unit": "ms",
+      "value": 8.9296875
+    },
+    "span.consensus.accept.p99": {
+      "unit": "ms",
+      "value": 15.150000000000082
+    },
+    "span.consensus.ledger_close.p50": {
+      "unit": "ms",
+      "value": 0.15142857142857144
+    },
+    "span.consensus.ledger_close.p95": {
+      "unit": "ms",
+      "value": 0.49328358208955236
+    },
+    "span.consensus.ledger_close.p99": {
+      "unit": "ms",
+      "value": 0.9314285714285726
+    },
+    "span.ledger.build.p50": {
+      "unit": "ms",
+      "value": 1.0612244897959187
+    },
+    "span.ledger.build.p95": {
+      "unit": "ms",
+      "value": 4.679591836734694
+    },
+    "span.ledger.build.p99": {
+      "unit": "ms",
+      "value": 5.075000000000041
+    },
+    "span.ledger.store.p50": {
+      "unit": "ms",
+      "value": 0.005
+    },
+    "span.ledger.store.p95": {
+      "unit": "ms",
+      "value": 0.0095
+    },
+    "span.ledger.store.p99": {
+      "unit": "ms",
+      "value": 0.0099
+    },
+    "span.ledger.validate.p50": {
+      "unit": "ms",
+      "value": 0.07787769784172663
+    },
+    "span.ledger.validate.p95": {
+      "unit": "ms",
+      "value": 0.2404310344827586
+    },
+    "span.ledger.validate.p99": {
+      "unit": "ms",
+      "value": 1.060000000000033
+    },
+    "span.rpc.ws_message.p50": {
+      "unit": "ms",
+      "value": 0.15990942879094971
+    },
+    "span.rpc.ws_message.p95": {
+      "unit": "ms",
+      "value": 0.8443074003795064
+    },
+    "span.rpc.ws_message.p99": {
+      "unit": "ms",
+      "value": 0.9878368121442125
+    },
+    "span.tx.apply.p50": {
+      "unit": "ms",
+      "value": 0.791666666666667
+    },
+    "span.tx.apply.p95": {
+      "unit": "ms",
+      "value": 4.627368421052632
+    },
+    "span.tx.apply.p99": {
+      "unit": "ms",
+      "value": 4.959157894736842
+    },
+    "span.tx.process.p50": {
+      "unit": "ms",
+      "value": 0.34281067382135394
+    },
+    "span.tx.process.p95": {
+      "unit": "ms",
+      "value": 0.7239865112994349
+    },
+    "span.tx.process.p99": {
+      "unit": "ms",
+      "value": 0.9945148151511076
+    }
+  },
   "profile": "full-validation",
   "schema_version": 1,
   "window": "3m"
