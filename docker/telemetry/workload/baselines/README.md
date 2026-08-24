@@ -25,6 +25,28 @@ was invoked with. Capture and comparison are profile-agnostic — they only read
 Prometheus — so all existing profiles (`full-validation`, `quick-smoke`, `stress`)
 continue to work unchanged.
 
+## Current state: the baseline is a placeholder
+
+`baseline-timings.json` currently carries `"placeholder": true` and an empty `metrics` object,
+so **no metric gates right now**. Its entries were captured on 2026-06-05 against a spanmetrics
+ladder that was re-cut on 2026-08-04 in `3860c93db2`, which makes every sub-millisecond quantile
+in that capture bucket-edge arithmetic rather than a latency (a p95 of `0.95` ms is `0.95 × 1 ms`).
+Because the comparator only flags a metric when the current value _exceeds_ the baseline, a
+stale-high baseline passes everything silently — so the entries were voided instead of left in
+place. The file's `_note` records why, and which numbers were dropped.
+
+To restore gating, follow [Bootstrapping the baseline](#bootstrapping-the-baseline) below — a
+placeholder is exactly the state that loop expects. Pasting the CI block **replaces the whole
+file**, `_note` included; that is intended, and the voided numbers stay retrievable from this
+file's git history.
+
+**Do not let the placeholder outlive one run.** CI stays green the whole time the placeholder
+stands, so an un-copied block is not a failure anyone will notice — it is a silent loss of
+regression coverage that looks identical to a passing gate.
+
+Voiding a baseline is the one hand edit this file allows; _setting_ one always comes from a
+printed CI block, per the "Refreshing the baseline" rule below.
+
 ## Bootstrapping the baseline
 
 1. Merge a CI run with a `"placeholder": true` baseline. The telemetry-validation
