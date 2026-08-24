@@ -42,7 +42,7 @@ ConsensusTransSetSF::gotNode(
 
     nodeCache_.insert(nodeHash, nodeData);
 
-    if ((type == SHAMapNodeType::TnTransactionNm) && (nodeData.size() > 16))
+    if ((type == SHAMapNodeType::TnTransactionNm) && (nodeData.size() >= kMinTxNodeBytesToParse))
     {
         // this is a transaction, and we didn't have it
         JLOG(j_.debug()) << "Node on our acquiring TX set is TXN we may not have";
