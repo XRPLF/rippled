@@ -20,8 +20,21 @@ pub const MAX_MEMORY_PAGES: u32 = 128;
 /// [`MAX_MEMORY_PAGES`] in bytes: 8 MiB.
 pub const MAX_MEMORY_BYTES: usize = (MAX_MEMORY_PAGES * WASM_PAGE_BYTES) as usize;
 
-/// Total bytes that may cross the host/guest boundary in one [`run`], separate
-/// from gas.
+/// Cap on a table's element count.
+///
+/// A table entry is 8 bytes and wasmi materializes every one of them inside
+/// `instantiate_and_start` — before the guest's first instruction, so no gas charge
+/// can reach the cost. Without this cap the ceiling is the validator's, `u32::MAX`
+/// entries, which a module asks for in five bytes of LEB128 and pays for in ~34 GiB.
+pub const MAX_TABLE_ELEMENTS: usize = 1024;
+
+/// Total bytes the host may write into guest memory in one [`run`], separate from
+/// gas.
+///
+/// One direction only. What the guest passes in is not charged: it reaches the host
+/// as a borrowed slice of guest memory, capped per value at [`MAX_FIELD_BYTES`] by
+/// `Region::read` and in number by gas, and a host that keeps a copy (`update_data`)
+/// bounds it on its own side.
 pub const TRANSFER_LIMIT_BYTES: u64 = 1 << 20;
 
 /// Size cap on any single value crossing the boundary, in either direction; over
@@ -33,8 +46,8 @@ pub const MAX_FIELD_BYTES: usize = 1024;
 /// State threaded through every host call, stored in the wasmi [`Store`].
 pub(crate) struct VmState<'h> {
     pub(crate) host: &'h dyn HostFunctions,
-    /// Enforces [`MAX_MEMORY_BYTES`] via `Store::limiter`, which needs a `&mut`
-    /// into it from `&mut VmState` — hence a field rather than a local.
+    /// Enforces [`store_limits`] via `Store::limiter`, which needs a `&mut` into it
+    /// from `&mut VmState` — hence a field rather than a local.
     pub(crate) mem_limits: StoreLimits,
     /// Remaining transfer budget for this run ([`TRANSFER_LIMIT_BYTES`]).
     ///
@@ -254,6 +267,30 @@ fn build_wasm_engine() -> Engine {
     Engine::new(&config)
 }
 
+/// Every resource ceiling a run is given, in one place.
+///
+/// The two *size* caps are what a contract can reach today. The three *count* caps
+/// are set to 1 although [`build_wasm_engine`] already forces each: turning
+/// `wasm_reference_types` on would let a module declare up to
+/// `wasmparser::MAX_WASM_TABLES` tables, `wasm_multi_memory` likewise for memories,
+/// and both size caps are **per table and per memory, not aggregate** — so a feature
+/// flag flipped in isolation would multiply the ceiling by a hundred rather than
+/// leave it be. The counts are what keeps those two decisions independent.
+///
+/// wasmi enforces the counts by asking the limiter before it allocates
+/// (`can_create_more_instances`/`_memories`/`_tables`); they default to 10000, so
+/// leaving them unset is not the same as their being unreachable.
+fn store_limits() -> StoreLimits {
+    StoreLimitsBuilder::new()
+        .memory_size(MAX_MEMORY_BYTES)
+        .table_elements(MAX_TABLE_ELEMENTS)
+        .instances(1)
+        .tables(1)
+        .memories(1)
+        .trap_on_grow_failure(true)
+        .build()
+}
+
 /// Compile `wasm` for this engine.
 ///
 /// The one path to a [`Module`]: the configuration is what decides whether a
@@ -275,15 +312,11 @@ pub fn run<'h>(
     let module =
         compile(wasm).map_err(|detail| RunFailure::owing_nothing(RunError::Compile(detail)))?;
 
-    let mem_limits = StoreLimitsBuilder::new()
-        .memory_size(MAX_MEMORY_BYTES)
-        .trap_on_grow_failure(true)
-        .build();
     let mut store = Store::new(
         engine,
         VmState {
             host,
-            mem_limits,
+            mem_limits: store_limits(),
             transfer_budget: Cell::new(TRANSFER_LIMIT_BYTES),
             memory: None,
             out_buffer: [0u8; MAX_FIELD_BYTES],
@@ -341,12 +374,30 @@ mod tests {
         assert!(Engine::same(wasm_engine(), wasm_engine()));
     }
 
+    /// One instance, one table, one memory — asserted here rather than through a
+    /// module, because no module can reach these. `wasm_reference_types(false)` and
+    /// `wasm_multi_memory(false)` make a module declaring a second table or memory
+    /// fail *validation*, so a run never gets far enough to consult the limiter.
+    /// That is exactly why the counts are worth pinning: they are the ceiling that
+    /// survives one of those flags being turned on, and nothing else would fail if
+    /// they were silently dropped.
+    #[test]
+    fn the_store_grants_one_of_each_thing_a_module_can_own() {
+        use wasmi::ResourceLimiter;
+
+        let limits = store_limits();
+        assert_eq!(limits.instances(), 1);
+        assert_eq!(limits.tables(), 1);
+        assert_eq!(limits.memories(), 1);
+    }
+
     /// The only place these numbers appear as literals; every other test derives
     /// them from the constants.
     #[test]
     fn the_limits_are_the_protocol_limits() {
         assert_eq!(MAX_MEMORY_PAGES, 128, "linear-memory page cap");
         assert_eq!(MAX_MEMORY_BYTES, 8 * 1024 * 1024, "page cap in bytes");
+        assert_eq!(MAX_TABLE_ELEMENTS, 1024, "table-element cap");
         assert_eq!(MAX_FIELD_BYTES, 1024, "kMaxWasmDataLength");
         assert_eq!(TRANSFER_LIMIT_BYTES, 1 << 20, "kWasmTransferLimit");
     }

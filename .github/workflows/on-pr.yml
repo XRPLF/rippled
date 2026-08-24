@@ -77,8 +77,9 @@ jobs:
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
-            .github/actions/generate-version/**
+            .github/actions/release-info/**
             .github/actions/setup-conan/**
+            .github/actions/setup-nix-env/**
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
@@ -91,6 +92,7 @@ jobs:
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            bin/check-nix-store-refs.sh
             bin/check-tools.sh
             bin/default-loader-path.sh
             cfg/**
@@ -104,6 +106,9 @@ jobs:
             CMakeLists.txt
             conanfile.py
             conan.lock
+            flake.lock
+            flake.nix
+            nix/**
             LICENSE.md
             package/**
             README.md

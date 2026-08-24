@@ -1,5 +1,8 @@
-//! Exercises what `host_functions!` generates: the trait is implementable and
-//! the spec table agrees with the declarations in `src/lib.rs`.
+//! Exercises the API that `host_functions!` generates, not the macro itself:
+//! the `HostFunctions` trait is implementable and callable both directly and
+//! through `&dyn`, and the generated `HostFunctionSpec` and `TraceDataType`
+//! tables agree with the declarations in `src/lib.rs`. The macro's own parsing
+//! and diagnostics are covered by the unit tests in `xrpl-host-functions-macros`.
 
 use std::cell::RefCell;
 use std::collections::HashSet;

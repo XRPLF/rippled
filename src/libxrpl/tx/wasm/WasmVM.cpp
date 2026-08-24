@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <stdexcept>
 #include <string_view>
 
 namespace xrpl {
@@ -23,8 +24,8 @@ namespace {
 using RunStatus = rs::wasm_vm::RunStatus;
 using CheckStatus = rs::wasm_vm::CheckStatus;
 
-// The engine's outcome as the caller's: a value with its cost, or a TER with the cost to
-// record beside it.
+// The engine's outcome as the caller's: a value with its gas cost, or a TER with the gas cost
+// to record beside it.
 //
 // A `tecINTERNAL` reports no cost. It says the fault is the node's, and charging a
 // transaction for a node's defect would write that defect into the ledger.
@@ -96,12 +97,13 @@ verdict(CheckStatus status)
             return tesSUCCESS;
 
         // The module will not compile, imports what no engine of this ABI serves, does
-        // not export the entry point as `() -> i32`, or asks for more linear memory than
-        // it may have.
+        // not export the entry point as `() -> i32`, or asks for more linear memory or
+        // table than it may have.
         case CheckStatus::Compile:
         case CheckStatus::Import:
         case CheckStatus::EntryPoint:
         case CheckStatus::Memory:
+        case CheckStatus::Table:
             return temBAD_WASM;
 
         // The engine panicked: a defect in the engine, reported rather than fatal to
@@ -134,10 +136,11 @@ runEscrowWasm(
         // The host caches the current ledger object, the slot table and the
         // contract's data for the length of one run, so a reused one would answer a
         // later contract out of an earlier contract's state.
+        XRPL_ASSERT(
+            hfs.checkSelf(), "::xrpl::runEscrowWasm : host functions not clean before the run");
         if (!hfs.checkSelf())
         {
-            JLOG(hfs.getJournal().error()) << "wasm: host functions not clean before the run";
-            return nodeSideFault;
+            throw std::runtime_error("host functions not clean before the run");
         }
 
         HostContext const ctx{hfs};

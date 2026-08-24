@@ -1,23 +1,25 @@
 //! The cxx bridge between the escrow wasm engine and xrpld.
 //!
-//! Three crossings. C++ calls `run_escrow` once per escrow finish; the engine's host
-//! calls come back out through the C++ `HostContext`, which `CxxHost` presents to the
-//! engine as an ordinary [`HostFunctions`] implementor. The ABI those calls speak is
-//! declared once, in `xrpl-host-functions`, so neither side of this file gets to
-//! restate a signature.
+//! Three crossings:
 //!
-//! `check_escrow` is the third, and it crosses in one direction only: screening a
-//! module needs no host, so nothing comes back out.
+//! - **In:** C++ calls `run_escrow`, once per escrow finish.
+//! - **Back out:** that run's host calls leave through the C++ `HostContext`, which
+//!   `CxxHost` presents to the engine as an ordinary [`HostFunctions`] implementor.
+//! - **In only:** C++ screens a module with `check_escrow`. Screening needs no host,
+//!   so nothing comes back out.
 //!
-//! **Neither direction may unwind into the other**, and the two halves of that are
+//! The ABI the host calls speak is declared once, in `xrpl-host-functions`, so neither
+//! side of this file gets to restate a signature.
+//!
+//! **Neither language may unwind into the other**, and the two halves of that are
 //! not symmetric:
 //!
 //! - A **Rust panic** is caught here, by `guarded`. Letting one reach C++ is
 //!   undefined behaviour; `[profile.release]` turns overflow checks on, so this is a
 //!   live path and not a formality.
 //! - A **C++ exception** is stopped on the C++ side: every `HostContext` method is
-//!   `noexcept` and reports failure as a negative `HostError` code. That is what
-//!   makes `guarded` sufficient — see its documentation.
+//!   `noexcept` and catches its own. That is what makes `guarded` sufficient — see
+//!   its documentation.
 //!
 //! Everything hand-written here is private, so the names above are code spans rather
 //! than links, and `cargo doc` needs `--document-private-items` to show any of it.
@@ -97,6 +99,8 @@ mod ffi {
         EntryPoint,
         /// The module asks for more linear memory than the engine grants.
         Memory,
+        /// The module asks for a larger table than the engine grants.
+        Table,
         /// The engine panicked. A defect in this crate or the one below it, and
         /// not a fault in the module — which is why it is a status of its own
         /// rather than one more way a contract can be malformed.
@@ -166,7 +170,7 @@ mod ffi {
         /// The C++ side of the ABI: one method per host function, forwarding to
         /// `xrpl::HostFunctions`.
         ///
-        /// Every method is `noexcept` and answers with a code, so a host call cannot
+        /// Every method is `noexcept` and catches everything, so a host call cannot
         /// unwind into the engine.
         ///
         /// `cxx_name` on each method below is not cosmetic: the declarations keep the
@@ -939,7 +943,7 @@ impl ffi::CheckResult {
 /// **Why catching here is enough.** An unwind can only be caught where every frame
 /// between the panic and the catch is Rust, and every frame here is: the engine and
 /// wasmi are Rust, and a host call cannot start a C++ unwind because each
-/// `HostContext` method is `noexcept` and answers with a code. So the only unwind
+/// `HostContext` method is `noexcept` and catches everything. So the only unwind
 /// that can reach this frame started in Rust, and this stops it.
 ///
 /// [`AssertUnwindSafe`] is sound because nothing survives to be observed in a torn
@@ -1036,6 +1040,7 @@ impl From<&CheckError> for ffi::CheckStatus {
             CheckError::Import(_) => ffi::CheckStatus::Import,
             CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
             CheckError::Memory(_) => ffi::CheckStatus::Memory,
+            CheckError::Table(_) => ffi::CheckStatus::Table,
         }
     }
 }
@@ -1242,6 +1247,7 @@ mod tests {
             CheckError::Import(String::new()),
             CheckError::EntryPoint(String::new()),
             CheckError::Memory(String::new()),
+            CheckError::Table(String::new()),
         ]
     }
 

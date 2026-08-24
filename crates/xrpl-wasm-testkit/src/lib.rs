@@ -4,8 +4,8 @@
 //! point. The engine pins `wasmi = { default-features = false }` precisely so a text
 //! assembler cannot reach the consensus path — wasmi's `wat` feature is on by default and
 //! makes `Module::new` accept text as readily as binary, which would make a transaction's
-//! validity a build flag (review finding A5). Putting `compile_wat` on the production bridge
-//! would link `wat` into xrpld even if nothing called it.
+//! validity a build flag. Putting `compile_wat` on the production bridge would link `wat`
+//! into xrpld even if nothing called it.
 //!
 //! Linked only into `xrpl_tests`, never into `libxrpl` or `xrpld`, so "no assembler in the
 //! shipped node" is a property of the link graph rather than a flag someone can flip.

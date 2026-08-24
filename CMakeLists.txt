@@ -158,6 +158,8 @@ if(coverage)
     include(XrplCov)
 endif()
 
+add_custom_target(tidy_prerequisites)
+
 add_subdirectory(crates)
 include(XrplCore)
 include(XrplProtocolAutogen)

@@ -27,12 +27,11 @@ enum class TraceDataType : std::int32_t;
 // access - and lowering its typed `std::expected` result onto the ABI's wire form.
 //
 // Every method is `noexcept`, and every body catches everything: a C++ exception
-// unwinding into the Rust frames that called it would be undefined behaviour, so a
-// failure leaves here as -1, which the engine reads as a fatal error and reports as
-// `tecINTERNAL`.
+// unwinding into the Rust frames that called it would be undefined behaviour, so a caught
+// one leaves here as `HostFunctionError::InternalFatal`, which the engine reads as a fatal
+// error and reports as `tecINTERNAL`.
 //
-// Not an owner: it borrows `hf` for the length of one run. Declared `struct` because the
-// Rust side only ever sees an opaque pointer.
+// Not an owner: it borrows the `HostFunctions` it is built over for the length of one run.
 class HostContext
 {
     // Non-const so a host function that mutates (`cacheLedgerObj`, `updateData`) can be
