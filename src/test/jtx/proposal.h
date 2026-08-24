@@ -55,6 +55,9 @@ namespace verify {
 class Create
 {
 public:
+    /**
+     * @throws std::logic_error if attached to another transaction type.
+     */
     void
     operator()(Env&, JTx&) const;
 };
@@ -68,8 +71,6 @@ public:
  * @code
  * env(proposal::create(alice, payload, expiration), proposal::verify::create());
  * @endcode
- *
- * @throws std::logic_error if attached to another transaction type.
  */
 [[nodiscard]] inline Create
 create()
