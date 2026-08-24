@@ -57,6 +57,8 @@ namespace xrpl::test {
 
 class InvariantsMisc_test : public InvariantsBase
 {
+    FeatureBitset const all_{test::jtx::testableAmendments()};
+
     void
     testXRPNotCreated()
     {
@@ -1068,7 +1070,7 @@ class InvariantsMisc_test : public InvariantsBase
         testcase << "object has pseudo-account";
         using namespace jtx;
 
-        auto const amendments = defaultAmendments() | fixCleanup3_3_0;
+        auto const amendments = all_ | fixCleanup3_3_0;
 
         // Vault: object deleted without its pseudo-account
         {
@@ -1318,8 +1320,8 @@ class InvariantsMisc_test : public InvariantsBase
         testNoBadOffers();
         testValidNewAccountRoot();
         testNoModifiedUnmodifiableFields();
-        testInvariantOverwrite(defaultAmendments());
-        testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
+        testInvariantOverwrite(all_);
+        testInvariantOverwrite(all_ - fixCleanup3_1_3);
         testObjectHasPseudoAccount();
         testSponsorship();
         testTxCheckException();

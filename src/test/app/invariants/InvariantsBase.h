@@ -35,13 +35,6 @@ makeTransactor(ApplyContext& ctx);
 
 namespace xrpl::test {
 
-// The default amendment set used by the invariant test suites. This is not part
-// of the shared Suite base on purpose: it enables specific fix amendments on top
-// of testableAmendments(), so it must be opted into explicitly rather than
-// inherited by unrelated tests that expect the standard testable amendment set.
-FeatureBitset
-defaultAmendments();
-
 class InvariantsBase : public beast::unit_test::Suite
 {
 protected:

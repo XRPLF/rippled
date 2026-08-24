@@ -54,6 +54,8 @@ namespace xrpl::test {
 
 class InvariantsVault_test : public InvariantsBase
 {
+    FeatureBitset const all_{test::jtx::testableAmendments()};
+
     void
     testVault()  // NOLINT(readability-function-size)
     {
@@ -687,7 +689,7 @@ class InvariantsVault_test : public InvariantsBase
         // Without fixCleanup3_4_0 the same state must NOT trip the invariant,
         // preserving pre-amendment behavior (no fork risk).
         doInvariantCheck(
-            makeEnv(defaultAmendments() - fixCleanup3_4_0),
+            makeEnv(all_ - fixCleanup3_4_0),
             {},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));

@@ -38,12 +38,6 @@
 
 namespace xrpl::test {
 
-FeatureBitset
-defaultAmendments()
-{
-    return xrpl::test::jtx::testableAmendments() | fixCleanup3_1_3 | fixCleanup3_2_0;
-}
-
 test::jtx::Env
 InvariantsBase::makeEnv(FeatureBitset features)
 {
@@ -63,7 +57,7 @@ InvariantsBase::doInvariantCheck(
     TER initialResult)
 {
     doInvariantCheck(
-        makeEnv(defaultAmendments()),
+        makeEnv(test::jtx::testableAmendments()),
         expectLogs,
         precheck,
         fee,

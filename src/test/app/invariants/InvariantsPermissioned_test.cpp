@@ -49,6 +49,8 @@ namespace xrpl::test {
 
 class InvariantsPermissioned_test : public InvariantsBase
 {
+    FeatureBitset const all_{test::jtx::testableAmendments()};
+
     void
     testPermissionedDomainInvariants(FeatureBitset features)
     {
@@ -702,8 +704,8 @@ class InvariantsPermissioned_test : public InvariantsBase
             }
         };
 
-        auto const pre = defaultAmendments() - fixCleanup3_4_0;
-        auto const post = defaultAmendments() | fixCleanup3_4_0;
+        auto const pre = all_ - fixCleanup3_4_0;
+        auto const post = all_;
 
         // after == null: not tracked
         check(pre, true, true, false);
@@ -797,7 +799,7 @@ class InvariantsPermissioned_test : public InvariantsBase
         // - The invariant must pass because this transaction did not create
         //   the bad root, only adding a child page.
         {
-            Env env{*this, defaultAmendments()};
+            Env env{*this, all_};
             Account const a1{"A1"};
             env.fund(XRP(1000), a1);
             env.close();
@@ -820,7 +822,7 @@ class InvariantsPermissioned_test : public InvariantsBase
         // modified without changing sfRootIndex or deleted, and checked when a
         // modified directory changes sfRootIndex.
         {
-            Env env{*this, defaultAmendments()};
+            Env env{*this, all_};
             Account const a1{"A1"};
             env.fund(XRP(1000), a1);
             env.close();
@@ -941,10 +943,10 @@ class InvariantsPermissioned_test : public InvariantsBase
     void
     run() override
     {
-        testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3);
-        testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
-        testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
-        testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
+        testPermissionedDomainInvariants(all_);
+        testPermissionedDomainInvariants(all_ - fixCleanup3_1_3);
+        testPermissionedDEX(all_);
+        testPermissionedDEX(all_ - fixCleanup3_1_3);
         testPermissionedDEXDeletedOfferFallback();
         testBookDirectoryExchangeRate();
     }

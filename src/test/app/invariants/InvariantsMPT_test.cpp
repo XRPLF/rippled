@@ -47,6 +47,8 @@ namespace xrpl::test {
 
 class InvariantsMPT_test : public InvariantsBase
 {
+    FeatureBitset const all_{test::jtx::testableAmendments()};
+
     void
     testMPT()
     {
@@ -73,7 +75,7 @@ class InvariantsMPT_test : public InvariantsBase
         };
 
         doInvariantCheck(
-            makeEnv(defaultAmendments() - fixCleanup3_2_0),
+            makeEnv(all_ - fixCleanup3_2_0),
             {},
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{},
@@ -386,7 +388,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Invalid IOU clawback delta must fail once MPTokensV2 enforces before/after validation.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -426,7 +428,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Full IOU clawback may delete the trustline; missing after-SLE represents zero balance.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -462,7 +464,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Pre-MPTokensV2 invalid IOU clawback delta logs but remains non-enforcing.
         {
-            Env env(*this, defaultAmendments() - featureMPTokensV2);
+            Env env(*this, all_ - featureMPTokensV2);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -502,7 +504,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Invalid MPT clawback delta must fail when raw MPToken debit mismatches sfAmount.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -541,7 +543,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // A clawback that mutates both IOU and MPT entries must fail under MPTokensV2.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -592,7 +594,7 @@ class InvariantsMPT_test : public InvariantsBase
         // tx amount: clawbackTrustLineBalanceInHolderTerms returns nullopt for
         // the mismatched line.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -632,7 +634,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Clawback leaving the holder's balance negative.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -673,7 +675,7 @@ class InvariantsMPT_test : public InvariantsBase
         // IOU-amount clawback while only an MPToken changed: no trustline was
         // recorded, so iou_.before is empty.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -711,7 +713,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Valid trustline change but a zero clawback amount.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -750,7 +752,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // MPT clawback tx missing the Holder field.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -787,7 +789,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // MPT clawback where the holder's MPToken was deleted (after is empty).
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -825,7 +827,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // MPT clawback that changed a different holder's MPToken.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -867,7 +869,7 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Valid MPToken change but a zero MPT clawback amount.
         {
-            Env env(*this, defaultAmendments());
+            Env env(*this, all_);
             Account const issuer{"issuer"};
             Account const holder{"holder"};
             Account const other{"other"};
@@ -1281,7 +1283,7 @@ class InvariantsMPT_test : public InvariantsBase
                 };
 
                 doInvariantCheck(
-                    Env{*this, defaultAmendments()},
+                    Env{*this, all_},
                     {{"invalid MPToken transfer between holders"}},
                     precheck,
                     XRPAmount{},
@@ -1301,7 +1303,7 @@ class InvariantsMPT_test : public InvariantsBase
                 };
 
                 doInvariantCheck(
-                    Env{*this, defaultAmendments()},
+                    Env{*this, all_},
                     {{"invalid MPToken transfer between holders"}},
                     precheck,
                     XRPAmount{},

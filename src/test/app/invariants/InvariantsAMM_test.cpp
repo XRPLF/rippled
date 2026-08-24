@@ -40,6 +40,8 @@ namespace xrpl::test {
 
 class InvariantsAMM_test : public InvariantsBase
 {
+    FeatureBitset const all_{test::jtx::testableAmendments()};
+
     void
     testAMMDeleteInvariants(FeatureBitset features)
     {
@@ -237,8 +239,8 @@ class InvariantsAMM_test : public InvariantsBase
     void
     run() override
     {
-        testAMMDeleteInvariants(defaultAmendments());
-        testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
+        testAMMDeleteInvariants(all_);
+        testAMMDeleteInvariants(all_ - fixCleanup3_3_0);
         testAMM();
     }
 };
