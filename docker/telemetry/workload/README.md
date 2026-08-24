@@ -215,7 +215,7 @@ Automated validation that all expected telemetry data exists. Every metric in `e
 
 - **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies. Entries marked `"optional": true` only fire under traffic the harness may not produce (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions); their absence is recorded as a passing skip, not a failure.
 - **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, `beast::insight` gauges/counters/histograms, `MetricsRegistry` OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries), polled until the metric appears or the poll window elapses, so a late-populating or quiet series is not a false negative.
-- **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki)
+- **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki). The two checks are `log.trace_id_present` and `log.trace_id_cross_reference`, and they exist only when `--skip-loki` is **not** passed — `run_validation()` builds them inside an `if not skip_loki` branch, so with the flag they are absent from the report rather than reported as skipped. **CI always passes `--skip-loki`, so these two are never exercised there** — see [CI Integration](#ci-integration).
 - **Dashboard validation**: Every dashboard uid listed under `grafana_dashboards.uids` in `expected_metrics.json` loads with panels. That list currently covers **all 15** dashboards provisioned in `docker/telemetry/grafana/dashboards/`. Note the scope of this check: it asks the Grafana API whether the dashboard exists and returns a panel count — it does **not** run the panels' queries, so a dashboard can pass here while individual panels render empty.
 
 ```bash
@@ -395,6 +395,28 @@ Of the five `workflow_dispatch` inputs, only `run_benchmark` changes behaviour.
 `run-full-validation.sh`, which parses them into shell variables and never reads
 them again — load shape comes entirely from `--profile` and
 `workload-profiles.json`. Their `description:` fields say so.
+
+### What CI does not cover
+
+The workflow invokes the harness with a hardcoded `--skip-loki`
+(`telemetry-validation.yml:237`), and `validate_telemetry.py` creates the
+`log.trace_id_present` and `log.trace_id_cross_reference` checks only inside an
+`if not skip_loki` branch (`validate_telemetry.py:1657`). Those two checks are
+therefore **never constructed on a CI run** — a green `Telemetry Validation`
+carries no evidence that log lines carry trace context or that a Tempo trace id
+resolves in Loki. `integration-test.sh` has its own `check_log_correlation()`, but
+no workflow runs that script either.
+
+Cover the gap locally by omitting the flag:
+
+```bash
+docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
+```
+
+Do that after any change to log formatting, span activation, the collector's
+`filelog` receiver, or the Loki exporter. Removing `--skip-loki` from the workflow
+would make CI exercise Loki ingestion and filelog mounting for the first time, so
+it is held back as its own change rather than folded into an unrelated push.
 
 ## Configuration Files
 

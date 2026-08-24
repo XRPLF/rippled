@@ -2759,9 +2759,26 @@ A plain `SpanGuard` that is **never activated** makes no span current — it "ne
 
 Severity does not affect injection, but `JLOG` filters on severity **before** `format()` runs, so the configured log level decides whether a qualifying line is emitted at all.
 
-**The guaranteed correlated line at `info`** is the consensus accept pair at [RCLConsensus.cpp:736/740](../src/xrpld/app/consensus/RCLConsensus.cpp#L736) — an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient over its whole body at [:565](../src/xrpld/app/consensus/RCLConsensus.cpp#L565) (`activateIfLive(acceptSpan)`, commented "Make the accept span ambient for the whole accept so doAccept's log lines ... correlate to it"), and the activation lives to the end of the function, so both branches are inside it. At roughly one round every 4 s this yields dozens of correlated lines per run.
+**The dependably correlated line at `info`** is the consensus accept pair at [RCLConsensus.cpp:736/740](../src/xrpld/app/consensus/RCLConsensus.cpp#L736) — an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient over its whole body at [:565](../src/xrpld/app/consensus/RCLConsensus.cpp#L565) (`activateIfLive(acceptSpan)`, commented "Make the accept span ambient for the whole accept so doAccept's log lines ... correlate to it"), and the activation lives to the end of the function, so both branches are inside it. At roughly one round every 4 s this yields dozens of correlated lines per run.
 
-`info` is therefore the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks are satisfied by construction, and it is what the workload harness generates. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
+That is a dependable pair rather than an unconditional one: `info` severity is necessary but not sufficient. Four preconditions must all hold, and each has its own bail-out that silently yields an uncorrelated line rather than an error:
+
+| Precondition                                                                  | Where it is enforced                                                                                                                                                                                                                                                                        | What happens if it fails                                                                        |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Telemetry enabled — built with `telemetry=ON` **and** `[telemetry] enabled=1` | The `SpanGuard` factories return early on `tel == nullptr \|\| !tel->isEnabled()`, e.g. [SpanGuard.cpp:278-280](../src/libxrpl/telemetry/SpanGuard.cpp#L278)                                                                                                                                | Null guard, no span, no `trace_id`                                                              |
+| `trace_consensus=1`                                                           | The round span is built by `hashSpan(TraceCategory::Consensus, …)`, which checks `isCategoryEnabled()` ([SpanGuard.cpp:354](../src/libxrpl/telemetry/SpanGuard.cpp#L354))                                                                                                                   | No round span, so `roundSpanContext_` never becomes valid                                       |
+| A valid `roundSpanContext_` at accept time                                    | `makeAcceptSpan()` calls `SpanGuard::childSpan(cs::accept, roundSpanContext_)` ([RCLConsensus.cpp:512](../src/xrpld/app/consensus/RCLConsensus.cpp#L512)), and `childSpan` returns a null guard on an invalid parent ([SpanGuard.cpp:274-281](../src/libxrpl/telemetry/SpanGuard.cpp#L274)) | Null accept span, so `activateIfLive` activates nothing and the pair logs without trace context |
+| The current span context is valid **and sampled**                             | Injection is gated on `spanCtx.IsValid() && spanCtx.IsSampled()` ([Log.cpp:328](../src/libxrpl/basics/Log.cpp#L328))                                                                                                                                                                        | Ids are withheld deliberately, so the log never advertises a trace that was not exported        |
+
+The sampled check is normally satisfied on a self-rooted consensus round — head sampling is a fixed ratio of 1.0 wrapped in a `ParentBasedSampler` ([Telemetry.cpp:412-414](../src/libxrpl/telemetry/Telemetry.cpp#L412)) — but a span inheriting an unsampled **remote** parent is dropped while still carrying valid ids, which is exactly the case the gate exists for.
+
+With all four satisfied, `info` is the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks pass by construction, and it is what the correlation-checking harnesses generate: the cfgs written by [run-full-validation.sh](../docker/telemetry/workload/run-full-validation.sh) and [integration-test.sh](../docker/telemetry/integration-test.sh) each set `enabled=1`, `trace_consensus=1` and `log_level info` together. `benchmark.sh` deliberately does not — it stays at `warning` to keep log I/O out of the overhead measurement, and it runs no correlation check. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
+
+> **CI does not exercise either check.** `log.trace_id_present` and `log.trace_id_cross_reference` never run in CI — see [Coverage gap](#ci-workflow) for why. Cover them locally, without `--skip-loki`, after any change to log formatting, span activation, the `filelog` receiver or the Loki exporter:
+>
+> ```bash
+> docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
+> ```
 
 #### Why not `debug`
 
@@ -3521,7 +3538,7 @@ not a sign the cache is working.
 - Verify xrpld was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
 - Verify `enabled=1` in the `[telemetry]` config section
 - Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
-- Check `log_level` is at least `info`. The guaranteed correlated line is the consensus accept pair, which is at info severity, so at `warning` or above correlation becomes incidental — see [Which Log Lines Carry Trace Context](#which-log-lines-carry-trace-context)
+- Check `log_level` is at least `info`. The dependably correlated line is the consensus accept pair, which is at info severity, so at `warning` or above correlation becomes incidental. `info` is necessary but not sufficient: the accept pair also needs telemetry enabled, `trace_consensus=1`, a valid round span context and a sampled span context — see [Which Log Lines Carry Trace Context](#which-log-lines-carry-trace-context) for the full precondition table
 - A plain `SpanGuard` that is never activated does not make its span current, so lines inside one are never correlated regardless of severity. Activated guards (`activate()` / `activateIfLive()`) and `ScopedSpanGuard` both do make their span current
 - Check that the specific trace category is enabled (e.g., `trace_rpc=1`)
 
@@ -3754,6 +3771,18 @@ container as the main CI, so Conan and ccache hit the shared caches), and
   `src/xrpld/telemetry/**`. There is no cron schedule.
 - **Invocation**: `run-full-validation.sh --xrpld <binary> --skip-loki`, so the
   default `full-validation` profile is used and the Loki checks are skipped.
+- **Coverage gap — log-trace correlation is never checked in CI**: the
+  `--skip-loki` above is hardcoded at
+  [telemetry-validation.yml:237](../.github/workflows/telemetry-validation.yml#L237),
+  and `validate_telemetry.py` creates `log.trace_id_present` and
+  `log.trace_id_cross_reference` only inside an `if not skip_loki` branch
+  ([:1657](../docker/telemetry/workload/validate_telemetry.py#L1657)), so those
+  two checks are not merely skipped — they are never constructed and never appear
+  in the report. `docker/telemetry/integration-test.sh` (which has its own
+  `check_log_correlation()`) is run by no workflow at all. A green
+  `Telemetry Validation` therefore carries no evidence about correlation; run it
+  locally without the flag to cover it:
+  `docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld`.
 - **Inputs**: only `run_benchmark` changes behaviour. `rpc_rate`, `rpc_duration`,
   `tx_tps` and `tx_duration` are inert, as noted in their descriptions.
 - **Results**: reports are uploaded as the `telemetry-validation-reports`
