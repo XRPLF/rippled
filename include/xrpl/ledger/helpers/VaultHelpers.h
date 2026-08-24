@@ -7,6 +7,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 #include <optional>
@@ -260,5 +261,41 @@ getVaultPhase(
     std::optional<std::uint8_t> vaultKind,
     std::optional<std::uint32_t> subscriptionDate,
     std::optional<std::uint32_t> redemptionDate);
+
+/**
+ * Controls whether checkVaultDomain reports an expired credential as an
+ * error. A caller that deletes expired credentials later, in doApply, passes
+ * Yes and treats the subject as authorized; a caller with no such cleanup
+ * step must keep the error.
+ */
+enum class SuppressExpired : bool { No = false, Yes = true };
+
+/**
+ * Checks that subject belongs to the permissioned domain governing a vault's
+ * shares.
+ *
+ * The domain is read from the share issuance rather than from the vault. Vault
+ * shares are issued by the vault's pseudo-account, which cannot grant an
+ * authorization explicitly, so domain membership is the only route to being
+ * authorized: a vault with no domain set has no authorized participants at
+ * all, and every subject fails with tecNO_AUTH.
+ *
+ * Which accounts to check, and whether to check at all, is left to the caller.
+ * This says nothing about vault privacy or about the roles of the accounts.
+ *
+ * @param view The ledger view.
+ * @param issuance The MPTokenIssuance SLE for the vault's shares.
+ * @param subject The account whose domain membership is checked.
+ * @param suppressExpired Whether an expired credential counts as authorized.
+ *
+ * @return tesSUCCESS if the subject is a domain member, otherwise the reason
+ * it is not.
+ */
+[[nodiscard]] TER
+checkVaultDomain(
+    ReadView const& view,
+    SLE::const_ref issuance,
+    AccountID const& subject,
+    SuppressExpired suppressExpired);
 
 }  // namespace xrpl
