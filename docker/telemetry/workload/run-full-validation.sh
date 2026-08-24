@@ -331,8 +331,14 @@ trace_ledger=1
 # Native OTel metrics via OTLP/HTTP. The collector has no StatsD receiver
 # (its metrics pipeline is [otlp, spanmetrics]), so beast::insight must export
 # over OTLP for system metrics to reach Prometheus at all. server=otel is the
-# only load-bearing key here -- it selects the OTel collector; endpoint is
-# read but already matches the built-in default.
+# only load-bearing key here -- it selects the OTel collector.
+#
+# endpoint below is parsed but inert, exactly like prefix: CollectorManager
+# reads it and hands it to OTelCollector, which uses it only in its startup log
+# line. The URL the metric exporter actually posts to is derived in
+# Telemetry::initMetrics() from [telemetry] endpoint, by swapping the trailing
+# /v1/traces for /v1/metrics. It is kept here so the log line names the right
+# URL; changing it would not redirect a single metric.
 #
 # No prefix is set on purpose. It would be inert: OTelCollector applies no
 # prefix to instrument names, so exported names are the lowercased raw names

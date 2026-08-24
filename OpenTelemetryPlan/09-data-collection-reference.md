@@ -598,15 +598,26 @@ These are system-level metrics emitted by xrpld's `beast::insight` framework via
 [insight]
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=xrpld
 ```
+
+`server=otel` is the only key here that changes what gets exported. No `prefix` is
+shown because it would do nothing on this path: `OTelCollector` routes every
+instrument name through its `static formatName()`, which only lowercases the raw
+name and maps `.` and space to `_`, and the only place the class reads `prefix_`
+is its startup log line. Exported names are therefore the lowercased raw names
+(`jobq_job_count`, `rpc_requests_total`) and the service is identified by the OTel
+resource `service.name`, not by a name prefix. `endpoint` is read from this section
+but likewise reaches only that log line — the real exporter URL is derived inside
+`Telemetry::initMetrics()` from `[telemetry] endpoint`, by swapping the trailing
+`/v1/traces` for `/v1/metrics`.
 
 Fallback (StatsD). `StatsDCollector` is still selected by this value, but the
 stack in `docker/telemetry/` no longer receives it: using this path also requires
 re-adding the `statsd` receiver to `otel-collector-config.yaml` and uncommenting
 port 8125 in `docker-compose.yml`, otherwise the metrics go to a port nothing
-listens on. Note also that `StatsDCollector` applies `prefix` to the metric name
-while `OTelCollector` does not, so switching transports renames every series.
+listens on. `prefix` does appear below, because `StatsDCollector` really does
+prepend it to every metric name it serializes — so switching transports renames
+every series.
 
 ```ini
 [insight]
@@ -2168,7 +2179,6 @@ enabled=1
 [insight]
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=xrpld
 ```
 
 ### Production Setup
@@ -2184,8 +2194,11 @@ max_queue_size=4096
 [insight]
 server=otel
 endpoint=http://otel-collector:4318/v1/metrics
-prefix=xrpld
 ```
+
+Neither block sets `[insight] prefix`: on the `server=otel` path it is inert and
+would only mislead — see [§2 Configuration](#configuration). It applies solely to
+`server=statsd`.
 
 ### Trace Category Toggle
 
