@@ -238,6 +238,13 @@ ${ips_fixed}
 ${telemetry_section}
 
 [rpc_startup]
+# Deliberately diverges from run-full-validation.sh (which uses info) and keeps
+# prefix=xrpld above. This script measures telemetry OVERHEAD as the delta
+# between a telemetry-off and a telemetry-on arm, so it needs a quiet, identical
+# baseline in both arms rather than good observability. Logging is synchronous, so
+# admitting more log lines would add I/O to both arms and inflate the CPU,
+# memory and latency figures the thresholds gate. Do not "align" this with the
+# workload harness -- that would silently degrade the measurement.
 { "command": "log_level", "severity": "warning" }
 
 [ssl_verify]

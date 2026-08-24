@@ -70,6 +70,27 @@ new numbers should become the norm, open a PR pasting the fresh timings into
 Do **not** edit `baseline-timings.json` by hand outside of this process — every entry
 should trace back to a real CI run so variance characteristics are preserved.
 
+## The baseline is only valid at the log level it was captured at
+
+Every timing here is coupled to the `log_level` that `run-full-validation.sh` writes into
+each node's `[rpc_startup]` stanza. Logging is **synchronous**, and several of the gated
+spans contain log statements, so the configured level is part of the measurement:
+
+- `ledger.build` contains [`BuildLedger.cpp:81`](../../../../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (debug).
+- `consensus.accept` contains [RCLConsensus.cpp:655/663/686](../../../../src/xrpld/app/consensus/RCLConsensus.cpp#L663) (debug) — `:663` logs **once per transaction** in the canonical set.
+- `tx.apply` and the other `spans.names` entries in [`../regression-metrics.json`](../regression-metrics.json) are affected the same way.
+
+Raising the level admits more of those statements and inflates the p50/p95/p99 of the very
+spans the gate measures; lowering it deflates them. Neither shows up as a regression, because
+the baseline moves with it — the gate simply starts measuring a different configuration.
+
+**Changing the workload log level therefore invalidates this baseline and requires
+re-capturing it.** Treat it exactly like a deliberate performance change: follow
+[Refreshing the baseline](#refreshing-the-baseline), and note the level change in the PR so
+the reviewer knows why the numbers moved. In particular, do not capture a baseline while the
+harness is running at `debug` — see the runbook's "Why not `debug`" note; if you need
+debug-level detail, enable it per partition **after** the baseline exists.
+
 ## Schema
 
 ```json
