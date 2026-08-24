@@ -338,7 +338,10 @@ SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectT
 }
 
 bool
-SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
+SHAMapStoreImp::copyNode(
+    std::uint64_t& nodeCount,
+    std::uint64_t& rescuedCount,
+    SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
     auto obj = dbRotating_->fetchNodeObject(
@@ -346,6 +349,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
     if (!obj)
     {
         rescueNode(node, NodeObjectType::AccountNode);
+        ++rescuedCount;
     }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
@@ -468,12 +472,13 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
+            std::uint64_t rescuedCount = 0;
 
             try
             {
                 validatedLedger->stateMap().snapShot(false)->visitNodes(
-                    [this, &nodeCount](SHAMapTreeNode const& node) {
-                        return copyNode(nodeCount, node);
+                    [this, &nodeCount, &rescuedCount](SHAMapTreeNode const& node) {
+                        return copyNode(nodeCount, rescuedCount, node);
                     });
             }
             catch (SHAMapMissingNode const& e)
@@ -495,12 +500,14 @@ SHAMapStoreImp::run()
             {
                 // Only log if we completed without a "health" abort
                 auto const copyDuplications = dbRotating_->getAndResetDuplicationCount();
-                JLOG(journal_.debug()) << "copied ledger " << validatedSeq << " duplicated "
-                                       << copyDuplications << " / " << nodeCount << " nodes";
+                JLOG(journal_.debug())
+                    << "copied ledger " << validatedSeq << " duplicated " << copyDuplications
+                    << " / " << nodeCount << " nodes. Rescued " << rescuedCount << " nodes";
             }
 
             JLOG(journal_.debug()) << "freshening caches";
-            freshenCaches();
+            rescuedCount = 0;
+            freshenCaches(rescuedCount);
             switch (healthWait())
             {
                 case HealthResult::Stopping:
@@ -511,7 +518,8 @@ SHAMapStoreImp::run()
                     break;
             }
             // Only log if we completed without a "health" abort
-            JLOG(journal_.debug()) << validatedSeq << " freshened caches";
+            JLOG(journal_.debug())
+                << validatedSeq << " freshened caches. Rescued " << rescuedCount << " nodes.";
 
             JLOG(journal_.trace()) << "Making a new backend";
             auto newBackend = makeBackendRotating();
@@ -738,11 +746,11 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 }
 
 void
-SHAMapStoreImp::freshenCaches()
+SHAMapStoreImp::freshenCaches(std::uint64_t& rescuedCount)
 {
-    if (freshenCache(*treeNodeCache_))
+    if (freshenCache(*treeNodeCache_, rescuedCount))
         return;
-    freshenCache(app_.getMasterTransaction().getCache());
+    freshenCache(app_.getMasterTransaction().getCache(), rescuedCount);
 }
 
 void
