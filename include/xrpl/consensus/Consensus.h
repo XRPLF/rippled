@@ -669,7 +669,8 @@ private:
 
     /**
      * Create the establish-phase span if not yet active.
-     *  Called on each phaseEstablish() invocation; no-op while span is live.
+     *  Called on each phaseEstablish() invocation; no-op while span is live,
+     *  so the entry-state attributes it sets are written exactly once.
      */
     void
     startEstablishTracing();
@@ -683,6 +684,9 @@ private:
 
     /**
      * End the establish span when transitioning to the accepted phase.
+     *  Records the terminal avalanche_state before ending the span. A round
+     *  that instead loses the establish span to a wrongLedger recovery omits
+     *  the attribute rather than reporting a stale regime.
      */
     void
     endEstablishTracing();
@@ -783,6 +787,22 @@ Consensus<Adaptor>::startRoundInternal(
     openSpan_.emplace(
         telemetry::SpanGuard::childSpan(
             telemetry::consensus::span::phaseOpen, adaptor_.roundSpanContext()));
+    if (*openSpan_)
+    {
+        namespace cs = telemetry::consensus::span;
+        // Which entry path created this span. A handleWrongLedger recovery
+        // re-enters startRoundInternal and emplaces a SECOND phase.open span
+        // under the same round span, so without this the two are
+        // indistinguishable in a trace.
+        openSpan_->setAttribute(
+            cs::attr::startReason,
+            reason == StartRoundReason::Recovered ? std::string_view{cs::val::startRecovered}
+                                                  : std::string_view{cs::val::startInitial});
+        // Read from the parameter, not previousLedger_, which is not assigned
+        // until further down this function. Feeds the sinceClose calculation
+        // in phaseOpen().
+        openSpan_->setAttribute(cs::attr::previousCloseAgree, prevLedger.closeAgree());
+    }
     // On the Recovered path, fire phase.open here because startRoundTracing
     // (which fires it for the Initial path) is not called on re-entry. On
     // the Initial path this is a no-op because the round span hasn't been
@@ -817,10 +837,25 @@ Consensus<Adaptor>::startRoundInternal(
     playbackProposals();
     CLOG(clog) << "number of peer proposals,previous proposers: " << currPeerPositions_.size()
                << ',' << prevProposers_ << ". ";
-    if (currPeerPositions_.size() > (prevProposers_ / 2))
+    // We may be falling behind, don't wait for the timer
+    // consider closing the ledger immediately
+    bool const closeImmediately = currPeerPositions_.size() > (prevProposers_ / 2);
+    // Annotate before the timerEntry() below, which can reach closeLedger()
+    // and end this span.
+    if (openSpan_ && *openSpan_)
     {
-        // We may be falling behind, don't wait for the timer
-        // consider closing the ledger immediately
+        namespace cs = telemetry::consensus::span;
+        // Positions already in hand once playbackProposals() has replayed the
+        // buffered ones — the head start this round began with. Pairs with
+        // peer_positions_at_close on the same span.
+        openSpan_->setAttribute(
+            cs::attr::peerPositionsAtOpen, static_cast<int64_t>(currPeerPositions_.size()));
+        // Whether the round skipped waiting for the timer because enough peers
+        // had already closed.
+        openSpan_->setAttribute(cs::attr::earlyCloseTriggered, closeImmediately);
+    }
+    if (closeImmediately)
+    {
         CLOG(clog) << "consider closing the ledger immediately. ";
         timerEntry(now_, clog);
     }
@@ -1560,6 +1595,11 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
             cs::attr::openDurationMs, static_cast<int64_t>(openTime_.read().count()));
         openSpan_->setAttribute(
             cs::attr::peerPositionsAtClose, static_cast<int64_t>(currPeerPositions_.size()));
+        // Candidate transaction sets held at close. Read before our own
+        // position is added below, so this counts only what peers shared. A
+        // low count against a high peer_positions_at_close means tx-set
+        // fetches did not land, not that peers disagreed.
+        openSpan_->setAttribute(cs::attr::txSetsAcquired, static_cast<int64_t>(acquired_.size()));
     }
     openSpan_.reset();
     phase_ = ConsensusPhase::Establish;
@@ -2113,6 +2153,16 @@ Consensus<Adaptor>::startEstablishTracing()
     if (*establishSpan_)
     {
         establishSpanContext_ = establishSpan_->spanContext();
+        // Disputes carried into the phase from the positions held at close.
+        // Set once (this function early-returns while the span is live),
+        // unlike disputes_count, which updateEstablishTracing() overwrites
+        // every iteration and so only ever reports the final value.
+        if (result_)
+        {
+            establishSpan_->setAttribute(
+                telemetry::consensus::span::attr::disputesCountInitial,
+                static_cast<int64_t>(result_->disputes.size()));
+        }
     }
 }
 
@@ -2138,6 +2188,15 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::endEstablishTracing()
 {
+    // Terminal close-time convergence regime, recorded once before the span
+    // ends. The derived avalanche_threshold on consensus.update_positions is
+    // a weight, not the state, and cannot be inverted back to it.
+    if (establishSpan_ && *establishSpan_)
+    {
+        establishSpan_->setAttribute(
+            telemetry::consensus::span::attr::avalancheState,
+            telemetry::consensus::span::avalancheStateLabel(closeTimeAvalancheState_));
+    }
     establishSpan_.reset();
     establishSpanContext_ = telemetry::SpanContext{};
 }
