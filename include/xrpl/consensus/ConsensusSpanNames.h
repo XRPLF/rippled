@@ -22,8 +22,11 @@
  *    |     Created: Consensus::startRoundInternal()
  *    |     Ended:   Consensus::closeLedger()
  *    |     Attrs:   start_reason, previous_close_agree, peer_positions_at_open,
- *    |              early_close_triggered (all at start); open_duration_ms,
- *    |              peer_positions_at_close, tx_sets_acquired (all at end)
+ *    |              early_close_triggered (at start); open_duration_ms,
+ *    |              peer_positions_at_close, tx_sets_acquired, close_reason,
+ *    |              proposers_validated (at close; absent if the round is
+ *    |              recovered or simulated, neither of which reaches
+ *    |              closeLedger())
  *    |
  *    +-- consensus.proposal.send                 [main thread]
  *    |     Created: Adaptor::propose()
@@ -36,9 +39,9 @@
  *    +-- consensus.establish                     [main thread, child]
  *    |     Created: Consensus::startEstablishTracing()
  *    |     Ended:   Consensus::phaseEstablish() on accept
- *    |     Attrs:   disputes_count_initial (at start); converge_percent,
- *    |              establish_count, proposers, disputes_count (overwritten
- *    |              each iteration); avalanche_state (terminal, at end)
+ *    |     Attrs:   converge_percent, establish_count, proposers,
+ *    |              disputes_count (overwritten each iteration);
+ *    |              close_time_avalanche_state (terminal, at end)
  *    |
  *    +-- consensus.update_positions              [main thread]
  *    |     Created: Consensus::updateOurPositions()
@@ -191,10 +194,11 @@ inline constexpr auto earlyCloseTriggered = makeStr("early_close_triggered");
 /**
  * Open-phase end metadata (set on consensus.phase.open before reset).
  *
- * A low `tx_sets_acquired` next to a high peer_positions_at_close points at
- * missing tx-set fetches rather than at disagreement. `close_reason` plus
- * `proposers_validated` separate "the network moved on without us" from "the
- * network was quiet".
+ * A low `tx_sets_acquired` next to a high peer_positions_at_close suggests
+ * tx-set fetches did not land; the reverse skew is also possible, because
+ * handleWrongLedger clears currPeerPositions_ but not acquired_.
+ * `close_reason` plus `proposers_validated` separate "the network moved on
+ * without us" from "the network was quiet".
  */
 inline constexpr auto openDurationMs = makeStr("open_duration_ms");
 inline constexpr auto peerPositionsAtClose = makeStr("peer_positions_at_close");
@@ -210,15 +214,13 @@ inline constexpr auto txCountOpen = makeStr("tx_count_open");
  */
 inline constexpr auto proposersFinished = makeStr("proposers_finished");
 /**
- * Establish-phase start/end metadata.
+ * Establish-phase end metadata.
  *
- * Both are set once, unlike `disputes_count`, which
- * updateEstablishTracing() overwrites every iteration.
- * `avalanche_state` is the terminal regime; the derived
- * `avalanche_threshold` cannot be inverted back to it.
+ * The terminal close-time regime, set once. Qualified because DisputedTx
+ * tracks a SECOND, per-transaction avalanche; this is not that one. The
+ * derived `avalanche_threshold` cannot be inverted back to it.
  */
-inline constexpr auto disputesCountInitial = makeStr("disputes_count_initial");
-inline constexpr auto avalancheState = makeStr("avalanche_state");
+inline constexpr auto closeTimeAvalancheState = makeStr("close_time_avalanche_state");
 /**
  * Accept/apply enrichment.
  */
@@ -331,11 +333,13 @@ inline constexpr auto phaseAccepted = makeStr("accepted");
 // start_reason values (how startRoundInternal was entered).
 inline constexpr auto startInitial = makeStr("initial");
 inline constexpr auto startRecovered = makeStr("recovered");
-// avalanche_state values, one per ConsensusParms::AvalancheState enumerator.
+// close_time_avalanche_state values, one per AvalancheState enumerator.
 inline constexpr auto avalancheInit = makeStr("init");
 inline constexpr auto avalancheMid = makeStr("mid");
 inline constexpr auto avalancheLate = makeStr("late");
 inline constexpr auto avalancheStuck = makeStr("stuck");
+// Sentinel for an unmapped enumerator, matching to_string(ConsensusPhase).
+inline constexpr auto unknown = makeStr("unknown");
 // close_reason values, one per LedgerCloseReason enumerator. keep_open is
 // never emitted: the attribute is only set on the path that closes.
 inline constexpr auto closeKeepOpen = makeStr("keep_open");
@@ -354,8 +358,8 @@ inline constexpr auto closeNormal = makeStr("normal");
  * @param state The state held by Consensus::closeTimeAvalancheState_.
  * @return The wire label; one of val::avalanche*.
  *
- * @note No default arm, so a new enumerator is a compiler warning rather than
- * a silently reused label.
+ * @note No default arm, so a new enumerator is a -Wswitch warning; the
+ * fall-through returns "unknown" rather than a plausible-looking regime.
  */
 [[nodiscard]] constexpr std::string_view
 avalancheStateLabel(ConsensusParms::AvalancheState const state)
@@ -371,7 +375,7 @@ avalancheStateLabel(ConsensusParms::AvalancheState const state)
         case ConsensusParms::AvalancheState::Stuck:
             return val::avalancheStuck;
     }
-    return val::avalancheInit;
+    return val::unknown;
 }
 
 /**
@@ -380,8 +384,8 @@ avalancheStateLabel(ConsensusParms::AvalancheState const state)
  * @param reason The value returned by whyCloseLedger().
  * @return The wire label; one of val::close*.
  *
- * @note No default arm, so a new enumerator is a compiler warning rather than
- * a silently reused label. `keep_open` is mapped but never emitted.
+ * @note No default arm, so a new enumerator is a -Wswitch warning; the
+ * fall-through returns "unknown". `keep_open` is mapped but never emitted.
  */
 [[nodiscard]] constexpr std::string_view
 closeReasonLabel(LedgerCloseReason const reason)
@@ -399,7 +403,7 @@ closeReasonLabel(LedgerCloseReason const reason)
         case LedgerCloseReason::Normal:
             return val::closeNormal;
     }
-    return val::closeKeepOpen;
+    return val::unknown;
 }
 
 }  // namespace xrpl::telemetry::consensus::span

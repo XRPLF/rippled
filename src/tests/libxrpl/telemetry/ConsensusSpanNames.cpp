@@ -78,8 +78,8 @@ TEST(ConsensusSpanNames, close_reason_label_is_usable_at_compile_time)
 
 TEST(ConsensusSpanNames, establish_attribute_keys)
 {
-    EXPECT_EQ(std::string_view(attr::disputesCountInitial), "disputes_count_initial");
-    EXPECT_EQ(std::string_view(attr::avalancheState), "avalanche_state");
+    // Qualified: DisputedTx tracks a second, per-transaction avalanche.
+    EXPECT_EQ(std::string_view(attr::closeTimeAvalancheState), "close_time_avalanche_state");
 }
 
 TEST(ConsensusSpanNames, start_reason_values_are_the_two_entry_paths)
@@ -97,6 +97,7 @@ TEST(ConsensusSpanNames, avalanche_state_values_match_the_parms_enum)
     EXPECT_EQ(std::string_view(val::avalancheMid), "mid");
     EXPECT_EQ(std::string_view(val::avalancheLate), "late");
     EXPECT_EQ(std::string_view(val::avalancheStuck), "stuck");
+    EXPECT_EQ(std::string_view(val::unknown), "unknown");
 }
 
 TEST(ConsensusSpanNames, avalanche_state_label_maps_every_enum_state)

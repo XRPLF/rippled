@@ -694,8 +694,7 @@ private:
 
     /**
      * Create the establish-phase span if not yet active.
-     *  Called on each phaseEstablish() invocation; no-op while span is live,
-     *  so the entry-state attributes it sets are written exactly once.
+     *  Called on each phaseEstablish() invocation; no-op while span is live.
      */
     void
     startEstablishTracing();
@@ -708,10 +707,9 @@ private:
     updateEstablishTracing();
 
     /**
-     * End the establish span when transitioning to the accepted phase.
-     *  Records the terminal avalanche_state before ending the span. A round
-     *  that instead loses the establish span to a wrongLedger recovery omits
-     *  the attribute rather than reporting a stale regime.
+     * End the establish span, recording its terminal regime.
+     *  Also called from startRoundInternal() on a wrongLedger recovery, so a
+     *  round that never reaches Accepted still reports the regime it reached.
      */
     void
     endEstablishTracing();
@@ -799,11 +797,12 @@ Consensus<Adaptor>::startRoundInternal(
     CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::Open, "
                   "previous ledgerID: "
                << prevLedgerID << ", seq: " << prevLedger.seq() << ". ";
-    // Reset establishSpan_ so a wrongLedger recovery mid-establish doesn't
-    // leak the prior round's span into the new one (startEstablishTracing
-    // early-returns when establishSpan_ is populated).
-    establishSpan_.reset();
-    establishSpanContext_ = telemetry::SpanContext{};
+    // End establishSpan_ so a wrongLedger recovery mid-establish doesn't leak
+    // the prior round's span into the new one (startEstablishTracing
+    // early-returns when establishSpan_ is populated). Via
+    // endEstablishTracing() so the recovered round still records its terminal
+    // regime; closeTimeAvalancheState_ is not reset until further down.
+    endEstablishTracing();
     // Child of the round span via its captured context: parent phase.open
     // explicitly under roundSpanContext_. An invalid round context (round span
     // not yet created) yields a null guard. openSpan_ is a thread-free
@@ -2180,14 +2179,6 @@ Consensus<Adaptor>::startEstablishTracing()
     if (*establishSpan_)
     {
         establishSpanContext_ = establishSpan_->spanContext();
-        // Disputes carried in from the positions held at close. Set once:
-        // this function early-returns while the span is live.
-        if (result_)
-        {
-            establishSpan_->setAttribute(
-                telemetry::consensus::span::attr::disputesCountInitial,
-                static_cast<int64_t>(result_->disputes.size()));
-        }
     }
 }
 
@@ -2217,7 +2208,7 @@ Consensus<Adaptor>::endEstablishTracing()
     if (establishSpan_ && *establishSpan_)
     {
         establishSpan_->setAttribute(
-            telemetry::consensus::span::attr::avalancheState,
+            telemetry::consensus::span::attr::closeTimeAvalancheState,
             telemetry::consensus::span::avalancheStateLabel(closeTimeAvalancheState_));
     }
     establishSpan_.reset();

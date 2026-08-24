@@ -257,7 +257,7 @@ TEST(ConsensusTest, why_close_ledger_reports_the_deciding_branch)
     ConsensusParms const p{};
 
     // Bizarre times forcibly close. These vectors ALSO satisfy the
-    // others-closed condition (8 > 10/2), so they pin the precedence: the
+    // others-closed condition (10+10 > 10/2), so they pin the precedence: the
     // anomaly check runs first.
     EXPECT_EQ(whyCloseLedger(true, 10, 10, 10, -10s, 10s, 1s, 1s, p), LedgerCloseReason::Anomaly);
     EXPECT_EQ(whyCloseLedger(true, 10, 10, 10, 100h, 10s, 1s, 1s, p), LedgerCloseReason::Anomaly);
@@ -272,14 +272,39 @@ TEST(ConsensusTest, why_close_ledger_reports_the_deciding_branch)
     EXPECT_EQ(whyCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, p), LedgerCloseReason::KeepOpen);
     EXPECT_EQ(whyCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p), LedgerCloseReason::Idle);
 
-    // Transactions present, but under ledgerMinClose (2s).
-    EXPECT_EQ(whyCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, p), LedgerCloseReason::KeepOpen);
+    // Under ledgerMinClose (2s). prevRoundTime is 2s so prevRoundTime/2 is 1s
+    // and openTime is NOT under it -- this vector isolates the min-close
+    // branch, which the 10s variant does not (there openTime < 5s trips the
+    // too-fast branch as well, so deleting min-close entirely still passes).
+    EXPECT_EQ(whyCloseLedger(true, 10, 0, 0, 2s, 10s, 1s, 10s, p), LedgerCloseReason::KeepOpen);
 
     // Past ledgerMinClose but under prevRoundTime/2 (5s), so still too fast.
     EXPECT_EQ(whyCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p), LedgerCloseReason::KeepOpen);
 
     // Both minimum-open constraints satisfied.
     EXPECT_EQ(whyCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p), LedgerCloseReason::Normal);
+}
+
+TEST(ConsensusTest, why_close_ledger_others_closed_boundary_is_exclusive)
+{
+    using namespace std::chrono_literals;
+    SCOPED_TRACE("others-closed boundary");
+
+    // The branch is `(closed + validated) > prevProposers / 2`, strict. With
+    // prevProposers 10 the threshold is 5, so 5 must NOT close and 6 must.
+    // Flipping > to >= would otherwise go unnoticed.
+    ConsensusParms const p{};
+
+    EXPECT_EQ(whyCloseLedger(true, 10, 3, 2, 10s, 10s, 10s, 10s, p), LedgerCloseReason::Normal);
+    EXPECT_EQ(
+        whyCloseLedger(true, 10, 3, 3, 10s, 10s, 10s, 10s, p), LedgerCloseReason::OthersClosed);
+
+    // Integer truncation: 11/2 is 5, so 5 still does not close.
+    EXPECT_EQ(whyCloseLedger(true, 11, 3, 2, 10s, 10s, 10s, 10s, p), LedgerCloseReason::Normal);
+
+    // Others-closed outranks both the no-transactions and the minimum-open
+    // branches, which would otherwise return KeepOpen for these inputs.
+    EXPECT_EQ(whyCloseLedger(false, 10, 3, 5, 1s, 1s, 1s, 10s, p), LedgerCloseReason::OthersClosed);
 }
 
 TEST(ConsensusTest, why_close_ledger_idle_boundary_is_inclusive)
