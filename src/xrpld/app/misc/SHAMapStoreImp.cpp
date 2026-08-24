@@ -6,6 +6,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -27,12 +28,10 @@
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/directory.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -94,7 +93,7 @@ SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 
 SHAMapStoreImp::SHAMapStoreImp(
     Application& app,
-    NodeStore::Scheduler& scheduler,
+    node_store::Scheduler& scheduler,
     beast::Journal journal)
     : app_(app)
     , scheduler_(scheduler)
@@ -165,7 +164,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 }
 
-std::unique_ptr<NodeStore::Database>
+std::unique_ptr<node_store::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(Sections::kNodeDatabase);
@@ -185,7 +184,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
     }
 
-    std::unique_ptr<NodeStore::Database> db;
+    std::unique_ptr<node_store::Database> db;
 
     if (deleteInterval_ != 0u)
     {
@@ -201,7 +200,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 
         // Create NodeStore with two backends to allow online deletion of
         // data
-        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
             scheduler_,
             readThreads,
             std::move(writableBackend),
@@ -210,11 +209,11 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             app_.getJournal(kNodeStoreName));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
-        db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
+        db.reset(dynamic_cast<node_store::Database*>(dbr.release()));
     }
     else
     {
-        db = NodeStore::Manager::instance().makeDatabase(
+        db = node_store::Manager::instance().makeDatabase(
             megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler_,
             readThreads,
@@ -257,7 +256,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
     auto obj = dbRotating_->fetchNodeObject(
-        node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
+        node.getHash().asUInt256(), 0, node_store::FetchType::Synchronous, true);
     if (!obj)
     {
         XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
@@ -374,7 +373,7 @@ SHAMapStoreImp::run()
             // exception) also clear the flag.
             struct RotationExposureGuard
             {
-                NodeStore::DatabaseRotating& db;
+                node_store::DatabaseRotating& db;
                 ~RotationExposureGuard()
                 {
                     db.setRotationInFlight(false);
@@ -426,10 +425,10 @@ SHAMapStoreImp::dbPaths()
     if (boost::iequals(get(section, Keys::kType), "memory"))
         return;
 
-    boost::filesystem::path dbPath = get(section, Keys::kPath);
-    if (boost::filesystem::exists(dbPath))
+    std::filesystem::path dbPath = get(section, Keys::kPath);
+    if (std::filesystem::exists(dbPath))
     {
-        if (!boost::filesystem::is_directory(dbPath))
+        if (!std::filesystem::is_directory(dbPath))
         {
             journal_.error() << "node db path must be a directory. " << dbPath.string();
             Throw<std::runtime_error>("node db path must be a directory.");
@@ -437,7 +436,7 @@ SHAMapStoreImp::dbPaths()
     }
     else
     {
-        boost::filesystem::create_directories(dbPath);
+        std::filesystem::create_directories(dbPath);
     }
 
     SavedState state = stateDb_.getState();
@@ -448,8 +447,8 @@ SHAMapStoreImp::dbPaths()
                 return false;
 
             // Check if configured "path" matches stored directory path
-            using namespace boost::filesystem;
-            auto const stored{path(sPath)};
+            using namespace std::filesystem;
+            auto const stored{std::filesystem::path(sPath)};
             if (stored.parent_path() == dbPath)
                 return false;
 
@@ -467,9 +466,9 @@ SHAMapStoreImp::dbPaths()
     bool writableDbExists = false;
     bool archiveDbExists = false;
 
-    std::vector<boost::filesystem::path> pathsToDelete;
-    for (boost::filesystem::directory_iterator it(dbPath);
-         it != boost::filesystem::directory_iterator();
+    std::vector<std::filesystem::path> pathsToDelete;
+    for (std::filesystem::directory_iterator it(dbPath);
+         it != std::filesystem::directory_iterator();
          ++it)
     {
         if (state.writableDb == it->path().string())
@@ -490,7 +489,7 @@ SHAMapStoreImp::dbPaths()
         (!archiveDbExists && !state.archiveDb.empty()) || (writableDbExists != archiveDbExists) ||
         state.writableDb.empty() != state.archiveDb.empty())
     {
-        boost::filesystem::path stateDbPathName = app_.config().legacy(Sections::kDatabasePath);
+        std::filesystem::path stateDbPathName = app_.config().legacy(Sections::kDatabasePath);
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
@@ -512,15 +511,15 @@ SHAMapStoreImp::dbPaths()
     }
 
     // The necessary directories exist. Now, remove any others.
-    for (boost::filesystem::path const& p : pathsToDelete)
-        boost::filesystem::remove_all(p);
+    for (std::filesystem::path const& p : pathsToDelete)
+        std::filesystem::remove_all(p);
 }
 
-std::unique_ptr<NodeStore::Backend>
+std::unique_ptr<node_store::Backend>
 SHAMapStoreImp::makeBackendRotating(std::string path)
 {
     Section section{app_.config().section(Sections::kNodeDatabase)};
-    boost::filesystem::path newPath;
+    std::filesystem::path newPath;
 
     if (!path.empty())
     {
@@ -528,14 +527,11 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     else
     {
-        boost::filesystem::path p = get(section, Keys::kPath);
-        p /= dbPrefix_;
-        p += ".%%%%";
-        newPath = boost::filesystem::unique_path(p);
+        newPath = uniqueRandomPath(get(section, Keys::kPath), dbPrefix_ + ".");
     }
     section.set(Keys::kPath, newPath.string());
 
-    auto backend{NodeStore::Manager::instance().makeBackend(
+    auto backend{node_store::Manager::instance().makeBackend(
         section,
         megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
         scheduler_,
@@ -702,7 +698,7 @@ SHAMapStoreImp::minimumOnline() const
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal)
+makeSHAMapStore(Application& app, node_store::Scheduler& scheduler, beast::Journal journal)
 {
     return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }

@@ -8,10 +8,12 @@ RUN mkdir -p ~/.config/nix && \
 
 # Copy our source and setup our working dir.
 COPY nix/ci-env.nix /tmp/build/nix/ci-env.nix
+COPY nix/linux.nix /tmp/build/nix/linux.nix
 COPY nix/packages.nix /tmp/build/nix/packages.nix
 COPY nix/utils.nix /tmp/build/nix/utils.nix
 COPY flake.nix /tmp/build/
 COPY flake.lock /tmp/build/
+COPY rust-toolchain.toml /tmp/build/
 WORKDIR /tmp/build
 
 FROM builder-source AS builder
@@ -56,7 +58,7 @@ ENV GIT_SSL_CAINFO="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
 # Externally-built dynamically-linked ELF binaries hard-code the loader path
 # (e.g. /lib64/ld-linux-x86-64.so.2) in their PT_INTERP header. Install it
 # from the Nix store when the base image doesn't already provide one.
-COPY nix/docker/loader-path.sh /tmp/loader-path.sh
+COPY bin/default-loader-path.sh /tmp/loader-path.sh
 
 RUN <<EOF
 target="$(/tmp/loader-path.sh)"

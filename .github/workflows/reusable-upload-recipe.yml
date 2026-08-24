@@ -40,18 +40,18 @@ defaults:
 jobs:
   upload:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-2e25435
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-a0074f8
     env:
       REMOTE_NAME: ${{ inputs.remote_name }}
       CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.remote_username }}
       CONAN_PASSWORD_XRPLF: ${{ secrets.remote_password }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Generate build version number
-        id: version
-        uses: ./.github/actions/generate-version
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
 
       - name: Set up Conan
         uses: ./.github/actions/setup-conan
@@ -64,8 +64,8 @@ jobs:
 
       - name: Upload Conan recipe (version)
         run: |
-          conan export . --version=${{ steps.version.outputs.version }}
-          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.version.outputs.version }}
+          conan export . --version=${{ steps.release_info.outputs.version }}
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.release_info.outputs.version }}
 
       # When this workflow is triggered by a push event, it will always be when merging into the
       # 'develop' branch, see on-trigger.yml.
@@ -92,4 +92,4 @@ jobs:
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/release
 
     outputs:
-      ref: xrpl/${{ steps.version.outputs.version }}
+      ref: xrpl/${{ steps.release_info.outputs.version }}

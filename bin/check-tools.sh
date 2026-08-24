@@ -15,10 +15,14 @@
 #   - Windows: the core build tools only (CMake, Conan, Git, Python).
 #              MSVC is expected to be provided separately and is not checked here.
 #
-# Some tools (clang-format, doxygen, gcovr, gh, git-cliff, gpg, pre-commit,
-# run-clang-tidy) are present in our Linux CI images and in local development
-# setups, but not in the macOS CI environment. They are checked everywhere
-# except when running in CI on macOS.
+# Some tools (clang-format, clang-tidy, doxygen, gcovr, gh, git-cliff, gpg,
+# pre-commit, run-clang-tidy) are present in our Linux CI images and in local
+# development setups, but not in the macOS CI environment. They are checked
+# everywhere except when running in CI on macOS.
+#
+# Tools that Nix also exposes under a version-suffixed name (`clang-tidy-22`,
+# `g++-15`, ...) are probed under both names: a suffixed name can break while
+# the plain one still works (see mkVersionedToolLinks in nix/packages.nix).
 #
 # Environment variables:
 #   CI                      if set, skip the tools above when on macOS.
@@ -26,12 +30,27 @@
 
 set -uo pipefail
 
+# Version suffixes of the Nix tool links, tracking nix/packages.nix.
+gcc_version=15
+llvm_version=22
+
 missing=()
 checked=0
 
+# tool_path <name>
+# Fully resolved path of a tool, so the snapshots record which derivation
+# provides it. Prints nothing when it isn't on PATH.
+tool_path() {
+    local path
+    path="$(command -v "$1" 2>/dev/null)" || return 0
+    readlink -f "${path}" 2>/dev/null || printf '%s' "${path}"
+}
+
 # check <name> [probe-command...]
-# Runs the probe (default: "<name> --version") quietly. Records <name> as
-# missing if the command is not found or exits non-zero.
+# Runs the probe (default: "<name> --version"), capturing both stdout and
+# stderr, and prints three lines: the status and name, the first non-blank line
+# of the probe output (its version, or the error when it failed), and the tool's
+# resolved path. Records <name> as missing if it is not found or exits non-zero.
 check() {
     local name="$1"
     shift
@@ -40,14 +59,18 @@ check() {
         probe=("${name}" --version)
     fi
 
-    echo "Checking ${name}..."
     checked=$((checked + 1))
-    if "${probe[@]}" | head -n 1; then
-        printf '  [ ok ] %s\n' "${name}"
+    local output version path
+    path="$(tool_path "${name}")"
+    if output="$("${probe[@]}" 2>&1)"; then
+        printf '  ✅ %s\n' "${name}"
     else
-        printf '  [MISS] %s\n' "${name}"
+        printf '  ❌ %s\n' "${name}"
         missing+=("${name}")
     fi
+    version="$(printf '%s\n' "${output}" | grep -m1 '[^[:space:]]' || true)"
+    printf '     %s\n' "${version:-(no output)}"
+    printf '     %s\n' "${path:-(not found)}"
 }
 
 case "$(uname -s)" in
@@ -79,24 +102,35 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     echo "Development tooling:"
     check ccache
     check clang
+    check "clang-${llvm_version}"
     check clang++
+    check "clang++-${llvm_version}"
     check ClangBuildAnalyzer
     check curl
     check file
     check less
     check make
-    check netstat which netstat
+    # net-tools netstat reports "net-tools X.Y"; macOS ships BSD netstat with no
+    # version flag, so fall back to a presence marker there.
+    check netstat sh -c 'command -v netstat >/dev/null && { netstat --version 2>&1 | grep -m1 -oE "net-tools [0-9.]+" || echo present; }'
     check ninja
-    check perl
+    check perl perl -e 'print "$^V\n"'
     check pkg-config
     check vim
-    check zip
+    check zip bash -c 'zip --version 2>&1 | grep -m1 -oE "Zip [0-9.]+"'
 
     # These tools are present in our Linux CI images and in local development
     # setups, but not in the macOS CI environment. So check them everywhere
     # except when running in CI on macOS.
     if [ "${os}" = "linux" ] || [ -z "${CI:-}" ]; then
+        check clang-apply-replacements
+        check "clang-apply-replacements-${llvm_version}"
         check clang-format
+        check "clang-format-${llvm_version}"
+        # clang-tidy leads --version with the LLVM banner, not the version.
+        tidy_probe="--version | grep -m1 -oE 'LLVM version [0-9.]+'"
+        check clang-tidy sh -c "clang-tidy ${tidy_probe}"
+        check "clang-tidy-${llvm_version}" sh -c "clang-tidy-${llvm_version} ${tidy_probe}"
         check dot
         check doxygen
         check gcovr
@@ -107,6 +141,7 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
         # pre-commit, or its alternative implementation prek
         check pre-commit sh -c 'pre-commit --version || prek --version'
         check run-clang-tidy run-clang-tidy --help
+        check "run-clang-tidy-${llvm_version}" "run-clang-tidy-${llvm_version}" --help
     fi
 fi
 
@@ -121,7 +156,7 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check cargo-audit cargo audit --version
     check cargo-llvm-cov cargo llvm-cov --version
     check cargo-nextest cargo nextest --version
-    check clippy clippy-driver --version
+    check clippy-driver
     check rust-analyzer
     check rustc
     check rustfmt
@@ -133,7 +168,11 @@ if [ "${os}" = "linux" ]; then
     echo
     echo "GCC toolchain:"
     check gcc
+    check "gcc-${gcc_version}"
     check g++
+    check "g++-${gcc_version}"
+    check cpp
+    check "cpp-${gcc_version}"
     check gcov
 
     echo
@@ -158,9 +197,9 @@ else
     checked=$((checked + 1))
     tmp_clone="$(mktemp -d)"
     if git clone --depth 1 https://github.com/XRPLF/actions.git "${tmp_clone}/actions" >/dev/null 2>&1; then
-        printf '  [ ok ] git clone over HTTPS\n'
+        printf '  ✅ git clone over HTTPS\n'
     else
-        printf '  [MISS] git clone over HTTPS\n'
+        printf '  ❌ git clone over HTTPS\n'
         missing+=("git-https-clone")
     fi
     rm -rf "${tmp_clone}"
@@ -168,9 +207,9 @@ fi
 
 echo
 if [ "${#missing[@]}" -eq 0 ]; then
-    echo "All ${checked} checked tools are present and runnable."
+    echo "✅ All ${checked} checked tools are present and runnable."
 else
-    echo "Missing or non-functional tools (${#missing[@]} of ${checked}):" >&2
+    echo "❌ Missing or non-functional tools (${#missing[@]} of ${checked}):" >&2
     for tool in "${missing[@]}"; do
         echo "  - ${tool}" >&2
     done

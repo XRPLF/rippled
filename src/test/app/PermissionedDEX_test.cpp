@@ -35,6 +35,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -59,7 +60,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     [[nodiscard]] static bool
     offerExists(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
-        return static_cast<bool>(env.le(keylet::offer(account.id(), offerSeq)));
+        return static_cast<bool>(
+            env.le(keylet::offer(account.id(), SeqProxy::rawSequence(offerSeq))));
     }
 
     [[nodiscard]] static bool
@@ -84,11 +86,11 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             auto const& indexes = page->getFieldV256(sfIndexes);
             return std::ranges::any_of(indexes, [&](auto const& index) {
-                return index == keylet::offer(account, offerSeq).key;
+                return index == keylet::offer(account, SeqProxy::rawSequence(offerSeq)).key;
             });
         };
 
-        auto const sle = env.le(keylet::offer(account.id(), offerSeq));
+        auto const sle = env.le(keylet::offer(account.id(), SeqProxy::rawSequence(offerSeq)));
         if (!sle)
             return false;
         if (sle->getFieldAmount(sfTakerGets) != takerGets)
@@ -147,7 +149,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     static std::optional<uint256>
     getDefaultOfferDirKey(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
-        if (auto const sle = env.le(keylet::offer(account.id(), offerSeq)))
+        if (auto const sle = env.le(keylet::offer(account.id(), SeqProxy::rawSequence(offerSeq))))
             return Keylet(ltDIR_NODE, (*sle)[sfBookDirectory]).key;
 
         return {};
@@ -1244,7 +1246,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-            auto const sleHybridOffer = env.le(keylet::offer(bob.id(), hybridOfferSeq));
+            auto const sleHybridOffer =
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(hybridOfferSeq)));
             if (!BEAST_EXPECT(sleHybridOffer))
                 return;
             auto const openDir =
@@ -1277,7 +1280,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             BEAST_EXPECT(offerExists(env, bob, regularOfferSeq));
             BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-            auto const sleHybridOffer = env.le(keylet::offer(bob.id(), hybridOfferSeq));
+            auto const sleHybridOffer =
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(hybridOfferSeq)));
             if (!BEAST_EXPECT(sleHybridOffer))
                 return;
             auto const openDir =
@@ -1570,7 +1574,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env(offer(bob, XRP(10), USD(10)), Txflags(tfHybrid), Domain(domainID));
             env.close();
 
-            auto const sleOffer = env.le(keylet::offer(bob.id(), bobOfferSeq));
+            auto const sleOffer =
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobOfferSeq)));
             BEAST_EXPECT(sleOffer);
             BEAST_EXPECT(sleOffer->getFieldH256(sfBookDirectory) == domainDir);
             BEAST_EXPECT(sleOffer->getFieldArray(sfAdditionalBooks).size() == 1);
@@ -1666,7 +1671,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         // Directly manipulate the offer SLE in the open ledger so that
         // sfAdditionalBooks is present but empty (size 0). This is the
         // malformed state that fixCleanup3_1_3 is designed to catch.
-        auto const offerKey = keylet::offer(bob.id(), bobOfferSeq);
+        auto const offerKey = keylet::offer(bob.id(), SeqProxy::rawSequence(bobOfferSeq));
         env.app().getOpenLedger().modify([&offerKey](OpenView& view, beast::Journal) {
             auto const sle = view.read(offerKey);
             if (!sle)
@@ -1735,7 +1740,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         env.close();
 
         // After crossing, Alice's remaining offer should be placed.
-        auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
+        auto const sle = env.le(keylet::offer(alice_.id(), SeqProxy::rawSequence(aliceOfferSeq)));
         BEAST_EXPECT(sle);
         BEAST_EXPECT(sle->isFieldPresent(sfAdditionalBooks));
         BEAST_EXPECT(sle->getFieldArray(sfAdditionalBooks).size() == 1);
@@ -1816,7 +1821,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.fund(XRP(1000), carol);
             env.close();
 
-            env(ledgerStateFix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
+            env(ledger_state_fix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
         }
 
         {
@@ -1829,13 +1834,13 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             // BookExchangeRate fixes require sfBookDirectory.
-            auto missingBookDirectory = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            auto missingBookDirectory = ledger_state_fix::bookExchangeRate(carol, uint256{1});
             missingBookDirectory.removeMember(sfBookDirectory.jsonName);
             env(missingBookDirectory, Ter(temINVALID));
 
             // BookExchangeRate fixes reject fields that belong to other
             // LedgerStateFix types.
-            auto extraOwner = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            auto extraOwner = ledger_state_fix::bookExchangeRate(carol, uint256{1});
             extraOwner[sfOwner.jsonName] = carol.human();
             env(extraOwner, Ter(temINVALID));
         }
@@ -1847,7 +1852,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             {
                 // Preclaim check: the target directory must exist.
-                env(ledgerStateFix::bookExchangeRate(setup.carol, uint256{1}),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, uint256{1}),
                     Fee(fixFee),
                     Ter(tecOBJECT_NOT_FOUND));
             }
@@ -1861,7 +1866,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                 BEAST_EXPECT(ownerDirSle);
                 BEAST_EXPECT(!ownerDirSle->isFieldPresent(sfExchangeRate));
 
-                env(ledgerStateFix::bookExchangeRate(setup.carol, ownerDir.key),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, ownerDir.key),
                     Fee(fixFee),
                     Ter(tecNO_PERMISSION));
             }
@@ -1873,7 +1878,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                 env(offer(setup.bob, XRP(100), setup.usd(40)));
                 env.close();
 
-                auto const sle = env.le(keylet::offer(setup.bob.id(), bobOfferSeq));
+                auto const sle =
+                    env.le(keylet::offer(setup.bob.id(), SeqProxy::rawSequence(bobOfferSeq)));
                 BEAST_EXPECT(sle);
 
                 auto const dirKey = sle->getFieldH256(sfBookDirectory);
@@ -1885,7 +1891,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                     BEAST_EXPECT(exchangeRate == quality);
                 }
 
-                env(ledgerStateFix::bookExchangeRate(setup.carol, dirKey),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, dirKey),
                     Fee(fixFee),
                     Ter(tecNO_PERMISSION));
             }
@@ -1907,7 +1913,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env(offer(alice_, USD(100), XRP(300)), Txflags(tfHybrid), Domain(domainID));
             env.close();
 
-            auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
+            auto const sle =
+                env.le(keylet::offer(alice_.id(), SeqProxy::rawSequence(aliceOfferSeq)));
             BEAST_EXPECT(sle);
 
             auto const openDirKey =
@@ -1932,7 +1939,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             auto const fixFee = drops(env.current()->fees().increment);
-            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey), Fee(fixFee));
+            env(ledger_state_fix::bookExchangeRate(carol_, openDirKey), Fee(fixFee));
             env.close();
 
             // Confirm sfExchangeRate now matches the key quality.
@@ -1947,7 +1954,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             }
 
             // Submitting again should fail — nothing to fix.
-            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey),
+            env(ledger_state_fix::bookExchangeRate(carol_, openDirKey),
                 Fee(fixFee),
                 Ter(tecNO_PERMISSION));
         }
@@ -2001,6 +2008,198 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testDomainOfferInWrongBook(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "Domain offer indexed in the wrong domain book"
+                 << (fixEnabled ? " (fixCleanup3_4_0 enabled)" : " (fixCleanup3_4_0 disabled)");
+
+        // Bob (a member of domains A and B) places an offer in domain A's
+        // book, which we then corrupt to claim domain B while it stays in
+        // domain A's book. A payment routed through domain A meets this offer.
+        //
+        // - With fixCleanup3_4_0: OfferStream sees the offer's domain (B)
+        //   mismatch the book (A) and errors out -> tecPATH_PARTIAL.
+        // - Without it: OfferStream only checks the offer's own domain (B,
+        //   which Bob is in), so it is used; the invariant then catches the
+        //   mismatch -> tecINVARIANT_FAILED.
+        //
+        // Either way the payment fails and the offer is left untouched.
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        // A second domain that Bob also belongs to.
+        Account const bobAcct = bob;
+        auto const domainID2 =
+            setupDomain(env, {bobAcct}, Account("permdex-domainOwner2"), "permdex-cred2");
+
+        // Bob places a domain offer in domain A's book.
+        auto const bobOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+        env.close();
+        BEAST_EXPECT(checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, true));
+
+        // Corrupt the offer: point its sfDomainID at domain B while it stays
+        // indexed in domain A's book directory.
+        auto const offerKey = keylet::offer(bob.id(), SeqProxy::rawSequence(bobOfferSeq));
+        env.app().getOpenLedger().modify([&offerKey, &domainID2](OpenView& view, beast::Journal) {
+            auto const sle = view.read(offerKey);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            replacement->setFieldH256(sfDomainID, domainID2);
+            view.rawReplace(replacement);
+            return true;
+        });
+
+        if (fixEnabled)
+        {
+            // With the fix: OfferStream rejects the mismatched offer.
+            env(pay(alice, carol, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(tecPATH_PARTIAL));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        }
+        else
+        {
+            // Without the fix: the offer is used, then the invariant
+            // rejects the whole transaction.
+            env(pay(alice, carol, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(tecINVARIANT_FAILED));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        }
+    }
+
+    void
+    testDomainBookOfferMissingDomain(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "Offer without a domain indexed in a domain book"
+                 << (fixEnabled ? " (fixCleanup3_4_0 enabled)" : " (fixCleanup3_4_0 disabled)");
+
+        // Same corruption as testDomainOfferInWrongBook, except the offer
+        // loses sfDomainID entirely instead of pointing at another domain
+        // while it stays indexed in domain A's book.
+        //
+        // - With fixCleanup3_4_0: OfferStream sees an offer that claims no
+        //   domain in a domain book and errors out -> tecPATH_PARTIAL.
+        // - Without it: neither the domain mismatch check nor the domain
+        //   membership check fires (both are gated on sfDomainID being
+        //   present), and the invariant does not catch it either because the
+        //   offer is fully consumed and deleted. The payment succeeds using an
+        //   offer that was never credential checked.
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        // Bob places a domain offer in domain A's book.
+        auto const bobOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+        env.close();
+        BEAST_EXPECT(checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, true));
+
+        // Corrupt the offer: drop sfDomainID while it stays indexed in domain
+        // A's book directory.
+        auto const offerKey = keylet::offer(bob.id(), SeqProxy::rawSequence(bobOfferSeq));
+        env.app().getOpenLedger().modify([&offerKey](OpenView& view, beast::Journal) {
+            auto const sle = view.read(offerKey);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            replacement->makeFieldAbsent(sfDomainID);
+            view.rawReplace(replacement);
+            return true;
+        });
+
+        auto const carolBefore = env.balance(carol, USD);
+
+        if (fixEnabled)
+        {
+            // With the fix: OfferStream rejects the domainless offer.
+            env(pay(alice, carol, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(tecPATH_PARTIAL));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(env.balance(carol, USD) - carolBefore == USD(0));
+        }
+        else
+        {
+            // Without the fix: the offer is silently usable in the domain
+            // book, and the payment goes through.
+            env(pay(alice, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
+            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(env.balance(carol, USD) - carolBefore == USD(10));
+        }
+    }
+
+    void
+    testReplaceDomainOfferWithOtherDomainOffer(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "Replace domain offer via OfferCreate"
+                 << (fixEnabled ? " (fixCleanup3_4_0 enabled)" : " (fixCleanup3_4_0 disabled)");
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainA, credType] =
+            PermissionedDEX(env);
+
+        Account const domainOwnerB("permdex-domainOwnerB");
+        auto const domainB =
+            setupDomain(env, {alice, bob, carol, gw}, domainOwnerB, "permdex-other-domain");
+        BEAST_EXPECT(domainA != domainB);
+
+        auto const oldSeq = env.seq(alice);
+        env(offer(alice, USD(100), XRP(1)), Domain(domainA));
+        env.close();
+
+        BEAST_EXPECT(checkOffer(env, alice, oldSeq, USD(100), XRP(1), 0, true));
+        auto const oldOffer = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(oldSeq)));
+        if (!BEAST_EXPECT(oldOffer))
+            return;
+        BEAST_EXPECT(oldOffer->getFieldH256(sfDomainID) == domainA);
+
+        auto const newSeq = env.seq(alice);
+        // The invariant should reject mixing active Permissioned DEX domains,
+        // not a domain that is only touched because its offer is being deleted.
+        if (fixEnabled)
+        {
+            env(offer(alice, USD(100), XRP(2)), Domain(domainB), Json(jss::OfferSequence, oldSeq));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, alice, oldSeq));
+            BEAST_EXPECT(checkOffer(env, alice, newSeq, USD(100), XRP(2), 0, true));
+            auto const newOffer = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(newSeq)));
+            if (!BEAST_EXPECT(newOffer))
+                return;
+            BEAST_EXPECT(newOffer->getFieldH256(sfDomainID) == domainB);
+        }
+        else
+        {
+            env(offer(alice, USD(100), XRP(2)),
+                Domain(domainB),
+                Json(jss::OfferSequence, oldSeq),
+                Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            BEAST_EXPECT(checkOffer(env, alice, oldSeq, USD(100), XRP(1), 0, true));
+            BEAST_EXPECT(!offerExists(env, alice, newSeq));
+        }
+    }
+
 public:
     void
     run() override
@@ -2038,6 +2237,16 @@ public:
         // only after fixCleanup3_2_0.
         testCancelRegularOfferWithDomainCreate(all);
         testCancelRegularOfferWithDomainCreate(all - fixCleanup3_2_0);
+
+        // A domain offer indexed in the wrong domain book is caught only
+        // after fixCleanup3_4_0. (Not an existing bug, but defensive testing)
+        testDomainOfferInWrongBook(all);
+        testDomainOfferInWrongBook(all - fixCleanup3_4_0);
+        testDomainBookOfferMissingDomain(all);
+        testDomainBookOfferMissingDomain(all - fixCleanup3_4_0);
+
+        testReplaceDomainOfferWithOtherDomainOffer(all);
+        testReplaceDomainOfferWithOtherDomainOffer(all - fixCleanup3_4_0);
     }
 };
 

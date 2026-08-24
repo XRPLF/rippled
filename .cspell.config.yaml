@@ -7,6 +7,7 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
   - .clang-tidy
+  - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -30,7 +31,9 @@ ignoreRegExpList:
   - ABCDEFGHIJKLMNOPQRSTUVWXYZ
   - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 overrides:
-  - filename: "**/*_test.cpp" # all test files
+  - filename:
+      - "**/*_test.cpp" # legacy boost.test files
+      - "src/tests/**/*.cpp" # gtest test files
     ignoreRegExpList:
       - /"[^"]*"/g # double-quoted strings
       - /'[^']*'/g # single-quoted strings
@@ -66,6 +69,7 @@ words:
   - Buildx
   - canonicality
   - canonicalised
+  - cctools
   - changespq
   - checkme
   - choco
@@ -107,6 +111,7 @@ words:
   - disablerepo
   - distro
   - doxyfile
+  - dsymutil
   - dxrpl
   - elgamal
   - enabled
@@ -130,6 +135,7 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - Hinnant
   - hotwallet
   - hwaddress
   - hwrap
@@ -163,6 +169,8 @@ words:
   - llection
   - LOCALGOOD
   - logwstream
+  - Lombrozo
+  - lresolv
   - lseq
   - lsmf
   - ltype
@@ -172,7 +180,6 @@ words:
   - MPTAMM
   - MPTDEX
   - Merkle
-  - Metafuncton
   - misprediction
   - missingok
   - mptbalance
@@ -200,6 +207,7 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - Nikolaos
   - nixfmt
   - nixos
   - nixpkgs
@@ -216,6 +224,8 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otool
+  - oxalica
   - pargs
   - partitioner
   - paychan
@@ -244,11 +254,15 @@ words:
   - Raphson
   - rcflags
   - replayer
+  - repodata
+  - repomd
   - rerandomize
   - rerandomization
   - rerandomized
   - rerandomizes
   - rerere
+  - retargeted
+  - retargets
   - retriable
   - RIPD
   - ripdtop
@@ -284,6 +298,7 @@ words:
   - sles
   - soci
   - socidb
+  - Sonatype
   - sponsee
   - sponsees
   - SRPMS
@@ -303,6 +318,7 @@ words:
   - summands
   - superpeer
   - superpeers
+  - Swatinem
   - takergets
   - takerpays
   - ters
@@ -340,6 +356,7 @@ words:
   - unsquelch
   - unsquelched
   - unsquelching
+  - unsuffixed
   - unvalidated
   - unveto
   - unvetoed
@@ -357,12 +374,15 @@ words:
   - wthread
   - xbridge
   - xchain
+  - xcrun
   - ximinez
   - XMACRO
+  - xored
   - xrpkuwait
   - xrpl
   - xrpld
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT
