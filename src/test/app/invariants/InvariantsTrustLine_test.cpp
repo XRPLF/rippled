@@ -22,7 +22,6 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>

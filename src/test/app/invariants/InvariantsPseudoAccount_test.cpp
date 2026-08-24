@@ -31,7 +31,6 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <array>
-#include <cstddef>
 #include <functional>
 #include <initializer_list>
 #include <memory>

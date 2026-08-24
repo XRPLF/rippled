@@ -23,7 +23,6 @@
 #include <xrpl/tx/ApplyContext.h>
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>

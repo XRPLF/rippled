@@ -28,7 +28,6 @@
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>

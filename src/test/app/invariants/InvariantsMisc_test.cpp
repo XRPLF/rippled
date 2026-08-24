@@ -43,7 +43,6 @@
 #include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <array>
-#include <cstddef>
 #include <functional>
 #include <initializer_list>
 #include <memory>

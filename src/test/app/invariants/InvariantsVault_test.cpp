@@ -39,7 +39,6 @@
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <array>
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
