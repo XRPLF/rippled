@@ -16,14 +16,49 @@
 namespace xrpl::proposal {
 
 /**
- * Whether the proposed transaction is a proposal transaction, or a Batch
- * containing one. A proposal must not nest another proposal (On-Chain
- * Cosigner spec §5.3.1), and without the one-level walk into a proposed
- * Batch's inner transactions, a proposal transaction could be hidden there.
- * TODO: cover ttTRANSACTION_PROPOSAL_SIGN once that transaction exists.
+ * Owner-reserve increments held by a proposal of an ordinary transaction.
+ */
+constexpr std::uint32_t kProposalOwnerCount = 5;
+
+/**
+ * Owner-reserve increments held by a proposal of a Batch transaction. A
+ * proposed Batch stores up to eight inner transactions plus multi-account
+ * signatures, so it reserves more than an ordinary proposed transaction.
+ */
+constexpr std::uint32_t kBatchProposalOwnerCount = 10;
+
+/**
+ * Owner-reserve increments held by a proposal of the given transaction.
+ */
+inline std::uint32_t
+proposalOwnerCount(STObject const& proposedTx)
+{
+    return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? kBatchProposalOwnerCount
+                                                                : kProposalOwnerCount;
+}
+
+/**
+ * Whether the proposed transaction is itself a proposal transaction, which
+ * would nest one proposal inside another.
+ *
+ * TODO: cover ttTRANSACTION_PROPOSAL_SIGN and ttTRANSACTION_PROPOSAL_CANCEL
+ * once those transactions exist.
  */
 bool
 isProposalTx(STObject const& proposedTx);
+
+/**
+ * Whether the proposed transaction is independently submittable through the
+ * ordinary multi-sign path: not a nested proposal, not a pseudo-transaction,
+ * not itself flagged as someone else's inner batch transaction, and — if it
+ * is a Batch — none of its own inner transactions is a nested proposal or a
+ * pseudo-transaction either. A Batch inner transaction cannot itself be
+ * pseudo (preflight0 rejects the pseudo/tfInnerBatchTxn combination
+ * generically), but that guard lives outside this feature, so it is checked
+ * again here rather than relied upon.
+ */
+bool
+isValidProposal(STObject const& proposedTx);
 
 /**
  * Whether the proposed transaction carries any signature field.
@@ -51,28 +86,6 @@ hasEmptySigningPubKey(STObject const& proposedTx)
 {
     return proposedTx.isFieldPresent(sfSigningPubKey) &&
         proposedTx.getFieldVL(sfSigningPubKey).empty();
-}
-
-/**
- * Owner-reserve increments held by a proposal of an ordinary transaction.
- */
-constexpr std::uint32_t kProposalOwnerCount = 5;
-
-/**
- * Owner-reserve increments held by a proposal of a Batch transaction. A
- * proposed Batch stores up to eight inner transactions plus multi-account
- * signatures, so it reserves more than an ordinary proposed transaction.
- */
-constexpr std::uint32_t kBatchProposalOwnerCount = 10;
-
-/**
- * Owner-reserve increments held by a proposal of the given transaction.
- */
-inline std::uint32_t
-proposalOwnerCount(STObject const& proposedTx)
-{
-    return proposedTx.getFieldU16(sfTransactionType) == ttBATCH ? kBatchProposalOwnerCount
-                                                                : kProposalOwnerCount;
 }
 
 /**
@@ -130,8 +143,8 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
  * BatchSigners, CounterpartySignature, SponsorSignature) and SigningPubKey,
  * which is stored empty and filled only if the target signs with its own
  * key. So the completed transaction matches no matter which mix of collected
- * or off-ledger signatures it carries, and any change to a non-signature
- * field does not.
+ * or off-ledger signatures it carries. Any change to a non-signature
+ * field results in a false-return value.
  *
  * @param proposedTx The proposal's ProposedTransaction field.
  * @param tx The transaction to compare, typically an STTx.

@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -14,7 +15,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
 namespace xrpl {
 
@@ -52,8 +52,7 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
 
     // A terminal proposal can never complete, so anyone may delete it and
     // release the Owner's reserve (XLS-0103 §7.2).
-    bool const terminal =
-        proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx);
+    bool const terminal = proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx);
 
     // A live proposal may only be cancelled by its Owner (the proposer) or
     // by its target. The target is the account the proposed transaction

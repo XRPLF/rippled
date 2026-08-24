@@ -6,9 +6,9 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
 
 #include <cstdint>
 #include <optional>
@@ -110,6 +110,23 @@ unsignedBatch(
     std::uint32_t flags,
     std::vector<json::Value> const& inners,
     std::optional<std::uint32_t> numSigners = std::nullopt);
+
+/**
+ * @brief Give @p proposer a place on @p target's SignerList, so it may
+ * create proposals against @p target.
+ *
+ * Only the target account itself, or an account on its SignerList, may
+ * create a TransactionProposalCreate against it (On-Chain Cosigner V1
+ * authorization). Sets a minimal one-signer, quorum-1 list; the quorum
+ * itself is irrelevant here since it only governs the proposed
+ * transaction's own completion, not who may propose it.
+ *
+ * @param env The test environment.
+ * @param target The account whose SignerList is set.
+ * @param proposer The account to add to it.
+ */
+void
+authorizeProposer(Env& env, Account const& target, Account const& proposer);
 
 /**
  * @brief Create tickets for a proposal to be built against, and close the

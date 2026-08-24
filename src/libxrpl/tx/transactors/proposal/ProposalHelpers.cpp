@@ -1,4 +1,4 @@
-#include <xrpl/tx/transactors/proposal/ProposalHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
