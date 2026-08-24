@@ -1,6 +1,8 @@
 #include <xrpl/consensus/ConsensusSpanNames.h>
 
 #include <xrpl/consensus/ConsensusParms.h>
+#include <xrpl/consensus/ConsensusSpanLabels.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 
 #include <gtest/gtest.h>
 
@@ -68,14 +70,6 @@ TEST(ConsensusSpanNames, close_reason_label_maps_every_enum_state)
     EXPECT_EQ(closeReasonLabel(xrpl::LedgerCloseReason::Normal), "normal");
 }
 
-TEST(ConsensusSpanNames, close_reason_label_is_usable_at_compile_time)
-{
-    static_assert(
-        closeReasonLabel(xrpl::LedgerCloseReason::Idle) == "idle",
-        "closeReasonLabel must be constexpr-evaluable");
-    SUCCEED();
-}
-
 TEST(ConsensusSpanNames, establish_attribute_keys)
 {
     // Qualified: DisputedTx tracks a second, per-transaction avalanche.
@@ -113,12 +107,11 @@ TEST(ConsensusSpanNames, avalanche_state_label_maps_every_enum_state)
     EXPECT_EQ(avalancheStateLabel(AvalancheState::Stuck), "stuck");
 }
 
-TEST(ConsensusSpanNames, avalanche_state_label_is_usable_at_compile_time)
-{
-    // The mapping is consteval-safe so the label costs nothing at the call
-    // site in endEstablishTracing().
-    static_assert(
-        avalancheStateLabel(xrpl::ConsensusParms::AvalancheState::Stuck) == "stuck",
-        "avalancheStateLabel must be constexpr-evaluable");
-    SUCCEED();
-}
+// Both mappings are constexpr, so the labels cost nothing at their call sites.
+// These fire at compile time and need no test body.
+static_assert(
+    closeReasonLabel(xrpl::LedgerCloseReason::Idle) == "idle",
+    "closeReasonLabel must be constexpr-evaluable");
+static_assert(
+    avalancheStateLabel(xrpl::ConsensusParms::AvalancheState::Stuck) == "stuck",
+    "avalancheStateLabel must be constexpr-evaluable");
