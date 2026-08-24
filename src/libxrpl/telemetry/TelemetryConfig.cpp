@@ -8,6 +8,7 @@
  * See cfg/xrpld-example.cfg for the full list of available options.
  */
 
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
@@ -16,6 +17,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 
 namespace xrpl::telemetry {
 
@@ -63,6 +65,35 @@ constexpr std::uint32_t batchSize = 512u;
 constexpr std::uint32_t batchDelayMs = 5000u;
 constexpr std::uint32_t maxQueueSize = 2048u;
 }  // namespace dflt
+
+/**
+ * Throw unless the given path names a file this process can read.
+ *
+ * An empty path means the option is unset, which every caller allows. Reading
+ * the file proves it is both present and readable; testing existence alone
+ * would miss a permissions problem. The contents are discarded — nothing here
+ * checks that they parse as PEM.
+ *
+ * @param path       Path taken from the config, possibly empty.
+ * @param configKey  Config key the path came from, named in the message. Not
+ * called `key`, which would hide the `key` namespace above.
+ * @throws std::runtime_error  If the path is non-empty and cannot be read.
+ */
+void
+requireReadableFile(std::string const& path, char const* configKey)
+{
+    if (path.empty())
+        return;
+
+    std::error_code ec;
+    getFileContents(ec, path);
+    if (ec)
+    {
+        Throw<std::runtime_error>(
+            std::string{"[telemetry] "} + configKey + " cannot be read: " + path + " - " +
+            ec.message());
+    }
+}
 
 }  // namespace
 
@@ -142,6 +173,18 @@ makeTelemetrySetup(
             Throw<std::runtime_error>(
                 "[telemetry] tls_client_cert/tls_client_key require use_tls=1 "
                 "(set use_tls=1 to enable mutual TLS, or remove the cert paths).");
+        }
+
+        // Still inside the enabled branch. The exporter opens these files only
+        // when TLS is on, so check them only then: a bad path behind use_tls=0
+        // stops nothing. Checking here turns what would otherwise surface much
+        // later as an opaque handshake failure into a startup error naming the
+        // key. Each path is optional; an empty one is skipped.
+        if (setup.useTls)
+        {
+            requireReadableFile(setup.tlsCertPath, key::tlsCaCert);
+            requireReadableFile(setup.tlsClientCertPath, key::tlsClientCert);
+            requireReadableFile(setup.tlsClientKeyPath, key::tlsClientKey);
         }
     }
 

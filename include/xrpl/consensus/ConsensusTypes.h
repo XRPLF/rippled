@@ -155,6 +155,41 @@ to_string(ConsensusPhase p)
 }
 
 /**
+ * Why the open ledger should, or should not, close right now.
+ *
+ * Returned by whyCloseLedger(); shouldCloseLedger() reduces it to a bool.
+ *
+ * @note KeepOpen is not a close reason. Compare against it rather than
+ * treating the enum as a flag.
+ */
+enum class LedgerCloseReason : std::uint8_t {
+    /**
+     * No close condition is met yet.
+     */
+    KeepOpen,
+
+    /**
+     * Timings out of range; close defensively.
+     */
+    Anomaly,
+
+    /**
+     * More than half the network has closed or validated.
+     */
+    OthersClosed,
+
+    /**
+     * Nothing waiting and the idle interval elapsed.
+     */
+    Idle,
+
+    /**
+     * Transactions waiting and both minimum-open floors met.
+     */
+    Normal,
+};
+
+/**
  * Measures the duration of phases of consensus
  */
 class ConsensusTimer

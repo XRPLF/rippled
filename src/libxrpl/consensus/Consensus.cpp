@@ -13,8 +13,8 @@
 
 namespace xrpl {
 
-bool
-shouldCloseLedger(
+LedgerCloseReason
+whyCloseLedger(
     bool anyTransactions,
     std::size_t prevProposers,
     std::size_t proposersClosed,
@@ -47,7 +47,7 @@ shouldCloseLedger(
 
         JLOG(j.warn()) << ss.str();
         CLOG(clog) << "closing ledger: " << ss.str() << ". ";
-        return true;
+        return LedgerCloseReason::Anomaly;
     }
 
     if ((proposersClosed + proposersValidated) > (prevProposers / 2))
@@ -55,14 +55,16 @@ shouldCloseLedger(
         // If more than half of the network has closed, we close
         JLOG(j.trace()) << "Others have closed";
         CLOG(clog) << "closing ledger because enough others have already. ";
-        return true;
+        return LedgerCloseReason::OthersClosed;
     }
 
     if (!anyTransactions)
     {
         // Only close at the end of the idle interval
         CLOG(clog) << "no transactions, returning. ";
-        return timeSincePrevClose >= idleInterval;  // normal idle
+        return timeSincePrevClose >= idleInterval  // normal idle
+            ? LedgerCloseReason::Idle
+            : LedgerCloseReason::KeepOpen;
     }
 
     // Preserve minimum ledger open time
@@ -70,7 +72,7 @@ shouldCloseLedger(
     {
         JLOG(j.debug()) << "Must wait minimum time before closing";
         CLOG(clog) << "not closing because under ledgerMIN_CLOSE. ";
-        return false;
+        return LedgerCloseReason::KeepOpen;
     }
 
     // Don't let this ledger close more than twice as fast as the previous
@@ -80,12 +82,40 @@ shouldCloseLedger(
     {
         JLOG(j.debug()) << "Ledger has not been open long enough";
         CLOG(clog) << "not closing because not open long enough. ";
-        return false;
+        return LedgerCloseReason::KeepOpen;
     }
 
     // Close the ledger
     CLOG(clog) << "no reason to not close. ";
-    return true;
+    return LedgerCloseReason::Normal;
+}
+
+bool
+shouldCloseLedger(
+    bool anyTransactions,
+    std::size_t prevProposers,
+    std::size_t proposersClosed,
+    std::size_t proposersValidated,
+    std::chrono::milliseconds prevRoundTime,
+    std::chrono::milliseconds timeSincePrevClose,
+    std::chrono::milliseconds openTime,
+    std::chrono::milliseconds idleInterval,
+    ConsensusParms const& parms,
+    beast::Journal j,
+    std::unique_ptr<std::stringstream> const& clog)
+{
+    return whyCloseLedger(
+               anyTransactions,
+               prevProposers,
+               proposersClosed,
+               proposersValidated,
+               prevRoundTime,
+               timeSincePrevClose,
+               openTime,
+               idleInterval,
+               parms,
+               j,
+               clog) != LedgerCloseReason::KeepOpen;
 }
 
 bool
