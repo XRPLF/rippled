@@ -6,6 +6,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -20,7 +21,6 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
@@ -33,6 +33,7 @@
 #include <memory>
 #include <source_location>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {

@@ -4,11 +4,9 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>

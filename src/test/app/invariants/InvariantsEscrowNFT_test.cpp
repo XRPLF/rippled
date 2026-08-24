@@ -138,8 +138,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
-                sleNew->setFieldU64(
-                    sfOutstandingAmount, std::numeric_limits<std::uint64_t>::max());
+                sleNew->setFieldU64(sfOutstandingAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
             });
