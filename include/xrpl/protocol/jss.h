@@ -391,6 +391,7 @@ JSS(max_ledger);                  // in/out: LedgerCleaner
 JSS(max_queue_size);              // out: TxQ
 JSS(max_spend_drops);             // out: AccountInfo
 JSS(max_spend_drops_total);       // out: AccountInfo
+JSS(maximum);
 JSS(mean);                        // out: get_aggregate_price
 JSS(median);                      // out: get_aggregate_price
 JSS(median_fee);                  // out: TxQ
