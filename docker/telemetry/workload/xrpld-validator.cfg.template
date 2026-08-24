@@ -4,6 +4,11 @@
 # cfg inline. Kept as the reference layout for a validator run as a container,
 # whose entrypoint would substitute the placeholders below.
 #
+# Because nothing reads this file, nothing catches it drifting from the cfg the
+# runner actually generates. Any change to the [telemetry], [insight] or
+# [rpc_startup] stanzas here must be mirrored in run-full-validation.sh, and
+# vice versa.
+#
 # Placeholders:
 #   {{NODE_INDEX}}        — Node number (1-based)
 #   {{RPC_PORT}}          — HTTP RPC port
@@ -90,13 +95,18 @@ trace_peer=1
 trace_ledger=1
 
 # --- Native OTel metrics (beast::insight over OTLP/HTTP) ---
-# The collector has no StatsD receiver (metrics pipeline is [otlp, spanmetrics]),
-# so beast::insight exports natively over OTLP. prefix=xrpld matches the OTel
-# resource service name and the metric names the dashboards query.
+# The collector has no StatsD receiver (its metrics pipeline is
+# [otlp, spanmetrics]), so beast::insight must export natively over OTLP for
+# system metrics to reach Prometheus at all. `server=otel` is the only
+# load-bearing key here -- it selects the OTel collector.
+#
+# No `prefix` is set on purpose. It would be inert: OTelCollector applies no
+# prefix to instrument names, so exported names are the lowercased raw names
+# (`jobq_job_count`, `rpc_requests_total`, `total_bytes_in`). The service is
+# identified by the OTel resource `service.name`, not by a name prefix.
 [insight]
 server=otel
 endpoint={{OTEL_METRICS_ENDPOINT}}
-prefix=xrpld
 
 [rpc_startup]
 { "command": "log_level", "severity": "{{LOG_LEVEL}}" }

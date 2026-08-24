@@ -329,12 +329,17 @@ trace_ledger=1
 
 [insight]
 # Native OTel metrics via OTLP/HTTP. The collector has no StatsD receiver
-# (metrics pipeline is [otlp, spanmetrics]), so beast::insight must export
-# over OTLP for system metrics to reach Prometheus. prefix=xrpld matches the
-# OTel resource service name and the metric names the dashboards query.
+# (its metrics pipeline is [otlp, spanmetrics]), so beast::insight must export
+# over OTLP for system metrics to reach Prometheus at all. server=otel is the
+# only load-bearing key here -- it selects the OTel collector; endpoint is
+# read but already matches the built-in default.
+#
+# No prefix is set on purpose. It would be inert: OTelCollector applies no
+# prefix to instrument names, so exported names are the lowercased raw names
+# (jobq_job_count, rpc_requests_total, total_bytes_in). The service is
+# identified by the OTel resource service.name, not by a name prefix.
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=xrpld
 
 [rpc_startup]
 # info is required here, not cosmetic, and is the minimum that works. The

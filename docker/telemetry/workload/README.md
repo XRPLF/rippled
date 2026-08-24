@@ -469,7 +469,7 @@ absence is a skip rather than a failure:
 The orchestrator (`run-full-validation.sh`) generates node configs with:
 
 - `[telemetry] enabled=1` with all five trace categories: `trace_rpc`, `trace_transactions`, `trace_consensus`, `trace_peer`, `trace_ledger`
-- `[insight] server=otel` with `endpoint=http://localhost:4318/v1/metrics` and `prefix=xrpld` — `beast::insight` metrics reach Prometheus over OTLP, because the collector declares no `statsd` receiver
+- `[insight] server=otel` with `endpoint=http://localhost:4318/v1/metrics` — `beast::insight` metrics reach Prometheus over OTLP, because the collector declares no `statsd` receiver. No `prefix` is set: it would be inert, since `OTelCollector` applies no prefix to instrument names and exported names are the lowercased raw names (`jobq_job_count`, not `xrpld_jobq_job_count`)
 - `[signing_support] true` — required for `tx_submitter.py` to submit signed transactions via WebSocket
 - `[ips]` (not `[ips_fixed]`) — ensures peer connections are counted in the PeerFinder active-peer gauges, exported as `peer_finder_active_inbound_peers` / `peer_finder_active_outbound_peers` (fixed peers are excluded from these counters by design). The `beast::insight` group/name pair is `Peer_Finder` / `Active_Inbound_Peers`; `formatName()` lowercases it for export.
 
