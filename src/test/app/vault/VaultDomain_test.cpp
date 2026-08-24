@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
@@ -18,6 +19,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -570,6 +572,112 @@ private:
         }
     }
 
+    void
+    testWithdrawCredentialDepositPreauth(FeatureBitset features)
+    {
+        testcase(
+            "withdraw with credential-based deposit preauth " +
+            std::string{features[fixCleanup3_4_0] ? "post-fix" : "pre-fix"});
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        Env env{*this, features};
+
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const dest{"dest"};
+        Account const credIssuer{"credIssuer"};
+        char const credType[] = "abcde";
+
+        env.fund(XRP(1000), owner, depositor, dest, credIssuer);
+        env(fset(dest, asfDepositAuth));
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+        Vault vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+        env.close();
+
+        auto withdrawToDest = [&]() {
+            auto wtx =
+                vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
+            wtx[sfDestination] = dest.human();
+            return wtx;
+        };
+
+        // Without any preauth, withdraw to dest fails
+        env(withdrawToDest(), Ter{tecNO_PERMISSION});
+        env.close();
+
+        // Issue and accept a credential for the depositor (with expiration)
+        auto jv = credentials::create(depositor, credIssuer, credType);
+        std::uint32_t const expiration =
+            env.current()->header().parentCloseTime.time_since_epoch().count() + 100;
+        jv[sfExpiration.jsonName] = expiration;
+        env(jv);
+        env(credentials::accept(depositor, credIssuer, credType));
+        env.close();
+
+        auto const credKeylet = credentials::keylet(depositor, credIssuer, credType);
+        auto const credIdx =
+            credentials::ledgerEntry(env, depositor, credIssuer, credType)[jss::result][jss::index]
+                .asString();
+
+        // dest authorizes deposits from holders of credentials issued by credIssuer
+        env(deposit::authCredentials(dest, {{.issuer = credIssuer, .credType = credType}}));
+        env.close();
+
+        // Withdraw without supplying credentials still fails
+        env(withdrawToDest(), Ter{tecNO_PERMISSION});
+        env.close();
+
+        if (!fixEnabled)
+        {
+            // Pre-fix: sfCredentialIDs in VaultWithdraw is rejected as disabled
+            env(withdrawToDest(), credentials::Ids({credIdx}), Ter{temDISABLED});
+            env.close();
+            return;
+        }
+
+        // Withdraw with credentials succeeds
+        env(withdrawToDest(), credentials::Ids({credIdx}));
+        env.close();
+
+        // Bad credential id is rejected
+        std::string const invalidIdx =
+            "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E01E034";
+        env(withdrawToDest(), credentials::Ids({invalidIdx}), Ter{tecBAD_CREDENTIALS});
+        env.close();
+
+        // Malformed credential array (duplicates) is rejected by checkFields
+        env(withdrawToDest(), credentials::Ids({credIdx, credIdx}), Ter{temMALFORMED});
+        env.close();
+
+        // Valid credential not authorized by dest hits authorizedDepositPreauth error path
+        char const credType2[] = "fghij";
+        env(credentials::create(depositor, credIssuer, credType2));
+        env(credentials::accept(depositor, credIssuer, credType2));
+        env.close();
+        auto const credIdx2 =
+            credentials::ledgerEntry(env, depositor, credIssuer, credType2)[jss::result][jss::index]
+                .asString();
+        env(withdrawToDest(), credentials::Ids({credIdx2}), Ter{tecNO_PERMISSION});
+        env.close();
+
+        // Advance time past expiration: credentials yield tecEXPIRED and are deleted
+        env.close(150s);
+        BEAST_EXPECT(env.le(credKeylet));
+        env(withdrawToDest(), credentials::Ids({credIdx}), Ter{tecEXPIRED});
+        env.close();
+        BEAST_EXPECT(!env.le(credKeylet));
+    }
+
 public:
     void
     run() override
@@ -578,6 +686,8 @@ public:
         testDomainLossAfterAcquisition();
         testDomainCheckBuyerSideOffer();
         testWithDomainChecXRP();
+        testWithdrawCredentialDepositPreauth(all_ - fixCleanup3_4_0);
+        testWithdrawCredentialDepositPreauth(all_);
     }
 };
 
