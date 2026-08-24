@@ -370,12 +370,20 @@ VaultDeposit::doApply()
             assetsDeposited =
                 clampToAssetsTotalScale(vault, assetsDeposited, Number::RoundingMode::Downward);
 
-            // Return tecPRECISION_LOSS instead of minting shares against a zero credit.
+            // Unreachable: sharesCreated == 0 and roundsToZeroForDepositor above already
+            // rejected deposits that canonicalize to nothing, so clamping a positive credit
+            // further cannot collapse it (or the re-derived share count) to zero. Kept as
+            // defense in depth.
             if (assetsDeposited <= beast::kZero)
             {
+                // LCOV_EXCL_START
+                UNREACHABLE(
+                    "xrpl::VaultDeposit::doApply : deposit rounds to zero at assets outstanding "
+                    "scale");
                 JLOG(j_.warn()) << "VaultDeposit: deposit rounds to zero at "
                                    "assets outstanding scale.";
                 return tecPRECISION_LOSS;
+                // LCOV_EXCL_STOP
             }
 
             // The pre-clamp share count would over-issue by the trimmed ULP and give the depositor
@@ -387,7 +395,12 @@ VaultDeposit::doApply()
             sharesCreated = *maybeReShares;
 
             if (sharesCreated == beast::kZero)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::VaultDeposit::doApply : clamped deposit mints zero shares");
                 return tecPRECISION_LOSS;
+                // LCOV_EXCL_STOP
+            }
         }
     }
     catch (std::overflow_error const&)

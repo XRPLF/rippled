@@ -425,12 +425,18 @@ VaultClawback::doApply()
             if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered) ||
                 debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsRecovered))
             {
+                // LCOV_EXCL_START
+                UNREACHABLE(
+                    "xrpl::VaultClawback::doApply : clawback amount too small to change stored "
+                    "vault balance");
                 JLOG(j_.debug())
                     << "VaultClawback: clawback amount too small to change stored vault"
                        " balance";
                 return tecPRECISION_LOSS;
+                // LCOV_EXCL_STOP
             }
         }
+        // LCOV_EXCL_START
         catch (std::overflow_error const&)
         {
             // It's easy to hit this exception from Number with large enough Scale
@@ -445,6 +451,7 @@ VaultClawback::doApply()
             // consistent. Return tecPATH_DRY rather than a hard internal error.
             return tecPATH_DRY;
         }
+        // LCOV_EXCL_STOP
     }
 
     // Debit both rails by the same delta so sfAssetsTotal and sfAssetsAvailable stay in step,

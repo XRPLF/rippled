@@ -352,6 +352,7 @@ VaultWithdraw::doApply()
                 return tecPRECISION_LOSS;
             }
         }
+        // LCOV_EXCL_START
         catch (std::overflow_error const&)
         {
             // It's easy to hit this exception from Number with large enough Scale
@@ -366,6 +367,7 @@ VaultWithdraw::doApply()
             // Return tecPATH_DRY rather than a hard internal error.
             return tecPATH_DRY;
         }
+        // LCOV_EXCL_STOP
     }
 
     // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
@@ -404,10 +406,16 @@ VaultWithdraw::doApply()
             // more than it can account for.
             assetsWithdrawn =
                 clampToAssetsTotalScale(vault, -assetsWithdrawn, Number::RoundingMode::Upward);
-            // Payout collapsed to zero. Return tecPRECISION_LOSS instead of burning shares for
-            // nothing.
+            // Unreachable: debitIsNonZeroDust above already rejected amounts too small to
+            // move sfAssetsTotal, so snapping to that same grid cannot collapse the payout
+            // to zero. Kept as defense in depth.
             if (assetsWithdrawn <= beast::kZero)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::VaultWithdraw::doApply : clamped withdrawal rounds to zero");
                 return tecPRECISION_LOSS;
+                // LCOV_EXCL_STOP
+            }
         }
         // LCOV_EXCL_START
         catch (std::overflow_error const&)
