@@ -24,9 +24,10 @@ void
 ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     // Track LoanBroker deletions so the finalize can enforce (a) that only
-    // ttLOAN_BROKER_DELETE removes a broker and (b) that the broker's
-    // pre-state DebtTotal and OwnerCount were zero at deletion. `before`
-    // holds the entry's state prior to erasure.
+    // ttLOAN_BROKER_DELETE removes a broker, (b) that at most one broker is
+    // removed per transaction, and (c) that the broker's pre-state DebtTotal
+    // and OwnerCount were zero at deletion. `before` holds the entry's state
+    // prior to erasure.
     //
     // Deleted trust lines and MPTokens are also recorded (from `before`) so
     // finalize can rediscover the affected broker through its pseudo-account
@@ -44,7 +45,14 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
         {
             if (before->getType() == ltLOAN_BROKER)
             {
-                deletedBrokers_.emplace_back(before);
+                if (deletedBroker_)
+                {
+                    multipleBrokerDeletions_ = true;
+                }
+                else
+                {
+                    deletedBroker_ = before;
+                }
             }
             else if (before->getType() == ltRIPPLE_STATE)
             {
@@ -135,16 +143,23 @@ ValidLoanBroker::finalize(
     // Loan Brokers will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 
-    // Deletion invariants (featureLendingProtocolV1_1). A LoanBroker may
-    // only be removed by ttLOAN_BROKER_DELETE, and only when its pre-state
-    // DebtTotal and OwnerCount are both zero.  The DebtTotal check
-    // complements ValidLoan's LoanBrokerDelete-must-not-touch-any-loan
-    // rule: even a broker that has finished paying off every loan may
-    // still hold non-zero exposure until its LoanBrokerCoverWithdraw
-    // settles, and neither state is safe to delete.
+    // Deletion invariants (featureLendingProtocolV1_1). At most one
+    // LoanBroker may be removed per transaction, and only by
+    // ttLOAN_BROKER_DELETE, and only when its pre-state DebtTotal and
+    // OwnerCount are both zero.  The DebtTotal check complements ValidLoan's
+    // LoanBrokerDelete-must-not-touch-any-loan rule: even a broker that has
+    // finished paying off every loan may still hold non-zero exposure until
+    // its LoanBrokerCoverWithdraw settles, and neither state is safe to
+    // delete.
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-        for (auto const& broker : deletedBrokers_)
+        if (multipleBrokerDeletions_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: more than one Loan Broker "
+                               "deleted in a single transaction";
+            return false;
+        }
+        if (deletedBroker_)
         {
             if (tx.getTxnType() != ttLOAN_BROKER_DELETE)
             {
@@ -152,13 +167,13 @@ ValidLoanBroker::finalize(
                                    "transaction other than LoanBrokerDelete";
                 return false;
             }
-            if (broker->at(sfDebtTotal) != beast::kZero)
+            if (deletedBroker_->at(sfDebtTotal) != beast::kZero)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with "
                                    "non-zero debt total";
                 return false;
             }
-            if (broker->at(sfOwnerCount) != 0)
+            if (deletedBroker_->at(sfOwnerCount) != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with "
                                    "non-zero owner count";

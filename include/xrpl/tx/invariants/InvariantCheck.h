@@ -365,11 +365,6 @@ public:
 class ValidPseudoAccounts
 {
     std::vector<std::string> errors_;
-    // Live pseudo-account entries touched by the transaction. Populated in
-    // visitEntry and consumed by finalize to cross-check owner-field
-    // resolution (e.g. VaultID -> vault whose sfAccount matches the
-    // pseudo-account).
-    std::vector<SLE::const_pointer> pseudoAccounts_;
 
 public:
     void
@@ -421,6 +416,13 @@ public:
  *
  * The reverse (pseudo-account deleted → object deleted) is enforced by
  * AccountRootsDeletedClean via getPseudoAccountFields().
+ *
+ * Under featureLendingProtocolV1_1, additionally verify that every touched
+ * pseudo-account's owner reference (sfVaultID / sfLoanBrokerID) resolves to a
+ * live object whose sfAccount points back at the pseudo-account. Catches
+ * orphan pseudo-accounts and broken back-pointers -- cases the
+ * deletion-driven check above cannot see when the pseudo-account itself is
+ * the only touched entry.
  */
 class ObjectHasPseudoAccount
 {
@@ -433,6 +435,10 @@ public:
 
 private:
     std::vector<SLE::const_pointer> deletedObjSles_;
+    // Live pseudo-account entries touched by the transaction. Populated in
+    // visitEntry and consumed by finalize to cross-check owner-field
+    // resolution.
+    std::vector<SLE::const_pointer> touchedPseudoAccounts_;
 };
 // additional invariant checks can be declared above and then added to this
 // tuple

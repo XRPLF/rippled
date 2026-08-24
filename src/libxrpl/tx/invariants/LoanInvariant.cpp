@@ -174,7 +174,7 @@ ValidLoan::finalize(
                     return false;
                 }
 
-                // (XLS-66 §3.10.5 default): a defaulted loan transitions to a terminal state
+                // (XLS-66 3.10.5 default): a defaulted loan transitions to a terminal state
                 // atomically. The lsfLoanDefault transition is covered above; balance zeroing is
                 // covered by the PaymentRemaining==0 rule higher up. What remains is
                 // NextPaymentDueDate: LoanManage::defaultLoan clears it (sets to 0) so it is
@@ -187,7 +187,7 @@ ValidLoan::finalize(
                 }
             }
 
-            // (XLS-66 §3.11.5 non-full payment): after a LoanPay that did not fully repay the loan,
+            // (XLS-66 3.11.5 non-full payment): after a LoanPay that did not fully repay the loan,
             // PrincipalOutstanding strictly decreases, PaymentRemaining decreases by at least 1,
             // and NextPaymentDueDate advances by a positive multiple of PaymentInterval. Class-2.
             // Skip the check when the payment fully repaid the loan (PaymentRemaining and balances
@@ -288,7 +288,7 @@ ValidLoan::finalize(
             return false;
         }
 
-        // (XLS-66 §3.1.5 precondition 1): LoanBrokerDelete's preclaim rejects a broker with
+        // (XLS-66 3.1.5 precondition 1): LoanBrokerDelete's preclaim rejects a broker with
         // OwnerCount != 0, so no loan should exist that references it; touching any loan alongside
         // the delete is inconsistent with that precondition and points at either an
         // OwnerCount-tracking bug or a spurious cascading write. Class-2 (transaction

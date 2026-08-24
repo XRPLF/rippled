@@ -1033,8 +1033,6 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
         }();
         if (isPseudo)
         {
-            // Snapshot for finalize-time owner-field resolution.
-            pseudoAccounts_.push_back(after);
             // Pseudo accounts must have the following properties:
             // 1. Exactly one of the pseudo-account fields is set.
             // 2. The sequence number is not changed.
@@ -1101,40 +1099,6 @@ ValidPseudoAccounts::finalize(
             return false;
     }
 
-    // For every pseudo-account touched, verify that the owner field resolves to an object whose
-    // sfAccount points back to the pseudo-account. Prevents a dangling pseudo-account from
-    // surviving a partial deletion.
-    if (view.rules().enabled(featureLendingProtocolV1_1))
-    {
-        for (auto const& sle : pseudoAccounts_)
-        {
-            if (!sle)
-                continue;  // LCOV_EXCL_LINE
-            AccountID const accID = sle->at(sfAccount);
-            if (auto const vaultID = (*sle)[~sfVaultID])
-            {
-                auto const vault = view.read(keylet::vault(*vaultID));
-                if (!vault || vault->at(sfAccount) != accID)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: pseudo-account VaultID does not "
-                                       "resolve to a vault referencing this account";
-                    if (enforce)
-                        return false;
-                }
-            }
-            if (auto const brokerID = (*sle)[~sfLoanBrokerID])
-            {
-                auto const broker = view.read(keylet::loanBroker(*brokerID));
-                if (!broker || broker->at(sfAccount) != accID)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: pseudo-account LoanBrokerID does "
-                                       "not resolve to a broker referencing this account";
-                    if (enforce)
-                        return false;
-                }
-            }
-        }
-    }
     return true;
 }
 
@@ -1345,28 +1309,39 @@ ValidAmounts::finalize(
 void
 ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    if (!isDelete)
-        return;
-
-    // Before should never be null when isDelete = true
-    if (!before)
+    if (isDelete)
     {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ObjectHasPseudoAccount::visitEntry : deleted ledger entry missing before state");
+        // Before should never be null when isDelete = true
+        if (!before)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::ObjectHasPseudoAccount::visitEntry : deleted ledger entry missing before "
+                "state");
+            return;
+            // LCOV_EXCL_STOP
+        }
+
+        switch (before->getType())
+        {
+            case ltAMM:
+            case ltVAULT:
+            case ltLOAN_BROKER:
+                deletedObjSles_.push_back(before);
+                break;
+            default:
+                return;
+        }
         return;
-        // LCOV_EXCL_STOP
     }
 
-    switch (before->getType())
+    // Snapshot live pseudo-accounts (touched or newly created) so finalize
+    // can verify their owner-field references resolve to a live object whose
+    // sfAccount points back at this pseudo-account.
+    if (after && after->getType() == ltACCOUNT_ROOT &&
+        (after->isFieldPresent(sfVaultID) || after->isFieldPresent(sfLoanBrokerID)))
     {
-        case ltAMM:
-        case ltVAULT:
-        case ltLOAN_BROKER:
-            deletedObjSles_.push_back(before);
-            break;
-        default:
-            return;
+        touchedPseudoAccounts_.push_back(after);
     }
 }
 
@@ -1378,29 +1353,57 @@ ObjectHasPseudoAccount::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
-    if (!view.rules().enabled(fixCleanup3_3_0))
-        return true;
-
-    if (deletedObjSles_.empty())
-        return true;
-
     bool failed = false;
-    for (auto const& sle : deletedObjSles_)
-    {
-        if (!sle->isFieldPresent(sfAccount))
-        {
-            JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
-                            << " is missing pseudo-account field";
-            failed = true;
-            continue;
-        }
 
-        // The pseudo-account must NOT exist on the ledger after the object is deleted.
-        if (view.exists(keylet::account(sle->getAccountID(sfAccount))))
+    if (view.rules().enabled(fixCleanup3_3_0))
+    {
+        for (auto const& sle : deletedObjSles_)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
-                            << " without deleting its pseudo-account";
-            failed = true;
+            if (!sle->isFieldPresent(sfAccount))
+            {
+                JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
+                                << " is missing pseudo-account field";
+                failed = true;
+                continue;
+            }
+
+            // The pseudo-account must NOT exist on the ledger after the object is deleted.
+            if (view.exists(keylet::account(sle->getAccountID(sfAccount))))
+            {
+                JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
+                                << " without deleting its pseudo-account";
+                failed = true;
+            }
+        }
+    }
+
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        for (auto const& sle : touchedPseudoAccounts_)
+        {
+            if (!sle)
+                continue;  // LCOV_EXCL_LINE
+            AccountID const accID = sle->at(sfAccount);
+            if (auto const vaultID = (*sle)[~sfVaultID])
+            {
+                auto const vault = view.read(keylet::vault(*vaultID));
+                if (!vault || vault->at(sfAccount) != accID)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: pseudo-account VaultID does not "
+                                       "resolve to a vault referencing this account";
+                    failed = true;
+                }
+            }
+            if (auto const brokerID = (*sle)[~sfLoanBrokerID])
+            {
+                auto const broker = view.read(keylet::loanBroker(*brokerID));
+                if (!broker || broker->at(sfAccount) != accID)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: pseudo-account LoanBrokerID does "
+                                       "not resolve to a broker referencing this account";
+                    failed = true;
+                }
+            }
         }
     }
 

@@ -2007,7 +2007,7 @@ class Invariants_test : public beast::unit_test::Suite
         testcase << "pseudo-account loan-broker link";
         using namespace jtx;
 
-        // The finalize-time walk in ValidPseudoAccounts verifies that every
+        // The finalize-time walk in ObjectHasPseudoAccount verifies that every
         // touched pseudo-account's sfLoanBrokerID resolves to a live broker
         // whose sfAccount points back at the pseudo. Repoint the pseudo-account
         // at a keylet with no broker so the lookup returns nothing.
@@ -2037,6 +2037,47 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             createBroker);
+    }
+
+    void
+    testPseudoAccountVaultLink()
+    {
+        testcase << "pseudo-account vault link";
+        using namespace jtx;
+
+        // The finalize-time walk in ObjectHasPseudoAccount verifies that every
+        // touched pseudo-account's sfVaultID resolves to a live vault whose
+        // sfAccount points back at the pseudo. Repoint the pseudo-account at a
+        // keylet with no vault so the lookup returns nothing.
+        Keylet vaultKeylet = keylet::amendments();
+        Preclose const createVault = [&](Account const& a, Account const&, Env& env) {
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            Vault const vault{env};
+            auto [tx, vKeylet] = vault.create({.owner = a, .asset = xrpAsset});
+            env(tx);
+            vaultKeylet = vKeylet;
+            return BEAST_EXPECT(env.le(vaultKeylet));
+        };
+
+        doInvariantCheck(
+            {{"pseudo-account VaultID does not resolve to a vault "
+              "referencing this account"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto sleVault = ac.view().peek(vaultKeylet);
+                if (!BEAST_EXPECT(sleVault))
+                    return false;
+                auto slePseudo = ac.view().peek(keylet::account(sleVault->at(sfAccount)));
+                if (!BEAST_EXPECT(slePseudo))
+                    return false;
+                // Point the pseudo-account at a keylet with no vault.
+                slePseudo->at(sfVaultID) = uint256(42);
+                ac.view().update(slePseudo);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createVault);
     }
 
     static std::pair<std::uint32_t, uint256>
@@ -3300,6 +3341,38 @@ class Invariants_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 sink.messages().str().contains("Loan Broker deleted with non-zero owner count"));
         }
+
+        // Only one LoanBroker may be deleted per transaction. Create two
+        // brokers under different owners, then erase both in the apply view
+        // and expect the multi-deletion invariant to fire.
+        {
+            Keylet loanBrokerKeylet1 = keylet::amendments();
+            Keylet loanBrokerKeylet2 = keylet::amendments();
+            Preclose const createTwoBrokers =
+                [&, this](Account const& a1, Account const& a2, Env& env) {
+                    PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                    loanBrokerKeylet1 = this->createLoanBroker(a1, env, xrpAsset);
+                    loanBrokerKeylet2 = this->createLoanBroker(a2, env, xrpAsset);
+                    return BEAST_EXPECT(
+                        env.le(loanBrokerKeylet1) && env.le(loanBrokerKeylet2));
+                };
+
+            doInvariantCheck(
+                {{"more than one Loan Broker deleted in a single transaction"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle1 = ac.view().peek(loanBrokerKeylet1);
+                    auto sle2 = ac.view().peek(loanBrokerKeylet2);
+                    if (!BEAST_EXPECT(sle1 && sle2))
+                        return false;
+                    ac.view().erase(sle1);
+                    ac.view().erase(sle2);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createTwoBrokers);
+        }
     }
 
     void
@@ -4454,7 +4527,7 @@ class Invariants_test : public beast::unit_test::Suite
         // debt. Vault cash flows and loan shape are correct; the broker is
         // touched (so the "modify exactly the loan's broker" cardinality
         // check passes) but its sfDebtTotal is left unchanged, so
-        // `Δ DebtTotal (0) != ownedToVault (100)` and the residual check
+        // `delta DebtTotal (0) != owedToVault (100)` and the residual check
         // trips. Requires a real broker on the ledger, so the setup is
         // bespoke.
         {
@@ -4544,7 +4617,7 @@ class Invariants_test : public beast::unit_test::Suite
         // of origination fee). Vault flows, DebtTotal and the loan shape all
         // balance, but the borrower is credited with only half the principal
         // and the remainder is routed to an unrelated account. The vault-side
-        // identity still holds (assetsTotal/assetsAvailable/ownedToVault
+        // identity still holds (assetsTotal/assetsAvailable/owedToVault
         // balance), so only the borrower-disburse check fires.
         {
             Env env{*this, defaultAmendments()};
@@ -4617,7 +4690,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleLoan);
             }
 
-            // Broker's DebtTotal must grow by ownedToVault (100) so the
+            // Broker's DebtTotal must grow by owedToVault (100) so the
             // earlier DebtTotal check passes and the borrower-disburse
             // check is the one that trips.
             {
@@ -4716,7 +4789,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleLoan);
             }
 
-            // ownedToVault = 100 (totalValueOutstanding), so bump DebtTotal
+            // owedToVault = 100 (totalValueOutstanding), so bump DebtTotal
             // by 100 to keep the earlier DebtTotal check happy.
             {
                 auto sleBroker = ac.view().peek(brokerKeylet);
@@ -4737,7 +4810,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
 
         // ttLOAN_SET: vault-side accounting identity
-        // `Δ AssetsTotal − Δ AssetsAvailable == loan.ownedToVault(version)`.
+        // `delta AssetsTotal − delta AssetsAvailable == loan.owedToVault(version)`.
         // Vault balance and assets available fall by 100 (matching the
         // principal release) but assets total is bumped by an extra 10, so
         // the residual is 10 rather than zero. Every other check (funding,
@@ -4803,7 +4876,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleLoan);
             }
 
-            // Bump DebtTotal by ownedToVault (100) so the earlier DebtTotal
+            // Bump DebtTotal by owedToVault (100) so the earlier DebtTotal
             // check passes.
             {
                 auto sleBroker = ac.view().peek(brokerKeylet);
@@ -5105,7 +5178,7 @@ class Invariants_test : public beast::unit_test::Suite
                     ov.rawReplace(sleVault);
                 }
 
-                // Seed a loan in the base view with `ownedToVault` == 100 so
+                // Seed a loan in the base view with `owedToVault` == 100 so
                 // the magnitude check has a definite target.
                 auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
                 {
@@ -5738,8 +5811,8 @@ class Invariants_test : public beast::unit_test::Suite
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
             // Cash inflow of 50 (paid by a2), assets outstanding grows by 100
-            // to keep the conservation identity honest (Δtotal - Δavailable -
-            // Δclaim = 100 - 50 - 50 = 0). Push both principal (100 → 150)
+            // to keep the conservation identity honest (deltatotal - deltaavailable -
+            // deltaclaim = 100 - 50 - 50 = 0). Push both principal (100 → 150)
             // and total value (150 → 200): under either accounting basis the
             // vault's claim grows by 50, which the sign check must reject.
             if (!BEAST_EXPECT(kAdjust(
@@ -5961,13 +6034,13 @@ class Invariants_test : public beast::unit_test::Suite
                 Number afterLossUnrealized;
             };
             auto const cases = std::to_array<Case>({
-                // Non-impaired: expected Δ is 0, but we drop LossUnrealized
+                // Non-impaired: expected delta is 0, but we drop LossUnrealized
                 // by 5.
                 {.beforeLoanFlags = 0,
                  .beforeLossUnrealized = Number(5),
                  .afterLossUnrealized = Number(0)},
-                // Impaired: the vault is cash-basis, so ownedToVault is the
-                // principal only (100) and the expected Δ is -100. We drop
+                // Impaired: the vault is cash-basis, so owedToVault is the
+                // principal only (100) and the expected delta is -100. We drop
                 // LossUnrealized by 50 instead.
                 {.beforeLoanFlags = lsfLoanImpaired,
                  .beforeLossUnrealized = Number(150),
@@ -6000,12 +6073,12 @@ class Invariants_test : public beast::unit_test::Suite
                 OpenView ov{*env.current()};
 
                 // Base LossUnrealized and broker DebtTotal reflect an
-                // outstanding loan whose ownedToVault is 150 (150 total value
+                // outstanding loan whose owedToVault is 150 (150 total value
                 // less zero management fee); the base broker DebtTotal must
-                // match so the Δ DebtTotal identity holds after the payment.
+                // match so the delta DebtTotal identity holds after the payment.
                 // AssetsAvailable and pseudoAccount balance are reduced by
                 // the same 150 so the vault's own accounting (assetsAvailable
-                // + ownedToVault == assetsTotal) is consistent in the base.
+                // + owedToVault == assetsTotal) is consistent in the base.
                 AccountID pseudoId;
                 {
                     auto const sleVaultRead = ov.read(vaultKeylet);
@@ -6059,8 +6132,8 @@ class Invariants_test : public beast::unit_test::Suite
 
                 // Cash inflow of 50 with matching bookkeeping: vault balance
                 // +50, assets available +50, assets total unchanged so the
-                // conservation identity (Δ AssetsTotal − Δ AssetsAvailable
-                // − Δ ownedToVault == 0) holds.
+                // conservation identity (delta AssetsTotal − delta AssetsAvailable
+                // − delta owedToVault == 0) holds.
                 if (!BEAST_EXPECT(kAdjust(
                         ac.view(),
                         vaultKeylet,
@@ -6086,7 +6159,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleLoan->setFieldU32(sfFlags, 0);
                 ac.view().update(sleLoan);
 
-                // Broker's DebtTotal falls by 50 to match Δ ownedToVault.
+                // Broker's DebtTotal falls by 50 to match delta owedToVault.
                 {
                     auto sleBroker = ac.view().peek(brokerKeylet);
                     if (!BEAST_EXPECT(sleBroker))
@@ -6119,7 +6192,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
 
         // ttLOAN_PAY: the broker's sfDebtTotal must fall by exactly the
-        // amount the loan's ownedToVault fell. Every other loan-pay identity
+        // amount the loan's owedToVault fell. Every other loan-pay identity
         // is lined up so only the DebtTotal-tracking check trips. The broker
         // is touched so the "modify exactly the loan's broker" cardinality
         // guard passes.
@@ -6147,7 +6220,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            // Base DebtTotal mirrors the loan's ownedToVault (150).
+            // Base DebtTotal mirrors the loan's owedToVault (150).
             {
                 auto const sleBrokerRead = ov.read(brokerKeylet);
                 if (!BEAST_EXPECT(sleBrokerRead))
@@ -6360,7 +6433,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
 
         // ttLOAN_MANAGE (default): loss unrealized must move by exactly
-        // -beforeLoan.ownedToVault when the loan was impaired, or stay
+        // -beforeLoan.owedToVault when the loan was impaired, or stay
         // unchanged when it was not. Base loan is not impaired, so the
         // expected delta is zero, yet the apply view drops loss unrealized
         // by 5, so the magnitude check trips. Other default-side identities
@@ -6409,7 +6482,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ov.rawReplace(sleVault);
             }
             // Seed the broker with a DebtTotal that mirrors the loan's
-            // ownedToVault so the apply-view -100 lands at zero rather than
+            // owedToVault so the apply-view -100 lands at zero rather than
             // going negative (which would trip a separate ValidLoanBroker
             // check).
             {
@@ -6443,7 +6516,7 @@ class Invariants_test : public beast::unit_test::Suite
             // Vault gets 100 first-loss capital: balance +100 and available
             // +100. Assets total is unchanged because the +100 inflow is
             // netted against the -100 write-off, so
-            // `Δ AssetsTotal − Δ AssetsAvailable − Δ ownedToVault
+            // `delta AssetsTotal − delta AssetsAvailable − delta owedToVault
             //   == 0 − 100 − (−100) == 0`.
             if (!BEAST_EXPECT(kAdjust(
                     ac.view(),
@@ -6462,7 +6535,7 @@ class Invariants_test : public beast::unit_test::Suite
             }
 
             // Broker: sfCoverAvailable drops by 100 (matches vault +100),
-            // sfDebtTotal drops by 100 (matches Δ ownedToVault = -100).
+            // sfDebtTotal drops by 100 (matches delta owedToVault = -100).
             {
                 auto sleBroker = ac.view().peek(brokerKeylet);
                 if (!BEAST_EXPECT(sleBroker))
@@ -6508,7 +6581,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // ttLOAN_MANAGE (default): mirror of the previous test for the
         // impaired branch. The base loan carries lsfLoanImpaired with
-        // ownedToVault = 100, so the paper loss (LossUnrealized = 100) must
+        // owedToVault = 100, so the paper loss (LossUnrealized = 100) must
         // fall by exactly 100 on default. The apply view only drops it by
         // 50, so the residual is 50 and the magnitude check trips.
         {
@@ -6825,7 +6898,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
 
         // ttLOAN_MANAGE (default): sfAssetsAvailable must grow by exactly
-        // the amount the broker released (DefaultCovered = Δ broker
+        // the amount the broker released (DefaultCovered = delta broker
         // sfCoverAvailable). Broker releases 100 and the vault balance
         // grows by 100, but assets available is only credited with 50, so
         // the identity fires. The "adds-up" check fires alongside because
@@ -6891,7 +6964,7 @@ class Invariants_test : public beast::unit_test::Suite
             // Vault: pseudo-account balance +100 (real cash inflow), but
             // AssetsAvailable only +50. AssetsTotal is unchanged so the
             // vault-side conservation identity would want
-            // Δ ownedToVault == Δ AssetsTotal − Δ AssetsAvailable == -50.
+            // delta owedToVault == delta AssetsTotal − delta AssetsAvailable == -50.
             if (!BEAST_EXPECT(kAdjust(
                     ac.view(),
                     vaultKeylet,
@@ -6909,7 +6982,7 @@ class Invariants_test : public beast::unit_test::Suite
             }
             // Broker: cover -100 mirrors the pseudo-account balance (the
             // sfCoverAvailable == pseudoBalance invariant stays intact).
-            // sfDebtTotal drops by 100 to match Δ ownedToVault.
+            // sfDebtTotal drops by 100 to match delta owedToVault.
             {
                 auto sleBroker = ac.view().peek(brokerKeylet);
                 if (!BEAST_EXPECT(sleBroker))
@@ -6943,7 +7016,7 @@ class Invariants_test : public beast::unit_test::Suite
         // ttLOAN_MANAGE (default): the broker's sfDebtTotal must fall by
         // exactly the amount the loan owed to the vault. Every other
         // default-side identity (cover conservation, adds-up, DefaultCovered
-        // == Δ AssetsAvailable, vault-side conservation) balances; only
+        // == delta AssetsAvailable, vault-side conservation) balances; only
         // sfDebtTotal is deliberately mis-adjusted (drops by 50 instead of
         // 100), so the DebtTotal-tracking check trips in isolation.
         {
@@ -7019,7 +7092,7 @@ class Invariants_test : public beast::unit_test::Suite
                 slePseudo->at(sfBalance) = *slePseudo->at(sfBalance) - 100;
                 ac.view().update(slePseudo);
             }
-            // Broker: cover -100 (matches Δ AssetsAvailable), but
+            // Broker: cover -100 (matches delta AssetsAvailable), but
             // sfDebtTotal only drops by 50, not the expected 100.
             {
                 auto sleBroker = ac.view().peek(brokerKeylet);
@@ -7277,7 +7350,7 @@ class Invariants_test : public beast::unit_test::Suite
                 return BEAST_EXPECT(env.le(loanKeylet));
             };
 
-            // (XLS-66 §3.1.5 precondition 1): a LoanBrokerDelete
+            // (XLS-66 3.1.5 precondition 1): a LoanBrokerDelete
             // transaction must not touch any loan. Broker delete requires
             // OwnerCount == 0 (no loans reference the broker); touching a
             // loan alongside the delete points at either an
@@ -10967,6 +11040,7 @@ public:
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testPseudoAccountLoanBrokerLink();
+        testPseudoAccountVaultLink();
         testValidLoanBroker();
         testVault();
         testConfidentialMPTTransfer();

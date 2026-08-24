@@ -384,7 +384,7 @@ private:
             isRounded(broker.asset, newState.principalOutstanding, originalState.loanScale));
     }
 
-    // Reproduces the scenario raised in PR #7732 review: the §3.11.5
+    // Reproduces the scenario raised in PR #7732 review: the 3.11.5
     // non-full-payment invariant asserts that a successful LoanPay strictly
     // decreases PaymentRemaining and advances NextPaymentDueDate. doPayment
     // deliberately leaves those schedule fields unchanged for
@@ -459,7 +459,7 @@ private:
         BEAST_EXPECT(afterReject.nextPaymentDate == before.nextPaymentDate);
 
         // Scenario B - a valid overpayment that also covers one scheduled
-        // payment. This reaches the §3.11.5 invariant with tesSUCCESS:
+        // payment. This reaches the 3.11.5 invariant with tesSUCCESS:
         // PaymentRemaining drops by one, NextPaymentDueDate advances by one
         // interval, and PrincipalOutstanding strictly decreases (by more than a
         // plain payment thanks to the extra). The invariant must accept it.

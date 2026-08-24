@@ -89,7 +89,7 @@ ValidVault::Shares::make(SLE const& from)
 }
 
 Number
-ValidVault::Loan::ownedToVault(VaultVersion version) const
+ValidVault::Loan::owedToVault(VaultVersion version) const
 {
     if (version == VaultVersion::CashBasis)
         return principalOutstanding;
@@ -254,7 +254,7 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
                 break;
             case ltLOAN_BROKER:
                 // See beforeBroker_; captured on both sides so the funding
-                // invariants can read `Δ DebtTotal` directly.
+                // invariants can read `delta DebtTotal` directly.
                 afterBroker_.push_back(Broker::make(*after));
                 break;
             default:;
@@ -449,7 +449,7 @@ ValidVault::checkLoanFunding(
     }
 
     // The remaining participant-side checks are new under featureLendingProtocolV1_1
-    // and use the basis-aware ownedToVault() accessor; keep them behind that gate
+    // and use the basis-aware owedToVault() accessor; keep them behind that gate
     // so pre-V1_1 behaviour is unchanged. The sole caller (finalizeLoanSet) already
     // returns early on the same gate, so this branch is defensive only.
     // LCOV_EXCL_START
@@ -474,12 +474,12 @@ ValidVault::checkLoanFunding(
 
     // The broker's DebtTotal tracks the aggregate amount its loans owe to the
     // vault (basis-aware). A new loan's contribution is what it owes to the
-    // vault at origination, so `Δ DebtTotal == loan.ownedToVault(version)`.
+    // vault at origination, so `delta DebtTotal == loan.owedToVault(version)`.
     // DebtTotal is written via adjustImpreciseNumber (rounded to the vault
     // scale), so compare via a once-rounded residual to avoid a false failure
     // from independently-rounded operands.
     {
-        auto const expected = loan.ownedToVault(afterVault.version);
+        auto const expected = loan.owedToVault(afterVault.version);
         auto const residual = roundToAsset(
             vaultAsset, (afterBroker.debtTotal - beforeBroker.debtTotal) - expected, minScale);
         if (residual != kZero)
@@ -586,10 +586,10 @@ ValidVault::checkLoanFunding(
     }
 
     // Vault-side accounting identity at origination, mirroring the one enforced
-    // for loan payments: `Δ AssetsTotal - Δ AssetsAvailable == Δ ownedToVault`.
+    // for loan payments: `delta AssetsTotal - delta AssetsAvailable == delta owedToVault`.
     // Before the transaction the loan did not exist, so
-    // `Δ ownedToVault == loan.ownedToVault(version)`. Basis-aware via
-    // ownedToVault(): under accrual it books the interest into AssetsTotal,
+    // `delta owedToVault == loan.owedToVault(version)`. Basis-aware via
+    // owedToVault(): under accrual it books the interest into AssetsTotal,
     // under cash-basis it does not. The residual is rounded once for the same
     // reason as in finalizeLoanPay - the underlying identity holds exactly, but
     // a term-wise comparison of independently-rounded operands can drift by a
@@ -599,7 +599,7 @@ ValidVault::checkLoanFunding(
             vaultAsset,
             (afterVault.assetsTotal - beforeVault.assetsTotal) -
                 (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
-                loan.ownedToVault(afterVault.version),
+                loan.owedToVault(afterVault.version),
             minScale);
         if (residual != kZero)
         {
@@ -768,7 +768,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         // produce a false failure.
         if (oneLoan)
         {
-            auto const owed = beforeLoan_[0].ownedToVault(afterVault.version);
+            auto const owed = beforeLoan_[0].owedToVault(afterVault.version);
             auto const expectedDelta = tx.isFlag(tfLoanImpair) ? owed : -owed;
             auto const residual = roundToAsset(
                 vaultAsset,
@@ -811,15 +811,15 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         // Vault-side conservation identity, mirroring the ones enforced for
         // loan origination (checkLoanFunding) and loan payment
         // (finalizeLoanPay):
-        // `Δ AssetsTotal - Δ AssetsAvailable - Δ ownedToVault(version) == 0`.
+        // `delta AssetsTotal - delta AssetsAvailable - delta owedToVault(version) == 0`.
         // On default the loan zeroes, so
-        // `Δ ownedToVault == -beforeLoan.ownedToVault(version)`, which under
+        // `delta owedToVault == -beforeLoan.owedToVault(version)`, which under
         // cash-basis is `-PrincipalOutstanding` and under accrual is
         // `-(TotalValueOutstanding - ManagementFeeOutstanding)`, matching
-        // XLS-66 §3.10.5 / §3.10.5.1. The residual is rounded once for the same
+        // XLS-66 3.10.5 / 3.10.5.1. The residual is rounded once for the same
         // reason as the other two identities - term-wise comparison of
         // independently-rounded operands can drift by a ULP. Basis-aware via
-        // ownedToVault(). Depends on the loan cardinality, so guarded by
+        // owedToVault(). Depends on the loan cardinality, so guarded by
         // oneLoan.
         if (oneLoan)
         {
@@ -827,8 +827,8 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                 vaultAsset,
                 (afterVault.assetsTotal - beforeVault.assetsTotal) -
                     (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
-                    (afterLoan_[0].ownedToVault(afterVault.version) -
-                     beforeLoan_[0].ownedToVault(afterVault.version)),
+                    (afterLoan_[0].owedToVault(afterVault.version) -
+                     beforeLoan_[0].owedToVault(afterVault.version)),
                 minScale);
             if (residual != kZero)
             {
@@ -861,7 +861,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         if (oneLoan)
         {
             Number const expectedDelta =
-                beforeLoan_[0].impaired ? -beforeLoan_[0].ownedToVault(afterVault.version) : kZero;
+                beforeLoan_[0].impaired ? -beforeLoan_[0].owedToVault(afterVault.version) : kZero;
             auto const residual = roundToAsset(
                 vaultAsset,
                 (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
@@ -942,7 +942,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                     result = false;
                 }
 
-                // Δ AssetsAvailable == DefaultCovered: the vault credits its
+                // delta AssetsAvailable == DefaultCovered: the vault credits its
                 // available assets by exactly what the broker released. Rounded
                 // once to avoid a false failure from independently-rounded
                 // operands - beforeBroker.coverAvailable/afterBroker.coverAvailable
@@ -971,8 +971,8 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                 auto const brokerResidual = roundToAsset(
                     vaultAsset,
                     (afterBroker.debtTotal - beforeBroker.debtTotal) -
-                        (afterLoan_[0].ownedToVault(afterVault.version) -
-                         beforeLoan_[0].ownedToVault(afterVault.version)),
+                        (afterLoan_[0].owedToVault(afterVault.version) -
+                         beforeLoan_[0].owedToVault(afterVault.version)),
                     minScale);
                 if (brokerResidual != kZero)
                 {
@@ -1118,7 +1118,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     auto const version = afterVault.version;
     auto const owedDelta = roundToAsset(
         vaultAsset,
-        afterLoan_[0].ownedToVault(version) - beforeLoan_[0].ownedToVault(version),
+        afterLoan_[0].owedToVault(version) - beforeLoan_[0].owedToVault(version),
         minScale);
 
     // A payment services the loan, so the amount the loan owes to the vault
@@ -1142,7 +1142,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     // the same reason.
     {
         Number const expectedDelta =
-            beforeLoan_[0].impaired ? -beforeLoan_[0].ownedToVault(version) : kZero;
+            beforeLoan_[0].impaired ? -beforeLoan_[0].owedToVault(version) : kZero;
         auto const residual = roundToAsset(
             vaultAsset,
             (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
@@ -1173,7 +1173,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         vaultAsset,
         (afterVault.assetsTotal - beforeVault.assetsTotal) -
             (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
-            (afterLoan_[0].ownedToVault(version) - beforeLoan_[0].ownedToVault(version)),
+            (afterLoan_[0].owedToVault(version) - beforeLoan_[0].owedToVault(version)),
         minScale);
     if (residual != kZero)
     {
@@ -1185,12 +1185,12 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     }
 
     // Under featureLendingProtocolV1_1, tie the broker's aggregate amount owed
-    // to the vault (DebtTotal) to the touched loan's `ownedToVault` delta:
+    // to the vault (DebtTotal) to the touched loan's `owedToVault` delta:
     // since a LoanPay touches exactly one loan,
-    // `Δ DebtTotal == Δ ownedToVault(loan)`. The universal
-    // `DebtTotal == Σ ownedToVault` identity reduces to this delta check
+    // `delta DebtTotal == delta owedToVault(loan)`. The universal
+    // `DebtTotal == Σ owedToVault` identity reduces to this delta check
     // because loans are modified one at a time. Basis-aware via
-    // ownedToVault(); the residual is rounded once for the same reason as
+    // owedToVault(); the residual is rounded once for the same reason as
     // the identity above.
     if (beforeBroker_.size() != 1 || afterBroker_.size() != 1 ||
         afterBroker_[0].key != afterLoan_[0].loanBrokerID)
@@ -1204,7 +1204,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         auto const brokerResidual = roundToAsset(
             vaultAsset,
             (afterBroker_[0].debtTotal - beforeBroker_[0].debtTotal) -
-                (afterLoan_[0].ownedToVault(version) - beforeLoan_[0].ownedToVault(version)),
+                (afterLoan_[0].owedToVault(version) - beforeLoan_[0].owedToVault(version)),
             minScale);
         if (brokerResidual != kZero)
         {
@@ -1502,7 +1502,7 @@ ValidVault::finalize(
             result = false;
         }
 
-        // (XLS-65 §3.1.6.1.3, §3.6): shares of a non-transferable vault
+        // (XLS-65 3.1.6.1.3, 3.6): shares of a non-transferable vault
         // (tfVaultShareNonTransferable → lsfMPTCanTransfer absent on the share
         // issuance) may only be issued or burned by the vault's own
         // deposit/withdraw/clawback flow. Any other transaction (notably Payment)
@@ -1527,10 +1527,10 @@ ValidVault::finalize(
         // vault set is excluded because it may never change either, and
         // vault create has nothing to compare against.
         //
-        // The identity is written as `Δ (AssetsAvailable + reserved) ==
-        // Δ pseudo-account balance`, with `reserved == 0` today.  When
+        // The identity is written as `delta (AssetsAvailable + reserved) ==
+        // delta pseudo-account balance`, with `reserved == 0` today.  When
         // Vault.AssetsReserved is introduced, the identity extends to
-        // `Δ AssetsAvailable + Δ AssetsReserved == Δ pseudo-account balance`
+        // `delta AssetsAvailable + delta AssetsReserved == delta pseudo-account balance`
         // by taking the sum of the two vault-side fields on both sides of the
         // delta.  See PR #7732 discussion r3756798430.
         if (txnType != ttVAULT_CREATE && txnType != ttVAULT_SET)

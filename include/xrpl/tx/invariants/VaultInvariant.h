@@ -137,7 +137,7 @@ class ValidVault
         // once received, it is the outstanding principal alone. Mirrors
         // loanVaultExposure in LendingHelpers.cpp.
         [[nodiscard]] Number
-        ownedToVault(VaultVersion version) const;
+        owedToVault(VaultVersion version) const;
 
         Loan static make(SLE const&);
     };
