@@ -41,6 +41,39 @@ TEST(ConsensusSpanNames, phase_open_end_attribute_keys)
     EXPECT_EQ(std::string_view(attr::openDurationMs), "open_duration_ms");
     EXPECT_EQ(std::string_view(attr::peerPositionsAtClose), "peer_positions_at_close");
     EXPECT_EQ(std::string_view(attr::txSetsAcquired), "tx_sets_acquired");
+    EXPECT_EQ(std::string_view(attr::closeReason), "close_reason");
+    EXPECT_EQ(std::string_view(attr::proposersValidated), "proposers_validated");
+}
+
+TEST(ConsensusSpanNames, close_reason_values_are_the_close_paths)
+{
+    // One per branch of whyCloseLedger() that closes the ledger. keep_open is
+    // never emitted (the attribute is only set on the closing path) but is
+    // labelled rather than left blank so the mapping is total.
+    EXPECT_EQ(std::string_view(val::closeKeepOpen), "keep_open");
+    EXPECT_EQ(std::string_view(val::closeAnomaly), "anomaly");
+    EXPECT_EQ(std::string_view(val::closeOthersClosed), "others_closed");
+    EXPECT_EQ(std::string_view(val::closeIdle), "idle");
+    EXPECT_EQ(std::string_view(val::closeNormal), "normal");
+}
+
+TEST(ConsensusSpanNames, close_reason_label_maps_every_enum_state)
+{
+    // A missed branch would attribute a close to the wrong cause, which is the
+    // whole point of the attribute, so every enumerator is asserted.
+    EXPECT_EQ(closeReasonLabel(xrpl::LedgerCloseReason::KeepOpen), "keep_open");
+    EXPECT_EQ(closeReasonLabel(xrpl::LedgerCloseReason::Anomaly), "anomaly");
+    EXPECT_EQ(closeReasonLabel(xrpl::LedgerCloseReason::OthersClosed), "others_closed");
+    EXPECT_EQ(closeReasonLabel(xrpl::LedgerCloseReason::Idle), "idle");
+    EXPECT_EQ(closeReasonLabel(xrpl::LedgerCloseReason::Normal), "normal");
+}
+
+TEST(ConsensusSpanNames, close_reason_label_is_usable_at_compile_time)
+{
+    static_assert(
+        closeReasonLabel(xrpl::LedgerCloseReason::Idle) == "idle",
+        "closeReasonLabel must be constexpr-evaluable");
+    SUCCEED();
 }
 
 TEST(ConsensusSpanNames, establish_attribute_keys)

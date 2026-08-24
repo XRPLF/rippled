@@ -32,10 +32,35 @@
 namespace xrpl {
 
 /**
+ * Determines why the current ledger should close at this time.
+ *
+ * Holds the close decision that shouldCloseLedger() reduces to a bool. Call
+ * this one when the deciding branch matters. Both log identically, so call
+ * one or the other, never both. Parameters match shouldCloseLedger().
+ *
+ * @return The deciding branch, or KeepOpen if no close condition is met.
+ */
+LedgerCloseReason
+whyCloseLedger(
+    bool anyTransactions,
+    std::size_t prevProposers,
+    std::size_t proposersClosed,
+    std::size_t proposersValidated,
+    std::chrono::milliseconds prevRoundTime,
+    std::chrono::milliseconds timeSincePrevClose,
+    std::chrono::milliseconds openTime,
+    std::chrono::milliseconds idleInterval,
+    ConsensusParms const& parms,
+    beast::Journal j,
+    std::unique_ptr<std::stringstream> const& clog = {});
+
+/**
  * Determines whether the current ledger should close at this time.
  *
  * This function should be called when a ledger is open and there is no close
  * in progress, or when a transaction is received and no close is in progress.
+ *
+ * Equivalent to `whyCloseLedger(...) != LedgerCloseReason::KeepOpen`.
  *
  * @param anyTransactions indicates whether any transactions have been received
  * @param prevProposers proposers in the last closing
@@ -790,17 +815,13 @@ Consensus<Adaptor>::startRoundInternal(
     if (*openSpan_)
     {
         namespace cs = telemetry::consensus::span;
-        // Which entry path created this span. A handleWrongLedger recovery
-        // re-enters startRoundInternal and emplaces a SECOND phase.open span
-        // under the same round span, so without this the two are
-        // indistinguishable in a trace.
+        // A recovery emplaces a SECOND phase.open span under the same round,
+        // so this is what tells the two apart.
         openSpan_->setAttribute(
             cs::attr::startReason,
             reason == StartRoundReason::Recovered ? std::string_view{cs::val::startRecovered}
                                                   : std::string_view{cs::val::startInitial});
-        // Read from the parameter, not previousLedger_, which is not assigned
-        // until further down this function. Feeds the sinceClose calculation
-        // in phaseOpen().
+        // From the parameter: previousLedger_ is not assigned until below.
         openSpan_->setAttribute(cs::attr::previousCloseAgree, prevLedger.closeAgree());
     }
     // On the Recovered path, fire phase.open here because startRoundTracing
@@ -840,18 +861,14 @@ Consensus<Adaptor>::startRoundInternal(
     // We may be falling behind, don't wait for the timer
     // consider closing the ledger immediately
     bool const closeImmediately = currPeerPositions_.size() > (prevProposers_ / 2);
-    // Annotate before the timerEntry() below, which can reach closeLedger()
-    // and end this span.
+    // Annotate before the timerEntry() below, which can end this span.
     if (openSpan_ && *openSpan_)
     {
         namespace cs = telemetry::consensus::span;
-        // Positions already in hand once playbackProposals() has replayed the
-        // buffered ones — the head start this round began with. Pairs with
-        // peer_positions_at_close on the same span.
+        // Head start after playbackProposals() replayed the buffered
+        // positions. Pairs with peer_positions_at_close.
         openSpan_->setAttribute(
             cs::attr::peerPositionsAtOpen, static_cast<int64_t>(currPeerPositions_.size()));
-        // Whether the round skipped waiting for the timer because enough peers
-        // had already closed.
         openSpan_->setAttribute(cs::attr::earlyCloseTriggered, closeImmediately);
     }
     if (closeImmediately)
@@ -1344,20 +1361,32 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
                << ", previous ledger close time resolution: "
                << previousLedger_.closeTimeResolution().count() << "ms. ";
 
-    // Decide if we should close the ledger
-    if (shouldCloseLedger(
-            anyTransactions,
-            prevProposers_,
-            proposersClosed,
-            proposersValidated,
-            prevRoundTime_,
-            sinceClose,
-            openTime_.read(),
-            idleInterval,
-            adaptor_.parms(),
-            j_,
-            clog))
+    // Decide if we should close the ledger. whyCloseLedger() so the deciding
+    // branch can be recorded; it logs the same, so only one is called.
+    LedgerCloseReason const closeReason = whyCloseLedger(
+        anyTransactions,
+        prevProposers_,
+        proposersClosed,
+        proposersValidated,
+        prevRoundTime_,
+        sinceClose,
+        openTime_.read(),
+        idleInterval,
+        adaptor_.parms(),
+        j_,
+        clog);
+    if (closeReason != LedgerCloseReason::KeepOpen)
     {
+        // Annotate before closeLedger() ends the span. Set once: the phase
+        // moves to Establish, so phaseOpen() is not entered again this round.
+        // Absent on the simulate() path, which bypasses this decision.
+        if (openSpan_ && *openSpan_)
+        {
+            namespace cs = telemetry::consensus::span;
+            openSpan_->setAttribute(cs::attr::closeReason, cs::closeReasonLabel(closeReason));
+            openSpan_->setAttribute(
+                cs::attr::proposersValidated, static_cast<int64_t>(proposersValidated));
+        }
         CLOG(clog) << "closing ledger. ";
         closeLedger(clog);
     }
@@ -1595,10 +1624,8 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
             cs::attr::openDurationMs, static_cast<int64_t>(openTime_.read().count()));
         openSpan_->setAttribute(
             cs::attr::peerPositionsAtClose, static_cast<int64_t>(currPeerPositions_.size()));
-        // Candidate transaction sets held at close. Read before our own
-        // position is added below, so this counts only what peers shared. A
-        // low count against a high peer_positions_at_close means tx-set
-        // fetches did not land, not that peers disagreed.
+        // Read before our own position is added below, so this counts only
+        // what peers shared.
         openSpan_->setAttribute(cs::attr::txSetsAcquired, static_cast<int64_t>(acquired_.size()));
     }
     openSpan_.reset();
@@ -2153,10 +2180,8 @@ Consensus<Adaptor>::startEstablishTracing()
     if (*establishSpan_)
     {
         establishSpanContext_ = establishSpan_->spanContext();
-        // Disputes carried into the phase from the positions held at close.
-        // Set once (this function early-returns while the span is live),
-        // unlike disputes_count, which updateEstablishTracing() overwrites
-        // every iteration and so only ever reports the final value.
+        // Disputes carried in from the positions held at close. Set once:
+        // this function early-returns while the span is live.
         if (result_)
         {
             establishSpan_->setAttribute(
@@ -2188,9 +2213,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::endEstablishTracing()
 {
-    // Terminal close-time convergence regime, recorded once before the span
-    // ends. The derived avalanche_threshold on consensus.update_positions is
-    // a weight, not the state, and cannot be inverted back to it.
+    // Terminal convergence regime, recorded once before the span ends.
     if (establishSpan_ && *establishSpan_)
     {
         establishSpan_->setAttribute(

@@ -66,6 +66,33 @@ shouldCloseLedger(
         clog);
 }
 
+LedgerCloseReason
+whyCloseLedger(
+    bool anyTransactions,
+    std::size_t prevProposers,
+    std::size_t proposersClosed,
+    std::size_t proposersValidated,
+    std::chrono::milliseconds prevRoundTime,
+    std::chrono::milliseconds timeSincePrevClose,
+    std::chrono::milliseconds openTime,
+    std::chrono::milliseconds idleInterval,
+    ConsensusParms const& parms,
+    std::unique_ptr<std::stringstream> const& clog = {})
+{
+    return xrpl::whyCloseLedger(
+        anyTransactions,
+        prevProposers,
+        proposersClosed,
+        proposersValidated,
+        prevRoundTime,
+        timeSincePrevClose,
+        openTime,
+        idleInterval,
+        parms,
+        journal(),
+        clog);
+}
+
 ConsensusState
 checkConsensus(
     std::size_t prevProposers,
@@ -217,6 +244,57 @@ TEST(ConsensusTest, should_close_ledger)
     EXPECT_TRUE(!shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p));
 
     EXPECT_TRUE(shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p));
+}
+
+TEST(ConsensusTest, why_close_ledger_reports_the_deciding_branch)
+{
+    using namespace std::chrono_literals;
+    SCOPED_TRACE("why close ledger");
+
+    // Same input vectors as should_close_ledger above, pinned to the reason
+    // rather than the bool, so a branch that starts returning the wrong
+    // reason is caught even though the close/no-close verdict is unchanged.
+    ConsensusParms const p{};
+
+    // Bizarre times forcibly close. These vectors ALSO satisfy the
+    // others-closed condition (8 > 10/2), so they pin the precedence: the
+    // anomaly check runs first.
+    EXPECT_EQ(whyCloseLedger(true, 10, 10, 10, -10s, 10s, 1s, 1s, p), LedgerCloseReason::Anomaly);
+    EXPECT_EQ(whyCloseLedger(true, 10, 10, 10, 100h, 10s, 1s, 1s, p), LedgerCloseReason::Anomaly);
+    EXPECT_EQ(whyCloseLedger(true, 10, 10, 10, 10s, 100h, 1s, 1s, p), LedgerCloseReason::Anomaly);
+
+    // Rest of network has closed: 3 closed + 5 validated > 10/2.
+    EXPECT_EQ(
+        whyCloseLedger(true, 10, 3, 5, 10s, 10s, 10s, 10s, p), LedgerCloseReason::OthersClosed);
+
+    // No transactions: keep open until the idle interval elapses, then close
+    // as idle rather than as a normal close.
+    EXPECT_EQ(whyCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, p), LedgerCloseReason::KeepOpen);
+    EXPECT_EQ(whyCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p), LedgerCloseReason::Idle);
+
+    // Transactions present, but under ledgerMinClose (2s).
+    EXPECT_EQ(whyCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, p), LedgerCloseReason::KeepOpen);
+
+    // Past ledgerMinClose but under prevRoundTime/2 (5s), so still too fast.
+    EXPECT_EQ(whyCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p), LedgerCloseReason::KeepOpen);
+
+    // Both minimum-open constraints satisfied.
+    EXPECT_EQ(whyCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p), LedgerCloseReason::Normal);
+}
+
+TEST(ConsensusTest, why_close_ledger_idle_boundary_is_inclusive)
+{
+    using namespace std::chrono_literals;
+    SCOPED_TRACE("idle boundary");
+
+    // The idle path closes on `timeSincePrevClose >= idleInterval`. One
+    // millisecond either side of the boundary, to pin the comparison as
+    // inclusive rather than strict.
+    ConsensusParms const p{};
+
+    EXPECT_EQ(whyCloseLedger(false, 10, 0, 0, 1s, 9999ms, 1s, 10s, p), LedgerCloseReason::KeepOpen);
+    EXPECT_EQ(whyCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p), LedgerCloseReason::Idle);
+    EXPECT_EQ(whyCloseLedger(false, 10, 0, 0, 1s, 10001ms, 1s, 10s, p), LedgerCloseReason::Idle);
 }
 
 TEST(ConsensusTest, check_consensus)
