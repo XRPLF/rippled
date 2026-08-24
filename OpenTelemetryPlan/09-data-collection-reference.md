@@ -677,21 +677,17 @@ prefix=xrpld
 | Prometheus Metric | Source File       | Unit | Description                    |
 | ----------------- | ----------------- | ---- | ------------------------------ |
 | `rpc_time`        | ServerHandler.cpp | ms   | RPC response time distribution |
-| `rpc_size`        | ServerHandler.cpp | ms\* | RPC response size (see note)   |
+| `rpc_size`        | ServerHandler.cpp | By\* | RPC response size (see note)   |
 | `ios_latency`     | Application.cpp   | ms   | I/O service loop latency       |
 | `pathfind_fast`   | PathRequests.h    | ms   | Fast pathfinding duration      |
 | `pathfind_full`   | PathRequests.h    | ms   | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
-\* **`rpc_size` now records bytes as bytes (fixed).** It used to go through the
-millisecond-scaled event histogram and export as `rpc_size_milliseconds_bucket`
-on a ladder topping out at 5000, so the 24.9% of responses larger than 5 kB all
-landed in the last bucket and every percentile read back as a flat 5000 — a
-plausible-looking constant rather than a byte size. `beast::insight::Event` now
+\* **`rpc_size` records bytes, not a duration.** `beast::insight::Event`
 declares a `Unit`, so this instrument is created with unit `By` and exports as
 **`rpc_size_bytes_bucket`** on `kByteBuckets` (512 B to 1 MiB, placed from the
-measured distribution). Queries and panels must use the new name.
+measured distribution). Queries and panels must use that name.
 
 **Grafana dashboards**: _Node Health_ (`ios_latency`), _RPC & Pathfinding_ (`rpc_time`, `rpc_size`, `pathfind_*`)
 

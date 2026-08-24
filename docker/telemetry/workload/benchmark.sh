@@ -189,9 +189,11 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
+# No prefix is set on purpose: OTelCollector applies no prefix to instrument
+# names, so setting one here would be inert. Same reasoning as
+# run-full-validation.sh.
 server=otel
-endpoint=http://localhost:4318/v1/metrics
-prefix=xrpld"
+endpoint=http://localhost:4318/v1/metrics"
         else
             telemetry_section="
 [telemetry]
@@ -238,8 +240,8 @@ ${ips_fixed}
 ${telemetry_section}
 
 [rpc_startup]
-# Deliberately diverges from run-full-validation.sh (which uses info) and keeps
-# prefix=xrpld above. This script measures telemetry OVERHEAD as the delta
+# The log level deliberately diverges from run-full-validation.sh, which uses
+# info. This script measures telemetry OVERHEAD as the delta
 # between a telemetry-off and a telemetry-on arm, so it needs a quiet, identical
 # baseline in both arms rather than good observability. Logging is synchronous, so
 # admitting more log lines would add I/O to both arms and inflate the CPU,
