@@ -1896,21 +1896,31 @@ public:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        // featureLendingProtocolV1_1 adds a closed-ended vault gate on
-        // LoanBrokerSet::preclaim (see LoanBrokerSet.cpp). This test uses
-        // an open-ended vault, which is fine under pre-LP V1.1 semantics
-        // but would be rejected under the amendment. Strip the amendment
-        // to preserve the pre-LP V1.1 behaviour this test asserts.
-        Env env{*this, jtx::testableAmendments() - featureLendingProtocolV1_1};
+        Env env{*this};
         Vault const vault{env};
         env.fund(XRP(10'000), lender, borrower);
         env.close();
 
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = xrpIssue()});
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build one with a near-future
+        // SubscriptionDate, deposit while still in the Subscription phase,
+        // and advance past SubscriptionDate before creating the broker.
+        using dur = NetClock::duration;
+        using tp = NetClock::time_point;
+        auto const sub = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 10u;
+        auto const red = sub + 1'000'000u;
+        auto [vaultTx, vaultKeylet] = vault.create(
+            {.owner = lender,
+             .asset = xrpIssue(),
+             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+             .subscriptionDate = sub,
+             .redemptionDate = red});
         env(vaultTx);
         env.close();
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = XRP(1'000)}));
         env.close();
+
+        env.close(tp{dur{sub + 1}});
 
         auto const brokerKeylet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
