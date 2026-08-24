@@ -235,9 +235,17 @@ git log -1 --format='%h %s'
 
 ## 5. Run the collector
 
-**Bring it up with both compose files.** The base file alone yields a collector
-with only local exporters — telemetry silently never leaves the host, the Cloud
-dashboards read empty, and nothing logs an error. This has caused lost
+**This host needs the collector, not the local Grafana stack.** Telemetry from
+these nodes is read in Grafana Cloud — section 7 verifies by querying Cloud, and
+nothing here uses the host's own Tempo, Prometheus, Grafana or Loki. The base
+compose file nevertheless defines all of them, so a plain `up -d` starts five
+services that are never looked at. Bring up the collector alone unless you have a
+specific reason to want the local stack (the local validation harness under
+`workload/` does need it).
+
+**Whatever you bring up, use both compose files.** The base file alone yields a
+collector with only local exporters — telemetry silently never leaves the host,
+the Cloud dashboards read empty, and nothing logs an error. This has caused lost
 measurement runs more than once.
 
 ```sh
