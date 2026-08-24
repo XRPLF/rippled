@@ -67,6 +67,16 @@
 
 namespace xrpl::test {
 
+/**
+ * Shared base for the Loan*_test family under src/test/app/lending/.
+ *
+ * Run all suites in this family with
+ *   xrpld -u Loan,LendingHelpers
+ * The "Loan" prefix is matched against every suite name via
+ * beast::unit_test::Selector::ModeT::Automatch; LendingHelpers is listed
+ * explicitly because it does not share the "Loan" prefix (and lives in a
+ * different module: app vs tx).
+ */
 class LoanTestBase : public beast::unit_test::Suite
 {
 protected:

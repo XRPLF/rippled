@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
@@ -13,6 +14,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 #include <optional>
@@ -67,6 +69,23 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     return assets;
 }
 
+[[nodiscard]] Number
+assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive)
+{
+    Number assetTotal = vault->at(sfAssetsTotal);
+    if (waive == WaiveUnrealizedLoss::No)
+        assetTotal -= vault->at(sfLossUnrealized);
+    return assetTotal;
+}
+
+[[nodiscard]] bool
+debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount)
+{
+    if (amount == 0)
+        return false;
+    return STAmount{asset, total - amount} == STAmount{asset, total};
+}
+
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     SLE::const_ref vault,
@@ -82,9 +101,7 @@ assetsToSharesWithdraw(
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number assetTotal = vault->at(sfAssetsTotal);
-    if (waive == WaiveUnrealizedLoss::No)
-        assetTotal -= vault->at(sfLossUnrealized);
+    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
@@ -110,9 +127,7 @@ sharesToAssetsWithdraw(
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number assetTotal = vault->at(sfAssetsTotal);
-    if (waive == WaiveUnrealizedLoss::No)
-        assetTotal -= vault->at(sfLossUnrealized);
+    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
@@ -227,6 +242,28 @@ getVaultPhase(
     if (!hasExpired(view, redemptionDate))
         return VaultPhase::Investment;
     return VaultPhase::Redemption;
+}
+
+[[nodiscard]] TER
+checkVaultDomain(
+    ReadView const& view,
+    SLE::const_ref issuance,
+    AccountID const& subject,
+    SuppressExpired suppressExpired)
+{
+    XRPL_ASSERT(
+        issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::checkVaultDomain : valid issuance SLE");
+
+    auto const maybeDomainID = issuance->at(~sfDomainID);
+    if (!maybeDomainID)
+        return tecNO_AUTH;
+
+    auto const err = credentials::validDomain(view, *maybeDomainID, subject);
+    if (err == tecEXPIRED && suppressExpired == SuppressExpired::Yes)
+        return tesSUCCESS;
+
+    return err;
 }
 
 }  // namespace xrpl

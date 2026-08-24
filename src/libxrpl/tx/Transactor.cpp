@@ -41,11 +41,11 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <functional>
 #include <map>
 #include <optional>
@@ -1246,7 +1246,7 @@ removeExpiredNFTokenOffers(
 }
 
 static void
-removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
+removeDeletedCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
 {
     for (auto const& index : creds)
     {
@@ -1255,7 +1255,7 @@ removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
             if (auto const ter = credentials::deleteSLE(view, sle, viewJ); !isTesSuccess(ter))
             {
                 JLOG(viewJ.error())
-                    << "removeExpiredCredentials: failed to delete expired credential. Err: "
+                    << "removeDeletedCredentials: failed to delete credential. Err: "
                     << transToken(ter);
             }
         }
@@ -1437,7 +1437,8 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
 
-    auto typesForResult = [](TER const ter) {
+    auto typesForResult = [credentialCleanup =
+                               view().rules().enabled(fixCleanup3_4_0)](TER const ter) {
         std::unordered_set<LedgerEntryType> types;
         if ((ter == tecOVERSIZE) || (ter == tecKILLED))
         {
@@ -1446,6 +1447,11 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
         else if (ter == tecINCOMPLETE)
         {
             types.insert(ltRIPPLE_STATE);
+            // A bounded pseudo-account credential cleanup (VaultDelete /
+            // LoanBrokerDelete) persists its partial credential deletions so a
+            // later transaction can resume.
+            if (credentialCleanup)
+                types.insert(ltCREDENTIAL);
         }
         else if (ter == tecEXPIRED)
         {
@@ -1523,7 +1529,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                     removeDeletedTrustLines(view(), ids, viewJ);
                     break;
                 case ltCREDENTIAL:
-                    removeExpiredCredentials(view(), ids, viewJ);
+                    removeDeletedCredentials(view(), ids, viewJ);
                     break;
                 // LCOV_EXCL_START
                 default:
@@ -1540,53 +1546,12 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
 }
 
 [[nodiscard]] TER
-Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
+Transactor::checkInvariants(TER result, XRPAmount fee, InvariantScope scope)
 {
-    try
-    {
-        // Phase 1: visit modified entries
-        ctx_.visit(
-            [this](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-                this->visitInvariantEntry(isDelete, before, after);
-            });
+    if (scope == InvariantScope::Full)
+        return xrpl::checkInvariants(ctx_, result, fee, *this);
 
-        // Phase 2: finalize
-        if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
-        {
-            JLOG(ctx_.journal.fatal()) <<                                             //
-                "Transaction has failed one or more transaction invariants, tx: " <<  //
-                to_string(ctx_.tx.getJson(JsonOptions::Values::None));
-            return tecINVARIANT_FAILED;
-        }
-    }
-    catch (std::exception const& ex)
-    {
-        JLOG(ctx_.journal.fatal()) <<                               //
-            "Exception while checking transaction invariants: " <<  //
-            ex.what() <<                                            //
-            ", tx: " <<                                             //
-            to_string(ctx_.tx.getJson(JsonOptions::Values::None));
-
-        return tecINVARIANT_FAILED;
-    }
-
-    return result;
-}
-
-[[nodiscard]] TER
-Transactor::checkInvariants(TER result, XRPAmount fee)
-{
-    /*
-     * DISABLED for 3.2.0 — Must be re-introduced for 3.3.0
-     *
-     * Transaction invariants are disabled due to a performance regression:
-     * the two-pass design (transaction-specific invariants + protocol invariants)
-     * iterates over modified ledger entries twice per transaction.
-     *
-     * Until resolved, only protocol invariants are checked (delegated to ctx_).
-     * This is safe because all transaction invariants in 3.2.0 are  no-ops.
-     */
-    return ctx_.checkInvariants(result, fee);
+    return xrpl::checkInvariants(ctx_, result, fee);
 }
 
 //------------------------------------------------------------------------------
@@ -1674,24 +1639,29 @@ Transactor::operator()()
     if (!canApply)
         return logger(result, canApply);
 
-    // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
-    // proceed to apply the tx
-    result = checkInvariants(result, fee);
+    // First invariant pass: both protocol and transaction-specific
+    // checks run against the transaction's tentative outcome. If it
+    // does not return tecINVARIANT_FAILED, we can proceed to apply the
+    // tx.
+    result = checkInvariants(result, fee, InvariantScope::Full);
     if (result == tecINVARIANT_FAILED)
     {
-        // Reset to fee-claim only
+        // Fee-claim reset: roll the transaction's effects back so that
+        // only the fee deduction remains. This is the reset referenced
+        // by InvariantScope::ProtocolOnly.
         auto const resetResult = reset(fee);
         if (!isTesSuccess(resetResult.first))
             result = resetResult.first;
 
         fee = resetResult.second;
 
-        // Check invariants again to ensure the fee claiming doesn't violate
-        // invariants. After reset, only protocol invariants are re-checked.
-        // Transaction invariants are not meaningful here — the transaction's
-        // effects have been rolled back.
+        // Re-check invariants against the post-reset (fee-claim only)
+        // state. The transaction's effects are gone, so the
+        // transaction-specific invariants no longer apply and only the
+        // protocol invariants are re-run. A failure here escalates to
+        // tefINVARIANT_FAILED and excludes the tx from the ledger.
         if (isTesSuccess(result) || isTecClaim(result))
-            result = ctx_.checkInvariants(result, fee);
+            result = checkInvariants(result, fee, InvariantScope::ProtocolOnly);
     }
 
     // We ran through the invariant checker, which can, in some cases,
