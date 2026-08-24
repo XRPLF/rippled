@@ -15,7 +15,16 @@
 #   {{IPS_FIXED}}         — Peer addresses (one per line)
 #   {{OTEL_ENDPOINT}}     — OTel Collector OTLP/HTTP traces endpoint
 #   {{OTEL_METRICS_ENDPOINT}} — OTel Collector OTLP/HTTP metrics endpoint
-#   {{LOG_LEVEL}}         — Log level (debug, info, warning, error)
+#   {{LOG_LEVEL}}         — Log level. Must be at least `info` for the
+#                           log-trace correlation checks to pass: they need a
+#                           log line emitted while a span is current on the
+#                           thread. The guaranteed such line is the consensus
+#                           accept pair in RCLConsensus.cpp, which is at info
+#                           and sits inside the activation doAccept makes over
+#                           its whole body. `warning` and above suppress it and
+#                           leave the checks with nothing to find. Do not use
+#                           `debug`: it adds log I/O inside the spans whose
+#                           latency regression-metrics.json gates.
 
 [server]
 port_rpc

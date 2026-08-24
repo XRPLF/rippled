@@ -2747,6 +2747,36 @@ This enables bidirectional navigation between logs and traces in Grafana:
 - **Tempo -> Loki**: Click "Logs for this trace" on any trace in Grafana Tempo to see all log lines from that trace.
 - **Loki -> Tempo**: Click the `TraceID` derived field link on any log line containing `trace_id=` to jump to the full trace in Tempo.
 
+### Which Log Lines Carry Trace Context
+
+Correlation requires a log line emitted **while a span is current on the emitting thread**. `Log.cpp` injects `trace_id`/`span_id` by reading `RuntimeContext::GetCurrent()`, so what matters is whether anything has pushed a span onto that thread's context store.
+
+A span becomes current in **either** of two ways:
+
+- As a [`ScopedSpanGuard`](../include/xrpl/telemetry/SpanGuard.h), which activates on construction.
+- By activating a plain `SpanGuard` through `activate()` or the `activateIfLive()` wrapper. `activate()` returns a `ScopedActivation` whose `Impl` holds an `otel_trace::Scope` constructed from the span, and that `Scope` pushes onto the same `RuntimeContext` store `Log.cpp` reads.
+
+A plain `SpanGuard` that is **never activated** makes no span current — it "never pushes the span onto the thread-local context stack" ([SpanGuard.h](../include/xrpl/telemetry/SpanGuard.h#L274)) — so lines inside such a region carry no `trace_id` regardless of severity.
+
+Severity does not affect injection, but `JLOG` filters on severity **before** `format()` runs, so the configured log level decides whether a qualifying line is emitted at all.
+
+**The guaranteed correlated line at `info`** is the consensus accept pair at [RCLConsensus.cpp:736/740](../src/xrpld/app/consensus/RCLConsensus.cpp#L736) — an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient over its whole body at [:565](../src/xrpld/app/consensus/RCLConsensus.cpp#L565) (`activateIfLive(acceptSpan)`, commented "Make the accept span ambient for the whole accept so doAccept's log lines ... correlate to it"), and the activation lives to the end of the function, so both branches are inside it. At roughly one round every 4 s this yields dozens of correlated lines per run.
+
+`info` is therefore the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks are satisfied by construction, and it is what the workload harness generates. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
+
+#### Why not `debug`
+
+`debug` does correlate strictly more: it additionally brings in [`BuildLedger.cpp:81`](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (inside the `ledger.build` `ScopedSpanGuard` at [:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55), once per ledger close) and [`RPCHandler.cpp:188`](../src/xrpld/rpc/detail/RPCHandler.cpp#L188) (inside the `rpc.command.*` `ScopedSpanGuard` at [:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168), once per RPC command), giving broader multi-subsystem coverage.
+
+But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:663](../src/xrpld/app/consensus/RCLConsensus.cpp#L663), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
+
+So if you need the broader coverage, enable it **per partition** rather than globally, and only **after** a baseline has been captured at the harness's normal level:
+
+```
+log_level LedgerConsensus debug
+log_level RPCHandler debug
+```
+
 ### Log Ingestion Pipeline
 
 Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
@@ -3485,6 +3515,8 @@ not a sign the cache is working.
 - Verify xrpld was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
 - Verify `enabled=1` in the `[telemetry]` config section
 - Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
+- Check `log_level` is at least `info`. The guaranteed correlated line is the consensus accept pair, which is at info severity, so at `warning` or above correlation becomes incidental — see [Which Log Lines Carry Trace Context](#which-log-lines-carry-trace-context)
+- A plain `SpanGuard` that is never activated does not make its span current, so lines inside one are never correlated regardless of severity. Activated guards (`activate()` / `activateIfLive()`) and `ScopedSpanGuard` both do make their span current
 - Check that the specific trace category is enabled (e.g., `trace_rpc=1`)
 
 ### No logs in Loki

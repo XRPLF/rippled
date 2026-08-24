@@ -337,7 +337,23 @@ endpoint=http://localhost:4318/v1/metrics
 prefix=xrpld
 
 [rpc_startup]
-{ "command": "log_level", "severity": "warning" }
+# info is required here, not cosmetic, and is the minimum that works. The
+# log-trace correlation checks need a log line emitted while a span is current
+# on the thread. A span becomes current either as a ScopedSpanGuard or by
+# activating a plain SpanGuard via activate()/activateIfLive(); a plain
+# SpanGuard that is never activated yields no trace_id.
+#
+# The guaranteed correlated line at info is the consensus accept pair in
+# RCLConsensus.cpp (an if/else, so exactly one fires every accepted round).
+# doAccept activates the accept span as ambient over its whole body, so both
+# branches carry a trace_id. At ~4s per round that is dozens of correlated
+# lines per run.
+#
+# Do NOT raise this to debug to get more coverage. debug puts synchronous log
+# I/O inside ledger.build, consensus.accept and tx.apply -- the same spans
+# whose p50/p95/p99 latencies regression-metrics.json gates -- so a baseline
+# captured at debug would bake log I/O into the numbers permanently.
+{ "command": "log_level", "severity": "info" }
 
 [signing_support]
 true
