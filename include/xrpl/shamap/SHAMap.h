@@ -445,20 +445,46 @@ private:
             return stack_.size();
         }
 
+        /**
+         * The node at the end of the path, paired with its ID.
+         *
+         * Reading an empty stack would be undefined, and the assert alone is stripped in release,
+         * so an empty path yields a null node the caller can test instead.
+         */
         [[nodiscard]] std::pair<SHAMapTreeNodePtr, SHAMapNodeID> const&
         top() const
         {
-            XRPL_ASSERT(!stack_.empty(), "xrpl::SHAMap::NodePathStack::top : non-empty stack");
+            if (stack_.empty())
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::top : empty stack");
+                static std::pair<SHAMapTreeNodePtr, SHAMapNodeID> const kEmpty;
+                return kEmpty;
+                // LCOV_EXCL_STOP
+            }
             return stack_.top();
         }
 
         void
         pop()
         {
-            XRPL_ASSERT(!stack_.empty(), "xrpl::SHAMap::NodePathStack::pop : non-empty stack");
+            if (stack_.empty())
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::pop : empty stack");
+                return;
+                // LCOV_EXCL_STOP
+            }
             stack_.pop();
         }
 
+        /**
+         * Discard the whole path.
+         *
+         * For a walk that pushed a node it then found unusable: the node never became a
+         * meaningful path entry, so it must not be mistaken for one by whatever the caller
+         * does next with an empty-vs-nonempty check.
+         */
         void
         clear()
         {
@@ -467,12 +493,22 @@ private:
 
         /**
          * Start a path at the root of the map, whose ID is the zero-depth ID by definition.
+         *
+         * @return false, leaving the path unchanged, if a path was already started. A malformed
+         *         call must not abort a release build, so callers stop rather than overwrite it.
          */
-        void
+        [[nodiscard]] bool
         pushRoot(SHAMapTreeNodePtr node)
         {
-            XRPL_ASSERT(stack_.empty(), "xrpl::SHAMap::NodePathStack::pushRoot : empty stack");
+            if (!stack_.empty())
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::pushRoot : non-empty stack");
+                return false;
+                // LCOV_EXCL_STOP
+            }
             stack_.emplace(std::move(node), SHAMapNodeID{});
+            return true;
         }
 
         /**
@@ -480,23 +516,40 @@ private:
          *
          * A node keeps the depth it was reached at, never a normalized kLeafDepth. Only a leaf may
          * sit at kLeafDepth, since an inner node there would have no branch left to select.
+         *
+         * @return false, leaving the path unchanged, if the current node can have no child. A
+         *         malformed map must not abort a release build, so callers stop walking instead.
          */
-        void
+        [[nodiscard]] bool
         pushChild(SHAMapTreeNodePtr node, unsigned int branch)
         {
-            XRPL_ASSERT(node, "xrpl::SHAMap::NodePathStack::pushChild : non-null node input");
-            XRPL_ASSERT(
-                !stack_.empty(), "xrpl::SHAMap::NodePathStack::pushChild : non-empty stack");
-            auto childID = stack_.top().second.getChildNodeID(branch);
-            XRPL_ASSERT_IF(
-                node->isInner(),
-                childID.getDepth() < kLeafDepth,
-                "xrpl::SHAMap::NodePathStack::pushChild : inner node above leaf depth");
+            if (stack_.empty() || !node || branch >= kBranchFactor)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::pushChild : no child to push");
+                return false;
+                // LCOV_EXCL_STOP
+            }
+
+            // Only a leaf may sit at kLeafDepth, so an inner child must land one level short of
+            // it, tighter than the plain depth bound a leaf child needs.
+            auto const& parentID = stack_.top().second;
+            auto const parentDepth = parentID.getDepth();
+            if (node->isInner() ? parentDepth + 1u >= kLeafDepth : parentDepth >= kLeafDepth)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::SHAMap::NodePathStack::pushChild : no child to push");
+                return false;
+                // LCOV_EXCL_STOP
+            }
+
+            auto childID = parentID.getChildNodeID(branch);
             XRPL_ASSERT_IF(
                 node->isLeaf(),
                 childID.isPrefixOf(leafKey(*node)),
                 "xrpl::SHAMap::NodePathStack::pushChild : leaf key below branch");
             stack_.emplace(std::move(node), std::move(childID));
+            return true;
         }
 
         /**
@@ -505,17 +558,14 @@ private:
          * For nodes not reached by descending a known branch: the walk tracks only the key it is
          * heading for, or the node is newly created. Either way `target` selects the branch.
          */
-        void
+        [[nodiscard]] bool
         pushNode(SHAMapTreeNodePtr node, uint256 const& target)
         {
             if (stack_.empty())
             {
-                pushRoot(std::move(node));
+                return pushRoot(std::move(node));
             }
-            else
-            {
-                pushChild(std::move(node), selectBranch(stack_.top().second, target));
-            }
+            return pushChild(std::move(node), selectBranch(stack_.top().second, target));
         }
 
     private:
