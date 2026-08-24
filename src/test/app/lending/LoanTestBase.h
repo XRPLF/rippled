@@ -503,8 +503,10 @@ protected:
         // vault. When LP V1.1 is enabled, transparently promote to
         // ClosedEnded so those tests keep working without threading
         // vaultKind through every call site. Callers that explicitly
-        // asked for ClosedEnded (or specifically want to test the
-        // open-ended rejection with LP V1.1 disabled) are left untouched.
+        // asked for ClosedEnded are left untouched. Tests that want to
+        // exercise the open-ended rejection under LP V1.1 build their own
+        // vault directly instead of going through this helper, since it
+        // always promotes OpenEnded once the amendment is enabled.
         auto effectiveVaultKind = params.vaultKind;
         if (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
             effectiveVaultKind == VaultKind::OpenEnded)

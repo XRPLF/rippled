@@ -532,10 +532,11 @@ private:
     }
 
     // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
-    // attaching a broker to an open-ended vault. Cover both branches: a
-    // pre-existing open-ended vault (LP V1.1 must be disabled at vault
-    // creation, then enabled) is rejected once LP V1.1 turns on, while
-    // the same broker create with LP V1.1 disabled succeeds. The gate
+    // attaching a broker to an open-ended vault. VaultCreate itself is
+    // not gated by the amendment, so the same open-ended vault can be
+    // built under either feature set; only the broker create is
+    // amendment-sensitive. Cover both branches: LP V1.1 disabled lets
+    // the broker create succeed, LP V1.1 enabled rejects it. The gate
     // only fires on the create path; existing brokers keep working.
     void
     testLoanBrokerRequiresClosedEndedVault()
