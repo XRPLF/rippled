@@ -54,6 +54,7 @@ DatabaseRotatingImp::rotate(
     // deleted.
     std::shared_ptr<node_store::Backend> oldArchiveBackend;
     std::uint64_t copyForwards = 0;
+    std::uint64_t duplications = 0;
     {
         std::scoped_lock const lock(mutex_);
 
@@ -66,6 +67,7 @@ DatabaseRotatingImp::rotate(
         writableBackend_ = std::move(newBackend);
 
         copyForwards = copyForwardCount_.exchange(0, std::memory_order_relaxed);
+        duplications = duplicationCount_.exchange(0, std::memory_order_relaxed);
     }
 
     if (copyForwards > 0)
@@ -73,6 +75,11 @@ DatabaseRotatingImp::rotate(
         JLOG(j_.warn()) << "Rotating: copied forward " << copyForwards
                         << " archive-served reads into the writable backend "
                            "during the rotation window";
+    }
+    if (duplications > 0)
+    {
+        JLOG(j_.warn()) << "Rotating: duplicated " << duplications
+                        << " nodes into the writable backend for the relevant cache.";
     }
 
     f(newWritableBackendName, newArchiveBackendName);
@@ -84,6 +91,22 @@ DatabaseRotatingImp::setRotationInFlight(bool inFlight)
     rotationInFlight_.store(inFlight, std::memory_order_release);
     JLOG(j_.debug()) << "Rotating: copy-forward on archive reads "
                      << (inFlight ? "enabled" : "disabled");
+}
+
+bool
+DatabaseRotatingImp::isRotationInFlight() const
+{
+    return rotationInFlight_.load(std::memory_order_acquire);
+}
+
+[[nodiscard]]
+std::uint64_t
+DatabaseRotatingImp::getAndResetDuplicationCount()
+{
+    std::uint64_t duplications = 0;
+    duplications = duplicationCount_.exchange(0, std::memory_order_relaxed);
+
+    return duplications;
 }
 
 std::string
@@ -141,7 +164,7 @@ DatabaseRotatingImp::sweep()
 std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchNodeObject(
     uint256 const& hash,
-    std::uint32_t,
+    std::uint32_t ledgerSeq,
     FetchReport& fetchReport,
     bool duplicate)
 {
@@ -190,22 +213,29 @@ DatabaseRotatingImp::fetchNodeObject(
         nodeObject = fetch(archive);
         if (nodeObject)
         {
-            {
-                // Refresh the writable backend pointer
-                std::scoped_lock const lock(mutex_);
-                writable = writableBackend_;
-            }
-
             // Update writable backend with data from the archive backend.
             // While a rotation is in flight, ordinary (duplicate == false)
             // reads served by the archive are copied forward too: the
             // archive is about to be deleted, and a body canonicalized
             // into the cache after the freshen getKeys() snapshot would
             // otherwise survive only in RAM once the archive is dropped.
-            if (duplicate || rotationInFlight_.load(std::memory_order_acquire))
+            auto const inFlight = isRotationInFlight();
+            if (duplicate || inFlight)
             {
-                if (!duplicate)
+                {
+                    // Refresh the writable backend pointer since we need to use it
+                    std::scoped_lock const lock(mutex_);
+                    writable = writableBackend_;
+                }
+
+                if (duplicate)
+                {
+                    duplicationCount_.fetch_add(1, std::memory_order_relaxed);
+                }
+                else
+                {
                     copyForwardCount_.fetch_add(1, std::memory_order_relaxed);
+                }
                 writable->store(nodeObject);
             }
         }

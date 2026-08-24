@@ -280,6 +280,63 @@ SHAMapStoreImp::fdRequired() const
     return fdRequired_;
 }
 
+void
+SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectType> expectedType)
+{
+    XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::rescueNode : rescued node must be clean");
+    // Reachable from the validated state map in memory, but present in
+    // neither backend: its only on-disk copy lived in a backend removed by
+    // an earlier rotation, and it was never rewritten because it is clean
+    // (cowid == 0, so flushDirty skips it). Persist the in-memory body
+    // directly into the writable backend so it survives this rotation
+    // instead of later surfacing as an unresolvable SHAMapMissingNode.
+
+    auto const nodeType = node.getType();
+    auto const objectType = std::invoke([nodeType, expectedType] {
+        switch (nodeType)
+        {
+            case SHAMapNodeType::TnAccountState:
+                return NodeObjectType::AccountNode;
+            // We don't expect to see transaction nodes. The check below will prevent writing them.
+            case SHAMapNodeType::TnTransactionNm:
+            case SHAMapNodeType::TnTransactionMd:
+                return NodeObjectType::TransactionNode;
+            case SHAMapNodeType::TnInner:
+                return expectedType.value_or(NodeObjectType::Unknown);
+            default:
+                return NodeObjectType::Unknown;
+        }
+    });
+
+    auto const hash = node.getHash().asUInt256();
+    XRPL_ASSERT_IF(
+        expectedType,
+        *expectedType == objectType,
+        "SHAMapStoreImp::rescueNode : expected node type");
+
+    if (objectType != NodeObjectType::AccountNode || (expectedType && *expectedType != objectType))
+    {
+        // LCOV_EXCL_START
+        JLOG(journal_.warn())
+            << "rescueNode: unable to re-store node with unsupported/unknown type, hash=" << hash
+            << " type=" << static_cast<int>(nodeType);
+        // We do not expect to see Inner nodes rescued without an expected type. Analysis and
+        // experimentation so far indicate that it just doesn't happen, specifically in
+        // freshenCaches. This UNREACHABLE is as much a developer alert as it is a safety check. If
+        // it does happen, we want to know about it. It won't affect production deployments.
+        UNREACHABLE("SHAMapStoreImp::rescueNode : unsupported node type");
+        return;
+        // LCOV_EXCL_STOP
+    }
+
+    Serializer s;
+    node.serializeWithPrefix(s);
+    dbRotating_->store(objectType, std::move(s.modData()), hash, 0);
+
+    JLOG(journal_.info()) << "rescueNode: re-stored node missing from both backends, hash=" << hash
+                          << " type=" << static_cast<int>(nodeType);
+}
+
 bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
@@ -288,19 +345,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         node.getHash().asUInt256(), 0, node_store::FetchType::Synchronous, true);
     if (!obj)
     {
-        XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
-        // Reachable from the validated state map in memory, but present in
-        // neither backend: its only on-disk copy lived in a backend removed by
-        // an earlier rotation, and it was never rewritten because it is clean
-        // (cowid == 0, so flushDirty skips it). Persist the in-memory body
-        // directly into the writable backend so it survives this rotation
-        // instead of later surfacing as an unresolvable SHAMapMissingNode.
-        auto const hash = node.getHash().asUInt256();
-        Serializer s;
-        node.serializeWithPrefix(s);
-        dbRotating_->store(NodeObjectType::AccountNode, std::move(s.modData()), hash, 0);
-        JLOG(journal_.warn()) << "copyNode: re-stored node missing from both backends, hash="
-                              << hash << " type=" << static_cast<int>(node.getType());
+        rescueNode(node, NodeObjectType::AccountNode);
     }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
@@ -326,6 +371,11 @@ SHAMapStoreImp::run()
 
     while (true)
     {
+        XRPL_ASSERT(
+            !dbRotating_->isRotationInFlight(),
+            "SHAMapStoreImp::run : rotationInFlight_ must be false "
+            "outside rotation window");
+
         healthy_ = true;
         std::shared_ptr<Ledger const> validatedLedger;
 
@@ -387,12 +437,23 @@ SHAMapStoreImp::run()
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
-            JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq << " lastRotated "
-                                  << lastRotated << " deleteInterval " << deleteInterval_
-                                  << " canDelete_ " << canDelete_ << " state "
+            auto const diff = validatedSeq - lastRotated;
+            JLOG(journal_.warn()) << "ROTATING: validatedSeq " << validatedSeq << " lastRotated "
+                                  << lastRotated << " diff " << diff << " deleteInterval "
+                                  << deleteInterval_ << " canDelete_ " << canDelete_ << " state "
                                   << app_.getOPs().strOperatingMode(false) << " age "
                                   << ledgerMaster_->getValidatedLedgerAge().count()
                                   << "s. Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
+
+            // Close the getKeys()->swap exposure window: from here until
+            // rotate() completes, an ordinary read for new ledgers served by the archive is
+            // copied forward into the writable backend, so a node fetched
+            // from the doomed archive cannot be left RAM-only when the
+            // archive is deleted. Use ScopeExit so the early returns and continues below (and any
+            // exceptions) also clear the flag.
+            ScopeExit const clearRotationInFlight{
+                [this] { dbRotating_->setRotationInFlight(false); }};
+            dbRotating_->setRotationInFlight(true);
 
             clearPrior(lastRotated);
             switch (healthWait())
@@ -431,26 +492,12 @@ SHAMapStoreImp::run()
                 case HealthResult::KeepGoing:
                     break;
             }
-            // Only log if we completed without a "health" abort
-            JLOG(journal_.debug())
-                << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
-
-            // Close the getKeys()->swap exposure window: from here until
-            // rotate() completes, an ordinary read served by the archive is
-            // copied forward into the writable backend, so a node fetched
-            // from the doomed archive cannot be left RAM-only when the
-            // archive is deleted. RAII so the early returns below (and any
-            // exception) also clear the flag.
-            struct RotationExposureGuard
             {
-                node_store::DatabaseRotating& db;
-                ~RotationExposureGuard()
-                {
-                    db.setRotationInFlight(false);
-                }
-            };
-            RotationExposureGuard const rotationExposureGuard{*dbRotating_};
-            dbRotating_->setRotationInFlight(true);
+                // Only log if we completed without a "health" abort
+                auto const copyDuplications = dbRotating_->getAndResetDuplicationCount();
+                JLOG(journal_.debug()) << "copied ledger " << validatedSeq << " duplicated "
+                                       << copyDuplications << " / " << nodeCount << " nodes";
+            }
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
@@ -495,9 +542,14 @@ SHAMapStoreImp::run()
                     clearCaches(validatedSeq);
                 });
 
-            JLOG(journal_.warn()) << "finished rotation. validatedSeq: " << validatedSeq
-                                  << ", lastRotated: " << lastRotated
-                                  << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
+            auto const currentValidatedSeq = ledgerMaster_->getValidLedgerIndex();
+            auto const processingDiff = currentValidatedSeq - validatedSeq;
+            JLOG(journal_.warn())
+                << "FINISHED ROTATION: validatedSeq: " << validatedSeq
+                << ", lastRotated: " << lastRotated << " diff " << diff
+                << ". Updated validated seq is " << currentValidatedSeq << ", " << processingDiff
+                << " ledgers were validated during the rotation processs. Complete ledgers: "
+                << ledgerMaster_->getCompleteLedgers();
         }
     }
 }
@@ -690,8 +742,7 @@ SHAMapStoreImp::freshenCaches()
 {
     if (freshenCache(*treeNodeCache_))
         return;
-    if (freshenCache(app_.getMasterTransaction().getCache()))
-        return;
+    freshenCache(app_.getMasterTransaction().getCache());
 }
 
 void
@@ -765,7 +816,6 @@ SHAMapStoreImp::healthWait()
 
         buildingIndex = (numMissing == 1 && !haveIndex);
     };
-
     // Tracked server status properties
     LedgerIndex index = 0;
     bool buildingIndex = false;

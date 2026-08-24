@@ -72,19 +72,28 @@ public:
 
     void
     setRotationInFlight(bool inFlight) override;
+    bool
+    isRotationInFlight() const override;
+
+    [[nodiscard]]
+    std::uint64_t
+    getAndResetDuplicationCount() override;
 
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex mutex_;
 
-    // True between SHAMapStore starting the cache-freshen phase and the
-    // completion of rotate(). While true, archive hits on ordinary
-    // (duplicate == false) fetches are copied forward into the writable
-    // backend; copyForwardCount_ tallies them per rotation for the
+    // Set to true during the entire SHAMapStore rotation process.
+    // While true, archive hits on ordinary (duplicate == false)
+    // fetches are copied forward into the writable backend.
+    // copyForwardCount_ tallies them per rotation for the
     // summary line logged at swap.
     std::atomic<bool> rotationInFlight_{false};
     std::atomic<std::uint64_t> copyForwardCount_{0};
+    // Duplication count tracks the number of nodes that are directly duplicated because they're in
+    // the target ledger or rescued from a cache.
+    std::atomic<std::uint64_t> duplicationCount_{0};
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
