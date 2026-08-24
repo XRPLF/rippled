@@ -4,94 +4,47 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
-#include <xrpl/tx/wasm/WasmImportsHelper.h>
 
 #include <cstdint>
 #include <expected>
-#include <memory>
-#include <string>
 #include <string_view>
-#include <vector>
 
 namespace xrpl {
 
-std::string_view inline constexpr wEnv = "env";
-std::string_view inline constexpr wHostLib = "host_lib";
-std::string_view inline constexpr wMem = "memory";
-std::string_view inline constexpr wStore = "store";
-std::string_view inline constexpr wLoad = "load";
-std::string_view inline constexpr wSize = "size";
-std::string_view inline constexpr wAlloc = "allocate";
-std::string_view inline constexpr wDealloc = "deallocate";
-std::string_view inline constexpr wProcExit = "proc_exit";
-
+// The export a programmable escrow's contract is run through.
 std::string_view inline constexpr escrowFunctionName = "escrow_finish";
 
-uint32_t inline constexpr maxPages = 128;  // 8MB = 64KB*128
-
-class WasmiEngine;
-
-class WasmEngine
-{
-    std::unique_ptr<WasmiEngine> const impl_;
-
-    WasmEngine();
-
-public:
-    WasmEngine(WasmEngine const&) = delete;
-    WasmEngine(WasmEngine&&) = delete;
-    WasmEngine&
-    operator=(WasmEngine const&) = delete;
-    WasmEngine&
-    operator=(WasmEngine&&) = delete;
-
-    static WasmEngine&
-    instance();
-
-    std::expected<WasmResult<int32_t>, WasmTER>
-    run(Bytes const& wasmCode,
-        HostFunctions& hfs,
-        int64_t gasLimit,
-        std::string_view funcName = {},
-        std::vector<WasmParam> const& params = {},
-        ImportVec const& imports = {},
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
-
-    NotTEC
-    check(
-        Bytes const& wasmCode,
-        HostFunctions& hfs,
-        std::string_view funcName,
-        std::vector<WasmParam> const& params = {},
-        ImportVec const& imports = {},
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
-
-    // Host functions helper functionality
-    void*
-    newTrap(std::string const& txt = std::string());
-
-    [[nodiscard]] beast::Journal
-    getJournal() const;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ImportVec
-createWasmImport(HostFunctions& hfs);
-
+// Run `wasmCode`'s `funcName` export with `gasLimit` gas, servicing its host calls
+// through `hfs`.
+//
+// On success the result is what the contract returned - positive means the escrow may
+// finish - together with the gas it consumed. On failure it is the TER to apply and,
+// when the number means anything, the gas to write to transaction metadata: a contract
+// that traps or exhausts its budget is charged for what it burned, while a `tecINTERNAL`
+// reports no cost because the fault is the node's rather than the transaction's.
 std::expected<EscrowResult, WasmTER>
 runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
-    int64_t gasLimit,
-    std::string_view funcName = escrowFunctionName,
-    std::vector<WasmParam> const& params = {});
+    std::int64_t gasLimit,
+    std::string_view funcName = escrowFunctionName) noexcept;
 
+// Screen `wasmCode`: whether `runEscrowWasm` would refuse it before the contract's
+// first instruction. Compiles the module and reads its imports and exports; runs
+// nothing.
+//
+// Takes no `HostFunctions`, because the verdict comes from the compiled module alone.
+// That is what makes this callable from a transactor's `preflight`, which has no view
+// to build a host over.
+//
+// `temBAD_WASM` for every fault in the module - the transaction carries something this
+// engine cannot run, so it is refused before it can reach the ledger.
+// `telFAILED_PROCESSING` if the engine itself failed: nothing was learned about the
+// module, and a defect here is not evidence that the transaction is malformed.
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
-    HostFunctions& hfs,
-    std::string_view funcName = escrowFunctionName,
-    std::vector<WasmParam> const& params = {});
+    beast::Journal j,
+    std::string_view funcName = escrowFunctionName) noexcept;
 
 }  // namespace xrpl

@@ -12,7 +12,6 @@ _BASE_CMAKE_ARGS = [
     "-Dwerr=ON",
     "-Dxrpld=ON",
     "-Dwextra=ON",
-    "-Drust=ON",
 ]
 
 # Maps sanitizer names (as used in cmake) to short config-name suffixes.

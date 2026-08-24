@@ -1,5 +1,10 @@
+// Not built. The only reader of these blobs is the disabled suite in Wasm_test.cpp, so they
+// are left out of the build and cost neither a translation unit nor static-init time.
+// Regenerate the hex with copyFixtures.py.
+//
 // TODO: consider moving these to separate files (and figure out the build)
 
+/*
 #include <test/app/wasm_fixtures/fixtures.h>
 
 #include <string>
@@ -649,3 +654,4 @@ extern std::string const kBadAlignWasmHex =
     "32393538616631656533303861373930636664623432626432343732302900490f7461726765745f66656174757265"
     "73042b0f6d757461626c652d676c6f62616c732b087369676e2d6578742b0f7265666572656e63652d74797065732b"
     "0a6d756c746976616c7565";
+*/

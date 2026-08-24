@@ -1,10 +1,11 @@
 [package]
-name = "rs-hello_world"
+name = "xrpl-wasm-testkit"
 version = "0.1.0"
 edition.workspace = true
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 cxx.workspace = true
+wat = "1"

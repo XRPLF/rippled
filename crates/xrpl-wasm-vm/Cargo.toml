@@ -1,0 +1,11 @@
+[package]
+name = "xrpl-wasm-vm"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+wasmi = { version = "1.1.0", default-features = false, features = ["std"] }
+xrpl-host-functions = { path = "../xrpl-host-functions" }
+
+[dev-dependencies]
+wat = "1"
