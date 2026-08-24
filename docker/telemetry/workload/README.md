@@ -264,7 +264,11 @@ Per-run tuning:
 - `REGRESSION_WINDOW` env var overrides the default Prometheus `rate()`
   window (`3m`). Keep close to the workload duration.
 - Metric surface lives in `regression-metrics.json`; thresholds in
-  `regression-thresholds.json`; both are reviewed changes.
+  `regression-thresholds.json`; both are reviewed changes. Each gated key's
+  absolute bound is `hi_next - baseline` — the distance from its baseline to the
+  top of the next bucket up — so refreshing the baseline obliges you to
+  re-derive the bounds. See `_absolute_bound_derivation` in that file;
+  `.github/scripts/telemetry/check_regression_bounds.py` enforces it in CI.
 
 See [`baselines/README.md`](./baselines/README.md) for the baseline
 lifecycle and refresh process.

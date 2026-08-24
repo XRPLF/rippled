@@ -25,27 +25,109 @@ was invoked with. Capture and comparison are profile-agnostic — they only read
 Prometheus — so all existing profiles (`full-validation`, `quick-smoke`, `stress`)
 continue to work unchanged.
 
-## Current state: the baseline is a placeholder
+## Current state: 25 metrics gate, on a baseline captured 2026-08-24
 
-`baseline-timings.json` currently carries `"placeholder": true` and an empty `metrics` object,
-so **no metric gates right now**. Its entries were captured on 2026-06-05 against a spanmetrics
-ladder that was re-cut on 2026-08-04 in `3860c93db2`, which makes every sub-millisecond quantile
+`baseline-timings.json` holds real captured values for the 25 keys the harness gates. The
+previous entries, captured on 2026-06-05, were voided into a placeholder first: they predated the
+spanmetrics ladder re-cut of 2026-08-04 (`3860c93db2`), which made every sub-millisecond quantile
 in that capture bucket-edge arithmetic rather than a latency (a p95 of `0.95` ms is `0.95 × 1 ms`).
 Because the comparator only flags a metric when the current value _exceeds_ the baseline, a
-stale-high baseline passes everything silently — so the entries were voided instead of left in
-place. The file's `_note` records why, and which numbers were dropped.
+stale-high baseline passes everything silently, so the entries had to be dropped rather than left
+in place. They stay retrievable from this file's git history.
 
-To restore gating, follow [Bootstrapping the baseline](#bootstrapping-the-baseline) below — a
-placeholder is exactly the state that loop expects. Pasting the CI block **replaces the whole
-file**, `_note` included; that is intended, and the voided numbers stay retrievable from this
-file's git history.
+**A placeholder must not outlive one run.** CI stays green the whole time one stands, so an
+un-copied block is not a failure anyone will notice — it is a silent loss of regression coverage
+that looks identical to a passing gate. Voiding a baseline is the one hand edit this file allows;
+_setting_ one always comes from a printed CI block, per the "Refreshing the baseline" rule below.
 
-**Do not let the placeholder outlive one run.** CI stays green the whole time the placeholder
-stands, so an un-copied block is not a failure anyone will notice — it is a silent loss of
-regression coverage that looks identical to a passing gate.
+## Absolute bounds are derived per metric, from the ladder
 
-Voiding a baseline is the one hand edit this file allows; _setting_ one always comes from a
-printed CI block, per the "Refreshing the baseline" rule below.
+`../regression-thresholds.json` gives every gated key its own `max_abs_increase_*`, equal to
+**`hi_next − baseline`**: locate the baseline in the half-open bucket `(lo, hi]` of its ladder,
+take `hi_next` as the next edge above `hi`, and the bound is the distance from the baseline to
+`hi_next`. The trip point is therefore exactly `hi_next` — the gate fires only once the reading
+clears the bucket **above** the baseline's own.
+
+That is what buys the guarantee. `histogram_quantile` returns a value interpolated inside
+whichever bucket the true quantile falls in, so any reading taken while the quantile is still in
+the baseline's bucket, or anywhere in the one immediately above, is at most `hi_next` and cannot
+fire. Firing needs the quantile to have moved at least two buckets up. A multiple of the
+_enclosing_ bucket's width cannot deliver this, because once the quantile crosses `hi` the
+interpolation happens across the **next** bucket, which on this ladder is up to 8x wider —
+`(0.5, 1]` is 0.5 ms wide and `(1, 5]` is 4 ms wide. The full derivation, both ladders, and a
+per-key table of the arithmetic are in that file's `_absolute_bound_derivation` and
+`_derivation_table`.
+
+Two earlier generations of this bound were wrong, in opposite directions:
+
+| generation                     | bound                                        | 10x regression caught | single-crossing false positive reachable |
+| ------------------------------ | -------------------------------------------- | --------------------- | ---------------------------------------- |
+| flat                           | 10 ms `p50`/`p95`, 15 ms `p99`, 20000 us job | 5 / 28 keys           | 2 / 25 keys                              |
+| 2 × enclosing bucket width     | per metric                                   | 28 / 28 keys          | **21 / 25 keys**                         |
+| `hi_next − baseline` (current) | per metric                                   | 25 / 25 keys          | **0 / 25 keys**                          |
+
+The flat bound was calibrated for a 5-25 ms band the spans do not occupy: 18 of the 28
+quantiles gated at the time sat below 1 ms, so it sat 1.15x to 2000x above the metric it guarded,
+and because the rule is an `AND` the percentage bound could never carry a regression alone. A 100x
+regression injected into `span.ledger.store.p95` reported **0 regressions, exit 0**. The second
+generation fixed the magnitude but kept an assumption that does not hold — that the reading's
+excursion is bounded by the enclosing bucket's width — which put 21 of 25 trip points inside the
+adjacent bucket, so a single legitimate bucket crossing could turn CI red.
+
+**Refreshing the baseline means re-deriving the bounds**, because a refreshed value can land in a
+different bucket and so get a different `hi_next`. This is no longer a documentation-only rule:
+[`.github/scripts/telemetry/check_regression_bounds.py`](../../../../.github/scripts/telemetry/check_regression_bounds.py)
+fails CI when a bound is not the one its own baseline implies, when a gated key has no override,
+when a baseline key is not declared by `../regression-metrics.json` (or the reverse), when the
+percentage bound would become the operative one, and when a baseline carries the ladder-floor
+signature described below.
+
+### Which keys are only weakly guarded
+
+The guarantee costs sensitivity where the ladder is coarse: the detection floor is
+`hi_next / baseline`, so a baseline sitting just above an edge is guarded loosely. Measured over
+the current baseline the floor ranges 2.02x to 9.43x. Do **not** read these as guarded:
+
+| key                               | baseline   | fires at  | floor |
+| --------------------------------- | ---------- | --------- | ----- |
+| `span.ledger.validate.p99`        | 1.0600 ms  | 10 ms     | 9.43x |
+| `span.ledger.build.p50`           | 1.0612 ms  | 10 ms     | 9.42x |
+| `span.tx.process.p95`             | 0.7240 ms  | 5 ms      | 6.91x |
+| `span.tx.apply.p50`               | 0.7917 ms  | 5 ms      | 6.32x |
+| `span.rpc.ws_message.p95`         | 0.8443 ms  | 5 ms      | 5.92x |
+| `job.acceptLedger.running.p95`    | 17428.6 us | 100000 us | 5.74x |
+| `span.consensus.accept.p50`       | 1.7436 ms  | 10 ms     | 5.74x |
+| `span.consensus.ledger_close.p99` | 0.9314 ms  | 5 ms      | 5.37x |
+| `span.rpc.ws_message.p99`         | 0.9878 ms  | 5 ms      | 5.06x |
+| `span.tx.process.p99`             | 0.9945 ms  | 5 ms      | 5.03x |
+
+`span.ledger.build.p50` is the one that matters most: ledger construction is the hot path this
+gate exists to guard, and at a 9.42x floor it could get almost ten times slower and still pass.
+All ten are limited by two 5x-wide
+ladder steps, 1 ms → 5 ms and 5000 us → 25000 us. The fix is a 2 ms edge (ideally 3 ms as well) in
+the collector's spanmetrics `buckets` list plus the matching entries in `kMillisecondBuckets`, and
+a 10000 us edge in `kMicrosecondBuckets`. That work belongs to the branch that owns the ladders.
+
+## Known exclusion: `ledger.store` is below the ladder's resolution
+
+`span.ledger.store` is **not** gated. The 2026-08-24 capture returned p50/p95/p99 of exactly
+`0.005` / `0.0095` / `0.0099` ms, which is `0.5` / `0.95` / `0.99 × 0.01` ms — the ladder's first
+edge times the quantile, the signature of every sample landing in the first bucket. Those numbers
+are interpolation arithmetic on the bucket floor, not latencies. It is physically plausible:
+[`LedgerMaster.cpp:463`](../../../../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L463) wraps an
+in-memory `ledgerHistory_.insert`, which completes in single-digit microseconds.
+
+While all the mass stays under 10 us the reported quantile cannot move materially, so **no
+absolute bound can gate this key** — every `ledger.store` slowing from 2 us to 9 us, a 4.5x
+regression, leaves the reported value unchanged. Three keys that read as covered but cannot fire
+are worse than no keys, the same argument that excluded `rpc.process`, so they were removed from
+`../regression-metrics.json` rather than left in with a bound that looks derived.
+
+Restoring the key needs sub-10 us edges on the collector's spanmetrics ladder (for example
+`0.001ms` and `0.005ms`) plus the matching entries in `HistogramBuckets.h`. `ledger.store`
+presence is still asserted by `../expected_spans.json` and `docker/telemetry/integration-test.sh`,
+and its rate is still on the ledger-operations dashboard; only the latency gate drops it.
+`check_regression_bounds.py` rule E fails the build if a key with this signature is gated again.
 
 ## Bootstrapping the baseline
 
@@ -69,6 +151,12 @@ new numbers should become the norm, open a PR pasting the fresh timings into
 
 Do **not** edit `baseline-timings.json` by hand outside of this process — every entry
 should trace back to a real CI run so variance characteristics are preserved.
+
+Refreshing the baseline also obliges you to re-derive the absolute bounds in
+`../regression-thresholds.json`, per
+[Absolute bounds are derived per metric](#absolute-bounds-are-derived-per-metric-from-the-ladder).
+A value that moves into a different bucket needs a different bound, and a bound left behind
+either stops catching regressions or starts firing on quantization noise.
 
 ## The baseline is only valid at the log level it was captured at
 

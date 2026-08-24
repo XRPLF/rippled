@@ -2,6 +2,7 @@
   "_description": "Metric surface for the OTel-driven regression gate. Each entry names a metric, the quantiles to capture, and how to query Prometheus. The comparator compares current run against baseline-timings.json under these exact keys.",
   "_key_format": "{category}.{name}.p{quantile}  (e.g. span.tx.process.p99, job.transaction.queued.p95). Only the categories defined below are captured; there is no rpc_methods group, so no rpc.* key is produced or gated (FU-4).",
   "_excluded_spans": "rpc.process is deliberately absent from spans.names. It is created only in ServerHandler::processRequest() on the HTTP/JSON-RPC path, which the workload load generators, being WebSocket-only, never reach, so its quantiles were captured as null every run and could never gate. (The harness shell scripts do issue a few HTTP JSON-RPC health polls, far too few to produce a meaningful quantile.) See baselines/README.md.",
+  "_excluded_ledger_store": "ledger.store is deliberately absent from spans.names too, for a different reason: it is below the ladder's resolution. The 2026-08-24 capture returned p50/p95/p99 of exactly 0.005/0.0095/0.0099 ms, which is 0.5/0.95/0.99 x the ladder's first edge of 0.01 ms — the signature of every sample landing in the first bucket, so the numbers are interpolation arithmetic on the bucket floor rather than latencies. That is physically plausible: LedgerMaster.cpp:463 wraps an in-memory ledgerHistory_.insert, which completes in single-digit microseconds. While all mass stays under 10 us the reported quantile cannot move materially, so NO absolute bound can gate it — every ledger.store slowing from 2 us to 9 us, 4.5x, leaves the reported value unchanged. Three keys that read as covered but cannot fire are worse than no keys (the same argument that excluded rpc.process), so they were removed rather than left in with a bound that looks derived. Restoring the key needs sub-10us edges on the collector's spanmetrics ladder (for example 0.001ms and 0.005ms) plus the matching entries in HistogramBuckets.h — that is the ladder's branch, not this file. ledger.store presence is still asserted by expected_spans.json and docker/telemetry/integration-test.sh, and its rate is still on the ledger-operations dashboard; only the latency gate drops it.",
   "spans": {
     "_query_template": "histogram_quantile({quantile}, sum by (le) (rate(span_duration_milliseconds_bucket{span_name=\"{name}\"}[{window}])))",
     "_unit": "ms",
@@ -12,7 +13,6 @@
       "tx.apply",
       "ledger.build",
       "ledger.validate",
-      "ledger.store",
       "consensus.ledger_close",
       "consensus.accept"
     ]

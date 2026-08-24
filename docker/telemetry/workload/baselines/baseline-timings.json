@@ -54,18 +54,6 @@
       "unit": "ms",
       "value": 5.075000000000041
     },
-    "span.ledger.store.p50": {
-      "unit": "ms",
-      "value": 0.005
-    },
-    "span.ledger.store.p95": {
-      "unit": "ms",
-      "value": 0.0095
-    },
-    "span.ledger.store.p99": {
-      "unit": "ms",
-      "value": 0.0099
-    },
     "span.ledger.validate.p50": {
       "unit": "ms",
       "value": 0.07787769784172663

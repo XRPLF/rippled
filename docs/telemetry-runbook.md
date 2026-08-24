@@ -3703,10 +3703,48 @@ Key properties:
 
 - **A metric regresses only when it exceeds BOTH the percentage and the absolute
   bound.** The `AND` is deliberate: SpanMetrics latency histograms use explicit
-  buckets, so a quantile sitting near a low bucket boundary can jump a whole
-  bucket (1 ms to 5 ms) with no real change. Bounds live in
-  `regression-thresholds.json` — `defaults` per category and quantile, with
-  per-metric `overrides` (e.g. `span.consensus.ledger_close` is held to 5%).
+  buckets, so a quantile sitting near a bucket boundary can jump a whole bucket
+  with no real change. Bounds live in `regression-thresholds.json` — `defaults`
+  per category and quantile, plus a per-metric `override` for every gated key.
+- **The absolute bound is derived per metric, as `hi_next − baseline`.** Locate
+  the baseline in the half-open bucket `(lo, hi]` of its ladder and take
+  `hi_next` as the next edge above `hi`; the trip point is then exactly
+  `hi_next`, so the gate fires only once the reading clears the bucket _above_
+  the baseline's own. That is what makes a single bucket crossing unable to turn
+  CI red: `histogram_quantile` interpolates inside whichever bucket the quantile
+  falls in, so any reading produced while the quantile is at most one bucket
+  above the baseline's is at most `hi_next`. A multiple of the _enclosing_
+  bucket width cannot deliver that, because after crossing `hi` the
+  interpolation happens across the next bucket, which here is up to 8x wider
+  (`(0.5, 1]` is 0.5 ms, `(1, 5]` is 4 ms). Derivation, both ladders and a
+  per-key table live in `regression-thresholds.json` under
+  `_absolute_bound_derivation` and `_derivation_table`. **Refreshing
+  `baseline-timings.json` obliges you to re-derive these bounds** — a value that
+  moves into a different bucket gets a different `hi_next` — and
+  `.github/scripts/telemetry/check_regression_bounds.py` fails CI if you do not.
+- **A single flat bound cannot work here.** The gated quantiles span 0.078 ms to
+  17 ms, so one figure is inert at the bottom of that range and trigger-happy at
+  the top. The flat 10/15 ms span bound it replaced sat 1.15x to 2000x above the
+  metric it guarded, and a 10x regression injected into each key in turn was
+  caught on only 5 of 28.
+- **The detection floor is `hi_next / baseline`, so some keys are only weakly
+  guarded.** It ranges 2.02x to 9.43x over the current baseline;
+  `span.ledger.build.p50` and `span.ledger.validate.p99` are effectively
+  not guarded at 9.4x. `baselines/README.md` lists all ten weak keys and the
+  ladder edges that would fix them.
+- **For every currently gated metric the absolute bound decides; the percentage
+  bound does not.** Measured, the bound is 102%-843% of its own baseline, above
+  both configured percentage bounds. This is _not_ a general property: the span
+  ladder's top steps are only 1.25x-1.5x apart, so a baseline between about
+  2667-3000 ms or 3334-4000 ms gets an absolute bound worth under 50% of itself
+  and the percentage bound takes over — `consensus.round` at ~3.9 s lands
+  exactly there. `check_regression_bounds.py` rule D fails the build rather than
+  letting that happen silently. The percentage entries are still required (a
+  missing one turns the metric into "no threshold configured" and stops it
+  gating) and they are the operative bound on the `defaults` path.
+- **`span.ledger.store` is not gated**, because its quantiles are the ladder's
+  first edge times the quantile — every sample lands under 10 us, so no bound
+  can move. See `baselines/README.md`.
 - **A metric with no configured threshold is captured but never gates.** It is
   reported with a note instead. Today only `span.*` and `job.*` keys have
   thresholds; `rpc.*` is not produced and would not gate if it were (see
