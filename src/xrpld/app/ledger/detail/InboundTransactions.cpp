@@ -143,6 +143,11 @@ public:
             return;
         }
 
+        // Asked before the loop below, which costs a hash per node, since a settled acquisition
+        // discards the result. Charges the peer itself when the reply is outside its allowance.
+        if (!ta->wantsReplyFrom(peer))
+            return;
+
         std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data;
         data.reserve(packet.nodes().size());
 
@@ -194,7 +199,12 @@ public:
                 inboundSet.set = set;
             }
 
-            inboundSet.acquire.reset();
+            // Reset only when something other than the acquisition itself supplied the set:
+            // dropping the pointer cancels an acquisition still in flight. Keeping it until
+            // newRound() sweeps the entry lets a late reply for this hash still reach
+            // takeNodesLocked()'s allowance.
+            if (!fromAcquire)
+                inboundSet.acquire.reset();
         }
 
         if (isNew)
