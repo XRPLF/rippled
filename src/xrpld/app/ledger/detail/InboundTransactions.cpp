@@ -96,11 +96,12 @@ public:
             {
                 if (acquire)
                 {
-                    it->second.seq = seq_;
-                    if (it->second.acquire)
-                    {
-                        it->second.acquire->stillNeed();
-                    }
+                    // Refreshed only while there is still something to wait for. An acquisition
+                    // that failed on an invalid map can never be revived, so refreshing it would
+                    // hold a dead entry - a set that stays null forever - out of newRound()'s reach
+                    // for as long as anything keeps asking.
+                    if (!it->second.acquire || it->second.acquire->stillNeed())
+                        it->second.seq = seq_;
                 }
                 return it->second.set;
             }
@@ -168,18 +169,11 @@ public:
             data.emplace_back(*nodeID, std::move(treeNode));
         }
 
-        auto const san = ta->takeNodes(std::move(data), peer);
-        if (san.isInvalid())
-        {
-            peer->charge(resource::kFeeInvalidData, "ledger_data invalid");
-        }
-        else if (!san.isGood())
-        {
-            // Good rather than useful: the verdict now tells a batch of nodes we already hold from
-            // one that was never examined, and a duplicate is what an honest second responder to
-            // trigger()'s fan-out sends.
-            peer->charge(resource::kFeeUselessData, "ledger_data useless");
-        }
+        // takeNodes() charges peers itself, at the failure site and under the lock that classified
+        // it: the tier (or no charge, within the late-reply allowance) depends on whether the map
+        // survived and whether we were still asking for the set. What it accepts is what we asked
+        // for.
+        ta->takeNodes(std::move(data), peer);
     }
 
     void
