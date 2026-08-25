@@ -142,15 +142,6 @@ scalarInv(Scalar const& a, Scalar& out)
 }
 
 bool
-scalarFromU64(std::uint64_t v, Scalar& out)
-{
-    out = {};
-    for (int i = 0; i < 8; ++i)
-        out[24 + i] = static_cast<std::uint8_t>((v >> (56 - 8 * i)) & 0xff);
-    return true;
-}
-
-bool
 oneScalar(Scalar& out)
 {
     out = {};
