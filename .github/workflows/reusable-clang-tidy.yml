@@ -63,7 +63,6 @@ jobs:
         uses: ./.github/actions/cargo-cache
         with:
           cache-directories: ${{ env.BUILD_DIR }}/corrosion
-          save-if: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release') }}
           workspaces: crates -> ../${{ env.BUILD_DIR }}/cargo
 
       - name: Setup Conan

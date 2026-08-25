@@ -167,7 +167,6 @@ jobs:
         with:
           cache-directories: ${{ env.BUILD_DIR }}/corrosion
           key: ${{ inputs.config_name }}
-          save-if: ${{ github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release') }}
           # two workspaces here because build artifacts are located in 2 places:
           # - crates/target when cargo is called directly
           # - build/cargo when cargo is called by cmake

@@ -3992,24 +3992,30 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
+                auto const cleanup340 = env.current()->rules().enabled(fixCleanup3_4_0);
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
-                // Auction slot purchase price is equal to the tiny amount
-                // since the minSlotPrice is 0 with no trading fee.
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
-                // The purchase price is too small to affect the total tokens
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    MPT(ammAlice[0])(10'000'000'000), USD(10'000), ammAlice.tokens()));
+                    MPT(ammAlice[0])(10'000'000'000),
+                    USD(10'000),
+                    cleanup340 ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                               : ammAlice.tokens()));
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
                     .bidMin = IOUAmount{STAmount::kMinValue, STAmount::kMinOffset},
                 }));
                 // Pay slightly higher price
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
-                // The purchase price is still too small to affect the total
-                // tokens
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(
+                    0, 0, IOUAmount{Number{firstPrice} * Number{105, -2}}));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    MPT(ammAlice[0])(10'000'000'000), USD(10'000), ammAlice.tokens()));
+                    MPT(ammAlice[0])(10'000'000'000),
+                    USD(10'000),
+                    cleanup340
+                        ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice} * Number{11, -1}}
+                        : ammAlice.tokens()));
             },
             {{gAmmmpt(10'000'000'000), USD(10'000)}});
 
@@ -7489,6 +7495,7 @@ private:
         testFeeVote();
         testInvalidBid();
         testBid(all);
+        testBid(all - fixCleanup3_4_0);
         testClawback();
         testClawbackFromAMMAccount(all);
         testClawbackFromAMMAccount(all - featureSingleAssetVault);

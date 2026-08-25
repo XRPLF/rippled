@@ -92,7 +92,8 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-a6983f8"
+        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-45e4b88",
+        "package_type": "deb"
       }
     ],
 
@@ -102,7 +103,8 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-a6983f8"
+        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-45e4b88",
+        "package_type": "rpm"
       }
     ]
   }
