@@ -220,11 +220,11 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         };
 
-        submitConvert(alice, aliceKp, 40, true);
-        BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 10));
+        submitConvert(alice, aliceKp, 50, true);
+        BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 0));
         {
             auto const sle = env.le(keylet::mptIssuance(id));
-            BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 40);
+            BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 50);
         }
 
         {
@@ -258,7 +258,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         Scalar rAmt = mustRandomScalar();
         Scalar rho = mustRandomScalar();
         std::uint64_t const sendAmt = 10;
-        std::uint64_t const bal = 40;
+        std::uint64_t const bal = 50;
         auto encSender = mustEncrypt(aliceKp.pk, sendAmt, rAmt);
         auto encDest = mustEncrypt(carolKp.pk, sendAmt, rAmt);
         auto encIss = mustEncrypt(issuer.pk, sendAmt, rAmt);
@@ -391,7 +391,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         BEAST_EXPECT(mpt.checkMPTokenAmount(carol, 55));
         {
             auto const sle = env.le(keylet::mptIssuance(id));
-            BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 35);
+            BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 45);
         }
 
         testcase("confidential clawback and holder exit");
@@ -402,7 +402,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         confidential::ClawbackSigmaPublicInput clPub;
         clPub.issuerKey = issuer.pk;
         clPub.issuerBalance = aliceIss;
-        clPub.revealedAmount = 30;
+        clPub.revealedAmount = 40;
         auto const clCtx = confidential::transactionContextIDClawback(
             static_cast<std::uint16_t>(ttCONFIDENTIAL_MPT_CLAWBACK),
             Slice(gw.id().data(), gw.id().size()),
@@ -419,7 +419,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[sfDelegate] = carolDelegate.human();
             jv[sfHolder] = alice.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
-            jv[sfMPTAmount] = "30";
+            jv[sfMPTAmount] = "40";
             jv[sfZKProof] = hexOf(clProof);
             env(jv, delegate::As(carolDelegate), Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
@@ -427,7 +427,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         {
             auto const sle = env.le(keylet::mptIssuance(id));
             BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 5);
-            BEAST_EXPECT((*sle)[sfOutstandingAmount] == 70);
+            BEAST_EXPECT((*sle)[sfOutstandingAmount] == 60);
             BEAST_EXPECTS(
                 (*sle)[sfConfidentialHolderCount] == 1,
                 "clawback decrements confidential holder census");
@@ -436,9 +436,8 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             !env.le(keylet::mptoken(id, alice.id()))
                  ->isFieldPresent(sfHolderEncryptionKey),
             "clawback clears confidential registration");
-        BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 10));
+        BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 0));
         testcase("delete exited confidential holder");
-        mpt.pay(alice, carol, 10);
         mpt.authorize({.account = alice, .flags = tfMPTUnauthorize});
         BEAST_EXPECTS(env.ter() == tesSUCCESS, transToken(env.ter()));
         BEAST_EXPECTS(
