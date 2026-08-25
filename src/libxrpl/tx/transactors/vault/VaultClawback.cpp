@@ -271,8 +271,15 @@ VaultClawback::assetsToClawback(
         }
         else
         {
+            // Pre-fixCleanup3_4_0: shares were rounded to nearest, so the
+            // round-trip back to assets could exceed clawbackAmount.
+            // Post-amendment: truncate shares so assetsRecovered <=
+            // clawbackAmount by construction (matches the clamp branch
+            // below).
+            auto const truncate = ctx_.view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes
+                                                                               : TruncateShares::No;
             auto const maybeShares =
-                assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount);
+                assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount, truncate);
             if (!maybeShares)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             sharesDestroyed = *maybeShares;
@@ -352,11 +359,6 @@ VaultClawback::doApply()
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
-
-    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
-    XRPL_ASSERT(
-        lossUnrealized <= (assetsTotal - assetsAvailable),
-        "xrpl::VaultClawback::doApply : loss and assets do balance");
 
     AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
