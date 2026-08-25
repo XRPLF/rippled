@@ -1,6 +1,7 @@
 #include <xrpl/server/InfoSub.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
