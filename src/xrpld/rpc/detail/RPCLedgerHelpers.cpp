@@ -331,6 +331,13 @@ getLedger<>(std::shared_ptr<ReadView const>&, LedgerShortcut shortcut, Context c
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
 
+// explicit instantiation of ledgerFromSpecifier
+template Status
+ledgerFromSpecifier<>(
+    std::shared_ptr<ReadView const>&,
+    org::xrpl::rpc::v1::LedgerSpecifier const&,
+    Context const&);
+
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
 // return the current ledger which, while not strictly wrong, could cause a lot

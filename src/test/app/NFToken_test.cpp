@@ -36,6 +36,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 
@@ -4791,6 +4792,87 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
     }
 
     void
+    testNftXxxOffersMarkerWrongSide(FeatureBitset features)
+    {
+        // A pagination marker passed to nft_buy_offers / nft_sell_offers must
+        // reference an offer on the same side (buy vs. sell) as the directory
+        // being enumerated.  A wrong-side marker is rejected with invalidParams.
+        //
+        // Note: the pre-fix code also returned invalidParams for a wrong-side
+        // marker, but only after scanning the entire target directory (an
+        // O(directory size) walk usable to burn CPU).  The fix short-circuits
+        // that scan.  The scan-avoidance is not observable from the RPC
+        // response, so this test locks the rejection contract (wrong-side ->
+        // error, same-side -> success) rather than the performance property.
+        testcase("nft_buy_offers and nft_sell_offers wrong-side marker");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        env.fund(XRP(10000), issuer, buyer);
+        env.close();
+
+        // Mint a transferable NFT.
+        uint256 const nftID{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0), Txflags(tfTransferable));
+        env.close();
+
+        // Create one sell offer (from the issuer, who owns the NFT) and one
+        // buy offer (from the buyer) for the same NFT.
+        env(token::createOffer(issuer, nftID, XRP(100)), Txflags(tfSellNFToken));
+        env(token::createOffer(buyer, nftID, XRP(50)), token::Owner(issuer));
+        env.close();
+
+        // Grab the index of the single offer on each side from the RPC
+        // response so we can use it as a marker.
+        auto firstOfferIndex = [this, &env, &nftID](char const* request) {
+            json::Value params;
+            params[jss::nft_id] = to_string(nftID);
+            json::Value const result = env.rpc("json", request, to_string(params))[jss::result];
+            BEAST_EXPECT(result.isMember(jss::offers) && result[jss::offers].size() == 1);
+            return result[jss::offers][0u][jss::nft_offer_index].asString();
+        };
+
+        std::string const sellOfferIndex = firstOfferIndex("nft_sell_offers");
+        std::string const buyOfferIndex = firstOfferIndex("nft_buy_offers");
+
+        auto queryWithMarker = [&env, &nftID](char const* request, std::string const& marker) {
+            json::Value params;
+            params[jss::nft_id] = to_string(nftID);
+            params[jss::marker] = marker;
+            return env.rpc("json", request, to_string(params))[jss::result];
+        };
+
+        // A marker referencing an offer on the wrong side is rejected with
+        // invalidParams.
+        {
+            // Sell-side marker passed to nft_buy_offers.
+            json::Value const result = queryWithMarker("nft_buy_offers", sellOfferIndex);
+            BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+        }
+        {
+            // Buy-side marker passed to nft_sell_offers.
+            json::Value const result = queryWithMarker("nft_sell_offers", buyOfferIndex);
+            BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+        }
+
+        // A same-side marker is still accepted.  With a single offer on each
+        // side, resuming after it simply yields no further offers.
+        {
+            json::Value const result = queryWithMarker("nft_buy_offers", buyOfferIndex);
+            BEAST_EXPECT(!result.isMember(jss::error));
+        }
+        {
+            json::Value const result = queryWithMarker("nft_sell_offers", sellOfferIndex);
+            BEAST_EXPECT(!result.isMember(jss::error));
+        }
+    }
+
+    void
     testNFTokenNegOffer(FeatureBitset features)
     {
         using namespace test::jtx;
@@ -7274,6 +7356,127 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testCreateOfferInvalidAmount(FeatureBitset features)
+    {
+        testcase("Invalid NFT offer create amount");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, a fake-XRP offer amount (an IOU using the
+        // "XRP" currency code) is not rejected in preflight. With the amendment
+        // enabled, preflight rejects it with temBAD_CURRENCY.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const alice{"alice"};
+            Account const gw{"gw"};
+
+            env.fund(XRP(1000), alice, gw);
+            env.close();
+
+            uint256 const nftID = token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
+            env.close();
+
+            // Fake XRP (an IOU using the "XRP" currency code) sell offer
+            // amount.
+            auto const bad = IOU(gw, badCurrency());
+            env(token::createOffer(alice, nftID, bad(1)),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{temBAD_CURRENCY} : TER{tesSUCCESS}));
+            env.close();
+        }
+    }
+
+    void
+    testAcceptOfferInvalidBrokerFee(FeatureBitset features)
+    {
+        testcase("Invalid NFT offer accept broker fee");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, a fake-XRP broker fee (an IOU using the "XRP"
+        // currency code) is not rejected in preflight and reaches later offer
+        // validation instead. With the amendment enabled, preflight rejects it
+        // with temBAD_CURRENCY.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const alice{"alice"};
+            Account const buyer{"buyer"};
+            Account const broker{"broker"};
+            Account const gw{"gw"};
+
+            env.fund(XRP(1000), alice, buyer, broker, gw);
+            env.close();
+
+            uint256 const nftID = token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
+            env.close();
+
+            uint256 const sellOfferIndex =
+                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            env(token::createOffer(alice, nftID, XRP(10)), Txflags(tfSellNFToken));
+            env.close();
+
+            uint256 const buyOfferIndex =
+                keylet::nftokenOffer(buyer, SeqProxy::rawSequence(env.seq(buyer))).key;
+            env(token::createOffer(buyer, nftID, XRP(40)), token::Owner(alice));
+            env.close();
+
+            // Fake XRP (an IOU using the "XRP" currency code) broker fee.
+            auto const bad = IOU(gw, badCurrency());
+            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex),
+                token::BrokerFee(bad(1)),
+                Ter(withFix ? TER{temBAD_CURRENCY} : TER{tecNFTOKEN_BUY_SELL_MISMATCH}));
+            env.close();
+        }
+    }
+
+    void
+    testCreateOfferIouIssuerGlobalFreeze(FeatureBitset features)
+    {
+        testcase("Create NFT offer by IOU issuer under global freeze");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, an IOU issuer that has set a global freeze on
+        // their own currency cannot create an NFToken offer denominated in that
+        // currency; the offer is rejected with tecFROZEN.  With the amendment
+        // enabled, the issuer is not subject to their own global freeze when the
+        // offer is denominated in their own IOU (e.g. to receive their own
+        // transfer fees), so the offer succeeds.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const issuer{"issuer"};
+            IOU const isISU(issuer["ISU"]);
+
+            env.fund(XRP(1000), issuer);
+            env.close();
+
+            // issuer mints a transferable NFToken.
+            uint256 const nftID = token::getNextID(env, issuer, 0, tfTransferable);
+            env(token::mint(issuer, 0u), Txflags(tfTransferable));
+            env.close();
+
+            // issuer sets a global freeze on their own IOU.
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+
+            // issuer creates a sell offer for the NFToken denominated in their
+            // own (globally frozen) IOU.
+            env(token::createOffer(issuer, nftID, isISU(100)),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{tesSUCCESS} : TER{tecFROZEN}));
+            env.close();
+        }
+    }
+
 protected:
     FeatureBitset const allFeatures_{test::jtx::testableAmendments()};
 
@@ -7305,6 +7508,7 @@ protected:
         testNFTokenWithTickets(features);
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
+        testNftXxxOffersMarkerWrongSide(features);
         testNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
@@ -7315,6 +7519,9 @@ protected:
         testUnaskedForAutoTrustline(features);
         testNFTIssuerIsIOUIssuer(features);
         testNFTokenModify(features);
+        testCreateOfferInvalidAmount(features);
+        testAcceptOfferInvalidBrokerFee(features);
+        testCreateOfferIouIssuerGlobalFreeze(features);
     }
 
 public:

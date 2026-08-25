@@ -10,7 +10,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/WasmFixture.h>
-// For `TraceDataType`, which the bridge declares and this header defines.
+// For `TraceDataType`: declared in the cxx bridge, defined in the header it generates.
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 
 #include <cstdint>
@@ -45,8 +45,8 @@ serialized(STAmount const& amount)
 
 }  // namespace
 
-// trace — a message, a data type, and a buffer holding what that type says. One import for
-// what were five, so what a test varies is the type rather than the function.
+// trace — a message, a data type, and a buffer holding what that type says. One import
+// covers every rendering, so what a test varies is the type rather than the function.
 //
 // The buffer arrives as bytes and leaves as text: `HostContext` renders it, and the host is
 // handed the finished line. So a test says which renderer the type selected.

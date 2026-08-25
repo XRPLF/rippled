@@ -7,7 +7,12 @@ from pathlib import Path
 
 THIS_DIR = Path(__file__).parent.resolve()
 
-_BASE_CMAKE_ARGS = ["-Dtests=ON", "-Dwerr=ON", "-Dxrpld=ON", "-Dwextra=ON"]
+_BASE_CMAKE_ARGS = [
+    "-Dtests=ON",
+    "-Dwerr=ON",
+    "-Dxrpld=ON",
+    "-Dwextra=ON",
+]
 
 # Maps sanitizer names (as used in cmake) to short config-name suffixes.
 _SANITIZER_SUFFIX: dict[str, str] = {
@@ -88,6 +93,9 @@ class PlatformConfig:
     build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
     benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     extra_cmake_args: str = ""
+    # "" is the runner's system compiler, "nix" the flake's CI environment.
+    # macOS only: Linux always builds in a Nix image, Windows has no Nix.
+    toolchain: str = ""
 
     def __post_init__(self) -> None:
         if isinstance(self.build_type, str):
@@ -137,6 +145,7 @@ class MatrixEntry:
     sanitizers: str
     image: str = ""  # container image; empty for macOS/Windows (runs natively)
     compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
+    toolchain: str = ""  # "nix" for the flake's CI environment; see PlatformConfig
 
 
 @dataclasses.dataclass
@@ -215,7 +224,7 @@ def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
 def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     """Generate the packaging matrix from a LinuxFile's package_configs section.
 
-    Packaging uses vanilla distro images (debian:bookworm, ubi9, …) instead of
+    Packaging uses vanilla distro images (debian:bookworm, almalinux:9) instead of
     the nix-based build images, because deb/rpm tooling (debhelper, rpm-build)
     is taken from the distro's archive rather than from nixpkgs. Each config
     entry carries its own 'image'.
@@ -253,9 +262,12 @@ def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]
         if minimal and not cfg.minimal:
             continue
         for build_type in cfg.build_type:
+            name = f"{platform_name}-{arch}-{build_type.lower()}"
+            if cfg.toolchain:
+                name += f"-{cfg.toolchain}"
             entries.append(
                 MatrixEntry(
-                    config_name=f"{platform_name}-{arch}-{build_type.lower()}",
+                    config_name=name,
                     cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                     cmake_target="install" if is_windows else "all",
                     build_only=cfg.build_only,
@@ -263,6 +275,7 @@ def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]
                     build_type=build_type,
                     architecture=Architecture(platform=pf.platform, runner=pf.runner),
                     sanitizers="",
+                    toolchain=cfg.toolchain,
                 )
             )
     return entries

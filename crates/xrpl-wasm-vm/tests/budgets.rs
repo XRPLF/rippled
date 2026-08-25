@@ -658,6 +658,183 @@ fn a_modest_run_never_meets_the_budget() {
     assert_eq!(outcome.result, MAX_FIELD_BYTES as i32);
 }
 
+/// A write the budget refuses is a write that did not happen. `float_to_mant_exp` is
+/// the case worth pinning: its two regions are charged as one, so a call that cannot
+/// pay for both must leave both alone rather than place the mantissa and refuse.
+#[test]
+fn a_write_the_budget_refuses_reaches_guest_memory_in_no_part() {
+    let host = FakeHost::new()
+        .answering_field(1, Answer::filler(MAX_FIELD_BYTES))
+        .answering_float_mant_exp(vec![1, 2, 3, 4, 5, 6, 7, 8], vec![9, 10, 11, 12]);
+
+    // Spend the budget on 1 KiB fields at offset 0, then ask for a mantissa and an
+    // exponent at offsets well clear of them.
+    let call = "(call $float_to_mant_exp (i32.const 0) (i32.const 8) (i32.const 2048) (i32.const 8) (i32.const 2064) (i32.const 4))";
+    let spent = |tail: &str| {
+        module(
+            &[import::HOME_LE_FIELD, import::FLOAT_TO_MANT_EXP, ONE_PAGE],
+            &format!(
+                "(local $r i32)
+                 (loop $l
+                   (local.set $r (call $home_le_field (i32.const 1) (i32.const 0) (i32.const {MAX_FIELD_BYTES})))
+                   (br_if $l {WHILE_POSITIVE}))
+                 {tail}"
+            ),
+        )
+    };
+
+    let refused = run(&spent(call), &host).expect("the module should run");
+    assert_eq!(refused.result, code(HostError::OutOfTransferLimit));
+
+    let wat = spent(&format!(
+        "(drop {call})
+         (i32.or (i32.load8_u (i32.const 2048)) (i32.load8_u (i32.const 2064)))"
+    ));
+    let outcome = run(&wat, &host).expect("the module should run");
+    assert_eq!(outcome.result, 0, "neither region should be written");
+}
+
+/// The same rule on the path that writes straight into guest memory: `write_into`
+/// hands the host a slice *of the guest's own buffer*, so a value the budget cannot
+/// pay for has to be kept out of that slice before the host fills it.
+///
+/// The probe region is one the spending loop never writes to, so anything found there
+/// came from the refused call.
+#[test]
+fn a_straight_write_the_budget_refuses_reaches_guest_memory_in_no_part() {
+    /// Clear of the offset the spending loop writes to.
+    const PROBE: usize = 2048;
+    /// Every byte of the value, so the fold sees a prefix as readily as the whole.
+    const MARK: u8 = 0xff;
+
+    let host = FakeHost::new().answering_field(1, Answer::bytes(vec![MARK; MAX_FIELD_BYTES]));
+    let call = format!(
+        "(call $home_le_field (i32.const 1) (i32.const {PROBE}) (i32.const {MAX_FIELD_BYTES}))"
+    );
+
+    // Every local the tails below use is declared here: wasm wants them all ahead of
+    // the first instruction.
+    let spent = |tail: &str| {
+        module(
+            &[import::HOME_LE_FIELD, ONE_PAGE],
+            &format!(
+                "(local $r i32) (local $i i32) (local $seen i32)
+                 (loop $l
+                   (local.set $r (call $home_le_field (i32.const 1) (i32.const 0) (i32.const {MAX_FIELD_BYTES})))
+                   (br_if $l {WHILE_POSITIVE}))
+                 {tail}"
+            ),
+        )
+    };
+
+    let refused = run(&spent(&call), &host).expect("the module should run");
+    assert_eq!(refused.result, code(HostError::OutOfTransferLimit));
+
+    // Guest memory starts zero-filled, so or-ing the region together reports whether
+    // any byte of it was written.
+    let wat = spent(&format!(
+        "(drop {call})
+         (loop $l
+           (local.set $seen (i32.or (local.get $seen)
+                                    (i32.load8_u (i32.add (i32.const {PROBE}) (local.get $i)))))
+           (local.set $i (i32.add (local.get $i) (i32.const 1)))
+           (br_if $l (i32.lt_u (local.get $i) (i32.const {MAX_FIELD_BYTES}))))
+         (local.get $seen)"
+    ));
+    let outcome = run(&wat, &host).expect("the module should run");
+    assert_eq!(outcome.result, 0, "not one byte should have been written");
+}
+
+/// What a write may deliver is what is *left* of the budget, to the byte.
+///
+/// The prologue spends all but `LEFT`, and field 3's host answers with as much as it
+/// is offered — so the window `write_into` opened is what it reports and what it
+/// leaves in guest memory, and both are read off as `LEFT`. A mark is a 1, so the
+/// fold over the probe's whole buffer counts the bytes that reached it.
+///
+/// `LEFT` is under [`MAX_FIELD_BYTES`] and the buffer is wider than both probes'
+/// values, so it is the budget answering and neither the field cap nor the guest's
+/// capacity. Field 4 is the byte past it: a host whose value is one larger than what
+/// is left, which no window can hold.
+#[test]
+fn a_write_may_deliver_what_is_left_of_the_budget_and_not_a_byte_more() {
+    /// Full-cap writes, all the prologue can make without overshooting.
+    const BULK: u64 = TRANSFER_LIMIT_BYTES / MAX_FIELD_BYTES as u64 - 1;
+    /// What the prologue leaves unspent.
+    const LEFT: usize = MAX_FIELD_BYTES / 2;
+    /// The write that trims what [`BULK`] leaves down to [`LEFT`].
+    const TRIM: usize = MAX_FIELD_BYTES - LEFT;
+    /// Clear of the offset the prologue writes to.
+    const PROBE: usize = 2048;
+    const BUFFER: usize = MAX_FIELD_BYTES;
+    /// One per byte written, so the fold below sums to how many there were.
+    const MARK: u8 = 1;
+
+    assert_eq!(
+        BULK * MAX_FIELD_BYTES as u64 + TRIM as u64 + LEFT as u64,
+        TRANSFER_LIMIT_BYTES,
+        "the prologue must spend all but LEFT of the budget"
+    );
+
+    let host = FakeHost::new()
+        .answering_field(1, Answer::filler(MAX_FIELD_BYTES))
+        .answering_field(2, Answer::filler(TRIM))
+        .answering_field(3, Answer::as_much_as_offered(MARK))
+        .answering_field(4, Answer::claiming(LEFT + 1));
+
+    let probe = |field: i32| {
+        format!(
+            "(call $home_le_field (i32.const {field}) (i32.const {PROBE}) (i32.const {BUFFER}))"
+        )
+    };
+    // Every local the tails use, declared where wasm wants them.
+    let after_prologue = |tail: String| {
+        let wat = module(
+            &[import::HOME_LE_FIELD, ONE_PAGE],
+            &format!(
+                "(local $i i32) (local $marks i32)
+                 (loop $l
+                   (drop (call $home_le_field (i32.const 1) (i32.const 0) (i32.const {MAX_FIELD_BYTES})))
+                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                   (br_if $l (i32.lt_u (local.get $i) (i32.const {BULK}))))
+                 (drop (call $home_le_field (i32.const 2) (i32.const 0) (i32.const {TRIM})))
+                 (local.set $i (i32.const 0))
+                 {tail}"
+            ),
+        );
+        run(&wat, &host).expect("the module should run").result
+    };
+
+    assert_eq!(
+        after_prologue(probe(3)),
+        LEFT as i32,
+        "the host should be offered exactly what is left"
+    );
+
+    // Guest memory starts zero-filled, so summing the probe's whole buffer counts the
+    // marks in it.
+    assert_eq!(
+        after_prologue(format!(
+            "(drop {})
+             (loop $l
+               (local.set $marks (i32.add (local.get $marks)
+                                          (i32.load8_u (i32.add (i32.const {PROBE}) (local.get $i)))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br_if $l (i32.lt_u (local.get $i) (i32.const {BUFFER}))))
+             (local.get $marks)",
+            probe(3)
+        )),
+        LEFT as i32,
+        "and that many marks, no more, should reach guest memory"
+    );
+
+    assert_eq!(
+        after_prologue(probe(4)),
+        code(HostError::OutOfTransferLimit),
+        "a value one byte past what is left fits no window"
+    );
+}
+
 /// Reads leave the budget alone: `read_borrowed` hands the host a slice *aliasing*
 /// guest memory, so there are no copied bytes to charge. What bounds how many reads
 /// a run can make is gas, which every host call pays before its body runs.

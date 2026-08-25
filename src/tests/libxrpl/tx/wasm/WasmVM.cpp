@@ -97,20 +97,6 @@ TEST_F(WasmVMTest, BudgetTooSmallToRunIsOutOfGas)
     EXPECT_TRUE(outcome.error().cost.has_value());
 }
 
-// No gas is not a small budget, it is a malformed transaction — refused before the engine is
-// asked to run anything.
-TEST_F(WasmVMTest, NoGasIsRefusedAsMalformedRatherThanRun)
-{
-    for (auto const gas : {std::int64_t{0}, std::int64_t{-1}})
-    {
-        auto const outcome = run(kEngineWat, gas);
-
-        ASSERT_FALSE(outcome.has_value()) << "gas: " << gas;
-        EXPECT_EQ(outcome.error().ter, temBAD_AMOUNT) << "gas: " << gas;
-        EXPECT_FALSE(outcome.error().cost.has_value()) << "gas: " << gas;
-    }
-}
-
 // A host call needs a memory to resolve its byte regions against, and the export is not
 // optional for a contract that makes one.
 TEST_F(WasmVMTest, HostCallWithNoExportedMemoryFails)
@@ -216,21 +202,6 @@ TEST_F(WasmVMTest, TextFormatModuleIsRejected)
     EXPECT_EQ(outcome.error().ter, tecINTERNAL);
 }
 
-// The host caches the current ledger object, the slot table and the contract's data for the
-// length of one run, so a reused one would answer a later contract out of an earlier
-// contract's state.
-TEST_F(WasmVMTest, DirtyHostIsRefusedBeforeContractRuns)
-{
-    EXPECT_CALL(host, checkSelf()).WillOnce(testing::Return(false));
-
-    auto const outcome = run(kEngineWat);
-
-    ASSERT_FALSE(outcome.has_value());
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    EXPECT_FALSE(outcome.error().cost.has_value());
-    EXPECT_THAT(logged(), testing::HasSubstr("not clean"));
-}
-
 // A soft host error is the contract's to interpret, so its code has to cross the boundary
 // unchanged: the engine must not renumber it, clamp it, or turn it into a failure of its own.
 //
@@ -323,6 +294,46 @@ TEST_F(WasmVMTest, ThrowingHostFunctionBecomesInternal)
     // call it came out of.
     EXPECT_THAT(logged(), testing::HasSubstr("the ledger came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerSqn"));
+}
+
+struct WasmVMDeathTest : WasmVMTest
+{
+};
+
+// No gas is not a small budget, it is a malformed transaction — refused before the engine is
+// asked to run anything.
+TEST_F(WasmVMDeathTest, NoGasIsRefusedAsMalformedRatherThanRun)
+{
+    for (auto const gas : {std::int64_t{0}, std::int64_t{-1}})
+    {
+        EXPECT_DEBUG_DEATH(
+            {
+                auto const outcome = run(kEngineWat, gas);
+
+                ASSERT_FALSE(outcome.has_value()) << "gas: " << gas;
+                EXPECT_EQ(outcome.error().ter, temBAD_AMOUNT) << "gas: " << gas;
+                EXPECT_FALSE(outcome.error().cost.has_value()) << "gas: " << gas;
+            },
+            "gas limit is positive");
+    }
+}
+
+// The host caches the current ledger object, the slot table and the contract's data for the
+// length of one run, so a reused one would answer a later contract out of an earlier
+// contract's state.
+TEST_F(WasmVMDeathTest, DirtyHostIsRefusedBeforeContractRuns)
+{
+    EXPECT_DEBUG_DEATH(
+        {
+            EXPECT_CALL(host, checkSelf()).WillOnce(testing::Return(false));
+            auto const outcome = run(kEngineWat);
+
+            ASSERT_FALSE(outcome.has_value());
+            EXPECT_EQ(outcome.error().ter, tecINTERNAL);
+            EXPECT_FALSE(outcome.error().cost.has_value());
+            EXPECT_THAT(logged(), testing::HasSubstr("not clean"));
+        },
+        "host functions not clean before the run");
 }
 
 }  // namespace xrpl::test

@@ -1,5 +1,17 @@
-[target.x86_64-unknown-linux-gnu]
+# The Rust static libraries are linked into C++ targets, so the runtime linkage
+# here has to match what the C++ build uses (see cmake/XrplCompiler.cmake).
+#
+# macOS needs nothing: AppleClang cannot link libgcc/libc++ statically, so the
+# C++ build skips those flags on Apple as well.
+
+# Both amd64 and arm64 Linux builds link libgcc statically. This only affects
+# links that rustc itself drives (`cargo test` binaries and the like) — the
+# `staticlib` crates consumed by CMake are archived, not linked, so rustc
+# silently ignores link args for them. Keeping libgcc_s.so.1 off the xrpld link
+# line is handled in crates/CMakeLists.txt instead.
+[target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-args=-static-libgcc"]
 
-[target.x86_64-pc-windows-msvc]
+# Windows builds use the static MSVC runtime.
+[target.'cfg(windows)']
 rustflags = ["-C", "target-feature=+crt-static"]

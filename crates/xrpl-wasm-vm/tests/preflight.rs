@@ -8,7 +8,7 @@ mod support;
 
 use support::{ENTRY, FakeHost, ONE_PAGE, PLENTY_OF_GAS, assemble, import, module};
 use xrpl_host_functions::HostFunctionSpec;
-use xrpl_wasm_vm::{CheckError, MAX_MEMORY_PAGES, RunError};
+use xrpl_wasm_vm::{CheckError, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, RunError};
 
 /// Assert which stage screening refused a module at, because the caller maps the
 /// stages separately. The error comes back out for the tests that also read its
@@ -464,36 +464,112 @@ fn a_declared_maximum_past_the_cap_still_passes() {
     ));
 }
 
-/// The gap, listed rather than described, and now one entry long. A memory a module
-/// keeps to itself is not in its exports, so this is the one module that passes
-/// screening and then fails to *instantiate* — which is why a run's refusal at that
-/// stage cannot be read as the node's fault.
+/// A module asking for more table than the engine grants is refused for the same
+/// reason a memory is. The cap itself passes.
+#[test]
+fn an_exported_table_past_the_cap_does_not_pass() {
+    let wat = module(
+        &[&format!(
+            r#"(table (export "t") {} funcref)"#,
+            MAX_TABLE_ELEMENTS + 1
+        )],
+        "(i32.const 0)",
+    );
+    let refusal = assert_stage!(refusal(&wat), CheckError::Table(_)).to_string();
+    assert!(refusal.contains("past the 1024-element cap"), "{refusal}");
+
+    passes(&module(
+        &[&format!(
+            r#"(table (export "t") {MAX_TABLE_ELEMENTS} funcref)"#
+        )],
+        "(i32.const 0)",
+    ));
+}
+
+/// Both caps are applied in one pass over the exports, so neither may end the walk
+/// early: a passing memory must not hide a failing table declared after it, and a
+/// passing table must not hide a failing memory.
+#[test]
+fn one_pass_screens_both_resources() {
+    let after_a_passing_memory = refusal(&module(
+        &[
+            ONE_PAGE,
+            &format!(r#"(table (export "t") {} funcref)"#, MAX_TABLE_ELEMENTS + 1),
+        ],
+        "(i32.const 0)",
+    ));
+    assert_stage!(after_a_passing_memory, CheckError::Table(_));
+
+    let after_a_passing_table = refusal(&module(
+        &[
+            r#"(table (export "t") 1 funcref)"#,
+            &format!(r#"(memory (export "memory") {})"#, MAX_MEMORY_PAGES + 1),
+        ],
+        "(i32.const 0)",
+    ));
+    assert_stage!(after_a_passing_table, CheckError::Memory(_));
+}
+
+/// As with memory, a declared *maximum* past the cap is unreachable rather than
+/// wrong: `vm_limits` runs this very module to completion.
+#[test]
+fn a_declared_table_maximum_past_the_cap_still_passes() {
+    passes(&module(
+        &[&format!(
+            r#"(table (export "t") 1 {} funcref)"#,
+            MAX_TABLE_ELEMENTS + 1
+        )],
+        "(i32.const 0)",
+    ));
+}
+
+/// The gap, listed rather than described. A memory or a table a module keeps to
+/// itself is not in its exports, so these are the modules that pass screening and
+/// then fail to *instantiate* — which is why a run's refusal at that stage cannot be
+/// read as the node's fault.
 ///
-/// A contract needs an exported memory to make any host call, so a module of this
-/// shape can do nothing but compute; the SDK does not produce one.
+/// The two entries are not equally remote. A contract needs an exported memory to
+/// make any host call, so the memory row can do nothing but compute and the SDK does
+/// not produce one. A table, though, is *normally* unexported — Rust exports
+/// `__indirect_function_table` only under `--export-table` — so the table row is the
+/// shape a hostile module actually takes, and the store's limiter is the only thing
+/// standing in front of it.
 #[test]
 fn what_static_screening_cannot_see() {
     let host = FakeHost::new();
-    let wat = format!(
-        r#"(module (memory {})
-             (func (export "finish") (result i32) (i32.const 0)))"#,
-        MAX_MEMORY_PAGES + 1
-    );
 
-    passes(&wat);
+    for (label, declaration) in [
+        ("memory", format!("(memory {})", MAX_MEMORY_PAGES + 1)),
+        (
+            "table",
+            format!("(table {} funcref)", MAX_TABLE_ELEMENTS + 1),
+        ),
+    ] {
+        let wat = format!(
+            r#"(module {declaration}
+                 (func (export "finish") (result i32) (i32.const 0)))"#
+        );
 
-    let failure = xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY)
-        .expect_err("the store's limiter must refuse the memory");
-    assert!(
-        matches!(failure.error, RunError::Instantiate(_)),
-        "{failure}"
-    );
+        passes(&wat);
+
+        let failure = match xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY) {
+            Err(failure) => failure,
+            Ok(outcome) => panic!(
+                "the store's limiter must refuse the {label}, but the module returned {}",
+                outcome.result
+            ),
+        };
+        assert!(
+            matches!(failure.error, RunError::Instantiate(_)),
+            "{label}: {failure}"
+        );
+    }
 }
 
-/// A start section is guest code, so screening cannot see whether it traps — but it
-/// no longer has to. A trap is the guest's fault wherever it happens, so the run
-/// charges the contract for what it burned instead of reporting a module the node
-/// should have screened.
+/// A start section is guest code, so screening cannot see whether it traps — and does
+/// not have to. A trap is the guest's fault wherever it happens, so the run charges the
+/// contract for what it burned instead of reporting a module the node should have
+/// screened.
 #[test]
 fn a_start_section_screening_cannot_see_is_charged_as_a_trap() {
     let host = FakeHost::new();

@@ -13,15 +13,17 @@
 //! passes: it is guest code, and executing it is the one thing a check must not do
 //! — a trap in one is charged to the contract like any other trap.
 //!
-//! One thing it screens that a run can only discover: an exported memory larger
-//! than the engine grants. See [`check_memory`] for what stays invisible.
+//! Two things it screens that a run can only discover: an exported memory, or an
+//! exported table, larger than the engine grants. Both read the same export list, so
+//! [`check_exported_resources`] is one pass — see it for what stays invisible, and
+//! why the table case leaves much more of it there.
 
 use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
 use xrpl_host_functions::HostFunctionSpec;
 
 use crate::register::HOST_MODULE;
-use crate::vm::{MAX_MEMORY_PAGES, compile};
+use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile};
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
 /// stages separately.
@@ -37,6 +39,8 @@ pub enum CheckError {
     EntryPoint(String),
     /// The module asks for more linear memory than the engine grants.
     Memory(String),
+    /// The module asks for a larger table than the engine grants.
+    Table(String),
 }
 
 impl fmt::Display for CheckError {
@@ -48,22 +52,24 @@ impl fmt::Display for CheckError {
             // "no entry point" would be wrong for an export of the wrong type.
             CheckError::EntryPoint(detail) => write!(f, "{detail}"),
             CheckError::Memory(detail) => write!(f, "memory: {detail}"),
+            CheckError::Table(detail) => write!(f, "table: {detail}"),
         }
     }
 }
 
 /// Screen `wasm`: it must compile, import only what the engine serves, export
-/// `function_name` as `() -> i32`, and ask for no more memory than it may have.
+/// `function_name` as `() -> i32`, and ask for no more memory or table than it may
+/// have.
 ///
 /// The stages are ordered by how much of the module each explains. An import fault
 /// is reported before a missing entry point because the imports are what the rest of
-/// the module is built on; memory comes last, being a resource request rather than a
+/// the module is built on; the resource caps come last, being a request rather than a
 /// mistake about the ABI.
 pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
     let module = compile(wasm).map_err(CheckError::Compile)?;
     check_imports(&module)?;
     check_entry_point(&module, function_name)?;
-    check_memory(&module)
+    check_exported_resources(&module)
 }
 
 /// Every import must be one the linker defines. The first that is not ends the
@@ -116,18 +122,30 @@ fn is_entry_point(ty: &FuncType) -> bool {
     ty.params().is_empty() && matches!(ty.results(), [ValType::I32])
 }
 
-/// A module may not declare more linear memory than the engine grants.
+/// A module may declare no more linear memory, and no larger a table, than the
+/// engine grants. One pass over the exports, since both rules read the same list and
+/// the export table is the only place either is visible.
 ///
-/// Only what it *exports* is visible here. A memory a module keeps to itself is not
-/// in its exports, and the store's limiter is what refuses that one — at
-/// instantiation, where the run is charged nothing and the caller cannot tell it
-/// from any other resource failure. Screening the exported case covers every
-/// contract built against the guest SDK, since a contract needs an exported memory
-/// to make a host call at all.
-fn check_memory(module: &Module) -> Result<(), CheckError> {
+/// **A memory or table the module keeps to itself is therefore not screened**: it is
+/// absent from the exports, and the store's limiter is what refuses it, at
+/// instantiation. That gap is wide for tables — Rust exports
+/// `__indirect_function_table` only under `--export-table`, so unexported is the
+/// normal shape — and narrow for memories, since a contract needs an exported one to
+/// make any host call at all.
+///
+/// A module faulting on both is reported by whichever it declares first. Neither
+/// fault explains the other, so there is no precedence to preserve — only the need
+/// for every node to reach the same verdict, which export order already gives.
+fn check_exported_resources(module: &Module) -> Result<(), CheckError> {
     for export in module.exports() {
-        if let ExternType::Memory(ty) = export.ty() {
-            check_initial_pages(ty.minimum()).map_err(CheckError::Memory)?;
+        match export.ty() {
+            ExternType::Memory(ty) => {
+                check_initial_pages(ty.minimum()).map_err(CheckError::Memory)?;
+            }
+            ExternType::Table(ty) => {
+                check_initial_elements(ty.minimum()).map_err(CheckError::Table)?;
+            }
+            _ => {}
         }
     }
     Ok(())
@@ -143,6 +161,21 @@ fn check_initial_pages(pages: u64) -> Result<(), String> {
     if pages > u64::from(MAX_MEMORY_PAGES) {
         return Err(format!(
             "initial memory of {pages} pages is past the {MAX_MEMORY_PAGES}-page cap"
+        ));
+    }
+    Ok(())
+}
+
+/// Whether the engine will grant a table of this declared initial size.
+///
+/// The *minimum* is the whole question: `table.grow` belongs to the reference-types
+/// proposal, which [`crate::vm`]'s engine turns off, so a table never becomes larger
+/// than it was declared and a declared maximum past the cap is simply unreachable.
+fn check_initial_elements(elements: u64) -> Result<(), String> {
+    let cap = u64::try_from(MAX_TABLE_ELEMENTS).expect("the cap is a small constant");
+    if elements > cap {
+        return Err(format!(
+            "initial table of {elements} elements is past the {MAX_TABLE_ELEMENTS}-element cap"
         ));
     }
     Ok(())
@@ -310,6 +343,25 @@ mod tests {
         );
     }
 
+    /// The cap itself is granted; one element past it is not. The boundary is the
+    /// whole rule, and it is the same boundary the store's limiter applies at
+    /// instantiation.
+    #[test]
+    fn the_initial_table_may_reach_the_cap_but_not_pass_it() {
+        let cap = u64::try_from(MAX_TABLE_ELEMENTS).expect("fits");
+        assert_eq!(check_initial_elements(0), Ok(()));
+        assert_eq!(check_initial_elements(cap), Ok(()));
+
+        let past = cap + 1;
+        let refusal = check_initial_elements(past).expect_err("one element past the cap");
+        assert_eq!(
+            refusal,
+            format!(
+                "initial table of {past} elements is past the {MAX_TABLE_ELEMENTS}-element cap"
+            )
+        );
+    }
+
     /// The bridge logs this string and the C++ tests match on it, so the stage's
     /// prefix is part of the interface rather than a debugging aid.
     #[test]
@@ -321,6 +373,10 @@ mod tests {
         assert_eq!(
             CheckError::Memory("initial memory of 129 pages".to_string()).to_string(),
             "memory: initial memory of 129 pages"
+        );
+        assert_eq!(
+            CheckError::Table("initial table of 1025 elements".to_string()).to_string(),
+            "table: initial table of 1025 elements"
         );
         assert_eq!(
             CheckError::Import("no host function 'x'".to_string()).to_string(),

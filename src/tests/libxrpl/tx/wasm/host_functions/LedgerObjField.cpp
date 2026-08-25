@@ -25,7 +25,7 @@ struct LedgerObjFieldImpl : RealHostFixture
     {
         auto const accountKeylet = keylet::account(acct.id());
         auto h = makeHost(accountKeylet, assembler.type, std::move(assembler.build));
-        h->cacheLedgerObj(accountKeylet.key, 1);
+        EXPECT_TRUE(h->cacheLedgerObj(accountKeylet.key, 1).has_value());
         expectValue(h->getLedgerObjField(index, field), f());
     }
 
@@ -39,7 +39,7 @@ struct LedgerObjFieldImpl : RealHostFixture
     {
         auto const accountKeylet = keylet::account(acct.id());
         auto h = makeHost(accountKeylet, assembler.type, std::move(assembler.build));
-        h->cacheLedgerObj(accountKeylet.key, 1);
+        EXPECT_TRUE(h->cacheLedgerObj(accountKeylet.key, 1).has_value());
         expectError(h->getLedgerObjField(index, field), error);
     }
 };
