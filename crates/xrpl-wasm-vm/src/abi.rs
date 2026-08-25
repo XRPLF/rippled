@@ -162,14 +162,14 @@ pub(crate) fn read_borrowed<'a>(
 }
 
 /// Decode a guest `u32` argument — a keylet's sequence number or document id — from
-/// its four little-endian bytes, carried on to the host as its `i32` bit pattern.
+/// its four little-endian bytes.
 ///
-/// The ABI transports these as a 4-byte region rather than a wasm scalar (the guest
-/// SDK passes `seq.to_le_bytes()`), so the region must be exactly four bytes;
-/// `InvalidParams` otherwise.
-pub(crate) fn read_u32_arg(bytes: &[u8]) -> HostResult<i32> {
+/// A declared `u32` is a 4-byte region rather than a wasm scalar (the guest SDK passes
+/// `seq.to_le_bytes()`), so the region must be exactly four bytes; `InvalidParams`
+/// otherwise.
+pub(crate) fn read_u32_arg(bytes: &[u8]) -> HostResult<u32> {
     let arr: [u8; 4] = bytes.try_into().map_err(|_| HostError::InvalidParams)?;
-    Ok(i32::from_le_bytes(arr))
+    Ok(u32::from_le_bytes(arr))
 }
 
 /// Service a call whose answer is bytes, written straight into the guest's output
@@ -445,7 +445,7 @@ mod tests {
         fn amm_keylet(&self, _asset1: &[u8], _asset2: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn check_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+        fn check_keylet(&self, _account: &[u8], _seq: u32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn credential_keylet(
@@ -476,7 +476,7 @@ mod tests {
         fn did_keylet(&self, _account: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn escrow_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+        fn escrow_keylet(&self, _account: &[u8], _seq: u32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn trust_line_keylet(
@@ -491,7 +491,7 @@ mod tests {
         fn mptoken_issuance_keylet(
             &self,
             _issuer: &[u8],
-            _seq: i32,
+            _seq: u32,
             _out: &mut [u8],
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
@@ -507,18 +507,18 @@ mod tests {
         fn nftoken_offer_keylet(
             &self,
             _account: &[u8],
-            _seq: i32,
+            _seq: u32,
             _out: &mut [u8],
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn offer_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+        fn offer_keylet(&self, _account: &[u8], _seq: u32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn oracle_keylet(
             &self,
             _account: &[u8],
-            _doc_id: i32,
+            _doc_id: u32,
             _out: &mut [u8],
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
@@ -527,7 +527,7 @@ mod tests {
             &self,
             _account: &[u8],
             _destination: &[u8],
-            _seq: i32,
+            _seq: u32,
             _out: &mut [u8],
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
@@ -535,7 +535,7 @@ mod tests {
         fn permissioned_domain_keylet(
             &self,
             _account: &[u8],
-            _seq: i32,
+            _seq: u32,
             _out: &mut [u8],
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
@@ -543,16 +543,16 @@ mod tests {
         fn signer_list_keylet(&self, _account: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn ticket_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+        fn ticket_keylet(&self, _account: &[u8], _seq: u32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn vault_keylet(&self, _account: &[u8], _seq: i32, _out: &mut [u8]) -> HostResult<usize> {
+        fn vault_keylet(&self, _account: &[u8], _seq: u32, _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn sha512_half(&self, _data: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn trace(&self, _msg: &str, _data: &[u8], _data_type: TraceDataType) -> HostResult<()> {
+        fn trace(&self, _msg: &str, _data_type: TraceDataType, _data: &[u8]) -> HostResult<()> {
             unreachable!("no unit test in this module calls the host")
         }
         fn update_data(&self, _data: &[u8]) -> HostResult<i32> {
@@ -576,29 +576,29 @@ mod tests {
         fn get_nft_sequence(&self, _nft_id: &[u8], _out: &mut [u8]) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn float_from_int(&self, _x: i64, _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+        fn float_from_int(&self, _x: i64, _out: &mut [u8], _mode: i32) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn float_from_uint(&self, _x: &[u8], _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+        fn float_from_uint(&self, _x: &[u8], _out: &mut [u8], _mode: i32) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn float_from_stamount(
             &self,
             _amount: &[u8],
-            _mode: i32,
             _out: &mut [u8],
+            _mode: i32,
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn float_from_stnumber(
             &self,
             _number: &[u8],
-            _mode: i32,
             _out: &mut [u8],
+            _mode: i32,
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn float_to_int(&self, _x: &[u8], _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
+        fn float_to_int(&self, _x: &[u8], _out: &mut [u8], _mode: i32) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
         fn float_to_mant_exp(
@@ -613,8 +613,8 @@ mod tests {
             &self,
             _mantissa: i64,
             _exponent: i32,
-            _mode: i32,
             _out: &mut [u8],
+            _mode: i32,
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
@@ -625,8 +625,8 @@ mod tests {
             &self,
             _x: &[u8],
             _y: &[u8],
-            _mode: i32,
             _out: &mut [u8],
+            _mode: i32,
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
@@ -634,8 +634,8 @@ mod tests {
             &self,
             _x: &[u8],
             _y: &[u8],
-            _mode: i32,
             _out: &mut [u8],
+            _mode: i32,
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
@@ -643,8 +643,8 @@ mod tests {
             &self,
             _x: &[u8],
             _y: &[u8],
-            _mode: i32,
             _out: &mut [u8],
+            _mode: i32,
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
@@ -652,8 +652,8 @@ mod tests {
             &self,
             _x: &[u8],
             _y: &[u8],
-            _mode: i32,
             _out: &mut [u8],
+            _mode: i32,
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
@@ -661,8 +661,8 @@ mod tests {
             &self,
             _x: &[u8],
             _n: i32,
-            _mode: i32,
             _out: &mut [u8],
+            _mode: i32,
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }

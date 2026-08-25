@@ -790,11 +790,6 @@ pub(crate) fn register_host_functions(
             // answered — an unreadable region, a `msg` that is not UTF-8 and a
             // `data_type` naming no rendering all leave the guest none the wiser, and
             // the host uncalled.
-            //
-            // Also the one arm whose parameters are not the declaration's order:
-            // `data_type` arrives third, between the two regions, as xrpld and the
-            // guest stdlib spell it. The wasm order is this closure's; the declaration
-            // order is the call's.
             HostFunctionSpec::Trace => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),
@@ -813,7 +808,7 @@ pub(crate) fn register_host_functions(
                         let data_type =
                             TraceDataType::from_code(data_type).ok_or(HostError::InvalidParams)?;
                         let data = read_borrowed(c, Region::new(data_ptr, data_len))?;
-                        Ok(host.trace(msg, data, data_type)?)
+                        Ok(host.trace(msg, data_type, data)?)
                     })
                 },
             ),
@@ -945,7 +940,7 @@ pub(crate) fn register_host_functions(
                  -> Result<i32, wasmi::Error> {
                     charged(&mut caller, HostFunctionSpec::FloatFromInt, |c| {
                         let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| host.float_from_int(x, mode, out))
+                        write_into(c, out, |host, out| host.float_from_int(x, out, mode))
                     })
                 },
             ),
@@ -963,7 +958,7 @@ pub(crate) fn register_host_functions(
                         let out = Region::new(out_ptr, out_len);
                         let x = Region::new(in_ptr, in_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_from_uint(x.read(data)?, mode, buf)
+                            host.float_from_uint(x.read(data)?, buf, mode)
                         })
                     })
                 },
@@ -982,7 +977,7 @@ pub(crate) fn register_host_functions(
                         let out = Region::new(out_ptr, out_len);
                         let amount = Region::new(in_ptr, in_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_from_stamount(amount.read(data)?, mode, buf)
+                            host.float_from_stamount(amount.read(data)?, buf, mode)
                         })
                     })
                 },
@@ -1001,7 +996,7 @@ pub(crate) fn register_host_functions(
                         let out = Region::new(out_ptr, out_len);
                         let number = Region::new(in_ptr, in_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_from_stnumber(number.read(data)?, mode, buf)
+                            host.float_from_stnumber(number.read(data)?, buf, mode)
                         })
                     })
                 },
@@ -1020,7 +1015,7 @@ pub(crate) fn register_host_functions(
                         let out = Region::new(out_ptr, out_len);
                         let x = Region::new(in_ptr, in_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_to_int(x.read(data)?, mode, buf)
+                            host.float_to_int(x.read(data)?, buf, mode)
                         })
                     })
                 },
@@ -1059,7 +1054,7 @@ pub(crate) fn register_host_functions(
                     charged(&mut caller, HostFunctionSpec::FloatFromMantExp, |c| {
                         let out = Region::new(out_ptr, out_len);
                         write_into(c, out, |host, out| {
-                            host.float_from_mant_exp(mantissa, exponent, mode, out)
+                            host.float_from_mant_exp(mantissa, exponent, out, mode)
                         })
                     })
                 },
@@ -1098,7 +1093,7 @@ pub(crate) fn register_host_functions(
                         let x = Region::new(x_ptr, x_len);
                         let y = Region::new(y_ptr, y_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_add(x.read(data)?, y.read(data)?, mode, buf)
+                            host.float_add(x.read(data)?, y.read(data)?, buf, mode)
                         })
                     })
                 },
@@ -1120,7 +1115,7 @@ pub(crate) fn register_host_functions(
                         let x = Region::new(x_ptr, x_len);
                         let y = Region::new(y_ptr, y_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_subtract(x.read(data)?, y.read(data)?, mode, buf)
+                            host.float_subtract(x.read(data)?, y.read(data)?, buf, mode)
                         })
                     })
                 },
@@ -1142,7 +1137,7 @@ pub(crate) fn register_host_functions(
                         let x = Region::new(x_ptr, x_len);
                         let y = Region::new(y_ptr, y_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_multiply(x.read(data)?, y.read(data)?, mode, buf)
+                            host.float_multiply(x.read(data)?, y.read(data)?, buf, mode)
                         })
                     })
                 },
@@ -1164,7 +1159,7 @@ pub(crate) fn register_host_functions(
                         let x = Region::new(x_ptr, x_len);
                         let y = Region::new(y_ptr, y_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_divide(x.read(data)?, y.read(data)?, mode, buf)
+                            host.float_divide(x.read(data)?, y.read(data)?, buf, mode)
                         })
                     })
                 },
@@ -1184,7 +1179,7 @@ pub(crate) fn register_host_functions(
                         let out = Region::new(out_ptr, out_len);
                         let x = Region::new(in_ptr, in_len);
                         write_buffered(c, out, |host, data, buf| {
-                            host.float_power(x.read(data)?, n, mode, buf)
+                            host.float_power(x.read(data)?, n, buf, mode)
                         })
                     })
                 },

@@ -196,7 +196,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// A keylet from an account and a sequence; `InvalidAccount` on an empty account.
-    fn check_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn check_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -263,7 +263,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The account-and-sequence shape, for an `Escrow`.
-    fn escrow_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn escrow_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -292,7 +292,7 @@ impl HostFunctions for FakeHost {
     fn mptoken_issuance_keylet(
         &self,
         issuer: &[u8],
-        _seq: i32,
+        _seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         if issuer.is_empty() {
@@ -314,7 +314,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The account-and-sequence shape, for an `NFTokenOffer`.
-    fn nftoken_offer_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn nftoken_offer_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -322,7 +322,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same account-and-sequence shape, for an `Offer`.
-    fn offer_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn offer_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -330,7 +330,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same account-and-scalar shape, for an `Oracle` keyed by document id.
-    fn oracle_keylet(&self, account: &[u8], _doc_id: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn oracle_keylet(&self, account: &[u8], _doc_id: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -343,7 +343,7 @@ impl HostFunctions for FakeHost {
         &self,
         account: &[u8],
         destination: &[u8],
-        _seq: i32,
+        _seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account.is_empty() || destination.is_empty() {
@@ -356,7 +356,7 @@ impl HostFunctions for FakeHost {
     fn permissioned_domain_keylet(
         &self,
         account: &[u8],
-        _seq: i32,
+        _seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account.is_empty() {
@@ -374,7 +374,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same account-and-sequence shape, for a `Ticket`.
-    fn ticket_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn ticket_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -382,7 +382,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same account-and-sequence shape, for a `Vault`.
-    fn vault_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn vault_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -395,7 +395,7 @@ impl HostFunctions for FakeHost {
         put(out, &digest)
     }
 
-    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
+    fn trace(&self, msg: &str, data_type: TraceDataType, data: &[u8]) -> HostResult<()> {
         self.traced
             .borrow_mut()
             .push(format!("{msg}/{data_type:?}/{}", data.len()));
@@ -457,12 +457,12 @@ impl HostFunctions for FakeHost {
     }
 
     /// A scalar-in float: writes the low byte of `x` as a stand-in float.
-    fn float_from_int(&self, x: i64, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_int(&self, x: i64, out: &mut [u8], _mode: i32) -> HostResult<usize> {
         put(out, &[x as u8])
     }
 
     /// A byte-in float; `InvalidParams` on an empty region.
-    fn float_from_uint(&self, x: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_uint(&self, x: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -470,7 +470,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same, for a serialized amount.
-    fn float_from_stamount(&self, amount: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stamount(&self, amount: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if amount.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -478,7 +478,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same, for a serialized number.
-    fn float_from_stnumber(&self, number: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stnumber(&self, number: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if number.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -486,7 +486,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// A float rounded to an integer, written as bytes.
-    fn float_to_int(&self, x: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_to_int(&self, x: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -514,8 +514,8 @@ impl HostFunctions for FakeHost {
         &self,
         mantissa: i64,
         _exponent: i32,
-        _mode: i32,
         out: &mut [u8],
+        _mode: i32,
     ) -> HostResult<usize> {
         put(out, &[mantissa as u8])
     }
@@ -529,7 +529,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// A binary float operator; `InvalidParams` if either operand is empty.
-    fn float_add(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -537,7 +537,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same shape, for subtraction.
-    fn float_subtract(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_subtract(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -545,7 +545,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same shape, for multiplication.
-    fn float_multiply(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_multiply(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -553,7 +553,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same shape, for division.
-    fn float_divide(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_divide(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -561,7 +561,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same shape, for exponentiation.
-    fn float_power(&self, x: &[u8], _n: i32, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_power(&self, x: &[u8], _n: i32, out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -779,7 +779,7 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
-    assert_eq!(host.trace("hello", b"xy", TraceDataType::AsHex), Ok(()));
+    assert_eq!(host.trace("hello", TraceDataType::AsHex, b"xy"), Ok(()));
     assert_eq!(host.update_data(b"abcd"), Ok(4));
     assert_eq!(host.get_nft(&[7; 20], &[9; 32], &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
@@ -798,25 +798,25 @@ fn the_trait_is_implementable() {
     assert_eq!(host.get_nft_flags(&[]), Err(HostError::InvalidParams));
     assert_eq!(host.get_nft_transfer_fee(&[9; 32]), Ok(9));
     assert_eq!(host.get_nft_sequence(&[9; 32], &mut out), Ok(1));
-    assert_eq!(host.float_from_int(5, 0, &mut out), Ok(1));
-    assert_eq!(host.float_from_uint(&[3; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_from_stamount(&[3; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_from_stnumber(&[3; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_to_int(&[3; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_from_int(5, &mut out, 0), Ok(1));
+    assert_eq!(host.float_from_uint(&[3; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_from_stamount(&[3; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_from_stnumber(&[3; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_to_int(&[3; 8], &mut out, 0), Ok(1));
     let mut mant = [0u8; 8];
     let mut exp = [0u8; 4];
     assert_eq!(host.float_to_mant_exp(&[3; 8], &mut mant, &mut exp), Ok(2));
-    assert_eq!(host.float_from_mant_exp(5, 0, 0, &mut out), Ok(1));
+    assert_eq!(host.float_from_mant_exp(5, 0, &mut out, 0), Ok(1));
     assert_eq!(host.float_compare(&[9; 8], &[4; 8]), Ok(5));
     assert_eq!(
         host.float_compare(&[], &[4; 8]),
         Err(HostError::InvalidParams)
     );
-    assert_eq!(host.float_add(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_subtract(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_multiply(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_divide(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_power(&[3; 8], 2, 0, &mut out), Ok(1));
+    assert_eq!(host.float_add(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_subtract(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_multiply(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_divide(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_power(&[3; 8], 2, &mut out, 0), Ok(1));
 
     assert_eq!(*host.traced.borrow(), ["hello/AsHex/2"]);
 }
@@ -860,7 +860,7 @@ fn the_trait_is_callable_through_a_shared_trait_object() {
 
     assert_eq!(host.get_ledger_sqn(&mut out), Ok(4));
     assert_eq!(
-        host.trace("count", &1i64.to_le_bytes(), TraceDataType::Int64),
+        host.trace("count", TraceDataType::Int64, &1i64.to_le_bytes()),
         Ok(())
     );
 
