@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -74,7 +75,8 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
     {
         Keypair kp;
         kp.sk = mustRandomScalar();
-        confidential::pointMulBase(kp.sk, kp.pk);
+        if (!confidential::pointMulBase(kp.sk, kp.pk))
+            throw std::runtime_error("failed to derive test public key");
         return kp;
     }
 
@@ -101,7 +103,9 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
     hexCipher(Ciphertext const& ct)
     {
         confidential::CiphertextBytes raw{};
-        confidential::serializeCiphertext(ct, Slice(raw.data(), raw.size()));
+        if (!confidential::serializeCiphertext(
+                ct, Slice(raw.data(), raw.size())))
+            throw std::runtime_error("failed to serialize test ciphertext");
         return hexOf(raw);
     }
 
@@ -115,7 +119,8 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
     mustEncrypt(CompressedPoint const& pk, std::uint64_t amount, Scalar const& r)
     {
         Ciphertext ct{};
-        confidential::elgamalEncrypt(pk, amount, r, ct);
+        if (!confidential::elgamalEncrypt(pk, amount, r, ct))
+            throw std::runtime_error("failed to encrypt test amount");
         return ct;
     }
 
