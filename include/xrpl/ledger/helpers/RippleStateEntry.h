@@ -26,7 +26,7 @@ public:
         AccountID const& id0,
         AccountID const& id1,
         Currency const& currency,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::trustLine(id0, id1, currency), view, j)
     {
@@ -35,14 +35,14 @@ public:
     explicit RippleStateEntry(
         AccountID const& id,
         Issue const& issue,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::trustLine(id, issue), view, j)
     {
     }
 };
 
-using RRippleStateEntry = RippleStateEntry<ReadView>;
-using WRippleStateEntry = RippleStateEntry<ApplyView>;
+using RippleStateEntryR = RippleStateEntry<ReadView>;
+using RippleStateEntryW = RippleStateEntry<ApplyView>;
 
 }  // namespace xrpl

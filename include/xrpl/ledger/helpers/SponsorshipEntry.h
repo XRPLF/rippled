@@ -23,14 +23,14 @@ public:
     explicit SponsorshipEntry(
         AccountID const& sponsor,
         AccountID const& sponsee,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::sponsorship(sponsor, sponsee), view, j)
     {
     }
 };
 
-using RSponsorshipEntry = SponsorshipEntry<ReadView>;
-using WSponsorshipEntry = SponsorshipEntry<ApplyView>;
+using SponsorshipEntryR = SponsorshipEntry<ReadView>;
+using SponsorshipEntryW = SponsorshipEntry<ApplyView>;
 
 }  // namespace xrpl

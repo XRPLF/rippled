@@ -20,7 +20,7 @@ namespace xrpl {
 
 // Concept to distinguish read-only vs writable view types
 template <typename V>
-concept WritableView = std::derived_from<V, ApplyView>;
+concept IsWritableView = std::derived_from<V, ApplyView>;
 
 namespace detail {
 
@@ -84,7 +84,7 @@ template <typename ViewT, LedgerEntryType EntryType = ltANY>
 class SLEBase
 {
 public:
-    static constexpr bool kIsWritable = WritableView<ViewT>;
+    static constexpr bool kIsWritable = IsWritableView<ViewT>;
 
     // The ledger entry type this entry is bound to, and whether that binding
     // is meaningful (ltANY means "any type", i.e. no static check).
@@ -92,11 +92,11 @@ public:
     static constexpr bool kIsTyped = (EntryType != ltANY);
 
     // SLE pointer type: mutable for writable views, const for read-only
-    using sle_ptr_type = std::conditional_t<kIsWritable, SLE::pointer, SLE::const_pointer>;
+    using SlePtrType = std::conditional_t<kIsWritable, SLE::pointer, SLE::const_pointer>;
 
     // View reference type: ApplyView& for writable, ReadView const& for
     // read-only
-    using view_ref_type = std::conditional_t<kIsWritable, ApplyView&, ReadView const&>;
+    using ViewRefType = std::conditional_t<kIsWritable, ApplyView&, ReadView const&>;
 
     // Non-virtual by design: these entries are parameterized on the view and
     // entry type, never used polymorphically through a base pointer. A vptr
@@ -108,7 +108,9 @@ public:
     // virtual, never delete a derived entry through an SLEBase*.
     ~SLEBase() = default;
 
-    SLEBase(SLEBase const&) = default;
+    SLEBase(SLEBase const&)
+        requires(!kIsWritable)
+    = default;
     SLEBase(SLEBase&&) = default;
     SLEBase&
     operator=(SLEBase const&) = delete;
@@ -130,7 +132,7 @@ public:
      */
     explicit SLEBase(
         SLE::const_pointer sle,
-        view_ref_type view,
+        ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!kIsWritable)
         : view_(view), sle_(std::move(sle)), j_(j)
@@ -145,7 +147,7 @@ public:
      */
     explicit SLEBase(
         Keylet const& key,
-        view_ref_type view,
+        ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!kIsWritable)
         : view_(view), sle_(detail::resolveEntry(view, key)), j_(j)
@@ -165,12 +167,12 @@ public:
      * Constrained to the same entry type (or to a ltANY target, i.e. widening
      * a typed entry to a generic ReadOnlySLE). The constraint is load-bearing:
      * this constructor is inherited into every per-type entry, and unconstrained
-     * it would bind any writable entry that slices to SLEBase, so a WOfferEntry
-     * would convert to an RAccountRootEntry with no cast at the call site.
+     * it would bind any writable entry that slices to SLEBase, so an OfferEntryW
+     * would convert to an AccountRootEntryR with no cast at the call site.
      */
     template <typename OtherViewT, LedgerEntryType OtherType>
     SLEBase(SLEBase<OtherViewT, OtherType> const& other)
-        requires(!kIsWritable && WritableView<OtherViewT> &&
+        requires(!kIsWritable && IsWritableView<OtherViewT> &&
                  (OtherType == EntryType || EntryType == ltANY))
         : view_(other.readView()), sle_(other.rawSle()), j_(other.journal())
     {
@@ -339,7 +341,7 @@ public:
     // --- Writable interface (compile-time gated) ---
     //
     // Everything that hands out mutable access (or mutates) is non-const, so
-    // that a `WFooEntry const&` is as inert as a `RFooEntry`. Use readView()
+    // that a `FooEntryW const&` is as inert as a `FooEntryR`. Use readView()
     // when a const entry only needs to inspect the view.
 
     /**
@@ -348,7 +350,7 @@ public:
      * Prefer operator-> / operator* for field access; this is for the call
      * sites that need the shared_ptr itself.
      */
-    [[nodiscard]] sle_ptr_type const&
+    [[nodiscard]] SlePtrType const&
     mutableRawSle()
         requires kIsWritable
     {
@@ -457,19 +459,20 @@ public:
     }
 
 protected:
-    view_ref_type view_;
+    ViewRefType view_;
 
     // Keylet is only meaningful for writable views, which need it to build an
     // SLE that does not exist yet; read-only entries derive it from the SLE.
     struct Empty
     {
     };
+
     // No default member initializer: Keylet is not default-constructible, so
     // every writable constructor must initialize key_ explicitly.
     [[no_unique_address]]
     std::conditional_t<kIsWritable, Keylet, Empty> key_;
 
-    sle_ptr_type sle_{};
+    SlePtrType sle_{};
     beast::Journal j_;
 };
 

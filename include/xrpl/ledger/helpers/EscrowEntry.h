@@ -24,14 +24,14 @@ public:
     explicit EscrowEntry(
         AccountID const& src,
         SeqProxy const& seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::escrow(src, seq), view, j)
     {
     }
 };
 
-using REscrowEntry = EscrowEntry<ReadView>;
-using WEscrowEntry = EscrowEntry<ApplyView>;
+using EscrowEntryR = EscrowEntry<ReadView>;
+using EscrowEntryW = EscrowEntry<ApplyView>;
 
 }  // namespace xrpl

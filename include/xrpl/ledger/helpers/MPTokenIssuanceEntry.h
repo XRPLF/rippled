@@ -27,7 +27,7 @@ public:
     explicit MPTokenIssuanceEntry(
         std::uint32_t seq,
         AccountID const& issuer,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::mptokenIssuance(makeMptID(seq, issuer)), view, j)
     {
@@ -35,7 +35,7 @@ public:
 
     explicit MPTokenIssuanceEntry(
         MPTID const& issuanceID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::mptokenIssuance(issuanceID), view, j)
     {
@@ -43,14 +43,14 @@ public:
 
     explicit MPTokenIssuanceEntry(
         uint256 const& issuanceKey,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::mptokenIssuance(issuanceKey), view, j)
     {
     }
 };
 
-using RMPTokenIssuanceEntry = MPTokenIssuanceEntry<ReadView>;
-using WMPTokenIssuanceEntry = MPTokenIssuanceEntry<ApplyView>;
+using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;
+using MPTokenIssuanceEntryW = MPTokenIssuanceEntry<ApplyView>;
 
 }  // namespace xrpl

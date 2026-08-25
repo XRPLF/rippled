@@ -25,14 +25,14 @@ public:
     explicit XChainOwnedClaimIDEntry(
         STXChainBridge const& bridge,
         std::uint64_t seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::xChainClaimID(bridge, seq), view, j)
     {
     }
 };
 
-using RXChainOwnedClaimIDEntry = XChainOwnedClaimIDEntry<ReadView>;
-using WXChainOwnedClaimIDEntry = XChainOwnedClaimIDEntry<ApplyView>;
+using XChainOwnedClaimIDEntryR = XChainOwnedClaimIDEntry<ReadView>;
+using XChainOwnedClaimIDEntryW = XChainOwnedClaimIDEntry<ApplyView>;
 
 }  // namespace xrpl

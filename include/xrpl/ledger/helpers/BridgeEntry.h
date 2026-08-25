@@ -23,14 +23,14 @@ public:
     explicit BridgeEntry(
         STXChainBridge const& bridge,
         STXChainBridge::ChainType chainType,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::bridge(bridge, chainType), view, j)
     {
     }
 };
 
-using RBridgeEntry = BridgeEntry<ReadView>;
-using WBridgeEntry = BridgeEntry<ApplyView>;
+using BridgeEntryR = BridgeEntry<ReadView>;
+using BridgeEntryW = BridgeEntry<ApplyView>;
 
 }  // namespace xrpl

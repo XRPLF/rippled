@@ -22,14 +22,14 @@ public:
 
     explicit SignerListEntry(
         AccountID const& account,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::signerList(account), view, j)
     {
     }
 };
 
-using RSignerListEntry = SignerListEntry<ReadView>;
-using WSignerListEntry = SignerListEntry<ApplyView>;
+using SignerListEntryR = SignerListEntry<ReadView>;
+using SignerListEntryW = SignerListEntry<ApplyView>;
 
 }  // namespace xrpl

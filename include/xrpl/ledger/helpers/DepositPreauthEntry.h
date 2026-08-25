@@ -28,7 +28,7 @@ public:
     explicit DepositPreauthEntry(
         AccountID const& owner,
         AccountID const& preauthorized,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::depositPreauth(owner, preauthorized), view, j)
     {
@@ -37,7 +37,7 @@ public:
     explicit DepositPreauthEntry(
         AccountID const& owner,
         std::set<std::pair<AccountID, Slice>> const& authCreds,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::depositPreauth(owner, authCreds), view, j)
     {
@@ -45,14 +45,14 @@ public:
 
     explicit DepositPreauthEntry(
         uint256 const& preauthID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::depositPreauth(preauthID), view, j)
     {
     }
 };
 
-using RDepositPreauthEntry = DepositPreauthEntry<ReadView>;
-using WDepositPreauthEntry = DepositPreauthEntry<ApplyView>;
+using DepositPreauthEntryR = DepositPreauthEntry<ReadView>;
+using DepositPreauthEntryW = DepositPreauthEntry<ApplyView>;
 
 }  // namespace xrpl

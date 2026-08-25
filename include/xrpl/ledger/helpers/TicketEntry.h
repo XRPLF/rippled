@@ -25,7 +25,7 @@ public:
     explicit TicketEntry(
         AccountID const& id,
         SeqProxy const& ticketSeq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::ticket(id, ticketSeq), view, j)
     {
@@ -33,14 +33,14 @@ public:
 
     explicit TicketEntry(
         uint256 const& ticketID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::ticket(ticketID), view, j)
     {
     }
 };
 
-using RTicketEntry = TicketEntry<ReadView>;
-using WTicketEntry = TicketEntry<ApplyView>;
+using TicketEntryR = TicketEntry<ReadView>;
+using TicketEntryW = TicketEntry<ApplyView>;
 
 }  // namespace xrpl

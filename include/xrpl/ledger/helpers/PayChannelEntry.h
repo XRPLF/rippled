@@ -25,14 +25,14 @@ public:
         AccountID const& src,
         AccountID const& dst,
         SeqProxy const& seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::payChannel(src, dst, seq), view, j)
     {
     }
 };
 
-using RPayChannelEntry = PayChannelEntry<ReadView>;
-using WPayChannelEntry = PayChannelEntry<ApplyView>;
+using PayChannelEntryR = PayChannelEntry<ReadView>;
+using PayChannelEntryW = PayChannelEntry<ApplyView>;
 
 }  // namespace xrpl

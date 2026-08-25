@@ -24,7 +24,7 @@ public:
     explicit AMMEntry(
         Asset const& issue1,
         Asset const& issue2,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::amm(issue1, issue2), view, j)
     {
@@ -32,14 +32,14 @@ public:
 
     explicit AMMEntry(
         uint256 const& ammID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::amm(ammID), view, j)
     {
     }
 };
 
-using RAMMEntry = AMMEntry<ReadView>;
-using WAMMEntry = AMMEntry<ApplyView>;
+using AMMEntryR = AMMEntry<ReadView>;
+using AMMEntryW = AMMEntry<ApplyView>;
 
 }  // namespace xrpl

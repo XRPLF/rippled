@@ -20,14 +20,14 @@ public:
     using Base::Base;
 
     explicit NegativeUNLEntry(
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::negativeUNL(), view, j)
     {
     }
 };
 
-using RNegativeUNLEntry = NegativeUNLEntry<ReadView>;
-using WNegativeUNLEntry = NegativeUNLEntry<ApplyView>;
+using NegativeUNLEntryR = NegativeUNLEntry<ReadView>;
+using NegativeUNLEntryW = NegativeUNLEntry<ApplyView>;
 
 }  // namespace xrpl

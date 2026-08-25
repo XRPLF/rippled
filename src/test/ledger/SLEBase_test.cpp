@@ -94,27 +94,27 @@ template class SLEBase<ApplyView>;
 
 // An entry class for one entry type must never be constructible from another.
 static_assert(
-    !std::is_convertible_v<WOfferEntry, RAccountRootEntry>,
+    !std::is_convertible_v<OfferEntryW, AccountRootEntryR>,
     "cross-entry-type conversion must not compile");
 static_assert(
-    !std::is_constructible_v<RAccountRootEntry, WOfferEntry>,
+    !std::is_constructible_v<AccountRootEntryR, OfferEntryW>,
     "cross-entry-type construction must not compile, even explicitly");
 static_assert(
-    !std::is_convertible_v<ROfferEntry, RAccountRootEntry>,
+    !std::is_convertible_v<OfferEntryR, AccountRootEntryR>,
     "read-only cross-entry-type conversion must not compile");
 
 // Nor from a type-erased writable entry, which carries no static type.
 static_assert(
-    !std::is_convertible_v<WritableSLE, RAccountRootEntry>,
+    !std::is_convertible_v<WritableSLE, AccountRootEntryR>,
     "generic -> typed conversion must not compile");
 
 // The intended conversions must keep working: same type writable -> read-only,
 // and typed -> generic widening.
 static_assert(
-    std::is_convertible_v<WAccountRootEntry, RAccountRootEntry>,
+    std::is_convertible_v<AccountRootEntryW, AccountRootEntryR>,
     "same-type writable -> read-only conversion must keep working");
 static_assert(
-    std::is_convertible_v<WAccountRootEntry, ReadOnlySLE>,
+    std::is_convertible_v<AccountRootEntryW, ReadOnlySLE>,
     "typed -> generic widening must keep working");
 
 // Detection idioms for the writable interface. These have to go through a
@@ -143,13 +143,13 @@ class SLEBase_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        RAccountRootEntry const absent(bob.id(), *env.current());
+        AccountRootEntryR const absent(bob.id(), *env.current());
         BEAST_EXPECT(!absent.exists());
         BEAST_EXPECT(!static_cast<bool>(absent));
         // A typed entry knows its entry type even with nothing to read.
         BEAST_EXPECT(absent.type() == ltACCOUNT_ROOT);
 
-        RAccountRootEntry const present(alice.id(), *env.current());
+        AccountRootEntryR const present(alice.id(), *env.current());
         BEAST_EXPECT(present.exists());
         BEAST_EXPECT(static_cast<bool>(present));
         BEAST_EXPECT(present.key() == keylet::account(alice.id()).key);
@@ -174,7 +174,7 @@ class SLEBase_test : public beast::unit_test::Suite
         auto const sle = env.current()->read(keylet::account(alice.id()));
         BEAST_EXPECT(sle != nullptr);
 
-        RAccountRootEntry const adopted(sle, *env.current(), env.journal);
+        AccountRootEntryR const adopted(sle, *env.current(), env.journal);
         BEAST_EXPECT(adopted.exists());
         BEAST_EXPECT(adopted.rawSle() == sle);
         BEAST_EXPECT(adopted.key() == keylet::account(alice.id()).key);
@@ -186,7 +186,7 @@ class SLEBase_test : public beast::unit_test::Suite
 
         // Adopting a null SLE is allowed: the assert only fires on a
         // type mismatch, and a null pointer has no type to mismatch.
-        RAccountRootEntry const empty(SLE::const_pointer{}, *env.current());
+        AccountRootEntryR const empty(SLE::const_pointer{}, *env.current());
         BEAST_EXPECT(!empty.exists());
         BEAST_EXPECT(empty.type() == ltACCOUNT_ROOT);
 
@@ -198,7 +198,7 @@ class SLEBase_test : public beast::unit_test::Suite
 
         // There is deliberately no writable equivalent.
         static_assert(
-            !std::is_constructible_v<WAccountRootEntry, SLE::pointer, ApplyView&>,
+            !std::is_constructible_v<AccountRootEntryW, SLE::pointer, ApplyView&>,
             "writable entries must not be constructible from a bare SLE");
     }
 
@@ -216,7 +216,7 @@ class SLEBase_test : public beast::unit_test::Suite
         auto const ledger = env.current();
         ApplyViewImpl av(&*ledger, TapNone);
 
-        WAccountRootEntry account(alice.id(), av, env.journal);
+        AccountRootEntryW account(alice.id(), av, env.journal);
         BEAST_EXPECT(account.exists());
         BEAST_EXPECT(account.mutableRawSle() == account.rawSle());
         BEAST_EXPECT(&account.applyView() == &av);
@@ -229,21 +229,21 @@ class SLEBase_test : public beast::unit_test::Suite
 
         // Everything handing out mutable access is non-const, so a const
         // writable entry is as inert as a read-only one.
-        static_assert(HasMutableRawSle<WAccountRootEntry>);
-        static_assert(HasApplyView<WAccountRootEntry>);
+        static_assert(HasMutableRawSle<AccountRootEntryW>);
+        static_assert(HasApplyView<AccountRootEntryW>);
         static_assert(
-            !HasMutableRawSle<WAccountRootEntry const>,
+            !HasMutableRawSle<AccountRootEntryW const>,
             "mutableRawSle() must not be callable on a const writable entry");
         static_assert(
-            !HasApplyView<WAccountRootEntry const>,
+            !HasApplyView<AccountRootEntryW const>,
             "applyView() must not be callable on a const writable entry");
 
         // Read-only entries do not have the writable interface at all.
         static_assert(
-            !HasMutableRawSle<RAccountRootEntry>,
+            !HasMutableRawSle<AccountRootEntryR>,
             "mutableRawSle() must not exist on a read-only entry");
         static_assert(
-            !HasApplyView<RAccountRootEntry>, "applyView() must not exist on a read-only entry");
+            !HasApplyView<AccountRootEntryR>, "applyView() must not exist on a read-only entry");
     }
 
     void
@@ -267,12 +267,12 @@ class SLEBase_test : public beast::unit_test::Suite
         // Delegates to the (Keylet, ApplyView&) constructor; ctx.tx is not
         // retained, so this must be indistinguishable from building from
         // ctx.view directly.
-        WAccountRootEntry fromCtx(keylet::account(alice.id()), ctx, env.journal);
+        AccountRootEntryW fromCtx(keylet::account(alice.id()), ctx, env.journal);
         BEAST_EXPECT(fromCtx.exists());
         BEAST_EXPECT(&fromCtx.applyView() == &av);
         BEAST_EXPECT(fromCtx.key() == keylet::account(alice.id()).key);
 
-        WAccountRootEntry const fromView(keylet::account(alice.id()), av, env.journal);
+        AccountRootEntryW const fromView(keylet::account(alice.id()), av, env.journal);
         BEAST_EXPECT(fromCtx.rawSle() == fromView.rawSle());
     }
 
@@ -295,7 +295,7 @@ class SLEBase_test : public beast::unit_test::Suite
 
         // Entry that does not exist yet: newSLE() -> insert().
         {
-            WTicketEntry ticket(keylet::ticket(alice.id(), SeqProxy::rawTicket(1)), av);
+            TicketEntryW ticket(keylet::ticket(alice.id(), SeqProxy::rawTicket(1)), av);
             BEAST_EXPECT(!ticket.exists());
             BEAST_EXPECT(ticket.key() == keylet::ticket(alice.id(), SeqProxy::rawTicket(1)).key);
             BEAST_EXPECT(ticket.type() == ltTICKET);
@@ -316,7 +316,7 @@ class SLEBase_test : public beast::unit_test::Suite
         // the entry must drop its pointer or a later write would silently
         // land in transaction metadata.
         {
-            WAccountRootEntry account(alice.id(), av);
+            AccountRootEntryW account(alice.id(), av);
             BEAST_EXPECT(account.exists());
 
             account.erase();
@@ -338,10 +338,10 @@ class SLEBase_test : public beast::unit_test::Suite
         auto const ledger = env.current();
         ApplyViewImpl av(&*ledger, TapNone);
 
-        WAccountRootEntry const writable(alice.id(), av);
+        AccountRootEntryW const writable(alice.id(), av);
         BEAST_EXPECT(writable.exists());
 
-        RAccountRootEntry const readOnly = writable;
+        AccountRootEntryR const readOnly = writable;
         BEAST_EXPECT(readOnly.exists());
         BEAST_EXPECT(readOnly.rawSle() == writable.rawSle());
 
@@ -367,17 +367,17 @@ class SLEBase_test : public beast::unit_test::Suite
         // from ApplyView, so resolveEntry's dynamic_cast fails and this takes
         // the plain ReadView::read() path.
         auto const ledger = env.current();
-        RAccountRootEntry const overLedger(alice.id(), *ledger);
+        AccountRootEntryR const overLedger(alice.id(), *ledger);
         BEAST_EXPECT(overLedger.exists());
 
         ApplyViewImpl av(&*ledger, TapNone);
 
         // ReadView const& binds an ApplyViewImpl just as happily, and there the
         // dynamic_cast succeeds, so this one resolves through ApplyView::peek().
-        RAccountRootEntry const readOnly(alice.id(), av);
+        AccountRootEntryR const readOnly(alice.id(), av);
         BEAST_EXPECT(readOnly.exists());
 
-        WAccountRootEntry writable(alice.id(), av);
+        AccountRootEntryW writable(alice.id(), av);
         BEAST_EXPECT(writable.exists());
 
         // The invariant resolveEntry() exists to hold: one SLE per key per
@@ -418,7 +418,7 @@ class SLEBase_test : public beast::unit_test::Suite
 
         // A per-type read-only entry always knows its type, but keylet() and
         // key() still have to derive the ledger key from the SLE.
-        RAccountRootEntry const missing(bob.id(), *env.current());
+        AccountRootEntryR const missing(bob.id(), *env.current());
         BEAST_EXPECT(!missing.exists());
         try
         {

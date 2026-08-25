@@ -23,14 +23,14 @@ public:
     explicit DelegateEntry(
         AccountID const& account,
         AccountID const& authorizedAccount,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::delegate(account, authorizedAccount), view, j)
     {
     }
 };
 
-using RDelegateEntry = DelegateEntry<ReadView>;
-using WDelegateEntry = DelegateEntry<ApplyView>;
+using DelegateEntryR = DelegateEntry<ReadView>;
+using DelegateEntryW = DelegateEntry<ApplyView>;
 
 }  // namespace xrpl

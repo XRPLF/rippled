@@ -22,14 +22,14 @@ public:
 
     explicit DIDEntry(
         AccountID const& account,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::did(account), view, j)
     {
     }
 };
 
-using RDIDEntry = DIDEntry<ReadView>;
-using WDIDEntry = DIDEntry<ApplyView>;
+using DIDEntryR = DIDEntry<ReadView>;
+using DIDEntryW = DIDEntry<ApplyView>;
 
 }  // namespace xrpl

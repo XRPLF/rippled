@@ -24,14 +24,14 @@ public:
     explicit NFTokenPageEntry(
         Keylet const& page,
         uint256 const& token,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::nftokenPage(page, token), view, j)
     {
     }
 };
 
-using RNFTokenPageEntry = NFTokenPageEntry<ReadView>;
-using WNFTokenPageEntry = NFTokenPageEntry<ApplyView>;
+using NFTokenPageEntryR = NFTokenPageEntry<ReadView>;
+using NFTokenPageEntryW = NFTokenPageEntry<ApplyView>;
 
 }  // namespace xrpl

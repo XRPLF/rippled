@@ -25,7 +25,7 @@ public:
     explicit LoanBrokerEntry(
         AccountID const& owner,
         SeqProxy const& seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::loanBroker(owner, seq), view, j)
     {
@@ -33,14 +33,14 @@ public:
 
     explicit LoanBrokerEntry(
         uint256 const& loanBrokerID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::loanBroker(loanBrokerID), view, j)
     {
     }
 };
 
-using RLoanBrokerEntry = LoanBrokerEntry<ReadView>;
-using WLoanBrokerEntry = LoanBrokerEntry<ApplyView>;
+using LoanBrokerEntryR = LoanBrokerEntry<ReadView>;
+using LoanBrokerEntryW = LoanBrokerEntry<ApplyView>;
 
 }  // namespace xrpl

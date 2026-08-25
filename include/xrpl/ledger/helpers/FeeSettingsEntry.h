@@ -20,14 +20,14 @@ public:
     using Base::Base;
 
     explicit FeeSettingsEntry(
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::feeSettings(), view, j)
     {
     }
 };
 
-using RFeeSettingsEntry = FeeSettingsEntry<ReadView>;
-using WFeeSettingsEntry = FeeSettingsEntry<ApplyView>;
+using FeeSettingsEntryR = FeeSettingsEntry<ReadView>;
+using FeeSettingsEntryW = FeeSettingsEntry<ApplyView>;
 
 }  // namespace xrpl

@@ -22,14 +22,14 @@ public:
 
     explicit AccountRootEntry(
         AccountID const& id,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::account(id), view, j)
     {
     }
 };
 
-using RAccountRootEntry = AccountRootEntry<ReadView>;
-using WAccountRootEntry = AccountRootEntry<ApplyView>;
+using AccountRootEntryR = AccountRootEntry<ReadView>;
+using AccountRootEntryW = AccountRootEntry<ApplyView>;
 
 }  // namespace xrpl

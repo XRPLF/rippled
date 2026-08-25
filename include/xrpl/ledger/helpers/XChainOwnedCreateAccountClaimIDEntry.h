@@ -26,14 +26,14 @@ public:
     explicit XChainOwnedCreateAccountClaimIDEntry(
         STXChainBridge const& bridge,
         std::uint64_t seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::xChainCreateAccountClaimID(bridge, seq), view, j)
     {
     }
 };
 
-using RXChainOwnedCreateAccountClaimIDEntry = XChainOwnedCreateAccountClaimIDEntry<ReadView>;
-using WXChainOwnedCreateAccountClaimIDEntry = XChainOwnedCreateAccountClaimIDEntry<ApplyView>;
+using XChainOwnedCreateAccountClaimIDEntryR = XChainOwnedCreateAccountClaimIDEntry<ReadView>;
+using XChainOwnedCreateAccountClaimIDEntryW = XChainOwnedCreateAccountClaimIDEntry<ApplyView>;
 
 }  // namespace xrpl

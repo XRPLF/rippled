@@ -25,7 +25,7 @@ public:
     explicit PermissionedDomainEntry(
         AccountID const& account,
         SeqProxy const& seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::permissionedDomain(account, seq), view, j)
     {
@@ -33,14 +33,14 @@ public:
 
     explicit PermissionedDomainEntry(
         uint256 const& domainID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::permissionedDomain(domainID), view, j)
     {
     }
 };
 
-using RPermissionedDomainEntry = PermissionedDomainEntry<ReadView>;
-using WPermissionedDomainEntry = PermissionedDomainEntry<ApplyView>;
+using PermissionedDomainEntryR = PermissionedDomainEntry<ReadView>;
+using PermissionedDomainEntryW = PermissionedDomainEntry<ApplyView>;
 
 }  // namespace xrpl

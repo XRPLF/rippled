@@ -20,14 +20,14 @@ public:
     using Base::Base;
 
     explicit LedgerHashesEntry(
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::skip(), view, j)
     {
     }
 };
 
-using RLedgerHashesEntry = LedgerHashesEntry<ReadView>;
-using WLedgerHashesEntry = LedgerHashesEntry<ApplyView>;
+using LedgerHashesEntryR = LedgerHashesEntry<ReadView>;
+using LedgerHashesEntryW = LedgerHashesEntry<ApplyView>;
 
 }  // namespace xrpl

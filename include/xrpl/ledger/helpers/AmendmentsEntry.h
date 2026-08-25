@@ -20,14 +20,14 @@ public:
     using Base::Base;
 
     explicit AmendmentsEntry(
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::amendments(), view, j)
     {
     }
 };
 
-using RAmendmentsEntry = AmendmentsEntry<ReadView>;
-using WAmendmentsEntry = AmendmentsEntry<ApplyView>;
+using AmendmentsEntryR = AmendmentsEntry<ReadView>;
+using AmendmentsEntryW = AmendmentsEntry<ApplyView>;
 
 }  // namespace xrpl

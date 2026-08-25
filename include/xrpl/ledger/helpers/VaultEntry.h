@@ -25,7 +25,7 @@ public:
     explicit VaultEntry(
         AccountID const& owner,
         SeqProxy const& seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::vault(owner, seq), view, j)
     {
@@ -33,14 +33,14 @@ public:
 
     explicit VaultEntry(
         uint256 const& vaultID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::vault(vaultID), view, j)
     {
     }
 };
 
-using RVaultEntry = VaultEntry<ReadView>;
-using WVaultEntry = VaultEntry<ApplyView>;
+using VaultEntryR = VaultEntry<ReadView>;
+using VaultEntryW = VaultEntry<ApplyView>;
 
 }  // namespace xrpl

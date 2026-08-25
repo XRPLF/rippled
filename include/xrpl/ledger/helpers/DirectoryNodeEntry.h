@@ -25,7 +25,7 @@ public:
 
     explicit DirectoryNodeEntry(
         AccountID const& id,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::ownerDir(id), view, j)
     {
@@ -37,14 +37,14 @@ public:
     explicit DirectoryNodeEntry(
         uint256 const& root,
         std::uint64_t index,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::page(root, index), view, j)
     {
     }
 };
 
-using RDirectoryNodeEntry = DirectoryNodeEntry<ReadView>;
-using WDirectoryNodeEntry = DirectoryNodeEntry<ApplyView>;
+using DirectoryNodeEntryR = DirectoryNodeEntry<ReadView>;
+using DirectoryNodeEntryW = DirectoryNodeEntry<ApplyView>;
 
 }  // namespace xrpl

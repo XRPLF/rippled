@@ -25,7 +25,7 @@ public:
     explicit NFTokenOfferEntry(
         AccountID const& owner,
         SeqProxy const& seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::nftokenOffer(owner, seq), view, j)
     {
@@ -33,14 +33,14 @@ public:
 
     explicit NFTokenOfferEntry(
         uint256 const& offerID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::nftokenOffer(offerID), view, j)
     {
     }
 };
 
-using RNFTokenOfferEntry = NFTokenOfferEntry<ReadView>;
-using WNFTokenOfferEntry = NFTokenOfferEntry<ApplyView>;
+using NFTokenOfferEntryR = NFTokenOfferEntry<ReadView>;
+using NFTokenOfferEntryW = NFTokenOfferEntry<ApplyView>;
 
 }  // namespace xrpl

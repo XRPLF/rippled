@@ -25,7 +25,7 @@ public:
     explicit MPTokenEntry(
         MPTID const& issuanceID,
         AccountID const& holder,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::mptoken(issuanceID, holder), view, j)
     {
@@ -34,7 +34,7 @@ public:
     explicit MPTokenEntry(
         uint256 const& issuanceKey,
         AccountID const& holder,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::mptoken(issuanceKey, holder), view, j)
     {
@@ -42,14 +42,14 @@ public:
 
     explicit MPTokenEntry(
         uint256 const& mptokenKey,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::mptoken(mptokenKey), view, j)
     {
     }
 };
 
-using RMPTokenEntry = MPTokenEntry<ReadView>;
-using WMPTokenEntry = MPTokenEntry<ApplyView>;
+using MPTokenEntryR = MPTokenEntry<ReadView>;
+using MPTokenEntryW = MPTokenEntry<ApplyView>;
 
 }  // namespace xrpl

@@ -25,7 +25,7 @@ public:
     explicit CheckEntry(
         AccountID const& id,
         SeqProxy const& seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::check(id, seq), view, j)
     {
@@ -33,14 +33,14 @@ public:
 
     explicit CheckEntry(
         uint256 const& checkID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::check(checkID), view, j)
     {
     }
 };
 
-using RCheckEntry = CheckEntry<ReadView>;
-using WCheckEntry = CheckEntry<ApplyView>;
+using CheckEntryR = CheckEntry<ReadView>;
+using CheckEntryW = CheckEntry<ApplyView>;
 
 }  // namespace xrpl

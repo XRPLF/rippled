@@ -25,14 +25,14 @@ public:
     explicit OracleEntry(
         AccountID const& account,
         std::uint32_t documentID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::oracle(account, documentID), view, j)
     {
     }
 };
 
-using ROracleEntry = OracleEntry<ReadView>;
-using WOracleEntry = OracleEntry<ApplyView>;
+using OracleEntryR = OracleEntry<ReadView>;
+using OracleEntryW = OracleEntry<ApplyView>;
 
 }  // namespace xrpl

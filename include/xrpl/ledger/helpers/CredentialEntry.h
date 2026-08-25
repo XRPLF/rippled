@@ -26,7 +26,7 @@ public:
         AccountID const& subject,
         AccountID const& issuer,
         Slice const& credType,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::credential(subject, issuer, credType), view, j)
     {
@@ -34,14 +34,14 @@ public:
 
     explicit CredentialEntry(
         uint256 const& credentialID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::credential(credentialID), view, j)
     {
     }
 };
 
-using RCredentialEntry = CredentialEntry<ReadView>;
-using WCredentialEntry = CredentialEntry<ApplyView>;
+using CredentialEntryR = CredentialEntry<ReadView>;
+using CredentialEntryW = CredentialEntry<ApplyView>;
 
 }  // namespace xrpl

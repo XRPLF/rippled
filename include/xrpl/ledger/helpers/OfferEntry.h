@@ -25,7 +25,7 @@ public:
     explicit OfferEntry(
         AccountID const& id,
         SeqProxy const& seq,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::offer(id, seq), view, j)
     {
@@ -33,14 +33,14 @@ public:
 
     explicit OfferEntry(
         uint256 const& offerID,
-        Base::view_ref_type view,
+        Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::offer(offerID), view, j)
     {
     }
 };
 
-using ROfferEntry = OfferEntry<ReadView>;
-using WOfferEntry = OfferEntry<ApplyView>;
+using OfferEntryR = OfferEntry<ReadView>;
+using OfferEntryW = OfferEntry<ApplyView>;
 
 }  // namespace xrpl
