@@ -21,6 +21,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -32,6 +33,7 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -974,6 +976,242 @@ private:
         }
     }
 
+    // Shared setup for testBugClawbackRoundTripOvershoot and
+    // testBugWithdrawRoundTripOvershoot, which both need a vault at
+    // assetsTotal=7, sharesTotal=5 and differ only in what they do once
+    // that state is reached.
+    //
+    // The (7, 5) state is reached through ordinary transactions: a 5 USD
+    // deposit mints 5 shares 1:1, then a loan broker on the vault issues a
+    // single-payment bullet loan for the full 5 USD at 40% interest. When
+    // the borrower repays a year later, LoanPay books the 2 USD of accrued
+    // interest into sfAssetsTotal without minting shares, leaving
+    // assetsTotal=7 against sharesTotal=5 (see
+    // testBugDepositShareTruncationSubUlp for the same technique in more
+    // detail).
+    struct RoundTripOvershootVault
+    {
+        test::jtx::Account issuer;
+        test::jtx::Account holder;
+        PrettyAsset usd;
+        test::jtx::Vault vault;
+        Keylet vaultKeylet;
+        Number initialAssetsTotal;
+        Number initialAssetsAvailable;
+    };
+
+    std::optional<RoundTripOvershootVault>
+    makeRoundTripOvershootVault(test::jtx::Env& env)
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000), issuer, owner, holder, borrower);
+        env.close();
+
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        env.trust(usd(1'000), owner);
+        env.trust(usd(1'000), holder);
+        env.trust(usd(1'000), borrower);
+        env.close();
+
+        env(pay(issuer, holder, usd(100)));
+        env(pay(issuer, borrower, usd(100)));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = usd});
+        vaultTx[sfScale] = 0;
+        env(vaultTx);
+        env.close();
+
+        // Holder deposits 5 USD, minting 5 shares 1:1.
+        env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = usd(5)}));
+        env.close();
+
+        // A loan broker on the vault, then a single bullet loan for the
+        // entire deposit at 40% interest, one payment, one year out.
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(set(owner, vaultKeylet.key));
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        env(set(borrower, brokerKeylet.key, usd(5).value()),
+            loan::kInterestRate(percentageToTenthBips(40)),
+            kGracePeriod(60),
+            kPaymentInterval(365 * 24 * 60 * 60),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Advance to just before the single payment falls due and let the
+        // borrower repay principal plus interest. Share supply stays at 5,
+        // so assetsTotal/sharesTotal becomes 7/5.
+        env.close(std::chrono::seconds{(365 * 24 * 60 * 60) - 3600});
+        env(pay(borrower, loanKeylet.key, usd(10).value()), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return std::nullopt;
+        auto const mptIssuanceID = vaultSle->at(sfShareMPTID);
+
+        Number const initialAssetsTotal = vaultSle->at(sfAssetsTotal);
+        Number const initialAssetsAvailable = vaultSle->at(sfAssetsAvailable);
+        BEAST_EXPECT(initialAssetsTotal == usd(7).number());
+        BEAST_EXPECT(initialAssetsAvailable == usd(7).number());
+        {
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptIssuanceID));
+            if (!BEAST_EXPECT(sleIssuance))
+                return std::nullopt;
+            BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 5);
+        }
+
+        return RoundTripOvershootVault{
+            .issuer = issuer,
+            .holder = holder,
+            .usd = usd,
+            .vault = vault,
+            .vaultKeylet = vaultKeylet,
+            .initialAssetsTotal = initialAssetsTotal,
+            .initialAssetsAvailable = initialAssetsAvailable};
+    }
+
+    // VaultClawback::assetsToClawback converts clawbackAmount to shares
+    // with round-to-nearest, then round-trips back to assets. When shares
+    // round up, assetsRecovered can exceed clawbackAmount.
+    //
+    // Repro: assetsTotal=7, sharesTotal=5, request 4:
+    //   shares = round(20/7) = 3, assets = 7*3/5 = 4.2 > 4.
+    //
+    // Post-fixCleanup3_4_0: truncate shares so assetsRecovered <=
+    // clawbackAmount by construction.
+    void
+    testBugClawbackRoundTripOvershoot()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool withFix) {
+            Env env{*this, features};
+
+            auto const setup = makeRoundTripOvershootVault(env);
+            if (!BEAST_EXPECT(setup))
+                return;
+
+            auto const clawbackAmount = setup->usd(4);
+            env(setup->vault.clawback(
+                {.issuer = setup->issuer,
+                 .id = setup->vaultKeylet.key,
+                 .holder = setup->holder,
+                 .amount = clawbackAmount.value()}));
+
+            auto const vaultSleAfter = env.current()->read(setup->vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Number const finalAssetsTotal = vaultSleAfter->at(sfAssetsTotal);
+            Number const assetsRecovered = setup->initialAssetsTotal - finalAssetsTotal;
+            Number const clawbackNum = clawbackAmount.number();
+
+            Number const expectedPost{28LL, -1};
+            Number const expectedPre{42LL, -1};
+            if (withFix)
+            {
+                BEAST_EXPECT(assetsRecovered <= clawbackNum);
+                BEAST_EXPECT(assetsRecovered == expectedPost);
+            }
+            else
+            {
+                BEAST_EXPECT(assetsRecovered > clawbackNum);
+                BEAST_EXPECT(assetsRecovered == expectedPre);
+            }
+        };
+
+        {
+            testcase(
+                "bug: VaultClawback round-trip overshoot lets issuer recover "
+                "more than requested (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, false);
+        }
+        {
+            testcase(
+                "bug: VaultClawback round-trip overshoot is clamped so "
+                "assetsRecovered <= clawbackAmount (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), true);
+        }
+    }
+
+    // Same root cause as testBugClawbackRoundTripOvershoot on the
+    // withdraw path. Also bypasses the preclaim canWithdraw check, which
+    // validates destination limits against the requested amount only.
+    //
+    // Repro: assetsTotal=7, sharesTotal=5, request 4:
+    //   pre-fix : shares = round(20/7) = 3, assets = 7*3/5 = 4.2 > 4.
+    //   post-fix: shares = floor(20/7) = 2, assets = 7*2/5 = 2.8 <= 4.
+    void
+    testBugWithdrawRoundTripOvershoot()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool withFix) {
+            Env env{*this, features};
+
+            auto const setup = makeRoundTripOvershootVault(env);
+            if (!BEAST_EXPECT(setup))
+                return;
+
+            auto const requested = setup->usd(4);
+            env(setup->vault.withdraw(
+                {.depositor = setup->holder,
+                 .id = setup->vaultKeylet.key,
+                 .amount = requested.value()}));
+
+            auto const vaultSleAfter = env.current()->read(setup->vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Number const finalAssetsTotal = vaultSleAfter->at(sfAssetsTotal);
+            Number const assetsWithdrawn = setup->initialAssetsTotal - finalAssetsTotal;
+            Number const requestedNum = requested.number();
+
+            Number const expectedPost{28LL, -1};
+            Number const expectedPre{42LL, -1};
+            if (withFix)
+            {
+                BEAST_EXPECT(assetsWithdrawn <= requestedNum);
+                BEAST_EXPECT(assetsWithdrawn == expectedPost);
+            }
+            else
+            {
+                BEAST_EXPECT(assetsWithdrawn > requestedNum);
+                BEAST_EXPECT(assetsWithdrawn == expectedPre);
+            }
+        };
+
+        {
+            testcase(
+                "bug: VaultWithdraw round-trip overshoot delivers more than "
+                "requested (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, false);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw round-trip overshoot is clamped so "
+                "assetsWithdrawn <= requested (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), true);
+        }
+    }
+
     void
     testCredentialPinsPseudoAccount()
     {
@@ -1101,6 +1339,8 @@ public:
         testCredentialPinsPseudoAccount();
         testCredentialPinOverflow();
         testBug6LimitBypassWithShares();
+        testBugClawbackRoundTripOvershoot();
+        testBugWithdrawRoundTripOvershoot();
     }
 };
 
