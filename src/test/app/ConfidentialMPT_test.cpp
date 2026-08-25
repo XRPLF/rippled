@@ -167,13 +167,17 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         env(delegate::set(
             alice,
             aliceDelegate,
-            {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox"}));
+            {"ConfidentialMPTConvert",
+             "ConfidentialMPTMergeInbox",
+             "ConfidentialMPTSend"}));
         env(delegate::set(
             carol,
             carolDelegate,
             {"ConfidentialMPTConvert",
              "ConfidentialMPTMergeInbox",
              "ConfidentialMPTConvertBack"}));
+        env(delegate::set(
+            gw, carolDelegate, {"ConfidentialMPTClawback"}));
         env.close();
 
         auto submitConvert = [&](Account const& acct,
@@ -304,6 +308,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             json::Value jv;
             jv[jss::TransactionType] = jss::ConfidentialMPTSend;
             jv[jss::Account] = alice.human();
+            jv[sfDelegate] = aliceDelegate.human();
             jv[jss::Destination] = carol.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
             jv[sfSenderEncryptedAmount] = hexCipher(encSender);
@@ -312,7 +317,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[sfAmountCommitment] = hexPoint(pcM);
             jv[sfBalanceCommitment] = hexPoint(pcB);
             jv[sfZKProof] = strHex(Slice(zk.data(), zk.size()));
-            env(jv, Fee(XRP(1)));
+            env(jv, delegate::As(aliceDelegate), Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
 
@@ -405,11 +410,12 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             json::Value jv;
             jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
             jv[jss::Account] = gw.human();
+            jv[sfDelegate] = carolDelegate.human();
             jv[sfHolder] = alice.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
             jv[sfMPTAmount] = "30";
             jv[sfZKProof] = hexOf(clProof);
-            env(jv, Fee(XRP(1)));
+            env(jv, delegate::As(carolDelegate), Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
         {
