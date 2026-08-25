@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/ConfidentialMPT.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -171,12 +172,28 @@ authorizeMPToken(
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
-            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
-                (view.rules().enabled(featureConfidentialTransfer) &&
-                 sleMpt->isFieldPresent(sfHolderEncryptionKey)) ||
+            if (!sleMpt)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            if ((*sleMpt)[sfMPTAmount] != 0 ||
                 (view.rules().enabled(fixCleanup3_1_3) &&
                  (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            if (view.rules().enabled(featureConfidentialTransfer) &&
+                sleMpt->isFieldPresent(sfHolderEncryptionKey))
+            {
+                auto sleIssuance = view.peek(keylet::mptIssuance(mptIssuanceID));
+                if (!sleIssuance ||
+                    (*sleIssuance)[sfConfidentialOutstandingAmount] != 0 ||
+                    auditorMigrationPending(*sleIssuance))
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                if (auto const ter = clearConfidentialState(*sleIssuance, *sleMpt);
+                    !isTesSuccess(ter))
+                    return ter;  // LCOV_EXCL_LINE
+                view.update(sleIssuance);
+                view.update(sleMpt);
+            }
 
             if (!view.dirRemove(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))

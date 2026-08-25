@@ -100,6 +100,26 @@ setCiphertextField(SLE& sle, SField const& field, confidential::Ciphertext const
 }
 
 TER
+clearConfidentialState(SLE& issuance, SLE& mpt)
+{
+    auto const holderCount = issuance[sfConfidentialHolderCount];
+    if (holderCount == 0)
+        return tecINTERNAL;
+
+    issuance[sfConfidentialHolderCount] = holderCount - 1;
+    for (auto const* field : {
+             &sfHolderEncryptionKey,
+             &sfConfidentialBalanceSpending,
+             &sfConfidentialBalanceInbox,
+             &sfIssuerEncryptedBalance,
+             &sfAuditorEncryptedBalance,
+             &sfAuditorKeyVersion,
+             &sfConfidentialBalanceVersion})
+        mpt.makeFieldAbsent(*field);
+    return tesSUCCESS;
+}
+
+TER
 checkPlaintextCiphertexts(
     std::uint64_t amount,
     confidential::Scalar const& r,

@@ -303,7 +303,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         BEAST_EXPECT(confidential::proveSendSigma(
             pub, wit, Slice(sendCtx.data(), sendCtx.size()), sigma));
         std::array<std::uint8_t, confidential::kAggregatedBulletproofBytes> bp{};
-        BEAST_EXPECT(confidential::proveBulletproofAggregated(
+        BEAST_EXPECT(confidential::proveBulletproofSend(
             pcM, pcRem, sendAmt, bal - sendAmt, rAmt, remBlind, bp));
         std::vector<std::uint8_t> zk(confidential::kSendZkProofBytes);
         std::memcpy(zk.data(), sigma.data(), sigma.size());
@@ -427,8 +427,15 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             auto const sle = env.le(keylet::mptIssuance(id));
             BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 5);
             BEAST_EXPECT((*sle)[sfOutstandingAmount] == 70);
+            BEAST_EXPECT((*sle)[sfConfidentialHolderCount] == 1);
         }
+        BEAST_EXPECT(
+            !env.le(keylet::mptoken(id, alice.id()))
+                 ->isFieldPresent(sfHolderEncryptionKey));
         BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 10));
+        mpt.pay(alice, carol, 10);
+        mpt.authorize({.account = alice, .flags = tfMPTUnauthorize});
+        BEAST_EXPECT(!env.le(keylet::mptoken(id, alice.id())));
     }
 
 

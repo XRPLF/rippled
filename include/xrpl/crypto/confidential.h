@@ -130,9 +130,19 @@ elgamalEncrypt(
 [[nodiscard]] bool
 elgamalAdd(Ciphertext const& a, Ciphertext const& b, Ciphertext& out) noexcept;
 
-/** Homomorphic subtract: (C1-D1, C2-D2). */
+/**
+ * Homomorphic subtract after re-randomizing the minuend.
+ *
+ * Adding Enc(0; r) first keeps an exact full-balance debit representable:
+ * secp256k1's public-key API cannot serialize the point at infinity.
+ */
 [[nodiscard]] bool
-elgamalSub(Ciphertext const& a, Ciphertext const& b, Ciphertext& out) noexcept;
+elgamalSub(
+    Ciphertext const& a,
+    Ciphertext const& b,
+    CompressedPoint const& pk,
+    Scalar const& r,
+    Ciphertext& out) noexcept;
 
 /** Re-randomize: CT ⊕ Enc(0; r). Used when applying Send credits. */
 [[nodiscard]] bool
@@ -397,6 +407,27 @@ proveBulletproofAggregated(
 verifyBulletproofAggregated(
     CompressedPoint const& commitment0,
     CompressedPoint const& commitment1,
+    Slice proof) noexcept;
+
+/**
+ * Send range proof for m in [1, 2^64) and b-m in [0, 2^64).
+ *
+ * Positivity is enforced by proving m-1 against PC_m-G.
+ */
+[[nodiscard]] bool
+proveBulletproofSend(
+    CompressedPoint const& amountCommitment,
+    CompressedPoint const& remainingCommitment,
+    std::uint64_t amount,
+    std::uint64_t remaining,
+    Scalar const& amountBlinding,
+    Scalar const& remainingBlinding,
+    std::array<std::uint8_t, kAggregatedBulletproofBytes>& out) noexcept;
+
+[[nodiscard]] bool
+verifyBulletproofSend(
+    CompressedPoint const& amountCommitment,
+    CompressedPoint const& remainingCommitment,
     Slice proof) noexcept;
 
 }  // namespace confidential

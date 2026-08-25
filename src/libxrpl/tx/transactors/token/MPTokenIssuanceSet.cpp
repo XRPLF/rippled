@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/crypto/confidential.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -120,6 +121,11 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         if (auditorKey && auditorKey->length() != kConfidentialElGamalPubKeyLength)
+            return temMALFORMED;
+
+        confidential::CompressedPoint parsed{};
+        if ((issuerKey && !confidential::parseCompressedPoint(*issuerKey, parsed)) ||
+            (auditorKey && !confidential::parseCompressedPoint(*auditorKey, parsed)))
             return temMALFORMED;
     }
 

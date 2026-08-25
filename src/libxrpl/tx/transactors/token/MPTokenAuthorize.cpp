@@ -2,6 +2,7 @@
 
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/ConfidentialMPT.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -84,7 +85,14 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             }
             if (ctx.view.rules().enabled(featureConfidentialTransfer) &&
                 sleMpt->isFieldPresent(sfHolderEncryptionKey))
-                return tecHAS_OBLIGATIONS;
+            {
+                auto const issuance =
+                    ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                if (!issuance ||
+                    (*issuance)[sfConfidentialOutstandingAmount] != 0 ||
+                    auditorMigrationPending(*issuance))
+                    return tecHAS_OBLIGATIONS;
+            }
             if (ctx.view.rules().enabled(featureSingleAssetVault) && sleMpt->isFlag(lsfMPTLocked))
                 return tecNO_PERMISSION;
 
