@@ -1476,7 +1476,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             issuance->setFieldU64(sfMaximumAmount, 100);
             issuance->setFieldU32(
                 sfFlags, lsfMPTCanHoldConfidentialBalance);
-            view.insert(issuance);
+            view.rawInsert(issuance);
 
             std::vector<std::uint8_t> key(33, 0x02);
             std::vector<std::uint8_t> ct(66, 0x02);
