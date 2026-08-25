@@ -1200,17 +1200,17 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 > below as **families currently emitting** (idle nodes under-report — workload-gated metrics such as
 > per-RPC/error counters appear only once exercised, which is Phase 10's purpose).
 
-| Category                       | Expected Count      | Validation Method                | Config File             |
-| ------------------------------ | ------------------- | -------------------------------- | ----------------------- |
-| Trace spans                    | 40 of 41 emitted    | Tempo API query                  | `expected_spans.json`   |
-| Span attributes                | 67 required         | Per-span attribute assertion     | `expected_spans.json`   |
-| Legacy beast::insight families | ~270 (≈224 traffic) | Named subset asserted            | `expected_metrics.json` |
-| Native MetricsRegistry         | 35 instruments      | Prometheus query                 | `expected_metrics.json` |
-| Call-site `XRPL_METRIC_*`      | 7 instruments       | Prometheus query                 | `expected_metrics.json` |
-| Per-job-type gauges            | 105 (35 types × 3)  | 6 asserted by literal name       | `expected_metrics.json` |
-| SpanMetrics RED                | 4 per span          | Prometheus query                 | `expected_metrics.json` |
-| Grafana dashboards             | all 15 on disk      | Dashboard API load + panel count | `expected_metrics.json` |
-| Log-trace links                | Present             | Loki query + Tempo reverse check | —                       |
+| Category                       | Expected Count      | Validation Method                           | Config File             |
+| ------------------------------ | ------------------- | ------------------------------------------- | ----------------------- |
+| Trace spans                    | 40 of 41 emitted    | Tempo API query                             | `expected_spans.json`   |
+| Span attributes                | 67 required         | Per-span attribute assertion                | `expected_spans.json`   |
+| Legacy beast::insight families | ~270 (≈224 traffic) | Named subset asserted; rest regex-accounted | `expected_metrics.json` |
+| Native MetricsRegistry         | 35 instruments      | Prometheus query                            | `expected_metrics.json` |
+| Call-site `XRPL_METRIC_*`      | 7 instruments       | Prometheus query                            | `expected_metrics.json` |
+| Per-job-type gauges            | 105 (35 types × 3)  | 6 by literal name; rest regex-accounted     | `expected_metrics.json` |
+| SpanMetrics RED                | 4 per span          | Prometheus query                            | `expected_metrics.json` |
+| Grafana dashboards             | all 15 on disk      | Dashboard API load + panel count            | `expected_metrics.json` |
+| Log-trace links                | Present             | Loki query + Tempo reverse check            | —                       |
 
 > **These are the harness's numbers, not the code's, and two of them differ.**
 > `docker/telemetry/workload/expected_spans.json` carries 40 span entries against
@@ -1220,12 +1220,17 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 > The **Validation Method** column for the two bulk beast rows used to read
 > "Prometheus `__name__` query", which never described anything real:
 > `expected_metrics.json` contains no `__name__` query and
-> `validate_telemetry.py` issues none. Both rows are covered by literal names —
+> `validate_telemetry.py` issues none. The single `__name__` string in that file
+> is prose quoting a `ledger-data-sync` dashboard query, not a check. What is
+> actually asserted in both rows is a subset named literally —
 > `overlay_traffic` asserts the four `total_*` families out of ~228, and
-> `job_queue_per_type_gauges` asserts 6 of the 105 per-job-type gauges — with
-> the remainder not listed at all. The single `__name__` string inside
-> `expected_metrics.json` is prose quoting a `ledger-data-sync` dashboard query,
-> not a check.
+> `job_queue_per_type_gauges` asserts 6 of the 105 per-job-type gauges. The
+> remainder is now **accounted for** rather than asserted: anchored regexes
+> under the top-level `accounted_patterns` list declare both cross products, so
+> the `metric.reverse_coverage` check does not report them, while any name
+> outside those shapes surfaces as unaccounted. That check warns and never
+> fails; see the reverse-coverage row in
+> [`docs/telemetry-runbook.md`](../docs/telemetry-runbook.md).
 >
 > `expected_metrics.json` lists all **15** dashboard uids in
 > `docker/telemetry/grafana/dashboards/`, so dashboard coverage does not differ;

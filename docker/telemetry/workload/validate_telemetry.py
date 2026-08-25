@@ -79,6 +79,12 @@ METRIC_POLL_INTERVAL_SEC = 5.0
 # not hammer the single-container Prometheus the harness runs.
 METRIC_POLL_CONCURRENCY = 8
 
+# The Prometheus exporter splits one histogram instrument into three series
+# names. Reverse coverage folds them back onto the base family so a contract
+# entry (or an accounted_patterns regex) written for the family accounts for
+# all three, and so a triple is never reported as three separate gaps.
+HISTOGRAM_SUFFIXES = ("_bucket", "_count", "_sum")
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -167,6 +173,95 @@ class ValidationReport:
             "end_time": self.end_time,
             "checks": [c.to_dict() for c in self.checks],
         }
+
+
+# ---------------------------------------------------------------------------
+# Reverse coverage: what is emitted but not accounted for
+# ---------------------------------------------------------------------------
+#
+# The forward checks read the contract and ask Prometheus/Tempo whether each
+# listed name exists. That direction cannot see a name the contract omits, and
+# omissions are how a 345-family metric gap and 7 unknown spans went unnoticed:
+# both emitted inventories were already being fetched, and neither was compared
+# back against the contract.
+#
+# These helpers close the loop. They are deliberately WARN-ONLY. Downstream
+# branches legitimately add telemetry that an upstream contract has not seen
+# (the sync-diagnostics branch emits 7 spans this contract does not list), so a
+# hard failure here would redden every one of them for doing the right thing.
+# The value is visibility: name the gaps, in a form a human can read in a CI
+# log and diff between runs, and let a person decide.
+
+
+def _log_name_list(header: str, names: list[str]) -> None:
+    """Log a name list one entry per line, sorted.
+
+    A single-line Python list repr of 422 metric families is ~15 kB on one CI
+    log line: unreadable, and impossible to diff between runs. One name per line
+    makes two runs' logs comparable. Emitted as a single log record so the
+    lines cannot be interleaved by another task's output.
+
+    Args:
+        header: Line printed above the list; the count is appended to it.
+        names:  Names to print. Sorted here, so callers need not be.
+    """
+    body = "\n".join(f"  {name}" for name in sorted(names)) or "  (none)"
+    logger.info("%s (%d total):\n%s", header, len(names), body)
+
+
+def _reverse_coverage_result(
+    check_name: str,
+    category: str,
+    noun: str,
+    emitted_count: int,
+    unaccounted: list[str],
+) -> CheckResult:
+    """Build the always-passing CheckResult for one reverse coverage check.
+
+    ``passed`` is hardcoded True. This is the single place that decides the
+    check cannot fail CI, so the guarantee is auditable in one line rather than
+    spread over two call sites. The finding travels in ``message`` and in
+    ``details["unaccounted"]``, and the names are also logged one per line by
+    the caller.
+
+    Args:
+        check_name:    Report check name (e.g. "metric.reverse_coverage").
+        category:      Report category ("metric" or "span").
+        noun:          Plural noun for the message ("metric families", "span names").
+        emitted_count: How many names the backend reported.
+        unaccounted:   Names the contract does not account for.
+
+    Returns:
+        A CheckResult that always passes.
+    """
+    if emitted_count == 0:
+        message = (
+            f"reverse coverage not evaluated: no {noun} were reported "
+            f"(backend unreachable or empty) — warning only, never fails"
+        )
+    elif unaccounted:
+        message = (
+            f"WARNING: {len(unaccounted)} of {emitted_count} emitted {noun} are "
+            f"not accounted for by the contract: {', '.join(sorted(unaccounted)[:5])}"
+            f"{' …' if len(unaccounted) > 5 else ''} "
+            f"(full list logged above; warning only, never fails)"
+        )
+    else:
+        message = f"all {emitted_count} emitted {noun} are accounted for"
+
+    return CheckResult(
+        name=check_name,
+        category=category,
+        passed=True,
+        message=message,
+        details={
+            "emitted": emitted_count,
+            "accounted": emitted_count - len(unaccounted),
+            "unaccounted_count": len(unaccounted),
+            "unaccounted": sorted(unaccounted),
+            "enforced": False,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -268,6 +363,33 @@ def _span_name_matches(emitted_name: str, expected_name: str) -> bool:
     return emitted_name == expected_name
 
 
+def _unaccounted_span_names(emitted: list[str], expected: dict[str, Any]) -> list[str]:
+    """Names Tempo reports that no expected_spans.json entry accounts for.
+
+    "Accounted for" is the same relation the forward check uses, so a contract
+    glob such as "rpc.command.*" covers every command it expands to, and an
+    entry marked ``optional`` still accounts for its name — being unasserted is
+    not the same as being unknown. No separate pattern list is needed for spans
+    because the contract already carries globs.
+
+    Args:
+        emitted:  Span names as reported by Tempo's span.name tag values.
+        expected: The parsed expected_spans.json contract.
+
+    Returns:
+        Sorted list of emitted names with no matching contract entry.
+    """
+    contract = [span_def["name"] for span_def in expected.get("spans", [])]
+    return sorted(
+        name
+        for name in emitted
+        if name
+        and not any(
+            _span_name_matches(name, expected_name) for expected_name in contract
+        )
+    )
+
+
 # ---------------------------------------------------------------------------
 # Span Validation (Tempo API)
 # ---------------------------------------------------------------------------
@@ -327,21 +449,21 @@ async def validate_spans(
         )
         return
 
-    # Diagnostic: list all available operations (span names) for the xrpld
-    # service.  This output appears in CI logs and helps debug missing-span
-    # failures without needing to reproduce the full stack locally.
+    # List every span name Tempo holds. This is both a diagnostic (it makes a
+    # missing-span failure debuggable without reproducing the stack locally)
+    # and the input to the reverse coverage check added at the end of this
+    # function. Note the tag-values API is not service-scoped, so in a stack
+    # where something other than xrpld also sent traces this list would be a
+    # superset; on the harness only xrpld exports spans.
+    emitted_span_names: list[str] = []
     try:
         async with session.get(
             f"{tempo_url}/api/v2/search/tag/span.name/values"
         ) as resp:
             ops_data = await resp.json()
             tag_values = ops_data.get("tagValues", [])
-            operations = [tv.get("value", "") for tv in tag_values]
-            logger.info(
-                "Tempo operations (%d total): %s",
-                len(operations),
-                operations,
-            )
+            emitted_span_names = [tv.get("value", "") for tv in tag_values]
+            _log_name_list("Tempo span names", emitted_span_names)
     except Exception as exc:
         logger.warning("Failed to fetch Tempo operations: %s", exc)
 
@@ -446,6 +568,25 @@ async def validate_spans(
             )
             continue
         await _validate_parent_child(session, tempo_url, rel, report)
+
+    # Reverse direction: span names Tempo holds that the contract never mentions.
+    # Added last so no existing check's position in the report moves.
+    unaccounted_spans = _unaccounted_span_names(emitted_span_names, expected)
+    if unaccounted_spans:
+        _log_name_list(
+            "Span names emitted but NOT accounted for by expected_spans.json "
+            "(warning only, does not fail CI)",
+            unaccounted_spans,
+        )
+    report.add(
+        _reverse_coverage_result(
+            check_name="span.reverse_coverage",
+            category="span",
+            noun="span names",
+            emitted_count=len(emitted_span_names),
+            unaccounted=unaccounted_spans,
+        )
+    )
 
 
 async def _check_attributes_on_first_trace(
@@ -648,12 +789,15 @@ async def _validate_parent_child(
 
 async def _log_prometheus_metric_names(
     session: aiohttp.ClientSession, prometheus_url: str
-) -> None:
-    """Log every metric family name Prometheus currently knows.
+) -> list[str]:
+    """Log every metric family name Prometheus knows, and return the list.
 
-    Diagnostic only — this output appears in CI logs and helps debug name
-    mismatches between expected_metrics.json and actual emissions. Failures
-    are warnings, never check failures.
+    Two jobs. It is the diagnostic that makes a name mismatch between
+    expected_metrics.json and actual emissions debuggable from a CI log, and it
+    is the emitted inventory the reverse coverage check compares the contract
+    against. Failures are warnings, never check failures; an empty return means
+    "could not determine", which the reverse check reports as not evaluated
+    rather than as a clean run.
 
     Deliberately unfiltered. This used to keep only names matching 19
     hard-coded prefixes, which made it useless for the job it exists to do: on
@@ -665,12 +809,16 @@ async def _log_prometheus_metric_names(
     to do. The whole list is a few kilobytes of CI log, so there is nothing to
     save by truncating it.
 
-    Sorted so two runs' output can be diffed directly; the Prometheus API does
-    not promise an order.
+    Sorted and printed one name per line so two runs' output can be diffed
+    directly; the Prometheus API does not promise an order, and the whole list
+    on one log line was neither readable nor diffable.
 
     Args:
         session:        aiohttp client session.
         prometheus_url: Prometheus base URL.
+
+    Returns:
+        Sorted metric family names, or an empty list if the fetch failed.
     """
     try:
         async with session.get(
@@ -678,13 +826,131 @@ async def _log_prometheus_metric_names(
         ) as resp:
             label_data = await resp.json()
             all_metrics = sorted(label_data.get("data", []))
-            logger.info(
-                "Prometheus metric families (%d total): %s",
-                len(all_metrics),
-                all_metrics,
-            )
+            _log_name_list("Prometheus metric families", all_metrics)
+            return all_metrics
     except Exception as exc:
         logger.warning("Failed to fetch Prometheus metric names: %s", exc)
+        return []
+
+
+def _selector_metric_name(selector: str) -> str:
+    """Strip any label matcher from a contract selector, leaving the name.
+
+    Contract entries are usually bare names but some carry a matcher, e.g.
+    ``ledger_economy{metric="base_fee_xrp"}``. Reverse coverage compares family
+    names, and Prometheus reports one ``__name__`` per family regardless of how
+    many label combinations it has, so the matcher must come off first.
+
+    Args:
+        selector: A metric name, optionally followed by a brace matcher group.
+
+    Returns:
+        The bare metric family name.
+    """
+    return selector.split("{", 1)[0].strip()
+
+
+def _metric_family_candidates(name: str) -> list[str]:
+    """The names a contract entry could use to account for an emitted series.
+
+    One histogram instrument reaches Prometheus as three names. Folding the
+    ``_bucket``/``_count``/``_sum`` suffix back off gives the base family, so a
+    contract entry or a regex written for the family covers all three.
+
+    The unfolded name is always kept as a candidate too, and a name is
+    accounted for if *any* candidate matches. That is what makes folding
+    ``_count`` safe even though a plain gauge can legitimately end in it
+    (``jobq_job_count`` does): the gauge matches on its own full name, and the
+    extra ``jobq_job`` candidate can only ever add coverage, never remove it.
+
+    Args:
+        name: Emitted Prometheus metric family name.
+
+    Returns:
+        ``[name]``, plus the base family if ``name`` carries a histogram suffix.
+    """
+    candidates = [name]
+    for suffix in HISTOGRAM_SUFFIXES:
+        if name.endswith(suffix) and len(name) > len(suffix):
+            candidates.append(name[: -len(suffix)])
+            break
+    return candidates
+
+
+def _accounted_metric_names(
+    expected: dict[str, Any],
+) -> tuple[set[str], list[re.Pattern[str]]]:
+    """Everything expected_metrics.json accounts for, in family-name form.
+
+    Three sources, all of which count as "the contract has considered this
+    name" — which is what reverse coverage asks, not "is this name asserted":
+
+    * every selector under a group's ``metrics`` (asserted),
+    * every key of ``not_asserted.metrics_excluded`` (deliberately unasserted
+      with a written reason),
+    * every regex under the top-level ``accounted_patterns`` (bulk families).
+
+    Literal histogram entries are expanded to the whole triple plus the base
+    family, so listing only ``foo_bucket`` still accounts for ``foo_count`` and
+    ``foo_sum``. The expansion is keyed off ``_bucket``/``_sum`` only, never off
+    ``_count`` alone, so a gauge named ``..._count`` does not silently claim a
+    shorter base family that nothing emits.
+
+    Args:
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        A (literal family names, compiled patterns) pair.
+    """
+    literals: set[str] = set()
+    for group in expected.values():
+        if not isinstance(group, dict):
+            continue
+        for selector in group.get("metrics", []):
+            literals.add(_selector_metric_name(selector))
+        # not_asserted records its entries under metrics_excluded, keyed by name.
+        literals.update(group.get("metrics_excluded", {}))
+
+    for name in list(literals):
+        for suffix in ("_bucket", "_sum"):
+            if name.endswith(suffix) and len(name) > len(suffix):
+                base = name[: -len(suffix)]
+                literals.add(base)
+                literals.update(base + s for s in HISTOGRAM_SUFFIXES)
+                break
+
+    patterns = [
+        re.compile(entry["pattern"])
+        for entry in expected.get("accounted_patterns", [])
+        if entry.get("pattern")
+    ]
+    return literals, patterns
+
+
+def _unaccounted_metric_names(
+    emitted: list[str], expected: dict[str, Any]
+) -> list[str]:
+    """Metric families Prometheus holds that the contract never mentions.
+
+    Args:
+        emitted:  Metric family names from the Prometheus __name__ label.
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        Sorted list of emitted family names nothing in the contract accounts for.
+    """
+    literals, patterns = _accounted_metric_names(expected)
+    unaccounted = []
+    for name in emitted:
+        candidates = _metric_family_candidates(name)
+        accounted = any(
+            candidate in literals
+            or any(pattern.fullmatch(candidate) for pattern in patterns)
+            for candidate in candidates
+        )
+        if not accounted:
+            unaccounted.append(name)
+    return sorted(unaccounted)
 
 
 def _metric_check_targets(
@@ -703,11 +969,20 @@ def _metric_check_targets(
         that declares it, not just spanmetrics. Nothing read the key at all
         until this was added, so the four labels the spanmetrics group
         documented as required had never actually been checked.
+
+    Note:
+        A group is any top-level value that is an object. The contract also
+        carries a string ("description"), a list ("accounted_patterns") and an
+        object that declares no metrics ("grafana_dashboards"); the isinstance
+        test skips the first two structurally rather than by name, so adding
+        another non-group key cannot break this function, and the third
+        contributes nothing because it has no "metrics" key. This selects
+        exactly the same groups the previous name-based exclusion list did.
     """
     groups = [
         (category_key, category_data)
         for category_key, category_data in expected.items()
-        if category_key not in ("description", "grafana_dashboards")
+        if isinstance(category_data, dict)
     ]
     targets = [
         (category_key, metric_name)
@@ -741,7 +1016,7 @@ async def validate_metrics(
     """
     logger.info("--- Metric Validation (Prometheus) ---")
 
-    await _log_prometheus_metric_names(session, prometheus_url)
+    emitted_metric_names = await _log_prometheus_metric_names(session, prometheus_url)
 
     with open(EXPECTED_METRICS_FILE) as f:
         expected = json.load(f)
@@ -788,6 +1063,25 @@ async def validate_metrics(
     # ahead of the label checks, so no existing check's position moves.
     for check in [*metric_checks, *label_checks]:
         report.add(check)
+
+    # Reverse direction: metric families Prometheus holds that the contract
+    # never mentions. Added last so no existing check's position moves.
+    unaccounted_metrics = _unaccounted_metric_names(emitted_metric_names, expected)
+    if unaccounted_metrics:
+        _log_name_list(
+            "Metric families emitted but NOT accounted for by expected_metrics.json "
+            "(warning only, does not fail CI)",
+            unaccounted_metrics,
+        )
+    report.add(
+        _reverse_coverage_result(
+            check_name="metric.reverse_coverage",
+            category="metric",
+            noun="metric families",
+            emitted_count=len(emitted_metric_names),
+            unaccounted=unaccounted_metrics,
+        )
+    )
 
 
 def _selector_with_label(metric_selector: str, label: str) -> str:

@@ -451,7 +451,14 @@ it is held back as its own change rather than folded into an unrelated push.
   "not_asserted": {
     "description": "Why these are excluded.",
     "metrics_excluded": { "metric_3": "reason" }
-  }
+  },
+  "accounted_patterns": [
+    {
+      "pattern": "^family_[a-z]+_(a|b)$",
+      "family": "Short label.",
+      "reason": "Why."
+    }
+  ]
 }
 ```
 
@@ -459,19 +466,64 @@ Every metric listed under a `metrics` array must produce > 0 Prometheus series d
 
 `required_labels` is optional and read for every category that declares one. Each label becomes one additional check, named `metric.<category>.label.<label>`, that at least one of that category's series carries the label with a non-empty value. It is matched as `<label>!=""` rather than `<label>=~".*"` because Prometheus cannot tell an absent label from an empty one, so a regex match would pass on a node that lost the label entirely. The guarantee rule is the same as for `metrics`: list a label only where the workload guarantees it. Declaring `required_labels` on a category with no `metrics` fails the check rather than skipping it, so the key can never sit unenforced.
 
-Three top-level keys are not metric categories:
+Four top-level keys are not metric categories:
 
-- `description` and `grafana_dashboards` are skipped explicitly by
-  `validate_metrics`. `grafana_dashboards.uids` drives the dashboard check, so
-  adding a dashboard to `docker/telemetry/grafana/dashboards/` does **not** put
-  it under the gate until its uid is added here too.
-- `not_asserted` is skipped structurally: the loop reads
+- `description` is a string, and `accounted_patterns` is a list, so
+  `_metric_check_targets` skips both structurally — it walks only top-level
+  values that are objects.
+- `grafana_dashboards` is an object but declares no `metrics`, so it contributes
+  no checks. `grafana_dashboards.uids` drives the dashboard check, so adding a
+  dashboard to `docker/telemetry/grafana/dashboards/` does **not** put it under
+  the gate until its uid is added here too.
+- `not_asserted` is skipped the same way: the loop reads
   `category_data.get("metrics", [])`, and this group deliberately has no
   `metrics` key — its entries live under `metrics_excluded` as a name-to-reason
   map. It documents metrics that are emitted and dashboarded but left unasserted
   because they are workload-gated or defect-gated (a check that fails on a
   healthy run is worse than no check). Promote an entry into an asserted group
   only after the workload is changed to guarantee it fires.
+- `accounted_patterns` asserts nothing. It is a list of `{pattern, family,
+reason}` entries feeding the reverse coverage check described below.
+
+### Reverse Coverage — emitted but not accounted for
+
+The checks above run in one direction only: they read the contract and ask the
+backend whether each listed name exists. That direction is blind to a name the
+contract omits, which is how a large metric gap and several unknown spans went
+unnoticed — both emitted inventories were already being fetched for the CI log,
+and neither was compared back.
+
+Two extra checks close the loop, `metric.reverse_coverage` and
+`span.reverse_coverage`. Each lists every name the backend reports that the
+contract never mentions, sorted, one per line in the log, with counts in the
+report's `details`.
+
+**They warn and never fail.** `passed` is hardcoded `True` in
+`_reverse_coverage_result`, so an unaccounted name cannot turn CI red. That is
+deliberate: downstream branches legitimately add telemetry an upstream contract
+has not seen yet, and a hard failure would redden every one of them for doing
+the right thing. The value is visibility, not enforcement.
+
+A metric family counts as accounted for when any of these is true:
+
+- a group's `metrics` array lists it (with any label matcher stripped),
+- a `not_asserted.metrics_excluded` key names it — deliberately unasserted is
+  not the same as unknown,
+- an `accounted_patterns` regex matches it (anchored, `fullmatch`).
+
+Exporter shapes are folded before matching, so a contract entry written for a
+family covers what the exporter derives from it: a histogram's
+`_bucket`/`_count`/`_sum` names fold back onto their base family, and counters
+are listed with the `_total` the exporter appends. Spans need no pattern list —
+`expected_spans.json` already carries globs such as `rpc.command.*`, and the
+reverse check reuses the same matcher the forward check uses.
+
+Use `accounted_patterns` only for a family whose membership is derived
+mechanically from a table in the code and so cannot be enumerated by hand — the
+per-job-type job-queue instruments and the overlay per-category traffic cross
+product are the two real cases, plus the Prometheus scrape plumbing that is not
+xrpld telemetry at all. Keep each pattern anchored and no wider than its family
+needs: a pattern that swallows unrelated names defeats the check.
 
 ### expected_spans.json Format
 
