@@ -649,11 +649,24 @@ async def _validate_parent_child(
 async def _log_prometheus_metric_names(
     session: aiohttp.ClientSession, prometheus_url: str
 ) -> None:
-    """Log the harness-relevant metric names Prometheus currently knows.
+    """Log every metric family name Prometheus currently knows.
 
     Diagnostic only — this output appears in CI logs and helps debug name
     mismatches between expected_metrics.json and actual emissions. Failures
     are warnings, never check failures.
+
+    Deliberately unfiltered. This used to keep only names matching 19
+    hard-coded prefixes, which made it useless for the job it exists to do: on
+    the last CI run it printed 147 of 422 families, and none of the prefixes
+    covered state_accounting_*, node_family_*, overlay_peer_disconnects or the
+    pathfind_* histograms, so a coverage gap in exactly those families could
+    not be seen here. An allow-list can only ever show names someone already
+    thought to look for, which is the opposite of what a discovery aid needs
+    to do. The whole list is a few kilobytes of CI log, so there is nothing to
+    save by truncating it.
+
+    Sorted so two runs' output can be diffed directly; the Prometheus API does
+    not promise an order.
 
     Args:
         session:        aiohttp client session.
@@ -664,38 +677,11 @@ async def _log_prometheus_metric_names(
             f"{prometheus_url}/api/v1/label/__name__/values"
         ) as resp:
             label_data = await resp.json()
-            all_metrics = label_data.get("data", [])
-            relevant = [
-                m
-                for m in all_metrics
-                if m.startswith(
-                    (
-                        "span_",
-                        "rpc_method",
-                        "cache_",
-                        "txq_",
-                        "object_count",
-                        "load_factor",
-                        "nodestore",
-                        "ledgermaster",
-                        "peer_finder",
-                        "jobq_",
-                        "total_bytes",
-                        "total_messages",
-                        "validation_agreement",
-                        "validator_health",
-                        "peer_quality",
-                        "ledger_economy",
-                        "state_tracking",
-                        "storage_detail",
-                    )
-                )
-            ]
+            all_metrics = sorted(label_data.get("data", []))
             logger.info(
-                "Prometheus metrics (relevant, %d of %d total): %s",
-                len(relevant),
+                "Prometheus metric families (%d total): %s",
                 len(all_metrics),
-                relevant,
+                all_metrics,
             )
     except Exception as exc:
         logger.warning("Failed to fetch Prometheus metric names: %s", exc)
