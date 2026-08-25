@@ -427,15 +427,20 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             auto const sle = env.le(keylet::mptIssuance(id));
             BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 5);
             BEAST_EXPECT((*sle)[sfOutstandingAmount] == 70);
-            BEAST_EXPECT((*sle)[sfConfidentialHolderCount] == 1);
+            BEAST_EXPECTS(
+                (*sle)[sfConfidentialHolderCount] == 1,
+                "clawback decrements confidential holder census");
         }
-        BEAST_EXPECT(
+        BEAST_EXPECTS(
             !env.le(keylet::mptoken(id, alice.id()))
-                 ->isFieldPresent(sfHolderEncryptionKey));
+                 ->isFieldPresent(sfHolderEncryptionKey),
+            "clawback clears confidential registration");
         BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 10));
         mpt.pay(alice, carol, 10);
         mpt.authorize({.account = alice, .flags = tfMPTUnauthorize});
-        BEAST_EXPECT(!env.le(keylet::mptoken(id, alice.id())));
+        BEAST_EXPECTS(
+            !env.le(keylet::mptoken(id, alice.id())),
+            "zero-balance holder can delete confidential registration");
     }
 
 
