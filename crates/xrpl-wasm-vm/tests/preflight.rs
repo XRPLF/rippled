@@ -158,7 +158,6 @@ const ALL_IMPORTS: [&str; 61] = [
     import::FLOAT_SUB,
     import::FLOAT_MULT,
     import::FLOAT_DIV,
-    import::FLOAT_ROOT,
     import::FLOAT_POW,
 ];
 

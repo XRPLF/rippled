@@ -382,11 +382,6 @@ fn call_for(op: HostFunctionSpec) -> Call {
             "(call $float_div (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 16) (i32.const 8) (i32.const 0))",
             7,
         ),
-        HostFunctionSpec::FloatRoot => (
-            import::FLOAT_ROOT,
-            "(call $float_root (i32.const 0) (i32.const 8) (i32.const 2) (i32.const 8) (i32.const 8) (i32.const 0))",
-            6,
-        ),
         HostFunctionSpec::FloatPower => (
             import::FLOAT_POW,
             "(call $float_pow (i32.const 0) (i32.const 8) (i32.const 2) (i32.const 8) (i32.const 8) (i32.const 0))",
