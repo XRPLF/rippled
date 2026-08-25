@@ -5982,6 +5982,62 @@ public:
                 BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "500000000");
             });
 
+        // A large MPT balance used to overflow the fee adjustment. divide()
+        // assumes an IOU mantissa, always normalized into [1e15, 1e16), and
+        // scales the numerator by 1e17. An MPT mantissa is the raw int64
+        // balance, so past ~1.8e17 the scaled quotient leaves uint64 range and
+        // throws -- failing the whole RPC with "internal", so one offer owner
+        // blanked the entire book for every caller.
+        //
+        // The quotient itself always fits, because the branch only runs when
+        // the rate exceeds parity. The cases below pin that at the edges of
+        // the domain rather than leaving it to inspection.
+        auto checkLargeOwnerFunds =
+            [&](std::uint16_t transferFee, std::int64_t funds, char const* expectedFunded) {
+                Env env{*this, features};
+                env.fund(XRP(10'000), issuer, maker, buyer);
+                env.close();
+
+                MPT const usd = MPTTester(
+                    {.env = env,
+                     .issuer = issuer,
+                     .holders = {maker, buyer},
+                     .transferFee = transferFee,
+                     .maxAmt = kMaxMpTokenAmount});
+                env(pay(issuer, maker, usd(funds)));
+                env.close();
+
+                auto const offerSeq = env.seq(maker);
+                env(offer(maker, XRP(100), usd(funds)));
+                env.close();
+
+                json::Value const jrr = getBookOffers(env, XRP, usd);
+                BEAST_EXPECT(!jrr.isMember(jss::error));
+                json::Value const& bookOffers = jrr[jss::offers];
+                BEAST_EXPECT(bookOffers.isArray());
+                if (!BEAST_EXPECT(bookOffers.size() == 1))
+                    return;
+
+                json::Value const& offer = bookOffers[0u];
+                BEAST_EXPECT(offer[sfAccount.jsonName] == maker.human());
+                BEAST_EXPECT(offer[sfSequence.jsonName] == offerSeq);
+                BEAST_EXPECT(offer[jss::owner_funds] == std::to_string(funds));
+                BEAST_EXPECT(offer[jss::taker_gets_funded][jss::value] == expectedFunded);
+            };
+
+        // Above the ~2.77e17 boundary at the maximum transfer rate of 1.5:
+        // 3e17 of owner funds covers 2e17 delivered.
+        checkLargeOwnerFunds(kMaxTransferFee, 300'000'000'000'000'000LL, "200000000000000000");
+        // Large balance at the maximum rate. Kept at 6e18 so that 6e18 * 1.5
+        // stays representable: offer crossing's rate-preservation path
+        // overflows above that, which is a separate defect from this one.
+        checkLargeOwnerFunds(kMaxTransferFee, 6'000'000'000'000'000'000LL, "4000000000000000000");
+        // Near-maximum balance at the smallest rate above parity. This is the
+        // largest quotient the branch can produce, and the case the old code
+        // failed earliest on -- its overflow boundary is lowest, ~1.8e17, when
+        // the rate is closest to parity.
+        checkLargeOwnerFunds(1, 9'000'000'000'000'000'000LL, "8999910000899991000");
+
         // An MPT global lock makes book_offers report the locked MPT book
         // liquidity as zero-funded instead of funded.
         {

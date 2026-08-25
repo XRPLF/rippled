@@ -78,6 +78,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -88,6 +89,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
@@ -4925,7 +4927,28 @@ NetworkOPsImp::getBookPage(
                 {
                     // Need to charge a transfer fee to offer owner.
                     offerRate = rate;
-                    saOwnerFundsLimit = divide(saOwnerFunds, offerRate);
+                    // Why MPT does not use divide(): divide() is built for an
+                    // IOU mantissa, which is always normalized into
+                    // [1e15, 1e16]. An MPT mantissa is the raw int64 balance,
+                    // and divide() scales the numerator by 1e17, so a balance
+                    // over ~1.8e17 leaves uint64 range and throws -- failing
+                    // the whole RPC rather than this one offer.
+                    //
+                    // Why mulRatio is safe: it evaluates in 128 bits, and here
+                    // it cannot overflow either. offerRate is
+                    // 1e9 + 10'000 * TransferFee, so this branch runs only with
+                    // offerRate > kParityRate, making the quotient smaller than
+                    // saOwnerFunds. Rounded down, so reported liquidity is
+                    // never overstated.
+                    saOwnerFundsLimit = saOwnerFunds.holds<MPTIssue>()
+                        ? toSTAmount(
+                              mulRatio(
+                                  saOwnerFunds.mpt(),
+                                  kParityRate.value,
+                                  offerRate.value,
+                                  /*roundUp*/ false),
+                              saOwnerFunds.asset())
+                        : divide(saOwnerFunds, offerRate);
                 }
 
                 if (saOwnerFundsLimit >= saTakerGets)
