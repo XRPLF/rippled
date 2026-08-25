@@ -187,7 +187,7 @@ authorizeMPToken(
                 if (!sleIssuance ||
                     (*sleIssuance)[sfConfidentialOutstandingAmount] != 0 ||
                     auditorMigrationPending(*sleIssuance))
-                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                    return tecHAS_OBLIGATIONS;
                 if (auto const ter = clearConfidentialState(*sleIssuance, *sleMpt);
                     !isTesSuccess(ter))
                     return ter;  // LCOV_EXCL_LINE
