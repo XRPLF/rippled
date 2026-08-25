@@ -82,14 +82,9 @@ IMAGE=$(jq -r '.package_configs.rhel[0].image' .github/scripts/strategy-matrix/l
 
 PKG_RELEASE=1
 
-# git refuses to read a repository owned by another user, and the container runs
-# as root, so mark the mount safe; build_pkg.py reads the commit timestamp from it.
 docker run --rm \
     -v "$(pwd):/src" \
     -w /src \
-    -e GIT_CONFIG_COUNT=1 \
-    -e GIT_CONFIG_KEY_0=safe.directory \
-    -e GIT_CONFIG_VALUE_0=/src \
     "${IMAGE}" \
     ./package/build_pkg.py --package-type rpm --pkg-release "${PKG_RELEASE}"
 

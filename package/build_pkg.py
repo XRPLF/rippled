@@ -109,7 +109,20 @@ def check_binaries(build_dir: Path) -> None:
 
 def source_date_epoch() -> int:
     """The last commit's timestamp."""
-    return int(capture("git", "-C", SRC_DIR, "log", "-1", "--format=%ct"))
+    # git refuses to read a checkout owned by another user, which is what a CI
+    # container or a bind mount hands it.
+    return int(
+        capture(
+            "git",
+            "-c",
+            f"safe.directory={SRC_DIR}",
+            "-C",
+            SRC_DIR,
+            "log",
+            "-1",
+            "--format=%ct",
+        )
+    )
 
 
 def stage_common(build_dir: Path, dest: Path) -> None:
