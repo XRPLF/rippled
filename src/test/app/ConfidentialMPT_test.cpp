@@ -437,6 +437,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
                  ->isFieldPresent(sfHolderEncryptionKey),
             "clawback clears confidential registration");
         BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 10));
+        testcase("delete exited confidential holder");
         mpt.pay(alice, carol, 10);
         mpt.authorize({.account = alice, .flags = tfMPTUnauthorize});
         BEAST_EXPECTS(
