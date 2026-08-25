@@ -142,30 +142,29 @@ ValidLoanBroker::finalize(
     // delete.
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-        if (multipleBrokerDeletions_)
+       if (multipleBrokerDeletions_)
         {
-            JLOG(j.fatal()) << "Invariant failed: more than one Loan Broker "
-                               "deleted in a single transaction";
+            JLOG(j.fatal())
+                << "Invariant failed: more than one Loan Broker deleted in a single transaction";
             return false;
         }
         if (deletedBroker_)
         {
             if (tx.getTxnType() != ttLOAN_BROKER_DELETE)
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted by a "
-                                   "transaction other than LoanBrokerDelete";
+                JLOG(j.fatal()) << "Invariant failed: " <<  //
+                    "Loan Broker deleted by a transaction other than LoanBrokerDelete";
                 return false;
             }
             if (deletedBroker_->at(sfDebtTotal) != beast::kZero)
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with "
-                                   "non-zero debt total";
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with non-zero debt total";
                 return false;
             }
             if (deletedBroker_->at(sfOwnerCount) != 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with "
-                                   "non-zero owner count";
+                JLOG(j.fatal())
+                    << "Invariant failed: Loan Broker deleted with non-zero owner count";
                 return false;
             }
         }
