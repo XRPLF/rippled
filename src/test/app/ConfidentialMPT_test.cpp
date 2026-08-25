@@ -768,7 +768,29 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             env(jv, Ter(tecBAD_PROOF), Fee(XRP(1)));
         }
 
-        // Issuance freeze coverage exercised in testFreezePaths (separate Env).
+        // Convert and Merge use the same MPT freeze mapping.
+        mpt.set({.account = gw, .holder = alice, .flags = tfMPTLock});
+        {
+            Scalar r = mustRandomScalar();
+            auto [h, i] = encPair(aliceKp.pk, 1, r);
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
+            jv[jss::Account] = alice.human();
+            jv[sfMPTokenIssuanceID] = to_string(id);
+            jv[sfMPTAmount] = "1";
+            jv[sfHolderEncryptedAmount] = hexCipher(h);
+            jv[sfIssuerEncryptedAmount] = hexCipher(i);
+            jv[sfBlindingFactor] = to_string(scalarToUint(r));
+            env(jv, Ter(tecLOCKED), Fee(XRP(1)));
+        }
+        {
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ConfidentialMPTMergeInbox;
+            jv[jss::Account] = alice.human();
+            jv[sfMPTokenIssuanceID] = to_string(id);
+            env(jv, Ter(tecLOCKED), Fee(XRP(1)));
+        }
+        mpt.set({.account = gw, .holder = alice, .flags = tfMPTUnlock});
 
         // Merge errors
         {

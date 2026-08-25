@@ -7,6 +7,7 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace xrpl;
@@ -351,6 +352,43 @@ TEST(ConfidentialCrypto, ConvertBackAndClawbackSigma)
     cpub.revealedAmount = revealed + 1;
     EXPECT_FALSE(verifyClawbackSigma(
         cpub, Slice(cctx.data(), cctx.size()), Slice(cproof.data(), cproof.size())));
+}
+
+TEST(ConfidentialCrypto, BulletproofGeneratorCacheConcurrentGrowth)
+{
+    Scalar singleBlind = mustRandomScalar();
+    Scalar aggregateBlind0 = mustRandomScalar();
+    Scalar aggregateBlind1 = mustRandomScalar();
+    CompressedPoint singleCommitment{};
+    CompressedPoint aggregateCommitment0{};
+    CompressedPoint aggregateCommitment1{};
+    ASSERT_TRUE(pedersenCommit(3, singleBlind, singleCommitment));
+    ASSERT_TRUE(pedersenCommit(5, aggregateBlind0, aggregateCommitment0));
+    ASSERT_TRUE(pedersenCommit(7, aggregateBlind1, aggregateCommitment1));
+
+    std::array<std::uint8_t, kSingleBulletproofBytes> singleProof{};
+    std::array<std::uint8_t, kAggregatedBulletproofBytes> aggregateProof{};
+    bool singleOk = false;
+    bool aggregateOk = false;
+    std::thread single([&] {
+        singleOk =
+            proveBulletproofSingle(singleCommitment, 3, singleBlind, singleProof);
+    });
+    std::thread aggregate([&] {
+        aggregateOk = proveBulletproofAggregated(
+            aggregateCommitment0,
+            aggregateCommitment1,
+            5,
+            7,
+            aggregateBlind0,
+            aggregateBlind1,
+            aggregateProof);
+    });
+    single.join();
+    aggregate.join();
+
+    EXPECT_TRUE(singleOk);
+    EXPECT_TRUE(aggregateOk);
 }
 
 TEST(ConfidentialCrypto, BulletproofSingleAndAggregated)
