@@ -565,13 +565,11 @@ fn what_static_screening_cannot_see() {
     }
 }
 
-/// A start section is guest code, so screening cannot see whether it traps — and does
-/// not have to. A trap is the guest's fault wherever it happens, so the run charges the
-/// contract for what it burned instead of reporting a module the node should have
-/// screened.
+/// A start section runs guest code at instantiation, before the entry point. The
+/// engine disallows it, so screening refuses the module outright rather than letting
+/// any code run ahead of the entry point.
 #[test]
-fn a_start_section_screening_cannot_see_is_charged_as_a_trap() {
-    let host = FakeHost::new();
+fn a_start_section_is_refused_by_screening() {
     let wat = format!(
         r#"(module {ONE_PAGE}
              (func $init (unreachable))
@@ -579,13 +577,19 @@ fn a_start_section_screening_cannot_see_is_charged_as_a_trap() {
              (func (export "finish") (result i32) (i32.const 0)))"#
     );
 
-    passes(&wat);
+    let refusal = assert_stage!(refusal(&wat), CheckError::Compile(_)).to_string();
+    assert!(refusal.contains("start"), "{refusal}");
+}
 
-    let failure = xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY)
-        .expect_err("a start section that traps must not complete the run");
-    assert!(matches!(failure.error, RunError::Trap(_)), "{failure}");
+#[test]
+fn a_memory64_memory_is_refused_by_screening() {
+    let wat = r#"(module
+        (memory i64 1)
+        (func (export "finish") (result i32) (i32.const 0)))"#;
+
+    let refusal = assert_stage!(refusal(wat), CheckError::Compile(_)).to_string();
     assert!(
-        failure.fuel_used > 0,
-        "charged for what it burned: {failure}"
+        refusal.contains("memory64") || refusal.contains("i64"),
+        "{refusal}"
     );
 }
