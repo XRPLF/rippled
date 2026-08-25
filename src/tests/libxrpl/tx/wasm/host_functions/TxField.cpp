@@ -45,7 +45,7 @@ TEST_F(TxFieldImpl, MPTokenIssuanceCreateTxMatchesScale)
     ledger.createAccount(owner, XRP(1000));
     auto const expectedScale = std::uint8_t{8};
     checkTxField(owner, sfAssetScale, mptIssuanceCreateTx(owner, expectedScale), [&] {
-        return toBytes(expectedScale);
+        return RealHostFixture::toBytes(expectedScale);
     });
 }
 
@@ -64,7 +64,7 @@ TEST_F(TxFieldImpl, AmmDepositTxUSDMatchesAsset2)
     ledger.createAccount(owner, XRP(1000));
     auto usdIssue = Issue{toCurrency("USD"), owner.id()};
     checkTxField(owner, sfAsset2, ammDepositTx(owner, xrpIssue(), usdIssue), [&] {
-        return toBytes(Asset{usdIssue});
+        return RealHostFixture::toBytes(Asset{usdIssue});
     });
 }
 
@@ -76,7 +76,7 @@ TEST_F(TxFieldImpl, AmmDepositTxGBPMatchesAsset)
     auto mptId = makeMptID(1, owner);
     auto mptIssue = MPTIssue{mptId};
     checkTxField(owner, sfAsset, ammDepositTx(owner, gbpIssue, mptIssue), [&] {
-        return toBytes(Asset{gbpIssue});
+        return RealHostFixture::toBytes(Asset{gbpIssue});
     });
 }
 
@@ -88,7 +88,7 @@ TEST_F(TxFieldImpl, AmmDepositTxGBPMatchesAsset2)
     auto mptId = makeMptID(1, owner);
     auto mptIssue = MPTIssue{mptId};
     checkTxField(owner, sfAsset2, ammDepositTx(owner, gbpIssue, mptIssue), [&] {
-        return toBytes(Asset{mptId});
+        return RealHostFixture::toBytes(Asset{mptId});
     });
 }
 
@@ -115,7 +115,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesTransactionType)
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
     checkTxField(owner, sfTransactionType, escrowFinishTx(ledger, owner), [] {
-        return toBytes(ttESCROW_FINISH);
+        return RealHostFixture::toBytes(ttESCROW_FINISH);
     });
 }
 
@@ -124,7 +124,7 @@ TEST_F(TxFieldImpl, EscrowTxMatchesOfferSequence)
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
     checkTxField(owner, sfOfferSequence, escrowFinishTx(ledger, owner), [&] {
-        return toBytes(ledger.getAccountRoot(owner.id()).getSequence());
+        return RealHostFixture::toBytes(ledger.getAccountRoot(owner.id()).getSequence());
     });
 }
 

@@ -37,29 +37,6 @@
 
 namespace xrpl::test {
 
-Bytes
-toBytes(std::uint8_t value);
-Bytes
-toBytes(std::uint16_t value);
-Bytes
-toBytes(std::uint32_t value);
-Bytes
-toBytes(uint256 const& value);
-Bytes
-toBytes(std::string_view value);
-Bytes
-toBytes(std::span<std::uint8_t const> value);
-Bytes
-toBytes(AccountID const& account);
-Bytes
-toBytes(Issue const& issue);
-Bytes
-toBytes(Asset const& asset);
-Bytes
-toBytes(STAmount const& amount);
-Bytes
-toBytes(STNumber const& number);
-
 template <typename T, typename U>
 void
 expectValue(
@@ -181,6 +158,29 @@ public:
         Account const& owner,
         std::uint32_t quorum,
         std::vector<std::pair<Account, std::uint16_t>> const& signers);
+
+    static Bytes
+    toBytes(std::uint8_t value);
+    static Bytes
+    toBytes(std::uint16_t value);
+    static Bytes
+    toBytes(std::uint32_t value);
+    static Bytes
+    toBytes(uint256 const& value);
+    static Bytes
+    toBytes(std::string_view value);
+    static Bytes
+    toBytes(std::span<std::uint8_t const> value);
+    static Bytes
+    toBytes(AccountID const& account);
+    static Bytes
+    toBytes(Issue const& issue);
+    static Bytes
+    toBytes(Asset const& asset);
+    static Bytes
+    toBytes(STAmount const& amount);
+    static Bytes
+    toBytes(STNumber const& number);
 
 private:
     CaptureSink traceSink_{beast::Severity::Trace};

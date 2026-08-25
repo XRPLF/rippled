@@ -17,7 +17,8 @@ struct NFTIssuerImpl : NFTTest
 TEST_F(NFTIssuerImpl, IssuerDecodesFromId)
 {
     auto const issuer = Account{"issuer"};
-    expectValue(makeHost()->getNFTIssuer(makeNftId(issuer.id())), toBytes(issuer.id()));
+    expectValue(
+        makeHost()->getNFTIssuer(makeNftId(issuer.id())), RealHostFixture::toBytes(issuer.id()));
 }
 
 TEST_F(NFTIssuerImpl, IssuerZeroIsInvalidParams)

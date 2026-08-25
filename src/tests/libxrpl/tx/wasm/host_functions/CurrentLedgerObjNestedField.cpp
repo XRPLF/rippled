@@ -32,7 +32,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerQuorum)
     auto h = makeHost(owner);
     expectValue(
         h->getCurrentLedgerObjNestedField(FieldLocator{{sfSignerQuorum.getCode()}}),
-        toBytes(static_cast<std::uint32_t>(2)));
+        RealHostFixture::toBytes(static_cast<std::uint32_t>(2)));
 }
 
 TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerWeight)
@@ -42,7 +42,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerWeight)
     expectValue(
         h->getCurrentLedgerObjNestedField(
             FieldLocator{{sfSignerEntries.getCode(), 0, sfSignerWeight.getCode()}}),
-        toBytes(static_cast<std::uint16_t>(1)));
+        RealHostFixture::toBytes(static_cast<std::uint16_t>(1)));
 }
 
 TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerAccount)
@@ -57,7 +57,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerAccount)
     expectValue(
         h->getCurrentLedgerObjNestedField(
             FieldLocator{{sfSignerEntries.getCode(), 0, sfAccount.getCode()}}),
-        toBytes(entry0.getAccountID(sfAccount)));
+        RealHostFixture::toBytes(entry0.getAccountID(sfAccount)));
 }
 
 TEST_F(CurrentLedgerObjNestedFieldImpl, MissingFieldNotFound)

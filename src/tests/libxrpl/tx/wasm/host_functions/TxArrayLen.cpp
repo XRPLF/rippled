@@ -23,8 +23,8 @@ struct TxArrayLenImpl : RealHostFixture
         assembler.build = [inner = std::move(assembler.build)](STObject& obj) {
             inner(obj);
             auto memos = STArray{};
-            memos.push_back(makeMemo(toBytes("hello")));
-            memos.push_back(makeMemo(toBytes("world")));
+            memos.push_back(makeMemo(RealHostFixture::toBytes("hello")));
+            memos.push_back(makeMemo(RealHostFixture::toBytes("world")));
             obj.setFieldArray(sfMemos, memos);
         };
         return makeHost(keylet::account(acct.id()), assembler.type, std::move(assembler.build));

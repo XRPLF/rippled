@@ -90,7 +90,7 @@ TEST_F(CacheLedgerObjImpl, IndependentHostsDoNotShareSlots)
     auto b = makeHost();
 
     ASSERT_TRUE(a->cacheLedgerObj(key, 1).has_value());
-    expectValue(a->getLedgerObjField(1, sfAccount), toBytes(owner.id()));
+    expectValue(a->getLedgerObjField(1, sfAccount), RealHostFixture::toBytes(owner.id()));
     // `b` never cached anything, so its slot 1 is still empty.
     expectError(b->getLedgerObjField(1, sfAccount), HostFunctionError::EmptySlot);
 }

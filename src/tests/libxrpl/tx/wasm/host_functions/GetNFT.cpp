@@ -41,7 +41,7 @@ TEST_F(GetNFTImpl, ReturnsUri)
     auto const owner = fund("owner");
     auto const uri = std::string_view{"https://example.com/nft"};
     auto const id = mintNFT(owner, uri);
-    expectValue(makeHost()->getNFT(owner.id(), id), toBytes(uri));
+    expectValue(makeHost()->getNFT(owner.id(), id), RealHostFixture::toBytes(uri));
 }
 
 TEST_F(GetNFTImpl, WithoutUriFieldNotFound)
