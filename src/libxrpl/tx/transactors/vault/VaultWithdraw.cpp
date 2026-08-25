@@ -381,9 +381,9 @@ VaultWithdraw::doApply()
 
     if (fix340Enabled && !isFinalWithdrawal)
     {
-        // Fixed-shares path: a small share count can round to zero assets even though the vault
-        // still has backing value. Reject rather than burn shares for a zero payout. The
-        // fixed-assets branch above has already rejected zero via the sharesRedeemed check.
+        // Fixed-shares path: a small share count can round to zero assets even though the vault has
+        // backing value. Reject rather than burn shares for a zero payout. The fixed-assets branch
+        // above has already rejected zero via the sharesRedeemed check.
         if (amount.asset() == share && assetsWithdrawn == beast::kZero &&
             assetsTotalForWithdrawal(vault, waiveUnrealizedLoss) != beast::kZero)
         {
@@ -391,17 +391,12 @@ VaultWithdraw::doApply()
             return tecPRECISION_LOSS;
         }
 
-        // Number arithmetic can throw overflow_error when Scale and totals are large. Caught
-        // below. debitIsNonZeroDust converts assetsTotal/assetsAvailable to STAmount, which is
-        // exactly what a sufficiently abused sfScale can push out of STAmount's representable
-        // range.
+        // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
-            // Even a non-zero withdrawal can be too small to change the stored sfAssetsTotal or
-            // sfAssetsAvailable at STAmount's precision. Shares would still move, so ValidVault
-            // would fail after apply; reject here instead.
-            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn) ||
-                debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsWithdrawn))
+            // A non-zero payout can be too small to change the stored sfAssetsTotal at
+            // STAmount's precision. Shares would still be burned, reject it instead.
+            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn))
             {
                 JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
                                     " vault balance";
@@ -448,30 +443,16 @@ VaultWithdraw::doApply()
     // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
     if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
     {
-        // Number arithmetic can throw overflow_error when Scale and totals are large. The
-        // debitIsNonZeroDust check above already performs the same STAmount conversion of
-        // assetsTotal/assetsAvailable under the ambient rounding mode and would have thrown
-        // (and been caught) first for any value that overflows under that mode. Only reachable
-        // if RoundingMode::Upward -- forced below to keep the clamp conservative -- carries a
-        // value that was in range under the ambient mode just past the max representable
-        // exponent. Kept for defense in depth; not realistically triggerable from a test.
+        // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
-            // Round Upward on the negative delta: the stored total is decremented by no more than
-            // it can represent, so the payout is trimmed downward and the vault never pays out
-            // more than it can account for.
-            assetsWithdrawn =
-                clampToAssetsTotalScale(vault, -assetsWithdrawn, Number::RoundingMode::Upward);
-            // Unreachable: debitIsNonZeroDust above already rejected amounts too small to
-            // move sfAssetsTotal, so snapping to that same grid cannot collapse the payout
-            // to zero. Kept as defense in depth.
-            if (assetsWithdrawn <= beast::kZero)
-            {
-                // LCOV_EXCL_START
-                UNREACHABLE("xrpl::VaultWithdraw::doApply : clamped withdrawal rounds to zero");
-                return tecPRECISION_LOSS;
-                // LCOV_EXCL_STOP
-            }
+            // Round down at the posterior sfAssetsTotal scale so the payout never exceeds the
+            // value represented by the redeemed shares. sharesRedeemed is intentionally not
+            // re-derived: any trimmed residue stays with remaining shareholders.
+            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsWithdrawn);
+            if (!maybeClamped)
+                return maybeClamped.error();
+            assetsWithdrawn = *maybeClamped;
         }
         // LCOV_EXCL_START
         catch (std::overflow_error const&)

@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
@@ -17,6 +18,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <utility>
 
@@ -69,20 +71,46 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     return assets;
 }
 
-[[nodiscard]] STAmount
-clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta, Number::RoundingMode mode)
+[[nodiscard]] std::expected<STAmount, TER>
+clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
 {
     XRPL_ASSERT(
         delta.asset() == vault->at(sfAsset),
         "xrpl::clampToAssetsTotalScale : delta and vault asset match");
 
     Asset const asset = vault->at(sfAsset);
-    // Canonicalize both endpoints under the same rounding mode so the subtraction
-    // reflects only the effect of `delta`, never a rounding difference between them.
-    NumberRoundModeGuard const mg(mode);
-    STAmount const totalBefore{asset, vault->at(sfAssetsTotal)};
-    STAmount const totalAfter{asset, vault->at(sfAssetsTotal) + delta};
-    return delta.negative() ? totalBefore - totalAfter : totalAfter - totalBefore;
+    STAmount const magnitude = delta.negative() ? -delta : delta;
+    Number const assetsTotal = vault->at(sfAssetsTotal);
+    int const postScale = [&] {
+        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+        return scale(assetsTotal + delta, asset);
+    }();
+
+    STAmount actualDelta;
+    if (delta.negative())
+    {
+        // A debit that is a multiple of the posterior ULP lands exactly, so rounding the
+        // magnitude is sufficient and cannot pay out more than requested.
+        actualDelta = roundToScale(magnitude, postScale, Number::RoundingMode::Downward);
+    }
+    else
+    {
+        // A credit must be derived from the posterior total. Rounding only the magnitude
+        // leaves the anterior total's off-grid residue in the stored sum, which can credit
+        // the vault by more than the depositor paid.
+        Number const roundedPosterior =
+            roundToAsset(asset, assetsTotal + magnitude, postScale, Number::RoundingMode::Downward);
+        actualDelta = STAmount{asset, roundedPosterior - assetsTotal};
+    }
+
+    XRPL_ASSERT(
+        abs(actualDelta) <= abs(delta),
+        "xrpl::clampToAssetsTotalScale : actual delta smaller or equal to calculated delta");
+
+    if (actualDelta <= beast::kZero)
+        return std::unexpected(tecPRECISION_LOSS);
+
+    return actualDelta;
 }
 
 [[nodiscard]] Number

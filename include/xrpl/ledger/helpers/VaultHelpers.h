@@ -10,6 +10,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 
 namespace xrpl {
@@ -45,30 +46,25 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
 
 /**
- * Returns the effective change to sfAssetsTotal after canonicalizing
- * `sfAssetsTotal + delta` under `mode`, as a non-negative magnitude.
- * `delta` is positive when crediting the vault and negative when debiting
- * it; only its sign is used to select the rounding direction. This is not
- * the same as simply rounding `delta`'s magnitude to sfAssetsTotal's
- * scale: both the before and after totals are canonicalized under `mode`
- * before subtracting, so the result also accounts for sfAssetsTotal
- * itself sitting mid-grid. The caller adds the returned magnitude to
- * sfAssetsTotal for credits, or subtracts it for debits, and applies it
- * the same way to any related field (for example sfAssetsAvailable) so
- * all rails stay in sync; the other fields' scale is at least as fine as
- * sfAssetsTotal's.
+ * Returns a non-negative magnitude to apply to sfAssetsTotal and the related
+ * rails, snapped to the scale of the post-transaction sfAssetsTotal — the same
+ * scale ValidVault uses. Credits take the Downward-rounded posterior total
+ * minus the current total so the vault cannot be credited more than `|delta|`
+ * even when the anterior total sits off that grid. Debits round `|delta|`
+ * Downward on the posterior scale. A zero result is `tecPRECISION_LOSS`.
+ *
+ * The caller adds the returned magnitude for credits or subtracts it for
+ * debits, and applies it to every related field so all rails stay in sync.
+ * A zero result is returned as `tecPRECISION_LOSS` so callers reject rather
+ * than moving shares without assets.
  *
  * @param vault The vault SLE.
- * @param delta The signed amount by which sfAssetsTotal will change; only
- *              its sign selects the rounding direction. The magnitude is
- *              what is quantized and returned.
- * @param mode The rounding mode to apply when quantizing to the
- *             sfAssetsTotal scale.
- *
- * @return The rounded magnitude, always non-negative.
+ * @param delta The requested signed change to sfAssetsTotal.
+ * @return The rounded magnitude, always non-negative, or `tecPRECISION_LOSS`
+ *         if the change is smaller than one ULP.
  */
-[[nodiscard]] STAmount
-clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta, Number::RoundingMode mode);
+[[nodiscard]] std::expected<STAmount, TER>
+clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta);
 
 /**
  * Controls whether to truncate shares instead of rounding.

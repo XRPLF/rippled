@@ -322,26 +322,16 @@ VaultClawback::assetsToClawback(
             }
         }
 
-        // Post-fixCleanup3_4_0: round the recovery to the sfAssetsTotal scale so all rails change
-        // by the same representable delta. sharesDestroyed is intentionally NOT re-derived here:
-        // the holder's shares are burned for their pre-clamp value, so any sub-ULP trimmed off
-        // stays in the vault for the remaining shareholders.
+        // Post-fixCleanup3_4_0: round the recovery down at the posterior sfAssetsTotal scale so all
+        // rails change by the same representable delta. sharesDestroyed is intentionally NOT
+        // re-derived here: the holder's shares are burned for their pre-clamp value, so any
+        // sub-ULP trimmed off stays in the vault for the remaining shareholders.
         if (ctx_.view().rules().enabled(fixCleanup3_4_0) && assetsRecovered > beast::kZero)
         {
-            assetsRecovered =
-                clampToAssetsTotalScale(vault, -assetsRecovered, Number::RoundingMode::Upward);
-            // Recovery collapsed to zero. Return tecPRECISION_LOSS rather than burning shares for
-            // no asset return.
-            if (assetsRecovered <= beast::kZero)
-                return std::unexpected(tecPRECISION_LOSS);
-            // clampToAssetsTotalScale canonicalizes both endpoints under RoundingMode::Upward
-            // before subtracting (see its docstring), so when sfAssetsTotal sits mid-grid the
-            // returned magnitude can exceed the pre-clamp value by up to one grid step, even
-            // though assetsRecovered was already clamped to *assetsAvailable above. Clamp again
-            // so the debit in doApply() can never drive assetsAvailable negative; sharesDestroyed
-            // is left as-is, consistent with the note above that it is not re-derived here.
-            if (assetsRecovered > *assetsAvailable)
-                assetsRecovered = *assetsAvailable;
+            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsRecovered);
+            if (!maybeClamped)
+                return std::unexpected(maybeClamped.error());
+            assetsRecovered = *maybeClamped;
         }
     }
     catch (std::overflow_error const&)
@@ -414,28 +404,14 @@ VaultClawback::doApply()
     if (sharesDestroyed == beast::kZero)
         return tecPRECISION_LOSS;
 
-    // Even a non-zero recovery can be too small to change the stored sfAssetsTotal or
-    // sfAssetsAvailable at STAmount's precision. Shares would still be burned, so ValidVault
-    // would fail after apply with "clawback must decrease vault balance"; reject here instead.
-    // On the issuer-clawback path this check is expected to be redundant once fixCleanup3_4_0
-    // is active, since assetsToClawback's own clampToAssetsTotalScale already snapped
-    // assetsRecovered to the grid under RoundingMode::Upward; however this check runs under the
-    // ambient rounding mode, so a boundary value could in principle still register as dust here.
-    // On the owner-burn path assetsRecovered is not put through that clamp at all, so this is the
-    // only guard against burning shares without moving the vault's stored balance. Genuinely
-    // reachable (or at least not provably otherwise); must return tecPRECISION_LOSS rather than
-    // assert, so keep this as a normal, testable branch rather than UNREACHABLE.
-    //
-    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught
-    // below. debitIsNonZeroDust converts assetsTotal/assetsAvailable to STAmount, which is
-    // exactly what a sufficiently abused sfScale can push out of STAmount's representable
-    // range.
+    // Number arithmetic can throw overflow_error when Scale and totals are large.
     if (view().rules().enabled(fixCleanup3_4_0))
     {
         try
         {
-            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered) ||
-                debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsRecovered))
+            // A non-zero recovery can be too small to change the stored sfAssetsTotal at
+            // STAmount's precision. Shares would still be burned, reject it instead.
+            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered))
             {
                 // LCOV_EXCL_START
                 JLOG(j_.debug())
@@ -463,8 +439,6 @@ VaultClawback::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // Debit both rails by the same delta so sfAssetsTotal and sfAssetsAvailable stay in step,
-    // as required by the ValidVault invariant.
     assetsTotal -= assetsRecovered;
     assetsAvailable -= assetsRecovered;
     view().update(vault);

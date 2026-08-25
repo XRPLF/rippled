@@ -479,7 +479,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
     }
 
     // Sub-ULP withdrawal from a ~1e8 vault; post-fix must return
-    // tecPRECISION_LOSS after the Upward clamp rounds the amount to zero.
+    // tecPRECISION_LOSS after the posterior-scale clamp rounds the amount to zero.
     void
     testWithdrawSubUlpRejected(FeatureBitset features)
     {

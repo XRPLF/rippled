@@ -893,22 +893,11 @@ private:
             }
         });
 
-        // Regression for a review finding on PR 8057: clampToAssetsTotalScale
-        // canonicalizes sfAssetsTotal under RoundingMode::Upward, and since
-        // sfAssetsTotal/sfAssetsAvailable are NUMBER fields (more precise
-        // than an STAmount's 16 significant digits), that canonicalization
-        // can *amplify* the magnitude when sfAssetsTotal sits mid-grid, e.g.
-        // T=10000000000000005, delta=6: round_up(T) - round_up(T - 6) ==
-        // 10000000000000010 - 9999999999999999 == 11 > 6. assetsToClawback
-        // had already clamped assetsRecovered to sfAssetsAvailable (== 6
-        // here) *before* that scale clamp runs, so without a re-check the
-        // amplified value (11) would flow into doApply()'s
-        // `assetsAvailable -= assetsRecovered`, driving assetsAvailable
-        // negative. Force this exact mid-grid state via `peek` (real deposit
-        // math can't reach a 17-significant-digit total) and confirm the
-        // clawback clamps back down to sfAssetsAvailable instead.
+        // The posterior total determines the invariant's comparison scale. Although
+        // T=10000000000000005 has a 10-asset ULP, T-6=9999999999999999 is exactly representable
+        // at the finer posterior scale, so the full recovery is valid.
         testCase(0, [&, this](Env& env, Data d) {
-            testcase("Scale clawback re-clamped after mid-grid amplification");
+            testcase("Scale clawback uses posterior scale across decade boundary");
 
             // depositor's balance is capped to 200 by the shared harness fixture.
             auto tx = d.vault.deposit(
@@ -931,10 +920,8 @@ private:
                 return true;
             });
 
-            // sfAmount absent means "clawback everything the holder has";
-            // the holder's 100 shares would convert to ~100 assets, clamped
-            // to sfAssetsAvailable (6) before the sfAssetsTotal scale clamp
-            // amplifies it to 11.
+            // sfAmount absent means "clawback everything the holder has"; the holder's 100 shares
+            // convert to ~100 assets and are first clamped to sfAssetsAvailable (6).
             // Deliberately read the vault before env.close(): the peek()
             // mutation above lives only in the open ledger (it bypasses the
             // normal transaction-apply path), so closing the ledger would
@@ -947,10 +934,140 @@ private:
 
             auto const sle = env.le(d.keylet);
             BEAST_EXPECT(sle != nullptr);
-            // Never negative: the fix re-clamps assetsRecovered to
-            // sfAssetsAvailable after the scale clamp amplifies it.
-            BEAST_EXPECT(sle->at(sfAssetsAvailable) == STAmount(d.asset, Number(0)));
-            BEAST_EXPECT(sle->at(sfAssetsTotal) == STAmount(d.asset, midGridTotal - available));
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == Number(0));
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == midGridTotal - available);
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(94));
+        });
+
+        // If the posterior total remains on the same 10-asset grid, a six-asset recovery is
+        // genuinely unrepresentable and must be rejected rather than burning shares for nothing.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback rejects amount below posterior scale");
+
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+
+            Number const midGridTotal{12345678901234567ll};
+            Number const available{6};
+            d.peek([&](SLE& vault, SLE& shares) -> bool {
+                vault[sfAssetsTotal] = midGridTotal;
+                vault[sfAssetsAvailable] = available;
+                shares[sfOutstandingAmount] = static_cast<std::uint64_t>(12345678901234567ull);
+                return true;
+            });
+
+            tx = d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tecPRECISION_LOSS));
+
+            auto const sle = env.le(d.keylet);
+            BEAST_EXPECT(sle != nullptr);
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == available);
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == midGridTotal);
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(100));
+        });
+
+        // The same posterior-scale rule applies to a recovery larger than the anterior ULP.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback preserves exact posterior amount");
+
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{15};
+            d.peek([&](SLE& vault, SLE& shares) -> bool {
+                vault[sfAssetsTotal] = midGridTotal;
+                vault[sfAssetsAvailable] = available;
+                shares[sfOutstandingAmount] = static_cast<std::uint64_t>(10000000000000005ull);
+                return true;
+            });
+
+            tx = d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tesSUCCESS));
+
+            auto const sle = env.le(d.keylet);
+            BEAST_EXPECT(sle != nullptr);
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == Number(0));
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == midGridTotal - available);
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(85));
+        });
+
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale deposit rejects amount below posterior scale");
+
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{100};
+            d.peek([&](SLE& vault, SLE& shares) -> bool {
+                vault[sfAssetsTotal] = midGridTotal;
+                vault[sfAssetsAvailable] = available;
+                shares[sfOutstandingAmount] = static_cast<std::uint64_t>(10000000000000005ull);
+                return true;
+            });
+
+            auto const assetsBefore = env.balance(d.depositor, d.assets);
+            tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(6))});
+            env(tx, Ter(tecPRECISION_LOSS));
+
+            auto const sle = env.le(d.keylet);
+            BEAST_EXPECT(sle != nullptr);
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == available);
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == midGridTotal);
+            BEAST_EXPECT(env.balance(d.depositor, d.assets) == assetsBefore);
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(100));
+        });
+
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale withdraw uses posterior scale across decade boundary");
+
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{100};
+            d.peek([&](SLE& vault, SLE& shares) -> bool {
+                vault[sfAssetsTotal] = midGridTotal;
+                vault[sfAssetsAvailable] = available;
+                shares[sfOutstandingAmount] = static_cast<std::uint64_t>(10000000000000005ull);
+                return true;
+            });
+
+            auto const assetsBefore = env.balance(d.depositor, d.assets);
+            tx = d.vault.withdraw(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.share, Number(15))});
+            env(tx, Ter(tesSUCCESS));
+
+            auto const sle = env.le(d.keylet);
+            BEAST_EXPECT(sle != nullptr);
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == Number(85));
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == midGridTotal - Number(15));
+            BEAST_EXPECT(
+                env.balance(d.depositor, d.assets) ==
+                STAmount(d.asset, assetsBefore.number() + Number(15)));
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(85));
         });
     }
 
