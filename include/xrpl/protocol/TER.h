@@ -128,6 +128,7 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
     temBAD_MPT,
+    temBAD_CIPHERTEXT,
 };
 
 //------------------------------------------------------------------------------
@@ -358,6 +359,8 @@ enum TECcodes : TERUnderlyingType {
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
+    // 198 reserved to match published codec numbering
+    tecBAD_PROOF = 199,
 };
 
 //------------------------------------------------------------------------------

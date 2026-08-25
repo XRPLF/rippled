@@ -140,7 +140,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTCanEscrow, lsfMPTCanEscrow)                                                                                                               \
         TF_FLAG(tfMPTCanTrade, lsfMPTCanTrade)                                                                                                                 \
         TF_FLAG(tfMPTCanTransfer, lsfMPTCanTransfer)                                                                                                           \
-        TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback),                                                                                                          \
+        TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback)                                                                                                           \
+        TF_FLAG(tfMPTCanHoldConfidentialBalance, lsfMPTCanHoldConfidentialBalance),                                                                            \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenAuthorize,                                                                                                                              \
@@ -349,10 +350,14 @@ inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTrans
 inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
 inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
 inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
+// SPEC INCONSISTENCY: xls-0096.md names an immutable-flag form; tree uses MutableFlags.
+inline constexpr FlagValue tmfMPTCannotEnableCanHoldConfidentialBalance =
+    lsmfMPTCannotEnableCanHoldConfidentialBalance;
 inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
     ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
       tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
-      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
+      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee |
+      tmfMPTCannotEnableCanHoldConfidentialBalance);
 
 // MPTokenIssuanceSet MutableFlags:
 // Set or Clear flags.
@@ -369,10 +374,13 @@ inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000100;
 inline constexpr FlagValue tmfMPTClearCanTransfer = 0x00000200;
 inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000400;
 inline constexpr FlagValue tmfMPTClearCanClawback = 0x00000800;
+// One-way enable; Updated XLS lists 0x40 which collides with tmfMPTSetCanTrade in this tree.
+inline constexpr FlagValue tmfMPTSetCanHoldConfidentialBalance = 0x00001000;
 inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask = ~(
     tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTSetRequireAuth | tmfMPTClearRequireAuth |
     tmfMPTSetCanEscrow | tmfMPTClearCanEscrow | tmfMPTSetCanTrade | tmfMPTClearCanTrade |
-    tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanClawback | tmfMPTClearCanClawback);
+    tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanClawback | tmfMPTClearCanClawback |
+    tmfMPTSetCanHoldConfidentialBalance);
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.

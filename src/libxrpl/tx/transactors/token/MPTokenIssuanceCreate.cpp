@@ -37,6 +37,13 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
+    auto const flags = ctx.tx.getFlags();
+    auto const mutableFlags = ctx.tx[~sfMutableFlags].value_or(0);
+    if (((flags & tfMPTCanHoldConfidentialBalance) != 0u ||
+         (mutableFlags & tmfMPTCannotEnableCanHoldConfidentialBalance) != 0u) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+        return false;
+
     return true;
 }
 
@@ -70,6 +77,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
             return temMALFORMED;
+
+        // Confidential MPTs are incompatible with a non-zero TransferFee.
+        if (fee > 0u && ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance))
+            return temBAD_TRANSFER_FEE;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])

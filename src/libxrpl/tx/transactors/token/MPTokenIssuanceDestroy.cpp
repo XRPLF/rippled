@@ -38,6 +38,10 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
     if ((*sleMPT)[~sfLockedAmount].value_or(0) != 0)
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
+    // Confidential outstanding amount must also be zero before deletion.
+    if ((*sleMPT)[sfConfidentialOutstandingAmount] != 0)
+        return tecHAS_OBLIGATIONS;
+
     return tesSUCCESS;
 }
 

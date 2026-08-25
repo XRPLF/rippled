@@ -735,6 +735,8 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfMPTokenMetadata, SoeOptional},
     {sfTransferFee, SoeOptional},
     {sfMutableFlags, SoeOptional},
+    {sfIssuerEncryptionKey, SoeOptional},
+    {sfAuditorEncryptionKey, SoeOptional},
 }))
 
 /** This transaction type authorizes a MPToken instance */
@@ -748,6 +750,93 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
     ({
     {sfMPTokenIssuanceID, SoeRequired},
     {sfHolder, SoeOptional},
+}))
+
+/** Convert public MPT balance into confidential form (XLS-0096) */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
+    Delegation::NotDelegable,
+    featureConfidentialTransfer,
+    NoPriv,
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfMPTAmount, SoeRequired},
+    {sfHolderEncryptionKey, SoeOptional},
+    {sfHolderEncryptedAmount, SoeRequired},
+    {sfIssuerEncryptedAmount, SoeRequired},
+    {sfAuditorEncryptedAmount, SoeOptional},
+    {sfBlindingFactor, SoeRequired},
+    {sfZKProof, SoeOptional},
+}))
+
+/** Merge confidential inbox into spending balance (XLS-0096) */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
+    Delegation::NotDelegable,
+    featureConfidentialTransfer,
+    NoPriv,
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+}))
+
+/** Convert confidential MPT balance back to public form (XLS-0096) */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTConvertBack.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT_BACK, 87, ConfidentialMPTConvertBack,
+    Delegation::NotDelegable,
+    featureConfidentialTransfer,
+    NoPriv,
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfMPTAmount, SoeRequired},
+    {sfHolderEncryptedAmount, SoeRequired},
+    {sfIssuerEncryptedAmount, SoeRequired},
+    {sfAuditorEncryptedAmount, SoeOptional},
+    {sfBlindingFactor, SoeRequired},
+    {sfZKProof, SoeRequired},
+    {sfBalanceCommitment, SoeRequired},
+}))
+
+/** Confidential transfer of MPT value between accounts (XLS-0096) */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_SEND, 88, ConfidentialMPTSend,
+    Delegation::Delegable,
+    featureConfidentialTransfer,
+    NoPriv,
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfDestination, SoeRequired},
+    {sfDestinationTag, SoeOptional},
+    {sfSenderEncryptedAmount, SoeRequired},
+    {sfDestinationEncryptedAmount, SoeRequired},
+    {sfIssuerEncryptedAmount, SoeRequired},
+    {sfAuditorEncryptedAmount, SoeOptional},
+    {sfZKProof, SoeRequired},
+    {sfAmountCommitment, SoeRequired},
+    {sfBalanceCommitment, SoeRequired},
+    {sfCredentialIDs, SoeOptional},
+}))
+
+/** Issuer clawback of a holder's confidential MPT balance (XLS-0096) */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTClawback.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
+    Delegation::Delegable,
+    featureConfidentialTransfer,
+    NoPriv,
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeRequired},
+    {sfMPTAmount, SoeRequired},
+    {sfZKProof, SoeRequired},
 }))
 
 /** This transaction type create an Credential instance */

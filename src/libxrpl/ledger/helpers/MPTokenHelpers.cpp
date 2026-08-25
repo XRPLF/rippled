@@ -172,6 +172,8 @@ authorizeMPToken(
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
+                (view.rules().enabled(featureConfidentialTransfer) &&
+                 sleMpt->isFieldPresent(sfHolderEncryptionKey)) ||
                 (view.rules().enabled(fixCleanup3_1_3) &&
                  (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
