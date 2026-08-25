@@ -7,10 +7,10 @@ This file provides guidance to AI coding agents (Claude Code, and other AGENTS.m
 Required on Linux/macOS: use the Nix devshell, which sets up the compiler, Conan, ccache, and (optionally) Rust automatically.
 
 ```bash
-nix develop # default shell (clang on macOS, gcc on Linux); also .#gcc, .#clang, .#gcc-plain, .#clang-plain, .#apple-clang
+nix develop
 ```
 
-For the manual build steps, CMake options, and protocol codegen commands, see [BUILD.md](./BUILD.md) (`## Steps`, `## Options`, `## Code generation`).
+For alternate devshell variants (specific compiler, no-compiler, coverage), see [docs/build/nix.md](./docs/build/nix.md). For the manual build steps, CMake options, and protocol codegen commands, see [BUILD.md](./BUILD.md) (`## Steps`, `## Options`, `## Code generation`).
 
 Rust crate tests (independent of the CMake build): `cargo test --manifest-path crates/Cargo.toml --workspace` (CI uses `cargo nextest`).
 
