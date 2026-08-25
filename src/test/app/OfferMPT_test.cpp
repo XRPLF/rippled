@@ -3681,26 +3681,26 @@ public:
         }
 
         {
-            // Companion to the transfer-rate overflow cases above. In this
-            // scenario the taker would sell TakerPays=MPT(~1.84e18) for
-            // TakerGets=XRP(1) against a same-magnitude poison offer,
-            // forcing BookStep::revImp()'s limitStepOut() to strictly reduce
-            // and overflow. Two layers of defense stop that from happening:
-            //   * OfferCreate::preflight rejects the taker's offer with
-            //     temBAD_OFFER, because getRate(TakerGets, TakerPays) == 0
-            //     (large MPT numerator over small XRP denominator overflows
-            //     the rate mantissa) -- an unrepresentable quality that
-            //     would rest in the quality-0 book directory and never
-            //     cross. This is the check exercised here.
-            //   * BookStep::forEachOffer's catch(std::overflow_error) is
-            //     the deeper safety net for overflows reached through other
-            //     paths (e.g. transfer-rate multiplication on a resting
-            //     offer). It is exercised by the other blocks in this test.
+            // Companion to the transfer-rate overflow cases above. The taker
+            // sells TakerPays=MPT(~1.84e18) for TakerGets=XRP(1) against a
+            // same-magnitude poison offer, forcing BookStep::revImp()'s
+            // limitStepOut() to strictly reduce and overflow.
             //
-            // Because preflight rejects the taker's offer outright, no
-            // crossing occurs: the poison offer remains on the book, the
-            // taker's offer is not placed, and the tem* rejection burns no
-            // fee and does not increment the taker's sequence.
+            // The taker's own quality is also unrepresentable here
+            // (getRate(TakerGets, TakerPays) == 0: a large MPT numerator over
+            // a small XRP denominator overflows the rate mantissa), but that
+            // no longer short-circuits the transaction -- crossing is
+            // attempted, and only a residual that would REST is stopped. So
+            // this exercises the deeper safety net:
+            // BookStep::forEachOffer's catch(std::overflow_error), which under
+            // featureMPTokensV2 removes the offending offer rather than
+            // propagating.
+            //
+            // Net effect: the poison offer is consumed off the book instead of
+            // being left to poison the next taker, nothing crosses, and the
+            // taker's own offer is not placed because its rate is
+            // unrepresentable -- so tecKILLED, which charges a fee and
+            // advances the sequence.
             Env env{*this, features};
             env.fund(XRP(10'000), issuer, taker);
             env.close();
@@ -3727,18 +3727,20 @@ public:
             auto const takerSeqBefore = env.seq(taker);
 
             auto const takerSeq = takerSeqBefore;
-            env(offer(taker, token(funded), XRP(1)), Ter(temBAD_OFFER));
+            auto const fee = env.current()->fees().base;
+            env(offer(taker, token(funded), XRP(1)), Ter(tecKILLED));
             env.close();
 
-            // Preflight rejection: poison offer untouched, taker's offer not
-            // placed, no balance/sequence change.
-            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+            // The overflowing poison offer is removed by BookStep. Nothing
+            // crossed, so no asset changes hands and the taker's offer is not
+            // placed; the fee is burned and the sequence advances.
+            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
             BEAST_EXPECT(
                 env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) == nullptr);
             BEAST_EXPECT(env.balance(issuer, XRP) == issuerXRPBefore);
-            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore);
+            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - fee);
             BEAST_EXPECT(env.balance(taker, token) == takerMPTBefore);
-            BEAST_EXPECT(env.seq(taker) == takerSeqBefore);
+            BEAST_EXPECT(env.seq(taker) == takerSeqBefore + 1);
         }
 
         {
@@ -5510,9 +5512,10 @@ public:
     void
     testMPTOfferZeroRate(FeatureBitset features)
     {
-        // An MPT offer whose quality is not representable must be rejected in
-        // preflight with temBAD_OFFER -- on both the buy and sell sides, with
-        // or without a TickSize on the IOU issuer.
+        // An MPT offer whose quality is not representable must not REST -- on
+        // both the buy and sell sides, with or without a TickSize on the IOU
+        // issuer. Here nothing crosses it, so the whole offer is the remainder
+        // and the result is tecKILLED with nothing placed.
         //
         // getRate(TakerGets, TakerPays) returns 0 when the rate overflows: a
         // large MPT TakerPays (XLS-0082 allows up to 2^63-1) over a small IOU
@@ -5523,6 +5526,9 @@ public:
         // drive the tick-rounding path in applyGuts to divide by a zero rate,
         // throwing and surfacing as tefEXCEPTION. A normally-priced offer in the
         // same market is unaffected.
+        //
+        // See testMPTOfferZeroRateCrossable for the other half of the
+        // behavior: an unrepresentable quality that CROSSES is not rejected.
         testcase("MPT Offer Zero Rate");
 
         using namespace jtx;
@@ -5558,22 +5564,23 @@ public:
                 {.env = env, .issuer = gw, .holders = {alice}, .maxAmt = kMaxMpTokenAmount});
 
             // Buy side: TakerPays = large MPT, TakerGets = small IOU.
-            // getRate() overflows to 0 -> rejected, no offer placed.
+            // getRate() overflows to 0 and nothing crosses -> killed, no
+            // offer placed and no reserve consumed.
             BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) == 0);
-            env(offer(alice, mpt(kBigMpt), usd(1)), Ter(temBAD_OFFER));
+            env(offer(alice, mpt(kBigMpt), usd(1)), Ter(tecKILLED));
             env.close();
             BEAST_EXPECT(offersOnAccount(env, alice).empty());
 
-            // Sell side (tfSell): preflight rejects regardless of the flag,
-            // since the rate is computed from the raw amounts either way.
+            // Sell side (tfSell): killed regardless of the flag, since the
+            // rate is computed from the raw amounts either way.
             BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) == 0);
-            env(offer(alice, mpt(kBigMpt), usd(1), tfSell), Ter(temBAD_OFFER));
+            env(offer(alice, mpt(kBigMpt), usd(1), tfSell), Ter(tecKILLED));
             env.close();
             BEAST_EXPECT(offersOnAccount(env, alice).empty());
 
             // Control: a normally-priced offer in the same market still
-            // places, proving the check does not over-reject (and that the
-            // tick-size rounding path still works when withTickSize is set).
+            // places (and the tick-size rounding path still works when
+            // withTickSize is set).
             env(offer(alice, mpt(10'000'000), usd(30)), Ter(tesSUCCESS));
             env.close();
             BEAST_EXPECT(offersOnAccount(env, alice).size() == 1);
@@ -5582,7 +5589,8 @@ public:
         // Without a TickSize: previously placed as a dead, never-crossable
         // quality-0 entry that still consumed reserve.
         runScenario(/*withTickSize=*/false);
-        // With a TickSize: previously threw and surfaced as tefEXCEPTION.
+        // With a TickSize: previously threw and surfaced as tefEXCEPTION. The
+        // rounding is now skipped when the rate is unrepresentable.
         runScenario(/*withTickSize=*/true);
     }
 
@@ -5597,8 +5605,8 @@ public:
         // rests in the quality-0 book directory (whose index == getBookBase),
         // which BookTip's strict successor scan never returns -- so it can
         // never be crossed, even by a willing, better-priced counterparty.
-        // With featureMPTokensV2 the same offer is rejected in preflight with
-        // temBAD_OFFER. (Unverified in this environment -- needs a real run.)
+        // With featureMPTokensV2 the same offer crosses nothing and is not
+        // placed, so it is killed.
         testcase("Zero Rate XRP/IOU Offer");
 
         using namespace jtx;
@@ -5646,14 +5654,66 @@ public:
             BEAST_EXPECT(offersOnAccount(env, bob).size() == 1);
         }
 
-        // featureMPTokensV2 enabled: rejected in preflight, nothing placed.
+        // featureMPTokensV2 disabled, with a TickSize on the IOU issuer: the
+        // tick-rounding path divides by the zero rate and throws, surfacing as
+        // tefEXCEPTION. Legacy behavior, and it must stay that way -- the
+        // guard that skips the rounding is gated on the amendment, since
+        // changing this without a gate would fork a pre-amendment ledger.
+        {
+            Env env{*this, features - featureMPTokensV2};
+            setup(env);
+
+            auto txn = noop(gw);
+            txn[sfTickSize.fieldName] = 5;
+            env(txn);
+            env.close();
+            BEAST_EXPECT((*env.le(gw))[sfTickSize] == 5);
+
+            BEAST_EXPECT(getRate(XRP(1'000), tinyUsd) == 0);
+            env(offer(alice, tinyUsd, XRP(1'000)), Ter(tefEXCEPTION));
+            env.close();
+            BEAST_EXPECT(offersOnAccount(env, alice).empty());
+        }
+
+        // featureMPTokensV2 enabled: nothing crosses, so the remainder is the
+        // whole offer and it is killed rather than placed.
         {
             Env env{*this, features};
             setup(env);
 
             BEAST_EXPECT(getRate(XRP(1000), tinyUsd) == 0);
-            env(offer(alice, tinyUsd, XRP(1000)), Ter(temBAD_OFFER));
+            env(offer(alice, tinyUsd, XRP(1000)), Ter(tecKILLED));
             env.close();
+            BEAST_EXPECT(offersOnAccount(env, alice).empty());
+        }
+
+        // featureMPTokensV2 enabled, with a counterparty already on the book:
+        // the same unrepresentable quality now CROSSES. This is the reviewer's
+        // objection with no MPT anywhere in it -- the old preflight check
+        // rejected this outright even though it fills completely and rests
+        // nothing.
+        {
+            Env env{*this, features};
+            setup(env);
+
+            // Bob rests first: he gives usd(10) to receive XRP(1'000).
+            auto const bobSeq = env.seq(bob);
+            env(offer(bob, XRP(1'000), usd(10)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
+
+            // Alice offers up to XRP(1'000) for a dust amount of USD -- rate
+            // 0, at a price bob's offer improves on enormously.
+            BEAST_EXPECT(getRate(XRP(1'000), tinyUsd) == 0);
+            env(offer(alice, tinyUsd, XRP(1'000)), Ter(tesSUCCESS));
+            env.close();
+
+            // Alice asked for dust and got exactly that, so her offer is
+            // fully satisfied and never reaches the book. Bob's offer is
+            // barely touched and stays. The old preflight check rejected this
+            // transaction outright, with no MPT involved anywhere.
+            BEAST_EXPECT(env.balance(alice, usd).value() == tinyUsd);
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
             BEAST_EXPECT(offersOnAccount(env, alice).empty());
         }
     }
@@ -6080,6 +6140,260 @@ public:
     }
 
     void
+    testMPTOfferZeroRateCrossable(FeatureBitset features)
+    {
+        // An unrepresentable quality does not imply an offer that cannot
+        // function. "Can never be crossed" describes an offer that RESTS:
+        // crossing happens in applyGuts, before any residual is placed in the
+        // book, so an offer whose rate is unrepresentable can still consume a
+        // resting offer in full and never reach the quality-0 directory.
+        //
+        // The two sides of one trade do not have the same rate
+        // representability: getRate(TakerGets, TakerPays) overflows to 0 for
+        // the side paying a large MPT, but not for the side paying XRP. So a
+        // preflight rejection keyed on getRate() == 0 admits the resting half
+        // of a trade and rejects the crossing half.
+        testcase("MPT Offer Zero Rate - crossable quality");
+
+        using namespace jtx;
+
+        // Above the rate-overflow threshold: divide() scales the XRP
+        // denominator up to a 1e15 mantissa and then evaluates
+        // muldiv(mptMantissa, 1e17, denMantissa), which exceeds 2^64 -- so
+        // getRate() takes its catch-all and returns 0.
+        auto const kBigMpt = 200'000'000'000'000'000LL;
+
+        // Both scenarios are the same trade against the same resting offer,
+        // and both execute identically (at bob's price). They differ only in
+        // the price alice quotes, and therefore only in whether the rate on
+        // HER side of the book is representable.
+        auto runScenario = [&](STAmount const& aliceQuote, bool rateRepresentable) {
+            Env env{*this, features};
+            auto const gw = Account{"gateway"};
+            auto const alice = Account{"alice"};
+            auto const bob = Account{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPT const mpt = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = kMaxMpTokenAmount});
+
+            env(pay(gw, bob, mpt(kBigMpt)));
+            env.close();
+
+            // Bob rests the sell side: TakerPays = XRP(1), TakerGets =
+            // kBigMpt. getRate(TakerGets, TakerPays) is representable in this
+            // direction, so preflight admits it and it rests at a normal
+            // quality.
+            BEAST_EXPECT(getRate(mpt(kBigMpt), XRP(1)) != 0);
+            auto const bobSeq = env.seq(bob);
+            env(offer(bob, XRP(1), mpt(kBigMpt)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
+
+            // Alice takes it from the other side: TakerPays = kBigMpt,
+            // TakerGets = her quote.
+            BEAST_EXPECT((getRate(aliceQuote, mpt(kBigMpt)) != 0) == rateRepresentable);
+
+            auto const bobXrpBefore = env.balance(bob).value().xrp();
+            env(offer(alice, mpt(kBigMpt), aliceQuote), Ter(tesSUCCESS));
+            env.close();
+
+            // Alice's offer crosses bob's in full, so it never rests: nothing
+            // ends up in the quality-0 directory, no reserve is stranded, and
+            // the tick-rounding divide is never reached with a zero rate.
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(kBigMpt));
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) == nullptr);
+            BEAST_EXPECT(offersOnAccount(env, alice).empty());
+            // And it executes at bob's 1 XRP, whatever alice quoted.
+            BEAST_EXPECT(env.balance(bob).value().xrp() == bobXrpBefore + XRP(1).value().xrp());
+        };
+
+        // Alice quotes bob's exact price. getRate() overflows to 0 on her
+        // side, yet the offer crosses in full and never rests.
+        runScenario(XRP(1), /*rateRepresentable=*/false);
+        // Alice quotes a price worse for herself, which halves the rate into
+        // representable range. Same execution as above: she pays 1 XRP for
+        // kBigMpt. The two cases are therefore numerically, not economically,
+        // different.
+        runScenario(XRP(2), /*rateRepresentable=*/true);
+    }
+
+    void
+    testMPTOfferZeroRatePartialCross(FeatureBitset features)
+    {
+        // The case between the two extremes: an unrepresentable quality that
+        // crosses PARTIALLY. The crossed portion must execute -- it never
+        // touches the book -- while the residual must not be placed, since it
+        // would rest in the quality-0 directory holding a reserve it could
+        // never earn back by being crossed.
+        testcase("MPT Offer Zero Rate - partial cross");
+
+        using namespace jtx;
+
+        auto const kBigMpt = 200'000'000'000'000'000LL;
+
+        Env env{*this, features};
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+
+        MPT const mpt = MPTTester(
+            {.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = kMaxMpTokenAmount});
+
+        env(pay(gw, bob, mpt(kBigMpt)));
+        env.close();
+
+        // Bob rests a sell of kBigMpt for XRP(1) -- representable on his side.
+        auto const bobSeq = env.seq(bob);
+        env(offer(bob, XRP(1), mpt(kBigMpt)), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
+
+        // Alice asks for twice what bob has, at the same price. Her rate is
+        // unrepresentable: mantissa ratio 4e17 / 2e15 = 200 > ~184.47.
+        BEAST_EXPECT(getRate(XRP(2), mpt(2 * kBigMpt)) == 0);
+
+        auto const aliceXrpBefore = env.balance(alice).value().xrp();
+        auto const fee = env.current()->fees().base;
+
+        env(offer(alice, mpt(2 * kBigMpt), XRP(2)), Ter(tesSUCCESS));
+        env.close();
+
+        // The half that crossed executed at bob's price...
+        BEAST_EXPECT(env.balance(alice, mpt) == mpt(kBigMpt));
+        BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) == nullptr);
+        BEAST_EXPECT(
+            env.balance(alice).value().xrp() == aliceXrpBefore - XRP(1).value().xrp() - fee);
+        // ...and the half that did not is dropped rather than placed, so no
+        // offer rests and no reserve is consumed.
+        BEAST_EXPECT(offersOnAccount(env, alice).empty());
+        BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 1);  // the MPToken only
+    }
+
+    void
+    testMPTOfferZeroRateTickSizeCross(FeatureBitset features)
+    {
+        // TickSize plus an unrepresentable quality plus a counterparty on the
+        // book. The tick-rounding path is skipped for a zero rate, since it
+        // would divide by that rate and throw, so the offer crosses at its raw
+        // price. Every other TickSize case here faces an empty book, making
+        // this the only coverage that the skip leaves crossing intact --
+        // without it this transaction is tefEXCEPTION.
+        testcase("MPT Offer Zero Rate - tick size with crossing");
+
+        using namespace jtx;
+
+        auto const kBigMpt = 5'000'000'000'000'000'000LL;
+
+        Env env{*this, features};
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+
+        auto const usd = gw["USD"];
+        env(trust(alice, usd(1'000)));
+        env(pay(gw, alice, usd(100)));
+        env.close();
+
+        auto txn = noop(gw);
+        txn[sfTickSize.fieldName] = 5;
+        env(txn);
+        env.close();
+        BEAST_EXPECT((*env.le(gw))[sfTickSize] == 5);
+
+        MPT const mpt = MPTTester(
+            {.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = kMaxMpTokenAmount});
+        env(pay(gw, bob, mpt(kBigMpt)));
+        env.close();
+
+        // Bob rests the sell side; representable in that direction.
+        BEAST_EXPECT(getRate(mpt(kBigMpt), usd(1)) != 0);
+        auto const bobSeq = env.seq(bob);
+        env(offer(bob, usd(1), mpt(kBigMpt)), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
+
+        // Alice takes it from the unrepresentable side, with the tick size in
+        // force on her TakerGets.
+        BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) == 0);
+        env(offer(alice, mpt(kBigMpt), usd(1)), Ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(env.balance(alice, mpt) == mpt(kBigMpt));
+        BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) == nullptr);
+        BEAST_EXPECT(offersOnAccount(env, alice).empty());
+    }
+
+    void
+    testMPTOfferZeroRateFlags(FeatureBitset features)
+    {
+        // A zero rate must not change what tfFillOrKill and tfImmediateOrCancel
+        // do. Both are handled above the unrepresentable-quality guard, but the
+        // ordering is not observable and no test can pin it: the guard returns
+        // the same pair either flag would. Immediate-or-cancel matches it by
+        // construction, and fill-or-kill disables partial payment
+        // (OfferCreate.cpp: flowCross is passed !tfFillOrKill), so a
+        // not-fully-fillable offer leaves crossed == false and both paths give
+        // {tecKILLED, false}. What this does cover is flags combined with an
+        // unrepresentable quality, which nothing else exercises.
+        testcase("MPT Offer Zero Rate - IOC and FoK");
+
+        using namespace jtx;
+
+        auto const kBigMpt = 200'000'000'000'000'000LL;
+
+        auto const runScenario = [&](std::uint32_t flags, TER expected) {
+            Env env{*this, features};
+            auto const gw = Account{"gateway"};
+            auto const alice = Account{"alice"};
+            auto const bob = Account{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPT const mpt = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = kMaxMpTokenAmount});
+            env(pay(gw, bob, mpt(kBigMpt)));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            env(offer(bob, XRP(1), mpt(kBigMpt)), Ter(tesSUCCESS));
+            env.close();
+
+            // Asking for twice what bob has forces a partial cross, so the
+            // flag handling -- not the fully-crossed early return -- decides.
+            BEAST_EXPECT(getRate(XRP(2), mpt(2 * kBigMpt)) == 0);
+            env(offer(alice, mpt(2 * kBigMpt), XRP(2), flags), Ter(expected));
+            env.close();
+
+            auto const bobOfferLive =
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr;
+            if (isTesSuccess(expected))
+            {
+                // Immediate-or-cancel: the crossed part is kept, the rest is
+                // cancelled -- the same shape the guard would produce.
+                BEAST_EXPECT(env.balance(alice, mpt) == mpt(kBigMpt));
+                BEAST_EXPECT(!bobOfferLive);
+            }
+            else
+            {
+                // Fill-or-kill: the offer is not fully fillable, so nothing
+                // crosses at all and bob's offer survives untouched.
+                BEAST_EXPECT(env.balance(alice, mpt) == mpt(0));
+                BEAST_EXPECT(bobOfferLive);
+            }
+            BEAST_EXPECT(offersOnAccount(env, alice).empty());
+        };
+
+        runScenario(tfImmediateOrCancel, tesSUCCESS);
+        runScenario(tfFillOrKill, tecKILLED);
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         testCanceledOffer(features);
@@ -6140,6 +6454,10 @@ public:
         testFillOrKill(features);
         testTickSize(features);
         testMPTOfferZeroRate(features);
+        testMPTOfferZeroRateCrossable(features);
+        testMPTOfferZeroRatePartialCross(features);
+        testMPTOfferZeroRateTickSizeCross(features);
+        testMPTOfferZeroRateFlags(features);
         testZeroRateXrpIouOffer(features);
         testBookOffersMPTFunding(features);
         testAutoCreateReserve(features);

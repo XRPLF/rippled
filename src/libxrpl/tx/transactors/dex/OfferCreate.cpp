@@ -166,25 +166,6 @@ OfferCreate::preflight(PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    // Reject an offer whose quality is not representable. getRate() returns 0
-    // when the rate overflows (a large MPT amount -- XLS-0082 allows up to
-    // 2^63-1 -- over a small IOU) and when it underflows ("too good", reachable
-    // for XRP/IOU and IOU/IOU at extreme magnitude ratios). A rate-0 offer
-    // cannot function: it would rest in the quality-0 book directory, whose
-    // index equals getBookBase(book). BookTip starts its scan at getBookBase
-    // and asks succ() for keys strictly greater (an open interval), so the
-    // quality-0 directory is never returned -- the offer can never be crossed,
-    // yet it still consumes the owner's reserve. Rejecting it also prevents the
-    // tick-size rounding path in applyGuts from dividing by a zero rate (which
-    // would throw and surface as tefEXCEPTION). Applies to all asset types,
-    // gated on featureMPTokensV2 so that pre-amendment book behavior (such
-    // offers placed but inert) is preserved for consensus.
-    if (ctx.rules.enabled(featureMPTokensV2) && getRate(saTakerGets, saTakerPays) == 0)
-    {
-        JLOG(j.debug()) << "Malformed offer: unrepresentable quality";
-        return temBAD_OFFER;
-    }
-
     return tesSUCCESS;
 }
 
@@ -691,6 +672,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     bool crossed = false;
+    bool const mptV2 = ctx_.view().rules().enabled(featureMPTokensV2);
 
     if (isTesSuccess(result))
     {
@@ -713,10 +695,13 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (sle && sle->isFieldPresent(sfTickSize))
                 uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
         }
-        if (uTickSize < Quality::kMaxTickSize)
+        // Quality's ctor is the same getRate() call that produced uRate, and
+        // round() maps zero to zero, so an unrepresentable quality would make
+        // divide() below throw (tefEXCEPTION). Skip the rounding instead: the
+        // offer still crosses, and any residual is stopped before placement.
+        bool const unrepresentableRate = mptV2 && uRate == 0;
+        if (uTickSize < Quality::kMaxTickSize && !unrepresentableRate)
         {
-            // A zero rate is rejected in preflight (unrepresentable quality),
-            // so it cannot reach here and divide() below is safe.
             auto const rate = Quality{saTakerGets, saTakerPays}.round(uTickSize).rate();
 
             // We round the side that's not exact,
@@ -859,6 +844,20 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             // change is here: https://github.com/XRPLF/rippled/issues/4115
             return {tecKILLED, false};
         }
+        return {tesSUCCESS, true};
+    }
+
+    // The remainder rests at uRate, the original pre-crossing rate. A zero
+    // rate (quality not representable) puts it in the directory whose index
+    // equals getBookBase(book), and BookTip scans keys strictly greater, so it
+    // could never be crossed while holding the owner's reserve. Don't place
+    // it; anything that crossed is kept, and a fully crossed offer has already
+    // returned above. Gated to preserve pre-amendment behavior.
+    if (mptV2 && uRate == 0)
+    {
+        JLOG(j_.debug()) << "Unrepresentable quality: remainder not placed";
+        if (!crossed)
+            return {tecKILLED, false};
         return {tesSUCCESS, true};
     }
 
