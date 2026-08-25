@@ -234,6 +234,17 @@ constexpr std::size_t kMaxMpTokenMetadataLength = 1024;
 constexpr std::uint64_t kMaxMpTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
 static_assert(Number::kMaxRep >= kMaxMpTokenAmount);
 
+/** Confidential MPT (XLS-0096) field sizes. Full EC-ElGamal ciphertexts are 66 bytes. */
+constexpr std::size_t kConfidentialElGamalCiphertextLength = 66;
+constexpr std::size_t kConfidentialElGamalPubKeyLength = 33;
+constexpr std::size_t kConfidentialCommitmentLength = 33;
+constexpr std::size_t kConfidentialSchnorrProofLength = 64;
+constexpr std::size_t kConfidentialSendProofLength = 946;
+constexpr std::size_t kConfidentialConvertBackProofLength = 816;
+constexpr std::size_t kConfidentialClawbackProofLength = 64;
+/** Fee multiplier applied to confidential MPT transactions. */
+constexpr std::uint32_t kConfidentialTransferFeeMultiplier = 10;
+
 /** The maximum length of Data payload */
 constexpr std::size_t kMaxDataPayloadLength = 256;
 

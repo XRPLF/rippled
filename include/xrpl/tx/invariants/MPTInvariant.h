@@ -5,6 +5,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
 #include <memory>
@@ -54,6 +55,7 @@ class ValidMPTPayment
     struct MPTData
     {
         std::array<std::int64_t, 2> outstanding{};
+        std::array<std::int64_t, 2> confidential{};
         // sum (MPT after - MPT before)
         std::int64_t mptAmount{0};
     };
@@ -107,6 +109,20 @@ private:
         MPTID const& mptid,
         AccountID const& holder,
         bool requireAuth) const;
+};
+
+/** Verify confidential MPT field and accounting consistency. */
+class ValidConfidentialMPT
+{
+    bool invalid_{false};
+    std::vector<uint192> confidentialHoldings_;
+
+public:
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 }  // namespace xrpl

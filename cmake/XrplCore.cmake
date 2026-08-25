@@ -187,10 +187,13 @@ target_link_libraries(
         xrpl.libxrpl.server
         xrpl.libxrpl.shamap
         xrpl.libxrpl.conditions
+        xrpl.libxrpl.crypto
 )
 
 add_module(xrpl tx)
-target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
+target_link_libraries(
+    xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger xrpl.libxrpl.crypto
+)
 
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)

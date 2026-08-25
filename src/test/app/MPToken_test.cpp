@@ -7744,6 +7744,103 @@ class MPToken_test : public beast::unit_test::Suite
         BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, alice, carol) == tecNO_PERMISSION);
     }
 
+    void
+    testConfidentialIssuanceLifecycle(FeatureBitset features)
+    {
+        testcase("confidential MPT issuance lifecycle");
+
+        using namespace test::jtx;
+        Account const alice("alice");
+
+        // 33-byte compressed pubkey placeholder (length-checked only here)
+        std::string const issuerKey(33, '\x02');
+        std::string const auditorKey(33, '\x03');
+        std::string const shortKey(32, '\x02');
+
+        // Confidential flags require featureConfidentialTransfer
+        {
+            Env env{*this, features - featureConfidentialTransfer};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create(
+                {.ownerCount = 0, .flags = tfMPTCanHoldConfidentialBalance, .err = temDISABLED});
+            mptAlice.create(
+                {.ownerCount = 0,
+                 .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
+                 .err = temDISABLED});
+        }
+
+        // Create with confidential flag; reject transfer fee combo
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create(
+                {.transferFee = 100,
+                 .ownerCount = 0,
+                 .flags = tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer,
+                 .err = temBAD_TRANSFER_FEE});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanHoldConfidentialBalance});
+            BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanHoldConfidentialBalance));
+        }
+
+        // Set: enable + keys; auditor requires issuer; bad key length
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags = tmfMPTCanMutateTransferFee});
+
+            mptAlice.set({.account = alice, .auditorEncryptionKey = auditorKey, .err = temMALFORMED});
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                 .issuerEncryptionKey = shortKey,
+                 .err = temMALFORMED});
+
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                 .issuerEncryptionKey = issuerKey,
+                 .auditorEncryptionKey = auditorKey});
+            BEAST_EXPECT(mptAlice.checkFlags(
+                lsfMPTCanTransfer | lsfMPTCanHoldConfidentialBalance));
+
+            auto const sle = env.le(keylet::mptIssuance(mptAlice.issuanceID()));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->isFieldPresent(sfIssuerEncryptionKey));
+            BEAST_EXPECT(sle->isFieldPresent(sfAuditorEncryptionKey));
+            BEAST_EXPECT((*sle)[sfConfidentialOutstandingAmount] == 0);
+
+            // Keys cannot be replaced
+            mptAlice.set(
+                {.account = alice, .issuerEncryptionKey = issuerKey, .err = tecNO_PERMISSION});
+
+            // Transfer fee incompatible once confidential enabled
+            mptAlice.set({.account = alice, .transferFee = 100, .err = tecNO_PERMISSION});
+        }
+
+        // CannotEnable blocks later enable
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create(
+                {.ownerCount = 1, .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance});
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                 .err = tecNO_PERMISSION});
+        }
+
+        // Destroy succeeds when COA is zero (default)
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanHoldConfidentialBalance});
+            mptAlice.destroy({.ownerCount = 0});
+        }
+    }
+
 public:
     void
     run() override
@@ -7832,6 +7929,9 @@ public:
         testMutateCanTransfer(all);
         testMutateCanTransfer(all - featureMPTokensV2);
         testMutateCanClawback(all);
+
+        // Confidential MPT issuance lifecycle (XLS-0096 protocol surface)
+        testConfidentialIssuanceLifecycle(all);
 
         // Test offer crossing
         testOfferCrossing(all);

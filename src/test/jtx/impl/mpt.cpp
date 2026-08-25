@@ -385,6 +385,10 @@ MPTTester::setJV(MPTSet const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
+    if (arg.issuerEncryptionKey)
+        jv[sfIssuerEncryptionKey] = strHex(*arg.issuerEncryptionKey);
+    if (arg.auditorEncryptionKey)
+        jv[sfAuditorEncryptionKey] = strHex(*arg.auditorEncryptionKey);
     jv[sfTransactionType] = jss::MPTokenIssuanceSet;
 
     return jv;
@@ -402,9 +406,13 @@ MPTTester::set(MPTSet const& arg)
          .mutableFlags = arg.mutableFlags,
          .transferFee = arg.transferFee,
          .metadata = arg.metadata,
+         .issuerEncryptionKey = arg.issuerEncryptionKey,
+         .auditorEncryptionKey = arg.auditorEncryptionKey,
          .delegate = arg.delegate,
          .domainID = arg.domainID});
-    if (submit(arg, jv) == tesSUCCESS && ((arg.flags.value_or(0) != 0u) || arg.mutableFlags))
+    if (submit(arg, jv) == tesSUCCESS &&
+        ((arg.flags.value_or(0) != 0u) || arg.mutableFlags || arg.issuerEncryptionKey ||
+         arg.auditorEncryptionKey))
     {
         auto require = [&](std::optional<Account> const& holder, bool unchanged) {
             auto flags = getFlags(holder);
@@ -476,6 +484,11 @@ MPTTester::set(MPTSet const& arg)
                     else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
                     {
                         flags &= ~lsfMPTCanTransfer;
+                    }
+
+                    if (*arg.mutableFlags & tmfMPTSetCanHoldConfidentialBalance)
+                    {
+                        flags |= lsfMPTCanHoldConfidentialBalance;
                     }
                 }
             }

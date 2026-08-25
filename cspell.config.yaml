@@ -72,6 +72,17 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - ElGamal
+  - ConfidentialMPTClawback
+  - ConfidentialMPTSend
+  - ConfidentialMPTMergeInbox
+  - ConfidentialMPTConvertBack
+  - ConfidentialMPTConvert
+  - ConfidentialTransfer
+  - ConfidentialOutstandingAmount
+  - ConfidentialBalanceVersion
+  - ConfidentialBalanceSpending
+  - ConfidentialBalanceInbox
   - cmaketoolchain
   - coeffs
   - coldwallet

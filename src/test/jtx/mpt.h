@@ -153,6 +153,8 @@ struct MPTSet
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;
+    std::optional<std::string> issuerEncryptionKey = std::nullopt;
+    std::optional<std::string> auditorEncryptionKey = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
