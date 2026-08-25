@@ -43,8 +43,6 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
     if (!sleMpt->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleMpt->isFieldPresent(sfConfidentialBalanceSpending))
         return tecNO_PERMISSION;
-    if (sleIssuance->isFlag(lsfMPTRequireAuth) && !sleMpt->isFlag(lsfMPTAuthorized))
-        return tecNO_AUTH;
     if (isFrozen(ctx.view, account, MPTIssue{issuanceID}))
         return tecLOCKED;
     return tesSUCCESS;

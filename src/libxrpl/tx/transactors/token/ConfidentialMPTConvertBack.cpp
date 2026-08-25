@@ -82,8 +82,8 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if ((*sleMpt)[sfMPTAmount] > kMaxMpTokenAmount - amount)
         return tecPATH_DRY;
 
-    if (sleIssuance->isFieldPresent(sfAuditorEncryptionKey) &&
-        !ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
+    if (sleIssuance->isFieldPresent(sfAuditorEncryptionKey) !=
+        ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
         return tecNO_PERMISSION;
 
     if (isFrozen(ctx.view, account, MPTIssue{issuanceID}))
