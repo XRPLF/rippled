@@ -47,7 +47,7 @@ jobs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read nix image tag
         id: tag
@@ -76,10 +76,10 @@ jobs:
     container: ${{ !matrix.nix_develop && format('ghcr.io/xrplf/xrpld/nix-ubuntu:{0}', needs.linux-image-tag.outputs.tag) || null }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@e4b6449d55a61c002d7c3fdfa6c20f721ede0606
+        uses: XRPLF/actions/prepare-runner@7bf7ceca5932114abdd0d43493c3c30c5a654e13
         with:
           enable_ccache: false
 
