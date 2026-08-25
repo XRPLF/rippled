@@ -156,7 +156,7 @@ ConfidentialMPTConvertBack::doApply()
     if (!parseKey(ctx_.tx[sfBalanceCommitment], pub.balanceCommitment))
         return tecBAD_PROOF;
 
-    auto const version = (*sleMpt)[~sfConfidentialBalanceVersion].value_or(0);
+    auto const version = (*sleMpt)[~sfConfidentialBalanceVersion].valueOr(0);
     auto const ctxId = confidential::transactionContextIDConvertBack(
         static_cast<std::uint16_t>(ctx_.tx.getTxnType()),
         Slice(account.data(), account.size()),

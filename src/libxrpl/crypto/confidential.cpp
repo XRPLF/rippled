@@ -293,7 +293,18 @@ pointCombineImpl(
     std::size_t n,
     secp256k1_pubkey& out) noexcept
 {
-    return secp256k1_ec_pubkey_combine(ctx(), &out, ins, n) == 1;
+    std::vector<secp256k1_pubkey> copies(n);
+    std::vector<secp256k1_pubkey const*> ptrs(n);
+    for (std::size_t i = 0; i < n; ++i)
+    {
+        copies[i] = *ins[i];
+        ptrs[i] = &copies[i];
+    }
+    secp256k1_pubkey r{};
+    if (secp256k1_ec_pubkey_combine(ctx(), &r, ptrs.data(), n) != 1)
+        return false;
+    out = r;
+    return true;
 }
 
 bool

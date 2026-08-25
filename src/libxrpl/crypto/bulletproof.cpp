@@ -206,8 +206,15 @@ mulPoint(secp256k1_pubkey const& p, Scalar const& k, secp256k1_pubkey& out)
 bool
 addPk(secp256k1_pubkey const& a, secp256k1_pubkey const& b, secp256k1_pubkey& out)
 {
-    secp256k1_pubkey const* ins[2] = {&a, &b};
-    return secp256k1_ec_pubkey_combine(bpCtx(), &out, ins, 2) == 1;
+    // secp256k1_ec_pubkey_combine memsets the output first; inputs must not alias it.
+    secp256k1_pubkey aa = a;
+    secp256k1_pubkey bb = b;
+    secp256k1_pubkey const* ins[2] = {&aa, &bb};
+    secp256k1_pubkey r{};
+    if (secp256k1_ec_pubkey_combine(bpCtx(), &r, ins, 2) != 1)
+        return false;
+    out = r;
+    return true;
 }
 
 bool
@@ -327,6 +334,16 @@ gensH(std::size_t n)
         have = h.size();
     }
     return h;
+}
+
+// gensG/gensH grow a process-wide cache. MSM requires |pts| == |scalars|, so
+// callers must use exactly N generators even after a larger proof warmed the cache.
+std::vector<secp256k1_pubkey>
+takePrefix(std::vector<secp256k1_pubkey> const& v, std::size_t n)
+{
+    if (v.size() < n)
+        return {};
+    return {v.begin(), v.begin() + static_cast<std::ptrdiff_t>(n)};
 }
 
 void
@@ -517,9 +534,9 @@ proveRange(
     if ((1ull << logN) != N)
         return false;
 
-    auto const& Gv = gensG(N);
-    auto const& Hv = gensH(N);
-    if (Gv.size() < N || Hv.size() < N)
+    auto const Gv = takePrefix(gensG(N), N);
+    auto const Hv = takePrefix(gensH(N), N);
+    if (Gv.size() != N || Hv.size() != N)
         return false;
 
     secp256k1_pubkey H{};
@@ -843,9 +860,9 @@ verifyRange(std::vector<CompressedPoint> const& Vs, RangeProof const& proof)
     if (proof.L.size() != logN || proof.R.size() != logN)
         return false;
 
-    auto const& Gv = gensG(N);
-    auto const& Hv = gensH(N);
-    if (Gv.size() < N || Hv.size() < N)
+    auto const Gv = takePrefix(gensG(N), N);
+    auto const Hv = takePrefix(gensH(N), N);
+    if (Gv.size() != N || Hv.size() != N)
         return false;
     secp256k1_pubkey H{};
     if (!parsePk(pedersenNumsGenerator(), H))
@@ -1022,12 +1039,10 @@ verifyRange(std::vector<CompressedPoint> const& Vs, RangeProof const& proof)
             if (!scalarMul(zpow2, z, zpow2))
                 return false;
         }
-        // H'_i = y^{-i} H_i. Coefficient on original H_i is
-        // y^{-i} (z + z^{2+j} 2^{bit}) as in Bünz et al. 2017/1066 §4.2.
-        Scalar inner{};
         Scalar twoTerm{};
-        if (!scalarMul(zpow2, twoN[bit], twoTerm) || !scalarAdd(z, twoTerm, inner) ||
-            !scalarMul(inner, yInvPow[i], hCoeff[i]))
+        if (!scalarMul(zpow2, twoN[bit], twoTerm) ||
+            !scalarMul(twoTerm, yInvPow[i], twoTerm) ||
+            !scalarAdd(z, twoTerm, hCoeff[i]))
             return false;
     }
 
