@@ -107,15 +107,13 @@ clearConfidentialState(SLE& issuance, SLE& mpt)
         return tecINTERNAL;
 
     issuance[sfConfidentialHolderCount] = holderCount - 1;
-    for (auto const* field : {
-             &sfHolderEncryptionKey,
-             &sfConfidentialBalanceSpending,
-             &sfConfidentialBalanceInbox,
-             &sfIssuerEncryptedBalance,
-             &sfAuditorEncryptedBalance,
-             &sfAuditorKeyVersion,
-             &sfConfidentialBalanceVersion})
-        mpt.makeFieldAbsent(*field);
+    mpt.makeFieldAbsent(sfHolderEncryptionKey);
+    mpt.makeFieldAbsent(sfConfidentialBalanceSpending);
+    mpt.makeFieldAbsent(sfConfidentialBalanceInbox);
+    mpt.makeFieldAbsent(sfIssuerEncryptedBalance);
+    mpt.makeFieldAbsent(sfAuditorEncryptedBalance);
+    mpt.makeFieldAbsent(sfAuditorKeyVersion);
+    mpt.makeFieldAbsent(sfConfidentialBalanceVersion);
     return tesSUCCESS;
 }
 
