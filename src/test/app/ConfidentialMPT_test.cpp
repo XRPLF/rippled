@@ -1366,9 +1366,10 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             });
             bool const passes =
                 expectLog == "invalid OutstandingAmount balance"
-                ? payment.finalize(tx, tesSUCCESS, XRPAmount{}, ov, jlog)
+                ? payment.finalize(
+                      tx, tesSUCCESS, XRPAmount{}, ac.view(), jlog)
                 : confidential.finalize(
-                      tx, tesSUCCESS, XRPAmount{}, ov, jlog);
+                      tx, tesSUCCESS, XRPAmount{}, ac.view(), jlog);
             BEAST_EXPECT(!passes);
             BEAST_EXPECTS(
                 sink.messages().str().find(expectLog) != std::string::npos,
