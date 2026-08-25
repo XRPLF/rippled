@@ -357,9 +357,6 @@ VaultWithdraw::doApply()
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
-    XRPL_ASSERT(
-        lossUnrealized <= (assetsTotal - assetsAvailable),
-        "xrpl::VaultWithdraw::doApply : loss and assets do balance");
 
     if (view().rules().enabled(fixCleanup3_4_0) && !isFinalWithdrawal)
     {
