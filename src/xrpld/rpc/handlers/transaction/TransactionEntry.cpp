@@ -7,6 +7,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -18,7 +19,7 @@ namespace xrpl {
 //   ledger_index : <ledger_index>
 // }
 //
-// XXX In this case, not specify either ledger does not mean ledger current. It
+// Note: not specifying either ledger does not mean ledger current — it
 // means any ledger.
 json::Value
 doTransactionEntry(rpc::JsonContext& context)
@@ -31,30 +32,30 @@ doTransactionEntry(rpc::JsonContext& context)
 
     if (!context.params.isMember(jss::tx_hash))
     {
-        jvResult[jss::error] = "fieldNotFoundTransaction";
+        // AC-1: missing tx_hash parameter
+        rpc::injectError(RpcInvalidParams, jvResult);
     }
     else if (jvResult.get(jss::ledger_hash, json::ValueType::Null).isNull())
     {
         // We don't work on ledger current.
-
-        // XXX We don't support any transaction yet.
-        jvResult[jss::error] = "notYetImplemented";
+        // AC-2: no closed ledger specified
+        rpc::injectError(RpcNotImpl, jvResult);
     }
     else
     {
         uint256 uTransID;
-        // XXX Relying on trusted WSS client. Would be better to have a strict
-        // routine, returning success or failure.
         if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))
         {
-            jvResult[jss::error] = "malformedRequest";
+            // AC-3: tx_hash is not valid hex
+            rpc::injectError(RpcInvalidParams, jvResult);
             return jvResult;
         }
 
         auto [sttx, stobj] = lpLedger->txRead(uTransID);
         if (!sttx)
         {
-            jvResult[jss::error] = "transactionNotFound";
+            // AC-4: transaction not found in ledger
+            rpc::injectError(RpcTxnNotFound, jvResult);
         }
         else
         {

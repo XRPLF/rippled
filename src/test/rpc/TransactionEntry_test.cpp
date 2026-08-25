@@ -36,9 +36,10 @@ class TransactionEntry_test : public beast::unit_test::Suite
                 })};
 
         {
-            // no params
+            // no params — AC-1: missing tx_hash → invalidParams
             auto const result = env.client().invoke("transaction_entry", {})[jss::result];
-            BEAST_EXPECT(result[jss::error] == "fieldNotFoundTransaction");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
@@ -51,21 +52,25 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
+            // AC-2: current ledger (no closed ledger) → notImpl
             json::Value params{json::ValueType::Object};
             params[jss::ledger] = "current";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
+            BEAST_EXPECT(result[jss::error] == "notImpl");
+            BEAST_EXPECT(result[jss::error_code] == RpcNotImpl);
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
         {
+            // AC-3: tx_hash is not valid hex → invalidParams
             json::Value params{json::ValueType::Object};
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
@@ -126,8 +131,10 @@ class TransactionEntry_test : public beast::unit_test::Suite
         {
             // Valid structure, but transaction not found.
             json::Value const result{env.rpc("transaction_entry", txHash, "closed")};
+            // AC-4: valid hex but tx not in ledger → txnNotFound
             BEAST_EXPECT(!result[jss::result][jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::result][jss::error] == "transactionNotFound");
+            BEAST_EXPECT(result[jss::result][jss::error] == "txnNotFound");
+            BEAST_EXPECT(result[jss::result][jss::error_code] == RpcTxnNotFound);
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
         }
     }
