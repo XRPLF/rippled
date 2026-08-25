@@ -391,55 +391,63 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 
 #### Consensus Attributes
 
-| Attribute                   | Type    | Set On                                                                                             | Description                                              |
-| --------------------------- | ------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `consensus_ledger_id`       | string  | `consensus.round`                                                                                  | Previous-ledger id anchoring the round                   |
-| `ledger_seq`                | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept.apply`, `consensus.validation.send` | Ledger sequence number                                   |
-| `consensus_mode`            | string  | `consensus.round`, `consensus.ledger_close`                                                        | Node mode: `"Proposing"`, `"Observing"`, `"Wrong"`, etc. |
-| `consensus_round_id`        | int64   | `consensus.round`                                                                                  | Round identifier                                         |
-| `consensus_phase`           | string  | `consensus.round`                                                                                  | Current phase name (updated on each transition)          |
-| `trace_strategy`            | string  | `consensus.round`                                                                                  | Trace-id strategy (`deterministic` / `attribute`)        |
-| `previous_ledger_seq`       | int64   | `consensus.round`                                                                                  | Sequence of the previous ledger                          |
-| `previous_proposers`        | int64   | `consensus.round`                                                                                  | Proposer count in the previous round                     |
-| `previous_round_time_ms`    | int64   | `consensus.round`                                                                                  | Duration of the previous round                           |
-| `consensus_round`           | int64   | `consensus.proposal.send`                                                                          | Proposal sequence number for the broadcast proposal      |
-| `is_bow_out`                | boolean | `consensus.proposal.send`                                                                          | Whether the proposal is a bow-out (resigning the round)  |
-| `tx_count_open`             | int64   | `consensus.ledger_close`                                                                           | Transactions in the open ledger at close                 |
-| `close_time_resolution_ms`  | int64   | `consensus.ledger_close`                                                                           | Close-time rounding granularity                          |
-| `converge_percent`          | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.check`                             | Convergence percentage                                   |
-| `establish_count`           | int64   | `consensus.establish`, `consensus.check`                                                           | Establish-phase iteration count                          |
-| `proposers`                 | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.accept`                            | Number of proposers                                      |
-| `disputes_count`            | int64   | `consensus.establish`, `consensus.update_positions`                                                | Number of disputed transactions                          |
-| `tx_id`                     | string  | `consensus.update_positions`                                                                       | Disputed transaction id (per-dispute event)              |
-| `dispute_our_vote`          | boolean | `consensus.update_positions`                                                                       | Our vote on the disputed tx                              |
-| `dispute_yays`              | int64   | `consensus.update_positions`                                                                       | Yes votes on the disputed tx                             |
-| `dispute_nays`              | int64   | `consensus.update_positions`                                                                       | No votes on the disputed tx                              |
-| `avalanche_threshold`       | int64   | `consensus.update_positions`                                                                       | Escalated weight needed to change our vote               |
-| `close_time_threshold`      | int64   | `consensus.update_positions`                                                                       | Close-time agreement threshold percentage                |
-| `agree_count`               | int64   | `consensus.check`                                                                                  | Agreeing proposer count                                  |
-| `disagree_count`            | int64   | `consensus.check`                                                                                  | Disagreeing proposer count                               |
-| `threshold_percent`         | int64   | `consensus.check`                                                                                  | Agreement threshold percentage                           |
-| `have_close_time_consensus` | boolean | `consensus.update_positions`, `consensus.check`                                                    | Whether the close time reached consensus                 |
-| `proposers_finished`        | int64   | `consensus.check`                                                                                  | Proposers that have already validated the next ledger    |
-| `consensus_stalled`         | boolean | `consensus.check`                                                                                  | Whether `checkConsensus` reported a stall                |
-| `consensus_result`          | string  | `consensus.check`                                                                                  | Check outcome                                            |
-| `quorum`                    | int64   | `consensus.accept`                                                                                 | Quorum required                                          |
-| `round_time_ms`             | int64   | `consensus.accept`, `consensus.accept.apply`                                                       | Total consensus round duration in milliseconds           |
-| `consensus_state`           | string  | `consensus.accept.apply`                                                                           | Consensus outcome: `"finished"` or `"moved_on"`          |
-| `close_time`                | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (epoch seconds)            |
-| `close_time_correct`        | boolean | `consensus.accept.apply`                                                                           | Whether validators agreed on close time                  |
-| `close_resolution_ms`       | int64   | `consensus.accept.apply`                                                                           | Close-time rounding granularity in milliseconds          |
-| `proposing`                 | boolean | `consensus.accept.apply`, `consensus.validation.send`                                              | Whether this node was a proposer                         |
-| `parent_close_time`         | int64   | `consensus.accept.apply`                                                                           | Parent ledger close time                                 |
-| `close_time_self`           | int64   | `consensus.accept.apply`                                                                           | This node's close-time vote                              |
-| `close_time_vote_bins`      | string  | `consensus.accept.apply`                                                                           | Distribution of close-time votes                         |
-| `resolution_direction`      | string  | `consensus.accept.apply`                                                                           | Whether close resolution increased/decreased/unchanged   |
-| `tx_count`                  | int64   | `consensus.accept.apply`                                                                           | Transactions in the accepted set                         |
-| `ledger_hash`               | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (shared with peer)     |
-| `full_validation`           | boolean | `consensus.validation.send`                                                                        | Whether this is a full validation                        |
-| `validation_sign_time`      | int64   | `consensus.validation.send`                                                                        | Validation signing time                                  |
-| `mode_old`                  | string  | `consensus.mode_change`                                                                            | Operating mode before the transition                     |
-| `mode_new`                  | string  | `consensus.mode_change`                                                                            | Operating mode after the transition                      |
+| Attribute                    | Type    | Set On                                                                                             | Description                                                |
+| ---------------------------- | ------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `consensus_ledger_id`        | string  | `consensus.round`                                                                                  | Previous-ledger id anchoring the round                     |
+| `ledger_seq`                 | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept.apply`, `consensus.validation.send` | Ledger sequence number                                     |
+| `consensus_mode`             | string  | `consensus.round`, `consensus.ledger_close`                                                        | Node mode: `"Proposing"`, `"Observing"`, `"Wrong"`, etc.   |
+| `consensus_round_id`         | int64   | `consensus.round`                                                                                  | Round identifier                                           |
+| `consensus_phase`            | string  | `consensus.round`                                                                                  | Current phase name (updated on each transition)            |
+| `trace_strategy`             | string  | `consensus.round`                                                                                  | Trace-id strategy (`deterministic` / `attribute`)          |
+| `previous_ledger_seq`        | int64   | `consensus.round`                                                                                  | Sequence of the previous ledger                            |
+| `previous_proposers`         | int64   | `consensus.round`                                                                                  | Proposer count in the previous round                       |
+| `previous_round_time_ms`     | int64   | `consensus.round`                                                                                  | Duration of the previous round                             |
+| `consensus_round`            | int64   | `consensus.proposal.send`                                                                          | Proposal sequence number for the broadcast proposal        |
+| `is_bow_out`                 | boolean | `consensus.proposal.send`                                                                          | Whether the proposal is a bow-out (resigning the round)    |
+| `tx_count_open`              | int64   | `consensus.ledger_close`                                                                           | Transactions in the open ledger at close                   |
+| `close_time_resolution_ms`   | int64   | `consensus.ledger_close`                                                                           | Close-time rounding granularity                            |
+| `start_reason`               | string  | `consensus.phase.open`                                                                             | Entry path: `"initial"` or `"recovered"`                   |
+| `previous_close_agree`       | boolean | `consensus.phase.open`                                                                             | Whether the prior ledger's close time was agreed           |
+| `peer_positions_at_open`     | int64   | `consensus.phase.open`                                                                             | Positions held after buffered proposals are replayed       |
+| `early_close_triggered`      | boolean | `consensus.phase.open`                                                                             | Round skipped the timer because peers had already closed   |
+| `tx_sets_acquired`           | int64   | `consensus.phase.open`                                                                             | Peer transaction sets held at close, excluding our own     |
+| `close_reason`               | string  | `consensus.phase.open`                                                                             | `"anomaly"`, `"others_closed"`, `"idle"`, or `"normal"`    |
+| `proposers_validated`        | int64   | `consensus.phase.open`                                                                             | Trusted validators of the previous ledger, at close        |
+| `converge_percent`           | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.check`                             | Convergence percentage                                     |
+| `establish_count`            | int64   | `consensus.establish`, `consensus.check`                                                           | Establish-phase iteration count                            |
+| `close_time_avalanche_state` | string  | `consensus.establish`                                                                              | Terminal regime: `"init"`, `"mid"`, `"late"`, or `"stuck"` |
+| `proposers`                  | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.accept`                            | Number of proposers                                        |
+| `disputes_count`             | int64   | `consensus.establish`, `consensus.update_positions`                                                | Number of disputed transactions                            |
+| `tx_id`                      | string  | `consensus.update_positions`                                                                       | Disputed transaction id (per-dispute event)                |
+| `dispute_our_vote`           | boolean | `consensus.update_positions`                                                                       | Our vote on the disputed tx                                |
+| `dispute_yays`               | int64   | `consensus.update_positions`                                                                       | Yes votes on the disputed tx                               |
+| `dispute_nays`               | int64   | `consensus.update_positions`                                                                       | No votes on the disputed tx                                |
+| `avalanche_threshold`        | int64   | `consensus.update_positions`                                                                       | Escalated weight needed to change our vote                 |
+| `close_time_threshold`       | int64   | `consensus.update_positions`                                                                       | Close-time agreement threshold percentage                  |
+| `agree_count`                | int64   | `consensus.check`                                                                                  | Agreeing proposer count                                    |
+| `disagree_count`             | int64   | `consensus.check`                                                                                  | Disagreeing proposer count                                 |
+| `threshold_percent`          | int64   | `consensus.check`                                                                                  | Agreement threshold percentage                             |
+| `have_close_time_consensus`  | boolean | `consensus.update_positions`, `consensus.check`                                                    | Whether the close time reached consensus                   |
+| `proposers_finished`         | int64   | `consensus.check`                                                                                  | Proposers that have already validated the next ledger      |
+| `consensus_stalled`          | boolean | `consensus.check`                                                                                  | Whether `checkConsensus` reported a stall                  |
+| `consensus_result`           | string  | `consensus.check`                                                                                  | Check outcome                                              |
+| `quorum`                     | int64   | `consensus.accept`                                                                                 | Quorum required                                            |
+| `round_time_ms`              | int64   | `consensus.accept`, `consensus.accept.apply`                                                       | Total consensus round duration in milliseconds             |
+| `consensus_state`            | string  | `consensus.accept.apply`                                                                           | Consensus outcome: `"finished"` or `"moved_on"`            |
+| `close_time`                 | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (epoch seconds)              |
+| `close_time_correct`         | boolean | `consensus.accept.apply`                                                                           | Whether validators agreed on close time                    |
+| `close_resolution_ms`        | int64   | `consensus.accept.apply`                                                                           | Close-time rounding granularity in milliseconds            |
+| `proposing`                  | boolean | `consensus.accept.apply`, `consensus.validation.send`                                              | Whether this node was a proposer                           |
+| `parent_close_time`          | int64   | `consensus.accept.apply`                                                                           | Parent ledger close time                                   |
+| `close_time_self`            | int64   | `consensus.accept.apply`                                                                           | This node's close-time vote                                |
+| `close_time_vote_bins`       | string  | `consensus.accept.apply`                                                                           | Distribution of close-time votes                           |
+| `resolution_direction`       | string  | `consensus.accept.apply`                                                                           | Whether close resolution increased/decreased/unchanged     |
+| `tx_count`                   | int64   | `consensus.accept.apply`                                                                           | Transactions in the accepted set                           |
+| `ledger_hash`                | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (shared with peer)       |
+| `full_validation`            | boolean | `consensus.validation.send`                                                                        | Whether this is a full validation                          |
+| `validation_sign_time`       | int64   | `consensus.validation.send`                                                                        | Validation signing time                                    |
+| `mode_old`                   | string  | `consensus.mode_change`                                                                            | Operating mode before the transition                       |
+| `mode_new`                   | string  | `consensus.mode_change`                                                                            | Operating mode after the transition                        |
 
 > **`quorum` is on `consensus.accept` only.** Its single set site is
 > `RCLConsensus::Adaptor::makeAcceptSpan()`

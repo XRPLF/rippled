@@ -332,7 +332,7 @@ read it from the parent rather than filtering `tx.apply` on it.
 | `consensus.phase.open`         | Consensus.h      | `start_reason`, `previous_close_agree`, `peer_positions_at_open`, `early_close_triggered` (at start); `open_duration_ms`, `peer_positions_at_close`, `tx_sets_acquired`, `close_reason`, `proposers_validated` (at close, so all five are absent on a recovered or simulated round, which never reaches `closeLedger()`) | Open phase duration (child of round)                                                                                                  |
 | `consensus.proposal.send`      | RCLConsensus.cpp | `consensus_round`, `is_bow_out`                                                                                                                                                                                                                                                                                          | Consensus proposal broadcast                                                                                                          |
 | `consensus.ledger_close`       | RCLConsensus.cpp | `ledger_seq`, `consensus_mode`                                                                                                                                                                                                                                                                                           | Ledger close event                                                                                                                    |
-| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                                                                                                                       | Establish phase duration (child of round)                                                                                             |
+| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`, `disputes_count` (all overwritten each iteration); `close_time_avalanche_state` (terminal regime, set once when the span ends)                                                                                                                                       | Establish phase duration (child of round)                                                                                             |
 | `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`, `avalanche_threshold` (only when peer positions exist), `have_close_time_consensus`, `close_time_threshold`                                                                                                                                                           | Position update and dispute resolution (see Events below)                                                                             |
 | `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `proposers_finished`, `consensus_stalled`, `establish_count`, `consensus_result`                                                                                                                                  | Consensus threshold check                                                                                                             |
 | `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                                                                                                              | Ledger accepted by consensus                                                                                                          |
@@ -1778,13 +1778,13 @@ ledger acquisition deferring". Use `acquire_ledger_deferrals` and
 
 #### Counters
 
-| Prometheus Metric         | Source                | Description                    |
-| ------------------------- | --------------------- | ------------------------------ |
-| `rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `warn`                    | Logic.h:33            | Resource manager warning count |
-| `drop`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                | Description                    |
+| ------------------------------- | --------------------- | ------------------------------ |
+| `rpc_requests_total`            | ServerHandler.cpp:108 | Total RPC request count        |
+| `ledger_fetches_total`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
+| `ledger_history_mismatch_total` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
+| `warn_total`                    | Logic.h:33            | Resource manager warning count |
+| `drop_total`                    | Logic.h:34            | Resource manager drop count    |
 
 #### Histograms
 
@@ -2122,7 +2122,7 @@ board and is documented last, together with the LogQL-specific traps it exposed.
 
 | Panel                       | Type       | PromQL                                                                                                                     | Labels Used              |
 | --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| RPC Request Rate by Command | timeseries | `sum by (command) (rate(span_calls_total{span_name=~"rpc.command.*"}[5m]))`                                                | `command`                |
+| RPC Request Rate by Command | timeseries | `sum by (command) (rate(span_calls_total{span_name=~"rpc.command.*"}[$__rate_interval]))`                                  | `command`                |
 | RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                      | `command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
@@ -2135,10 +2135,10 @@ board and is documented last, together with the LogQL-specific traps it exposed.
 
 | Panel                              | Type           | PromQL                                                                                       | Labels Used                         |
 | ---------------------------------- | -------------- | -------------------------------------------------------------------------------------------- | ----------------------------------- |
-| Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                        | `span_name`                         |
+| Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[$__rate_interval])` and `tx.receive`          | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
-| Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[5m]))`                    | `local`                             |
-| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[5m])`                                         | —                                   |
+| Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[$__rate_interval]))`      | `local`                             |
+| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
 | TX Apply Failed Rate               | stat           | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result`               |
@@ -2149,11 +2149,11 @@ board and is documented last, together with the LogQL-specific traps it exposed.
 | Panel                         | Type       | PromQL                                                                                                                                             | Labels Used      |
 | ----------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
 | Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`                                                                              | —                |
-| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[5m])`                                                                                  | —                |
+| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[$__rate_interval])`                                                                    | —                |
 | Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.round"})` (full round, not `consensus.ledger_close` which is only the sub-ms onClose prologue) | `consensus_mode` |
-| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[5m])`                                                                                | —                |
+| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[$__rate_interval])`                                                                  | —                |
 | Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`                                                                        | —                |
-| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[5m])`                                                                                   | —                |
+| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[$__rate_interval])`                                                                     | —                |
 | Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                                                                                       | `consensus_mode` |
 | Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                                                                                                | —                |
 | Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                                                                                            | —                |
@@ -2194,14 +2194,14 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Operating Mode Transitions                                   | timeseries | `round(increase(state_accounting_*_transitions[$__interval]))` (bars, Min step 1m)                                                                         | —                |
 | I/O Latency                                                  | timeseries | `histogram_quantile(0.95, ios_latency_milliseconds_bucket)`                                                                                                | —                |
 | Job Queue Depth                                              | timeseries | `jobq_job_count`                                                                                                                                           | —                |
-| Ledger Fetch Rate                                            | stat       | `rate(ledger_fetches[5m])`                                                                                                                                 | —                |
-| Ledger History Mismatches                                    | stat       | `rate(ledger_history_mismatch_total[5m])`                                                                                                                  | —                |
+| Ledger Fetch Rate                                            | stat       | `rate(ledger_fetches_total[$__rate_interval])`                                                                                                             | —                |
+| Ledger History Mismatches                                    | stat       | `rate(ledger_history_mismatch_total[$__rate_interval])`                                                                                                    | —                |
 | Key Jobs Execution Time                                      | timeseries | `histogram_quantile($quantile, sum by (le) (rate(job_running_us_bucket{job_type="acceptLedger"}[$__rate_interval])))` (+ 10 more key jobs)                 | `job_type`       |
 | Key Jobs Dequeue Wait Time                                   | timeseries | `histogram_quantile($quantile, sum by (le) (rate(job_queued_us_bucket{job_type="acceptLedger"}[$__rate_interval])))` (+ 10 more)                           | `job_type`       |
 | FullBelowCache Size                                          | timeseries | `node_family_full_below_cache_size`                                                                                                                        | —                |
 | FullBelowCache Hit Rate                                      | gauge      | `node_family_full_below_cache_hit_rate`                                                                                                                    | —                |
 | Ledger Publish Gap                                           | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                                                                                                              | —                |
-| State Duration Rate (Full vs Tracking)                       | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`                                                                                                       | —                |
+| State Duration Rate (Full vs Tracking)                       | timeseries | `rate(state_accounting_full_duration[$__rate_interval]) / 1000000`                                                                                         | —                |
 | All Jobs Execution Time (Detail)                             | timeseries | `histogram_quantile($quantile, sum by (le, job_type) (rate(job_running_us_bucket[$__rate_interval])))`                                                     | `job_type`       |
 | All Jobs Dequeue Wait (Detail)                               | timeseries | `histogram_quantile($quantile, sum by (le, job_type) (rate(job_queued_us_bucket[$__rate_interval])))`                                                      | `job_type`       |
 | Server State                                                 | stat       | `server_info{metric="server_state"}`                                                                                                                       | `metric`         |
@@ -2261,7 +2261,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 | Panel                     | Type       | PromQL                                                        | Labels Used |
 | ------------------------- | ---------- | ------------------------------------------------------------- | ----------- |
-| RPC Request Rate          | stat       | `rate(rpc_requests[5m])`                                      | —           |
+| RPC Request Rate          | stat       | `rate(rpc_requests_total[$__rate_interval])`                  | —           |
 | RPC Response Time         | timeseries | `histogram_quantile(0.95, rpc_time_milliseconds_bucket)`      | —           |
 | RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_bytes_bucket)`             | —           |
 | RPC Response Time Heatmap | heatmap    | `rpc_time_milliseconds_bucket`                                | —           |
