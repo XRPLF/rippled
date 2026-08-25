@@ -1,4 +1,5 @@
 #include <test/jtx.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -145,6 +146,8 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         Account const gw("gw");
         Account const alice("alice");
         Account const carol("carol");
+        Account const aliceDelegate("aliceDelegate");
+        Account const carolDelegate("carolDelegate");
         Env env(*this, features);
         MPTTester mpt(env, gw, {.holders = {alice, carol}});
         mpt.create(
@@ -160,6 +163,18 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         auto aliceKp = makeKey();
         auto carolKp = makeKey();
         auto const id = mpt.issuanceID();
+        env.fund(XRP(1000), aliceDelegate, carolDelegate);
+        env(delegate::set(
+            alice,
+            aliceDelegate,
+            {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox"}));
+        env(delegate::set(
+            carol,
+            carolDelegate,
+            {"ConfidentialMPTConvert",
+             "ConfidentialMPTMergeInbox",
+             "ConfidentialMPTConvertBack"}));
+        env.close();
 
         auto submitConvert = [&](Account const& acct,
                                  Keypair const& kp,
@@ -171,6 +186,9 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             json::Value jv;
             jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
             jv[jss::Account] = acct.human();
+            auto const& delegatedSigner =
+                acct == alice ? aliceDelegate : carolDelegate;
+            jv[sfDelegate] = delegatedSigner.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
             jv[sfMPTAmount] = std::to_string(amount);
             jv[sfHolderEncryptedAmount] = hexCipher(holderCt);
@@ -189,7 +207,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
                     kp.sk, kp.pk, Slice(ctxId.data(), ctxId.size()), proof));
                 jv[sfZKProof] = hexOf(proof);
             }
-            env(jv, Fee(XRP(1)));
+            env(jv, delegate::As(delegatedSigner), Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         };
 
@@ -204,8 +222,9 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             json::Value jv;
             jv[jss::TransactionType] = jss::ConfidentialMPTMergeInbox;
             jv[jss::Account] = alice.human();
+            jv[sfDelegate] = aliceDelegate.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
-            env(jv, Fee(XRP(1)));
+            env(jv, delegate::As(aliceDelegate), Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
 
@@ -301,8 +320,9 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             json::Value jv;
             jv[jss::TransactionType] = jss::ConfidentialMPTMergeInbox;
             jv[jss::Account] = carol.human();
+            jv[sfDelegate] = carolDelegate.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
-            env(jv, Fee(XRP(1)));
+            env(jv, delegate::As(carolDelegate), Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
 
@@ -347,6 +367,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             json::Value jv;
             jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
             jv[jss::Account] = carol.human();
+            jv[sfDelegate] = carolDelegate.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
             jv[sfMPTAmount] = std::to_string(backAmt);
             jv[sfHolderEncryptedAmount] = hexCipher(backH);
@@ -354,7 +375,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[sfBlindingFactor] = to_string(scalarToUint(rBack));
             jv[sfBalanceCommitment] = hexPoint(pcBal);
             jv[sfZKProof] = strHex(Slice(cbZk.data(), cbZk.size()));
-            env(jv, Fee(XRP(1)));
+            env(jv, delegate::As(carolDelegate), Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
         BEAST_EXPECT(mpt.checkMPTokenAmount(carol, 55));
@@ -1169,6 +1190,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         Account const gw("gwRotate");
         Account const alice("aliceRotate");
         Account const bob("bobRotate");
+        Account const auditorDelegate("auditorDelegate");
         Env env(*this, features);
         MPTTester mpt(env, gw, {.holders = {alice, bob}});
         mpt.create(
@@ -1189,6 +1211,12 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             {.account = gw,
              .issuerEncryptionKey = rawKey(issuer.pk),
              .auditorEncryptionKey = rawKey(oldAuditor.pk)});
+        env.fund(XRP(1000), auditorDelegate);
+        env(delegate::set(
+            gw,
+            auditorDelegate,
+            {"ConfidentialMPTReencryptAuditor"}));
+        env.close();
 
         auto convert = [&](Account const& holder,
                            Keypair const& holderKey,
@@ -1293,6 +1321,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[jss::TransactionType] =
                 jss::ConfidentialMPTReencryptAuditor;
             jv[jss::Account] = gw.human();
+            jv[sfDelegate] = auditorDelegate.human();
             jv[sfHolder] = holder.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
             jv[sfAuditorEncryptedBalance] = hexCipher(auditorBalance);
@@ -1300,6 +1329,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             env(
                 jv,
                 tamper ? Ter(tecBAD_PROOF) : Ter(tesSUCCESS),
+                delegate::As(auditorDelegate),
                 Fee(XRP(1)));
         };
 

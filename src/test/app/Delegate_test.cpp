@@ -2182,7 +2182,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 51;
+        std::size_t const expectedDelegableCount = 55;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,
