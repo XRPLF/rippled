@@ -11,7 +11,9 @@
 #include <secp256k1.h>
 
 #include <algorithm>
+#include <array>
 #include <cstring>
+#include <stdexcept>
 #include <vector>
 
 namespace xrpl {
@@ -28,6 +30,17 @@ ctx()
             : impl(secp256k1_context_create(
                   SECP256K1_CONTEXT_VERIFY | SECP256K1_CONTEXT_SIGN))
         {
+            std::array<unsigned char, 32> seed{};
+            cryptoPrng()(seed.data(), seed.size());
+            if (!impl || secp256k1_context_randomize(impl, seed.data()) != 1)
+            {
+                secureErase(seed.data(), seed.size());
+                if (impl)
+                    secp256k1_context_destroy(impl);
+                throw std::runtime_error(
+                    "Unable to randomize confidential secp256k1 context");
+            }
+            secureErase(seed.data(), seed.size());
         }
         ~Holder()
         {

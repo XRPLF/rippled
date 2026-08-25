@@ -2,15 +2,18 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/crypto/csprng.h>
+#include <xrpl/crypto/secure_erase.h>
 
 #include <openssl/bn.h>
 #include <openssl/sha.h>
 #include <secp256k1.h>
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <mutex>
 #include <span>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 
@@ -31,6 +34,17 @@ bpCtx()
             : impl(secp256k1_context_create(
                   SECP256K1_CONTEXT_VERIFY | SECP256K1_CONTEXT_SIGN))
         {
+            std::array<unsigned char, 32> seed{};
+            cryptoPrng()(seed.data(), seed.size());
+            if (!impl || secp256k1_context_randomize(impl, seed.data()) != 1)
+            {
+                secureErase(seed.data(), seed.size());
+                if (impl)
+                    secp256k1_context_destroy(impl);
+                throw std::runtime_error(
+                    "Unable to randomize Bulletproof secp256k1 context");
+            }
+            secureErase(seed.data(), seed.size());
         }
         ~Holder()
         {
