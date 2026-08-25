@@ -31,12 +31,11 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
     //
     // Deleted trust lines/MPTokens are recorded (from `before`) so finalize() can find the broker
     // via its pseudo-account and check CoverAvailable still matches the pseudo-account balance.
-    if (isDelete)
+    if (isDelete && before)
     {
-        if (before)
+        switch (before->getType())
         {
-            if (before->getType() == ltLOAN_BROKER)
-            {
+            case (ltLOAN_BROKER):
                 if (deletedBroker_)
                 {
                     multipleBrokerDeletions_ = true;
@@ -45,19 +44,17 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
                 {
                     deletedBroker_ = before;
                 }
-            }
-            else if (before->getType() == ltRIPPLE_STATE)
-            {
+                break;
+            case (ltRIPPLE_STATE):
                 lines_.emplace_back(before);
-            }
-            else if (before->getType() == ltMPTOKEN)
-            {
+                break;
+            case (ltMPTOKEN):
                 mpts_.emplace_back(before);
-            }
+                break;
+            default:
+                return;
         }
-        return;
     }
-
     if (after)
     {
         if (after->getType() == ltLOAN_BROKER)
