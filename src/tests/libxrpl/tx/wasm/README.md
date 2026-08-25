@@ -44,6 +44,33 @@ intentionally **not** exercised here: that is the SDK repo's own test suite. WAT
 side (this repo's code); a compiled guest would couple this suite to that repo and a Rust→wasm
 toolchain.
 
+## SDK ↔ host agreement — what the retired fixtures tested, and why it lives elsewhere
+
+The old `wasm_fixtures/` guests (`all_host_functions`, `all_keylets`, `codecov_tests`) were
+compiled from the real `xrpl-std` / `xrpl-escrow` SDK, so beyond exercising host functions they
+implicitly tested the **SDK's side of the ABI contract** — that the SDK and the host agree on the
+wire format:
+
+- **host bindings** — import module/name and parameter order/types actually reach the host functions
+- **field-code & locator encoding** — `sfield` constants and nested-field `Locator` serialization
+- **type serialization** — `Issue` / `Currency` / `MptId` / `XrpIssue` encode to the byte layouts the host decodes
+- **error-code enum** — the SDK's `error_codes` match the host's wire numbers
+- **size constants** — `DEFAULT_BLOB_SIZE` / `XRPL_CONTRACT_DATA_SIZE` match the host's caps
+- **typed accessors** — `get_current_escrow`, `ledger_object::get_field`, `keylets::*` build requests and decode responses
+
+None of that is host code — it is the SDK's, and it is the `xrpl-wasm-stdlib` repo's job to test.
+The tests here hand-write the ABI in WAT (raw imports, literal field codes, hand-built byte
+layouts), which **deliberately bypasses all SDK code**. So SDK correctness is out of scope here by
+design.
+
+**The one residual gap** is the _direct_ SDK↔host cross-check a compiled guest gave for free. The
+new split verifies agreement **transitively**: the SDK repo tests the SDK against the ABI spec, and
+this repo tests the host against the same spec (`host_calls`, the `generated_abi.rs` spec table,
+`host_errors.rs`). That is sound as long as both conform to the spec; it would not catch a drift
+where the SDK and host diverge on an ambiguous point. Closing that gap is **not** a rippled unit
+test — it is a **cross-repo integration test** (compiled `xrpl-wasm-stdlib` guests run against a
+real rippled host) belonging in CI where the Rust→wasm toolchain exists.
+
 ## Old → new test map
 
 `Wasm_test.cpp` (retired) + `wasm_fixtures/` guests → the new design. ★ = authored during the
