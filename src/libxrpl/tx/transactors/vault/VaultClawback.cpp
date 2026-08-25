@@ -409,10 +409,14 @@ VaultClawback::doApply()
     // Even a non-zero recovery can be too small to change the stored sfAssetsTotal or
     // sfAssetsAvailable at STAmount's precision. Shares would still be burned, so ValidVault
     // would fail after apply with "clawback must decrease vault balance"; reject here instead.
-    // On the issuer-clawback path this is effectively unreachable once fixCleanup3_4_0 is
-    // active, since assetsToClawback's own clampToAssetsTotalScale already snapped
-    // assetsRecovered to the grid; kept as defense in depth and to cover the owner-burn path,
-    // where assetsRecovered is not put through that clamp.
+    // On the issuer-clawback path this check is expected to be redundant once fixCleanup3_4_0
+    // is active, since assetsToClawback's own clampToAssetsTotalScale already snapped
+    // assetsRecovered to the grid under RoundingMode::Upward; however this check runs under the
+    // ambient rounding mode, so a boundary value could in principle still register as dust here.
+    // On the owner-burn path assetsRecovered is not put through that clamp at all, so this is the
+    // only guard against burning shares without moving the vault's stored balance. Genuinely
+    // reachable (or at least not provably otherwise); must return tecPRECISION_LOSS rather than
+    // assert, so keep this as a normal, testable branch rather than UNREACHABLE.
     //
     // Number arithmetic can throw overflow_error when Scale and totals are large. Caught
     // below. debitIsNonZeroDust converts assetsTotal/assetsAvailable to STAmount, which is
@@ -426,9 +430,6 @@ VaultClawback::doApply()
                 debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsRecovered))
             {
                 // LCOV_EXCL_START
-                UNREACHABLE(
-                    "xrpl::VaultClawback::doApply : clawback amount too small to change stored "
-                    "vault balance");
                 JLOG(j_.debug())
                     << "VaultClawback: clawback amount too small to change stored vault"
                        " balance";
