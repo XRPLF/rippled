@@ -7763,7 +7763,11 @@ class MPToken_test : public beast::unit_test::Suite
         std::string const issuerKey = keyBytes(alice);
         std::string const auditorKey = keyBytes(auditor);
         std::string const shortKey(32, '\x02');
-        std::string const invalidKey(33, '\x02');
+        std::string const invalidKey = [] {
+            std::string key(33, '\0');
+            key[0] = '\x04';
+            return key;
+        }();
 
         // Confidential flags require featureConfidentialTransfer
         {
@@ -7952,7 +7956,9 @@ class MPToken_test : public beast::unit_test::Suite
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create(
                 {.ownerCount = 1,
+                 .pay = {{std::vector<Account>{bob}, 10}},
                  .flags = tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer});
+            mptAlice.pay(bob, alice, 10);
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
                 auto sle = view.read(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
                 if (!sle)
