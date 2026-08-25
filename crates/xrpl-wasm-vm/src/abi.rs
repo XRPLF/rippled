@@ -821,4 +821,24 @@ mod tests {
             "one {MAX_FIELD_BYTES}-byte value against a {TRANSFER_LIMIT_BYTES}-byte budget"
         );
     }
+
+    #[test]
+    fn read_u32_arg_success() {
+        let number: u32 = 0x12345678;
+        let le_array: [u8; 4] = number.to_le_bytes();
+        assert_eq!(le_array, [0x78, 0x56, 0x34, 0x12]);
+
+        let result = read_u32_arg(&le_array);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), number.try_into().unwrap());
+    }
+
+    #[test]
+    fn read_u32_arg_invalid_length() {
+        let le_array = [0x56, 0x34, 0x12];
+
+        let result = read_u32_arg(&le_array);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), HostError::InvalidParams);
+    }
 }

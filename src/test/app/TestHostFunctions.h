@@ -140,7 +140,9 @@ public:
             return Bytes{s.begin(), s.end()};
         }
 
-        return std::unexpected(HostFunctionError::Unimplemented);
+        // FieldNotFound is a guest-returnable code (the contract handles a negative result);
+        // Unimplemented now maps to a fatal Fault::Internal (tecINTERNAL) that stops the run.
+        return std::unexpected(HostFunctionError::FieldNotFound);
     }
 
     [[nodiscard]] std::expected<Bytes, HostFunctionError>
