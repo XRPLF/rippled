@@ -28,31 +28,31 @@ esac
 #   - debhelper and dpkg-dev build the DEB
 #   - rpm-build builds the RPM, with systemd-rpm-macros and redhat-rpm-config
 #     supplying the systemd and find-debuginfo macros the spec uses
-#   - rpm-sign signs the built RPM
-#   - git gives build_pkg.sh a real history to read SOURCE_DATE_EPOCH from;
-#     without one the timestamp falls back to the wall clock
-#   - curl uploads the finished packages in publish_pkg.sh
-#   - ca-certificates lets curl and git verify TLS
+#   - rpm-sign and gnupg2 sign the built RPM
+#   - python3 runs the packaging scripts
+#   - git gives build_pkg.py the commit timestamp it stamps files with
+#   - ca-certificates lets git and the packaging scripts verify TLS
 function install() {
     case "${ID}" in
         debian | ubuntu)
             apt-get update -y
             apt-get install -y --no-install-recommends \
                 ca-certificates \
-                curl \
                 debhelper \
                 debhelper-compat \
                 dpkg-dev \
-                git
+                git \
+                python3
             ;;
 
         rhel | centos | rocky | almalinux)
             dnf install -y --setopt=install_weak_deps=False \
-                curl-minimal \
                 git \
+                gnupg2 \
+                python3 \
+                redhat-rpm-config \
                 rpm-build \
                 rpm-sign \
-                redhat-rpm-config \
                 systemd-rpm-macros
             ;;
     esac

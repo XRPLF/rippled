@@ -31,9 +31,8 @@
 
 namespace xrpl::test {
 
-// Shared fixture for VaultInvariantPrecision_test and VaultTransactorPrecision_test.
-// Also landed identically on the companion invariant-fix branch; reconcile this copy
-// against that branch's version on rebase.
+// Shared fixture for VaultInvariantPrecision_test and
+// VaultTransactorPrecision_test.
 //
 // Layout:
 //   - A-1 (impairAndPaySibling=false): 1000 USD vault + one ordinary loan.
