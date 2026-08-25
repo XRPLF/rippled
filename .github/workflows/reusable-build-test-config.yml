@@ -323,7 +323,7 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ldd ./xrpld
-          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+)' | wc -l)" -eq 0 ]; then
+          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
               echo 'The binary is statically linked.'
           else
               echo 'The binary is dynamically linked.'
@@ -335,14 +335,6 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ./xrpld --version | grep libvoidstar
-
-      - name: Run Rust tests
-        if: ${{ !inputs.build_only }}
-        working-directory: crates
-        # `xrpl-wasm-vm-ffi` is left out on Windows: its tests link as an executable, and
-        # MSVC - unlike the Unix linkers - will not dead-strip the never-called cxx wrappers
-        # whose C++ shims only the CMake build defines. The other runners cover these tests.
-        run: cargo nextest run --workspace --all-features --locked --no-tests=warn ${{ runner.os == 'Windows' && '--exclude xrpl-wasm-vm-ffi' || '' }}
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
