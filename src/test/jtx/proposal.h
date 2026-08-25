@@ -2,6 +2,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
@@ -38,6 +39,46 @@ using xrpl::proposal::kProposalOwnerCount;
  */
 json::Value
 create(Account const& proposer, json::Value const& proposedTx, std::uint32_t expiration);
+
+/**
+ * @brief Conditions that check what a proposal transaction did to the ledger.
+ *
+ * Each is named for the generator it verifies, so a submission and its check
+ * read as a pair, and the transactions that later sign or complete a proposal
+ * get their own entries here rather than sharing one.
+ */
+namespace verify {
+
+/**
+ * @brief The condition returned by create(); see it for what is checked.
+ */
+class Create
+{
+public:
+    /**
+     * @throws std::logic_error if attached to another transaction type.
+     */
+    void
+    operator()(Env&, JTx&) const;
+};
+
+/**
+ * @brief Check the ledger effects a TransactionProposalCreate must have,
+ * whatever its outcome: on tesSUCCESS a new proposal holding what was
+ * submitted, listed in the proposer's directory and paid for by its reserve;
+ * otherwise nothing moved. Nothing of the target's moves either way.
+ *
+ * @code
+ * env(proposal::create(alice, payload, expiration), proposal::verify::create());
+ * @endcode
+ */
+[[nodiscard]] inline Create
+create()
+{
+    return Create{};
+}
+
+}  // namespace verify
 
 /**
  * @brief Put a transaction of any type into the form a proposal stores it in:
