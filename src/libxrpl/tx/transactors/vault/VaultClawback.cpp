@@ -271,15 +271,8 @@ VaultClawback::assetsToClawback(
         }
         else
         {
-            // Pre-fixCleanup3_4_0: shares were rounded to nearest, so the
-            // round-trip back to assets could exceed clawbackAmount.
-            // Post-amendment: truncate shares so assetsRecovered <=
-            // clawbackAmount by construction (matches the clamp branch
-            // below).
-            auto const truncate = ctx_.view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes
-                                                                               : TruncateShares::No;
             auto const maybeShares =
-                assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount, truncate);
+                assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount);
             if (!maybeShares)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             sharesDestroyed = *maybeShares;
@@ -360,6 +353,11 @@ VaultClawback::doApply()
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
 
+    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
+    XRPL_ASSERT(
+        lossUnrealized <= (assetsTotal - assetsAvailable),
+        "xrpl::VaultClawback::doApply : loss and assets do balance");
+
     AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered = {vault->at(sfAsset)};
@@ -384,20 +382,6 @@ VaultClawback::doApply()
 
     if (sharesDestroyed == beast::kZero)
         return tecPRECISION_LOSS;
-
-    // A recovered amount can be genuinely non-zero yet still be dust relative to a
-    // sfAssetsTotal/sfAssetsAvailable large enough to exceed STAmount's significant-digit
-    // precision: subtracting it below rounds the stored total right back to where it started.
-    // The shares still move, so ValidVault would fail after the fact with "clawback must
-    // decrease vault balance" instead of a clean upfront rejection.
-    if (view().rules().enabled(fixCleanup3_4_0) &&
-        (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered) ||
-         debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsRecovered)))
-    {
-        JLOG(j_.debug()) << "VaultClawback: clawback amount too small to change stored vault"
-                            " balance";
-        return tecPRECISION_LOSS;
-    }
 
     assetsTotal -= assetsRecovered;
     assetsAvailable -= assetsRecovered;

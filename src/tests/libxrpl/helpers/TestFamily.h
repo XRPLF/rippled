@@ -29,11 +29,11 @@ namespace xrpl::test {
 class TestFamily : public Family
 {
 private:
-    std::unique_ptr<node_store::Database> db_;
+    std::unique_ptr<NodeStore::Database> db_;
     TestStopwatch clock_;
     std::shared_ptr<FullBelowCache> fbCache_;
     std::shared_ptr<TreeNodeCache> tnCache_;
-    node_store::DummyScheduler scheduler_;
+    NodeStore::DummyScheduler scheduler_;
     beast::Journal j_;
 
 public:
@@ -51,16 +51,16 @@ public:
         Section config;
         config.set(Keys::kType, "memory");
         config.set(Keys::kPath, "TestFamily");
-        db_ = node_store::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
+        db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 
-    node_store::Database&
+    NodeStore::Database&
     db() override
     {
         return *db_;
     }
 
-    [[nodiscard]] node_store::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return *db_;

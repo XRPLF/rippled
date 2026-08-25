@@ -5,11 +5,11 @@
 #include <cstdint>
 #include <utility>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
-Endpoint::Endpoint(beast::ip::Endpoint ep, std::uint32_t hops)
-    : hops(std::min(hops, tuning::kMaxHops + 1)), address(std::move(ep))
+Endpoint::Endpoint(beast::IP::Endpoint ep, std::uint32_t hops)
+    : hops(std::min(hops, Tuning::kMaxHops + 1)), address(std::move(ep))
 {
 }
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

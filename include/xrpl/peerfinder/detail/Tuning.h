@@ -9,7 +9,7 @@
  * Heuristically tuned constants.
  */
 /** @{ */
-namespace xrpl::peer_finder::tuning {
+namespace xrpl::PeerFinder::Tuning {
 
 //---------------------------------------------------------
 //
@@ -111,5 +111,5 @@ constexpr std::chrono::seconds kLiveCacheSecondsToLive(30);
 // Note that we ignore the port for purposes of comparison.
 constexpr std::chrono::seconds kRecentAttemptDuration(60);
 
-}  // namespace xrpl::peer_finder::tuning
+}  // namespace xrpl::PeerFinder::Tuning
 /** @} */

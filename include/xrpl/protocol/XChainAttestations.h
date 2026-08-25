@@ -20,7 +20,7 @@
 
 namespace xrpl {
 
-namespace attestations {
+namespace Attestations {
 
 struct AttestationBase
 {
@@ -227,7 +227,7 @@ struct CmpByCreateCount
     }
 };
 
-};  // namespace attestations
+};  // namespace Attestations
 
 // Result when checking when two attestation match.
 enum class AttestationMatch {
@@ -241,7 +241,7 @@ enum class AttestationMatch {
 
 struct XChainClaimAttestation
 {
-    using TSignedAttestation = attestations::AttestationClaim;
+    using TSignedAttestation = Attestations::AttestationClaim;
     static SField const& arrayFieldName;
 
     AccountID keyAccount;
@@ -297,7 +297,7 @@ struct XChainClaimAttestation
 
 struct XChainCreateAccountAttestation
 {
-    using TSignedAttestation = attestations::AttestationCreateAccount;
+    using TSignedAttestation = Attestations::AttestationCreateAccount;
     static SField const& arrayFieldName;
 
     AccountID keyAccount;

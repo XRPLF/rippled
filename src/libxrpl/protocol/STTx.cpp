@@ -33,13 +33,13 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
+#include <boost/format/free_funcs.hpp>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <expected>
-#include <format>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -200,16 +200,22 @@ STTx::getSeqProxy() const
 {
     std::uint32_t const seq{getFieldU32(sfSequence)};
     if (seq != 0)
-        return SeqProxy::rawSequence(seq);
+        return SeqProxy::sequence(seq);
 
-    std::optional<std::uint32_t> const ticketSeq{at(~sfTicketSequence)};
+    std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
     if (!ticketSeq)
     {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
-        return SeqProxy::rawSequence(seq);
+        return SeqProxy::sequence(seq);
     }
 
-    return SeqProxy::rawTicket(*ticketSeq);
+    return SeqProxy{SeqProxy::Type::Ticket, *ticketSeq};
+}
+
+std::uint32_t
+STTx::getSeqValue() const
+{
+    return getSeqProxy().value();
 }
 
 void
@@ -399,21 +405,16 @@ STTx::getMetaSQL(
     TxnSql status,
     std::string const& escapedMetaData) const
 {
+    static boost::format const kBfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(txType_);
     XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
-    return std::format(
-        "('{}', '{}', '{}', '{}', '{}', '{}', {}, {})",
-        to_string(getTransactionID()),
-        format->getName(),
-        toBase58(getAccountID(sfAccount)),
-        getFieldU32(sfSequence),
-        inLedger,
-        safeCast<char>(status),
-        rTxn,
-        escapedMetaData);
+    return str(
+        boost::format(kBfTrans) % to_string(getTransactionID()) % format->getName() %
+        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger %
+        safeCast<char>(status) % rTxn % escapedMetaData);
 }
 
 static std::expected<void, std::string>
@@ -458,7 +459,7 @@ STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> con
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
-    serializeBatch(msg, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
+    serializeBatch(msg, getAccountID(sfAccount), getSeqValue(), getFlags(), txIds);
     finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
     return singleSignHelper(batchSigner, msg.slice());
 }
@@ -552,7 +553,7 @@ STTx::checkBatchMultiSign(
     // with the stuff that stays constant from signature to signature.
     auto const batchSignerAccount = batchSigner.getAccountID(sfAccount);
     Serializer dataStart;
-    serializeBatch(dataStart, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
+    serializeBatch(dataStart, getAccountID(sfAccount), getSeqValue(), getFlags(), txIds);
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
         batchSigner,
@@ -811,19 +812,16 @@ invalidMPTAmountInTx(STObject const& tx)
 static bool
 isBatchRawTransactionOkay(STTx const& tx, std::string& reason)
 {
-    XRPL_ASSERT(
-        tx.getTxnType() == ttBATCH || !tx.isFieldPresent(sfRawTransactions),
-        "xrpl::isBatchRawTransactionOkay : raw transactions only on batch");
-
-    if (tx.getTxnType() != ttBATCH)
+    if (!tx.isFieldPresent(sfRawTransactions))
         return true;
 
-    if (!tx.isFieldPresent(sfRawTransactions))
+    // sfRawTransactions only appears on a Batch. passesLocalChecks runs on
+    // unverified user and peer input, so reject (rather than assert) a non-batch
+    // transaction that carries it.
+    if (tx.getTxnType() != ttBATCH)
     {
-        // LCOV_EXCL_START
-        reason = "Batch transactions must contain raw transactions.";
+        reason = "Only Batch transactions may contain raw transactions.";
         return false;
-        // LCOV_EXCL_STOP
     }
 
     if (tx.isFieldPresent(sfBatchSigners) &&

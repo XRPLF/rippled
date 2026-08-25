@@ -9,7 +9,7 @@
 
 #include <atomic>
 
-namespace xrpl::rpc {
+namespace xrpl::RPC {
 
 LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
 {
@@ -21,13 +21,13 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
     }
 
     auto const& jobCount = app.getJobQueue().getJobCountGE(JtClient);
-    if (jobCount > tuning::kMaxPathfindJobCount || app.getFeeTrack().isLoadedLocal())
+    if (jobCount > Tuning::kMaxPathfindJobCount || app.getFeeTrack().isLoadedLocal())
         return;
 
     while (true)
     {
         int prevVal = inProgress.load();
-        if (prevVal >= tuning::kMaxPathfindsInProgress)
+        if (prevVal >= Tuning::kMaxPathfindsInProgress)
             return;
 
         if (inProgress.compare_exchange_strong(
@@ -47,4 +47,4 @@ LegacyPathFind::~LegacyPathFind()
 
 std::atomic<int> LegacyPathFind::inProgress(0);
 
-}  // namespace xrpl::rpc
+}  // namespace xrpl::RPC

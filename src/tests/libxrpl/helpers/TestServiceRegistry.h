@@ -213,14 +213,14 @@ public:
         throw std::logic_error("TestServiceRegistry::peerReservations() not implemented");
     }
 
-    resource::Manager&
+    Resource::Manager&
     getResourceManager() override
     {
         throw std::logic_error("TestServiceRegistry::getResourceManager() not implemented");
     }
 
     // Storage services
-    node_store::Database&
+    NodeStore::Database&
     getNodeStore() override
     {
         throw std::logic_error("TestServiceRegistry::getNodeStore() not implemented");

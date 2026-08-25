@@ -21,7 +21,7 @@ class LoanSetBuilder;
  * Type: ttLOAN_SET (80)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: Privilege::MayAuthorizeMpt | Privilege::MustModifyVault
+ * Privileges: MayAuthorizeMpt | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanSetBuilder to construct new transactions.

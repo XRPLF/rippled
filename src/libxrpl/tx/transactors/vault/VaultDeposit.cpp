@@ -2,20 +2,17 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -49,39 +46,6 @@ roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
     return roundToScale(amount, postScale, Number::RoundingMode::Downward);
 }
 
-// True if debiting `assets` would leave the depositor's balance where it started, so the deposit
-// would mint shares against a transfer that never happened. Asking the balance directly whether it
-// notices the debit avoids having to infer the rounding step: it has to be the stored balance that
-// answers, because that magnitude is what governs the rounding, and it is not the same as the
-// spendable amount, which also counts what the counterparty's limit allows.
-[[nodiscard]]
-static bool
-roundsToZeroForDepositor(
-    ReadView const& view,
-    AccountID const& account,
-    STAmount const& assets,
-    beast::Journal j)
-{
-    if (assets.integral())
-        return false;
-
-    auto const balance = accountHolds(
-        view,
-        account,
-        assets.asset(),
-        FreezeHandling::ZeroIfFrozen,
-        AuthHandling::ZeroIfUnauthorized,
-        j,
-        SpendableHandling::SimpleBalance);
-
-    if (balance - assets != balance)
-        return false;
-
-    JLOG(j.warn()) << "VaultDeposit: amount " << assets.getFullText()
-                   << " leaves the depositor's balance " << balance.getFullText() << " unchanged";
-    return true;
-}
-
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {
@@ -106,17 +70,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
-
-    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
-    {
-        auto const phase = getVaultPhase(ctx.view, vault);
-        if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)
-        {
-            JLOG(ctx.j.debug()) << "VaultDeposit: vault deposit is not allowed in the investment "
-                                   "or redemption phase.";
-            return tecEXPIRED;
-        }
-    }
 
     auto const& account = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];
@@ -174,13 +127,26 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             return tecLOCKED;
     }
 
-    // The vault owner is authorized to deposit unconditionally. An expired
-    // credential is tolerated here because doApply deletes it.
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
-        if (auto const err = checkVaultDomain(ctx.view, sleIssuance, account, SuppressExpired::Yes);
-            !isTesSuccess(err))
-            return err;
+        auto const maybeDomainID = sleIssuance->at(~sfDomainID);
+        // Since this is a private vault and the account is not its owner, we
+        // perform authorization check based on DomainID read from sleIssuance.
+        // Had the vault shares been a regular MPToken, we would allow
+        // authorization granted by the Issuer explicitly, but Vault uses Issuer
+        // pseudo-account, which cannot grant an authorization.
+        if (maybeDomainID)
+        {
+            // As per validDomain documentation, we suppress tecEXPIRED error
+            // here, so we can delete any expired credentials inside doApply.
+            if (auto const err = credentials::validDomain(ctx.view, *maybeDomainID, account);
+                !isTesSuccess(err) && err != tecEXPIRED)
+                return err;
+        }
+        else
+        {
+            return tecNO_AUTH;
+        }
     }
 
     // Source MPToken must exist (if asset is an MPT)
@@ -230,7 +196,6 @@ TER
 VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
-    bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -331,12 +296,6 @@ VaultDeposit::doApply()
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        // What a deposit transfers is not the requested amount but that amount truncated to a
-        // whole number of shares and converted back, which can be smaller. Only here is that
-        // value known rather than recomputed, so this is where it can be checked against the
-        // depositor's balance before anything moves.
-        if (fix340Enabled && roundsToZeroForDepositor(view(), accountID_, *maybeAssets, j_))
-            return tecPRECISION_LOSS;
         assetsDeposited = *maybeAssets;
     }
     catch (std::overflow_error const&)

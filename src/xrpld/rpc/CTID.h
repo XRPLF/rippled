@@ -11,7 +11,7 @@
 #include <string_view>
 #include <tuple>
 
-namespace xrpl::rpc {
+namespace xrpl::RPC {
 
 // CTID stands for Concise Transaction ID.
 //
@@ -111,4 +111,4 @@ decodeCTID(T const ctid) noexcept
     return std::make_tuple(ledgerSeq, txnIndex, networkID);
 }
 
-}  // namespace xrpl::rpc
+}  // namespace xrpl::RPC

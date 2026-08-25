@@ -130,6 +130,9 @@ LoanDelete::doApply()
     // Decrement the borrower's owner count
     decreaseOwnerCountForObject(view, borrowerSle, loanSle, 1, j_);
 
+    // These associations shouldn't do anything, but do them just to be safe
+    associateAsset(*loanSle, vaultAsset);
+    associateAsset(*brokerSle, vaultAsset);
     associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;

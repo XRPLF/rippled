@@ -82,6 +82,13 @@ public:
         return node_ == other.node_;
     }
 
+    template <typename M>
+    bool
+    operator!=(ListIterator<M> const& other) const noexcept
+    {
+        return !((*this) == other);
+    }
+
     reference
     operator*() const noexcept
     {

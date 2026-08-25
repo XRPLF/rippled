@@ -14,7 +14,7 @@ namespace xrpl {
 class Section;
 }  // namespace xrpl
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 /**
  * Base class for backend factories.
@@ -70,4 +70,4 @@ public:
     }
 };
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

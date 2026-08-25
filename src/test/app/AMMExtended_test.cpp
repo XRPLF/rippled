@@ -267,39 +267,20 @@ private:
             {features});
 
         // tfPassive -- place the offer without crossing it.
-        if (features[featureMPTokensV2])
-        {
-            Env env{*this, features};
-            fund(env, gw_, {alice_, carol_}, XRP(30'000'000), {USD(30'000'000)});
-
-            AMM const ammAlice(env, alice_, XRP(10'100'000), USD(10'000'000));
-
-            // Scale the exact-quality fixture up so the visual relationship
-            // stays clear: the passive CLOB offer has the same 1:1 quality as
-            // the generated AMM offer, so it should not cross.
-            env(offer(carol_, XRP(100'000), USD(100'000), tfPassive));
-            env.close();
-            BEAST_EXPECT(
-                ammAlice.expectBalances(XRP(10'100'000), USD(10'000'000), ammAlice.tokens()));
-            BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100'000), USD(100'000)}}}));
-        }
-        else
-        {
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    // Carol creates a passive offer that could cross AMM.
-                    // Carol's offer should stay in the ledger.
-                    env(offer(carol_, XRP(100), USD(100), tfPassive));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
-                    BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {features});
-        }
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Carol creates a passive offer that could cross AMM.
+                // Carol's offer should stay in the ledger.
+                env(offer(carol_, XRP(100), USD(100), tfPassive));
+                env.close();
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
         // tfPassive -- cross only offers of better quality.
         testAMM(
@@ -1303,78 +1284,6 @@ private:
         BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
     }
 
-    // Same shape as testRequireAuth, except the issuer never authorizes the AMM's own trust line.
-    // An AMM holds the asset for its liquidity providers and cannot sign a TrustSet for itself, so
-    // once pseudo-accounts are implicitly authorized the pool keeps trading. Before that the offer
-    // stream drops it and the taker's offer stays on the book.
-    void
-    testPseudoAccountRequireAuth(FeatureBitset features)
-    {
-        testcase("lsfRequireAuth, unauthorized AMM pseudo-account");
-
-        using namespace jtx;
-
-        bool const pseudoExempt = features[fixCleanup3_4_0];
-
-        Env env{*this, features};
-
-        auto const aliceUSD = alice_["USD"];
-        auto const bobUSD = bob_["USD"];
-
-        env.fund(XRP(400'000), gw_, alice_, bob_);
-        env.close();
-
-        env(fset(gw_, asfRequireAuth));
-        env.close();
-
-        env(trust(gw_, bobUSD(100)), Txflags(tfSetfAuth));
-        env(trust(bob_, USD(100)));
-        env(trust(gw_, aliceUSD(100)), Txflags(tfSetfAuth));
-        env(trust(alice_, USD(2'000)));
-        env(pay(gw_, alice_, USD(1'000)));
-        env.close();
-
-        AMM const ammAlice(env, alice_, USD(1'000), XRP(1'050));
-
-        // The pool's own line stays unauthorized: AMMCreate opens it without the flag, and the
-        // pseudo-account has no key to ask for one.
-        auto const ammLineAuthorized = [&]() -> bool {
-            auto const line =
-                env.le(keylet::trustLine(ammAlice.ammAccount(), USD.issue().account, USD.currency));
-            if (!BEAST_EXPECT(line))
-                return false;
-            return line->isFlag(
-                ammAlice.ammAccount() > USD.issue().account ? lsfLowAuth : lsfHighAuth);
-        };
-        BEAST_EXPECT(!ammLineAuthorized());
-
-        env(pay(gw_, bob_, USD(50)));
-        env.close();
-        BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
-
-        // Bob sells USD into the pool, so the pool is the side that has to be authorized to hold
-        // the asset.
-        env(offer(bob_, XRP(50), USD(50)));
-        env.close();
-
-        if (pseudoExempt)
-        {
-            BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), XRP(1'000), ammAlice.tokens()));
-            BEAST_EXPECT(expectOffers(env, bob_, 0));
-            BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
-        }
-        else
-        {
-            // The pool is skipped, so nothing crosses and the offer rests on the book.
-            BEAST_EXPECT(ammAlice.expectBalances(USD(1'000), XRP(1'050), ammAlice.tokens()));
-            BEAST_EXPECT(expectOffers(env, bob_, 1));
-            BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
-        }
-
-        // Either way the exemption skips the check rather than setting the flag.
-        BEAST_EXPECT(!ammLineAuthorized());
-    }
-
     void
     testMissingAuth(FeatureBitset features)
     {
@@ -1450,7 +1359,6 @@ private:
         testRmFundedOffer(all_ - fixAMMv1_1 - fixAMMv1_3);
         testEnforceNoRipple(all_);
         testFillModes(all_);
-        testFillModes(all_ - featureMPTokensV2);
         testOfferCrossWithXRP(all_);
         testOfferCrossWithLimitOverride(all_);
         testCurrencyConversionEntire(all_);
@@ -1472,8 +1380,6 @@ private:
         testDirectToDirectPath(all_);
         testDirectToDirectPath(all_ - fixAMMv1_1 - fixAMMv1_3);
         testRequireAuth(all_);
-        testPseudoAccountRequireAuth(all_);
-        testPseudoAccountRequireAuth(all_ - fixCleanup3_4_0);
         testMissingAuth(all_);
     }
 

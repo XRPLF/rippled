@@ -4,16 +4,15 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -142,19 +141,6 @@ LoanBrokerDelete::doApply()
 
     auto const brokerPseudoID = broker->at(sfAccount);
 
-    // Remove any credentials pinned to the broker pseudo-account before anything
-    // else. They would otherwise keep its owner directory alive and block
-    // deletion with tecHAS_OBLIGATIONS. Doing it first means a bounded,
-    // tecINCOMPLETE cleanup can be resumed by a later transaction without having
-    // already torn down the broker.
-    if (view().rules().enabled(fixCleanup3_4_0))
-    {
-        if (auto const ter = credentials::deletePseudoAccountCredentials(
-                view(), brokerPseudoID, kMaxDeletablePseudoAccountCredentials, j_);
-            !isTesSuccess(ter))
-            return ter;
-    }
-
     if (!view().dirRemove(
             keylet::ownerDir(accountID_), broker->at(sfOwnerNode), broker->key(), false))
     {
@@ -211,6 +197,8 @@ LoanBrokerDelete::doApply()
     }
 
     view().erase(broker);
+
+    associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;
 }

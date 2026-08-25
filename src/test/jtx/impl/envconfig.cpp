@@ -7,10 +7,8 @@
 #include <xrpl/config/Constants.h>
 
 #include <atomic>
-#include <cstdint>
 #include <map>
 #include <memory>
-#include <string>
 #include <vector>
 
 namespace xrpl::test {
@@ -61,15 +59,6 @@ setupConfigForUnitTests(Config& cfg)
 }
 
 namespace jtx {
-
-std::unique_ptr<Config>
-onlineDelete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval)
-{
-    cfg->ledgerHistory = deleteInterval;
-    auto& section = cfg->section(Sections::kNodeDatabase);
-    section.set(Keys::kOnlineDelete, std::to_string(deleteInterval));
-    return cfg;
-}
 
 std::unique_ptr<Config>
 noAdmin(std::unique_ptr<Config> cfg)

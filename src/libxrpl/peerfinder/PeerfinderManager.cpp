@@ -29,7 +29,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 class ManagerImp : public Manager
 {
@@ -98,7 +98,7 @@ public:
     }
 
     void
-    addFixedPeer(std::string_view name, std::vector<beast::ip::Endpoint> const& addresses) override
+    addFixedPeer(std::string_view name, std::vector<beast::IP::Endpoint> const& addresses) override
     {
         logic_.addFixedPeer(name, addresses);
     }
@@ -119,14 +119,14 @@ public:
 
     std::pair<std::shared_ptr<Slot>, Result>
     newInboundSlot(
-        beast::ip::Endpoint const& localEndpoint,
-        beast::ip::Endpoint const& remoteEndpoint) override
+        beast::IP::Endpoint const& localEndpoint,
+        beast::IP::Endpoint const& remoteEndpoint) override
     {
         return logic_.newInboundSlot(localEndpoint, remoteEndpoint);
     }
 
     std::pair<std::shared_ptr<Slot>, Result>
-    newOutboundSlot(beast::ip::Endpoint const& remoteEndpoint) override
+    newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint) override
     {
         return logic_.newOutboundSlot(remoteEndpoint);
     }
@@ -163,7 +163,7 @@ public:
     //--------------------------------------------------------------------------
 
     bool
-    onConnected(std::shared_ptr<Slot> const& slot, beast::ip::Endpoint const& localEndpoint)
+    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& localEndpoint)
         override
     {
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
@@ -184,7 +184,7 @@ public:
         return logic_.redirect(impl);
     }
 
-    std::vector<beast::ip::Endpoint>
+    std::vector<beast::IP::Endpoint>
     autoconnect() override
     {
         return logic_.autoconnect();
@@ -265,4 +265,4 @@ makeManager(
     return std::make_unique<ManagerImp>(ioContext, clock, journal, store, collector);
 }
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

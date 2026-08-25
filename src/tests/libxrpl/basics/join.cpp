@@ -19,11 +19,11 @@ struct JoinTest : public ::testing::Test
 
 TEST_F(JoinTest, join)
 {
-    auto test = [](auto collectionAndDelimiter, std::string expected) {
+    auto test = [](auto collectionanddelimiter, std::string expected) {
         std::stringstream ss;
         // Put something else in the buffer before and after to ensure that
         // the << operator returns the stream correctly.
-        ss << "(" << collectionAndDelimiter << ")";
+        ss << "(" << collectionanddelimiter << ")";
         auto const str = ss.str();
         EXPECT_EQ(str.substr(1, str.length() - 2), expected);
         EXPECT_EQ(str.front(), '(');

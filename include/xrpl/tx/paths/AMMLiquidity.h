@@ -6,6 +6,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <cstdint>
@@ -123,12 +124,17 @@ private:
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
 
     /**
-     * Generate max offer. The offer is generated as:
+     * Generate max offer.
+     * If `fixAMMOverflowOffer` is active, the offer is generated as:
      * takerGets = 99% * balances.out takerPays = swapOut(takerGets).
      * Return nullopt if takerGets is 0 or takerGets == balances.out.
+     *
+     * If `fixAMMOverflowOffer` is not active, the offer is generated as:
+     * takerPays = max input amount;
+     * takerGets = swapIn(takerPays).
      */
     [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
-    maxOffer(TAmounts<TIn, TOut> const& balances) const;
+    maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
 };
 
 }  // namespace xrpl

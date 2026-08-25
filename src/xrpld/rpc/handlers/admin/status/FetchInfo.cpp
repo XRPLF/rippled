@@ -7,7 +7,7 @@
 namespace xrpl {
 
 json::Value
-doFetchInfo(rpc::JsonContext& context)
+doFetchInfo(RPC::JsonContext& context)
 {
     json::Value ret(json::ValueType::Object);
 

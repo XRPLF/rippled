@@ -7,7 +7,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 /**
  * Properties and state associated with a peer to peer overlay connection.
@@ -52,13 +52,13 @@ public:
     /**
      * The remote endpoint of socket.
      */
-    [[nodiscard]] virtual beast::ip::Endpoint const&
+    [[nodiscard]] virtual beast::IP::Endpoint const&
     remoteEndpoint() const = 0;
 
     /**
      * The local endpoint of the socket, when known.
      */
-    [[nodiscard]] virtual std::optional<beast::ip::Endpoint> const&
+    [[nodiscard]] virtual std::optional<beast::IP::Endpoint> const&
     localEndpoint() const = 0;
 
     [[nodiscard]] virtual std::optional<std::uint16_t>
@@ -72,4 +72,4 @@ public:
     publicKey() const = 0;
 };
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

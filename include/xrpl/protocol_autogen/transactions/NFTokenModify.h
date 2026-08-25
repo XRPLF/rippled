@@ -21,7 +21,7 @@ class NFTokenModifyBuilder;
  * Type: ttNFTOKEN_MODIFY (61)
  * Delegable: Delegation::Delegable
  * Amendment: featureDynamicNFT
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenModifyBuilder to construct new transactions.

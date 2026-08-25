@@ -260,11 +260,6 @@ public:
     unsigned
     pop() noexcept;
 
-    // if true, there are no recoverable digits in the guard, though there may be dropped digits
-    // (xbit_)
-    [[nodiscard]] bool
-    unrecoverable() const noexcept;
-
     // if true, there are no digits in the guard, including dropped digits (xbit_)
     [[nodiscard]] bool
     empty() const noexcept;
@@ -281,17 +276,6 @@ public:
     template <class T>
     void
     doDropDigit(T& mantissa, int& exponent) noexcept;
-
-    /**
-     * Drop a digit from the mantissa, and increment the exponent, storing the dropped digit in
-     * this Guard.
-     *
-     * If a drop will not do anything meaningful (there are no recoverable digits in the guard, and
-     * the mantissa is 0), and if targetExponent > exponent, simply set exponent to targetExponent.
-     */
-    template <class T>
-    void
-    doDropDigitWithTarget(T& mantissa, int& exponent, int const targetExponent) noexcept;
 
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
@@ -391,15 +375,9 @@ Number::Guard::pop() noexcept
 }
 
 inline bool
-Number::Guard::unrecoverable() const noexcept
-{
-    return digits_ == 0;
-}
-
-inline bool
 Number::Guard::empty() const noexcept
 {
-    return unrecoverable() && !xbit_;
+    return digits_ == 0 && !xbit_;
 }
 
 template <class T>
@@ -421,25 +399,6 @@ Number::Guard::doDropDigit<uint128_t>(uint128_t& mantissa, int& exponent) noexce
     // mantissa /= 10;
     push(divu10(mantissa));
     ++exponent;
-}
-
-template <class T>
-void
-Number::Guard::doDropDigitWithTarget(T& mantissa, int& exponent, int const targetExponent) noexcept
-{
-    XRPL_ASSERT(
-        exponent < targetExponent, "xrpl::Number::Guard::doDropDigitWithTarget : something to do");
-    while (exponent < targetExponent)
-    {
-        if (mantissa == 0 && unrecoverable())
-        {
-            // No number of dropped digits is going to change anything except the exponent at this
-            // point, so just jump to the result
-            exponent = targetExponent;
-            return;
-        }
-        doDropDigit(mantissa, exponent);
-    }
 }
 
 template <UnsignedMantissa T>
@@ -969,7 +928,6 @@ Number::operator+=(Number const& y)
     //  to match, if necessary.
     auto const adjust = [&g, &upperLimit](
                             uint128_t& expandM, int& expandE, uint128_t& shrinkM, int& shrinkE) {
-        XRPL_ASSERT(shrinkE < expandE, "xrpl::Number::operator+= : exponents ordered correctly");
         // Adjust up and down until the exponents match
         if (g.cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330)
         {
@@ -977,8 +935,6 @@ Number::operator+=(Number const& y)
             // 1. First, shrink the mantissa of shrinkM/shrinkE while shrinkM ends in 0.
             while (shrinkE < expandE && shrinkM % 10 == 0)
             {
-                // Don't use doDropDigitWithTarget here, because the loop will stop before the
-                // mantissa gets to 0.
                 g.doDropDigit(shrinkM, shrinkE);
             }
 
@@ -994,11 +950,10 @@ Number::operator+=(Number const& y)
 
         // 3. Finally, shrink the mantissa of shrinkM/shrinkE until the exponents match. Any removed
         // digits will be put into the Guard. This is the only step for non-Enabled330 modes.
-        if (shrinkE < expandE)
+        while (shrinkE < expandE)
         {
-            g.doDropDigitWithTarget(shrinkM, shrinkE, expandE);
+            g.doDropDigit(shrinkM, shrinkE);
         }
-        XRPL_ASSERT(shrinkE == expandE, "xrpl::Number::operator+= : exponents are equal");
     };
 
     // Shrink the mantissa and raise the exponent of the value with the lower exponent. Store any
@@ -1041,7 +996,7 @@ Number::operator+=(Number const& y)
             // round.
             XRPL_ASSERT(
                 xm > maxMantissa || g.empty(),
-                "xrpl::Number::operator+= : rounding state expected after add");
+                "xrpl::Number::operator+ : rounding state expected after add");
         }
         else
         {
@@ -1083,7 +1038,7 @@ Number::operator+=(Number const& y)
             }
             XRPL_ASSERT(
                 xm > maxMantissa || g.empty(),
-                "xrpl::Number::operator+= : rounding state expected after subtract");
+                "xrpl::Number::operator+ : rounding state expected after subtract");
         }
         else
         {
@@ -1375,10 +1330,9 @@ operator rep() const
             g.setNegative();
             drops = -drops;
         }
-        if (offset < 0)
+        while (offset < 0)
         {
-            g.doDropDigitWithTarget(drops, offset, 0);
-            XRPL_ASSERT(offset == 0, "xrpl::Number::operator rep() : exponents are equal");
+            g.doDropDigit(drops, offset);
         }
         for (; offset > 0; --offset)
         {

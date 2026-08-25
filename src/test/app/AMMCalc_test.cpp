@@ -20,7 +20,6 @@
 
 #include <cstdint>
 #include <exception>
-#include <format>
 #include <iostream>
 #include <map>
 #include <optional>
@@ -189,7 +188,8 @@ class AMMCalc_test : public beast::unit_test::Suite
     static std::string
     toString(STAmount const& a)
     {
-        return std::format("{}/{}", a.getText(), ::xrpl::to_string(a.get<Issue>().currency));
+        return (boost::format("%s/%s") % a.getText() % ::xrpl::to_string(a.get<Issue>().currency))
+            .str();
     }
 
     static STAmount

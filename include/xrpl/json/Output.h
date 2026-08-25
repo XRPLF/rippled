@@ -1,19 +1,20 @@
 #pragma once
 
+#include <boost/beast/core/string.hpp>
+
 #include <functional>
 #include <string>
-#include <string_view>
 
 namespace json {
 
 class Value;
 
-using Output = std::function<void(std::string_view)>;
+using Output = std::function<void(boost::beast::string_view const&)>;
 
 inline Output
 stringOutput(std::string& s)
 {
-    return [&](std::string_view b) { s.append(b.data(), b.size()); };
+    return [&](boost::beast::string_view const& b) { s.append(b.data(), b.size()); };
 }
 
 /**

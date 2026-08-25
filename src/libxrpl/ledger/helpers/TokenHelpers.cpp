@@ -309,15 +309,6 @@ getLineIfUsable(
                 }
             }
         }
-
-        // An LPToken whose AMM pool contains an MPT that forbids transfers is not
-        // spendable. Issuer is the LPToken's AMM account; canTransferLPToken is
-        // a no-op for non-AMM issuers and non-MPT pool assets, so this is implicitly
-        // gated by featureMPTokensV2.
-        if (!isTesSuccess(canTransferLPToken(view, account, account, issuer)))
-        {
-            return nullptr;
-        }
     }
 
     return sle;
@@ -439,7 +430,7 @@ accountHolds(
     auto const sleMpt = view.read(keylet::mptoken(mptIssue.getMptID(), account));
 
     if (!sleMpt ||
-        (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, *sleMpt)))
+        (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, mptIssue)))
     {
         amount.clear(mptIssue);
     }

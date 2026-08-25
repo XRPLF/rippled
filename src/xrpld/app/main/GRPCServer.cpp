@@ -9,7 +9,6 @@
 
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -25,6 +24,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
 
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/icl/interval_set.hpp>
@@ -49,7 +49,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -72,10 +71,10 @@ getEndpoint(std::string const& peer)
             peerClean = peer.substr(first + 1);
         }
 
-        std::optional<beast::ip::Endpoint> endpoint =
-            beast::ip::Endpoint::fromStringChecked(peerClean);
+        std::optional<beast::IP::Endpoint> endpoint =
+            beast::IP::Endpoint::fromStringChecked(peerClean);
         if (endpoint)
-            return beast::ip::toAsioEndpoint(endpoint.value());
+            return beast::IP::toAsioEndpoint(endpoint.value());
     }
     catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
     {
@@ -93,8 +92,8 @@ GRPCServerImpl::CallData<Request, Response>::CallData(
     BindListener<Request, Response> bindListener,
     Handler<Request, Response> handler,
     Forward<Request, Response> forward,
-    rpc::Condition requiredCondition,
-    resource::Charge loadType,
+    RPC::Condition requiredCondition,
+    Resource::Charge loadType,
     std::vector<boost::asio::ip::address> const& secureGatewayIPs)
     : service_(service)
     , cq_(cq)
@@ -196,7 +195,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                 JLOG(app_.getJournal("GRPCServer::Calldata").debug()) << toLog.str();
             }
 
-            rpc::GRPCContext<Request> context{
+            RPC::GRPCContext<Request> context{
                 {app_.getJournal("gRPCServer"),
                  app_,
                  loadType,
@@ -210,11 +209,11 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                 request_};
 
             // Make sure we can currently handle the rpc
-            ErrorCodeI const conditionMetRes = rpc::conditionMet(requiredCondition_, context);
+            ErrorCodeI const conditionMetRes = RPC::conditionMet(requiredCondition_, context);
 
             if (conditionMetRes != RpcSuccess)
             {
-                rpc::ErrorInfo const errorInfo = rpc::getErrorInfo(conditionMetRes);
+                RPC::ErrorInfo const errorInfo = RPC::getErrorInfo(conditionMetRes);
                 grpc::Status const status{
                     grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.cStr()};
                 responder_.FinishWithError(status, this);
@@ -242,7 +241,7 @@ GRPCServerImpl::CallData<Request, Response>::isFinished()
 }
 
 template <class Request, class Response>
-resource::Charge
+Resource::Charge
 GRPCServerImpl::CallData<Request, Response>::getLoadType()
 {
     return loadType_;
@@ -324,12 +323,12 @@ GRPCServerImpl::CallData<Request, Response>::setIsUnlimited(Response& response, 
 }
 
 template <class Request, class Response>
-resource::Consumer
+Resource::Consumer
 GRPCServerImpl::CallData<Request, Response>::getUsage()
 {
     auto endpoint = getClientEndpoint();
     if (endpoint)
-        return app_.getResourceManager().newInboundEndpoint(beast::ip::fromAsio(endpoint.value()));
+        return app_.getResourceManager().newInboundEndpoint(beast::IP::fromAsio(endpoint.value()));
     Throw<std::runtime_error>("Failed to get client endpoint");
 }
 
@@ -372,7 +371,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
                 std::string ip;
                 while (std::getline(ss, ip, ','))
                 {
-                    ip = trimWhitespace(ip);
+                    boost::algorithm::trim(ip);
                     auto const addr = boost::asio::ip::make_address(ip);
 
                     if (addr.is_unspecified())
@@ -528,7 +527,7 @@ GRPCServerImpl::handleRpcs()
 std::vector<std::shared_ptr<Processor>>
 GRPCServerImpl::setupListeners()
 {
-    using rpc::Condition;
+    using RPC::Condition;
     std::vector<std::shared_ptr<Processor>> requests;
 
     auto addToRequests = [&requests](auto callData) { requests.push_back(std::move(callData)); };
@@ -546,7 +545,7 @@ GRPCServerImpl::setupListeners()
                 doLedgerGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
                 Condition::NoCondition,
-                resource::kFeeMediumBurdenRpc,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -563,7 +562,7 @@ GRPCServerImpl::setupListeners()
                 doLedgerDataGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
                 Condition::NoCondition,
-                resource::kFeeMediumBurdenRpc,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -580,7 +579,7 @@ GRPCServerImpl::setupListeners()
                 doLedgerDiffGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
                 Condition::NoCondition,
-                resource::kFeeMediumBurdenRpc,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -597,7 +596,7 @@ GRPCServerImpl::setupListeners()
                 doLedgerEntryGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
                 Condition::NoCondition,
-                resource::kFeeMediumBurdenRpc,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     return requests;
@@ -616,7 +615,7 @@ GRPCServerImpl::createServerCredentials()
 
     try
     {
-        std::error_code ec;
+        boost::system::error_code ec;
         grpc::SslServerCredentialsOptions sslOpts;
         grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
 

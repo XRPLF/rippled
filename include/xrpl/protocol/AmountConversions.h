@@ -154,7 +154,7 @@ T
 toAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number::getround())
 {
     SaveNumberRoundMode const rm(Number::getround());
-    if (asset.integral())
+    if (isXRP(asset))
         Number::setround(mode);
 
     if constexpr (std::is_same_v<IOUAmount, T>)

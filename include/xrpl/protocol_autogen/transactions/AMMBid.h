@@ -21,7 +21,7 @@ class AMMBidBuilder;
  * Type: ttAMM_BID (39)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMBidBuilder to construct new transactions.

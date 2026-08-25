@@ -21,7 +21,7 @@ class BatchBuilder;
  * Type: ttBATCH (71)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureBatchV1_1
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use BatchBuilder to construct new transactions.

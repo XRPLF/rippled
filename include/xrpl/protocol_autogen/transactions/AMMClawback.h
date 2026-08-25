@@ -21,7 +21,7 @@ class AMMClawbackBuilder;
  * Type: ttAMM_CLAWBACK (31)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMMClawback
- * Privileges: Privilege::MayDeleteAcct | Privilege::OverrideFreeze | Privilege::MayAuthorizeMpt
+ * Privileges: MayDeleteAcct | OverrideFreeze | MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMClawbackBuilder to construct new transactions.

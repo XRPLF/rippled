@@ -10,7 +10,7 @@
 #include <sstream>
 #include <string>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 /**
  * Direction of a slot count adjustment.
@@ -50,7 +50,7 @@ public:
         // Must be handshaked and in the right state
         XRPL_ASSERT(
             s.state() == Slot::State::Connected || s.state() == Slot::State::Accept,
-            "xrpl::peer_finder::Counts::can_activate : valid input state");
+            "xrpl::PeerFinder::Counts::can_activate : valid input state");
 
         if (s.fixed() || s.reserved())
             return true;
@@ -67,9 +67,9 @@ public:
     [[nodiscard]] std::size_t
     attemptsNeeded() const
     {
-        if (attempts_ >= tuning::kMaxConnectAttempts)
+        if (attempts_ >= Tuning::kMaxConnectAttempts)
             return 0;
-        return tuning::kMaxConnectAttempts - attempts_;
+        return Tuning::kMaxConnectAttempts - attempts_;
     }
 
     /**
@@ -295,7 +295,7 @@ private:
         switch (s.state())
         {
             case Slot::State::Accept:
-                XRPL_ASSERT(s.inbound(), "xrpl::peer_finder::Counts::adjust : input is inbound");
+                XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
                 acceptCount_ += n;
                 break;
 
@@ -303,7 +303,7 @@ private:
             case Slot::State::Connected:
                 XRPL_ASSERT(
                     !s.inbound(),
-                    "xrpl::peer_finder::Counts::adjust : input is not "
+                    "xrpl::PeerFinder::Counts::adjust : input is not "
                     "inbound");
                 attempts_ += n;
                 break;
@@ -331,7 +331,7 @@ private:
 
             // LCOV_EXCL_START
             default:
-                UNREACHABLE("xrpl::peer_finder::Counts::adjust : invalid input state");
+                UNREACHABLE("xrpl::PeerFinder::Counts::adjust : invalid input state");
                 break;
                 // LCOV_EXCL_STOP
         };
@@ -391,4 +391,4 @@ private:
     int closingCount_{0};
 };
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

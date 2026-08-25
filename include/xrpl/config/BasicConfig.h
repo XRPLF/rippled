@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/contract.h>
 
+#include <boost/beast/core/string.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>

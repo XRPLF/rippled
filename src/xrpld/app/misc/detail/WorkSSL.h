@@ -7,6 +7,7 @@
 #include <xrpl/net/HTTPClientSSLContext.h>
 
 #include <boost/asio/ssl.hpp>
+#include <boost/format.hpp>
 
 #include <memory>
 #include <string>

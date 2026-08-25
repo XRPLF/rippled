@@ -11,7 +11,7 @@ public:
     {
         testcase("EncodeSoftwareVersion");
 
-        auto encodedVersion = build_info::encodeSoftwareVersion("1.2.3-b7");
+        auto encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.3-b7");
 
         // the first two bytes identify the particular implementation, 0x183B
         BEAST_EXPECT((encodedVersion & 0xFFFF'0000'0000'0000LLU) == 0x183B'0000'0000'0000LLU);
@@ -25,15 +25,15 @@ public:
             // 01 if a beta
             BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b01);
             // 10 if an RC
-            encodedVersion = build_info::encodeSoftwareVersion("1.2.4-rc7");
+            encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.4-rc7");
             BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b10);
             // 11 if neither an RC nor a beta
-            encodedVersion = build_info::encodeSoftwareVersion("1.2.5");
+            encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.5");
             BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b11);
         }
 
         // the next six bits: rc/beta number (1-63)
-        encodedVersion = build_info::encodeSoftwareVersion("1.2.6-b63");
+        encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.6-b63");
         BEAST_EXPECT((encodedVersion & 0x0000'0000'003F'0000LLU) >> 16 == 63);
 
         // the last two bytes are zeros
@@ -41,14 +41,14 @@ public:
 
         // Test some version strings with wrong formats:
         // no rc/beta number
-        encodedVersion = build_info::encodeSoftwareVersion("1.2.3-b");
+        encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.3-b");
         BEAST_EXPECT((encodedVersion & 0x0000'0000'00FF'0000LLU) == 0);
         // rc/beta number out of range
-        encodedVersion = build_info::encodeSoftwareVersion("1.2.3-b64");
+        encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.3-b64");
         BEAST_EXPECT((encodedVersion & 0x0000'0000'00FF'0000LLU) == 0);
 
         // Check that the rc/beta number of a release is 0:
-        encodedVersion = build_info::encodeSoftwareVersion("1.2.6");
+        encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.6");
         BEAST_EXPECT((encodedVersion & 0x0000'0000'003F'0000LLU) == 0);
     }
 
@@ -57,9 +57,9 @@ public:
     {
         testcase("IsXrpldVersion");
         auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
-        BEAST_EXPECT(!build_info::isXrpldVersion(vFF));
+        BEAST_EXPECT(!BuildInfo::isXrpldVersion(vFF));
         auto vXrpld = 0x183B'0000'0000'0000LLU;
-        BEAST_EXPECT(build_info::isXrpldVersion(vXrpld));
+        BEAST_EXPECT(BuildInfo::isXrpldVersion(vXrpld));
     }
 
     void
@@ -67,16 +67,16 @@ public:
     {
         testcase("IsNewerVersion");
         auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
-        BEAST_EXPECT(!build_info::isNewerVersion(vFF));
+        BEAST_EXPECT(!BuildInfo::isNewerVersion(vFF));
 
-        auto v159 = build_info::encodeSoftwareVersion("1.5.9");
-        BEAST_EXPECT(!build_info::isNewerVersion(v159));
+        auto v159 = BuildInfo::encodeSoftwareVersion("1.5.9");
+        BEAST_EXPECT(!BuildInfo::isNewerVersion(v159));
 
-        auto vCurrent = build_info::getEncodedVersion();
-        BEAST_EXPECT(!build_info::isNewerVersion(vCurrent));
+        auto vCurrent = BuildInfo::getEncodedVersion();
+        BEAST_EXPECT(!BuildInfo::isNewerVersion(vCurrent));
 
-        auto vMax = build_info::encodeSoftwareVersion("255.255.255");
-        BEAST_EXPECT(build_info::isNewerVersion(vMax));
+        auto vMax = BuildInfo::encodeSoftwareVersion("255.255.255");
+        BEAST_EXPECT(BuildInfo::isNewerVersion(vMax));
     }
 
     void

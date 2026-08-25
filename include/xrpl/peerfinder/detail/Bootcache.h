@@ -14,7 +14,7 @@
 
 #include <functional>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 /**
  * Stores IP addresses useful for gaining initial connections.
@@ -65,7 +65,7 @@ private:
     };
 
     using left_t = boost::bimaps::
-        unordered_set_of<beast::ip::Endpoint, boost::hash<beast::ip::Endpoint>, std::equal_to<>>;
+        unordered_set_of<beast::IP::Endpoint, boost::hash<beast::IP::Endpoint>, std::equal_to<>>;
     using right_t = boost::bimaps::multiset_of<Entry, std::less<>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
@@ -73,11 +73,11 @@ private:
     struct Transform
     {
         using first_argument_type = map_type::right_map::const_iterator::value_type const&;
-        using result_type = beast::ip::Endpoint const&;
+        using result_type = beast::IP::Endpoint const&;
 
         explicit Transform() = default;
 
-        beast::ip::Endpoint const&
+        beast::IP::Endpoint const&
         operator()(map_type::right_map::const_iterator::value_type const& v) const
         {
             return v.get_left();
@@ -121,7 +121,7 @@ public:
     size() const;
 
     /**
-     * ip::Endpoint iterators that traverse in decreasing valence.
+     * IP::Endpoint iterators that traverse in decreasing valence.
      */
     /** @{ */
     [[nodiscard]] const_iterator
@@ -146,25 +146,25 @@ public:
      * Add a newly-learned address to the cache.
      */
     bool
-    insert(beast::ip::Endpoint const& endpoint);
+    insert(beast::IP::Endpoint const& endpoint);
 
     /**
      * Add a staticallyconfigured address to the cache.
      */
     bool
-    insertStatic(beast::ip::Endpoint const& endpoint);
+    insertStatic(beast::IP::Endpoint const& endpoint);
 
     /**
      * Called when an outbound connection handshake completes.
      */
     void
-    onSuccess(beast::ip::Endpoint const& endpoint);
+    onSuccess(beast::IP::Endpoint const& endpoint);
 
     /**
      * Called when an outbound connection attempt fails to handshake.
      */
     void
-    onFailure(beast::ip::Endpoint const& endpoint);
+    onFailure(beast::IP::Endpoint const& endpoint);
 
     /**
      * Stores the cache in the persistent database on a timer.
@@ -189,4 +189,4 @@ private:
     flagForUpdate();
 };
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

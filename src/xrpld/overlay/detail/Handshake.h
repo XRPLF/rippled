@@ -47,8 +47,8 @@ buildHandshake(
     boost::beast::http::fields& h,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::ip::Address publicIp,
-    beast::ip::Address remoteIp,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     Application& app);
 
 /**
@@ -68,8 +68,8 @@ verifyHandshake(
     boost::beast::http::fields const& headers,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::ip::Address publicIp,
-    beast::ip::Address remote,
+    beast::IP::Address publicIp,
+    beast::IP::Address remote,
     Application& app);
 
 /**
@@ -109,8 +109,8 @@ http_response_type
 makeResponse(
     bool crawlPublic,
     http_request_type const& req,
-    beast::ip::Address publicIp,
-    beast::ip::Address remoteIp,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion version,

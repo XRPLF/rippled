@@ -21,7 +21,7 @@ class MPTokenIssuanceDestroyBuilder;
  * Type: ttMPTOKEN_ISSUANCE_DESTROY (55)
  * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: Privilege::DestroyMptIssuance
+ * Privileges: DestroyMptIssuance
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenIssuanceDestroyBuilder to construct new transactions.

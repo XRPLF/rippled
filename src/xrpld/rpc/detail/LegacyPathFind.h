@@ -6,7 +6,7 @@ namespace xrpl {
 
 class Application;
 
-namespace rpc {
+namespace RPC {
 
 class LegacyPathFind
 {
@@ -26,5 +26,5 @@ private:
     bool isOk_{false};
 };
 
-}  // namespace rpc
+}  // namespace RPC
 }  // namespace xrpl

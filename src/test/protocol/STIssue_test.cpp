@@ -7,22 +7,17 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <array>
-#include <cstdint>
 #include <memory>
 
 namespace xrpl::test {
@@ -279,54 +274,6 @@ public:
     }
 
     void
-    testMPTSerialization()
-    {
-        testcase("MPT serialization");
-        using namespace jtx;
-        Account const alice{"alice"};
-
-        // 0x01020304 pins canonical MPTID bytes 01 02 03 04 and
-        // preserved STIssue wire bytes 04 03 02 01 on BE and LE.
-        auto const sequences = std::to_array<std::uint32_t>({0x00000001, 0x01020304, 0xa1b2c3d4});
-
-        for (auto const vector : sequences)
-        {
-            MPTID const mptID = makeMptID(vector, alice);
-            MPTIssue const issue{mptID};
-            STIssue const stIssue(sfAsset, Asset{issue});
-
-            Serializer actual;
-            stIssue.add(actual);
-
-            // STIssue preserves the existing little-endian validator ledger bytes.
-            Serializer expected;
-            expected.addBitString(alice.id());
-            expected.addBitString(noAccount());
-            {
-                std::array<unsigned char, 4> const bytes{
-                    static_cast<unsigned char>(vector),
-                    static_cast<unsigned char>(vector >> 8),
-                    static_cast<unsigned char>(vector >> 16),
-                    static_cast<unsigned char>(vector >> 24)};
-                expected.addRaw(bytes.data(), bytes.size());
-            }
-
-            BEAST_EXPECTS(strHex(actual) == strHex(expected), strHex(actual));
-
-            // Decoding the preserved wire format must recover the canonical MPTID.
-            SerialIter iter(expected.slice());
-            STIssue const decoded(iter, sfAsset);
-            BEAST_EXPECT(decoded.holds<MPTIssue>());
-            BEAST_EXPECT(decoded.value().get<MPTIssue>().getMptID() == mptID);
-
-            // A decoded ledger value must serialize back to the same bytes.
-            Serializer roundTrip;
-            decoded.add(roundTrip);
-            BEAST_EXPECTS(strHex(roundTrip) == strHex(expected), strHex(roundTrip));
-        }
-    }
-
-    void
     run() override
     {
         // compliments other unit tests to ensure complete coverage
@@ -336,7 +283,6 @@ public:
         testNoAccountIssuer();
         testXrpAccountIssuerRpc();
         testXrpAccountIssuer();
-        testMPTSerialization();
     }
 };
 

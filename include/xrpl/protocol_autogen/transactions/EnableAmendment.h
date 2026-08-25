@@ -21,7 +21,7 @@ class EnableAmendmentBuilder;
  * Type: ttAMENDMENT (100)
  * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EnableAmendmentBuilder to construct new transactions.

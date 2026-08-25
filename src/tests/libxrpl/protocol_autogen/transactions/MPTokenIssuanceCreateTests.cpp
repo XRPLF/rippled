@@ -34,7 +34,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     auto const maximumAmountValue = canonical_UINT64();
     auto const mPTokenMetadataValue = canonical_VL();
     auto const domainIDValue = canonical_UINT256();
-    auto const immutableFlagsValue = canonical_UINT32();
+    auto const mutableFlagsValue = canonical_UINT32();
 
     MPTokenIssuanceCreateBuilder builder{
         accountValue,
@@ -48,7 +48,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     builder.setMaximumAmount(maximumAmountValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
-    builder.setImmutableFlags(immutableFlagsValue);
+    builder.setMutableFlags(mutableFlagsValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -107,11 +107,11 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = immutableFlagsValue;
-        auto const actualOpt = tx.getImmutableFlags();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfImmutableFlags should be present";
-        expectEqualField(expected, *actualOpt, "sfImmutableFlags");
-        EXPECT_TRUE(tx.hasImmutableFlags());
+        auto const& expected = mutableFlagsValue;
+        auto const actualOpt = tx.getMutableFlags();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMutableFlags should be present";
+        expectEqualField(expected, *actualOpt, "sfMutableFlags");
+        EXPECT_TRUE(tx.hasMutableFlags());
     }
 
 }
@@ -135,7 +135,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     auto const maximumAmountValue = canonical_UINT64();
     auto const mPTokenMetadataValue = canonical_VL();
     auto const domainIDValue = canonical_UINT256();
-    auto const immutableFlagsValue = canonical_UINT32();
+    auto const mutableFlagsValue = canonical_UINT32();
 
     // Build an initial transaction
     MPTokenIssuanceCreateBuilder initialBuilder{
@@ -149,7 +149,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setMaximumAmount(maximumAmountValue);
     initialBuilder.setMPTokenMetadata(mPTokenMetadataValue);
     initialBuilder.setDomainID(domainIDValue);
-    initialBuilder.setImmutableFlags(immutableFlagsValue);
+    initialBuilder.setMutableFlags(mutableFlagsValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -204,10 +204,10 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = immutableFlagsValue;
-        auto const actualOpt = rebuiltTx.getImmutableFlags();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfImmutableFlags should be present";
-        expectEqualField(expected, *actualOpt, "sfImmutableFlags");
+        auto const& expected = mutableFlagsValue;
+        auto const actualOpt = rebuiltTx.getMutableFlags();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMutableFlags should be present";
+        expectEqualField(expected, *actualOpt, "sfMutableFlags");
     }
 
 }
@@ -275,8 +275,8 @@ TEST(TransactionsMPTokenIssuanceCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getMPTokenMetadata().has_value());
     EXPECT_FALSE(tx.hasDomainID());
     EXPECT_FALSE(tx.getDomainID().has_value());
-    EXPECT_FALSE(tx.hasImmutableFlags());
-    EXPECT_FALSE(tx.getImmutableFlags().has_value());
+    EXPECT_FALSE(tx.hasMutableFlags());
+    EXPECT_FALSE(tx.getMutableFlags().has_value());
 }
 
 }

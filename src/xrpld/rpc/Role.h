@@ -40,13 +40,13 @@ requestRole(
     Role const& required,
     Port const& port,
     json::Value const& params,
-    beast::ip::Endpoint const& remoteIp,
+    beast::IP::Endpoint const& remoteIp,
     std::string_view user);
 
-resource::Consumer
+Resource::Consumer
 requestInboundEndpoint(
-    resource::Manager& manager,
-    beast::ip::Endpoint const& remoteAddress,
+    Resource::Manager& manager,
+    beast::IP::Endpoint const& remoteAddress,
     Role const& role,
     std::string_view user,
     std::string_view forwardedFor);
@@ -66,7 +66,7 @@ isUnlimited(Role const& role);
  */
 bool
 ipAllowed(
-    beast::ip::Address const& remoteIp,
+    beast::IP::Address const& remoteIp,
     std::vector<boost::asio::ip::network_v4> const& nets4,
     std::vector<boost::asio::ip::network_v6> const& nets6);
 

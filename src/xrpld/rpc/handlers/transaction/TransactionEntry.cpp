@@ -21,10 +21,10 @@ namespace xrpl {
 // XXX In this case, not specify either ledger does not mean ledger current. It
 // means any ledger.
 json::Value
-doTransactionEntry(rpc::JsonContext& context)
+doTransactionEntry(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    json::Value jvResult = rpc::lookupLedger(lpLedger, context);
+    json::Value jvResult = RPC::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
@@ -84,7 +84,7 @@ doTransactionEntry(rpc::JsonContext& context)
                 jvResult[jss::tx_json] = sttx->getJson(JsonOptions::Values::None);
             }
 
-            rpc::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
+            RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 
             auto const jsonMeta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)

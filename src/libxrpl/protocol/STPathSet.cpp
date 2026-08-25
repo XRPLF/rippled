@@ -51,12 +51,6 @@ STPathElement::getHash(STPathElement const& element)
     return (hashAccount ^ hashCurrency ^ hashIssuer);
 }
 
-[[nodiscard]] size_t
-STPathElement::getHash() const
-{
-    return STPathElement::getHash(*this);
-}
-
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
 {
     std::vector<STPathElement> path;
@@ -132,15 +126,21 @@ STPathSet::move(std::size_t n, void* buf)
 bool
 STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
-    STPath combined = base;
-    combined.pushBack(tail);
+    value_.push_back(base);
 
-    if (!seenHashes_.insert(combined).second)
+    auto it = value_.rbegin();
+
+    STPath& newPath = *it;
+    newPath.pushBack(tail);
+
+    while (++it != value_.rend())
     {
-        return false;
+        if (*it == newPath)
+        {
+            value_.pop_back();
+            return false;
+        }
     }
-
-    value_.push_back(std::move(combined));
     return true;
 }
 

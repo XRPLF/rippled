@@ -8,7 +8,6 @@ Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 
 import io
 import argparse
-import re
 from pathlib import Path
 import pyparsing as pp
 
@@ -54,89 +53,28 @@ def create_transaction_parser():
     return macro_parser
 
 
-# Defaults for xrpl::TxSettings members, mirroring
-# include/xrpl/protocol/TxSettings.h. A transaction's settings blob only names
-# the members that differ from these.
-SETTING_DEFAULTS = {
-    "delegable": "Delegation::NotDelegable",
-    "amendment": "uint256{}",
-    "privileges": "Privilege::NoPriv",
-}
-
-
-def parse_settings(settings_str):
-    """Parse a TxSettings blob into a dict, filling in defaults.
-
-    Args:
-        settings_str: A string like '({.delegable = Delegation::NotDelegable,
-                      .privileges = Privilege::CreateAcct})', or '({})'.
-
-    Returns:
-        A dict with a value for every key in SETTING_DEFAULTS.
-    """
-    body = settings_str.strip()
-    if not (body.startswith("(") and body.endswith(")")):
-        raise ValueError(
-            f"Malformed settings blob, expected '({{...}})': {settings_str!r}"
-        )
-    body = body[1:-1].strip()
-    if not (body.startswith("{") and body.endswith("}")):
-        raise ValueError(
-            f"Malformed settings blob, expected '({{...}})': {settings_str!r}"
-        )
-    body = body[1:-1]
-
-    # Strip comments, which may be interleaved with the designated initializers.
-    body = re.sub(r"//[^\n]*", "", body)
-
-    settings = dict(SETTING_DEFAULTS)
-    seen = set()
-    # Each entry runs from '.key =' up to the next '.key =' or the end.
-    for key, value in re.findall(
-        r"\.(\w+)\s*=\s*(.*?)(?=,\s*\.\w+\s*=|,?\s*$)", body, re.S
-    ):
-        if key not in SETTING_DEFAULTS:
-            raise ValueError(f"Unknown TxSettings member '.{key}' in {settings_str!r}")
-        settings[key] = " ".join(value.split()).rstrip(",")
-        seen.add(key)
-
-    # Catch a typo'd or unparsed initializer rather than silently defaulting it.
-    # Every '.member' in the blob must have been consumed above.
-    if len(re.findall(r"\.\w+", body)) != len(seen):
-        raise ValueError(f"Could not parse every setting in {settings_str!r}")
-
-    # A blob with content but no designated initializer is positional, which
-    # would otherwise be read as "all defaults" and silently generate the
-    # wrong output.
-    if body.strip() and not seen:
-        raise ValueError(
-            "TxSettings requires designated initializers (.member = value), "
-            f"got {settings_str!r}"
-        )
-
-    return settings
-
-
 def parse_transaction_args(args_list):
     """Parse the arguments of a TRANSACTION macro call.
 
     Args:
         args_list: A list of parsed arguments from pyparsing, e.g.,
-                   ['ttPAYMENT', '0', 'Payment',
-                    '({.privileges = Privilege::CreateAcct})', '({...})']
+                   ['ttPAYMENT', '0', 'Payment', 'Delegation::delegable',
+                    'uint256{}', 'createAcct', '({...})']
 
     Returns:
         A dict with parsed transaction information.
     """
-    if len(args_list) < 5:
+    if len(args_list) < 7:
         raise ValueError(
-            f"Expected at least 5 parts in TRANSACTION, got {len(args_list)}: {args_list}"
+            f"Expected at least 7 parts in TRANSACTION, got {len(args_list)}: {args_list}"
         )
 
     tag = args_list[0]
     value = args_list[1]
     name = args_list[2]
-    settings = parse_settings(args_list[3])
+    delegable = args_list[3]
+    amendments = args_list[4]
+    privileges = args_list[5]
     fields_str = args_list[-1]
 
     # Parse fields: ({field1, field2, ...})
@@ -146,9 +84,9 @@ def parse_transaction_args(args_list):
         "tag": tag,
         "value": value,
         "name": name,
-        "delegable": settings["delegable"],
-        "amendments": settings["amendment"],
-        "privileges": settings["privileges"],
+        "delegable": delegable,
+        "amendments": amendments,
+        "privileges": privileges,
         "fields": fields,
     }
 

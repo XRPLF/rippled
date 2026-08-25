@@ -18,7 +18,6 @@ override_dh_installsysusers:
 
 override_dh_install:
 	install -D -m 0755 xrpld            debian/xrpld/usr/bin/xrpld
-	install -D -m 0755 validator-keys   debian/xrpld/usr/bin/validator-keys
 	install -D -m 0644 xrpld.cfg        debian/xrpld/etc/xrpld/xrpld.cfg
 	install -D -m 0644 validators.txt   debian/xrpld/etc/xrpld/validators.txt
 

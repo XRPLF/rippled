@@ -25,6 +25,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 
@@ -200,14 +201,14 @@ CheckCreate::doApply()
         return ret;
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
-    auto const seq = ctx_.tx.getSeqProxy();
+    std::uint32_t const seq = ctx_.tx.getSeqValue();
     Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
-    sleCheck->setFieldU32(sfSequence, seq.value());
+    sleCheck->setFieldU32(sfSequence, seq);
     sleCheck->setFieldAmount(sfSendMax, ctx_.tx[sfSendMax]);
     if (auto const srcTag = ctx_.tx[~sfSourceTag])
         sleCheck->setFieldU32(sfSourceTag, *srcTag);

@@ -137,9 +137,9 @@ InnerObjectFormats::InnerObjectFormats()
             {sfCredentialType, SoeRequired},
         });
 
-    add(sfPermission.jsonName, sfPermission.getCode(), {{sfPermissionValue, SoeRequired}});
+    add(sfPermission.jsonName.cStr(), sfPermission.getCode(), {{sfPermissionValue, SoeRequired}});
 
-    add(sfBatchSigner.jsonName,
+    add(sfBatchSigner.jsonName.cStr(),
         sfBatchSigner.getCode(),
         {{sfAccount, SoeRequired},
          {sfSigningPubKey, SoeOptional},
@@ -161,7 +161,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfSigners, SoeOptional},
         });
 
-    add(sfSponsorSignature.jsonName,
+    add(sfSponsorSignature.jsonName.cStr(),
         sfSponsorSignature.getCode(),
         {
             {sfSigningPubKey, SoeOptional},

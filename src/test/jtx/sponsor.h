@@ -18,24 +18,24 @@ namespace xrpl::test::jtx::sponsor {
 json::Value
 set(jtx::Account const& account,
     std::uint32_t flags,
-    std::optional<std::int32_t> const reserveCountDelta = std::nullopt,
-    std::optional<STAmount> const feeAmountDelta = std::nullopt,
+    std::optional<std::uint32_t> const reserveCount = std::nullopt,
+    std::optional<STAmount> const feeAmount = std::nullopt,
     std::optional<STAmount> const maxFee = std::nullopt);
 
 inline json::Value
 set_fee(
     jtx::Account const& account,
     std::uint32_t flags,
-    STAmount feeAmountDelta,
+    STAmount feeAmount,
     std::optional<STAmount> maxFee = std::nullopt)
 {
-    return set(account, flags, std::nullopt, std::move(feeAmountDelta), std::move(maxFee));
+    return set(account, flags, std::nullopt, std::move(feeAmount), std::move(maxFee));
 }
 
 inline json::Value
-set_reserve(jtx::Account const& account, std::uint32_t flags, std::int32_t reserveCountDelta)
+set_reserve(jtx::Account const& account, std::uint32_t flags, std::uint32_t reserveCount)
 {
-    return set(account, flags, reserveCountDelta);
+    return set(account, flags, reserveCount);
 }
 
 inline json::Value

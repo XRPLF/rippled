@@ -15,7 +15,7 @@
 #include <memory>
 #include <utility>
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 void
 DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
@@ -125,4 +125,4 @@ DatabaseNodeImp::fetchNodeObject(
     return nodeObject;
 }
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

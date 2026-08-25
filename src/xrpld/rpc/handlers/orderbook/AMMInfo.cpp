@@ -61,13 +61,13 @@ toIso8601(NetClock::time_point tp)
 }
 
 json::Value
-doAMMInfo(rpc::JsonContext& context)
+doAMMInfo(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     json::Value result;
 
     std::shared_ptr<ReadView const> ledger;
-    result = rpc::lookupLedger(ledger, context);
+    result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
@@ -174,7 +174,7 @@ doAMMInfo(rpc::JsonContext& context)
     auto const r = getValuesFromContextParams();
     if (!r)
     {
-        rpc::injectError(r.error(), result);
+        RPC::injectError(r.error(), result);
         return result;
     }
 

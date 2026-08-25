@@ -16,18 +16,18 @@ namespace xrpl {
 //   secret: <secret of signing account>
 // }
 json::Value
-doSignFor(rpc::JsonContext& context)
+doSignFor(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
-        return rpc::makeError(RpcNotSupported, "Signing is not supported by this server.");
+        return RPC::makeError(RpcNotSupported, "Signing is not supported by this server.");
     }
 
-    context.loadType = resource::kFeeHeavyBurdenRpc;
+    context.loadType = Resource::kFeeHeavyBurdenRpc;
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 
-    auto ret = rpc::transactionSignFor(
+    auto ret = RPC::transactionSignFor(
         context.params,
         context.apiVersion,
         failType,

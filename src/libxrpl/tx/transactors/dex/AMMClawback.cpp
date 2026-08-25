@@ -227,7 +227,6 @@ AMMClawback::applyGuts(Sandbox& sb)
                 sb,
                 *ammSle,
                 holder,
-                issuer,
                 ammAccount,
                 amountBalance,
                 amount2Balance,
@@ -257,7 +256,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     }
 
     if (!isTesSuccess(result))
-        return result;
+        return result;  // LCOV_EXCL_LINE
 
     if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
     {
@@ -312,14 +311,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& holdLPtokens,
     STAmount const& amount)
 {
-    // The clawback issuer signs for its own asset only. Threaded into the
-    // withdrawal so a recreated MPToken is auto-authorized only for the
-    // clawback issuer's asset, never for a paired asset from another issuer.
-    // preflight guarantees sfAccount is the clawed asset's issuer (it rejects
-    // the tx as temMALFORMED when sfAsset's issuer != sfAccount), so this is
-    // the issuer, not just any signer.
-    AccountID const issuer = ctx_.tx[sfAccount];
-
     auto frac = Number{amount} / amountBalance;
     auto amount2Withdraw = amount2Balance * frac;
 
@@ -333,7 +324,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             sb,
             ammSle,
             holder,
-            issuer,
             ammAccount,
             amountBalance,
             amount2Balance,
@@ -363,18 +353,10 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 
         auto amountRounded = getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
 
-        // The requested clawback amount is likely too small and results in
-        // one-sided pool withdrawal due to round off. Fail so the issuer can
-        // clawback a larger amount.
-        if (rules.enabled(fixCleanup3_4_0) &&
-            (amountRounded == beast::kZero || amount2Rounded == beast::kZero))
-            return {tecAMM_FAILED, STAmount{}, STAmount{}, STAmount{}};
-
         return AMMWithdraw::withdraw(
             sb,
             ammSle,
             ammAccount,
-            issuer,
             holder,
             amountBalance,
             amountRounded,
@@ -395,7 +377,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         sb,
         ammSle,
         ammAccount,
-        issuer,
         holder,
         amountBalance,
         amount,

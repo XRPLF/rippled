@@ -4,6 +4,8 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
+#include <boost/filesystem.hpp>
+
 #include <string>
 
 namespace xrpl {

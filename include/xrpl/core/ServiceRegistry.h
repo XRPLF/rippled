@@ -15,12 +15,12 @@
 namespace xrpl {
 
 // Forward declarations
-namespace node_store {
+namespace NodeStore {
 class Database;
-}  // namespace node_store
-namespace resource {
+}  // namespace NodeStore
+namespace Resource {
 class Manager;
-}  // namespace resource
+}  // namespace Resource
 namespace perf {
 class PerfLog;
 }  // namespace perf
@@ -160,11 +160,11 @@ public:
     virtual PeerReservationTable&
     getPeerReservations() = 0;
 
-    virtual resource::Manager&
+    virtual Resource::Manager&
     getResourceManager() = 0;
 
     // Storage services
-    virtual node_store::Database&
+    virtual NodeStore::Database&
     getNodeStore() = 0;
 
     virtual SHAMapStore&

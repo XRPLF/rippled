@@ -68,8 +68,8 @@ struct TxArgs
     std::optional<std::pair<uint32_t, uint32_t>> ledgerRange;
 };
 
-std::pair<TxResult, rpc::Status>
-doTxHelp(rpc::Context& context, TxArgs args)
+std::pair<TxResult, RPC::Status>
+doTxHelp(RPC::Context& context, TxArgs args)
 {
     TxResult result;
 
@@ -169,7 +169,7 @@ doTxHelp(rpc::Context& context, TxArgs args)
             uint32_t const netID = context.app.getNetworkIDService().getNetworkID();
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
-                result.ctid = rpc::encodeCTID(lgrSeq, txnIdx, netID);
+                result.ctid = RPC::encodeCTID(lgrSeq, txnIdx, netID);
         }
     }
 
@@ -178,12 +178,12 @@ doTxHelp(rpc::Context& context, TxArgs args)
 
 json::Value
 populateJsonResponse(
-    std::pair<TxResult, rpc::Status> const& res,
+    std::pair<TxResult, RPC::Status> const& res,
     TxArgs const& args,
-    rpc::JsonContext const& context)
+    RPC::JsonContext const& context)
 {
     json::Value response;
-    rpc::Status const& error = res.second;
+    RPC::Status const& error = res.second;
     TxResult const& result = res.first;
     // handle errors
     if (error.toErrorCode() != RpcSuccess)
@@ -215,7 +215,7 @@ populateJsonResponse(
             else
             {
                 response[jss::tx_json] = result.txn->getJson(kOptionsJson);
-                rpc::insertDeliverMax(
+                RPC::insertDeliverMax(
                     response[jss::tx_json], sttx->getTxnType(), context.apiVersion);
             }
 
@@ -236,7 +236,7 @@ populateJsonResponse(
         {
             response = result.txn->getJson(JsonOptions::Values::IncludeDate, args.binary);
             if (!args.binary)
-                rpc::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
+                RPC::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
         }
 
         // populate binary metadata
@@ -254,8 +254,8 @@ populateJsonResponse(
             {
                 response[jss::meta] = meta->getJson(JsonOptions::Values::None);
                 insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
-                rpc::insertNFTSyntheticInJson(response, sttx, *meta);
-                rpc::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
+                RPC::insertNFTSyntheticInJson(response, sttx, *meta);
+                RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;
@@ -267,7 +267,7 @@ populateJsonResponse(
 }
 
 json::Value
-doTxJson(rpc::JsonContext& context)
+doTxJson(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
         return rpcError(RpcNotEnabled);
@@ -291,7 +291,7 @@ doTxJson(rpc::JsonContext& context)
     }
     else if (context.params.isMember(jss::ctid))
     {
-        auto ctid = rpc::decodeCTID(context.params[jss::ctid].asString());
+        auto ctid = RPC::decodeCTID(context.params[jss::ctid].asString());
         if (!ctid)
             return rpcError(RpcInvalidParams);
 
@@ -302,7 +302,7 @@ doTxJson(rpc::JsonContext& context)
             out << "Wrong network. You should submit this request to a node "
                    "running on NetworkID: "
                 << net_id;
-            return rpc::makeError(RpcWrongNetwork, out.str());
+            return RPC::makeError(RpcWrongNetwork, out.str());
         }
         args.ctid = {lgr_seq, txn_idx};
     }
@@ -327,7 +327,7 @@ doTxJson(rpc::JsonContext& context)
         }
     }
 
-    std::pair<TxResult, rpc::Status> const res = doTxHelp(context, args);
+    std::pair<TxResult, RPC::Status> const res = doTxHelp(context, args);
     return populateJsonResponse(res, args, context);
 }
 

@@ -54,15 +54,15 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
     if (!root_->isInner())
         return;
 
-    using StackEntry = std::pair<unsigned int, intr_ptr::SharedPtr<SHAMapInnerNode>>;
+    using StackEntry = std::pair<int, intr_ptr::SharedPtr<SHAMapInnerNode>>;
     std::stack<StackEntry, std::vector<StackEntry>> stack;
 
     auto node = intr_ptr::staticPointerCast<SHAMapInnerNode>(root_);
-    auto pos = 0u;
+    int pos = 0;
 
     while (true)
     {
-        while (pos < kBranchFactor)
+        while (pos < 16)
         {
             if (!node->isEmptyBranch(pos))
             {
@@ -77,10 +77,10 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                 else
                 {
                     // If there are no more children, don't push this node
-                    while ((pos != kBranchFactor - 1u) && (node->isEmptyBranch(pos + 1)))
+                    while ((pos != 15) && (node->isEmptyBranch(pos + 1)))
                         ++pos;
 
-                    if (pos != kBranchFactor - 1u)
+                    if (pos != 15)
                     {
                         // save next position to resume at
                         stack.emplace(pos + 1, std::move(node));
@@ -107,7 +107,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
 
 void
 SHAMap::visitDifferences(
-    SHAMap const* map,
+    SHAMap const* have,
     std::function<bool(SHAMapTreeNode const&)> const& function) const
 {
     // Visit every node in this SHAMap that is not present
@@ -118,13 +118,13 @@ SHAMap::visitDifferences(
     if (root_->getHash().isZero())
         return;
 
-    if ((map != nullptr) && (root_->getHash() == map->root_->getHash()))
+    if ((have != nullptr) && (root_->getHash() == have->root_->getHash()))
         return;
 
     if (root_->isLeaf())
     {
         auto leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(root_);
-        if ((map == nullptr) || !map->hasLeafNode(leaf->peekItem()->key(), leaf->getHash()))
+        if ((have == nullptr) || !have->hasLeafNode(leaf->peekItem()->key(), leaf->getHash()))
             function(*root_);
         return;
     }
@@ -143,35 +143,24 @@ SHAMap::visitDifferences(
         if (!function(*node))
             return;
 
-        // Nibbles run out at kLeafDepth, so only a leaf belongs there. A well-formed map never
-        // holds an inner node at that depth: addKnownNode marks the map invalid rather than hooking
-        // one in, and fetch-pack data is hash-verified against a validated root, so reaching this
-        // means a defect or a corrupt store, not something a peer can provoke. Report the node
-        // anyway - the wire form carries no depth, and the recipient hooks blobs in by hash - but
-        // skip the children rather than letting getChildNodeID throw on them.
-        if (nodeID.getDepth() >= kLeafDepth)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::SHAMap::visitDifferences : inner node at leaf depth");
-            continue;
-            // LCOV_EXCL_STOP
-        }
-
         // 2) push non-matching child inner nodes
-        for (auto i = 0u; i < kBranchFactor; ++i)
+        for (int i = 0; i < 16; ++i)
         {
             if (!node->isEmptyBranch(i))
             {
                 auto const& childHash = node->getChildHash(i);
-                auto const childID = nodeID.getChildNodeID(i);
+                SHAMapNodeID const childID = nodeID.getChildNodeID(i);
                 auto next = descendThrow(node, i);
 
                 if (next->isInner())
                 {
-                    if ((map == nullptr) || !map->hasInnerNode(childID, childHash))
+                    if ((have == nullptr) || !have->hasInnerNode(childID, childHash))
                         stack.emplace(safeDowncast<SHAMapInnerNode*>(next), childID);
                 }
-                else if ((map == nullptr) || !map->hasLeafNode(leafKey(*next), childHash))
+                else if (
+                    (have == nullptr) ||
+                    !have->hasLeafNode(
+                        safeDowncast<SHAMapLeafNode*>(next)->peekItem()->key(), childHash))
                 {
                     if (!function(*next))
                         return;
@@ -190,13 +179,13 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 {
     SHAMapInnerNode*& node = std::get<0>(se);
     SHAMapNodeID& nodeID = std::get<1>(se);
-    auto& firstChild = std::get<2>(se);
-    auto& currentChild = std::get<3>(se);
+    int& firstChild = std::get<2>(se);
+    int& currentChild = std::get<3>(se);
     bool& fullBelow = std::get<4>(se);
 
-    while (currentChild < kBranchFactor)
+    while (currentChild < 16)
     {
-        auto const branch = (firstChild + currentChild++) % kBranchFactor;
+        int const branch = (firstChild + currentChild++) % 16;
         if (node->isEmptyBranch(branch))
             continue;
 
@@ -276,7 +265,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     int complete = 0;
     while (complete != mn.deferred)
     {
-        MissingNodes::DeferredNode deferredNode;
+        std::tuple<SHAMapInnerNode*, SHAMapNodeID, int, SHAMapTreeNodePtr> deferredNode;
         {
             std::unique_lock<std::mutex> lock{mn.deferLock};
 
@@ -425,7 +414,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
 bool
 SHAMap::getNodeFat(
     SHAMapNodeID const& wanted,
-    std::vector<SHAMapNodeData>& data,
+    std::vector<std::pair<SHAMapNodeID, Blob>>& data,
     bool fatLeaves,
     std::uint32_t depth) const
 {
@@ -437,7 +426,7 @@ SHAMap::getNodeFat(
 
     while ((node != nullptr) && node->isInner() && (nodeID.getDepth() < wanted.getDepth()))
     {
-        auto const branch = selectBranch(nodeID, wanted.getNodeID());
+        int const branch = selectBranch(nodeID, wanted.getNodeID());
         auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
@@ -458,7 +447,7 @@ SHAMap::getNodeFat(
         return false;
     }
 
-    std::stack<std::tuple<SHAMapTreeNode*, SHAMapNodeID, std::uint32_t>> stack;
+    std::stack<std::tuple<SHAMapTreeNode*, SHAMapNodeID, int>> stack;
     stack.emplace(node, nodeID, depth);
 
     Serializer s(8192);
@@ -471,19 +460,19 @@ SHAMap::getNodeFat(
         // Add this node to the reply
         s.erase();
         node->serializeForWire(s);
-        data.emplace_back(nodeID, node->isLeaf(), s.getData());
+        data.emplace_back(nodeID, s.getData());
 
         if (node->isInner())
         {
             // We descend inner nodes with only a single child
             // without decrementing the depth
             auto inner = safeDowncast<SHAMapInnerNode*>(node);
-            auto const bc = inner->getBranchCount();
+            int const bc = inner->getBranchCount();
 
             if ((depth > 0) || (bc == 1))
             {
                 // We need to process this node's children
-                for (auto i = 0u; i < kBranchFactor; ++i)
+                for (int i = 0; i < 16; ++i)
                 {
                     if (!inner->isEmptyBranch(i))
                     {
@@ -501,7 +490,7 @@ SHAMap::getNodeFat(
                             // Just include this node
                             s.erase();
                             childNode->serializeForWire(s);
-                            data.emplace_back(childID, childNode->isLeaf(), s.getData());
+                            data.emplace_back(childID, s.getData());
                         }
                     }
                 }
@@ -519,33 +508,25 @@ SHAMap::serializeRoot(Serializer& s) const
 }
 
 SHAMapAddNode
-SHAMap::addRootNode(
-    SHAMapHash const& hash,
-    SHAMapTreeNodePtr rootNode,
-    SHAMapSyncFilter const* filter)
+SHAMap::addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter const* filter)
 {
-    XRPL_ASSERT(cowid_ >= 1, "xrpl::SHAMap::addRootNode : valid cowid");
-    XRPL_ASSERT(rootNode, "xrpl::SHAMap::addRootNode : non-null root node");
-
     // we already have a root_ node
     if (root_->getHash().isNonZero())
     {
-        JLOG(journal_.trace()) << "Got root node, already have one";
-        XRPL_ASSERT(root_->getHash() == hash, "xrpl::SHAMap::addRootNode : valid hash");
+        JLOG(journal_.trace()) << "got root node, already have one";
+        XRPL_ASSERT(root_->getHash() == hash, "xrpl::SHAMap::addRootNode : valid hash input");
         return SHAMapAddNode::duplicate();
     }
 
-    if (rootNode->getHash() != hash)
-    {
-        JLOG(journal_.warn()) << "Corrupt root node received: expected hash " << hash << ", got "
-                              << rootNode->getHash();
+    XRPL_ASSERT(cowid_ >= 1, "xrpl::SHAMap::addRootNode : valid cowid");
+    auto node = SHAMapTreeNode::makeFromWire(rootNode);
+    if (!node || node->getHash() != hash)
         return SHAMapAddNode::invalid();
-    }
 
     if (backed_)
-        canonicalize(hash, rootNode);
+        canonicalize(hash, node);
 
-    root_ = std::move(rootNode);
+    root_ = node;
 
     if (root_->isLeaf())
         clearSynching();
@@ -562,17 +543,9 @@ SHAMap::addRootNode(
 }
 
 SHAMapAddNode
-SHAMap::addKnownNode(
-    SHAMapNodeID const& nodeID,
-    SHAMapTreeNodePtr treeNode,
-    SHAMapSyncFilter const* filter)
+SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncFilter const* filter)
 {
-    XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node");
-    XRPL_ASSERT(treeNode, "xrpl::SHAMap::addKnownNode : non-null tree node");
-    XRPL_ASSERT_IF(
-        treeNode->isLeaf(),
-        nodeID.isPrefixOf(leafKey(*treeNode)),
-        "xrpl::SHAMap::addKnownNode : leaf position consistent with node ID");
+    XRPL_ASSERT(!node.isRoot(), "xrpl::SHAMap::addKnownNode : valid node input");
 
     if (!isSynching())
     {
@@ -586,14 +559,14 @@ SHAMap::addKnownNode(
 
     while (currNode->isInner() &&
            !safeDowncast<SHAMapInnerNode*>(currNode)->isFullBelow(generation) &&
-           (currNodeID.getDepth() < nodeID.getDepth()))
+           (currNodeID.getDepth() < node.getDepth()))
     {
-        auto const branch = selectBranch(currNodeID, nodeID.getNodeID());
+        int const branch = selectBranch(currNodeID, node.getNodeID());
+        XRPL_ASSERT(branch >= 0, "xrpl::SHAMap::addKnownNode : valid branch");
         auto inner = safeDowncast<SHAMapInnerNode*>(currNode);
         if (inner->isEmptyBranch(branch))
         {
-            JLOG(journal_.warn()) << "Add known node " << nodeID << " for empty branch " << branch
-                                  << " at " << currNodeID;
+            JLOG(journal_.warn()) << "Add known node for empty branch" << node;
             return SHAMapAddNode::invalid();
         }
 
@@ -609,45 +582,67 @@ SHAMap::addKnownNode(
         if (currNode != nullptr)
             continue;
 
-        if (childHash != treeNode->getHash())
+        auto newNode = SHAMapTreeNode::makeFromWire(rawNode);
+
+        if (!newNode || childHash != newNode->getHash())
         {
-            JLOG(journal_.warn()) << "Corrupt node " << nodeID << " received: expected hash "
-                                  << childHash << ", got " << treeNode->getHash();
+            JLOG(journal_.warn()) << "Corrupt node received";
             return SHAMapAddNode::invalid();
+        }
+
+        // In rare cases, a node can still be corrupt even after hash
+        // validation. For leaf nodes, we perform an additional check to
+        // ensure the node's position in the tree is consistent with its
+        // content to prevent inconsistencies that could
+        // propagate further down the line.
+        if (newNode->isLeaf())
+        {
+            auto const& actualKey =
+                safeDowncast<SHAMapLeafNode const*>(newNode.get())->peekItem()->key();
+
+            // Validate that this leaf belongs at the target position
+            auto const expectedNodeID = SHAMapNodeID::createID(node.getDepth(), actualKey);
+            if (expectedNodeID.getNodeID() != node.getNodeID())
+            {
+                JLOG(journal_.debug())
+                    << "Leaf node position mismatch: "
+                    << "expected=" << expectedNodeID.getNodeID() << ", actual=" << node.getNodeID();
+                return SHAMapAddNode::invalid();
+            }
         }
 
         // Inner nodes must be at a level strictly less than 64
         // but leaf nodes (while notionally at level 64) can be
         // at any depth up to and including 64:
         if ((currNodeID.getDepth() > kLeafDepth) ||
-            (treeNode->isInner() && currNodeID.getDepth() == kLeafDepth))
+            (newNode->isInner() && currNodeID.getDepth() == kLeafDepth))
         {
             // Map is provably invalid
             state_ = SHAMapState::Invalid;
             return SHAMapAddNode::useful();
         }
 
-        if (currNodeID != nodeID)
+        if (currNodeID != node)
         {
             // Either this node is broken or we didn't request it (yet)
-            JLOG(journal_.warn()) << "unable to hook node " << nodeID;
+            JLOG(journal_.warn()) << "unable to hook node " << node;
             JLOG(journal_.info()) << " stuck at " << currNodeID;
-            JLOG(journal_.info()) << "got depth=" << nodeID.getDepth()
+            JLOG(journal_.info()) << "got depth=" << node.getDepth()
                                   << ", walked to= " << currNodeID.getDepth();
             return SHAMapAddNode::useful();
         }
 
         if (backed_)
-            canonicalize(childHash, treeNode);
+            canonicalize(childHash, newNode);
 
-        treeNode = prevNode->canonicalizeChild(branch, std::move(treeNode));
+        newNode = prevNode->canonicalizeChild(branch, std::move(newNode));
 
         if (filter != nullptr)
         {
             Serializer s;
-            treeNode->serializeWithPrefix(s);
+            newNode->serializeWithPrefix(s);
             filter->gotNode(
-                false, childHash, ledgerSeq_, std::move(s.modData()), treeNode->getType());
+                false, childHash, ledgerSeq_, std::move(s.modData()), newNode->getType());
         }
 
         return SHAMapAddNode::useful();
@@ -698,7 +693,7 @@ SHAMap::deepCompare(SHAMap& other) const
                 return false;
             auto nodeInner = safeDowncast<SHAMapInnerNode*>(node);
             auto otherInner = safeDowncast<SHAMapInnerNode*>(otherNode);
-            for (auto i = 0u; i < kBranchFactor; ++i)
+            for (int i = 0; i < 16; ++i)
             {
                 if (nodeInner->isEmptyBranch(i))
                 {
@@ -737,7 +732,7 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
 
     while (node->isInner() && (nodeID.getDepth() < targetNodeID.getDepth()))
     {
-        auto const branch = selectBranch(nodeID, targetNodeID.getNodeID());
+        int const branch = selectBranch(nodeID, targetNodeID.getNodeID());
         auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
@@ -763,18 +758,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 
     do
     {
-        // Same kLeafDepth hazard as in visitDifferences above. That guard bounds the caller's own
-        // traversal, not the map queried here, and the loop below descends from this map's root
-        // independently, so this check is what keeps a malformed map from reaching getChildNodeID.
-        if (nodeID.getDepth() >= kLeafDepth)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::SHAMap::hasLeafNode : inner node at leaf depth");
-            return false;
-            // LCOV_EXCL_STOP
-        }
-
-        auto const branch = selectBranch(nodeID, tag);
+        int const branch = selectBranch(nodeID, tag);
         auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;  // Dead end, node must not be here
@@ -826,7 +810,7 @@ SHAMap::getProofPath(uint256 const& key) const
 bool
 SHAMap::verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector<Blob> const& path)
 {
-    if (path.empty() || path.size() > kLeafDepth + 1u)
+    if (path.empty() || path.size() > 65)
         return false;
 
     SHAMapHash hash{rootHash};
@@ -842,30 +826,15 @@ SHAMap::verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector
             if (node->getHash() != hash)
                 return false;
 
-            auto const depth = static_cast<unsigned int>(std::distance(path.rbegin(), rit));
+            auto depth = std::distance(path.rbegin(), rit);
             if (node->isInner())
             {
-                // Nibbles run out at kLeafDepth, so only the leaf terminating the path may sit
-                // there. These nodes come off the wire, so a peer can still claim an inner one;
-                // reject it rather than passing this depth to selectBranch.
-                SOMETIMES(
-                    depth >= kLeafDepth, "xrpl::SHAMap::verifyProofPath : inner at leaf depth");
-                if (depth >= kLeafDepth)
-                    return false;
-
                 auto nodeId = SHAMapNodeID::createID(depth, key);
                 hash = safeDowncast<SHAMapInnerNode*>(node.get())
                            ->getChildHash(selectBranch(nodeId, key));
             }
             else
             {
-                // The hash chain up to rootHash only proves this leaf sits where the path claims,
-                // not that it is the leaf for `key`: a peer could substitute any other leaf whose
-                // subtree hashes to the same value at every level above it. Checking the terminal
-                // leaf's own key is what ties the proof to `key` specifically.
-                if (leafKey(*node) != key)
-                    return false;
-
                 // should exhaust all the blobs now
                 return depth + 1 == path.size();
             }

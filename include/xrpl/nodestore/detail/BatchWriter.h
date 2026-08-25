@@ -9,7 +9,7 @@
 #include <memory>
 #include <mutex>
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 /**
  * Batch-writing assist logic.
@@ -86,4 +86,4 @@ private:
     Batch writeSet_;
 };
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

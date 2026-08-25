@@ -10,15 +10,15 @@
 namespace xrpl {
 
 json::Value
-doNFTSellOffers(rpc::JsonContext& context)
+doNFTSellOffers(RPC::JsonContext& context)
 {
     if (!context.params.isMember(jss::nft_id))
-        return rpc::missingFieldError(jss::nft_id);
+        return RPC::missingFieldError(jss::nft_id);
 
     uint256 nftId;
 
     if (!nftId.parseHex(context.params[jss::nft_id].asString()))
-        return rpc::invalidFieldError(jss::nft_id);
+        return RPC::invalidFieldError(jss::nft_id);
 
     return enumerateNFTOffers(context, nftId, keylet::nftSells(nftId));
 }

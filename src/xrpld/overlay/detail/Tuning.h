@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace xrpl::tuning {
+namespace xrpl::Tuning {
 
 /**
  * How many ledgers off a server can be and we will
@@ -74,7 +74,7 @@ constexpr std::size_t kReadBufferBytes = 16384;
  * while a hit is usually served from cache. On top of that, a size-band
  * surcharge kicks in for larger requests so an attacker who crams a
  * single message with thousands of hashes blows past
- * `resource::kDropThreshold` and gets disconnected.
+ * `Resource::kDropThreshold` and gets disconnected.
  *
  * The numbers below are picked to keep three things true given
  * `kDropThreshold = 25000`:
@@ -165,4 +165,4 @@ static constexpr auto kLegitHashesPerType = 4;
 static constexpr auto kBandSmallMax = kLegitHashesPerType * SHAMapInnerNode::kBranchFactor;
 static constexpr auto kBandMediumMax = kBandSmallMax * SHAMapInnerNode::kBranchFactor;
 
-}  // namespace xrpl::tuning
+}  // namespace xrpl::Tuning

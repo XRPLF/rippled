@@ -74,7 +74,7 @@ createHTTPPost(
 
     // CHECKME this uses a different version than the replies below use. Is
     //         this by design or an accident or should it be using
-    //         build_info::getFullVersionString () as well?
+    //         BuildInfo::getFullVersionString () as well?
 
     s << "POST " << (strPath.empty() ? "/" : strPath) << " HTTP/1.0\r\n"
       << "User-Agent: " << systemName() << "-json-rpc/v1\r\n"
@@ -149,7 +149,7 @@ private:
             return jvResult;
         }
 
-        return rpc::makeParamError(
+        return RPC::makeParamError(
             std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
     }
 
@@ -355,7 +355,7 @@ private:
             }
             catch (std::exception const&)
             {
-                return rpc::invalidFieldError(jss::limit);
+                return RPC::invalidFieldError(jss::limit);
             }
         }
 
@@ -369,7 +369,7 @@ private:
             }
             catch (std::exception const&)
             {
-                return rpc::invalidFieldError(jss::proof);
+                return RPC::invalidFieldError(jss::proof);
             }
         }
 
@@ -1182,7 +1182,7 @@ private:
 
         std::string param = jvParams[index++].asString();
         if (param.empty())
-            return rpc::makeParamError("Invalid first parameter");
+            return RPC::makeParamError("Invalid first parameter");
 
         if (param[0] != 'r')
         {
@@ -1196,7 +1196,7 @@ private:
             }
 
             if (size <= index)
-                return rpc::makeParamError("Invalid hotwallet");
+                return RPC::makeParamError("Invalid hotwallet");
 
             param = jvParams[index++].asString();
         }
@@ -1726,7 +1726,7 @@ rpcClient(
 
             {
                 boost::asio::io_context isService;
-                rpc_call::fromNetwork(
+                RPCCall::fromNetwork(
                     isService,
                     setup.client.ip,
                     setup.client.port,
@@ -1813,12 +1813,12 @@ rpcClient(
 
 //------------------------------------------------------------------------------
 
-namespace rpc_call {
+namespace RPCCall {
 
 int
 fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs)
 {
-    auto const result = rpcClient(vCmd, config, logs, rpc::kApiCommandLineVersion);
+    auto const result = rpcClient(vCmd, config, logs, RPC::kApiCommandLineVersion);
 
     std::cout << result.second.toStyledString();
 
@@ -1883,6 +1883,6 @@ fromNetwork(
         j);
 }
 
-}  // namespace rpc_call
+}  // namespace RPCCall
 
 }  // namespace xrpl

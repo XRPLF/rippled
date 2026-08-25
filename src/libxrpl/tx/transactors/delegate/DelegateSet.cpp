@@ -57,7 +57,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
 
     if (isPseudoAccount(sleAuthorize))
-        return tecPSEUDO_ACCOUNT;
+        return tecNO_PERMISSION;
 
     // Deleting the delegate object is invalid if it doesn’t exist.
     if (ctx.tx.getFieldArray(sfPermissions).empty() &&

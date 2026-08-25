@@ -9,11 +9,11 @@
 #include <cstdint>
 #include <utility>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 SlotImp::SlotImp(
-    beast::ip::Endpoint const& localEndpoint,
-    beast::ip::Endpoint remoteEndpoint,
+    beast::IP::Endpoint const& localEndpoint,
+    beast::IP::Endpoint remoteEndpoint,
     bool fixed,
     clock_type& clock)
     : recent(clock)
@@ -30,7 +30,7 @@ SlotImp::SlotImp(
 {
 }
 
-SlotImp::SlotImp(beast::ip::Endpoint remoteEndpoint, bool fixed, clock_type& clock)
+SlotImp::SlotImp(beast::IP::Endpoint remoteEndpoint, bool fixed, clock_type& clock)
     : recent(clock)
     , inbound_(false)
     , fixed_(fixed)
@@ -49,29 +49,29 @@ SlotImp::state(State state)
 {
     // Must go through activate() to set active state
     XRPL_ASSERT(
-        state != State::Active, "xrpl::peer_finder::SlotImp::state : input state is not active");
+        state != State::Active, "xrpl::PeerFinder::SlotImp::state : input state is not active");
 
     // The state must be different
     XRPL_ASSERT(
         state_ != state,
-        "xrpl::peer_finder::SlotImp::state : input state is different from "
+        "xrpl::PeerFinder::SlotImp::state : input state is different from "
         "current");
 
     // You can't transition into the initial states
     XRPL_ASSERT(
         state != State::Accept && state != State::Connect,
-        "xrpl::peer_finder::SlotImp::state : input state is not an initial");
+        "xrpl::PeerFinder::SlotImp::state : input state is not an initial");
 
     // Can only become connected from outbound connect state
     XRPL_ASSERT(
         state != State::Connected || (!inbound_ && state_ == State::Connect),
-        "xrpl::peer_finder::SlotImp::state : input state is not connected an "
+        "xrpl::PeerFinder::SlotImp::state : input state is not connected an "
         "invalid state");
 
     // Can't gracefully close on an outbound connection attempt
     XRPL_ASSERT(
         state != State::Closing || state_ != State::Connect,
-        "xrpl::peer_finder::SlotImp::state : input state is not closing an "
+        "xrpl::PeerFinder::SlotImp::state : input state is not closing an "
         "invalid state");
 
     state_ = state;
@@ -83,7 +83,7 @@ SlotImp::activate(clock_type::time_point const& now)
     // Can only become active from the accept or connected state
     XRPL_ASSERT(
         state_ == State::Accept || state_ == State::Connected,
-        "xrpl::peer_finder::SlotImp::activate : valid state");
+        "xrpl::PeerFinder::SlotImp::activate : valid state");
 
     state_ = State::Active;
     whenAcceptEndpoints = now;
@@ -100,7 +100,7 @@ SlotImp::RecentT::RecentT(clock_type& clock) : cache_(clock)
 }
 
 void
-SlotImp::RecentT::insert(beast::ip::Endpoint const& ep, std::uint32_t hops)
+SlotImp::RecentT::insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
     auto const result(cache_.emplace(ep, hops));
     if (!result.second)
@@ -115,7 +115,7 @@ SlotImp::RecentT::insert(beast::ip::Endpoint const& ep, std::uint32_t hops)
 }
 
 bool
-SlotImp::RecentT::filter(beast::ip::Endpoint const& ep, std::uint32_t hops)
+SlotImp::RecentT::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
     auto const iter(cache_.find(ep));
     if (iter == cache_.end())
@@ -129,7 +129,7 @@ SlotImp::RecentT::filter(beast::ip::Endpoint const& ep, std::uint32_t hops)
 void
 SlotImp::RecentT::expire()
 {
-    beast::expire(cache_, tuning::kLiveCacheSecondsToLive);
+    beast::expire(cache_, Tuning::kLiveCacheSecondsToLive);
 }
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

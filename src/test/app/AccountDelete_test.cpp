@@ -23,7 +23,6 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
-#include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -32,12 +31,10 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -217,10 +214,8 @@ public:
             BEAST_EXPECT(env.closed()->exists(keylet::account(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
-            BEAST_EXPECT(env.closed()->exists(
-                keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq))));
-            BEAST_EXPECT(env.closed()->exists(
-                keylet::ticket(carol.id(), SeqProxy::rawTicket(carolTicketSeq))));
+            BEAST_EXPECT(env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
+            BEAST_EXPECT(env.closed()->exists(keylet::ticket(carol.id(), carolTicketSeq)));
             BEAST_EXPECT(env.closed()->exists(keylet::signerList(carol.id())));
 
             // Delete carol's account even with stuff in her directory.  Show
@@ -233,10 +228,8 @@ public:
             BEAST_EXPECT(!env.closed()->exists(keylet::account(carol.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
-            BEAST_EXPECT(!env.closed()->exists(
-                keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq))));
-            BEAST_EXPECT(!env.closed()->exists(
-                keylet::ticket(carol.id(), SeqProxy::rawTicket(carolTicketSeq))));
+            BEAST_EXPECT(!env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
+            BEAST_EXPECT(!env.closed()->exists(keylet::ticket(carol.id(), carolTicketSeq)));
             BEAST_EXPECT(!env.closed()->exists(keylet::signerList(carol.id())));
 
             // Verify that Carol's XRP, minus the fee, was transferred to becky.
@@ -330,7 +323,7 @@ public:
         // alice writes a check to becky.  Until that check is cashed or
         // canceled it will prevent alice's and becky's accounts from being
         // deleted.
-        uint256 const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+        uint256 const checkId = keylet::check(alice, env.seq(alice)).key;
         env(check::create(alice, becky, XRP(1)));
         env.close();
 
@@ -393,8 +386,7 @@ public:
         env(escrow::cancel(becky, alice, escrowSeq));
         env.close();
 
-        Keylet const alicePayChanKey{
-            keylet::payChannel(alice, becky, SeqProxy::rawSequence(env.seq(alice)))};
+        Keylet const alicePayChanKey{keylet::payChannel(alice, becky, env.seq(alice))};
 
         env(payChanCreate(alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -425,8 +417,7 @@ public:
 
         // gw creates a PayChannel with alice as the destination, this should
         // prevent alice from deleting her account.
-        Keylet const gwPayChanKey{
-            keylet::payChannel(gw, alice, SeqProxy::rawSequence(env.seq(gw)))};
+        Keylet const gwPayChanKey{keylet::payChannel(gw, alice, env.seq(gw))};
 
         env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -512,10 +503,7 @@ public:
 
             // alice's offers.
             for (std::uint32_t i{0}; i < kOfferCount; ++i)
-            {
-                BEAST_EXPECT(closed->exists(
-                    keylet::offer(alice.id(), SeqProxy::rawSequence(offerSeq0 + i))));
-            }
+                BEAST_EXPECT(closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
         }
 
         // Delete alice's account.  Should fail because she has too many
@@ -549,10 +537,7 @@ public:
 
             // alice's former offers.
             for (std::uint32_t i{0}; i < kOfferCount; ++i)
-            {
-                BEAST_EXPECT(!closed->exists(
-                    keylet::offer(alice.id(), SeqProxy::rawSequence(offerSeq0 + i))));
-            }
+                BEAST_EXPECT(!closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
         }
     }
 
@@ -677,8 +662,7 @@ public:
             BEAST_EXPECT(closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(
-                    closed->exists(keylet::ticket(bob.id(), SeqProxy::rawTicket(ticketSeq + i))));
+                BEAST_EXPECT(closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
             }
         }
 
@@ -697,14 +681,13 @@ public:
             BEAST_EXPECT(!closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(
-                    !closed->exists(keylet::ticket(bob.id(), SeqProxy::rawTicket(ticketSeq + i))));
+                BEAST_EXPECT(!closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
             }
         }
     }
 
     void
-    testDest(FeatureBitset features)
+    testDest()
     {
         testcase("Destination Constraints");
 
@@ -715,7 +698,7 @@ public:
         Account const carol{"carol"};
         Account const daria{"daria"};
 
-        Env env{*this, features};
+        Env env{*this};
         env.fund(XRP(100000), alice, becky, carol);
         env.close();
 
@@ -727,16 +710,6 @@ public:
         // carol requires a destination tag.
         env(fset(carol, asfRequireDest));
         env.close();
-
-        // Need to create a pseudo-account
-        Vault const vault{env};
-        auto [tx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
-        env(tx);
-        env.close();
-        auto const sleVault = env.le(keylet);
-        if (!BEAST_EXPECT(sleVault))
-            return;
-        Account const vaultPseudo{"vaultPseudo", sleVault->at(sfAccount)};
 
         // Close enough ledgers to be able to delete becky's account.
         incLgrSeqForAccDel(env, becky);
@@ -756,10 +729,6 @@ public:
         // so the delete is blocked.
         env(acctdelete(becky, alice), Fee(acctDelFee), Ter(tecNO_PERMISSION));
         env.close();
-
-        // becky attempts to delete her account using a pseudo-account as the
-        // destination, which fails since pseudo-accounts have deposit auth enabled.
-        env(acctdelete(becky, vaultPseudo), Fee(acctDelFee), Ter(tecNO_PERMISSION));
 
         // alice preauthorizes deposits from becky.  Now becky can delete her
         // account and forward the leftovers to alice.
@@ -1107,7 +1076,6 @@ public:
     void
     run() override
     {
-        auto const all{jtx::testableAmendments()};
         testBasics();
         testDirectories();
         testOwnedTypes();
@@ -1115,8 +1083,7 @@ public:
         testImplicitlyCreatedTrustline();
         testBalanceTooSmallForFee();
         testWithTickets();
-        testDest(all);
-        testDest(all - fixCleanup3_3_0);
+        testDest();
         testDestinationDepositAuthCredentials();
         testDeleteCredentialsOwner();
     }

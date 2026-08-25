@@ -15,13 +15,14 @@
 
 namespace xrpl {
 
-namespace resource {
+namespace Resource {
 class Charge;
-}  // namespace resource
+}  // namespace Resource
 
 enum class ProtocolFeature {
+    ValidatorListPropagation,
+    ValidatorList2Propagation,
     LedgerReplay,
-    LedgerNodeDepth,
 };
 
 /**
@@ -49,7 +50,7 @@ public:
     virtual void
     send(std::shared_ptr<Message> const& m) = 0;
 
-    [[nodiscard]] virtual beast::ip::Endpoint
+    [[nodiscard]] virtual beast::IP::Endpoint
     getRemoteAddress() const = 0;
 
     /**
@@ -74,7 +75,7 @@ public:
      * Adjust this peer's load balance based on the type of load imposed.
      */
     virtual void
-    charge(resource::Charge const& fee, std::string const& context) = 0;
+    charge(Resource::Charge const& fee, std::string const& context) = 0;
 
     //
     // Identity
@@ -116,7 +117,7 @@ public:
     // Ledger
     //
 
-    [[nodiscard]] virtual uint256
+    [[nodiscard]] virtual uint256 const&
     getClosedLedgerHash() const = 0;
     [[nodiscard]] virtual bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const = 0;

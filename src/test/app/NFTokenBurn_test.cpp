@@ -25,14 +25,12 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -78,8 +76,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         for (uint32_t i = 0; i < tokenCancelCount; ++i)
         {
             // Create sell offer
-            offerIndexes.push_back(
-                keylet::nftokenOffer(owner, SeqProxy::rawSequence(env.seq(owner))).key);
+            offerIndexes.push_back(keylet::nftokenOffer(owner, env.seq(owner)).key);
             env(token::createOffer(owner, nftokenID, drops(1)), Txflags(tfSellNFToken));
             env.close();
         }
@@ -117,30 +114,33 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 std::cout << "Ledger state is not array!" << std::endl;
                 return;
             }
-            for (auto& i : state)
+            for (json::UInt i = 0; i < state.size(); ++i)
             {
-                if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
+                if (state[i].isMember(sfNFTokens.jsonName) &&
+                    state[i][sfNFTokens.jsonName].isArray())
                 {
-                    std::uint32_t const tokenCount = i[sfNFTokens.jsonName].size();
-                    std::cout << tokenCount << " NFtokens in page " << i[jss::index].asString()
-                              << std::endl;
+                    std::uint32_t const tokenCount = state[i][sfNFTokens.jsonName].size();
+                    std::cout << tokenCount << " NFtokens in page "
+                              << state[i][jss::index].asString() << std::endl;
 
                     if (vol == Volume::Noisy)
                     {
-                        std::cout << i.toStyledString() << std::endl;
+                        std::cout << state[i].toStyledString() << std::endl;
                     }
                     else
                     {
                         if (tokenCount > 0)
                         {
-                            std::cout << "first: " << i[sfNFTokens.jsonName][0u].toStyledString()
-                                      << std::endl;
+                            std::cout
+                                << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString()
+                                << std::endl;
                         }
                         if (tokenCount > 1)
                         {
-                            std::cout << "last: "
-                                      << i[sfNFTokens.jsonName][tokenCount - 1].toStyledString()
-                                      << std::endl;
+                            std::cout
+                                << "last: "
+                                << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
+                                << std::endl;
                         }
                     }
                 }
@@ -237,8 +237,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 // We do the same work on alice and minter, so make a lambda.
                 auto xferNFT = [&env, &becky](AcctStat& acct, auto& iter) {
                     uint256 const offerIndex =
-                        keylet::nftokenOffer(acct.acct, SeqProxy::rawSequence(env.seq(acct.acct)))
-                            .key;
+                        keylet::nftokenOffer(acct.acct, env.seq(acct.acct)).key;
                     env(token::createOffer(acct, *iter, XRP(0)), Txflags(tfSellNFToken));
                     env.close();
                     env(token::acceptSellOffer(becky, offerIndex));
@@ -416,11 +415,12 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 json::Value& state = jrr[jss::result][jss::state];
 
                 int pageCount = 0;
-                for (auto& i : state)
+                for (json::UInt i = 0; i < state.size(); ++i)
                 {
-                    if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
+                    if (state[i].isMember(sfNFTokens.jsonName) &&
+                        state[i][sfNFTokens.jsonName].isArray())
                     {
-                        BEAST_EXPECT(i[sfNFTokens.jsonName].size() == 32);
+                        BEAST_EXPECT(state[i][sfNFTokens.jsonName].size() == 32);
                         ++pageCount;
                     }
                 }
@@ -455,11 +455,11 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             {
                 json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
 
-                json::Value const& state = jrr[jss::result][jss::state];
+                json::Value& state = jrr[jss::result][jss::state];
 
-                for (auto const& i : state)
+                for (json::UInt i = 0; i < state.size(); ++i)
                 {
-                    BEAST_EXPECT(!i.isMember(sfNFTokens.jsonName));
+                    BEAST_EXPECT(!state[i].isMember(sfNFTokens.jsonName));
                 }
             }
         };
@@ -753,8 +753,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // We're going to fire an Invariant failure that is difficult to
             // cause.  We do it here because the tools are here.
             //
-            // See InvariantsMisc_test.cpp for examples of other invariant
-            // tests that this one is modeled after.
+            // See Invariants_test.cpp for examples of other invariant tests
+            // that this one is modeled after.
 
             // Generate three closely packed NFTokenPages.
             std::vector<uint256> nfts = genPackedTokens();
@@ -791,7 +791,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 TER terActual = tesSUCCESS;
                 for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
                 {
-                    terActual = xrpl::checkInvariants(ac, terActual, XRPAmount{});
+                    terActual = ac.checkInvariants(terActual, XRPAmount{});
                     BEAST_EXPECT(terExpect == terActual);
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
@@ -827,7 +827,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 TER terActual = tesSUCCESS;
                 for (TER const& terExpect : {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
                 {
-                    terActual = xrpl::checkInvariants(ac, terActual, XRPAmount{});
+                    terActual = ac.checkInvariants(terActual, XRPAmount{});
                     BEAST_EXPECT(terExpect == terActual);
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
@@ -871,8 +871,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             }
 
             // Becky creates a buy offer
-            uint256 const beckyOfferIndex =
-                keylet::nftokenOffer(becky, SeqProxy::rawSequence(env.seq(becky))).key;
+            uint256 const beckyOfferIndex = keylet::nftokenOffer(becky, env.seq(becky)).key;
             env(token::createOffer(becky, nftokenID, drops(1)), token::Owner(alice));
             env.close();
 
@@ -1047,8 +1046,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 env.close();
 
                 // Minter creates an offer for the NFToken.
-                uint256 const minterOfferIndex =
-                    keylet::nftokenOffer(minter, SeqProxy::rawSequence(env.seq(minter))).key;
+                uint256 const minterOfferIndex = keylet::nftokenOffer(minter, env.seq(minter)).key;
                 env(token::createOffer(minter, nfts.back(), XRP(0)), Txflags(tfSellNFToken));
                 env.close();
 
@@ -1072,11 +1070,12 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 json::Value& state = jrr[jss::result][jss::state];
 
                 int pageCount = 0;
-                for (auto& i : state)
+                for (json::UInt i = 0; i < state.size(); ++i)
                 {
-                    if (i.isMember(sfNFTokens.jsonName) && i[sfNFTokens.jsonName].isArray())
+                    if (state[i].isMember(sfNFTokens.jsonName) &&
+                        state[i][sfNFTokens.jsonName].isArray())
                     {
-                        BEAST_EXPECT(i[sfNFTokens.jsonName].size() == 32);
+                        BEAST_EXPECT(state[i][sfNFTokens.jsonName].size() == 32);
                         ++pageCount;
                     }
                 }
@@ -1118,8 +1117,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             nfts.pop_back();
 
             // alice creates an offer for the NFToken.
-            uint256 const aliceOfferIndex =
-                keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+            uint256 const aliceOfferIndex = keylet::nftokenOffer(alice, env.seq(alice)).key;
             env(token::createOffer(alice, last32NFTs.back(), XRP(0)), Txflags(tfSellNFToken));
             env.close();
 
@@ -1153,8 +1151,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         for (uint256 const nftID : last32NFTs)
         {
             // minter creates an offer for the NFToken.
-            uint256 const minterOfferIndex =
-                keylet::nftokenOffer(minter, SeqProxy::rawSequence(env.seq(minter))).key;
+            uint256 const minterOfferIndex = keylet::nftokenOffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftID, XRP(0)), Txflags(tfSellNFToken));
             env.close();
 

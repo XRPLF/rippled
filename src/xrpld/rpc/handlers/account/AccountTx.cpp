@@ -43,11 +43,11 @@ static std::expected<DelegateFilter, json::Value>
 parseDelegateFilter(json::Value const& delegateNode)
 {
     if (!delegateNode.isObject())
-        return std::unexpected(rpc::invalidFieldError(jss::delegate));
+        return std::unexpected(RPC::invalidFieldError(jss::delegate));
 
     if (!delegateNode.isMember(jss::delegate_filter) ||
         !delegateNode[jss::delegate_filter].isString())
-        return std::unexpected(rpc::invalidFieldError(jss::delegate_filter));
+        return std::unexpected(RPC::invalidFieldError(jss::delegate_filter));
 
     auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
 
@@ -58,7 +58,7 @@ parseDelegateFilter(json::Value const& delegateNode)
         if (delegateFilterStr == "authorizer")
             return DelegateType::Authorizer;
 
-        return std::unexpected(rpc::invalidFieldError(jss::delegate_filter));
+        return std::unexpected(RPC::invalidFieldError(jss::delegate_filter));
     }();
 
     if (!typeResult)
@@ -70,7 +70,7 @@ parseDelegateFilter(json::Value const& delegateNode)
     if (delegateNode.isMember(jss::counter_party))
     {
         if (!delegateNode[jss::counter_party].isString())
-            return std::unexpected(rpc::invalidFieldError(jss::counter_party));
+            return std::unexpected(RPC::invalidFieldError(jss::counter_party));
 
         counterparty = parseBase58<AccountID>(delegateNode[jss::counter_party].asString());
 
@@ -90,7 +90,7 @@ using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a Json object on error
 std::variant<std::optional<LedgerSpecifier>, json::Value>
-parseLedgerArgs(rpc::Context& context, json::Value const& params)
+parseLedgerArgs(RPC::Context& context, json::Value const& params)
 {
     json::Value response;
     // if ledger_index_min or max is specified, then ledger_hash or ledger_index
@@ -100,7 +100,7 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
         if ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
             (params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index)))
         {
-            rpc::Status const status{RpcInvalidParams, "invalidParams"};
+            RPC::Status const status{RpcInvalidParams, "invalidParams"};
             status.inject(response);
             return response;
         }
@@ -123,7 +123,7 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
         auto& hashValue = params[jss::ledger_hash];
         if (!hashValue.isString())
         {
-            rpc::Status const status{RpcInvalidParams, "ledgerHashNotString"};
+            RPC::Status const status{RpcInvalidParams, "ledgerHashNotString"};
             status.inject(response);
             return response;
         }
@@ -131,7 +131,7 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
         LedgerHash hash;
         if (!hash.parseHex(hashValue.asString()))
         {
-            rpc::Status const status{RpcInvalidParams, "ledgerHashMalformed"};
+            RPC::Status const status{RpcInvalidParams, "ledgerHashMalformed"};
             status.inject(response);
             return response;
         }
@@ -162,7 +162,7 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
             }
             else
             {
-                rpc::Status const status{RpcInvalidParams, "ledger_index string malformed"};
+                RPC::Status const status{RpcInvalidParams, "ledger_index string malformed"};
                 status.inject(response);
                 return response;
             }
@@ -172,8 +172,8 @@ parseLedgerArgs(rpc::Context& context, json::Value const& params)
     return std::optional<LedgerSpecifier>{};
 }
 
-std::variant<LedgerRange, rpc::Status>
-getLedgerRange(rpc::Context& context, std::optional<LedgerSpecifier> const& ledgerSpecifier)
+std::variant<LedgerRange, RPC::Status>
+getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledgerSpecifier)
 {
     std::uint32_t uValidatedMin = 0;
     std::uint32_t uValidatedMax = 0;
@@ -193,7 +193,7 @@ getLedgerRange(rpc::Context& context, std::optional<LedgerSpecifier> const& ledg
     if (ledgerSpecifier)
     {
         auto status = std::visit(
-            [&](auto const& ls) -> rpc::Status {
+            [&](auto const& ls) -> RPC::Status {
                 using T = std::decay_t<decltype(ls)>;
                 if constexpr (std::is_same_v<T, LedgerRange>)
                 {
@@ -241,7 +241,7 @@ getLedgerRange(rpc::Context& context, std::optional<LedgerSpecifier> const& ledg
                     }
                     uLedgerMin = uLedgerMax = ledgerView->header().seq;
                 }
-                return rpc::Status::kOK;
+                return RPC::Status::kOK;
             },
             *ledgerSpecifier);
 
@@ -251,15 +251,15 @@ getLedgerRange(rpc::Context& context, std::optional<LedgerSpecifier> const& ledg
     return LedgerRange{.min = uLedgerMin, .max = uLedgerMax};
 }
 
-std::pair<AccountTxResult, rpc::Status>
-doAccountTxHelp(rpc::Context& context, AccountTxArgs const& args)
+std::pair<AccountTxResult, RPC::Status>
+doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
-    context.loadType = resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     AccountTxResult result;
 
     auto lgrRange = getLedgerRange(context, args.ledger);
-    if (auto stat = std::get_if<rpc::Status>(&lgrRange))
+    if (auto stat = std::get_if<RPC::Status>(&lgrRange))
     {
         // An error occurred getting the requested ledger range
         return {result, *stat};
@@ -318,12 +318,12 @@ doAccountTxHelp(rpc::Context& context, AccountTxArgs const& args)
 
 json::Value
 populateJsonResponse(
-    std::pair<AccountTxResult, rpc::Status> const& res,
+    std::pair<AccountTxResult, RPC::Status> const& res,
     AccountTxArgs const& args,
-    rpc::JsonContext const& context)
+    RPC::JsonContext const& context)
 {
     json::Value response;
-    rpc::Status const& error = res.second;
+    RPC::Status const& error = res.second;
     if (error.toErrorCode() != RpcSuccess)
     {
         error.inject(response);
@@ -374,13 +374,13 @@ populateJsonResponse(
                     }
 
                     auto const& sttx = txn->getSTransaction();
-                    rpc::insertDeliverMax(jvObj[jsonTx], sttx->getTxnType(), context.apiVersion);
+                    RPC::insertDeliverMax(jvObj[jsonTx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
                         jvObj[jss::meta] = txnMeta->getJson(JsonOptions::Values::IncludeDate);
                         insertDeliveredAmount(jvObj[jss::meta], context, txn, *txnMeta);
-                        rpc::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
-                        rpc::insertMPTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);
+                        RPC::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
+                        RPC::insertMPTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);
                     }
                     else
                     {
@@ -445,7 +445,7 @@ populateJsonResponse(
 // delegate-filtered query is only valid for a follow-up request that repeats
 // the same `delegate` object
 json::Value
-doAccountTx(rpc::JsonContext& context)
+doAccountTx(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
         return rpcError(RpcNotEnabled);
@@ -460,24 +460,24 @@ doAccountTx(rpc::JsonContext& context)
     // onwards only
     if (context.apiVersion > 1u && params.isMember(jss::binary) && !params[jss::binary].isBool())
     {
-        return rpc::invalidFieldError(jss::binary);
+        return RPC::invalidFieldError(jss::binary);
     }
     if (context.apiVersion > 1u && params.isMember(jss::forward) && !params[jss::forward].isBool())
     {
-        return rpc::invalidFieldError(jss::forward);
+        return RPC::invalidFieldError(jss::forward);
     }
 
-    if (auto const err = rpc::readLimitField(args.limit, rpc::tuning::kAccountTx, context))
+    if (auto const err = RPC::readLimitField(args.limit, RPC::Tuning::kAccountTx, context))
         return *err;
 
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
     args.forward = params.isMember(jss::forward) && params[jss::forward].asBool();
 
     if (!params.isMember(jss::account))
-        return rpc::missingFieldError(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return rpc::invalidFieldError(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     auto const account = parseBase58<AccountID>(params[jss::account].asString());
     if (!account)
@@ -500,7 +500,7 @@ doAccountTx(rpc::JsonContext& context)
             !token[jss::ledger].isConvertibleTo(json::ValueType::UInt) ||
             !token[jss::seq].isConvertibleTo(json::ValueType::UInt))
         {
-            rpc::Status const status{
+            RPC::Status const status{
                 RpcInvalidParams,
                 "invalid marker. Provide ledger index via ledger field, and "
                 "transaction sequence number via seq field"};
@@ -534,7 +534,7 @@ doAccountTx(rpc::JsonContext& context)
             params[jss::marker][jss::delegate].asBool();
         if (markerFromDelegate != args.delegate.has_value())
         {
-            rpc::Status const status{
+            RPC::Status const status{
                 RpcInvalidParams,
                 "Do not mix delegate and non-delegate pagination markers in account_tx; "
                 "repeat the same `delegate` object when using a delegate marker."};

@@ -35,7 +35,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -54,7 +53,7 @@ class Check_test : public beast::unit_test::Suite
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
-        return keylet::check(account, SeqProxy::rawSequence(uSequence)).key;
+        return keylet::check(account, uSequence).key;
     }
 
     // Helper function that returns the Checks on an account.

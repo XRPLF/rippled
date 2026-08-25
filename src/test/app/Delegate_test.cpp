@@ -47,7 +47,6 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
@@ -237,7 +236,7 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(gw, Account("unknown"), {"Payment"}), Ter(tecNO_TARGET));
         }
 
-        // Delegating to a pseudo-account is not allowed, should return tecPSEUDO_ACCOUNT
+        // Delegating to a pseudo-account is not allowed, should return tecNO_PERMISSION
         {
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = gw, .asset = xrpIssue()});
@@ -247,7 +246,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const sleVault = env.le(keylet);
             BEAST_EXPECT(sleVault);
             Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
-            env(delegate::set(gw, vaultPseudo, {"Payment"}), Ter(tecPSEUDO_ACCOUNT));
+            env(delegate::set(gw, vaultPseudo, {"Payment"}), Ter(tecNO_PERMISSION));
         }
 
         // non-delegable transaction
@@ -2168,12 +2167,11 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock"}));
             env.close();
 
-            // tfMPTSetCanLock is a valid MPTokenIssuanceSet flag but is not
-            // covered by the MPTokenIssuanceLock granular permission, so a
-            // delegate holding only that permission cannot set it.
+            // Field is not permitted, permitted fields for delegation is defined in
+            // permissions.macro.
             mpt.set(
                 {.account = alice,
-                 .flags = tfMPTSetCanLock,
+                 .mutableFlags = 2,
                  .delegate = bob,
                  .err = terNO_DELEGATE_PERMISSION});
 
@@ -2719,24 +2717,19 @@ class Delegate_test : public beast::unit_test::Suite
 
         std::size_t delegableCount = 0;
 
-#pragma push_macro("UNWRAP")
-#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, settings, ...)                                 \
-    if ((xrpl::TxSettings UNWRAP settings).delegable == xrpl::Delegation::Delegable) \
-    {                                                                                \
-        delegableCount++;                                                            \
+#define TRANSACTION(tag, value, name, txDelegable, ...) \
+    if (txDelegable == xrpl::Delegable)                 \
+    {                                                   \
+        delegableCount++;                               \
     }
 
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
-#undef UNWRAP
-#pragma pop_macro("UNWRAP")
 
         // ====================================================================
         // IMPORTANT NOTICE:
@@ -2756,7 +2749,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 56;
+        std::size_t const expectedDelegableCount = 57;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,
@@ -2830,15 +2823,15 @@ class Delegate_test : public beast::unit_test::Suite
                 auto [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
                 env(createTx);
 
-                env(loan_broker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
-                env(loan_broker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
-                env(loan_broker::coverDeposit(alice, keylet.key, XRP(1)),
+                env(loanBroker::set(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loanBroker::del(alice, keylet.key), delegate::As(bob), Ter(temINVALID));
+                env(loanBroker::coverDeposit(alice, keylet.key, XRP(1)),
                     delegate::As(bob),
                     Ter(temINVALID));
-                env(loan_broker::coverWithdraw(alice, keylet.key, XRP(1)),
+                env(loanBroker::coverWithdraw(alice, keylet.key, XRP(1)),
                     delegate::As(bob),
                     Ter(temINVALID));
-                env(loan_broker::coverClawback(alice), delegate::As(bob), Ter(temINVALID));
+                env(loanBroker::coverClawback(alice), delegate::As(bob), Ter(temINVALID));
 
                 env(loan::set(alice, keylet.key, Number(100)), delegate::As(bob), Ter(temINVALID));
                 env(loan::manage(alice, keylet.key, 0), delegate::As(bob), Ter(temINVALID));

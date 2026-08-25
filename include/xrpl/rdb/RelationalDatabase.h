@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
 
+#include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
 
 #include <concepts>

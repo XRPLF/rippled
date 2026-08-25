@@ -5855,8 +5855,8 @@ public:
     {
         testcase << "RPCCall API version " << apiVersion;
         if (!BEAST_EXPECT(
-                apiVersion >= rpc::kApiMinimumSupportedVersion &&
-                apiVersion <= rpc::kApiMaximumValidVersion))
+                apiVersion >= RPC::kApiMinimumSupportedVersion &&
+                apiVersion <= RPC::kApiMaximumValidVersion))
             return;
 
         test::jtx::Env const env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
@@ -5870,8 +5870,8 @@ public:
             std::vector<std::string> const args{rpcCallTest.args.begin(), rpcCallTest.args.end()};
 
             char const* const expVersioned =
-                (apiVersion - rpc::kApiMinimumSupportedVersion) < rpcCallTest.exp.size()
-                ? rpcCallTest.exp[apiVersion - rpc::kApiMinimumSupportedVersion]
+                (apiVersion - RPC::kApiMinimumSupportedVersion) < rpcCallTest.exp.size()
+                ? rpcCallTest.exp[apiVersion - RPC::kApiMinimumSupportedVersion]
                 : rpcCallTest.exp.back();
 
             // Note that, over the long term, kNone of these tests should

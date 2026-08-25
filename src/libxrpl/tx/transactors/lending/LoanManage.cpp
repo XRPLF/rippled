@@ -127,6 +127,23 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+static Number
+owedToVault(SLE::ref loanSle)
+{
+    // Spec section 3.2.3.2, defines the default amount as
+    //
+    // DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
+    //
+    // Loan.InterestOutstanding is not stored directly on ledger.
+    // It is computed as
+    //
+    // Loan.TotalValueOutstanding - Loan.PrincipalOutstanding -
+    //      Loan.ManagementFeeOutstanding
+    //
+    // Add that to the original formula, and you get this:
+    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
+}
+
 TER
 LoanManage::defaultLoan(
     ApplyView& view,
@@ -141,7 +158,7 @@ LoanManage::defaultLoan(
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    Number const totalDefaultAmount = loanVaultExposure(vaultSle, loanSle);
+    Number const totalDefaultAmount = owedToVault(loanSle);
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
@@ -287,7 +304,7 @@ LoanManage::impairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
-    Number const lossUnrealized = loanVaultExposure(vaultSle, loanSle);
+    Number const lossUnrealized = owedToVault(loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
@@ -336,7 +353,7 @@ LoanManage::unimpairLoan(
 
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
+    Number const lossReversed = owedToVault(loanSle);
     if (vaultLossUnrealizedProxy < lossReversed)
     {
         // LCOV_EXCL_START

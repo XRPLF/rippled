@@ -12,7 +12,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <array>
@@ -22,6 +21,8 @@
 #include <utility>
 
 namespace xrpl {
+
+class SeqProxy;
 /**
  * Keylet computation functions.
  *
@@ -122,7 +123,7 @@ trustLine(AccountID const& id, Issue const& issue) noexcept
  */
 /** @{ */
 Keylet
-offer(AccountID const& id, SeqProxy const& seq) noexcept;
+offer(AccountID const& id, std::uint32_t seq) noexcept;
 
 inline Keylet
 offer(uint256 const& key) noexcept
@@ -135,7 +136,7 @@ offer(uint256 const& key) noexcept
  * The initial directory page for a specific quality
  */
 Keylet
-quality(Keylet const& k, std::uint64_t const q) noexcept;
+quality(Keylet const& k, std::uint64_t q) noexcept;
 
 /**
  * The directory for the next lower quality
@@ -148,7 +149,10 @@ next(Keylet const& k);
  */
 /** @{ */
 Keylet
-ticket(AccountID const& id, SeqProxy const& ticketSeq);
+ticket(AccountID const& id, std::uint32_t ticketSeq);
+
+Keylet
+ticket(AccountID const& id, SeqProxy ticketSeq);
 
 inline Keylet
 ticket(uint256 const& key)
@@ -174,7 +178,7 @@ sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
  */
 /** @{ */
 Keylet
-check(AccountID const& id, SeqProxy const& seq) noexcept;
+check(AccountID const& id, std::uint32_t seq) noexcept;
 
 inline Keylet
 check(uint256 const& key) noexcept
@@ -235,10 +239,10 @@ ownerDir(AccountID const& id) noexcept;
  */
 /** @{ */
 Keylet
-page(uint256 const& root, std::uint64_t const index = 0) noexcept;
+page(uint256 const& root, std::uint64_t index = 0) noexcept;
 
 inline Keylet
-page(Keylet const& root, std::uint64_t const index = 0) noexcept
+page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
     return page(root.key, index);
@@ -249,13 +253,13 @@ page(Keylet const& root, std::uint64_t const index = 0) noexcept
  * An escrow entry
  */
 Keylet
-escrow(AccountID const& src, SeqProxy const& seq) noexcept;
+escrow(AccountID const& src, std::uint32_t seq) noexcept;
 
 /**
  * A PaymentChannel
  */
 Keylet
-payChannel(AccountID const& src, AccountID const& dst, SeqProxy const& seq) noexcept;
+payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
 
 /**
  * NFT page keylets
@@ -286,7 +290,7 @@ nftokenPage(Keylet const& k, uint256 const& token);
  * An offer from an account to buy or sell an NFT
  */
 Keylet
-nftokenOffer(AccountID const& owner, SeqProxy const& seq);
+nftokenOffer(AccountID const& owner, std::uint32_t seq);
 
 inline Keylet
 nftokenOffer(uint256 const& offer)
@@ -326,17 +330,17 @@ bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
 
 // `seq` is stored as `sfXChainClaimID` in the object
 Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t const seq);
+xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
 // `seq` is stored as `sfXChainAccountCreateCount` in the object
 Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t const seq);
+xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
 Keylet
 did(AccountID const& account) noexcept;
 
 Keylet
-oracle(AccountID const& account, std::uint32_t const documentID) noexcept;
+oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 
 Keylet
 credential(AccountID const& subject, AccountID const& issuer, Slice const& credType) noexcept;
@@ -346,6 +350,9 @@ credential(uint256 const& key) noexcept
 {
     return {ltCREDENTIAL, key};
 }
+
+Keylet
+mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
 
 Keylet
 mptokenIssuance(MPTID const& issuanceID) noexcept;
@@ -369,7 +376,7 @@ Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
 Keylet
-vault(AccountID const& owner, SeqProxy const& seq) noexcept;
+vault(AccountID const& owner, std::uint32_t seq) noexcept;
 
 inline Keylet
 vault(uint256 const& vaultKey)
@@ -378,7 +385,7 @@ vault(uint256 const& vaultKey)
 }
 
 Keylet
-loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept;
+loanBroker(AccountID const& owner, std::uint32_t seq) noexcept;
 
 inline Keylet
 loanBroker(uint256 const& key)
@@ -387,7 +394,7 @@ loanBroker(uint256 const& key)
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept;
+loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept;
 
 inline Keylet
 loan(uint256 const& key)
@@ -396,7 +403,7 @@ loan(uint256 const& key)
 }
 
 Keylet
-permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
+permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
@@ -414,6 +421,12 @@ getQualityNext(uint256 const& uBase);
 std::uint64_t
 getQuality(uint256 const& uBase);
 
+uint256
+getTicketIndex(AccountID const& account, std::uint32_t uSequence);
+
+uint256
+getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
+
 template <class... KeyletParams>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct KeyletDesc
@@ -427,6 +440,6 @@ struct KeyletDesc
 extern std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets;
 
 MPTID
-makeMptID(std::uint32_t const sequence, AccountID const& account);
+makeMptID(std::uint32_t sequence, AccountID const& account);
 
 }  // namespace xrpl

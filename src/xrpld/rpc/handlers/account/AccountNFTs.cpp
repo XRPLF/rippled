@@ -35,14 +35,14 @@ namespace xrpl {
  * }
  */
 json::Value
-doAccountNFTs(rpc::JsonContext& context)
+doAccountNFTs(RPC::JsonContext& context)
 {
     auto const& params = context.params;
     if (!params.isMember(jss::account))
-        return rpc::missingFieldError(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return rpc::invalidFieldError(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
@@ -51,7 +51,7 @@ doAccountNFTs(rpc::JsonContext& context)
     }
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = rpc::lookupLedger(ledger, context);
+    auto result = RPC::lookupLedger(ledger, context);
     if (ledger == nullptr)
         return result;
     auto const accountID{id.value()};
@@ -60,7 +60,7 @@ doAccountNFTs(rpc::JsonContext& context)
         return rpcError(RpcActNotFound);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, rpc::tuning::kAccountNfTokens, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kAccountNfTokens, context))
         return *err;
 
     uint256 marker;
@@ -70,10 +70,10 @@ doAccountNFTs(rpc::JsonContext& context)
     {
         auto const& m = params[jss::marker];
         if (!m.isString())
-            return rpc::expectedFieldError(jss::marker, "string");
+            return RPC::expectedFieldError(jss::marker, "string");
 
         if (!marker.parseHex(m.asString()))
-            return rpc::invalidFieldError(jss::marker);
+            return RPC::invalidFieldError(jss::marker);
     }
 
     auto const first = keylet::nftokenPage(keylet::nftokenPageMin(accountID), marker);
@@ -125,7 +125,7 @@ doAccountNFTs(rpc::JsonContext& context)
             }
 
             if (markerSet && !markerFound)
-                return rpc::invalidFieldError(jss::marker);
+                return RPC::invalidFieldError(jss::marker);
 
             pastMarker = true;
 
@@ -160,10 +160,10 @@ doAccountNFTs(rpc::JsonContext& context)
     }
 
     if (markerSet && !markerFound)
-        return rpc::invalidFieldError(jss::marker);
+        return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 

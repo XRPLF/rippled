@@ -182,7 +182,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
 
         if (txnSeq_ && netID)
         {
-            std::optional<std::string> const ctid = rpc::encodeCTID(ledgerIndex_, *txnSeq_, *netID);
+            std::optional<std::string> const ctid = RPC::encodeCTID(ledgerIndex_, *txnSeq_, *netID);
             if (ctid)
                 ret[jss::ctid] = *ctid;
         }

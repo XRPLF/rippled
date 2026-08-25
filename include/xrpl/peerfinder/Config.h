@@ -9,7 +9,7 @@
 #include <string>
 #include <string_view>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 struct PeerLimitConfig
 {
@@ -28,7 +28,7 @@ struct Config
      * This includes both inbound and outbound, but does not include
      * fixed peers.
      */
-    std::size_t maxPeers{tuning::kDefaultMaxPeers};
+    std::size_t maxPeers{Tuning::kDefaultMaxPeers};
 
     /**
      * The number of automatic outbound connections to maintain.
@@ -100,7 +100,7 @@ struct Config
     onWrite(beast::PropertyStream::Map& map) const;
 
     /**
-     * Make peer_finder::Config from peer limit and server mode parameters.
+     * Make PeerFinder::Config from peer limit and server mode parameters.
      */
     static Config
     makeConfig(
@@ -160,4 +160,4 @@ to_string(Result result) noexcept
     return "unknown";
 }
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

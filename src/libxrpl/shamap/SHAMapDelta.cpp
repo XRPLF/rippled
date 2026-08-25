@@ -54,7 +54,7 @@ SHAMap::walkBranch(
         {
             // This is an inner node, add all non-empty branches
             auto inner = safeDowncast<SHAMapInnerNode*>(node);
-            for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
+            for (int i = 0; i < 16; ++i)
             {
                 if (!inner->isEmptyBranch(i))
                     nodeStack.push({descendThrow(inner, i)});
@@ -205,7 +205,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         {
             auto ours = safeDowncast<SHAMapInnerNode*>(ourNode);
             auto other = safeDowncast<SHAMapInnerNode*>(otherNode);
-            for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
+            for (int i = 0; i < 16; ++i)
             {
                 if (ours->getChildHash(i) != other->getChildHash(i))
                 {
@@ -257,7 +257,7 @@ SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) co
         intr_ptr::SharedPtr<SHAMapInnerNode> const node = std::move(nodeStack.top());
         nodeStack.pop();
 
-        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
+        for (int i = 0; i < 16; ++i)
         {
             if (!node->isEmptyBranch(i))
             {
@@ -286,29 +286,27 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
         return false;
 
     using StackEntry = intr_ptr::SharedPtr<SHAMapInnerNode>;
-    std::array<SHAMapTreeNodePtr, SHAMapInnerNode::kBranchFactor> topChildren;
+    std::array<SHAMapTreeNodePtr, 16> topChildren;
     {
         auto const& innerRoot = intr_ptr::staticPointerCast<SHAMapInnerNode>(root_);
-        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
+        for (int i = 0; i < 16; ++i)
         {
             if (!innerRoot->isEmptyBranch(i))
                 topChildren[i] = descendNoStore(*innerRoot, i);
         }
     }
     std::vector<std::thread> workers;
-    workers.reserve(SHAMapInnerNode::kBranchFactor);
+    workers.reserve(16);
     std::vector<SHAMapMissingNode> exceptions;
-    exceptions.reserve(SHAMapInnerNode::kBranchFactor);
+    exceptions.reserve(16);
 
-    std::array<std::stack<StackEntry, std::vector<StackEntry>>, SHAMapInnerNode::kBranchFactor>
-        nodeStacks;
+    std::array<std::stack<StackEntry, std::vector<StackEntry>>, 16> nodeStacks;
 
     // This mutex is used inside the worker threads to protect `missingNodes`
     // and `maxMissing` from race conditions
     std::mutex m;
 
-    for (auto rootChildIndex = 0u; rootChildIndex < SHAMapInnerNode::kBranchFactor;
-         ++rootChildIndex)
+    for (int rootChildIndex = 0; rootChildIndex < 16; ++rootChildIndex)
     {
         auto const& child = topChildren[rootChildIndex];
         if (!child || !child->isInner())
@@ -329,7 +327,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                         XRPL_ASSERT(node, "xrpl::SHAMap::walkMapParallel : non-null node");
                         nodeStack.pop();
 
-                        for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
+                        for (int i = 0; i < 16; ++i)
                         {
                             if (node->isEmptyBranch(i))
                                 continue;

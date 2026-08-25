@@ -24,12 +24,11 @@ randomWeightedShuffle(std::vector<T> v, std::vector<double> w, G& g)
 {
     using std::swap;
 
-    for (auto i = 0uz; i + 1 < v.size(); ++i)
+    for (int i = 0; i < v.size() - 1; ++i)
     {
-        // Pick a random item from the unplaced tail, weighted by w.
-        // NOLINTNEXTLINE(misc-const-correctness)
-        std::discrete_distribution<std::size_t> dd(w.begin() + i, w.end());
-        auto const idx = i + dd(g);
+        // pick a random item weighted by w
+        std::discrete_distribution<> dd(w.begin() + i, w.end());  // NOLINT(misc-const-correctness)
+        auto idx = dd(g);
         std::swap(v[i], v[idx]);
         std::swap(w[i], w[idx]);
     }

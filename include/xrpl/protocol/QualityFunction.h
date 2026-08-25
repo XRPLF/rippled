@@ -61,15 +61,6 @@ public:
     outFromAvgQ(Quality const& quality);
 
     /**
-     * Return whether `out` produces at least the requested
-     * average quality.
-     * @param quality requested average quality (quality limit)
-     * @param out output amount to test
-     */
-    [[nodiscard]] bool
-    satisfiesAvgQ(Quality const& quality, Number const& out) const;
-
-    /**
      * Return true if the quality function is constant
      */
     [[nodiscard]] bool

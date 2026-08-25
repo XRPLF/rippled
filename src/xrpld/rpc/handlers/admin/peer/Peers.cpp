@@ -17,7 +17,7 @@
 namespace xrpl {
 
 json::Value
-doPeers(rpc::JsonContext& context)
+doPeers(RPC::JsonContext& context)
 {
     json::Value jvResult(json::ValueType::Object);
 

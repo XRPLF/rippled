@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 Config
 makeConfig(
@@ -16,4 +16,4 @@ makeConfig(
     int ipLimit,
     bool verifyEndpoints);
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

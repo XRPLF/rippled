@@ -152,14 +152,7 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
                                                                                                                                                                \
     TRANSACTION(MPTokenIssuanceSet,                                                                                                                            \
         TF_FLAG(tfMPTLock, 0x00000001)                                                                                                                         \
-        TF_FLAG(tfMPTUnlock, 0x00000002)                                                                                                                       \
-        TF_FLAG(tfMPTSetCanLock, 0x00000004)                                                                                                                   \
-        TF_FLAG(tfMPTSetRequireAuth, 0x00000008)                                                                                                               \
-        TF_FLAG(tfMPTSetCanEscrow, 0x00000010)                                                                                                                 \
-        TF_FLAG(tfMPTSetCanTrade, 0x00000020)                                                                                                                  \
-        TF_FLAG(tfMPTSetCanTransfer, 0x00000040)                                                                                                               \
-        TF_FLAG(tfMPTSetCanClawback, 0x00000080)                                                                                                               \
-        TF_FLAG(tfMPTSetCanHoldConfidentialBalance, 0x00000100),                                                                                               \
+        TF_FLAG(tfMPTUnlock, 0x00000002),                                                                                                                      \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(NFTokenCreateOffer,                                                                                                                            \
@@ -363,26 +356,38 @@ inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
 inline constexpr FlagValue tfTrustSetPermissionMask =
     ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
 
-// MPTokenIssuanceCreate / MPTokenIssuanceSet ImmutableFlags:
-// Defines the immutable fields and flags specific to MPTokenIssuance.
-inline constexpr FlagValue tifMPTCanLock = lsifMPTCanLock;
-inline constexpr FlagValue tifMPTRequireAuth = lsifMPTRequireAuth;
-inline constexpr FlagValue tifMPTCanEscrow = lsifMPTCanEscrow;
-inline constexpr FlagValue tifMPTCanTrade = lsifMPTCanTrade;
-inline constexpr FlagValue tifMPTCanTransfer = lsifMPTCanTransfer;
-inline constexpr FlagValue tifMPTCanClawback = lsifMPTCanClawback;
-inline constexpr FlagValue tifMPTMetadata = lsifMPTMetadata;
-inline constexpr FlagValue tifMPTTransferFee = lsifMPTTransferFee;
-inline constexpr FlagValue tifMPTCanHoldConfidentialBalance = lsifMPTCanHoldConfidentialBalance;
-inline constexpr FlagValue tifMPTokenIssuanceImmutableMask =
-    ~(tifMPTCanLock | tifMPTRequireAuth | tifMPTCanEscrow | tifMPTCanTrade | tifMPTCanTransfer |
-      tifMPTCanClawback | tifMPTMetadata | tifMPTTransferFee | tifMPTCanHoldConfidentialBalance);
+// MPTokenIssuanceCreate MutableFlags:
+// Indicating specific fields or flags may be changed after issuance.
+inline constexpr FlagValue tmfMPTCanEnableCanLock = lsmfMPTCanEnableCanLock;
+inline constexpr FlagValue tmfMPTCanEnableRequireAuth = lsmfMPTCanEnableRequireAuth;
+inline constexpr FlagValue tmfMPTCanEnableCanEscrow = lsmfMPTCanEnableCanEscrow;
+inline constexpr FlagValue tmfMPTCanEnableCanTrade = lsmfMPTCanEnableCanTrade;
+inline constexpr FlagValue tmfMPTCanEnableCanTransfer = lsmfMPTCanEnableCanTransfer;
+inline constexpr FlagValue tmfMPTCanEnableCanClawback = lsmfMPTCanEnableCanClawback;
+inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
+inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
+inline constexpr FlagValue tmfMPTCannotEnableCanHoldConfidentialBalance =
+    lsmfMPTCannotEnableCanHoldConfidentialBalance;
+inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
+    ~(tmfMPTCanEnableCanLock | tmfMPTCanEnableRequireAuth | tmfMPTCanEnableCanEscrow |
+      tmfMPTCanEnableCanTrade | tmfMPTCanEnableCanTransfer | tmfMPTCanEnableCanClawback |
+      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee |
+      tmfMPTCannotEnableCanHoldConfidentialBalance);
 
-// MPTokenIssuanceSet set of flags that is used to enable capabilities on an MPTokenIssuance.
-// Used as `txFlags & tfMPTokenIssuanceSetEnableFlagMask` to extract the capability-enabling bits.
-inline constexpr FlagValue tfMPTokenIssuanceSetEnableFlagMask = tfMPTSetCanLock |
-    tfMPTSetRequireAuth | tfMPTSetCanEscrow | tfMPTSetCanTrade | tfMPTSetCanTransfer |
-    tfMPTSetCanClawback | tfMPTSetCanHoldConfidentialBalance;
+// MPTokenIssuanceSet MutableFlags:
+// Enable mutable capability flags. These flags are one-way: once enabled,
+// the corresponding capability cannot be disabled by MPTokenIssuanceSet.
+
+inline constexpr FlagValue tmfMPTSetCanLock = 0x00000001;
+inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000002;
+inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000004;
+inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000008;
+inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000010;
+inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000020;
+inline constexpr FlagValue tmfMPTSetCanHoldConfidentialBalance = 0x00000040;
+inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask =
+    ~(tmfMPTSetCanLock | tmfMPTSetRequireAuth | tmfMPTSetCanEscrow | tmfMPTSetCanTrade |
+      tmfMPTSetCanTransfer | tmfMPTSetCanClawback | tmfMPTSetCanHoldConfidentialBalance);
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.
@@ -425,7 +430,8 @@ inline constexpr FlagValue tfDepositSubTx =
     ASF_FLAG(asfDefaultRipple, 8)                 \
     ASF_FLAG(asfDepositAuth, 9)                   \
     ASF_FLAG(asfAuthorizedNFTokenMinter, 10)      \
-    /*  11 is unused */                           \
+    /*  11 is reserved for Hooks amendment */     \
+    /* ASF_FLAG(asfTshCollect, 11) */             \
     ASF_FLAG(asfDisallowIncomingNFTokenOffer, 12) \
     ASF_FLAG(asfDisallowIncomingCheck, 13)        \
     ASF_FLAG(asfDisallowIncomingPayChan, 14)      \

@@ -219,11 +219,11 @@ public:
      *
      * @param i index of the requested child
      */
-    [[nodiscard]] std::optional<unsigned int>
-    getChildIndex(std::uint16_t isBranch, unsigned int i) const;
+    [[nodiscard]] std::optional<int>
+    getChildIndex(std::uint16_t isBranch, int i) const;
 };
 
-[[nodiscard]] inline unsigned int
+[[nodiscard]] inline int
 popcnt16(std::uint16_t a)
 {
 #if __cpp_lib_bitops
@@ -234,11 +234,11 @@ popcnt16(std::uint16_t a)
     // fallback to table lookup
     static constexpr auto tbl = []() {
         std::array<std::uint8_t, 256> ret{};
-        for (auto i = 0u; i != 256u; ++i)
+        for (int i = 0; i != 256; ++i)
         {
-            for (auto j = 0u; j != 8u; ++j)
+            for (int j = 0; j != 8; ++j)
             {
-                if (i & (1u << j))
+                if (i & (1 << j))
                     ret[i]++;
             }
         }

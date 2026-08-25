@@ -26,7 +26,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STPathSet.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
@@ -43,7 +42,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <ranges>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -316,11 +314,19 @@ auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
 auto const kAmount = JTxFieldWrapper<StAmountField>(sfAmount);
 
-template <std::ranges::range Input>
+// TODO We only need this long "requires" clause as polyfill, for C++20
+// implementations which are missing <ranges> header. Replace with
+// `std::ranges::range<Input>`, and accordingly use std::ranges::begin/end
+// when we have moved to better compilers.
+template <typename Input>
 auto
 makeVector(Input const& input)
+    requires requires(Input& v) {
+        std::begin(v);
+        std::end(v);
+    }
 {
-    return std::vector(std::ranges::begin(input), std::ranges::end(input));
+    return std::vector(std::begin(input), std::end(input));
 }
 
 // Functions used in debugging
@@ -773,9 +779,9 @@ inline constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
 inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
 inline uint256
-getCheckIndex(AccountID const& account, std::uint32_t const sequence)
+getCheckIndex(AccountID const& account, std::uint32_t uSequence)
 {
-    return keylet::check(account, SeqProxy::rawSequence(sequence)).key;
+    return keylet::check(account, uSequence).key;
 }
 
 template <class Suite>
@@ -870,7 +876,7 @@ checkMetrics(
 /* LoanBroker */
 /******************************************************************************/
 
-namespace loan_broker {
+namespace loanBroker {
 
 json::Value
 set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
@@ -911,7 +917,7 @@ auto const kCoverRateLiquidation =
 
 auto const kDestination = JTxFieldWrapper<AccountIdField>(sfDestination);
 
-}  // namespace loan_broker
+}  // namespace loanBroker
 
 /* Loan */
 /******************************************************************************/

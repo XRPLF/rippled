@@ -21,7 +21,7 @@ class LedgerStateFixBuilder;
  * Type: ttLEDGER_STATE_FIX (53)
  * Delegable: Delegation::Delegable
  * Amendment: fixNFTokenPageLinks
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LedgerStateFixBuilder to construct new transactions.

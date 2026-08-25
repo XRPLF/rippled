@@ -260,35 +260,39 @@ FeeVoteImpl::doVoting(
     }
 
     // choose our positions
-    auto const [baseFee, baseFeeChanged] = baseFeeVote.getVotes();
-    auto const [baseReserve, baseReserveChanged] = baseReserveVote.getVotes();
-    auto const [incReserve, incReserveChanged] = incReserveVote.getVotes();
+    // TODO: Use structured binding once LLVM 16 is the minimum supported
+    // version. See also: https://github.com/llvm/llvm-project/issues/48582
+    // https://github.com/llvm/llvm-project/commit/127bf44385424891eb04cff8e52d3f157fc2cb7c
+    auto const baseFee = baseFeeVote.getVotes();
+    auto const baseReserve = baseReserveVote.getVotes();
+    auto const incReserve = incReserveVote.getVotes();
 
     auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
-    if (baseFeeChanged || baseReserveChanged || incReserveChanged)
+    if (baseFee.second || baseReserve.second || incReserve.second)
     {
-        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee << "/" << baseReserve
-                              << "/" << incReserve;
+        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee.first << "/"
+                              << baseReserve.first << "/" << incReserve.first;
 
         STTx const feeTx(ttFEE, [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))
             {
-                obj[sfBaseFeeDrops] = baseFee;
-                obj[sfReserveBaseDrops] = baseReserve;
-                obj[sfReserveIncrementDrops] = incReserve;
+                obj[sfBaseFeeDrops] = baseFee.first;
+                obj[sfReserveBaseDrops] = baseReserve.first;
+                obj[sfReserveIncrementDrops] = incReserve.first;
             }
             else
             {
                 // Without the featureXRPFees amendment, these fields are
                 // required.
-                obj[sfBaseFee] = baseFee.dropsAs<std::uint64_t>(baseFeeVote.current());
-                obj[sfReserveBase] = baseReserve.dropsAs<std::uint32_t>(baseReserveVote.current());
+                obj[sfBaseFee] = baseFee.first.dropsAs<std::uint64_t>(baseFeeVote.current());
+                obj[sfReserveBase] =
+                    baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
                 obj[sfReserveIncrement] =
-                    incReserve.dropsAs<std::uint32_t>(incReserveVote.current());
+                    incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
                 obj[sfReferenceFeeUnits] = kFeeUnitsDeprecated;
             }
         });

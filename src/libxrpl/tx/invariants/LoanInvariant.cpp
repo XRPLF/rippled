@@ -4,18 +4,13 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-
-#include <cstdint>
 
 namespace xrpl {
 
@@ -31,7 +26,7 @@ ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after
 bool
 ValidLoan::finalize(
     STTx const& tx,
-    TER const result,
+    TER const,
     XRPAmount const,
     ReadView const& view,
     beast::Journal const& j)
@@ -41,35 +36,6 @@ ValidLoan::finalize(
 
     for (auto const& [before, after] : loans_)
     {
-        // A closed-ended vault must not accept a loan whose final scheduled payment falls on or
-        // after the vault's RedemptionDate. This mirrors the LoanSet::preclaim gate and only fires
-        // on loan creation; once the loan exists, its StartDate / PaymentInterval are immutable and
-        // PaymentRemaining only decreases, so the bound is preserved.
-        if (!before && isTesSuccess(result))
-        {
-            auto const broker = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
-            if (broker)
-            {
-                auto const vault = view.read(keylet::vault(broker->at(sfVaultID)));
-                // We don't check for LendingProtocolV1_1 amendment because a ClosedEnded Vault will
-                // not exist without the amendment enabled
-                if (vault && getVaultKind(vault) == VaultKind::ClosedEnded)
-                {
-                    std::uint32_t const startDate = after->at(sfStartDate);
-                    std::uint32_t const interval = after->at(sfPaymentInterval);
-                    std::uint32_t const remaining = after->at(sfPaymentRemaining);
-                    std::uint32_t const redemption = vault->at(sfRedemptionDate);
-                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) >=
-                        redemption)
-                    {
-                        JLOG(j.fatal()) << "Invariant failed: closed-ended loan final payment "
-                                           "must precede RedemptionDate";
-                        return false;
-                    }
-                }
-            }
-        }
-
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
         // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
         if (after->at(sfPaymentRemaining) == 0 &&

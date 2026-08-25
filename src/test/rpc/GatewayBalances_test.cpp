@@ -177,45 +177,6 @@ public:
     }
 
     void
-    testGWBInvalidAccount(FeatureBitset features)
-    {
-        testcase("Gateway Balances with non-string account/ident");
-        using namespace std::chrono_literals;
-        using namespace jtx;
-        Env env(*this, features);
-
-        Account const alice{"alice"};
-        env.fund(XRP(10000), alice);
-        env.close();
-
-        auto wsc = makeWSClient(env.app().config());
-
-        // A non-string "account" must be rejected cleanly with invalidParams
-        // rather than throwing a Json::LogicError that surfaces as internal.
-        json::Value qry;
-        qry[jss::account] = 42;
-        qry[jss::hotwallet] = alice.human();
-
-        forAllApiVersions([&, this](unsigned apiVersion) {
-            qry[jss::api_version] = apiVersion;
-            auto jv = wsc->invoke("gateway_balances", qry);
-            expect(jv[jss::status] == "error");
-            BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
-        });
-
-        // The same applies to a non-string "ident".
-        json::Value qry2;
-        qry2[jss::ident] = 42;
-
-        forAllApiVersions([&, this](unsigned apiVersion) {
-            qry2[jss::api_version] = apiVersion;
-            auto jv = wsc->invoke("gateway_balances", qry2);
-            expect(jv[jss::status] == "error");
-            BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
-        });
-    }
-
-    void
     testGWBOverflow()
     {
         using namespace std::chrono_literals;
@@ -319,7 +280,6 @@ public:
         {
             testGWB(feature);
             testGWBApiVersions(feature);
-            testGWBInvalidAccount(feature);
         }
         testGWBWithMPT();
         testGWBOverflow();

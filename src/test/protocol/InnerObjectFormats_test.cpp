@@ -5,7 +5,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>  // json::Reader
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/ErrorCodes.h>    // rpc::containsError
+#include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
 
 #include <stdexcept>
@@ -13,7 +13,7 @@
 
 namespace xrpl {
 
-namespace inner_object_formats_unit_test_detail {
+namespace InnerObjectFormatsUnitTestDetail {
 
 struct TestJSONTxt
 {
@@ -149,7 +149,7 @@ static TestJSONTxt const kTestArray[] = {
 
 };
 
-}  // namespace inner_object_formats_unit_test_detail
+}  // namespace InnerObjectFormatsUnitTestDetail
 
 class InnerObjectFormatsParsedJSON_test : public beast::unit_test::Suite
 {
@@ -157,7 +157,7 @@ public:
     void
     run() override
     {
-        using namespace inner_object_formats_unit_test_detail;
+        using namespace InnerObjectFormatsUnitTestDetail;
 
         // Instantiate a jtx::Env so debugLog writes are exercised.
         test::jtx::Env const env(*this);
@@ -166,7 +166,7 @@ public:
         {
             json::Value req;
             json::Reader().parse(test.txt, req);
-            if (rpc::containsError(req))
+            if (RPC::containsError(req))
             {
                 Throw<std::runtime_error>(
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");

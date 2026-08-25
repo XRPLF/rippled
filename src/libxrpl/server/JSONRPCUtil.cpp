@@ -42,7 +42,7 @@ httpReply(int nStatus, std::string const& content, json::Output const& output, b
 
         // CHECKME this returns a different version than the replies below. Is
         //         this by design or an accident or should it be using
-        //         build_info::getFullVersionString () as well?
+        //         BuildInfo::getFullVersionString () as well?
         output("Server: " + systemName() + "-json-rpc/v1");
         output("\r\n");
 
@@ -123,7 +123,7 @@ httpReply(int nStatus, std::string const& content, json::Output const& output, b
         "Content-Type: application/json; charset=UTF-8\r\n");
 
     output("Server: " + systemName() + "-json-rpc/");
-    output(build_info::getFullVersionString());
+    output(BuildInfo::getFullVersionString());
     output(
         "\r\n"
         "\r\n");

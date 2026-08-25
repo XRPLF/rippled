@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -90,14 +89,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == account)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTConvert::preclaim : issuer derived from the MPT ID must "
-            "match the ledger's stored issuer");
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorEncryptionKey);
@@ -215,25 +207,11 @@ ConfidentialMPTConvert::doApply()
 
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTConvert::doApply : preclaim already validated the MPToken "
-            "exists");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTConvert::doApply : preclaim already validated the issuance "
-            "exists");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const amtToConvert = ctx_.tx[sfMPTAmount];
     auto const amt = (*sleMptoken)[~sfMPTAmount].valueOr(0);
@@ -295,14 +273,7 @@ ConfidentialMPTConvert::doApply()
         if (auditorEc)
         {
             if (!sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
-            {
-                // LCOV_EXCL_START
-                UNREACHABLE(
-                    "xrpl::ConfidentialMPTConvert::doApply : issuance-level auditing implies "
-                    "the MPToken already carries an auditor balance");
-                return tecINTERNAL;
-                // LCOV_EXCL_STOP
-            }
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             auto sum = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance]);
             if (!sum)
@@ -337,14 +308,7 @@ ConfidentialMPTConvert::doApply()
             (*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
         if (!zeroBalance)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::ConfidentialMPTConvert::doApply : canonical zero encryption cannot fail "
-                "for an already-valid holder public key");
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*zeroBalance);
     }
@@ -352,12 +316,7 @@ ConfidentialMPTConvert::doApply()
     {
         // both sfIssuerEncryptedBalance and sfConfidentialBalanceInbox should
         // exist together
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTConvert::doApply : confidential balance fields must be all "
-            "present or all absent");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     view().update(sleIssuance);

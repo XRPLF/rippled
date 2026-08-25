@@ -111,7 +111,7 @@ getCountsJson(Application& app, int minObjectCount)
 //   min_count: <number>  // optional, defaults to 10
 // }
 json::Value
-doGetCounts(rpc::JsonContext& context)
+doGetCounts(RPC::JsonContext& context)
 {
     int minCount = 10;
 

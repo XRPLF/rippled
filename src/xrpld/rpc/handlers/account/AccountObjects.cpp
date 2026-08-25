@@ -5,7 +5,6 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -192,13 +191,6 @@ getAccountObjects(
         for (; entryIter != dirEntries.end(); ++entryIter)
         {
             auto const sleNode = ledger.read(keylet::child(*entryIter));
-            if (!sleNode)
-            {
-                // LCOV_EXCL_START
-                UNREACHABLE("xrpl::doAccountObjects : null SLE");
-                continue;
-                // LCOV_EXCL_STOP
-            }
 
             bool canAppend = true;
 
@@ -265,24 +257,24 @@ getAccountObjects(
 }
 
 json::Value
-doAccountObjects(rpc::JsonContext& context)
+doAccountObjects(RPC::JsonContext& context)
 {
     auto const& params = context.params;
     if (!params.isMember(jss::account))
-        return rpc::missingFieldError(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return rpc::invalidFieldError(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = rpc::lookupLedger(ledger, context);
+    auto result = RPC::lookupLedger(ledger, context);
     if (ledger == nullptr)
         return result;
 
     auto const id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        rpc::injectError(RpcActMalformed, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
@@ -331,10 +323,10 @@ doAccountObjects(rpc::JsonContext& context)
     }
     else
     {
-        auto [rpcStatus, type] = rpc::chooseLedgerEntryType(params);
+        auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
 
-        if (!rpc::isAccountObjectsValidType(type))
-            return rpc::invalidFieldError(jss::type);
+        if (!RPC::isAccountObjectsValidType(type))
+            return RPC::invalidFieldError(jss::type);
 
         if (rpcStatus)
         {
@@ -349,7 +341,7 @@ doAccountObjects(rpc::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, rpc::tuning::kAccountObjects, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kAccountObjects, context))
         return *err;
 
     uint256 dirIndex;
@@ -358,18 +350,18 @@ doAccountObjects(rpc::JsonContext& context)
     {
         auto const& marker = params[jss::marker];
         if (!marker.isString())
-            return rpc::expectedFieldError(jss::marker, "string");
+            return RPC::expectedFieldError(jss::marker, "string");
 
         auto const& markerStr = marker.asString();
         auto const& idx = markerStr.find(',');
         if (idx == std::string::npos)
-            return rpc::invalidFieldError(jss::marker);
+            return RPC::invalidFieldError(jss::marker);
 
         if (!dirIndex.parseHex(markerStr.substr(0, idx)))
-            return rpc::invalidFieldError(jss::marker);
+            return RPC::invalidFieldError(jss::marker);
 
         if (!entryIndex.parseHex(markerStr.substr(idx + 1)))
-            return rpc::invalidFieldError(jss::marker);
+            return RPC::invalidFieldError(jss::marker);
     }
 
     std::optional<bool> sponsoredFilter;
@@ -377,17 +369,17 @@ doAccountObjects(rpc::JsonContext& context)
     {
         auto const& sponsoredJv = params[jss::sponsored];
         if (!sponsoredJv.isBool())
-            return rpc::expectedFieldError(jss::sponsored, "boolean");
+            return RPC::expectedFieldError(jss::sponsored, "boolean");
 
         sponsoredFilter = sponsoredJv.asBool();
     }
 
     if (!getAccountObjects(
             *ledger, accountID, typeFilter, dirIndex, entryIndex, limit, sponsoredFilter, result))
-        return rpc::invalidFieldError(jss::marker);
+        return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 

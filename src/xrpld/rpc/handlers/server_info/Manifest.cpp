@@ -12,12 +12,12 @@
 
 namespace xrpl {
 json::Value
-doManifest(rpc::JsonContext& context)
+doManifest(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
     if (!params.isMember(jss::public_key))
-        return rpc::missingFieldError(jss::public_key);
+        return RPC::missingFieldError(jss::public_key);
 
     auto const requested = params[jss::public_key].asString();
 
@@ -27,7 +27,7 @@ doManifest(rpc::JsonContext& context)
     auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, requested);
     if (!pk)
     {
-        rpc::injectError(RpcInvalidParams, ret);
+        RPC::injectError(RpcInvalidParams, ret);
         return ret;
     }
 

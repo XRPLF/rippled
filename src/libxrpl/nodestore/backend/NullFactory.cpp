@@ -13,7 +13,7 @@
 #include <memory>
 #include <string>
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 class NullBackend : public Backend
 {
@@ -125,4 +125,4 @@ registerNullFactory(Manager& manager)
     static NullFactory const kInstance{manager};
 }
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

@@ -21,7 +21,7 @@ class LoanBrokerDeleteBuilder;
  * Type: ttLOAN_BROKER_DELETE (75)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt
+ * Privileges: MustDeleteAcct | MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerDeleteBuilder to construct new transactions.

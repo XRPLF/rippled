@@ -256,27 +256,27 @@ public:
     }
 
     /**
-     * @brief Get sfImmutableFlags (SoeDefault)
+     * @brief Get sfMutableFlags (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getImmutableFlags() const
+    getMutableFlags() const
     {
-        if (hasImmutableFlags())
-            return this->sle_->at(sfImmutableFlags);
+        if (hasMutableFlags())
+            return this->sle_->at(sfMutableFlags);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfImmutableFlags is present.
+     * @brief Check if sfMutableFlags is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasImmutableFlags() const
+    hasMutableFlags() const
     {
-        return this->sle_->isFieldPresent(sfImmutableFlags);
+        return this->sle_->isFieldPresent(sfMutableFlags);
     }
 
     /**
@@ -557,13 +557,13 @@ public:
     }
 
     /**
-     * @brief Set sfImmutableFlags (SoeDefault)
+     * @brief Set sfMutableFlags (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setImmutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfImmutableFlags] = value;
+        object_[sfMutableFlags] = value;
         return *this;
     }
 

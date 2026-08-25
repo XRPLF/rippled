@@ -8,14 +8,14 @@
 #include <cstdint>
 #include <vector>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
 /**
  * Represents a set of addresses.
  */
-using IPAddresses = std::vector<beast::ip::Endpoint>;
+using IPAddresses = std::vector<beast::IP::Endpoint>;
 
 //------------------------------------------------------------------------------
 
@@ -26,10 +26,10 @@ struct Endpoint
 {
     Endpoint() = default;
 
-    Endpoint(beast::ip::Endpoint ep, std::uint32_t hops);
+    Endpoint(beast::IP::Endpoint ep, std::uint32_t hops);
 
     std::uint32_t hops = 0;
-    beast::ip::Endpoint address;
+    beast::IP::Endpoint address;
 };
 
 inline bool
@@ -43,4 +43,4 @@ operator<(Endpoint const& lhs, Endpoint const& rhs)
  */
 using Endpoints = std::vector<Endpoint>;
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

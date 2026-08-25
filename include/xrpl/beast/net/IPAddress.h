@@ -15,7 +15,7 @@
 //------------------------------------------------------------------------------
 
 namespace beast {
-namespace ip {
+namespace IP {
 
 using Address = boost::asio::ip::address;
 
@@ -73,13 +73,13 @@ isPublic(Address const& addr)
     return (addr.is_v4()) ? isPublic(addr.to_v4()) : isPublic(addr.to_v6());
 }
 
-}  // namespace ip
+}  // namespace IP
 
 //------------------------------------------------------------------------------
 
 template <class Hasher>
 void
-hash_append(Hasher& h, beast::ip::Address const& addr) noexcept
+hash_append(Hasher& h, beast::IP::Address const& addr) noexcept
 {
     using beast::hash_append;
     if (addr.is_v4())
@@ -101,12 +101,12 @@ hash_append(Hasher& h, beast::ip::Address const& addr) noexcept
 
 namespace boost {
 template <>
-struct hash<::beast::ip::Address>
+struct hash<::beast::IP::Address>
 {
-    hash() = default;
+    explicit hash() = default;
 
     std::size_t
-    operator()(::beast::ip::Address const& addr) const
+    operator()(::beast::IP::Address const& addr) const
     {
         return ::beast::Uhash<>{}(addr);
     }

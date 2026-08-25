@@ -2,22 +2,21 @@
    Protocol Autogen - Code generation for protocol wrapper classes
 #]===================================================================]
 
-# The repository root, derived from the location of this file rather than from
-# the including project, so that the targets below can also be offered on their
-# own by cmake/codegen/CMakeLists.txt.
-get_filename_component(XRPL_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
-
 set(CODEGEN_VENV_DIR
-    "${XRPL_ROOT}/.venv"
+    "${CMAKE_CURRENT_SOURCE_DIR}/.venv"
     CACHE PATH
     "Path to a Python virtual environment for code generation. A venv will be created here by setup_code_gen and used to run generation scripts."
 )
 
 # Directory paths
-set(MACRO_DIR "${XRPL_ROOT}/include/xrpl/protocol/detail")
-set(AUTOGEN_HEADER_DIR "${XRPL_ROOT}/include/xrpl/protocol_autogen")
-set(AUTOGEN_TEST_DIR "${XRPL_ROOT}/src/tests/libxrpl/protocol_autogen")
-set(SCRIPTS_DIR "${XRPL_ROOT}/cmake/scripts/codegen")
+set(MACRO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl/protocol/detail")
+set(AUTOGEN_HEADER_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl/protocol_autogen"
+)
+set(AUTOGEN_TEST_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/libxrpl/protocol_autogen"
+)
+set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/scripts/codegen")
 
 # Input macro files
 set(TRANSACTIONS_MACRO "${MACRO_DIR}/transactions.macro")
@@ -115,14 +114,14 @@ if(CODEGEN_VENV_DIR)
         setup_code_gen
         COMMAND ${Python3_EXECUTABLE} -m venv "${CODEGEN_VENV_DIR}"
         COMMAND ${CODEGEN_PYTHON} -m pip install -r "${REQUIREMENTS_FILE}"
-        WORKING_DIRECTORY "${XRPL_ROOT}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         COMMENT "Creating venv and installing code generation dependencies..."
     )
 else()
     add_custom_target(
         setup_code_gen
         COMMAND ${Python3_EXECUTABLE} -m pip install -r "${REQUIREMENTS_FILE}"
-        WORKING_DIRECTORY "${XRPL_ROOT}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         COMMENT "Installing code generation dependencies..."
     )
 endif()
@@ -140,8 +139,8 @@ add_custom_target(
         -DSFIELDS_MACRO=${SFIELDS_MACRO}
         -DAUTOGEN_HEADER_DIR=${AUTOGEN_HEADER_DIR}
         -DAUTOGEN_TEST_DIR=${AUTOGEN_TEST_DIR} -P
-        "${CMAKE_CURRENT_LIST_DIR}/XrplProtocolAutogenRun.cmake"
-    WORKING_DIRECTORY "${XRPL_ROOT}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/XrplProtocolAutogenRun.cmake"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     COMMENT "Running protocol code generation..."
     SOURCES ${ALL_INPUT_FILES}
 )

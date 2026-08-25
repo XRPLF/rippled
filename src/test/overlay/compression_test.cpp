@@ -292,6 +292,33 @@ public:
         return getObject;
     }
 
+    static std::shared_ptr<protocol::TMValidatorList>
+    buildValidatorList()
+    {
+        auto list = std::make_shared<protocol::TMValidatorList>();
+
+        auto master = randomKeyPair(KeyType::Ed25519);
+        auto signing = randomKeyPair(KeyType::Ed25519);
+        STObject st(sfGeneric);
+        st[sfSequence] = 0;
+        st[sfPublicKey] = std::get<0>(master);
+        st[sfSigningPubKey] = std::get<0>(signing);
+        st[sfDomain] = makeSlice(std::string("example.com"));
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
+        Serializer s;
+        st.add(s);
+        list->set_manifest(s.data(), s.size());
+        list->set_version(3);
+        STObject const signature(sfSignature);
+        xrpl::sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
+        Serializer s1;
+        st.add(s1);
+        list->set_signature(s1.data(), s1.size());
+        list->set_blob(strHex(s.slice()));
+        return list;
+    }
+
     static std::shared_ptr<protocol::TMValidatorListCollection>
     buildValidatorListCollection()
     {
@@ -332,6 +359,7 @@ public:
         protocol::TMGetLedger const getLedger;
         protocol::TMLedgerData const ledgerData;
         protocol::TMGetObjectByHash const getObject;
+        protocol::TMValidatorList const validatorList;
         protocol::TMValidatorListCollection const validatorListCollection;
 
         // 4.5KB
@@ -358,6 +386,8 @@ public:
         doTest(buildLedgerData(500000, *logs), protocol::mtLEDGER_DATA, 100, "TMLedgerData500000");
         // 7.7KB
         doTest(buildGetObjectByHash(), protocol::mtGET_OBJECTS, 4, "TMGetObjectByHash");
+        // 895B
+        doTest(buildValidatorList(), protocol::mtVALIDATOR_LIST, 4, "TMValidatorList");
         doTest(
             buildValidatorListCollection(),
             protocol::mtVALIDATOR_LIST_COLLECTION,
@@ -383,7 +413,7 @@ public:
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
-            beast::ip::Address const addr = boost::asio::ip::make_address("172.1.1.100");
+            beast::IP::Address const addr = boost::asio::ip::make_address("172.1.1.100");
 
             auto env = getEnv(outboundEnable);
             auto request = xrpl::makeRequest(

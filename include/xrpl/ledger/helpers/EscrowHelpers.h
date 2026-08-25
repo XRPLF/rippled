@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -16,7 +15,6 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
@@ -243,25 +241,10 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
-        if (ctx.view.rules().enabled(fixCleanup3_4_0))
-        {
-            XRPL_ASSERT(
-                lockedRate >= kParityRate,
-                "xrpl::escrowUnlockApplyHelper<MPTIssue> : lockedRate is at least parity");
-            // MPTs are integral, so round the delivered amount down and
-            // charge any fractional transfer fee to the escrowed amount.
-            auto const delivered =
-                mulRatio(amount.mpt(), kParityRate.value, lockedRate.value, false);
-            finalAmt = STAmount(amount.asset(), delivered.value());
-        }
-        else
-        {
-            // compute transfer fee, if any
-            auto const xferFee =
-                amount.value() - divideRound(amount, lockedRate, amount.asset(), true);
-            // compute balance to transfer
-            finalAmt = amount.value() - xferFee;
-        }
+        // compute transfer fee, if any
+        auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.asset(), true);
+        // compute balance to transfer
+        finalAmt = amount.value() - xferFee;
     }
     return unlockEscrowMPT(
         ctx.view,

@@ -80,7 +80,7 @@ private:
     using stream_type = boost::beast::ssl_stream<socket_type>;
 
     Application& app_;
-    resource::Manager& resourceManager_;
+    Resource::Manager& resourceManager_;
     beast::Journal journal_;
     NetworkOPs& networkOPs_;
     std::unique_ptr<Server> server_;
@@ -109,7 +109,7 @@ private:
         boost::asio::io_context&,
         JobQueue&,
         NetworkOPs&,
-        resource::Manager&,
+        Resource::Manager&,
         CollectorManager& cm);
 
 public:
@@ -120,7 +120,7 @@ public:
         boost::asio::io_context& ioContext,
         JobQueue& jobQueue,
         NetworkOPs& networkOPs,
-        resource::Manager& resourceManager,
+        Resource::Manager& resourceManager,
         CollectorManager& cm);
 
     ~ServerHandler();
@@ -196,7 +196,7 @@ private:
     processRequest(
         Port const& port,
         std::string const& request,
-        beast::ip::Endpoint const& remoteIPAddress,
+        beast::IP::Endpoint const& remoteIPAddress,
         Output const&,
         std::shared_ptr<JobQueue::Coro> coro,
         std::string_view forwardedFor,
@@ -215,7 +215,7 @@ makeServerHandler(
     boost::asio::io_context&,
     JobQueue&,
     NetworkOPs&,
-    resource::Manager&,
+    Resource::Manager&,
     CollectorManager& cm);
 
 }  // namespace xrpl

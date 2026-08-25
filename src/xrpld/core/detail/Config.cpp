@@ -21,19 +21,21 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/format/free_funcs.hpp>
 #include <boost/multiprecision/detail/endian.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>  // IWYU pragma: keep
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
-#include <filesystem>
-#include <format>
 #include <iostream>
 #include <iterator>
 #include <limits>
@@ -43,7 +45,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <system_error>
 #include <thread>
 #include <type_traits>
 #include <utility>
@@ -184,7 +185,7 @@ parseIniFile(std::string const& strInput, bool const bTrim)
     for (auto& strValue : vLines)
     {
         if (bTrim)
-            strValue = trimWhitespace(strValue);
+            boost::algorithm::trim(strValue);
 
         if (strValue.empty() || strValue[0] == '#')
         {
@@ -312,13 +313,13 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     // directory, use the current working directory as the
     // config directory and that with "db" as the data
     // directory.
-    std::filesystem::path dataDir;
+    boost::filesystem::path dataDir;
 
     if (!strConf.empty())
     {
         // --conf=<path> : everything is relative that file.
         configFile_ = strConf;
-        configDir = std::filesystem::absolute(configFile_);
+        configDir = boost::filesystem::absolute(configFile_);
         configDir.remove_filename();
         dataDir = configDir / kDatabaseDirName;
     }
@@ -329,13 +330,13 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
             // Check if either of the config files exist in the current working
             // directory, in which case the databases will be stored in a
             // subdirectory.
-            configDir = std::filesystem::current_path();
+            configDir = boost::filesystem::current_path();
             dataDir = configDir / kDatabaseDirName;
             configFile_ = configDir / kConfigFileName;
-            if (std::filesystem::exists(configFile_))
+            if (boost::filesystem::exists(configFile_))
                 break;
             configFile_ = configDir / kConfigLegacyName;
-            if (std::filesystem::exists(configFile_))
+            if (boost::filesystem::exists(configFile_))
                 break;
 
             // Check if the home directory is set, and optionally the XDG config
@@ -362,10 +363,10 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
                 dataDir = strXdgDataHome + "/" + systemName();
                 configDir = strXdgConfigHome + "/" + systemName();
                 configFile_ = configDir / kConfigFileName;
-                if (std::filesystem::exists(configFile_))
+                if (boost::filesystem::exists(configFile_))
                     break;
                 configFile_ = configDir / kConfigLegacyName;
-                if (std::filesystem::exists(configFile_))
+                if (boost::filesystem::exists(configFile_))
                     break;
             }
 
@@ -373,7 +374,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
             dataDir = "/var/lib/" + systemName();
             configDir = "/etc/" + systemName();
             configFile_ = configDir / kConfigFileName;
-            if (std::filesystem::exists(configFile_))
+            if (boost::filesystem::exists(configFile_))
                 break;
             configFile_ = configDir / kConfigLegacyName;
         } while (false);
@@ -386,7 +387,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         std::string const dbPath(legacy(Sections::kDatabasePath));
         if (!dbPath.empty())
         {
-            dataDir = std::filesystem::path(dbPath);
+            dataDir = boost::filesystem::path(dbPath);
         }
         else if (runStandalone_)
         {
@@ -396,13 +397,13 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
 
     if (!dataDir.empty())
     {
-        std::error_code ec;
-        std::filesystem::create_directories(dataDir, ec);
+        boost::system::error_code ec;
+        boost::filesystem::create_directories(dataDir, ec);
 
         if (ec)
-            Throw<std::runtime_error>(std::format("Can not create {}", dataDir.string()));
+            Throw<std::runtime_error>(boost::str(boost::format("Can not create %s") % dataDir));
 
-        legacy(Sections::kDatabasePath, std::filesystem::absolute(dataDir).string());
+        legacy(Sections::kDatabasePath, boost::filesystem::absolute(dataDir).string());
     }
 
     HTTPClient::initializeSSLContext(this->sslVerifyDir, this->sslVerifyFile, this->sslVerify, j_);
@@ -454,7 +455,7 @@ Config::load()
     if (!quiet_)
         std::cerr << "Loading: " << configFile_ << "\n";
 
-    std::error_code ec;
+    boost::system::error_code ec;
     auto const fileContents = getFileContents(ec, configFile_);
 
     if (ec)
@@ -507,8 +508,8 @@ Config::loadFromString(std::string const& fileContents)
         std::string dbPath;
         if (getSingleSection(secConfig, Sections::kDatabasePath, dbPath, j_))
         {
-            std::filesystem::path const p(dbPath);
-            legacy(Sections::kDatabasePath, std::filesystem::absolute(p).string());
+            boost::filesystem::path const p(dbPath);
+            legacy(Sections::kDatabasePath, boost::filesystem::absolute(p).string());
         }
     }
 
@@ -675,9 +676,6 @@ Config::loadFromString(std::string const& fileContents)
 
     if (getSingleSection(secConfig, Sections::kNetworkQuorum, strTemp, j_))
         networkQuorum = beast::lexicalCastThrow<std::size_t>(strTemp);
-
-    if (getSingleSection(secConfig, Sections::kMaxSubscriptionsPerConnection, strTemp, j_))
-        maxSubscriptionsPerConnection = beast::lexicalCastThrow<std::size_t>(strTemp);
 
     fees = setupFeeVote(section(Sections::kVoting));
     /* [fee_default] is documented in the example config files as useful for
@@ -922,38 +920,6 @@ Config::loadFromString(std::string const& fileContents)
                 std::string("Invalid value 'max_diverged_time' in ") + Sections::kOverlay +
                 ": the time must be between 60 and 900 seconds, inclusive.");
         }
-
-        // Both manifest counts parse and validate identically, so read them
-        // the same way. Returns nullopt when the key is absent, leaving the
-        // built-in default in effect at the use site.
-        auto manifestCount = [&sec](char const* key) -> std::optional<std::size_t> {
-            std::optional<std::size_t> count;
-
-            try
-            {
-                if (auto val = sec.get(key))
-                    count = beast::lexicalCastThrow<std::size_t>(*val);
-            }
-            catch (...)
-            {
-                Throw<std::runtime_error>(
-                    std::string("Invalid value '") + key + "' in " + Sections::kOverlay +
-                    ": must be of the form '<number>' representing a count of manifests.");
-            }
-
-            if (count && (*count < kMinManifestCount || *count > kMaxManifestCount))
-            {
-                Throw<std::runtime_error>(
-                    std::string("Invalid value '") + key + "' in " + Sections::kOverlay +
-                    ": the count must be between " + std::to_string(kMinManifestCount) + " and " +
-                    std::to_string(kMaxManifestCount) + ", inclusive.");
-            }
-
-            return count;
-        };
-
-        maxUntrustedCount = manifestCount(Keys::kMaxUntrustedCount);
-        maxTrustedCount = manifestCount(Keys::kMaxTrustedCount);
     }
 
     if (getSingleSection(secConfig, Sections::kAmendmentMajorityTime, strTemp, j_))
@@ -1010,7 +976,7 @@ Config::loadFromString(std::string const& fileContents)
         // If no path was specified, then look for validators.txt
         // in the same directory as the config file, but don't complain
         // if we can't find it.
-        std::filesystem::path validatorsFile;
+        boost::filesystem::path validatorsFile;
 
         if (getSingleSection(secConfig, Sections::kValidatorsFile, strTemp, j_))
         {
@@ -1025,7 +991,7 @@ Config::loadFromString(std::string const& fileContents)
             if (!validatorsFile.is_absolute() && !configDir.empty())
                 validatorsFile = configDir / validatorsFile;
 
-            if (!std::filesystem::exists(validatorsFile))
+            if (!boost::filesystem::exists(validatorsFile))
             {
                 Throw<std::runtime_error>(
                     std::string("The file specified in [") + Sections::kValidatorsFile +
@@ -1034,8 +1000,8 @@ Config::loadFromString(std::string const& fileContents)
                     validatorsFile.string());
             }
             else if (
-                !std::filesystem::is_regular_file(validatorsFile) &&
-                !std::filesystem::is_symlink(validatorsFile))
+                !boost::filesystem::is_regular_file(validatorsFile) &&
+                !boost::filesystem::is_symlink(validatorsFile))
             {
                 Throw<std::runtime_error>(
                     std::string("Invalid file specified in [") + Sections::kValidatorsFile +
@@ -1048,20 +1014,20 @@ Config::loadFromString(std::string const& fileContents)
 
             if (!validatorsFile.empty())
             {
-                if (!std::filesystem::exists(validatorsFile) ||
-                    (!std::filesystem::is_regular_file(validatorsFile) &&
-                     !std::filesystem::is_symlink(validatorsFile)))
+                if (!boost::filesystem::exists(validatorsFile) ||
+                    (!boost::filesystem::is_regular_file(validatorsFile) &&
+                     !boost::filesystem::is_symlink(validatorsFile)))
                 {
                     validatorsFile.clear();
                 }
             }
         }
 
-        if (!validatorsFile.empty() && std::filesystem::exists(validatorsFile) &&
-            (std::filesystem::is_regular_file(validatorsFile) ||
-             std::filesystem::is_symlink(validatorsFile)))
+        if (!validatorsFile.empty() && boost::filesystem::exists(validatorsFile) &&
+            (boost::filesystem::is_regular_file(validatorsFile) ||
+             boost::filesystem::is_symlink(validatorsFile)))
         {
-            std::error_code ec;
+            boost::system::error_code ec;
             auto const data = getFileContents(ec, validatorsFile);
             if (ec)
             {
@@ -1194,7 +1160,7 @@ Config::loadFromString(std::string const& fileContents)
     }
 }
 
-std::filesystem::path
+boost::filesystem::path
 Config::getDebugLogFile() const
 {
     auto logFile = debugLogfile_;
@@ -1203,17 +1169,17 @@ Config::getDebugLogFile() const
     {
         // Unless an absolute path for the log file is specified, the
         // path is relative to the config file directory.
-        logFile = std::filesystem::absolute(configDir / logFile);
+        logFile = boost::filesystem::absolute(logFile, configDir);
     }
 
     if (!logFile.empty())
     {
         auto logDir = logFile.parent_path();
 
-        if (!std::filesystem::is_directory(logDir))
+        if (!boost::filesystem::is_directory(logDir))
         {
-            std::error_code ec;
-            std::filesystem::create_directories(logDir, ec);
+            boost::system::error_code ec;
+            boost::filesystem::create_directories(logDir, ec);
 
             // If we fail, we warn but continue so that the calling code can
             // decide how to handle this situation.
@@ -1315,7 +1281,8 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 boost::iequals(journalMode, "truncate") || boost::iequals(journalMode, "persist") ||
                 boost::iequals(journalMode, "wal"))
             {
-                result->emplace_back(commonDbPragmaJournal(journalMode));
+                result->emplace_back(
+                    boost::str(boost::format(kCommonDbPragmaJournal) % journalMode));
             }
             else
             {
@@ -1336,7 +1303,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
             {
-                result->emplace_back(commonDbPragmaSync(synchronous));
+                result->emplace_back(boost::str(boost::format(kCommonDbPragmaSync) % synchronous));
             }
             else
             {
@@ -1357,7 +1324,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(tempStore, "default") ||
                 boost::iequals(tempStore, "file"))
             {
-                result->emplace_back(commonDbPragmaTemp(tempStore));
+                result->emplace_back(boost::str(boost::format(kCommonDbPragmaTemp) % tempStore));
             }
             else
             {

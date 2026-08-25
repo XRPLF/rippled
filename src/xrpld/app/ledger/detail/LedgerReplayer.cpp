@@ -51,7 +51,7 @@ LedgerReplayer::replay(
 {
     XRPL_ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0 &&
-            totalNumLedgers <= ledger_replay_parameters::kMaxTaskSize,
+            totalNumLedgers <= LedgerReplayParameters::kMaxTaskSize,
         "xrpl::LedgerReplayer::replay : valid inputs");
 
     // NOLINTNEXTLINE(misc-const-correctness)
@@ -64,7 +64,7 @@ LedgerReplayer::replay(
         std::scoped_lock const lock(mtx_);
         if (app_.isStopping())
             return;
-        if (tasks_.size() >= ledger_replay_parameters::kMaxTasks)
+        if (tasks_.size() >= LedgerReplayParameters::kMaxTasks)
         {
             JLOG(j_.info()) << "Too many replay tasks, dropping new task " << parameter.finishHash;
             return;

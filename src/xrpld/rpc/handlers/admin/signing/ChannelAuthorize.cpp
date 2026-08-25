@@ -15,7 +15,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <exception>
@@ -31,36 +30,34 @@ namespace xrpl {
 //   drops: 64-bit uint (as string)
 // }
 json::Value
-doChannelAuthorize(rpc::JsonContext& context)
+doChannelAuthorize(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
-        return rpc::makeError(RpcNotSupported, "Signing is not supported by this server.");
+        return RPC::makeError(RpcNotSupported, "Signing is not supported by this server.");
     }
-
-    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     auto const& params(context.params);
     for (auto const& p : {jss::channel_id, jss::amount})
     {
         if (!params.isMember(p))
-            return rpc::missingFieldError(p);
+            return RPC::missingFieldError(p);
     }
 
     // Compatibility if a key type isn't specified. If it is, the
     // keypairForSignature code will validate parameters and return
     // the appropriate error.
     if (!params.isMember(jss::key_type) && !params.isMember(jss::secret))
-        return rpc::missingFieldError(jss::secret);
+        return RPC::missingFieldError(jss::secret);
 
     json::Value result;
     std::optional<std::pair<PublicKey, SecretKey>> const keyPair =
-        rpc::keypairForSignature(params, result, context.apiVersion);
+        RPC::keypairForSignature(params, result, context.apiVersion);
 
     XRPL_ASSERT(
-        keyPair || rpc::containsError(result),
+        keyPair || RPC::containsError(result),
         "xrpl::doChannelAuthorize : valid keyPair or an error");
-    if (!keyPair || rpc::containsError(result))
+    if (!keyPair || RPC::containsError(result))
         return result;
 
     PublicKey const& pk = keyPair->first;
@@ -89,7 +86,7 @@ doChannelAuthorize(rpc::JsonContext& context)
     catch (std::exception const& ex)
     {
         // LCOV_EXCL_START
-        result = rpc::makeError(
+        result = RPC::makeError(
             RpcInternal, "Exception occurred during signing: " + std::string(ex.what()));
         // LCOV_EXCL_STOP
     }

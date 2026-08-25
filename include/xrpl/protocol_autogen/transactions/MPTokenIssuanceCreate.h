@@ -21,7 +21,7 @@ class MPTokenIssuanceCreateBuilder;
  * Type: ttMPTOKEN_ISSUANCE_CREATE (54)
  * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: Privilege::CreateMptIssuance
+ * Privileges: CreateMptIssuance
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenIssuanceCreateBuilder to construct new transactions.
@@ -178,29 +178,29 @@ public:
     }
 
     /**
-     * @brief Get sfImmutableFlags (SoeOptional)
+     * @brief Get sfMutableFlags (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getImmutableFlags() const
+    getMutableFlags() const
     {
-        if (hasImmutableFlags())
+        if (hasMutableFlags())
         {
-            return this->tx_->at(sfImmutableFlags);
+            return this->tx_->at(sfMutableFlags);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfImmutableFlags is present.
+     * @brief Check if sfMutableFlags is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasImmutableFlags() const
+    hasMutableFlags() const
     {
-        return this->tx_->isFieldPresent(sfImmutableFlags);
+        return this->tx_->isFieldPresent(sfMutableFlags);
     }
 };
 
@@ -302,13 +302,13 @@ public:
     }
 
     /**
-     * @brief Set sfImmutableFlags (SoeOptional)
+     * @brief Set sfMutableFlags (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceCreateBuilder&
-    setImmutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfImmutableFlags] = value;
+        object_[sfMutableFlags] = value;
         return *this;
     }
 

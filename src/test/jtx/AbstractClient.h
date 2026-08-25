@@ -40,17 +40,6 @@ public:
      */
     [[nodiscard]] virtual unsigned
     version() const = 0;
-
-    /**
-     * Close the client's connection to the server.
-     *
-     * Releases the connection the client holds against the server's per-port
-     * connection limit. After this call the client must not be used to
-     * invoke() again. Tests use this to deterministically free the slot
-     * rather than waiting for the server's idle timeout to drop it.
-     */
-    virtual void
-    disconnect() = 0;
 };
 
 }  // namespace xrpl::test

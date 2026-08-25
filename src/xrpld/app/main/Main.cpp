@@ -6,7 +6,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SlabAllocator.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -22,6 +21,7 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/process/v1/args.hpp>
 #include <boost/process/v1/child.hpp>  // IWYU pragma: keep
 #include <boost/process/v1/exe.hpp>
@@ -211,7 +211,7 @@ public:
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
         selectors_.reserve(v.size());
         std::ranges::for_each(v, [this](std::string s) {
-            s = trimWhitespace(s);
+            boost::trim(s);
             if (selectors_.empty() || !s.empty())
                 selectors_.emplace_back(beast::unit_test::Selector::ModeT::Automatch, s);
         });
@@ -506,7 +506,7 @@ run(int argc, char** argv)
     if (vm.contains("version"))
     {
         // LCOV_EXCL_START
-        std::cout << "xrpld version " << build_info::getVersionString() << std::endl;
+        std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
@@ -614,7 +614,7 @@ run(int argc, char** argv)
                 std::vector<std::uint32_t> result;
                 for (auto& s : strVec)
                 {
-                    s = trimWhitespace(s);
+                    boost::trim(s);
                     if (!s.empty())
                         result.push_back(std::stoi(s));
                 }
@@ -716,7 +716,7 @@ run(int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.contains("rpc_ip"))
     {
-        auto endpoint = beast::ip::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
+        auto endpoint = beast::IP::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
         {
             std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>() << "\n";
@@ -826,7 +826,7 @@ run(int argc, char** argv)
 
     // We have an RPC command to process:
     beast::setCurrentThreadName("xrpld: rpc");
-    return rpc_call::fromCommandLine(
+    return RPCCall::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP
 }

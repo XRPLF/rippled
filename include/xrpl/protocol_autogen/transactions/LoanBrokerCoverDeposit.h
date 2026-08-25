@@ -21,7 +21,7 @@ class LoanBrokerCoverDepositBuilder;
  * Type: ttLOAN_BROKER_COVER_DEPOSIT (76)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerCoverDepositBuilder to construct new transactions.

@@ -21,7 +21,7 @@ class CredentialDeleteBuilder;
  * Type: ttCREDENTIAL_DELETE (60)
  * Delegable: Delegation::Delegable
  * Amendment: featureCredentials
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CredentialDeleteBuilder to construct new transactions.

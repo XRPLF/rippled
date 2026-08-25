@@ -223,7 +223,7 @@ WorkBase<Impl>::onStart()
     req_.target(path_.empty() ? "/" : path_);
     req_.version(11);
     req_.set("Host", host_ + ":" + port_);
-    req_.set("User-Agent", build_info::getFullVersionString());
+    req_.set("User-Agent", BuildInfo::getFullVersionString());
     req_.prepare_payload();
     boost::beast::http::async_write(
         impl().stream(),

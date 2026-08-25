@@ -21,7 +21,7 @@ class VaultDepositBuilder;
  * Type: ttVAULT_DEPOSIT (68)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: Privilege::MayAuthorizeMpt | Privilege::MustModifyVault
+ * Privileges: MayAuthorizeMpt | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultDepositBuilder to construct new transactions.

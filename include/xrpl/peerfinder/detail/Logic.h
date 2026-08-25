@@ -43,7 +43,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 /**
  * The Logic for maintaining the list of Slot addresses.
@@ -57,7 +57,7 @@ public:
     // Maps remote endpoints to slots. Since a slot has a
     // remote endpoint upon construction, this holds all counts_.
     //
-    using Slots = std::map<beast::ip::Endpoint, std::shared_ptr<SlotImp>>;
+    using Slots = std::map<beast::IP::Endpoint, std::shared_ptr<SlotImp>>;
 
     beast::Journal journal;
     clock_type& clock;
@@ -81,7 +81,7 @@ private:
     Counts counts_;
 
     // A list of slots that should always be connected
-    std::map<beast::ip::Endpoint, Fixed> fixed_;
+    std::map<beast::IP::Endpoint, Fixed> fixed_;
 
 public:
     // Live livecache from mtENDPOINTS messages
@@ -96,7 +96,7 @@ public:
     // The addresses (but not port) we are connected to. This includes
     // outgoing connection attempts. Note that this set can contain
     // duplicates (since the port is not set)
-    std::multiset<beast::ip::Address> connectedAddresses;
+    std::multiset<beast::IP::Address> connectedAddresses;
 
     // Set of public keys belonging to active peers
     std::set<PublicKey> keys;
@@ -170,13 +170,13 @@ public:
     }
 
     void
-    addFixedPeer(std::string_view name, beast::ip::Endpoint const& ep)
+    addFixedPeer(std::string_view name, beast::IP::Endpoint const& ep)
     {
-        addFixedPeer(name, std::vector<beast::ip::Endpoint>{ep});
+        addFixedPeer(name, std::vector<beast::IP::Endpoint>{ep});
     }
 
     void
-    addFixedPeer(std::string_view name, std::vector<beast::ip::Endpoint> const& addresses)
+    addFixedPeer(std::string_view name, std::vector<beast::IP::Endpoint> const& addresses)
     {
         std::scoped_lock const _(lock);
 
@@ -213,8 +213,8 @@ public:
     // Called when the Checker completes a connectivity test
     void
     checkComplete(
-        beast::ip::Endpoint const& remoteAddress,
-        beast::ip::Endpoint const& checkedAddress,
+        beast::IP::Endpoint const& remoteAddress,
+        beast::IP::Endpoint const& checkedAddress,
         boost::system::error_code ec)
     {
         if (ec == boost::asio::error::operation_aborted)
@@ -256,8 +256,8 @@ public:
 
     std::pair<SlotImp::ptr, Result>
     newInboundSlot(
-        beast::ip::Endpoint const& localEndpoint,
-        beast::ip::Endpoint const& remoteEndpoint)
+        beast::IP::Endpoint const& localEndpoint,
+        beast::IP::Endpoint const& remoteEndpoint)
     {
         JLOG(journal.debug()) << std::left << std::setw(18) << "Logic accept" << remoteEndpoint
                               << " on local " << localEndpoint;
@@ -293,7 +293,7 @@ public:
         // Remote address must not already exist
         XRPL_ASSERT(
             result.second,
-            "xrpl::peer_finder::Logic::new_inbound_slot : remote endpoint "
+            "xrpl::PeerFinder::Logic::new_inbound_slot : remote endpoint "
             "inserted");
         // Add to the connected address list
         connectedAddresses.emplace(remoteEndpoint.address());
@@ -306,7 +306,7 @@ public:
 
     // Can't check for self-connect because we don't know the local endpoint
     std::pair<SlotImp::ptr, Result>
-    newOutboundSlot(beast::ip::Endpoint const& remoteEndpoint)
+    newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint)
     {
         JLOG(journal.debug()) << std::left << std::setw(18) << "Logic connect " << remoteEndpoint;
 
@@ -329,7 +329,7 @@ public:
         // Remote address must not already exist
         XRPL_ASSERT(
             result.second,
-            "xrpl::peer_finder::Logic::new_outbound_slot : remote endpoint "
+            "xrpl::PeerFinder::Logic::new_outbound_slot : remote endpoint "
             "inserted");
 
         // Add to the connected address list
@@ -342,7 +342,7 @@ public:
     }
 
     bool
-    onConnected(SlotImp::ptr const& slot, beast::ip::Endpoint const& localEndpoint)
+    onConnected(SlotImp::ptr const& slot, beast::IP::Endpoint const& localEndpoint)
     {
         beast::WrappedSink sink{journal.sink(), slot->prefix()};
         beast::Journal const journal{sink};
@@ -354,7 +354,7 @@ public:
         // The object must exist in our table
         XRPL_ASSERT(
             slots.contains(slot->remoteEndpoint()),
-            "xrpl::peer_finder::Logic::onConnected : valid slot input");
+            "xrpl::PeerFinder::Logic::onConnected : valid slot input");
         // Assign the local endpoint now that it's known
         slot->localEndpoint(localEndpoint);
 
@@ -365,7 +365,7 @@ public:
             {
                 XRPL_ASSERT(
                     iter->second->localEndpoint() == slot->remoteEndpoint(),
-                    "xrpl::peer_finder::Logic::onConnected : local and remote "
+                    "xrpl::PeerFinder::Logic::onConnected : local and remote "
                     "endpoints do match");
                 JLOG(journal.warn()) << "Logic dropping as self connect";
                 return false;
@@ -393,11 +393,11 @@ public:
         // The object must exist in our table
         XRPL_ASSERT(
             slots.contains(slot->remoteEndpoint()),
-            "xrpl::peer_finder::Logic::activate : valid slot input");
+            "xrpl::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
         XRPL_ASSERT(
             slot->state() == Slot::State::Accept || slot->state() == Slot::State::Connected,
-            "xrpl::peer_finder::Logic::activate : valid slot state");
+            "xrpl::PeerFinder::Logic::activate : valid slot state");
 
         // Check for duplicate connection by key
         if (keys.contains(key))
@@ -425,7 +425,7 @@ public:
         {
             [[maybe_unused]] bool const inserted = keys.insert(key).second;
             // Public key must not already exist
-            XRPL_ASSERT(inserted, "xrpl::peer_finder::Logic::activate : public key inserted");
+            XRPL_ASSERT(inserted, "xrpl::PeerFinder::Logic::activate : public key inserted");
         }
 
         // Change state and update counts
@@ -443,7 +443,7 @@ public:
             if (iter == fixed_.end())
             {
                 logicError(
-                    "peer_finder::Logic::activate(): remote_endpoint "
+                    "PeerFinder::Logic::activate(): remote_endpoint "
                     "missing from fixed_");
             }
 
@@ -476,10 +476,10 @@ public:
     // VFALCO TODO This should add the returned addresses to the
     //             squelch list in one go once the list is built,
     //             rather than having each module add to the squelch list.
-    std::vector<beast::ip::Endpoint>
+    std::vector<beast::IP::Endpoint>
     autoconnect()
     {
-        std::vector<beast::ip::Endpoint> none;
+        std::vector<beast::IP::Endpoint> none;
 
         std::scoped_lock const _(lock);
 
@@ -635,7 +635,7 @@ public:
                 // either. ipv6 has a slightly more compact string
                 // representation of 0, so use that for self entries.
                 ep.address =
-                    beast::ip::Endpoint(beast::ip::AddressV6()).atPort(config_.listeningPort);
+                    beast::IP::Endpoint(beast::IP::AddressV6()).atPort(config_.listeningPort);
                 for (auto& t : targets)
                     t.insert(ep);
             }
@@ -656,7 +656,7 @@ public:
                 result.emplace_back(slot, list);
             }
 
-            whenBroadcast = now + tuning::kSecondsPerMessage;
+            whenBroadcast = now + Tuning::kSecondsPerMessage;
         }
 
         return result;
@@ -675,7 +675,7 @@ public:
             entry.second->expire();
 
         // Expire the recent attempts table
-        beast::expire(squelches, tuning::kRecentAttemptDuration);
+        beast::expire(squelches, Tuning::kRecentAttemptDuration);
 
         bootcache.periodicActivity();
     }
@@ -692,7 +692,7 @@ public:
             Endpoint& ep(*iter);
 
             // Enforce hop limit
-            if (ep.hops > tuning::kMaxHops)
+            if (ep.hops > Tuning::kMaxHops)
             {
                 JLOG(journal.debug()) << std::left << std::setw(18) << "Endpoints drop "
                                       << ep.address << " for excess hops " << ep.hops;
@@ -754,10 +754,10 @@ public:
         beast::Journal const journal{sink};
 
         // If we're sent too many endpoints, sample them at random:
-        if (list.size() > tuning::kNumberOfEndpointsMax)
+        if (list.size() > Tuning::kNumberOfEndpointsMax)
         {
             std::shuffle(list.begin(), list.end(), defaultPrng());
-            list.resize(tuning::kNumberOfEndpointsMax);
+            list.resize(Tuning::kNumberOfEndpointsMax);
         }
 
         JLOG(journal.trace()) << "Endpoints contained " << list.size()
@@ -768,12 +768,12 @@ public:
         // The object must exist in our table
         XRPL_ASSERT(
             slots.contains(slot->remoteEndpoint()),
-            "xrpl::peer_finder::Logic::onEndpoints : valid slot input");
+            "xrpl::PeerFinder::Logic::onEndpoints : valid slot input");
 
         // Must be handshaked!
         XRPL_ASSERT(
             slot->state() == Slot::State::Active,
-            "xrpl::peer_finder::Logic::onEndpoints : valid slot state");
+            "xrpl::PeerFinder::Logic::onEndpoints : valid slot state");
 
         clock_type::time_point const now(clock.now());
 
@@ -785,7 +785,7 @@ public:
 
         for (auto const& ep : list)
         {
-            XRPL_ASSERT(ep.hops, "xrpl::peer_finder::Logic::onEndpoints : nonzero hops");
+            XRPL_ASSERT(ep.hops, "xrpl::PeerFinder::Logic::onEndpoints : nonzero hops");
 
             slot->recent.insert(ep.address, ep.hops);
 
@@ -837,7 +837,7 @@ public:
             bootcache.insert(ep.address);
         }
 
-        slot->whenAcceptEndpoints = now + tuning::kSecondsPerMessage;
+        slot->whenAcceptEndpoints = now + Tuning::kSecondsPerMessage;
     }
 
     //--------------------------------------------------------------------------
@@ -851,7 +851,7 @@ public:
             if (iter == slots.end())
             {
                 logicError(
-                    "peer_finder::Logic::remove(): remote_endpoint "
+                    "PeerFinder::Logic::remove(): remote_endpoint "
                     "missing from slots_");
             }
 
@@ -866,7 +866,7 @@ public:
             if (iter == keys.end())
             {
                 logicError(
-                    "peer_finder::Logic::remove(): public_key missing "
+                    "PeerFinder::Logic::remove(): public_key missing "
                     "from keys_");
             }
 
@@ -879,7 +879,7 @@ public:
             if (iter == connectedAddresses.end())
             {
                 logicError(
-                    "peer_finder::Logic::remove(): remote_endpoint "
+                    "PeerFinder::Logic::remove(): remote_endpoint "
                     "address missing from connectedAddresses_");
             }
 
@@ -907,7 +907,7 @@ public:
             if (iter == fixed_.end())
             {
                 logicError(
-                    "peer_finder::Logic::on_closed(): remote_endpoint "
+                    "PeerFinder::Logic::on_closed(): remote_endpoint "
                     "missing from fixed_");
             }
 
@@ -943,7 +943,7 @@ public:
             // LCOV_EXCL_START
             default:
                 UNREACHABLE(
-                    "xrpl::peer_finder::Logic::on_closed : invalid slot "
+                    "xrpl::PeerFinder::Logic::on_closed : invalid slot "
                     "state");
                 break;
                 // LCOV_EXCL_STOP
@@ -968,17 +968,17 @@ public:
     // Returns `true` if the address matches a fixed slot address
     // Must have the lock held
     bool
-    fixed(beast::ip::Endpoint const& endpoint) const
+    fixed(beast::IP::Endpoint const& endpoint) const
     {
         return std::ranges::any_of(
             fixed_, [&endpoint](auto const& entry) { return entry.first == endpoint; });
     }
 
     // Returns `true` if the address matches a fixed slot address
-    // Note that this does not use the port information in the ip::Endpoint
+    // Note that this does not use the port information in the IP::Endpoint
     // Must have the lock held
     bool
-    fixed(beast::ip::Address const& address) const
+    fixed(beast::IP::Address const& address) const
     {
         return std::ranges::any_of(
             fixed_, [&address](auto const& entry) { return entry.first.address() == address; });
@@ -1097,9 +1097,9 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    // Returns true if the ip::Endpoint contains no invalid data.
+    // Returns true if the IP::Endpoint contains no invalid data.
     bool
-    isValidAddress(beast::ip::Endpoint const& address)
+    isValidAddress(beast::IP::Endpoint const& address)
     {
         if (isUnspecified(address))
             return false;
@@ -1220,7 +1220,7 @@ Logic<Checker>::onRedirects(
 {
     std::scoped_lock const _(lock);
     std::size_t n = 0;
-    for (; first != last && n < tuning::kMaxRedirects; ++first, ++n)
+    for (; first != last && n < Tuning::kMaxRedirects; ++first, ++n)
         bootcache.insert(beast::IPAddressConversion::fromAsio(*first));
     if (n > 0)
     {
@@ -1229,4 +1229,4 @@ Logic<Checker>::onRedirects(
     }
 }
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

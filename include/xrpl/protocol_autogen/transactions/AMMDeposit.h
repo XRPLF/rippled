@@ -21,7 +21,7 @@ class AMMDepositBuilder;
  * Type: ttAMM_DEPOSIT (36)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMDepositBuilder to construct new transactions.

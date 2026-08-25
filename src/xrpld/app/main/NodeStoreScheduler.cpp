@@ -12,7 +12,7 @@ NodeStoreScheduler::NodeStoreScheduler(JobQueue& jobQueue) : jobQueue_(jobQueue)
 }
 
 void
-NodeStoreScheduler::scheduleTask(node_store::Task& task)
+NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 {
     if (jobQueue_.isStopped())
         return;
@@ -26,19 +26,19 @@ NodeStoreScheduler::scheduleTask(node_store::Task& task)
 }
 
 void
-NodeStoreScheduler::onFetch(node_store::FetchReport const& report)
+NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 {
     if (jobQueue_.isStopped())
         return;
 
     jobQueue_.addLoadEvents(
-        report.fetchType == node_store::FetchType::Async ? JtNsAsyncRead : JtNsSyncRead,
+        report.fetchType == NodeStore::FetchType::Async ? JtNsAsyncRead : JtNsSyncRead,
         1,
         report.elapsed);
 }
 
 void
-NodeStoreScheduler::onBatchWrite(node_store::BatchWriteReport const& report)
+NodeStoreScheduler::onBatchWrite(NodeStore::BatchWriteReport const& report)
 {
     if (jobQueue_.isStopped())
         return;

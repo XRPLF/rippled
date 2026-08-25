@@ -92,13 +92,13 @@ public:
     send(std::shared_ptr<Message> const& m) override
     {
     }
-    [[nodiscard]] beast::ip::Endpoint
+    [[nodiscard]] beast::IP::Endpoint
     getRemoteAddress() const override
     {
         return {};
     }
     void
-    charge(resource::Charge const& fee, std::string const& context = {}) override
+    charge(Resource::Charge const& fee, std::string const& context = {}) override
     {
     }
     [[nodiscard]] bool
@@ -140,7 +140,7 @@ public:
     setPublisherListSequence(PublicKey const&, std::size_t const) override
     {
     }
-    [[nodiscard]] uint256
+    [[nodiscard]] uint256 const&
     getClosedLedgerHash() const override
     {
         static uint256 const kHash{};
@@ -1610,7 +1610,7 @@ vp_base_squelch_max_selected_peers=2
                 env_.app().config().compression = c.compression;
             };
             auto handshake = [&](int outboundEnable, int inboundEnable) {
-                beast::ip::Address const addr = boost::asio::ip::make_address("172.1.1.100");
+                beast::IP::Address const addr = boost::asio::ip::make_address("172.1.1.100");
 
                 setEnv(outboundEnable);
                 auto request = xrpl::makeRequest(

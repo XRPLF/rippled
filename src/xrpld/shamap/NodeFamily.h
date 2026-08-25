@@ -33,13 +33,13 @@ public:
 
     NodeFamily(Application& app, CollectorManager& cm);
 
-    node_store::Database&
+    NodeStore::Database&
     db() override
     {
         return db_;
     }
 
-    [[nodiscard]] node_store::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return db_;
@@ -80,7 +80,7 @@ public:
 
 private:
     Application& app_;
-    node_store::Database& db_;
+    NodeStore::Database& db_;
     beast::Journal const j_;
 
     std::shared_ptr<FullBelowCache> fbCache_;

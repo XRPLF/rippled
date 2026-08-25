@@ -49,25 +49,19 @@ namespace xrpl {
 // gateway_balances [<ledger>] <account> [<hotwallet> [<hotwallet [...
 
 json::Value
-doGatewayBalances(rpc::JsonContext& context)
+doGatewayBalances(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
     // Get the current ledger
     std::shared_ptr<ReadView const> ledger;
-    auto result = rpc::lookupLedger(ledger, context);
+    auto result = RPC::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
 
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
-        return rpc::missingFieldError(jss::account);
-
-    if (params.isMember(jss::account) && !params[jss::account].isString())
-        return rpc::invalidFieldError(jss::account);
-
-    if (params.isMember(jss::ident) && !params[jss::ident].isString())
-        return rpc::invalidFieldError(jss::ident);
+        return RPC::missingFieldError(jss::account);
 
     std::string const strIdent(
         params.isMember(jss::account) ? params[jss::account].asString()
@@ -78,13 +72,13 @@ doGatewayBalances(rpc::JsonContext& context)
     if (!id)
         return rpcError(RpcActMalformed);
     auto const accountID{id.value()};
-    context.loadType = resource::kFeeHeavyBurdenRpc;
+    context.loadType = Resource::kFeeHeavyBurdenRpc;
 
     result[jss::account] = toBase58(accountID);
 
     if (context.apiVersion > 1u && !ledger->exists(keylet::account(accountID)))
     {
-        rpc::injectError(RpcActNotFound, result);
+        RPC::injectError(RpcActNotFound, result);
         return result;
     }
 
@@ -132,11 +126,11 @@ doGatewayBalances(rpc::JsonContext& context)
             // not have currency issued by the account from the request.
             if (context.apiVersion < 2u)
             {
-                rpc::injectError(RpcInvalidHotwallet, result);
+                RPC::injectError(RpcInvalidHotwallet, result);
             }
             else
             {
-                rpc::injectError(RpcInvalidParams, result);
+                RPC::injectError(RpcInvalidParams, result);
             }
             return result;
         }

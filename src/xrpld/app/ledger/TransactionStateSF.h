@@ -18,7 +18,7 @@ namespace xrpl {
 class TransactionStateSF : public SHAMapSyncFilter
 {
 public:
-    TransactionStateSF(node_store::Database& db, AbstractFetchPackContainer& fp) : db_(db), fp_(fp)
+    TransactionStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp) : db_(db), fp_(fp)
     {
     }
 
@@ -34,7 +34,7 @@ public:
     getNode(SHAMapHash const& nodeHash) const override;
 
 private:
-    node_store::Database& db_;
+    NodeStore::Database& db_;
     AbstractFetchPackContainer& fp_;
 };
 

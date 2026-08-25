@@ -17,7 +17,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -553,14 +552,11 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             auto domain = pdomain::getNewDomain(env.meta());
             if (features[fixCleanup3_1_3])
             {
-                BEAST_EXPECT(
-                    domain ==
-                    keylet::permissionedDomain(alice.id(), SeqProxy::rawSequence(seq)).key);
+                BEAST_EXPECT(domain == keylet::permissionedDomain(alice.id(), seq).key);
             }
             else
             {
-                BEAST_EXPECT(
-                    domain == keylet::permissionedDomain(alice.id(), SeqProxy::rawSequence(0)).key);
+                BEAST_EXPECT(domain == keylet::permissionedDomain(alice.id(), 0).key);
             }
         }
 

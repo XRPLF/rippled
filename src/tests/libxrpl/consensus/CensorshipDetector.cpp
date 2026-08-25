@@ -69,7 +69,7 @@ TEST(CensorshipDetectorTest, censorship_detector)
     runRound(cdet, ++round, {23, 24, 25, 26}, {25, 27}, {23, 26}, {24});
     runRound(cdet, ++round, {23, 26, 28}, {26, 28}, {23}, {});
 
-    for (auto i = 0uz; i != 10; ++i)
+    for (int i = 0; i != 10; ++i)
         runRound(cdet, ++round, {23}, {}, {23}, {});
 
     runRound(cdet, ++round, {23, 29}, {29}, {23}, {});

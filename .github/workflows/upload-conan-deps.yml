@@ -65,17 +65,12 @@ jobs:
         uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
 
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@7bf7ceca5932114abdd0d43493c3c30c5a654e13
+        uses: XRPLF/actions/prepare-runner@e4b6449d55a61c002d7c3fdfa6c20f721ede0606
         with:
           enable_ccache: false
-
-      # Before any step that uses a build tool, composite actions included.
-      - name: Setup Nix environment
-        if: ${{ matrix.toolchain == 'nix' }}
-        uses: ./.github/actions/setup-nix-env
 
       - name: Print build environment
         uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
@@ -92,9 +87,7 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
-      # `setup-nix-env` already did this for the Nix toolchain.
       - name: Setup Conan
-        if: ${{ matrix.toolchain != 'nix' }}
         env:
           SANITIZERS: ${{ matrix.sanitizers }}
         uses: ./.github/actions/setup-conan
@@ -112,10 +105,6 @@ jobs:
           # amount of logs. For other OSes, the "verbose" logs are more useful.
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ matrix.sanitizers }}
-
-      - name: Check the Conan cache for Nix store references (Nix toolchain)
-        if: ${{ matrix.toolchain == 'nix' }}
-        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
 
       - name: Log into Conan remote
         if: ${{ github.repository == 'XRPLF/rippled' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}

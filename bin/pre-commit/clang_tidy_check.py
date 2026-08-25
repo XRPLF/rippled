@@ -144,11 +144,7 @@ def main():
             + files
         )
         canonicalize_fix_paths(Path(fixes_dir))
-        # `FormatStyle` in .clang-tidy does not reach this path,
-        # so ask for the repository style here.
-        applied = subprocess.run(
-            [clang_apply_replacements, "--format", "--style=file", fixes_dir]
-        )
+        applied = subprocess.run([clang_apply_replacements, fixes_dir])
 
     return result.returncode or applied.returncode
 

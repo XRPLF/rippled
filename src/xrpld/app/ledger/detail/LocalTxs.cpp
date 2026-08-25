@@ -8,7 +8,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/SeqProxy.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -148,7 +147,7 @@ public:
             if (!sleAcct)
                 return false;
 
-            SeqProxy const acctSeq = SeqProxy::rawSequence(sleAcct->getFieldU32(sfSequence));
+            SeqProxy const acctSeq = SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
             SeqProxy const seqProx = txn.getSeqProxy();
 
             if (seqProx.isSeq())

@@ -133,8 +133,17 @@ maxOut(T const& out, Asset const& asset)
 
 template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
-AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances) const
+AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const
 {
+    if (!rules.enabled(fixAMMOverflowOffer))
+    {
+        return AMMOffer<TIn, TOut>(
+            *this,
+            {maxAmount<TIn>(), swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
+            balances,
+            Quality{balances});
+    }
+
     auto const out = maxOut<TOut>(balances.out, assetOut());
     if (out <= TOut{0} || out >= balances.out)
         return std::nullopt;
@@ -197,7 +206,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 // changed in BookStep per either deliver amount limit, or
                 // sendmax, or available output or input funds. Might return
                 // nullopt if the pool is small.
-                return maxOffer(balances);
+                return maxOffer(balances, view.rules());
             }
             if (auto const amounts =
                     changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
@@ -206,7 +215,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
             }
             if (view.rules().enabled(fixAMMv1_2))
             {
-                if (auto const maxAMMOffer = maxOffer(balances);
+                if (auto const maxAMMOffer = maxOffer(balances, view.rules());
                     maxAMMOffer && Quality{maxAMMOffer->amount()} > *clobQuality)
                     return maxAMMOffer;
             }
@@ -214,6 +223,10 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         catch (std::overflow_error const& e)
         {
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
+            if (!view.rules().enabled(fixAMMOverflowOffer))
+            {
+                return maxOffer(balances, view.rules());
+            }
 
             return std::nullopt;
         }

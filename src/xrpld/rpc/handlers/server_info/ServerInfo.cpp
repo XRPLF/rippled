@@ -9,7 +9,7 @@
 namespace xrpl {
 
 json::Value
-doServerInfo(rpc::JsonContext& context)
+doServerInfo(RPC::JsonContext& context)
 {
     json::Value ret(json::ValueType::Object);
 

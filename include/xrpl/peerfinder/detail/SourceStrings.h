@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 /**
  * Provides addresses from a static set of strings.
@@ -22,4 +22,4 @@ public:
     make(std::string const& name, Strings const& strings);
 };
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

@@ -21,7 +21,7 @@ class PermissionedDomainDeleteBuilder;
  * Type: ttPERMISSIONED_DOMAIN_DELETE (63)
  * Delegable: Delegation::Delegable
  * Amendment: featurePermissionedDomains
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PermissionedDomainDeleteBuilder to construct new transactions.
