@@ -86,7 +86,10 @@ docker run --rm \
     -v "$(pwd):/src" \
     -w /src \
     "${IMAGE}" \
-    ./package/build_pkg.py --package-type rpm --pkg-release "${PKG_RELEASE}"
+    ./package/build_pkg.py \
+    --package-type rpm \
+    --pkg-release "${PKG_RELEASE}" \
+    --channel UNRELEASED
 
 # Output:
 #   build/debbuild/*.deb         (DEB + dbgsym; Debian names both .deb)
@@ -114,9 +117,9 @@ The `cmake/XrplPackaging.cmake` module defines the `package` target only if at
 least one of `rpmbuild` / `dpkg-buildpackage` is present and both the `xrpld` and
 `validator-keys` targets exist (`-Dxrpld=ON -Dvalidator_keys=ON`); the target
 builds both binaries before packaging, passing `--package-type deb` when
-`dpkg-buildpackage` is present and `rpm` otherwise. The packaging script installs to
-FHS-standard paths (`/usr/bin`, `/etc/xrpld`, etc.) regardless of
-`CMAKE_INSTALL_PREFIX`.
+`dpkg-buildpackage` is present and `rpm` otherwise, and `--channel UNRELEASED`.
+The packaging script installs to FHS-standard paths (`/usr/bin`, `/etc/xrpld`,
+etc.) regardless of `CMAKE_INSTALL_PREFIX`.
 
 The package version is not a CMake input on this path: `build_pkg.py` derives it
 from the just-built `xrpld` binary's `xrpld --version` output. The package
@@ -128,13 +131,13 @@ Packages are published to the XRPLF repositories on Sonatype Nexus at
 `https://packages.xrplf.org`. The `release-info` action decides the channel from
 the event, and `publish_pkg.py` maps that channel to its repositories:
 
-| Event                    | Version           | Channel        | DEB repository     | RPM upload repository     |
-| ------------------------ | ----------------- | -------------- | ------------------ | ------------------------- |
-| tag                      | `X.Y.Z`           | `stable`       | `deb-stable`       | `rpm-stable-hosted`       |
-| tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable-hosted`     |
-| tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental-hosted` |
-| push to `develop`        | `xrpld --version` | `develop`      | `deb-develop`      | `rpm-develop-hosted`      |
-| tag, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private-hosted`      |
+| Event                    | Version           | Channel   | DEB repository | RPM upload repository |
+| ------------------------ | ----------------- | --------- | -------------- | --------------------- |
+| tag                      | `X.Y.Z`           | `stable`  | `deb-stable`   | `rpm-stable-hosted`   |
+| tag                      | `X.Y.Z-rcN`       | `rc`      | `deb-rc`       | `rpm-rc-hosted`       |
+| tag                      | `X.Y.Z-bN`        | `beta`    | `deb-beta`     | `rpm-beta-hosted`     |
+| push to `develop`        | `xrpld --version` | `develop` | `deb-develop`  | `rpm-develop-hosted`  |
+| tag, non-public codebase | _any_             | `private` | `deb-private`  | `rpm-private-hosted`  |
 
 Only a tag names a channel — do not extend that to `develop`, where
 `BuildInfo.cpp`'s `versionString` moves through `-bN`, `-rcN` and even the final
@@ -207,9 +210,11 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 from the build host, so the RHEL image can track a newer release without
 changing what the packages claim to target.
 
-The Debian changelog entry carries the channel passed as `--channel`,
-defaulting to `unstable`. An unsupported pre-release, and build metadata on a
-final release such as `3.2.0+abc123`, are both rejected.
+The Debian changelog entry carries the channel passed as `--channel`, which
+only accepts the channels in the table above plus `UNRELEASED`, the Debian
+convention for a build that targets no channel at all — what local and CMake
+builds pass, since nothing publishes them. An unsupported pre-release, and
+build metadata on a final release such as `3.2.0+abc123`, are both rejected.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
@@ -220,8 +225,8 @@ The package format is `--package-type`, either `deb` or `rpm`. It is required,
 so a job never silently builds the wrong format for the image it runs in; the
 matching build tool still has to be on PATH.
 
-Every input is a named argument. CMake passes `--package-type`, `--build-dir`
-and `--pkg-release`; CI adds `--channel`. The repository root is not an argument
+Every input is a named argument, and every argument but `--build-dir` and
+`--pkg-release` is required. The repository root is not an argument
 at all: the script reads it from its own location. Only secrets stay in the
 environment, so they never reach the process list -- `PKG_SIGNING_KEY` for
 `sign_rpm.py`, and `NEXUS_USERNAME` / `NEXUS_PASSWORD` for `publish_pkg.py`.
