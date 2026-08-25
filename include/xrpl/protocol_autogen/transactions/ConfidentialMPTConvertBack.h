@@ -19,7 +19,7 @@ class ConfidentialMPTConvertBackBuilder;
  * @brief Transaction: ConfidentialMPTConvertBack
  *
  * Type: ttCONFIDENTIAL_MPT_CONVERT_BACK (87)
- * Delegable: Delegation::NotDelegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
  * Privileges: NoPriv
  *

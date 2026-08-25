@@ -783,6 +783,27 @@ transactionContextIDClawback(
         Slice(specific.data(), specific.size()));
 }
 
+uint256
+transactionContextIDMigrateAuditor(
+    std::uint16_t txType,
+    Slice account,
+    Slice issuanceId,
+    std::uint32_t sequenceOrTicket,
+    Slice holder,
+    std::uint32_t targetAuditorVersion) noexcept
+{
+    // TxSpecific := Holder || TargetAuditorVersion
+    std::vector<std::uint8_t> specific;
+    appendSlice(specific, holder);
+    appendU32(specific, targetAuditorVersion);
+    return contextHash(
+        txType,
+        account,
+        issuanceId,
+        sequenceOrTicket,
+        Slice(specific.data(), specific.size()));
+}
+
 bool
 proveSchnorrRegister(
     Scalar const& sk,
@@ -1436,6 +1457,249 @@ verifyClawbackSigma(
     appendPoint(transcript, T1);
     appendPoint(transcript, T2);
     appendSlice(transcript, contextId);
+
+    Scalar e2{};
+    if (!challengeFromTranscript(Slice(transcript.data(), transcript.size()), e2))
+        return false;
+    return e == e2;
+}
+
+namespace {
+
+void
+buildAuditorEqualityTranscript(
+    AuditorEqualitySigmaPublicInput const& pub,
+    CompressedPoint const& Tx,
+    CompressedPoint const& T1A,
+    CompressedPoint const& T2I,
+    CompressedPoint const& T2A,
+    Slice contextId,
+    std::vector<std::uint8_t>& transcript)
+{
+    appendSlice(
+        transcript,
+        Slice(kTagAuditorEqualitySigma.data(), kTagAuditorEqualitySigma.size()));
+    appendPoint(transcript, pub.issuerKey);
+    appendPoint(transcript, pub.issuerCiphertext.c1);
+    appendPoint(transcript, pub.issuerCiphertext.c2);
+    appendPoint(transcript, pub.auditorKey);
+    appendPoint(transcript, pub.auditorCiphertext.c1);
+    appendPoint(transcript, pub.auditorCiphertext.c2);
+    appendPoint(transcript, Tx);
+    appendPoint(transcript, T1A);
+    appendPoint(transcript, T2I);
+    appendPoint(transcript, T2A);
+    appendSlice(transcript, contextId);
+}
+
+bool
+reconstructAuditorEqualityCommitments(
+    AuditorEqualitySigmaPublicInput const& pub,
+    Scalar const& e,
+    Scalar const& zx,
+    Scalar const& zr,
+    Scalar const& zm,
+    CompressedPoint& Tx,
+    CompressedPoint& T1A,
+    CompressedPoint& T2I,
+    CompressedPoint& T2A) noexcept
+{
+    secp256k1_pubkey PI{};
+    secp256k1_pubkey C1I{};
+    secp256k1_pubkey C2I{};
+    secp256k1_pubkey PA{};
+    secp256k1_pubkey C1A{};
+    secp256k1_pubkey C2A{};
+    if (!parsePubkey(pub.issuerKey, PI) ||
+        !parsePubkey(pub.issuerCiphertext.c1, C1I) ||
+        !parsePubkey(pub.issuerCiphertext.c2, C2I) ||
+        !parsePubkey(pub.auditorKey, PA) ||
+        !parsePubkey(pub.auditorCiphertext.c1, C1A) ||
+        !parsePubkey(pub.auditorCiphertext.c2, C2A))
+        return false;
+
+    // Tx = zx·G - e·pk_I
+    {
+        secp256k1_pubkey zxG{};
+        secp256k1_pubkey ePI{};
+        secp256k1_pubkey t{};
+        if (!pointMulBaseImpl(zx, zxG) || !pointMulImpl(PI, e, ePI) ||
+            !pointSubImpl(zxG, ePI, t) || !serializePubkey(t, Tx))
+            return false;
+    }
+
+    // T1A = zr·G - e·C1_A
+    {
+        secp256k1_pubkey zrG{};
+        secp256k1_pubkey eC1A{};
+        secp256k1_pubkey t{};
+        if (!pointMulBaseImpl(zr, zrG) || !pointMulImpl(C1A, e, eC1A) ||
+            !pointSubImpl(zrG, eC1A, t) || !serializePubkey(t, T1A))
+            return false;
+    }
+
+    // T2I = zm·G + zx·C1_I - e·C2_I
+    {
+        secp256k1_pubkey left{};
+        secp256k1_pubkey eC2I{};
+        secp256k1_pubkey t{};
+        if (!linComb(zm, zx, C1I, left) || !pointMulImpl(C2I, e, eC2I) ||
+            !pointSubImpl(left, eC2I, t) || !serializePubkey(t, T2I))
+            return false;
+    }
+
+    // T2A = zm·G + zr·pk_A - e·C2_A
+    {
+        secp256k1_pubkey left{};
+        secp256k1_pubkey eC2A{};
+        secp256k1_pubkey t{};
+        if (!linComb(zm, zr, PA, left) || !pointMulImpl(C2A, e, eC2A) ||
+            !pointSubImpl(left, eC2A, t) || !serializePubkey(t, T2A))
+            return false;
+    }
+
+    return true;
+}
+
+bool
+auditorEqualityWitnessMatches(
+    AuditorEqualitySigmaPublicInput const& pub,
+    AuditorEqualitySigmaWitness const& wit) noexcept
+{
+    CompressedPoint expectPk{};
+    if (!pointMulBase(wit.issuerSk, expectPk) || expectPk != pub.issuerKey)
+        return false;
+
+    CompressedPoint expectC1A{};
+    if (!pointMulBase(wit.randomness, expectC1A) ||
+        expectC1A != pub.auditorCiphertext.c1)
+        return false;
+
+    secp256k1_pubkey C1I{};
+    secp256k1_pubkey PA{};
+    secp256k1_pubkey expectC2I{};
+    secp256k1_pubkey expectC2A{};
+    if (!parsePubkey(pub.issuerCiphertext.c1, C1I) ||
+        !parsePubkey(pub.auditorKey, PA) ||
+        !linComb(wit.amount, wit.issuerSk, C1I, expectC2I) ||
+        !linComb(wit.amount, wit.randomness, PA, expectC2A))
+        return false;
+
+    CompressedPoint c2I{};
+    CompressedPoint c2A{};
+    if (!serializePubkey(expectC2I, c2I) || !serializePubkey(expectC2A, c2A))
+        return false;
+    return c2I == pub.issuerCiphertext.c2 && c2A == pub.auditorCiphertext.c2;
+}
+
+}  // namespace
+
+bool
+proveAuditorEqualitySigma(
+    AuditorEqualitySigmaPublicInput const& pub,
+    AuditorEqualitySigmaWitness const& wit,
+    Slice contextId,
+    AuditorEqualitySigmaProof& out) noexcept
+{
+    // x and r must be in [1, n-1]; m may be zero (empty confidential balance).
+    if (secp256k1_ec_seckey_verify(ctx(), wit.issuerSk.data()) != 1 ||
+        secp256k1_ec_seckey_verify(ctx(), wit.randomness.data()) != 1)
+        return false;
+    if (!isZeroScalar(wit.amount) &&
+        secp256k1_ec_seckey_verify(ctx(), wit.amount.data()) != 1)
+        return false;
+    if (!auditorEqualityWitnessMatches(pub, wit))
+        return false;
+
+    Scalar ax{};
+    Scalar ar{};
+    Scalar am{};
+    if (!randomScalar(ax) || !randomScalar(ar) || !randomScalar(am))
+        return false;
+
+    CompressedPoint Tx{};
+    if (!pointMulBase(ax, Tx))
+        return false;
+
+    CompressedPoint T1A{};
+    if (!pointMulBase(ar, T1A))
+        return false;
+
+    CompressedPoint T2I{};
+    {
+        secp256k1_pubkey C1I{};
+        secp256k1_pubkey t{};
+        if (!parsePubkey(pub.issuerCiphertext.c1, C1I) ||
+            !linComb(am, ax, C1I, t) || !serializePubkey(t, T2I))
+            return false;
+    }
+
+    CompressedPoint T2A{};
+    {
+        secp256k1_pubkey PA{};
+        secp256k1_pubkey t{};
+        if (!parsePubkey(pub.auditorKey, PA) || !linComb(am, ar, PA, t) ||
+            !serializePubkey(t, T2A))
+            return false;
+    }
+
+    std::vector<std::uint8_t> transcript;
+    buildAuditorEqualityTranscript(pub, Tx, T1A, T2I, T2A, contextId, transcript);
+
+    Scalar e{};
+    if (!challengeFromTranscript(Slice(transcript.data(), transcript.size()), e))
+        return false;
+
+    Scalar zx{};
+    Scalar zr{};
+    Scalar zm{};
+    if (!scalarMad(ax, e, wit.issuerSk, zx) ||
+        !scalarMad(ar, e, wit.randomness, zr) ||
+        !scalarMad(am, e, wit.amount, zm))
+        return false;
+
+    // Order: (e, z_x, z_r, z_m)
+    std::memcpy(out.data() + 0, e.data(), 32);
+    std::memcpy(out.data() + 32, zx.data(), 32);
+    std::memcpy(out.data() + 64, zr.data(), 32);
+    std::memcpy(out.data() + 96, zm.data(), 32);
+
+    secureErase(ax.data(), ax.size());
+    secureErase(ar.data(), ar.size());
+    secureErase(am.data(), am.size());
+    return true;
+}
+
+bool
+verifyAuditorEqualitySigma(
+    AuditorEqualitySigmaPublicInput const& pub,
+    Slice contextId,
+    Slice proof) noexcept
+{
+    if (proof.size() != kAuditorEqualitySigmaProofBytes)
+        return false;
+
+    Scalar e{};
+    Scalar zx{};
+    Scalar zr{};
+    Scalar zm{};
+    // All compact fields are scalars in [1, n-1].
+    if (!parseScalar(proof.substr(0, 32), e) ||
+        !parseScalar(proof.substr(32, 32), zx) ||
+        !parseScalar(proof.substr(64, 32), zr) ||
+        !parseScalar(proof.substr(96, 32), zm))
+        return false;
+
+    CompressedPoint Tx{};
+    CompressedPoint T1A{};
+    CompressedPoint T2I{};
+    CompressedPoint T2A{};
+    if (!reconstructAuditorEqualityCommitments(
+            pub, e, zx, zr, zm, Tx, T1A, T2I, T2A))
+        return false;
+
+    std::vector<std::uint8_t> transcript;
+    buildAuditorEqualityTranscript(pub, Tx, T1A, T2I, T2A, contextId, transcript);
 
     Scalar e2{};
     if (!challengeFromTranscript(Slice(transcript.data(), transcript.size()), e2))

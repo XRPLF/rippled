@@ -839,6 +839,21 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     {sfZKProof, SoeRequired},
 }))
 
+/** Re-encrypt one confidential holder mirror during a frozen auditor rotation. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTReencryptAuditor.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_REENCRYPT_AUDITOR, 90, ConfidentialMPTReencryptAuditor,
+    Delegation::Delegable,
+    featureConfidentialTransfer,
+    NoPriv,
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeRequired},
+    {sfAuditorEncryptedBalance, SoeRequired},
+    {sfZKProof, SoeRequired},
+}))
+
 /** This transaction type create an Credential instance */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/credentials/CredentialCreate.h>

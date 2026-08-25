@@ -328,6 +328,30 @@ public:
     }
 
     /**
+     * @brief Get sfConfidentialHolderCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getConfidentialHolderCount() const
+    {
+        if (hasConfidentialHolderCount())
+            return this->sle_->at(sfConfidentialHolderCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfConfidentialHolderCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasConfidentialHolderCount() const
+    {
+        return this->sle_->isFieldPresent(sfConfidentialHolderCount);
+    }
+
+    /**
      * @brief Get sfIssuerEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -373,6 +397,78 @@ public:
     hasAuditorEncryptionKey() const
     {
         return this->sle_->isFieldPresent(sfAuditorEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfAuditorKeyVersion (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAuditorKeyVersion() const
+    {
+        if (hasAuditorKeyVersion())
+            return this->sle_->at(sfAuditorKeyVersion);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorKeyVersion is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorKeyVersion() const
+    {
+        return this->sle_->isFieldPresent(sfAuditorKeyVersion);
+    }
+
+    /**
+     * @brief Get sfPendingAuditorEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getPendingAuditorEncryptionKey() const
+    {
+        if (hasPendingAuditorEncryptionKey())
+            return this->sle_->at(sfPendingAuditorEncryptionKey);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPendingAuditorEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPendingAuditorEncryptionKey() const
+    {
+        return this->sle_->isFieldPresent(sfPendingAuditorEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfAuditorMigrationCount (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAuditorMigrationCount() const
+    {
+        if (hasAuditorMigrationCount())
+            return this->sle_->at(sfAuditorMigrationCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorMigrationCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorMigrationCount() const
+    {
+        return this->sle_->isFieldPresent(sfAuditorMigrationCount);
     }
 };
 
@@ -588,6 +684,17 @@ public:
     }
 
     /**
+     * @brief Set sfConfidentialHolderCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setConfidentialHolderCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfConfidentialHolderCount] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfIssuerEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
@@ -606,6 +713,39 @@ public:
     setAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfAuditorEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorKeyVersion (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setAuditorKeyVersion(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAuditorKeyVersion] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfPendingAuditorEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setPendingAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfPendingAuditorEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorMigrationCount (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setAuditorMigrationCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAuditorMigrationCount] = value;
         return *this;
     }
 

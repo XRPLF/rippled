@@ -21,6 +21,12 @@ confidentialMptBaseFee(ReadView const& view, STTx const& tx)
     return (baseFee + (signerCount * baseFee)) * kConfidentialTransferFeeMultiplier;
 }
 
+bool
+auditorMigrationPending(SLE const& issuance) noexcept
+{
+    return issuance.isFieldPresent(sfPendingAuditorEncryptionKey);
+}
+
 NotTEC
 preflightCiphertext(Slice blob)
 {

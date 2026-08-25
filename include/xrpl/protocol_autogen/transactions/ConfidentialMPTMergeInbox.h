@@ -19,7 +19,7 @@ class ConfidentialMPTMergeInboxBuilder;
  * @brief Transaction: ConfidentialMPTMergeInbox
  *
  * Type: ttCONFIDENTIAL_MPT_MERGE_INBOX (86)
- * Delegable: Delegation::NotDelegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
  * Privileges: NoPriv
  *

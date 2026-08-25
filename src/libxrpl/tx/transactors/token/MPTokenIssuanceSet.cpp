@@ -116,10 +116,6 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         if (holderID)
             return temMALFORMED;
 
-        // Auditor key requires issuer key in the same transaction.
-        if (auditorKey && !issuerKey)
-            return temMALFORMED;
-
         if (issuerKey && issuerKey->length() != kConfidentialElGamalPubKeyLength)
             return temMALFORMED;
 
@@ -318,20 +314,25 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) ||
-        ctx.tx.isFieldPresent(sfAuditorEncryptionKey))
+    auto const settingIssuerKey = ctx.tx.isFieldPresent(sfIssuerEncryptionKey);
+    auto const settingAuditorKey = ctx.tx.isFieldPresent(sfAuditorEncryptionKey);
+    if (settingIssuerKey || settingAuditorKey)
     {
         // Keys require confidential capability already on, or being enabled now.
         if (!sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) && !setConfidential)
             return tecNO_PERMISSION;
 
-        // Keys cannot be replaced once set.
-        if (sleMptIssuance->isFieldPresent(sfIssuerEncryptionKey) ||
-            sleMptIssuance->isFieldPresent(sfAuditorEncryptionKey))
+        if (settingIssuerKey &&
+            (sleMptIssuance->isFieldPresent(sfIssuerEncryptionKey) ||
+             sleMptIssuance->getFieldU64(sfConfidentialOutstandingAmount) != 0))
             return tecNO_PERMISSION;
 
-        // Keys cannot be registered once confidential balances are in circulation.
-        if (sleMptIssuance->getFieldU64(sfConfidentialOutstandingAmount) != 0)
+        if (settingAuditorKey &&
+            (!sleMptIssuance->isFieldPresent(sfIssuerEncryptionKey) && !settingIssuerKey))
+            return tecNO_PERMISSION;
+
+        if (settingAuditorKey &&
+            sleMptIssuance->isFieldPresent(sfPendingAuditorEncryptionKey))
             return tecNO_PERMISSION;
     }
 
@@ -400,7 +401,24 @@ MPTokenIssuanceSet::doApply()
         sle->setFieldVL(sfIssuerEncryptionKey, *issuerKey);
 
     if (auto const auditorKey = ctx_.tx[~sfAuditorEncryptionKey])
-        sle->setFieldVL(sfAuditorEncryptionKey, *auditorKey);
+    {
+        auto const holderCount = (*sle)[sfConfidentialHolderCount];
+        auto const nextVersion = (*sle)[sfAuditorKeyVersion] + 1;
+
+        // DESIGN DECISION: auditor changes use a frozen, two-phase migration.
+        // Existing holder mirrors are re-encrypted one at a time and the last
+        // migration atomically activates the pending key.
+        if (holderCount == 0)
+        {
+            sle->setFieldVL(sfAuditorEncryptionKey, *auditorKey);
+            sle->setFieldU32(sfAuditorKeyVersion, nextVersion);
+        }
+        else
+        {
+            sle->setFieldVL(sfPendingAuditorEncryptionKey, *auditorKey);
+            sle->setFieldU32(sfAuditorMigrationCount, holderCount);
+        }
+    }
 
     if (flagsIn != flagsOut)
         sle->setFieldU32(sfFlags, flagsOut);

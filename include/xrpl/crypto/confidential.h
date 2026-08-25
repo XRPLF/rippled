@@ -19,6 +19,7 @@ inline constexpr std::size_t kCiphertextBytes = 66;
 inline constexpr std::size_t kSchnorrRegisterProofBytes = 64;
 inline constexpr std::size_t kSendSigmaProofBytes = 192;
 inline constexpr std::size_t kConvertBackSigmaProofBytes = 128;
+inline constexpr std::size_t kAuditorEqualitySigmaProofBytes = 128;
 inline constexpr std::size_t kClawbackSigmaProofBytes = 64;
 // Bulletproofs (Bünz et al., 2017/1066) for n=64: 2 log2(nm)+4 points + 5 scalars.
 inline constexpr std::size_t kSingleBulletproofBytes = 688;      // m=1: 16*33 + 5*32
@@ -34,12 +35,16 @@ using CiphertextBytes = std::array<std::uint8_t, kCiphertextBytes>;
 using SchnorrRegisterProof = std::array<std::uint8_t, kSchnorrRegisterProofBytes>;
 using SendSigmaProof = std::array<std::uint8_t, kSendSigmaProofBytes>;
 using ConvertBackSigmaProof = std::array<std::uint8_t, kConvertBackSigmaProofBytes>;
+using AuditorEqualitySigmaProof =
+    std::array<std::uint8_t, kAuditorEqualitySigmaProofBytes>;
 using ClawbackSigmaProof = std::array<std::uint8_t, kClawbackSigmaProofBytes>;
 
 /** Fiat–Shamir domain tags from Updated_ConfidentialMPT_20260612.md. */
 inline constexpr std::string_view kTagSchnorrRegister = "CMPT_POK_SK_REGISTER";
 inline constexpr std::string_view kTagSendSigma = "CMPT_SEND_SIGMA";
 inline constexpr std::string_view kTagConvertBackSigma = "CMPT_CONVERTBACK_SIGMA";
+inline constexpr std::string_view kTagAuditorEqualitySigma =
+    "CMPT_AUDITOR_EQ_SIGMA";
 inline constexpr std::string_view kTagClawbackSigma = "CMPT_CLAWBACK_SIGMA";
 inline constexpr std::string_view kTagEncZero = "EncZero";
 
@@ -211,6 +216,16 @@ transactionContextIDClawback(
     std::uint32_t sequenceOrTicket,
     Slice holder) noexcept;
 
+/** TxSpecific := Holder || TargetAuditorVersion (auditor migration). */
+[[nodiscard]] uint256
+transactionContextIDMigrateAuditor(
+    std::uint16_t txType,
+    Slice account,
+    Slice issuanceId,
+    std::uint32_t sequenceOrTicket,
+    Slice holder,
+    std::uint32_t targetAuditorVersion) noexcept;
+
 /**
  * Compact Schnorr PoK for key registration: π = (e || s), 64 bytes.
  * SPEC INCONSISTENCY: eprint serializes (T||s) = 65 bytes; XLS lists 64.
@@ -308,6 +323,39 @@ proveClawbackSigma(
 [[nodiscard]] bool
 verifyClawbackSigma(
     ClawbackSigmaPublicInput const& pub,
+    Slice contextId,
+    Slice proof) noexcept;
+
+/**
+ * Compact equality sigma for auditor migration: π = (e || z_x || z_r || z_m),
+ * 128 bytes. Proves pk_I = x·G, C1_A = r·G, C2_I = m·G + x·C1_I,
+ * C2_A = m·G + r·pk_A under one Fiat–Shamir challenge.
+ */
+struct AuditorEqualitySigmaPublicInput
+{
+    CompressedPoint issuerKey{};       // pk_I
+    Ciphertext issuerCiphertext{};     // (C1_I, C2_I)
+    CompressedPoint auditorKey{};      // pending auditor pk_A
+    Ciphertext auditorCiphertext{};    // (C1_A, C2_A)
+};
+
+struct AuditorEqualitySigmaWitness
+{
+    Scalar issuerSk{};    // x
+    Scalar randomness{};  // r (fresh auditor ciphertext randomness)
+    Scalar amount{};      // m
+};
+
+[[nodiscard]] bool
+proveAuditorEqualitySigma(
+    AuditorEqualitySigmaPublicInput const& pub,
+    AuditorEqualitySigmaWitness const& wit,
+    Slice contextId,
+    AuditorEqualitySigmaProof& out) noexcept;
+
+[[nodiscard]] bool
+verifyAuditorEqualitySigma(
+    AuditorEqualitySigmaPublicInput const& pub,
     Slice contextId,
     Slice proof) noexcept;
 

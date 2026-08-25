@@ -60,6 +60,8 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(issuanceID));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
+    if (auditorMigrationPending(*sleIssuance))
+        return tecLOCKED;
     if (account == (*sleIssuance)[sfIssuer])
         return temMALFORMED;
     if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
