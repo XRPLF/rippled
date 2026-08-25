@@ -394,14 +394,14 @@ Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions 
 
 ### Ledger Spans
 
-| Span Name         | Source File       | Attributes                                                              | Description                                                                                                                   |
-| ----------------- | ----------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `ledger.build`    | BuildLedger.cpp   | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus                                                                                                 |
-| `ledger.validate` | LedgerMaster.cpp  | `ledger_seq`, `validations`                                             | Ledger promoted to validated                                                                                                  |
-| `ledger.store`    | LedgerMaster.cpp  | `ledger_seq`                                                            | Ledger stored in history                                                                                                      |
-| `ledger.acquire`  | InboundLedger.cpp | `ledger_seq`, `acquire_reason`, `timeouts`, `peer_count`, `outcome`     | Fetch a missing ledger from peers (parent varies — see [known issues](#where-telemetry-parenting-differs-from-protocol-flow)) |
+| Span Name         | Source File       | Attributes                                                                         | Description                                                                                                                   |
+| ----------------- | ----------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `ledger.build`    | BuildLedger.cpp   | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`            | Ledger build during consensus                                                                                                 |
+| `ledger.validate` | LedgerMaster.cpp  | `ledger_hash`, `ledger_seq`, `validations`                                         | Ledger promoted to validated                                                                                                  |
+| `ledger.store`    | LedgerMaster.cpp  | `ledger_hash`, `ledger_seq`                                                        | Ledger stored in history                                                                                                      |
+| `ledger.acquire`  | InboundLedger.cpp | `ledger_hash`, `ledger_seq`, `acquire_reason`, `timeouts`, `peer_count`, `outcome` | Fetch a missing ledger from peers (parent varies — see [known issues](#where-telemetry-parenting-differs-from-protocol-flow)) |
 
-`ledger.acquire` sets only `ledger_seq` and `acquire_reason` when the span opens
+`ledger.acquire` sets only `ledger_hash`, `ledger_seq` and `acquire_reason` when the span opens
 in `init()`. `outcome` has three values, written on two different paths:
 
 | `outcome`  | Written where | Meaning                                                                                                                                                                                                                                                                             |
@@ -437,14 +437,19 @@ child `tx.apply` span, which is where the set is actually applied
 ([BuildLedger.cpp:191](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L191)) —
 join on the trace, not on one span.
 
-> **Gap: no `ledger.*` span carries a ledger hash.** The attribute constant
-> `ledger_span::attr::ledgerHash` is declared
-> ([LedgerSpanNames.h:41](../src/xrpld/app/ledger/detail/LedgerSpanNames.h#L41))
-> but is never set by any call site, so `ledger.build` / `ledger.store` /
-> `ledger.validate` / `ledger.acquire` are identifiable by `ledger_seq` only. A
-> query filtering on `span.ledger_hash` over a `ledger.*` span returns nothing.
-> `ledger_hash` **is** set on `consensus.validation.send` and on the peer spans,
-> so use those when a hash is required.
+> **Most `ledger.*` spans carry a ledger hash; `ledger.build` does not.**
+> `ledger_span::attr::ledgerHash`
+> ([LedgerSpanNames.h:95](../src/xrpld/app/ledger/detail/LedgerSpanNames.h#L95))
+> is set unconditionally on `ledger.validate` and `ledger.store` by
+> `LedgerMaster::makeLedgerTraceSpan`
+> ([LedgerMaster.cpp:187](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L187)),
+> and on `ledger.acquire` together with its three phase children, so
+> `span.ledger_hash` filters work over all of those. It is also the key the
+> per-ledger trace join hashes, which is why the validation harness now requires
+> it on both ends of that join. The exception is `ledger.build`, which carries
+> `ledger_seq` only — identify a build by sequence, or pull the whole ledger's
+> trace and read the hash off a sibling span. `ledger_hash` is likewise set on
+> `consensus.validation.send` and on the peer spans.
 
 ### Peer Spans
 

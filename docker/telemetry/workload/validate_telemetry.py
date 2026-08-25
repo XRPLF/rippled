@@ -792,6 +792,17 @@ async def _validate_trace_join_group(
 # with its generic group loop: "description" is prose, "grafana_dashboards"
 # holds dashboard UIDs (checked by validate_dashboards), and
 # "sync_diagnostics" has its own validator, assert_sync_diagnostics_metrics().
+#
+# MERGE HAZARD, for whoever brings phase-10 forward into this branch. phase-10
+# replaces the flatten below with _metric_check_targets(), which selects every
+# group satisfying isinstance(category_data, dict) and has no equivalent of this
+# tuple. Resolving that merge in phase-10's favour therefore lets
+# validate_metrics walk "sync_diagnostics" as well, while
+# assert_sync_diagnostics_metrics still walks it -- every metric in the group
+# polled twice and reported twice, inflating the check total. The resolution must
+# reinstate this exclusion inside _metric_check_targets, or fold
+# assert_sync_diagnostics_metrics into it and drop the separate pass. Either is
+# fine; keeping both walkers without an exclusion is not.
 SKIPPED_METRIC_GROUPS = ("description", "grafana_dashboards", SYNC_DIAGNOSTICS_GROUP)
 
 
@@ -1086,8 +1097,11 @@ async def assert_sync_diagnostics_metrics(
     # so each result must be added here. Discarding them would let the group
     # pass silently whatever Prometheus holds, which is the more dangerous half
     # of the defect this replaces: the original call also passed `report` where
-    # `deadline` belongs and omitted `sem` entirely, raising TypeError before
-    # any check ran and taking the four later validation phases down with it.
+    # `deadline` belongs and omitted `sem` entirely, raising TypeError before any
+    # check ran and taking the validation phases ordered after it down with it --
+    # three of them as CI invokes this (dashboards, parity span attrs, parity
+    # value sanity), since the workflow passes --skip-loki; four when the
+    # log-correlation phase is enabled.
     deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
     sem = asyncio.Semaphore(METRIC_POLL_CONCURRENCY)
     checks = await asyncio.gather(
