@@ -24,11 +24,11 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 | `batch_size`               | uint   | `512`                             | Spans per export batch                                                                                     |
 | `batch_delay_ms`           | uint   | `5000`                            | Max delay before sending batch (ms)                                                                        |
 | `max_queue_size`           | uint   | `2048`                            | Maximum queued spans                                                                                       |
-| `trace_transactions`       | bool   | `true`                            | Enable transaction tracing                                                                                 |
-| `trace_consensus`          | bool   | `true`                            | Enable consensus tracing                                                                                   |
-| `trace_rpc`                | bool   | `true`                            | Enable RPC tracing                                                                                         |
-| `trace_peer`               | bool   | `true`                            | Enable peer message tracing (high volume)                                                                  |
-| `trace_ledger`             | bool   | `true`                            | Enable ledger tracing                                                                                      |
+| `trace_transactions`       | 0 or 1 | `1`                               | Enable transaction tracing                                                                                 |
+| `trace_consensus`          | 0 or 1 | `1`                               | Enable consensus tracing                                                                                   |
+| `trace_rpc`                | 0 or 1 | `1`                               | Enable RPC tracing                                                                                         |
+| `trace_peer`               | 0 or 1 | `1`                               | Enable peer message tracing (high volume)                                                                  |
+| `trace_ledger`             | 0 or 1 | `1`                               | Enable ledger tracing                                                                                      |
 | `tx_trace_strategy`        | string | `"deterministic"`                 | TX trace ID strategy: `"deterministic"` (trace_id = txHash[0:16]) or `"attribute"` (random)                |
 | `consensus_trace_strategy` | string | `"deterministic"`                 | Consensus trace ID strategy: `"deterministic"` (trace_id = prevLedgerHash[0:16]) or `"attribute"` (random) |
 | `service_name`             | string | `"xrpld"`                         | Service name (`service.name`) for traces and metrics                                                       |
