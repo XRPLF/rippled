@@ -769,7 +769,21 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         }
 
         // Convert and Merge use the same MPT freeze mapping.
-        mpt.set({.account = gw, .holder = alice, .flags = tfMPTLock});
+        auto setHolderLock = [&](bool locked) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto sle = view.read(keylet::mptoken(id, alice.id()));
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle);
+                auto flags = replacement->getFieldU32(sfFlags);
+                replacement->setFieldU32(
+                    sfFlags,
+                    locked ? flags | lsfMPTLocked : flags & ~lsfMPTLocked);
+                view.rawReplace(replacement);
+                return true;
+            });
+        };
+        setHolderLock(true);
         {
             Scalar r = mustRandomScalar();
             auto [h, i] = encPair(aliceKp.pk, 1, r);
@@ -790,7 +804,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[sfMPTokenIssuanceID] = to_string(id);
             env(jv, Ter(tecLOCKED), Fee(XRP(1)));
         }
-        mpt.set({.account = gw, .holder = alice, .flags = tfMPTUnlock});
+        setHolderLock(false);
 
         // Merge errors
         {
