@@ -599,10 +599,6 @@ fn a_memory64_module_is_rejected_at_compile() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// Resource-exhaustion limits (ported from the old Beast fixtures)
-// ---------------------------------------------------------------------------
-
 /// A function declaring more parameters than wasm allows (1000) is refused at compile, so a
 /// contract cannot smuggle an unbounded signature past screening.
 #[test]
@@ -671,10 +667,6 @@ fn many_functions_currently_run_unbounded() {
         "a large-function module currently compiles and runs"
     );
 }
-
-// ---------------------------------------------------------------------------
-// Individual trap kinds (belt-and-suspenders alongside the unreachable representative)
-// ---------------------------------------------------------------------------
 
 /// The trap *kinds* wasmi distinguishes all reach the caller identically — a guest trap
 /// charged as the contract's fault — so the `unreachable` representative pins the mapping.

@@ -1265,10 +1265,6 @@ fn the_outcome_carries_whatever_the_guest_returned() {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Float operators without a dedicated marshalling test above (ported gaps)
-// ---------------------------------------------------------------------------
-
 /// The remaining binary operators marshal like `float_add`: both operands and the mode reach
 /// the host, tagged by operator.
 #[test]
