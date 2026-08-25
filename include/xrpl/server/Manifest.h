@@ -306,12 +306,6 @@ operator==(Manifest const& lhs, Manifest const& rhs)
         lhs.serialized == rhs.serialized;
 }
 
-inline bool
-operator!=(Manifest const& lhs, Manifest const& rhs)
-{
-    return !(lhs == rhs);
-}
-
 struct ValidatorToken
 {
     std::string manifest;

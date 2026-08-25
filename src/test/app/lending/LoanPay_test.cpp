@@ -4,7 +4,9 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/jtx_json.h>
+#include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -13,9 +15,12 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -728,10 +733,309 @@ private:
         }
     }
 
+    // Which pseudo-account is left holding an unauthorized trust line when the
+    // repayment lands.
+    enum class UnauthorizedPayee {
+        // The vault's own line, as VaultCreate leaves it.
+        Vault,
+        // Same vault, but the issuer authorized the line by hand first.
+        VaultAuthorized,
+        // Vault line authorized, broker owner unable to take the fee, so the
+        // fee goes to the loan broker's pseudo-account instead.
+        Broker,
+    };
+
+    // A vault holding an IOU whose issuer requires authorization ends up with
+    // its own trust line unauthorized: VaultCreate opens the line without the
+    // auth flag, and the pseudo-account has no key to sign a TrustSet for
+    // itself. Neither deposits nor loan origination look at that line, so the
+    // vault appears to work right up to the first repayment, which is the only
+    // step that has to credit the vault back.
+    //
+    // The loan broker's pseudo-account has the same defect for the same reason,
+    // and LoanPay reaches it whenever the broker owner cannot take the fee.
+    //
+    // The issuer can still repair either line by hand, because TrustSet accepts
+    // a line that already exists even when its owner is a pseudo-account.
+    void
+    testRepayIntoUnauthorizedVault()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        auto runTestCases = [&](FeatureBitset features, UnauthorizedPayee payee) {
+            bool const pseudoExempt = features[fixCleanup3_4_0];
+            // With the vault's line repaired by the issuer, the only remaining
+            // unauthorized payee is the broker's pseudo-account.
+            bool const expectSuccess = pseudoExempt || payee == UnauthorizedPayee::VaultAuthorized;
+
+            auto const payeeLabel = [payee]() -> char const* {
+                switch (payee)
+                {
+                    case UnauthorizedPayee::Vault:
+                        return "vault";
+                    case UnauthorizedPayee::VaultAuthorized:
+                        return "vault authorized by the issuer";
+                    case UnauthorizedPayee::Broker:
+                        return "loan broker";
+                }
+                return "";  // LCOV_EXCL_LINE
+            }();
+
+            testcase << "LoanPay crediting an unauthorized " << payeeLabel << ": pseudo-account "
+                     << (pseudoExempt ? "exempt" : "not exempt");
+
+            Env env{*this, features};
+
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env.close();
+
+            env(fset(issuer, asfRequireAuth));
+            env.close();
+
+            PrettyAsset const asset = issuer[iouCurrency_];
+            env(trust(lender, asset(100'000'000)));
+            env(trust(borrower, asset(100'000'000)));
+            env.close();
+
+            // Authorize the two participants. Nothing asks the issuer to also
+            // authorize the vault, which is the whole point of this test.
+            env(trust(issuer, asset(0), lender, tfSetfAuth));
+            env(trust(issuer, asset(0), borrower, tfSetfAuth));
+            env.close();
+
+            env(pay(issuer, lender, asset(10'000'000)));
+            env(pay(issuer, borrower, asset(10'000)));
+            env.close();
+
+            // Creating the vault and funding it with deposits succeeds even
+            // though the vault cannot be authorized to hold the asset.
+            BrokerInfo const broker{createVaultAndBroker(env, asset, lender)};
+
+            auto const vaultSle = env.le(broker.vaultKeylet());
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            if (!BEAST_EXPECT(vaultSle && brokerSle))
+                return;
+
+            Account const vaultPseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+            Account const brokerPseudo{"broker pseudo-account", brokerSle->at(sfAccount)};
+
+            auto const lineIsAuthorized = [&](Account const& holder) -> bool {
+                auto const line = env.le(keylet::trustLine(holder, asset.raw().get<Issue>()));
+                if (!BEAST_EXPECT(line))
+                    return false;
+                return line->isFlag(holder.id() > issuer.id() ? lsfLowAuth : lsfHighAuth);
+            };
+
+            BEAST_EXPECT(!lineIsAuthorized(vaultPseudo));
+            BEAST_EXPECT(!lineIsAuthorized(brokerPseudo));
+
+            if (payee != UnauthorizedPayee::Vault)
+            {
+                env(trust(issuer, asset(0), vaultPseudo, tfSetfAuth));
+                env.close();
+                BEAST_EXPECT(lineIsAuthorized(vaultPseudo));
+            }
+
+            using namespace loan;
+
+            // The service fee guarantees the broker is owed something on the
+            // first payment, so the broker leg of the transfer is exercised.
+            Number const serviceFee = asset(2).value();
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            env(set(borrower, broker.brokerID, asset(1'000).value()),
+                Sig(sfCounterpartySignature, lender),
+                kLoanServiceFee(serviceFee),
+                kInterestRate(percentageToTenthBips(12)),
+                kPaymentTotal(12),
+                kPaymentInterval(600),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+
+            // Paying the principal out of the vault never needed authorization.
+            BEAST_EXPECT(env.le(loanKeylet));
+
+            if (payee == UnauthorizedPayee::Broker)
+            {
+                // A deep-frozen owner cannot take the fee, so LoanPay pays it
+                // into the broker's pseudo-account instead.
+                env(trust(issuer, asset(0), lender, tfSetFreeze | tfSetDeepFreeze));
+                env.close();
+            }
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            STAmount const payment{
+                broker.asset,
+                roundPeriodicPayment(
+                    broker.asset, state.periodicPayment + serviceFee, state.loanScale)};
+
+            // Repayment turns an outstanding loan back into cash the vault can
+            // lend again, so AssetsAvailable is what moves. AssetsTotal already
+            // counted the loan.
+            auto const assetsAvailable = [&]() -> Number {
+                auto const sle = env.le(broker.vaultKeylet());
+                if (!BEAST_EXPECT(sle))
+                    return Number{};
+                return sle->at(sfAssetsAvailable);
+            };
+
+            auto const borrowerBefore = env.balance(borrower, asset).number();
+            auto const vaultBefore = env.balance(vaultPseudo, asset).number();
+            auto const brokerBefore = env.balance(brokerPseudo, asset).number();
+            auto const assetsAvailableBefore = assetsAvailable();
+
+            env(pay(borrower, loanKeylet.key, payment),
+                Ter(expectSuccess ? TER{tesSUCCESS} : TER{tecNO_AUTH}));
+            env.close();
+
+            if (expectSuccess)
+            {
+                BEAST_EXPECT(env.balance(borrower, asset).number() < borrowerBefore);
+                BEAST_EXPECT(env.balance(vaultPseudo, asset).number() > vaultBefore);
+                BEAST_EXPECT(assetsAvailable() > assetsAvailableBefore);
+                // Confirms the broker variant really did route the fee to the
+                // pseudo-account rather than to the owner.
+                BEAST_EXPECT(
+                    (env.balance(brokerPseudo, asset).number() > brokerBefore) ==
+                    (payee == UnauthorizedPayee::Broker));
+
+                // The payee is skipped by the check, not authorized by it: the line that just
+                // took the credit is still missing its auth flag.
+                if (payee == UnauthorizedPayee::Vault)
+                    BEAST_EXPECT(!lineIsAuthorized(vaultPseudo));
+                if (payee == UnauthorizedPayee::Broker)
+                    BEAST_EXPECT(!lineIsAuthorized(brokerPseudo));
+            }
+            else
+            {
+                // A rejected repayment must leave every balance untouched.
+                BEAST_EXPECT(env.balance(borrower, asset).number() == borrowerBefore);
+                BEAST_EXPECT(env.balance(vaultPseudo, asset).number() == vaultBefore);
+                BEAST_EXPECT(env.balance(brokerPseudo, asset).number() == brokerBefore);
+                BEAST_EXPECT(assetsAvailable() == assetsAvailableBefore);
+            }
+        };
+
+        for (auto const& features : {all_, all_ - fixCleanup3_4_0})
+        {
+            runTestCases(features, UnauthorizedPayee::Vault);
+            runTestCases(features, UnauthorizedPayee::VaultAuthorized);
+            runTestCases(features, UnauthorizedPayee::Broker);
+        }
+    }
+
+    void
+    testLoanPayFundsConservedPayeeBelowReserve(FeatureBitset features)
+    {
+        // Regression test: LoanPay::doApply's fund-conservation check used to
+        // read XRP balances via accountHolds(..., SpendableHandling::
+        // FullBalance), which for XRP always defers to xrpLiquid (balance
+        // minus reserve, clamped at zero). When the broker fee landed on a
+        // payee sitting below its own reserve, that payee's clamped balance
+        // stayed zero and the fee vanished from the conservation sum,
+        // tripping "funds are conserved (with rounding)".
+        testcase("LoanPay funds conserved: broker fee payee below reserve");
+
+        using namespace jtx;
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        // Broker defaults match the fuzz workload: ManagementFeeRate = 100
+        // tenth-bips. The service fee guarantees feePaid > 0 on the first
+        // regular payment.
+        BrokerParameters const brokerParams;
+        Number const serviceFeeValue{2};
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .principalRequest = 1000,
+            .serviceFee = serviceFeeValue,
+            .interest = TenthBips32{percentageToTenthBips(12)},
+            .payTotal = 12,
+            .payInterval = 3600};
+
+        auto const loanOpt =
+            createLoan(env, AssetType::XRP, brokerParams, loanParams, issuer, lender, borrower);
+        if (BEAST_EXPECT(loanOpt); !loanOpt.has_value())
+            return;
+        auto const& [broker, loanKeylet, brokerPseudo] = *loanOpt;
+
+        auto const vaultPseudo = [&]() {
+            auto const vaultSle = env.le(keylet::vault(broker.vaultID));
+            if (!BEAST_EXPECT(vaultSle))
+                return AccountID{};
+            return vaultSle->at(sfAccount);
+        }();
+
+        // Raw AccountRoot balance, matching LoanPay::doApply's conservation
+        // check (not the reserve-clamped accountHolds()/xrpLiquid() value).
+        auto rawBalance = [&](AccountID const& id) -> STAmount {
+            auto const sle = env.le(keylet::account(id));
+            if (!BEAST_EXPECT(sle))
+                return STAmount{};
+            return sle->getFieldAmount(sfBalance);
+        };
+        auto lenderReserve = [&] {
+            return env.current()->fees().accountReserve(ownerCount(env, lender), 1);
+        };
+
+        STAmount const baseFee{env.current()->fees().base};
+
+        // Park the lender (broker owner, fee payee) exactly at its reserve,
+        // then burn part of the reserve with an oversized transaction fee.
+        // Fees are exempt from the reserve check, so the balance ends up
+        // below the reserve.
+        env(pay(lender, issuer, rawBalance(lender.id()) - lenderReserve() - baseFee));
+        env(noop(lender), Fee(XRP(100)));
+        env.close();
+        BEAST_EXPECT(env.balance(lender) < lenderReserve());
+
+        // First regular payment, exactly the amount due.
+        auto const state = getCurrentState(env, broker, loanKeylet);
+        STAmount const serviceFee = broker.asset(serviceFeeValue);
+        STAmount const roundedPeriodicPayment{
+            broker.asset,
+            roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
+        STAmount const totalDue = roundToScale(
+            roundedPeriodicPayment + serviceFee, state.loanScale, Number::RoundingMode::Upward);
+
+        auto const borrowerBefore = rawBalance(borrower.id());
+        auto const vaultBefore = rawBalance(vaultPseudo);
+        auto const lenderBefore = rawBalance(lender.id());
+
+        // Before the fix, this aborted inside LoanPay::doApply on
+        // XRPL_ASSERT_PARTS(goodRounding, "xrpl::LoanPay::doApply", "funds
+        // are conserved (with rounding)").
+        env(loan::pay(borrower, loanKeylet.key, totalDue));
+        env.close();
+
+        auto const borrowerAfter = rawBalance(borrower.id());
+        auto const vaultAfter = rawBalance(vaultPseudo);
+        auto const lenderAfter = rawBalance(lender.id());
+
+        // The broker fee reached the lender's AccountRoot, even though the
+        // lender's balance remains below its reserve.
+        BEAST_EXPECT(lenderAfter > lenderBefore);
+        BEAST_EXPECT(lenderAfter < lenderReserve());
+
+        // Total funds conserved across the payer, vault, and fee payee.
+        BEAST_EXPECT(
+            borrowerBefore - baseFee + vaultBefore + lenderBefore ==
+            borrowerAfter + vaultAfter + lenderAfter);
+    }
+
     void
     runAmendmentIndependent()
     {
         testLoanSetNearZeroInterestRateSucceeds();
+        testRepayIntoUnauthorizedVault();
     }
 
     // Tests run under each entry in amendmentCombinations().
@@ -741,6 +1045,7 @@ private:
 #if LOAN_TODO
         testLoanPayLateFullPaymentBypassesPenalties(features);
 #endif
+        testLoanPayFundsConservedPayeeBelowReserve(features);
         testOverpaymentManagementFee(features);
         testDosLoanPay(features);
         testLoanNextPaymentDueDateOverflow(features);

@@ -3,6 +3,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -19,9 +20,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -97,7 +95,7 @@ doAccountOffers(rpc::JsonContext& context)
             return rpc::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter using boost lexical cast.
+        // former will be read as hex, and the latter as a decimal integer.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -109,14 +107,10 @@ doAccountOffers(rpc::JsonContext& context)
         if (!std::getline(marker, value, ','))
             return rpc::invalidFieldError(jss::marker);
 
-        try
-        {
-            startHint = boost::lexical_cast<std::uint64_t>(value);
-        }
-        catch (boost::bad_lexical_cast&)
-        {
+        auto const hint = toUInt64(value);
+        if (!hint.has_value())
             return rpc::invalidFieldError(jss::marker);
-        }
+        startHint = *hint;
 
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.

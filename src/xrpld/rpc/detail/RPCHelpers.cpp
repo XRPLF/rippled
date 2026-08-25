@@ -37,6 +37,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <format>
 #include <functional>
 #include <optional>
 #include <tuple>
@@ -443,7 +444,7 @@ parseSubUnsubJson(
     if (jv.isMember(jss::mpt_issuance_id) &&
         (jv.isMember(jss::currency) || jv.isMember(jss::issuer)))
     {
-        JLOG(j.info()) << boost::format("Bad %s currency or MPT.") % name.cStr();
+        JLOG(j.info()) << std::format("Bad {} currency or MPT.", name.cStr());
         return RpcInvalidParams;
     }
 
@@ -454,7 +455,7 @@ parseSubUnsubJson(
         if (!jv.isMember(jss::currency) ||
             !toCurrency(issue.currency, jv[jss::currency].asString()))
         {
-            JLOG(j.info()) << boost::format("Bad %s currency.") % name.cStr();
+            JLOG(j.info()) << std::format("Bad {} currency.", name.cStr());
             return assetError;
         }
 
@@ -464,7 +465,7 @@ parseSubUnsubJson(
             // Don't allow illegal issuers.
             || (!issue.currency != !issue.account) || noAccount() == issue.account)
         {
-            JLOG(j.info()) << boost::format("Bad %s issuer.") % name.cStr();
+            JLOG(j.info()) << std::format("Bad {} issuer.", name.cStr());
             return issuerError;
         }
         asset = issue;
@@ -478,7 +479,7 @@ parseSubUnsubJson(
     }
     else
     {
-        JLOG(j.info()) << boost::format("Neither %s currency or MPT is present.") % name.cStr();
+        JLOG(j.info()) << std::format("Neither {} currency or MPT is present.", name.cStr());
         return assetError;
     }
 
