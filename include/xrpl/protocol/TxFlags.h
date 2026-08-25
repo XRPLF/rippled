@@ -350,7 +350,8 @@ inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTrans
 inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
 inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
 inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
-// SPEC INCONSISTENCY: xls-0096.md names an immutable-flag form; tree uses MutableFlags.
+// DESIGN DECISION: use DynamicMPT's MutableFlags model instead of the draft
+// XLS-0096 immutable-flag form, while preserving one-way confidential enable.
 inline constexpr FlagValue tmfMPTCannotEnableCanHoldConfidentialBalance =
     lsmfMPTCannotEnableCanHoldConfidentialBalance;
 inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
