@@ -7,18 +7,28 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/utility.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <optional>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -37,7 +47,7 @@ create(Account const& proposer, json::Value const& proposedTx, std::uint32_t exp
 }
 
 json::Value
-unsignedPayload(Env const& env, json::Value tx, std::uint32_t ticketSeq)
+unsignedPayload(Env const& env, json::Value tx, std::uint32_t ticketSeq, std::uint32_t extraSigners)
 {
     // Unsigned canonical form: an empty SigningPubKey and no signature fields
     // at all. Signatures may only ever arrive through TransactionProposalSign.
@@ -50,7 +60,14 @@ unsignedPayload(Env const& env, json::Value tx, std::uint32_t ticketSeq)
 
     // The target account pays this fee when the completed transaction is
     // submitted, so it is fixed now. A fee already chosen by the caller stands.
-    fillFee(tx, *env.current());
+    // extraSigners is the number of Signers entries the payload will carry at
+    // submit (each adds one base fee on top of the unsigned base).
+    if (!tx.isMember(jss::Fee))
+    {
+        fillFee(tx, *env.current());
+        if (extraSigners != 0)
+            tx[jss::Fee] = to_string(env.current()->fees().base * (1 + extraSigners));
+    }
 
     return tx;
 }
@@ -130,6 +147,51 @@ SLE::const_pointer
 entry(Env const& env, Account const& target, std::uint32_t ticketSeq)
 {
     return entry(env, target.id(), ticketSeq);
+}
+
+uint256
+id(AccountID const& target, std::uint32_t ticketSeq)
+{
+    return keylet::txProposal(target, ticketSeq).key;
+}
+
+uint256
+id(Account const& target, std::uint32_t ticketSeq)
+{
+    return id(target.id(), ticketSeq);
+}
+
+json::Value
+sign(
+    Env const& env,
+    Account const& submitter,
+    Account const& target,
+    std::uint32_t ticketSeq,
+    Account const& signingFor,
+    Account const& signer)
+{
+    auto const sle = entry(env, target, ticketSeq);
+    if (!sle)
+        Throw<std::runtime_error>("proposal::sign: no such proposal");
+
+    STObject const proposedTx = sle->getFieldObject(sfProposedTransaction);
+    auto const data =
+        xrpl::proposal::signingData(proposedTx, signingFor.id(), signer.id(), signer.pk().slice());
+    if (!data)
+        Throw<std::runtime_error>("proposal::sign: cannot build signing data");
+
+    auto const sig = xrpl::sign(signer.pk(), signer.sk(), data->slice());
+
+    json::Value jv;
+    jv[jss::TransactionType] = "TransactionProposalSign";
+    jv[jss::Account] = submitter.human();
+    jv[sfProposalID.jsonName] = to_string(id(target, ticketSeq));
+    jv[sfSigningFor.jsonName] = signingFor.human();
+    auto& ps = jv[sfProposalSignature.jsonName];
+    ps[jss::Account] = signer.human();
+    ps[jss::SigningPubKey] = strHex(signer.pk().slice());
+    ps[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
+    return jv;
 }
 
 }  // namespace xrpl::test::jtx::proposal
