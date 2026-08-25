@@ -1204,10 +1204,10 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 | ------------------------------ | ------------------- | -------------------------------- | ----------------------- |
 | Trace spans                    | 40 of 41 emitted    | Tempo API query                  | `expected_spans.json`   |
 | Span attributes                | 67 required         | Per-span attribute assertion     | `expected_spans.json`   |
-| Legacy beast::insight families | ~270 (≈224 traffic) | Prometheus `__name__` query      | `expected_metrics.json` |
+| Legacy beast::insight families | ~270 (≈224 traffic) | Named subset asserted            | `expected_metrics.json` |
 | Native MetricsRegistry         | 35 instruments      | Prometheus query                 | `expected_metrics.json` |
 | Call-site `XRPL_METRIC_*`      | 7 instruments       | Prometheus query                 | `expected_metrics.json` |
-| Per-job-type gauges            | 105 (35 types × 3)  | Prometheus `__name__` query      | `expected_metrics.json` |
+| Per-job-type gauges            | 105 (35 types × 3)  | 6 asserted by literal name       | `expected_metrics.json` |
 | SpanMetrics RED                | 4 per span          | Prometheus query                 | `expected_metrics.json` |
 | Grafana dashboards             | all 15 on disk      | Dashboard API load + panel count | `expected_metrics.json` |
 | Log-trace links                | Present             | Loki query + Tempo reverse check | —                       |
@@ -1217,6 +1217,16 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 > the **41** families the code emits ([§1.1](#11-complete-span-inventory-41-spans)) —
 > `rpc.ws_upgrade` has no entry — and 67 distinct required attributes (the
 > manifest's own `total_unique_attributes: 58` field is stale).
+> The **Validation Method** column for the two bulk beast rows used to read
+> "Prometheus `__name__` query", which never described anything real:
+> `expected_metrics.json` contains no `__name__` query and
+> `validate_telemetry.py` issues none. Both rows are covered by literal names —
+> `overlay_traffic` asserts the four `total_*` families out of ~228, and
+> `job_queue_per_type_gauges` asserts 6 of the 105 per-job-type gauges — with
+> the remainder not listed at all. The single `__name__` string inside
+> `expected_metrics.json` is prose quoting a `ledger-data-sync` dashboard query,
+> not a check.
+>
 > `expected_metrics.json` lists all **15** dashboard uids in
 > `docker/telemetry/grafana/dashboards/`, so dashboard coverage does not differ;
 > `log-derived-insights` is listed for the provisioning check only, and its panel

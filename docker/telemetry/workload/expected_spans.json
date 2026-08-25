@@ -343,7 +343,7 @@
         "pathfind_dest_account"
       ],
       "config_flag": "trace_rpc",
-      "note": "Fires on ripple_path_find / path_find RPC. Driven by the ripple_path_find load in rpc_load_generator.py. Created as an ambient (scoped) child inside the RPC command handler (RipplePathFind.cpp:35-36, PathFind.cpp:26-27), so its parent is the enclosing rpc.command.* span — RipplePathFind.cpp:30 states this explicitly."
+      "note": "Fires on ripple_path_find / path_find RPC. Driven by the ripple_path_find load in rpc_load_generator.py. Created as an ambient (scoped) child inside the RPC command handler (RipplePathFind.cpp:35-36, PathFind.cpp:26-27), so its parent is the enclosing rpc.command.* span — RipplePathFind.cpp:30 states this explicitly. This span still emits on the harness even though pathfinding itself is disabled there, and the reason is purely positional: the ScopedSpanGuard is constructed at RipplePathFind.cpp:35, above the 'if (pathSearchMax == 0) return rpcError(RpcNotSupported)' guard at :48-49, so the span opens and closes around a request that is refused before any PathRequest exists. That is why this entry is asserted while pathfind.compute and pathfind.discover below are not."
     },
     {
       "name": "pathfind.compute",
@@ -352,7 +352,7 @@
       "required_attributes": ["pathfind_fast"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Only fires when PathRequest::doUpdate runs a computation; the self-to-self XRP probe from the load generator returns early without computing paths in a fresh cluster with no liquidity."
+      "note": "Created by PathRequest::doUpdate (PathRequest.cpp:749-750), which the harness never reaches: pathfinding is disabled on every harness node, so no PathRequest is ever constructed. Config.cpp:725-726 sets pathSearchMax to 0 when a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for every node (:308) and has no [path_search*] override, and doRipplePathFind then returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 — above the request-construction branches and below the pathfind.request span guard at :35. Liquidity is not the reason and never was: the call is refused before any path search is attempted, so the outcome does not depend on what the ledger holds. Enabling this span needs a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
     },
     {
       "name": "pathfind.discover",
@@ -361,7 +361,7 @@
       "required_attributes": ["pathfind_search_level", "pathfind_num_paths"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Graph exploration; only fires under pathfind.compute, which needs real path liquidity not present in the fresh test cluster."
+      "note": "Graph exploration; only fires under pathfind.compute, which the harness never reaches because pathfinding is disabled on every node (see the pathfind.compute entry above for the config chain). Liquidity is not the reason: the RPC is refused before any search runs."
     },
     {
       "name": "pathfind.update_all",
@@ -370,7 +370,7 @@
       "required_attributes": ["pathfind_ledger_index", "pathfind_num_requests"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Async recomputation at ledger close; only fires when there are active path_find subscriptions (the one-shot ripple_path_find load does not register one)."
+      "note": "Async recomputation at ledger close. PathRequestManager::updateAll emits the span only when requests_ is non-empty (PathRequestManager.cpp:88-95), so it needs a live path_find subscription. On the harness requests_ can never become non-empty at all: the only two insertPathRequest call sites are makePathRequest (:268) and makeLegacyPathRequest (:296), and both handlers return rpcNOT_SUPPORTED first because pathfinding is disabled on every node (PathFind.cpp:39, RipplePathFind.cpp:48; see the pathfind.compute entry above for the config chain)."
     },
     {
       "name": "grpc.*",
@@ -424,7 +424,7 @@
       "child": "pathfind.compute",
       "description": "Pathfind request contains the compute sub-span",
       "skip": true,
-      "skip_reason": "pathfind.compute only fires when a path computation actually runs; the self-to-self XRP probe in a fresh cluster with no liquidity returns before computing, so the child is not emitted under the harness workload."
+      "skip_reason": "Real relationship (pathfind.compute is created inside PathRequest::doUpdate at PathRequest.cpp:749-750, under the pathfind.request scope), but the child never exists on the harness because pathfinding is disabled on every node: Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for all five nodes (:308) with no [path_search*] override, and doRipplePathFind returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 before constructing a PathRequest. The parent still appears only because its ScopedSpanGuard is created at RipplePathFind.cpp:35, above that guard. Liquidity has nothing to do with it — the earlier 'no liquidity, returns before computing' reason was wrong, because no path search is attempted at all. Asserting this relationship needs a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
     }
   ],
   "total_span_types": 41,
