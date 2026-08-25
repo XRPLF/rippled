@@ -225,7 +225,6 @@ ValidLoanBroker::finalize(
 
         auto const& before = broker.brokerBefore;
 
-        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
         // one node (the root), which will only hold entries for `RippleState`
         // or `MPToken` objects.

@@ -366,32 +366,6 @@ ValidVault::isVaultEmpty(Vault const& vault)
 }
 
 bool
-ValidVault::exactlyOneLoan(LoanOp op, beast::Journal const& j) const
-{
-    if (afterLoan_.size() != 1)
-    {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: lending transaction must touch exactly one loan";
-        return false;
-    }
-
-    bool const isCreate = op == LoanOp::Create;
-    // A created loan has no prior state; a modified one must be the very loan
-    // whose prior state was captured, otherwise the deltas computed from the
-    // two snapshots are meaningless.
-    if (isCreate ? !beforeLoan_.empty()
-                 : (beforeLoan_.size() != 1 || beforeLoan_[0].key != afterLoan_[0].key))
-    {
-        JLOG(j.fatal()) <<  //
-            (isCreate ? "Invariant failed: lending transaction must not modify an existing loan"
-                      : "Invariant failed: lending transaction must modify exactly one loan");
-        return false;
-    }
-
-    return true;
-}
-
-bool
 ValidVault::checkLoanFunding(
     STTx const& tx,
     XRPAmount const fee,
@@ -400,13 +374,10 @@ ValidVault::checkLoanFunding(
 {
     XRPL_ASSERT(
         !beforeVault_.empty(), "xrpl::ValidVault::checkLoanFunding : loan set updated a vault");
-    XRPL_ASSERT(
-        !afterLoan_.empty(), "xrpl::ValidVault::checkLoanFunding : loan cardinality enforced");
 
     auto const& beforeVault = beforeVault_[0];
     auto const& afterVault = afterVault_[0];
     auto const& vaultAsset = afterVault.asset;
-    auto const& loan = afterLoan_[0];
 
     // Funding a loan moves the requested principal out of the vault
     // pseudo-account to the borrower (and, if any, the origination
@@ -436,26 +407,12 @@ ValidVault::checkLoanFunding(
         result = false;
     }
 
-    // The created loan must record exactly the principal the vault
-    // released. Otherwise the amount the loan owes to the vault (and
-    // thus the assets booked back to the vault on repayment) is
-    // decoupled from the assets actually lent, which would skew the
-    // vault's share price.
-    if (loan.principalOutstanding != tx[sfPrincipalRequested])
-    {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: loan set principal outstanding must equal principal requested";
-        result = false;
-    }
-
-    // The remaining participant-side checks are new under featureLendingProtocolV1_1
-    // and use the basis-aware owedToVault() accessor; keep them behind that gate
-    // so pre-V1_1 behaviour is unchanged. The sole caller (finalizeLoanSet) already
-    // returns early on the same gate, so this branch is defensive only.
-    // LCOV_EXCL_START
-    if (!view.rules().enabled(featureLendingProtocolV1_1))
+    // ValidLoan validates the creation shape. Without a single created loan,
+    // only the vault checks above can be evaluated safely.
+    if (!beforeLoan_.empty() || afterLoan_.size() != 1)
         return result;
-    // LCOV_EXCL_STOP
+
+    auto const& loan = afterLoan_[0];
 
     // The broker whose DebtTotal must reflect the newly-originated loan is the
     // one the loan points at. Verify the snapshot corresponds and is populated
@@ -646,13 +603,6 @@ ValidVault::finalizeLoanSet(
         return false;
     }
 
-    // A loan set must create exactly one loan object; the interest
-    // it books is the only permitted change to assets outstanding.
-    if (!exactlyOneLoan(LoanOp::Create, j))
-    {
-        return false;
-    }
-
     return checkLoanFunding(tx, fee, view, j);
 }
 
@@ -697,11 +647,10 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
     auto const& afterVault = afterVault_[0];
     auto const& vaultAsset = afterVault.asset;
 
-    // Every sub-operation acts on the single loan named by the transaction. The
-    // vault-only checks below do not read the loan, so they are still performed
-    // when this fails; only the checks which need the loan are skipped.
-    bool const oneLoan = exactlyOneLoan(LoanOp::Modify, j);
-    result = result && oneLoan;
+    // ValidLoan validates the operation shape. Loan-dependent vault checks are
+    // skipped when there is no single modified loan snapshot to compare.
+    bool const hasLoan = beforeLoan_.size() == 1 && afterLoan_.size() == 1 &&
+        beforeLoan_[0].key == afterLoan_[0].key;
 
     // Loan management (impair / unimpair / default) never removes
     // assets from the vault. Only a default returns first-loss
@@ -766,7 +715,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         // LoanPay conservation identity in finalizeLoanPay) so that comparing
         // the two independently-scaled operands cannot drift by a ULP and
         // produce a false failure.
-        if (oneLoan)
+        if (hasLoan)
         {
             auto const owed = beforeLoan_[0].owedToVault(afterVault.version);
             auto const expectedDelta = tx.isFlag(tfLoanImpair) ? owed : -owed;
@@ -819,9 +768,8 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         // XLS-66 3.10.5 / 3.10.5.1. The residual is rounded once for the same
         // reason as the other two identities - term-wise comparison of
         // independently-rounded operands can drift by a ULP. Basis-aware via
-        // owedToVault(). Depends on the loan cardinality, so guarded by
-        // oneLoan.
-        if (oneLoan)
+        // owedToVault().
+        if (hasLoan)
         {
             auto const residual = roundToAsset(
                 vaultAsset,
@@ -858,7 +806,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         // from paper to realized). If the loan was not impaired there is
         // nothing to release and LossUnrealized is unchanged. As with
         // impair/unimpair the residual is rounded once.
-        if (oneLoan)
+        if (hasLoan)
         {
             Number const expectedDelta =
                 beforeLoan_[0].impaired ? -beforeLoan_[0].owedToVault(afterVault.version) : kZero;
@@ -881,7 +829,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         // opposite amounts. A default that credited the vault from anywhere
         // else would manufacture value. The broker can only be located through
         // the defaulted loan, so this is skipped when that loan is unknown.
-        if (oneLoan)
+        if (hasLoan)
         {
             auto const brokerSle = view.read(keylet::loanBroker(afterLoan_[0].loanBrokerID));
             if (!brokerSle)
@@ -914,7 +862,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         // together as a single identity. The pre-V1_1 cover-residual above only
         // catches asymmetric movements; a default that touched neither side
         // would slip through it because both deltas fall back to zero.
-        if (oneLoan)
+        if (hasLoan)
         {
             if (beforeBroker_.size() != 1 || afterBroker_.size() != 1 ||
                 afterBroker_[0].key != afterLoan_[0].loanBrokerID)
@@ -1013,10 +961,10 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
     auto const& afterVault = afterVault_[0];
     auto const& vaultAsset = afterVault.asset;
 
-    // A payment is made against the single loan named by the transaction. The
-    // cash-flow checks immediately below do not read the loan, so they are still
-    // performed when this fails; the loan-dependent ones are then skipped.
-    bool const oneLoan = exactlyOneLoan(LoanOp::Modify, j);
+    // ValidLoan validates the operation shape. Loan-dependent vault checks are
+    // skipped when there is no single modified loan snapshot to compare.
+    bool const hasLoan = beforeLoan_.size() == 1 && afterLoan_.size() == 1 &&
+        beforeLoan_[0].key == afterLoan_[0].key;
 
     // A loan payment moves the paid principal and interest into the
     // vault pseudo-account (fees go to the broker), so the vault
@@ -1057,8 +1005,8 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
         result = false;
     }
 
-    if (!oneLoan)
-        return false;  // That's all we can do
+    if (!hasLoan)
+        return result;
 
     // The vault, the broker pseudo-account and the broker owner are
     // the only three destinations of a loan payment (the fee goes to

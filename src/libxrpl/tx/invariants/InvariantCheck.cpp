@@ -1184,19 +1184,12 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
-                // Flag-bit immutability relocated from ValidLoan.
-                //
-                // lsfLoanOverpayment is set-once at creation and must never
-                // toggle; this is ungated to match its previous coverage in
-                // LoanInvariant, which pre-dates featureLendingProtocolV1_1. The
-                // enforcement gate is the outer featureLendingProtocol -
-                // ltLOAN entries only exist under that amendment.
-                //
-                // lsfLoanDefault is set-once too, but weakly: it may transition
-                // from unset to set (via a successful tfLoanDefault), so only
-                // the reverse transition is a violation. Gated on
-                // featureLendingProtocolV1_1 to match its previous placement in
-                // LoanInvariant.
+
+                // lsfLoanOverpayment is immutable after creation. Check it ungated, as
+                // LoanInvariant did before V1_1; the enclosing featureLendingProtocol gate suffices
+                // because only that amendment creates ltLOAN entries. lsfLoanDefault may change
+                // only from unset to set through tfLoanDefault. Under V1_1, reject attempts to
+                // clear it, matching LoanInvariant's previous gate.
                 {
                     std::uint32_t const beforeFlags = before->getFlags();
                     std::uint32_t const afterFlags = after->getFlags();
@@ -1224,14 +1217,6 @@ NoModifiedUnmodifiableFields::finalize(
                 }
                 break;
             case ltVAULT:
-                // Vault immutable fields split across two amendments.
-                //
-                // sfSequence, sfOwnerNode, sfOwner, sfWithdrawalPolicy and
-                // sfScale exist on every vault and pre-date
-                // featureLendingProtocolV1_1. Gating them behind V1_1 would
-                // leave them unchecked until that amendment votes in, so they
-                // are gated on fixCleanup3_4_0 instead, which activates much
-                // sooner.
                 if (view.rules().enabled(fixCleanup3_4_0))
                 {
                     bad = bad || kFieldChanged(before, after, sfSequence) ||
@@ -1240,12 +1225,6 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfWithdrawalPolicy) ||
                         kFieldChanged(before, after, sfScale);
                 }
-                // sfAccount, sfAsset and sfShareMPTID pre-date V1_1 too, but
-                // their immutability is already enforced by ValidVault when
-                // V1_1 is off, so they are only checked here once V1_1 is on
-                // (the two paths are mutually exclusive). sfVaultKind,
-                // sfSubscriptionDate, sfRedemptionDate and sfLEVersion are
-                // introduced by V1_1 and only exist on V1_1 vaults.
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
                     bad = bad || kFieldChanged(before, after, sfAsset) ||
@@ -1334,15 +1313,6 @@ ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::co
         }
         return;
     }
-
-    // Snapshot live pseudo-accounts (touched or newly created) so finalize
-    // can verify their owner-field references resolve to a live object whose
-    // sfAccount points back at this pseudo-account.
-    if (after && after->getType() == ltACCOUNT_ROOT &&
-        (after->isFieldPresent(sfVaultID) || after->isFieldPresent(sfLoanBrokerID)))
-    {
-        touchedPseudoAccounts_.push_back(after);
-    }
 }
 
 [[nodiscard]] bool
@@ -1373,36 +1343,6 @@ ObjectHasPseudoAccount::finalize(
                 JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
                                 << " without deleting its pseudo-account";
                 failed = true;
-            }
-        }
-    }
-
-    if (view.rules().enabled(featureLendingProtocolV1_1))
-    {
-        for (auto const& sle : touchedPseudoAccounts_)
-        {
-            if (!sle)
-                continue;  // LCOV_EXCL_LINE
-            AccountID const accID = sle->at(sfAccount);
-            if (auto const vaultID = (*sle)[~sfVaultID])
-            {
-                auto const vault = view.read(keylet::vault(*vaultID));
-                if (!vault || vault->at(sfAccount) != accID)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: pseudo-account VaultID does not "
-                                       "resolve to a vault referencing this account";
-                    failed = true;
-                }
-            }
-            if (auto const brokerID = (*sle)[~sfLoanBrokerID])
-            {
-                auto const broker = view.read(keylet::loanBroker(*brokerID));
-                if (!broker || broker->at(sfAccount) != accID)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: pseudo-account LoanBrokerID does "
-                                       "not resolve to a broker referencing this account";
-                    failed = true;
-                }
             }
         }
     }

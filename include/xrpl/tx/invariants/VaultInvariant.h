@@ -38,11 +38,8 @@ namespace xrpl {
  * - vault withdrawal and clawback reduce assets and share issuance, and
  *   subtracts from: total assets, assets available, shares outstanding
  * - vault set must not alter the vault assets or shares balance
- * - every lending transaction touches exactly one loan: loan set creates one,
- *   loan manage and loan pay each modify one
- * - loan set moves the requested principal out of the vault: it must create
- *   exactly one loan, and decreases assets available (and the vault balance)
- *   by the principal
+ * - loan set moves the requested principal out of the vault, decreasing assets
+ *   available (and the vault balance) by the principal
  * - loan manage never removes assets from the vault: assets available may only
  *   grow (and the vault balance grows with it, by the returned first-loss
  *   capital on a default, which leaves the loan-broker pseudo-account by the
@@ -257,38 +254,17 @@ private:
     [[nodiscard]] static bool
     isVaultEmpty(Vault const& vault);
 
-    // Distinguishes the two cardinality patterns @c exactlyOneLoan checks.
-    // Named enum used at the call site so the intent is legible without a
-    // comment.
-    enum class LoanOp { Create, Modify };
-
-    /**
-     * @brief Verify that the transaction touched exactly one loan.
-     *
-     * Every lending transaction operates on a single loan: @c ttLOAN_SET creates one, while
-     * @c ttLOAN_MANAGE and @c ttLOAN_PAY each modify one. The per-transaction checks below index
-     * the loan snapshots directly, so this must hold before they run.
-     *
-     * @param op            Whether the loan is expected to be created or modified.
-     * @param j             Journal for logging invariant failures.
-     * @return @c true when exactly one loan was created, respectively modified.
-     */
-    [[nodiscard]] bool
-    exactlyOneLoan(LoanOp op, beast::Journal const& j) const;
-
     /**
      * @brief Funding-side invariants of a loan-origination transaction.
      *
      * Verifies that the transaction moved the requested principal out of the vault
-     * pseudo-account, and that the created loan records exactly that principal. Under
-     * @c featureLendingProtocolV1_1 also verifies the participant-side accounting: the broker's
+     * pseudo-account. Under @c featureLendingProtocolV1_1 it also verifies the participant-side
+     * accounting: the broker's
      * @c DebtTotal grows by the amount the new loan owes to the vault (basis-aware), the
      * borrower and broker owner receive their respective portions of the principal, and the
-     * vault's @c AssetsTotal / @c AssetsAvailable identity holds at origination. Assumes
-     * @c exactlyOneLoan has
-     * already returned @c true, so it may index @c afterLoan_[0] directly. Extracted so a future
-     * @c LoanAccept transactor can reuse the funding checks independently of the creation-side
-     * phase gate.
+     * vault's @c AssetsTotal / @c AssetsAvailable identity holds at origination. Extracted so a
+     * future @c LoanAccept transactor can reuse the funding checks independently of the
+     * creation-side phase gate.
      *
      * @param tx            The transaction being applied.
      * @param fee           Fee charged by this transaction; added back when the fee-payer is one

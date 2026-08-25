@@ -945,10 +945,8 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
-        // ttLOAN_SET: exactly one loan is created, but the vault
-        // (pseudo-account) balance does not change, so only the balance check
-        // trips. A loan must be created so the "exactly one loan" check passes
-        // first and the balance check is actually reached.
+        // ttLOAN_SET: a valid loan is created, but the vault (pseudo-account)
+        // balance does not change, so the vault balance check trips.
         doInvariantCheck(
             {"loan set must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -1044,6 +1042,20 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
+        Keylet loanSetBrokerKeylet = keylet::amendments();
+        auto const precloseXrpWithBroker = [&](Account const& a1,
+                                               Account const& a2,
+                                               Env& env) -> bool {
+            if (!precloseXrp(a1, a2, env))
+                return false;
+            auto const vaultKeylet =
+                keylet::vault(a1.id(), SeqProxy::rawSequence(env.current()->seq()));
+            loanSetBrokerKeylet =
+                keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
+            env(loan_broker::set(a1, vaultKeylet.key), Fee(kIncrement));
+            return BEAST_EXPECT(env.le(loanSetBrokerKeylet));
+        };
+
         // ttLOAN_SET: principal matches, but more than one loan is created
         doInvariantCheck(
             {"lending transaction must touch exactly one loan"},
@@ -1061,31 +1073,35 @@ class InvariantsVault_test : public InvariantsBase
                                 .principalOutstanding = 100,
                                 .totalValueOutstanding = 100,
                                 .borrower = a1.id(),
+                                .brokerKey = loanSetBrokerKeylet.key,
                             },
                         .loanCount = 2});
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            precloseXrp);
+            precloseXrpWithBroker);
 
         // ttLOAN_SET: no new loan is created, but an existing loan is modified
-        // instead. The cardinality helper distinguishes create from modify;
-        // a set that touches a pre-existing loan is spurious.
+        // instead. ValidLoan rejects this operation shape.
         {
             Env env{*this, all_};
             Account const a1{"A1"};
             Account const a2{"A2"};
             env.fund(XRP(1000), a1, a2);
             BEAST_EXPECT(precloseXrp(a1, a2, env));
+            auto const vaultKeylet =
+                keylet::vault(a1.id(), SeqProxy::rawSequence(env.current()->seq()));
+            auto const brokerKeylet =
+                keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
+            env(loan_broker::set(a1, vaultKeylet.key), Fee(kIncrement));
             env.close();
 
             OpenView ov{*env.current()};
 
-            auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
             auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             // Pre-existing loan in the base view; modifying it in the apply
-            // view is what the cardinality check must reject for a set.
+            // view is what ValidLoan must reject for a set.
             {
                 auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -1105,7 +1121,6 @@ class InvariantsVault_test : public InvariantsBase
             // Move the vault balance and available assets to match the
             // principal requested, so the funding checks pass and only the
             // cardinality shape is left to trip.
-            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
             if (!BEAST_EXPECT(kAdjust(
                     ac.view(),
                     vaultKeylet,
@@ -1114,9 +1129,8 @@ class InvariantsVault_test : public InvariantsBase
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200}})))
                 return;
-            // Modify the pre-existing loan so afterLoan_ has one entry with a
-            // non-empty beforeLoan_ counterpart: this is the "modify" shape
-            // that a set transaction must never produce.
+            // Modify the pre-existing loan to produce the operation shape that
+            // a set transaction must never produce.
             auto sleLoan = ac.view().peek(loanKeylet);
             if (!BEAST_EXPECT(sleLoan))
                 return;
@@ -1185,12 +1199,13 @@ class InvariantsVault_test : public InvariantsBase
                             .principalOutstanding = 300,
                             .totalValueOutstanding = 300,
                             .borrower = a1.id(),
+                            .brokerKey = loanSetBrokerKeylet.key,
                         }});
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            precloseXrp);
+            precloseXrpWithBroker);
 
         // ttLOAN_SET pre-featureLendingProtocolV1_1: finalizeLoanSet short-
         // circuits and returns success without inspecting the loan or the
@@ -1578,10 +1593,10 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
-        // ttLOAN_MANAGE: a loan is created rather than modified. The cardinality
-        // helper distinguishes create from modify and rejects the wrong shape.
+        // ttLOAN_MANAGE: a loan is created rather than modified. This object-
+        // existence rule applies on both invariant passes.
         doInvariantCheck(
-            {"lending transaction must modify exactly one loan"},
+            {"Loan created by a transaction other than LoanSet"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(
@@ -2163,7 +2178,7 @@ class InvariantsVault_test : public InvariantsBase
                 tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(sink.messages().str().contains(
-                "defaulted loan must have zero next payment due date"));
+                "Loan with zero payments must have zero next payment due date"));
         }
 
         // ttLOAN_MANAGE (default): loss unrealized must not increase. A default
@@ -2210,7 +2225,7 @@ class InvariantsVault_test : public InvariantsBase
 
         // ttLOAN_PAY: cash is credited to the vault but no loan is touched.
         // The vault-balance check passes because a real inflow was recorded;
-        // it is the cardinality helper that must catch the missing loan.
+        // ValidLoan catches the missing loan.
         doInvariantCheck(
             {"lending transaction must touch exactly one loan"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -2230,11 +2245,10 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp);
 
         // ttLOAN_PAY: cash is credited to the vault and a loan is created
-        // rather than modified. A payment services an existing loan, so a
-        // create is the wrong shape and the cardinality helper must reject
-        // it.
+        // rather than modified. This object-existence rule applies on both
+        // invariant passes.
         doInvariantCheck(
-            {"lending transaction must modify exactly one loan"},
+            {"Loan created by a transaction other than LoanSet"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(
@@ -3990,11 +4004,13 @@ class InvariantsVault_test : public InvariantsBase
                 precloseLoan);
         }
 
+        STTx const loanSetTx{
+            ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(0); }};
+
         // Loan interest due (total value less principal and management fee)
-        // must never be negative. A neutral transaction type is used so the
-        // vault invariants short-circuit and only the loan check fires. The
-        // loan object is created directly with principal 100, total value 90
-        // and management fee 0, so interest due = 90 - 100 - 0 = -10 (< 0)
+        // must never be negative. The loan object is created directly with
+        // principal 100, total value 90 and management fee 0, so interest due
+        // = 90 - 100 - 0 = -10 (< 0)
         // while every individual field stays non-negative.
         doInvariantCheck(
             {"Loan interest due is negative"},
@@ -4006,13 +4022,14 @@ class InvariantsVault_test : public InvariantsBase
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ac.view().insert(sleLoan);
                 return true;
-            });
+            },
+            XRPAmount{},
+            loanSetTx);
 
-        // Each of these loan STNumber fields must never be negative. A neutral
-        // transaction type is used so the vault invariants short-circuit and
-        // only the loan check fires. The loan is created directly with a single
-        // field set negative while the paid-off bookkeeping is kept consistent
-        // so that only the "<field> is negative" check trips.
+        // Each of these loan STNumber fields must never be negative. The loan
+        // is created directly with a single field set negative while the
+        // paid-off bookkeeping is kept consistent, so that only the "<field>
+        // is negative" check trips.
         for (auto const field : {
                  &sfLoanServiceFee,
                  &sfLatePaymentFee,
@@ -4036,7 +4053,9 @@ class InvariantsVault_test : public InvariantsBase
                     sleLoan->setFieldU32(sfPaymentRemaining, isOutstanding ? 1 : 0);
                     ac.view().insert(sleLoan);
                     return true;
-                });
+                },
+                XRPAmount{},
+                loanSetTx);
         }
 
         // Mirror of the loop above for the strictly-positive constraint: a
@@ -4052,7 +4071,9 @@ class InvariantsVault_test : public InvariantsBase
                     sleLoan->at(sfPeriodicPayment) = badValue;
                     ac.view().insert(sleLoan);
                     return true;
-                });
+                },
+                XRPAmount{},
+                loanSetTx);
         }
 
         // A loan with sfPaymentRemaining == 0 must be fully paid off in every
@@ -4071,7 +4092,9 @@ class InvariantsVault_test : public InvariantsBase
                 sleLoan->setFieldU32(sfPaymentRemaining, 0);
                 ac.view().insert(sleLoan);
                 return true;
-            });
+            },
+            XRPAmount{},
+            loanSetTx);
 
         // Converse: a loan whose outstanding balances are all zero has been
         // fully paid off and must carry zero payments remaining. Insert a
@@ -4084,7 +4107,9 @@ class InvariantsVault_test : public InvariantsBase
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ac.view().insert(sleLoan);
                 return true;
-            });
+            },
+            XRPAmount{},
+            loanSetTx);
 
         // A loan must reference a live loan broker. A bare loan SLE is
         // inserted with every other loan-level field kept consistent so the
@@ -4096,7 +4121,9 @@ class InvariantsVault_test : public InvariantsBase
                 auto sleLoan = makeLoanSle(uint256{}, 1, a2.id());
                 ac.view().insert(sleLoan);
                 return true;
-            });
+            },
+            XRPAmount{},
+            loanSetTx);
 
         // A loan's broker must in turn reference a live vault. A real broker
         // is created in the preclose so its sfVaultID points at an existing
@@ -4137,7 +4164,7 @@ class InvariantsVault_test : public InvariantsBase
                     return true;
                 },
                 XRPAmount{},
-                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                loanSetTx,
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 precloseBroker);
         }

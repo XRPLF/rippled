@@ -19,6 +19,8 @@ namespace xrpl {
  * - PaymentRemaining == 0 iff the loan is fully paid off (all of
  *   PrincipalOutstanding, TotalValueOutstanding and ManagementFeeOutstanding
  *   are zero).
+ * - Under featureLendingProtocolV1_1, a fully paid loan has a zero
+ *   NextPaymentDueDate.
  * - The STNumber fields LoanServiceFee, LatePaymentFee, ClosePaymentFee,
  *   PrincipalOutstanding, TotalValueOutstanding and ManagementFeeOutstanding
  *   must be non-negative; PeriodicPayment must be positive.
@@ -27,20 +29,25 @@ namespace xrpl {
  *   must be non-negative.
  *
  * Creation:
+ * - Only LoanSet may create a loan, regardless of the transaction result.
+ * - A successful LoanSet creates exactly one loan and does not modify or delete
+ *   another loan.
+ * - The created loan's PrincipalOutstanding equals PrincipalRequested.
  * - A newly-created loan against a closed-ended vault must satisfy
  *   `StartDate + PaymentInterval * PaymentRemaining < Vault.RedemptionDate`.
  *
  * LoanManage (featureLendingProtocolV1_1, on tesSUCCESS):
+ * - Exactly one existing loan is modified.
  * - The tfLoanImpair, tfLoanUnimpair and tfLoanDefault sub-operation flags
  *   must transition the corresponding ledger flags in the expected
  *   direction (impair sets lsfLoanImpaired on a non-impaired loan,
  *   unimpair clears it, default sets lsfLoanDefault on a non-defaulted loan).
- * - A defaulted loan must have zero NextPaymentDueDate.
  *
- * LoanPay (featureLendingProtocolV1_1, on tesSUCCESS, non-full repayment):
- * - PrincipalOutstanding strictly decreases, PaymentRemaining decreases,
- *   and NextPaymentDueDate advances by a positive multiple of
- *   PaymentInterval.
+ * LoanPay (featureLendingProtocolV1_1, on tesSUCCESS):
+ * - Exactly one existing loan is modified.
+ * - On a non-full repayment, PrincipalOutstanding strictly decreases,
+ *   PaymentRemaining decreases, and NextPaymentDueDate advances by a positive
+ *   multiple of PaymentInterval.
  *
  * Flag immutability:
  * - Pre-featureLendingProtocolV1_1: lsfLoanOverpayment is set-once.

@@ -435,10 +435,6 @@ public:
 
 private:
     std::vector<SLE::const_pointer> deletedObjSles_;
-    // Live pseudo-account entries touched by the transaction. Populated in
-    // visitEntry and consumed by finalize to cross-check owner-field
-    // resolution.
-    std::vector<SLE::const_pointer> touchedPseudoAccounts_;
 };
 // additional invariant checks can be declared above and then added to this
 // tuple
