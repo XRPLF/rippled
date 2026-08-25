@@ -1264,3 +1264,147 @@ fn the_outcome_carries_whatever_the_guest_returned() {
         assert_eq!(outcome.result, value);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Float operators without a dedicated marshalling test above (ported gaps)
+// ---------------------------------------------------------------------------
+
+/// The remaining binary operators marshal like `float_add`: both operands and the mode reach
+/// the host, tagged by operator.
+#[test]
+fn float_sub_reads_both_operands_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let wat = module(
+        &[import::FLOAT_SUB, ONE_PAGE],
+        "(call $float_sub (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 2))",
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(
+        *host.float_binary_ops_asked.borrow(),
+        vec![("sub", vec![0u8; 8], vec![0u8; 8], 2)]
+    );
+}
+
+#[test]
+fn float_mult_reads_both_operands_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let wat = module(
+        &[import::FLOAT_MULT, ONE_PAGE],
+        "(call $float_mult (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 2))",
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(
+        *host.float_binary_ops_asked.borrow(),
+        vec![("mult", vec![0u8; 8], vec![0u8; 8], 2)]
+    );
+}
+
+#[test]
+fn float_div_reads_both_operands_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let wat = module(
+        &[import::FLOAT_DIV, ONE_PAGE],
+        "(call $float_div (i32.const 0) (i32.const 8) (i32.const 8) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 2))",
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(
+        *host.float_binary_ops_asked.borrow(),
+        vec![("div", vec![0u8; 8], vec![0u8; 8], 2)]
+    );
+}
+
+/// `float_pow` marshals like `float_root`: one float region, an integer degree, and a mode.
+#[test]
+fn float_pow_reads_the_float_the_degree_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let wat = module(
+        &[import::FLOAT_POW, ONE_PAGE],
+        "(call $float_pow (i32.const 0) (i32.const 8) (i32.const 3) (i32.const 64) (i32.const 8) (i32.const 1))",
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(
+        *host.float_unary_ops_asked.borrow(),
+        vec![("pow", vec![0u8; 8], 3, 1)]
+    );
+}
+
+/// The `ST*`-in operators read one serialized region and a mode, and write the float.
+#[test]
+fn float_from_stamount_reads_the_amount_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let wat = module(
+        &[import::FLOAT_FROM_STAMOUNT, ONE_PAGE],
+        "(call $float_from_stamount (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 2))",
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(
+        *host.float_from_stamount_asked.borrow(),
+        vec![(vec![0u8; 8], 2)]
+    );
+}
+
+#[test]
+fn float_from_stnumber_reads_the_number_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let wat = module(
+        &[import::FLOAT_FROM_STNUMBER, ONE_PAGE],
+        "(call $float_from_stnumber (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 2))",
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(
+        *host.float_from_stnumber_asked.borrow(),
+        vec![(vec![0u8; 8], 2)]
+    );
+}
+
+/// `float_to_int` reads a float and a mode, writing the integer.
+#[test]
+fn float_to_int_reads_the_float_and_the_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let wat = module(
+        &[import::FLOAT_TO_INT, ONE_PAGE],
+        "(call $float_to_int (i32.const 0) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 2))",
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(*host.float_to_int_asked.borrow(), vec![(vec![0u8; 8], 2)]);
+}
+
+/// `float_from_mant_exp` passes two scalars (an i64 mantissa and an i32 exponent) and a mode.
+#[test]
+fn float_from_mant_exp_passes_the_mantissa_exponent_and_mode() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let wat = module(
+        &[import::FLOAT_FROM_MANT_EXP, ONE_PAGE],
+        "(call $float_from_mant_exp (i64.const 42) (i32.const 3) (i32.const 64) (i32.const 8) (i32.const 1))",
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(*host.float_from_mant_exp_asked.borrow(), vec![(42, 3, 1)]);
+}
+
+/// A host input read from an unaligned pointer arrives intact: the host reads a byte slice, not
+/// an aligned word, so a contract that hands it an odd offset is served the right bytes. (Ports
+/// the old `bad_align` fixture, which exercised unaligned reads in the C-ABI wrapper.)
+#[test]
+fn an_unaligned_input_is_read_intact() {
+    let host = FakeHost::new().answering_float(support::Answer::filler(8));
+    let stores: String = (0..8u8)
+        .map(|i| {
+            format!(
+                "(i32.store8 (i32.const {}) (i32.const {}))",
+                i + 1,
+                0xa0 + i
+            )
+        })
+        .collect();
+    let wat = module(
+        &[import::FLOAT_FROM_STAMOUNT, ONE_PAGE],
+        &format!(
+            "{stores} (call $float_from_stamount (i32.const 1) (i32.const 8) (i32.const 64) (i32.const 8) (i32.const 0))"
+        ),
+    );
+    assert_eq!(status(&wat, &host), 8);
+    assert_eq!(
+        *host.float_from_stamount_asked.borrow(),
+        vec![((0xa0u8..0xa8u8).collect::<Vec<u8>>(), 0)]
+    );
+}

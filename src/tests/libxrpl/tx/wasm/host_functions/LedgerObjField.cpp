@@ -47,15 +47,17 @@ struct LedgerObjFieldImpl : RealHostFixture
 TEST_F(LedgerObjFieldImpl, MatchesAccount)
 {
     auto const owner = fund("owner");
-    checkCachedField(owner, 1, sfAccount, bareTx(), [&] { return toBytes(owner.id()); });
+    checkCachedField(
+        owner, 1, sfAccount, bareTx(), [&] { return RealHostFixture::toBytes(owner.id()); });
 }
 
 TEST_F(LedgerObjFieldImpl, MatchesBalance)
 {
     auto const owner = fund("owner");
     auto const root = ledger.getOpenLedger().read(keylet::account(owner.id()));
-    checkCachedField(
-        owner, 1, sfBalance, bareTx(), [&] { return toBytes(root->getFieldAmount(sfBalance)); });
+    checkCachedField(owner, 1, sfBalance, bareTx(), [&] {
+        return RealHostFixture::toBytes(root->getFieldAmount(sfBalance));
+    });
 }
 
 TEST_F(LedgerObjFieldImpl, MatchesAccountSlotOutOfRange)

@@ -48,7 +48,7 @@ TEST_F(TxNestedFieldImpl, MatchesNestedMemo)
     auto h = makeHost(owner);
     expectValue(
         h->getTxNestedField(FieldLocator{{sfMemos.getCode(), 0, sfMemoData.getCode()}}),
-        toBytes("hello"));
+        RealHostFixture::toBytes("hello"));
 }
 
 TEST_F(TxNestedFieldImpl, MatchesCredId)
@@ -56,14 +56,17 @@ TEST_F(TxNestedFieldImpl, MatchesCredId)
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectValue(
-        h->getTxNestedField(FieldLocator{{sfCredentialIDs.getCode(), 0}}), toBytes(credentialId()));
+        h->getTxNestedField(FieldLocator{{sfCredentialIDs.getCode(), 0}}),
+        RealHostFixture::toBytes(credentialId()));
 }
 
 TEST_F(TxNestedFieldImpl, MatchesBaseFieldViaNestedLocator)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
-    expectValue(h->getTxNestedField(FieldLocator{{sfAccount.getCode()}}), toBytes(owner.id()));
+    expectValue(
+        h->getTxNestedField(FieldLocator{{sfAccount.getCode()}}),
+        RealHostFixture::toBytes(owner.id()));
 }
 
 TEST_F(TxNestedFieldImpl, MissingFieldNotFound)

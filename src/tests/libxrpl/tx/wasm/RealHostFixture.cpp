@@ -41,19 +41,19 @@
 namespace xrpl::test {
 
 Bytes
-toBytes(std::uint8_t value)
+RealHostFixture::toBytes(std::uint8_t value)
 {
     return {value};
 }
 
 Bytes
-toBytes(std::uint16_t value)
+RealHostFixture::toBytes(std::uint16_t value)
 {
     return {static_cast<std::uint8_t>(value), static_cast<std::uint8_t>(value >> 8)};
 }
 
 Bytes
-toBytes(std::uint32_t value)
+RealHostFixture::toBytes(std::uint32_t value)
 {
     return {
         static_cast<std::uint8_t>(value),
@@ -63,31 +63,31 @@ toBytes(std::uint32_t value)
 }
 
 Bytes
-toBytes(uint256 const& value)
+RealHostFixture::toBytes(uint256 const& value)
 {
     return Bytes{std::begin(value), std::end(value)};
 }
 
 Bytes
-toBytes(std::string_view value)
+RealHostFixture::toBytes(std::string_view value)
 {
     return Bytes{std::begin(value), std::end(value)};
 }
 
 Bytes
-toBytes(std::span<std::uint8_t const> value)
+RealHostFixture::toBytes(std::span<std::uint8_t const> value)
 {
     return Bytes{std::begin(value), std::end(value)};
 }
 
 Bytes
-toBytes(AccountID const& account)
+RealHostFixture::toBytes(AccountID const& account)
 {
     return Bytes{std::begin(account), std::end(account)};
 }
 
 Bytes
-toBytes(Issue const& issue)
+RealHostFixture::toBytes(Issue const& issue)
 {
     auto s = Serializer{};
     s.addBitString(issue.currency);
@@ -97,7 +97,7 @@ toBytes(Issue const& issue)
 }
 
 Bytes
-toBytes(Asset const& asset)
+RealHostFixture::toBytes(Asset const& asset)
 {
     if (asset.holds<Issue>())
         return toBytes(asset.get<Issue>());
@@ -108,7 +108,7 @@ toBytes(Asset const& asset)
 }
 
 Bytes
-toBytes(STAmount const& amount)
+RealHostFixture::toBytes(STAmount const& amount)
 {
     auto msg = Serializer{};
     amount.add(msg);
@@ -116,7 +116,7 @@ toBytes(STAmount const& amount)
 }
 
 Bytes
-toBytes(STNumber const& number)
+RealHostFixture::toBytes(STNumber const& number)
 {
     auto msg = Serializer{};
     number.add(msg);
@@ -126,7 +126,7 @@ toBytes(STNumber const& number)
 void
 expectKeyletMatches(std::expected<Bytes, HostFunctionError> const& result, Keylet const& expected)
 {
-    expectValue(result, toBytes(expected.key));
+    expectValue(result, RealHostFixture::toBytes(expected.key));
 }
 
 SignedMessage

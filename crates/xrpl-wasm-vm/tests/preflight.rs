@@ -566,13 +566,11 @@ fn what_static_screening_cannot_see() {
     }
 }
 
-/// A start section is guest code, so screening cannot see whether it traps — and does
-/// not have to. A trap is the guest's fault wherever it happens, so the run charges the
-/// contract for what it burned instead of reporting a module the node should have
-/// screened.
+/// A start section runs guest code at instantiation, before the entry point. The
+/// engine disallows it, so screening refuses the module outright rather than letting
+/// any code run ahead of the entry point.
 #[test]
-fn a_start_section_screening_cannot_see_is_charged_as_a_trap() {
-    let host = FakeHost::new();
+fn a_start_section_is_refused_by_screening() {
     let wat = format!(
         r#"(module {ONE_PAGE}
              (func $init (unreachable))
@@ -580,13 +578,79 @@ fn a_start_section_screening_cannot_see_is_charged_as_a_trap() {
              (func (export "finish") (result i32) (i32.const 0)))"#
     );
 
-    passes(&wat);
+    let refusal = assert_stage!(refusal(&wat), CheckError::Compile(_)).to_string();
+    assert!(refusal.contains("start"), "{refusal}");
+}
 
-    let failure = xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY)
-        .expect_err("a start section that traps must not complete the run");
-    assert!(matches!(failure.error, RunError::Trap(_)), "{failure}");
+#[test]
+fn a_memory64_memory_is_refused_by_screening() {
+    let wat = r#"(module
+        (memory i64 1)
+        (func (export "finish") (result i32) (i32.const 0)))"#;
+
+    let refusal = assert_stage!(refusal(wat), CheckError::Compile(_)).to_string();
     assert!(
-        failure.fuel_used > 0,
-        "charged for what it burned: {failure}"
+        refusal.contains("memory64") || refusal.contains("i64"),
+        "{refusal}"
     );
+}
+
+/// Malformed modules crafted to abuse the parser rather than merely be invalid — a vector
+/// length that lies about its size, a section that overruns its payload, a locals-count bomb,
+/// and a non-terminating LEB128 — are refused at compile like any other garbage. These guard
+/// the parser against resource-exhaustion shapes (ported from the old Beast section-corruption
+/// fixtures); the plainer "bad magic / wrong version" shapes are covered by `garbage_does_not_pass`.
+#[test]
+fn parser_abuse_shapes_are_refused() {
+    fn hex(s: &str) -> Vec<u8> {
+        (0..s.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+            .collect()
+    }
+    let cases = [
+        ("vector length lies", "0061736d010000000105ffffffff0f"),
+        ("section overruns its payload", "0061736d01000000010a0160"),
+        (
+            "locals-count bomb",
+            "0061736d01000000010401600000030201000a0f010d01ffffffff0f7f0b",
+        ),
+        (
+            "non-terminating LEB128",
+            "0061736d0100000001058080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080808080",
+        ),
+    ];
+    for (label, h) in cases {
+        let refusal = xrpl_wasm_vm::check(&hex(h), ENTRY).expect_err(label);
+        assert_stage!(refusal, CheckError::Compile(_));
+    }
+}
+
+/// The plain structurally-malformed modules from the old section-corruption fixtures — a
+/// corrupt magic, a wrong version, a lying section length, sections out of order, junk after
+/// the last section, an unknown section id — are all refused at compile. Belt-and-suspenders
+/// alongside `garbage_does_not_pass`: guards against a wasmi upgrade loosening the validator.
+#[test]
+fn structurally_malformed_modules_are_refused() {
+    fn hex(s: &str) -> Vec<u8> {
+        (0..s.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+            .collect()
+    }
+    let cases = [
+        ("corrupt magic number", "0161736d01000000"),
+        ("wrong version", "0061736d02000000"),
+        ("lying section length", "0061736d01000000018080808008"),
+        ("sections out of order", "0061736d010000000a02000b03020000"),
+        (
+            "junk after last section",
+            "0061736d01000000010a01600000000000000000",
+        ),
+        ("unknown section id", "0061736d01000000ff0100"),
+    ];
+    for (label, h) in cases {
+        let refusal = xrpl_wasm_vm::check(&hex(h), ENTRY).expect_err(label);
+        assert_stage!(refusal, CheckError::Compile(_));
+    }
 }
