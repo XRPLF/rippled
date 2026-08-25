@@ -213,7 +213,7 @@ python3 tx_submitter.py --endpoint ws://localhost:6006 \
 
 Automated validation that all expected telemetry data exists. Every metric in `expected_metrics.json` is required — if it doesn't fire, the validation fails. Spans are required unless the entry carries `"optional": true`.
 
-- **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies. Entries marked `"optional": true` only fire under traffic the harness may not produce (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions); their absence is recorded as a passing skip, not a failure.
+- **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies. Entries marked `"optional": true` only fire under traffic the harness may not produce (HTTP/JSON-RPC client, gRPC client, path-finding RPC — see [Pathfinding is not exercised](#pathfinding-is-not-exercised) — missing-ledger fetch, mode transitions); their absence is recorded as a passing skip, not a failure.
 - **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, `beast::insight` gauges/counters/histograms, `MetricsRegistry` OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries), polled until the metric appears or the poll window elapses, so a late-populating or quiet series is not a false negative.
 - **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki). The two checks are `log.trace_id_present` and `log.trace_id_cross_reference`, and they exist only when `--skip-loki` is **not** passed — `run_validation()` builds them inside an `if not skip_loki` branch, so with the flag they are absent from the report rather than reported as skipped. **CI always passes `--skip-loki`, so these two are never exercised there** — see [CI Integration](#ci-integration).
 - **Dashboard validation**: Every dashboard uid listed under `grafana_dashboards.uids` in `expected_metrics.json` loads with panels. That list currently covers **all 15** dashboards provisioned in `docker/telemetry/grafana/dashboards/`. Note the scope of this check: it asks the Grafana API whether the dashboard exists and returns a panel count — it does **not** run the panels' queries, so a dashboard can pass here while individual panels render empty.
@@ -421,6 +421,27 @@ Do that after any change to log formatting, span activation, the collector's
 `filelog` receiver, or the Loki exporter. Removing `--skip-loki` from the workflow
 would make CI exercise Loki ingestion and filelog mounting for the first time, so
 it is held back as its own change rather than folded into an unrelated push.
+
+### Pathfinding is not exercised
+
+`rpc_load_generator.py` stopped issuing `ripple_path_find` on 2026-08-25 — the weight, the request-builder branch and the docstring line went together.
+
+**Why.** Pathfinding is disabled on every node this harness starts, so those calls could only ever fail:
+
+- `src/xrpld/core/detail/Config.cpp:725-726` sets `pathSearchMax = 0` whenever a `[validation_seed]` or `[validator_token]` section is present — "by default, validators don't have pathfinding enabled".
+- `run-full-validation.sh:308` writes `[validation_seed]` into every generated node cfg, and that script carries no `[path_search]`, `[path_search_fast]` or `[path_search_max]` section to put the default back.
+- `src/xrpld/rpc/handlers/orderbook/RipplePathFind.cpp:48-49` therefore returns `rpcNOT_SUPPORTED`; `PathFind.cpp:39` does the same for `path_find`.
+
+**What removing it fixes.** The refusals were not silent. `pathfind.request` is opened at `RipplePathFind.cpp:35`, **above** that guard, so every refused call still exported a span, and the enclosing `rpc.command.ripple_path_find` span carried `rpc_status=error`. At a 3% weight that manufactured a steady ~3% error floor in `span_calls_total{status_code="STATUS_CODE_ERROR"}`. **Any error-rate threshold derived from harness data before this change was measuring the harness, not xrpld** — re-derive it.
+
+**What it costs.** Pathfinding now has no coverage here at all. Four spans (`pathfind.request`, `.compute`, `.discover`, `.update_all`) and two histograms (`pathfind_fast_milliseconds`, `pathfind_full_milliseconds`) go unexercised, and `pathfind.request` moved from required to `"optional": true` in `expected_spans.json` for that reason. Until the load returns, verify pathfinding by hand: the **PathFind** row of [`../TESTING.md`](../TESTING.md) carries a `curl` recipe, and `../xrpld-telemetry.cfg` is a non-validator config that already enables pathfinding.
+
+**Putting it back.** All four steps are required. The first two alone just restore the error floor:
+
+1. Add a `[path_search_max]` section to the node cfg `run-full-validation.sh` generates — or drop `[validation_seed]` and run a non-validator node. The `[path_search*]` block in `../xrpld-telemetry.cfg` is a working example.
+2. Restore the `ripple_path_find` weight in `DEFAULT_WEIGHTS` and its branch in `build_rpc_request()`. `path_find` is a streaming subscription and needs its own phase instead — the generator is strictly one request, one reply.
+3. Set `pathfind.request` back to required in `expected_spans.json`. Step 1 also makes `pathfind.compute` reachable, so the `pathfind.request -> pathfind.compute` relationship can lose its `"skip": true`.
+4. **Re-capture `baselines/baseline-timings.json`.** Restoring the load changes the RPC mix, and `span.rpc.ws_message.{p50,p95,p99}` is a gated key — a baseline captured under a different mix is stale. See [OTel Timings Regression Gate](#otel-timings-regression-gate).
 
 ## Configuration Files
 

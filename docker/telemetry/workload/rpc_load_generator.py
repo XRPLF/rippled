@@ -5,13 +5,15 @@ Connects to one or more rippled WebSocket endpoints and fires all traced
 RPC commands at configurable rates with realistic production-like
 distribution.
 
-Command distribution (default weights):
+Command distribution (default weights, summing to 100):
   40%  Health checks:   server_info, fee
   30%  Wallet queries:  account_info, account_lines, account_objects
   15%  Explorer:        ledger, ledger_data
   10%  TX lookups:      tx, account_tx
    5%  DEX queries:     book_offers, amm_info
-   3%  Pathfinding:     ripple_path_find
+
+Path-finding RPC is deliberately absent — see "Pathfinding is not exercised"
+in README.md for why, and for how to put it back.
 
 Usage:
     python3 rpc_load_generator.py --endpoints ws://localhost:6006 --rate 50 --duration 120
@@ -68,10 +70,9 @@ DEFAULT_WEIGHTS: dict[str, int] = {
     # 5% DEX queries
     "book_offers": 3,
     "amm_info": 2,
-    # Pathfinding — exercises the pathfind.request/compute/discover spans.
-    # ripple_path_find is the synchronous (one-shot) variant that fits this
-    # fire-one-request WS client; path_find is a streaming subscription.
-    "ripple_path_find": 3,
+    # No path-finding command on purpose: every harness node disables
+    # pathfinding, so those calls only ever produced errors. README.md,
+    # "Pathfinding is not exercised", has the reason and the way back.
 }
 
 # Well-known genesis account for queries that require an account parameter.
@@ -340,13 +341,6 @@ def build_rpc_request(command: str) -> dict[str, Any]:
             "currency": "USD",
             "issuer": GENESIS_ACCOUNT,
         }
-    elif command == "ripple_path_find":
-        # Self-to-self XRP path search. It returns no usable paths, but the
-        # server still runs the full pathfinding pipeline (pathfind.request ->
-        # pathfind.compute -> pathfind.discover), which is what we trace.
-        req["source_account"] = GENESIS_ACCOUNT
-        req["destination_account"] = GENESIS_ACCOUNT
-        req["destination_amount"] = "1000000"  # 1 XRP in drops
 
     return req
 
