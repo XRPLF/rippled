@@ -400,27 +400,33 @@ Of the five `workflow_dispatch` inputs, only `run_benchmark` changes behaviour.
 them again — load shape comes entirely from `--profile` and
 `workload-profiles.json`. Their `description:` fields say so.
 
-### What CI does not cover
+### Log-trace correlation in CI
 
-The workflow invokes the harness with a hardcoded `--skip-loki`
-(`telemetry-validation.yml:237`), and `validate_telemetry.py` creates the
-`log.trace_id_present` and `log.trace_id_cross_reference` checks only inside an
-`if not skip_loki` branch (`validate_telemetry.py:1657`). Those two checks are
-therefore **never constructed on a CI run** — a green `Telemetry Validation`
-carries no evidence that log lines carry trace context or that a Tempo trace id
-resolves in Loki. `integration-test.sh` has its own `check_log_correlation()`, but
-no workflow runs that script either.
+The workflow no longer passes `--skip-loki`, so `log.trace_id_present` and
+`log.trace_id_cross_reference` are constructed and gated on every CI run. A green
+`Telemetry Validation` is now evidence that log lines carry trace context and
+that a logged trace id resolves to an exported trace. `integration-test.sh` has
+its own `check_log_correlation()`, but no workflow runs that script.
 
-Cover the gap locally by omitting the flag:
+Correlation depends on four independent legs, and a failed check on its own names
+none of them: the node must write a `debug.log` line carrying trace ids, the
+collector container must see that file, its `filelog` receiver must parse and
+export the line, and Loki must return it for the validator's LogQL.
+`run-full-validation.sh` prints a per-leg diagnostic after the suite whenever the
+Loki checks are enabled — per-node correlated-line counts and severity mix, the
+container-side view of `/var/log/xrpld`, the receiver's watched files and
+internal log-record counters, and Loki's own entry counts for the selector with
+and without the line filter. Read that block first; it identifies the broken leg
+without reproducing anything.
+
+The same block prints locally:
 
 ```bash
 docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
 ```
 
-Do that after any change to log formatting, span activation, the collector's
-`filelog` receiver, or the Loki exporter. Removing `--skip-loki` from the workflow
-would make CI exercise Loki ingestion and filelog mounting for the first time, so
-it is held back as its own change rather than folded into an unrelated push.
+Re-run it after any change to log formatting, span activation, the collector's
+`filelog` receiver, or the Loki exporter.
 
 ### Pathfinding is not exercised
 

@@ -87,6 +87,20 @@ BASELINE_FILE="${BASELINE_FILE:-$SCRIPT_DIR/baselines/baseline-timings.json}"
 THRESHOLDS_FILE="${THRESHOLDS_FILE:-$SCRIPT_DIR/regression-thresholds.json}"
 METRICS_FILE="${METRICS_FILE:-$SCRIPT_DIR/regression-metrics.json}"
 
+# Loki API base URL. Matches validate_telemetry.py's DEFAULT_LOKI, so the
+# diagnostics below query the same instance the log-correlation checks do.
+LOKI_URL="${LOKI_URL:-http://localhost:3100}"
+# Query window for the Loki diagnostics, in seconds. MUST stay equal to
+# LOG_QUERY_WINDOW_SECONDS in validate_telemetry.py (4h): a diagnostic that
+# looked further back than the check would report entries the check cannot see,
+# which is the one way these numbers could mislead rather than explain.
+DIAG_LOG_WINDOW_SECONDS=14400
+# The shape Logs::format() actually injects: a 32-hex trace_id followed by a
+# 16-hex span_id, both lowercase (src/libxrpl/basics/Log.cpp). Matching the
+# exact widths rather than a loose "trace_id=" substring keeps a truncated or
+# all-zero id from being counted as a correlated line.
+DIAG_TRACE_RE='trace_id=[0-9a-f]{32} span_id=[0-9a-f]{16}'
+
 GENESIS_ACCOUNT="rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
 GENESIS_SEED="snoPBrXtMeMyMHUVTgbuqAfg1SUTb"
 
@@ -529,6 +543,310 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Log-trace correlation diagnostics
+# ---------------------------------------------------------------------------
+# Log-trace correlation has four legs and a failed check names none of them:
+# the node must write a debug.log line carrying trace ids, the collector
+# container must see that file, its filelog receiver must parse and export the
+# line, and Loki must return it for the validator's own LogQL. Each leg below
+# reports what it observed, so a reader with only the CI log can tell which one
+# broke instead of guessing.
+#
+# Everything here is diagnostic. Every leg runs in its own subshell with
+# errexit off, and every external call is guarded, so a missing container, a
+# wedged docker daemon or an unreachable endpoint degrades to a printed note.
+# A diagnostic must never be the reason a run fails.
+
+# Fallback copies of the stream selector and line filter the log checks use.
+# Only reached when the constants cannot be read out of validate_telemetry.py
+# (see diag_validator_const); the module is the source of truth.
+DIAG_LOG_SELECTOR='{service_name="xrpld"}'
+DIAG_LOG_FILTER='|= "trace_id="'
+
+# Bound every external call: a hung docker daemon or endpoint must not stall
+# the run. Absent coreutils' timeout the calls still run, just unbounded.
+DIAG_HAVE_TIMEOUT=false
+if command -v timeout >/dev/null 2>&1; then
+    DIAG_HAVE_TIMEOUT=true
+fi
+
+diag_run() {
+    if [ "$DIAG_HAVE_TIMEOUT" = true ]; then
+        timeout 20 "$@"
+    else
+        "$@"
+    fi
+}
+
+# Container id of the running collector; empty when it is not up.
+diag_collector_cid() {
+    docker compose -f "$COMPOSE_FILE" ps -q otel-collector 2>/dev/null | head -1
+}
+
+# An image from this same stack that carries a shell, used to look inside the
+# collector's mounts and network namespace.
+#
+# The collector's own image cannot serve: it is built from scratch and ships
+# only the binary, so `docker exec <collector> ls` fails with "executable file
+# not found in $PATH". Read from the compose config rather than from a running
+# container so it resolves even when that service is down, and taken from the
+# stack so this never pulls an image the run did not already need.
+diag_shell_image() {
+    docker compose -f "$COMPOSE_FILE" config --format json 2>/dev/null |
+        jq -r '.services.prometheus.image // empty' 2>/dev/null
+}
+
+# Read a string constant out of validate_telemetry.py.
+#
+# Two copies of the same query would drift, and the copy with no check attached
+# is the one that ends up wrong — so the query is derived from the module that
+# runs the checks rather than restated here. $2 is the fallback, used only when
+# the import is impossible (e.g. aiohttp missing); it is the value the module
+# defines today, so the worst case is a stale literal rather than no output.
+diag_validator_const() {
+    python3 -c \
+        "import sys; sys.path.insert(0, '$SCRIPT_DIR'); import validate_telemetry as v; print(v.$1)" \
+        2>/dev/null || printf '%s\n' "$2"
+}
+
+# Sum an instant LogQL count over every stream it returns. Returns non-zero
+# when Loki could not be queried, which the caller reports as unavailable
+# rather than as zero — "Loki said none" and "Loki did not answer" are
+# different findings.
+diag_loki_count() {
+    local body
+    body=$(diag_run curl -sfG --max-time 10 "$LOKI_URL/loki/api/v1/query" \
+        --data-urlencode "query=$1" --data-urlencode "time=$2" 2>/dev/null) || return 1
+    printf '%s' "$body" |
+        jq -er '[.data.result[].value[1] | tonumber] | add // 0' 2>/dev/null || return 1
+}
+
+# Leg 1 — node: does xrpld emit correlated lines at all?
+#
+# Separates the three node-side failures that all surface as "no correlated
+# logs": no debug.log at all (the node died before opening its log sink), a log
+# level too high to reach the correlated call sites (severity mix shows no
+# NFO), and lines flowing but none emitted inside an active sampled span
+# (correlated=0 alongside a healthy severity mix).
+diag_node_logs() {
+    local i log bytes total correlated sample
+    echo "  [leg 1/4 node] debug.log lines matching '$DIAG_TRACE_RE'"
+    for i in $(seq 1 "$NUM_NODES"); do
+        log="$WORKDIR/node$i/debug.log"
+        if [ ! -f "$log" ]; then
+            echo "    node$i: no debug.log at $log — the node never opened its log sink"
+            continue
+        fi
+        bytes=$(wc -c <"$log" 2>/dev/null || echo 0)
+        total=$(wc -l <"$log" 2>/dev/null || echo 0)
+        # grep -c exits 1 on zero matches but still prints the count, so the
+        # guard keeps the 0 rather than replacing it with an empty string.
+        correlated=$(grep -cE "$DIAG_TRACE_RE" "$log" 2>/dev/null || true)
+        echo "    node$i: bytes=$bytes lines=$total correlated=${correlated:-0}"
+        # Severity mix from the '[partition:]SEV' token, which Logs::format()
+        # writes as the 4th whitespace-separated field. Fixed key order so two
+        # runs' output can be diffed directly. Lines whose 4th field is not a
+        # severity code are message continuations, counted as unparsed.
+        awk '{
+                 n = split($4, f, ":")
+                 s = f[n]
+                 if (s ~ /^(TRC|DBG|NFO|WRN|ERR|FTL)$/)
+                     c[s]++
+                 else
+                     other++
+             }
+             END {
+                 split("TRC DBG NFO WRN ERR FTL", order, " ")
+                 line = ""
+                 for (k = 1; k <= 6; k++)
+                     line = line sprintf("%s=%d ", order[k], c[order[k]] + 0)
+                 printf "      severity: %sunparsed=%d\n", line, other + 0
+             }' "$log" 2>/dev/null || echo "      severity: (could not be computed)"
+        sample=$(grep -m1 -E "$DIAG_TRACE_RE" "$log" 2>/dev/null || true)
+        if [ -n "$sample" ]; then
+            printf '      sample: %.200s\n' "$sample"
+        fi
+    done
+}
+
+# Leg 2 — mount: does the collector container see those files?
+#
+# A correct host-side log with an empty container-side view is the signature of
+# a mount or permission problem. The listing runs in a throwaway container
+# started with --volumes-from and the collector's own uid, so it reproduces the
+# collector's exact mount set and access rights instead of the host's.
+diag_collector_mount() {
+    local cid img usr binds
+    local -a user_flag=()
+    echo "  [leg 2/4 mount] container-side view of /var/log/xrpld"
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "    docker is not on PATH — leg skipped"
+        return 0
+    fi
+    cid=$(diag_collector_cid)
+    if [ -z "$cid" ]; then
+        echo "    otel-collector container is not running — leg skipped"
+        return 0
+    fi
+    echo "    binds declared on the container:"
+    binds=$(diag_run docker inspect \
+        -f '{{range .Mounts}}{{.Type}} {{.Source}} -> {{.Destination}} rw={{.RW}}{{"\n"}}{{end}}' \
+        "$cid" 2>/dev/null || true)
+    if [ -n "$binds" ]; then
+        printf '%s\n' "$binds" | sed '/^[[:space:]]*$/d; s/^/      /'
+    else
+        echo "      (docker inspect reported no mounts)"
+    fi
+    img=$(diag_shell_image)
+    if [ -z "$img" ]; then
+        echo "    no stack image with a shell resolved — container-side listing skipped"
+        return 0
+    fi
+    usr=$(diag_run docker inspect -f '{{.Config.User}}' "$cid" 2>/dev/null || true)
+    if [ -n "$usr" ]; then
+        user_flag=(--user "$usr")
+    fi
+    echo "    listing as uid '${usr:-<image default>}' using $img:"
+    diag_run docker run --rm --volumes-from "$cid" \
+        ${user_flag[@]+"${user_flag[@]}"} --entrypoint /bin/sh "$img" -c \
+        'ls -la /var/log/xrpld 2>&1
+         find /var/log/xrpld -maxdepth 2 -name debug.log -exec ls -l {} \; 2>&1' |
+        sed 's/^/      /' || echo "      (container-side listing failed)"
+}
+
+# Leg 3 — collector: did the filelog receiver parse and export those lines?
+#
+# Two independent readings. The collector's own stderr names every file the
+# receiver opened and carries any filelog parse or Loki export error. Its
+# internal telemetry counts log records in and out: accepted>0 with sent=0 is
+# an export failure, accepted=0 while files are being watched is a parse
+# failure.
+#
+# That telemetry endpoint binds to the container's own localhost and its port
+# is not published, so it is unreachable from the host and is read from inside
+# the container's network namespace instead. The names below are a filter over
+# whatever the collector reports, not an assertion that any given series
+# exists; when it reports nothing matching, the leg says so.
+diag_collector_pipeline() {
+    local cid img watched problems metrics
+    echo "  [leg 3/4 collector] filelog receiver state"
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "    docker is not on PATH — leg skipped"
+        return 0
+    fi
+    cid=$(diag_collector_cid)
+    if [ -z "$cid" ]; then
+        echo "    otel-collector container is not running — leg skipped"
+        return 0
+    fi
+    watched=$(diag_run docker logs "$cid" 2>&1 |
+        grep -F 'Started watching file' | grep -oE '"path": "[^"]*"' | sort -u || true)
+    if [ -n "$watched" ]; then
+        echo "    files the receiver opened:"
+        printf '%s\n' "$watched" | sed 's/^/      /'
+    else
+        echo "    the receiver reported opening no files"
+    fi
+    # Second filter keys on the collector's own logs-pipeline markers so this
+    # does not report warnings from the trace or metric pipelines. Nothing is
+    # excluded beyond that: the collector's benign config-alias deprecation
+    # notices ("filelog" -> "file_log") do surface here, and suppressing lines
+    # because they are usually harmless is how a diagnostic hides the one that
+    # was not.
+    problems=$(diag_run docker logs "$cid" 2>&1 |
+        grep -iE '(warn|error)' |
+        grep -iE 'filelog|fileconsumer|loki|signal": *"logs' |
+        tail -n 20 || true)
+    if [ -n "$problems" ]; then
+        echo "    logs-pipeline warnings and errors (last 20):"
+        printf '%s\n' "$problems" | cut -c1-300 | sed 's/^/      /'
+    else
+        echo "    no logs-pipeline warnings or errors in the collector's output"
+    fi
+    img=$(diag_shell_image)
+    if [ -z "$img" ]; then
+        echo "    no stack image with a shell resolved — internal telemetry skipped"
+        return 0
+    fi
+    metrics=$(diag_run docker run --rm --network "container:$cid" \
+        --entrypoint /bin/sh "$img" -c \
+        'wget -qO- --timeout=5 http://localhost:8888/metrics 2>/dev/null' 2>/dev/null |
+        grep -E '^otelcol_([a-z]+_)*log_records|^otelcol_fileconsumer' || true)
+    if [ -n "$metrics" ]; then
+        echo "    collector internal log-record counters:"
+        printf '%s\n' "$metrics" | sed 's/^/      /'
+    else
+        echo "    collector internal telemetry reported no log-record counters"
+    fi
+}
+
+# Leg 4 — Loki: is the entry queryable by the validator's own LogQL?
+#
+# Counts the selector on its own and the selector plus line filter separately,
+# so "Loki has nothing" is distinguishable from "Loki has lines but none carry
+# a trace id". The label inventory catches the third case: entries ingested
+# under a label set the validator's selector cannot match.
+diag_loki_stream() {
+    local now selector correlation query_all query_filtered
+    local total matching labels values sample
+    echo "  [leg 4/4 loki] entries in the last ${DIAG_LOG_WINDOW_SECONDS}s (the window the checks use)"
+    now=$(date +%s)
+    selector=$(diag_validator_const LOG_STREAM_SELECTOR "$DIAG_LOG_SELECTOR")
+    correlation=$(diag_validator_const LOG_CORRELATION_QUERY \
+        "$DIAG_LOG_SELECTOR $DIAG_LOG_FILTER")
+    [ -n "$selector" ] || selector="$DIAG_LOG_SELECTOR"
+    [ -n "$correlation" ] || correlation="$DIAG_LOG_SELECTOR $DIAG_LOG_FILTER"
+    query_all="count_over_time($selector[${DIAG_LOG_WINDOW_SECONDS}s])"
+    query_filtered="count_over_time($correlation [${DIAG_LOG_WINDOW_SECONDS}s])"
+    echo "    validator LogQL:  $correlation"
+    echo "    diagnostic LogQL: $query_all"
+    echo "                      $query_filtered"
+    labels=$(diag_run curl -sf --max-time 10 "$LOKI_URL/loki/api/v1/labels" 2>/dev/null |
+        jq -r '.data // [] | join(", ")' 2>/dev/null || true)
+    values=$(diag_run curl -sf --max-time 10 \
+        "$LOKI_URL/loki/api/v1/label/service_name/values" 2>/dev/null |
+        jq -r '.data // [] | join(", ")' 2>/dev/null || true)
+    echo "    stream labels Loki knows: ${labels:-<none or unreachable>}"
+    echo "    service_name values:      ${values:-<none or unreachable>}"
+    if total=$(diag_loki_count "$query_all" "$now"); then
+        echo "    entries matching the selector:            $total"
+    else
+        echo "    entries matching the selector:            unavailable (Loki did not answer)"
+    fi
+    if matching=$(diag_loki_count "$query_filtered" "$now"); then
+        echo "    entries also matching the line filter:    $matching"
+    else
+        echo "    entries also matching the line filter:    unavailable (Loki did not answer)"
+    fi
+    sample=$(diag_run curl -sfG --max-time 10 "$LOKI_URL/loki/api/v1/query_range" \
+        --data-urlencode "query=$correlation" \
+        --data-urlencode "start=$((now - DIAG_LOG_WINDOW_SECONDS))000000000" \
+        --data-urlencode "end=${now}000000000" \
+        --data-urlencode "limit=1" --data-urlencode "direction=backward" 2>/dev/null |
+        jq -r '.data.result[0].values[0][1] // empty' 2>/dev/null || true)
+    if [ -n "$sample" ]; then
+        printf '    sample entry: %.200s\n' "$sample"
+    fi
+}
+
+# Run every leg, isolated. Each subshell disables errexit and nounset so a leg
+# that trips still prints what it had, and its failure is reported rather than
+# propagated. Always returns success.
+run_log_correlation_diagnostics() {
+    local leg
+    echo ""
+    echo "--- Log-trace correlation diagnostics (non-fatal, for attribution only) ---"
+    for leg in diag_node_logs diag_collector_mount diag_collector_pipeline diag_loki_stream; do
+        (
+            set +e +u +o pipefail
+            "$leg"
+        ) || warn "$leg: the diagnostic itself failed — ignored"
+    done
+    echo ""
+    return 0
+}
+
+# ---------------------------------------------------------------------------
 # Step 5: Run telemetry validation suite
 # ---------------------------------------------------------------------------
 log "Step 5: Running telemetry validation suite..."
@@ -546,6 +864,15 @@ if [ "$VALIDATION_EXIT" -eq 0 ]; then
 else
     fail "Some telemetry validation checks failed (exit $VALIDATION_EXIT)"
 fi
+
+# Only when the log-correlation checks actually ran: with --skip-loki there is
+# no result to attribute. Runs whether they passed or failed — the same numbers
+# that explain a failure are what proves a pass was not a coincidence. Placed
+# after the suite so its Loki counts are never earlier than the checks' own.
+if [ "$SKIP_LOKI" != true ]; then
+    run_log_correlation_diagnostics
+fi
+
 fold_exit "$VALIDATION_EXIT"
 
 # ---------------------------------------------------------------------------

@@ -48,6 +48,16 @@ import aiohttp
 # someone re-runs it later to investigate a result.
 LOG_QUERY_WINDOW_SECONDS = 4 * 60 * 60
 
+# Loki's OTLP ingestion promotes service.name to the stream label
+# `service_name`; a `job` attribute arrives as structured metadata, which a
+# stream selector cannot match (see otel-collector-config.yaml). Declared once
+# so both log checks and the diagnostic below report on the same query -- a
+# diagnostic that queried something else would describe a different failure
+# than the one being investigated.
+LOG_STREAM_SELECTOR = '{service_name="xrpld"}'
+LOG_TRACE_LINE_FILTER = '|= "trace_id="'
+LOG_CORRELATION_QUERY = f"{LOG_STREAM_SELECTOR} {LOG_TRACE_LINE_FILTER}"
+
 logger = logging.getLogger("validate_telemetry")
 
 # ---------------------------------------------------------------------------
@@ -1290,6 +1300,118 @@ async def _check_metric_label(
 # ---------------------------------------------------------------------------
 
 
+async def _loki_json(
+    session: aiohttp.ClientSession,
+    loki_url: str,
+    path: str,
+    params: dict[str, str] | None = None,
+) -> dict[str, Any] | None:
+    """GET one Loki API path and decode it, or None if that failed.
+
+    Diagnostic-only helper: every failure is a warning, so one unreachable
+    endpoint does not suppress the rest of the diagnostic.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+        path:     API path, including its leading slash.
+        params:   Optional query parameters.
+
+    Returns:
+        The decoded response body, or None when the request or decode failed.
+    """
+    try:
+        async with session.get(f"{loki_url}{path}", params=params or {}) as resp:
+            return await resp.json()
+    except Exception as exc:  # noqa: BLE001 - diagnostic must never raise
+        logger.warning("Loki diagnostic: GET %s failed: %s", path, exc)
+        return None
+
+
+async def _loki_count(
+    session: aiohttp.ClientSession, loki_url: str, query: str
+) -> int | None:
+    """Sum an instant LogQL count over every stream it returns.
+
+    Returns None rather than 0 when Loki could not be queried. "Loki holds
+    none" and "Loki did not answer" are different findings, and printing the
+    same number for both is how a diagnostic misleads.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+        query:    An instant LogQL metric query.
+
+    Returns:
+        Total entry count, or None when the query could not be evaluated.
+    """
+    params = {"query": query, "time": str(int(time.time()))}
+    data = await _loki_json(session, loki_url, "/loki/api/v1/query", params)
+    if data is None:
+        return None
+    try:
+        results = data.get("data", {}).get("result", [])
+        return sum(int(float(entry["value"][1])) for entry in results)
+    except Exception as exc:  # noqa: BLE001 - diagnostic must never raise
+        logger.warning("Loki diagnostic: could not read count for %s: %s", query, exc)
+        return None
+
+
+async def _log_loki_diagnostics(session: aiohttp.ClientSession, loki_url: str) -> None:
+    """Log what Loki holds for the stream the correlation checks select.
+
+    Same role as _log_prometheus_metric_names on the metric side, and the same
+    contract: diagnostic only, every failure a warning, never a check result.
+    A failed correlation check says a log line was not found; these numbers say
+    which of the three Loki-side reasons applies — nothing was ingested at all,
+    entries exist but none carry a trace id, or entries arrived under a label
+    set this selector cannot match (which the label inventory exposes).
+
+    Counted over exactly LOG_QUERY_WINDOW_SECONDS, the window the checks use.
+    A wider window here would report entries the checks cannot see, including a
+    previous run's, and describe a failure that is not the one at hand.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+    """
+    window = f"[{LOG_QUERY_WINDOW_SECONDS}s]"
+    logger.info("Loki diagnostic: the checks below query %s", LOG_CORRELATION_QUERY)
+
+    labels = await _loki_json(session, loki_url, "/loki/api/v1/labels")
+    if labels is not None:
+        names = labels.get("data") or []
+        logger.info(
+            "Loki diagnostic: stream labels Loki knows: %s",
+            ", ".join(names) or "(none)",
+        )
+
+    values = await _loki_json(
+        session, loki_url, "/loki/api/v1/label/service_name/values"
+    )
+    if values is not None:
+        found = values.get("data") or []
+        logger.info(
+            "Loki diagnostic: service_name values: %s", ", ".join(found) or "(none)"
+        )
+
+    for label, query in (
+        ("selector only", f"count_over_time({LOG_STREAM_SELECTOR}{window})"),
+        (
+            "selector + line filter",
+            f"count_over_time({LOG_CORRELATION_QUERY} {window})",
+        ),
+    ):
+        total = await _loki_count(session, loki_url, query)
+        logger.info(
+            "Loki diagnostic: %s = %s entries in the last %ds  [%s]",
+            label,
+            "unavailable" if total is None else total,
+            LOG_QUERY_WINDOW_SECONDS,
+            query,
+        )
+
+
 async def validate_log_trace_correlation(
     session: aiohttp.ClientSession,
     loki_url: str,
@@ -1310,13 +1432,14 @@ async def validate_log_trace_correlation(
     """
     logger.info("--- Log-Trace Correlation Validation (Loki) ---")
 
+    # Numbers first, so a failure below is read next to the state that caused
+    # it. Never raises and never adds a check (see _log_loki_diagnostics).
+    await _log_loki_diagnostics(session, loki_url)
+
     # Check 1: Any logs with trace_id exist.
     try:
         params = {
-            # Loki's OTLP ingestion promotes service.name to the label
-            # `service_name`. A `job` attribute is structured metadata, which a
-            # stream selector cannot match — see otel-collector-config.yaml.
-            "query": '{service_name="xrpld"} |= "trace_id="',
+            "query": LOG_CORRELATION_QUERY,
             "limit": 5,
             "direction": "backward",
             **_log_query_window(),
@@ -1360,7 +1483,7 @@ async def validate_log_trace_correlation(
     # written to a log must resolve to a trace that was actually exported.
     try:
         loki_params = {
-            "query": '{service_name="xrpld"} |= "trace_id="',
+            "query": LOG_CORRELATION_QUERY,
             "limit": 5,
             "direction": "backward",
             **_log_query_window(),

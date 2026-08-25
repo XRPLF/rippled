@@ -1044,7 +1044,8 @@ later metric families. The categories are:
   only asks Grafana for the dashboard and its panel count; it does not run the
   panel queries.
 - **Log-trace correlation** — `trace_id` present in Loki plus a Tempo reverse
-  lookup (skipped in CI via `--skip-loki`, not absent from the suite)
+  lookup (gated in CI; `run-full-validation.sh` prints a node/mount/collector/Loki
+  diagnostic alongside them so a failure names the leg that broke)
 
 See [Phase10_taskList.md](./Phase10_taskList.md) for the per-task breakdown.
 
@@ -1053,8 +1054,9 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for the per-task breakdown.
 1. `rpc.process` -> `rpc.command.*` hierarchy — not assertable under the
    harness's WebSocket-only load, because `rpc.process` is created only on the
    HTTP path. This is a load-shape limitation, not a context-propagation bug.
-2. Log-trace correlation — implemented and passing locally; CI passes
-   `--skip-loki`.
+2. Log-trace correlation — the two `validate_telemetry.py` checks are now gated
+   in CI, but `integration-test.sh`'s own `check_log_correlation()` is still run
+   by no workflow.
 3. Legacy `beast::insight` coverage — `expected_metrics.json` asserts a
    representative subset, not all ~270 families.
 4. Sustained load / backpressure — the `stress` profile exists in
