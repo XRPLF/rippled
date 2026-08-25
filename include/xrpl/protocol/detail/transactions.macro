@@ -757,7 +757,7 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
-    Delegation::NotDelegable,
+    Delegation::Delegable,
     featureConfidentialTransfer,
     NoPriv,
     ({
@@ -776,7 +776,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
-    Delegation::NotDelegable,
+    Delegation::Delegable,
     featureConfidentialTransfer,
     NoPriv,
     ({
@@ -788,7 +788,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTConvertBack.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT_BACK, 87, ConfidentialMPTConvertBack,
-    Delegation::NotDelegable,
+    Delegation::Delegable,
     featureConfidentialTransfer,
     NoPriv,
     ({

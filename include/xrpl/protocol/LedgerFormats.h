@@ -187,8 +187,8 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsmfMPTCanMutateCanTrade, 0x00000010)                                                                             \
         LSF_FLAG(lsmfMPTCanMutateCanTransfer, 0x00000020)                                                                          \
         LSF_FLAG(lsmfMPTCanMutateCanClawback, 0x00000040)                                                                          \
-        /* SPEC INCONSISTENCY: xls-0096.md uses sfImmutableFlags/lsifMPTCanHoldConfidentialBalance; */                             \
-        /* DynamicMPT + Updated Confidential MPT use sfMutableFlags. Preserve one-way enable. */                                   \
+        /* DESIGN DECISION: model confidential mutability with DynamicMPT's sfMutableFlags */                                      \
+        /* instead of the draft XLS-0096 sfImmutableFlags form, while preserving one-way enable. */                                \
         LSF_FLAG(lsmfMPTCannotEnableCanHoldConfidentialBalance, 0x00000080)                                                        \
         LSF_FLAG(lsmfMPTCanMutateMetadata, 0x00010000)                                                                             \
         LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000))                                                                         \

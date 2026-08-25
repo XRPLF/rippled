@@ -31,6 +31,10 @@ ConfidentialMPTConvert::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
 {
+    // sfBlindingFactor is UINT256, so the codec rejects non-32-byte values
+    // before preflight constructs an STTx.
+    static_assert(uint256::kBytes == confidential::kScalarBytes);
+
     auto const amount = ctx.tx[sfMPTAmount];
     if (amount > kMaxMpTokenAmount)
         return temBAD_AMOUNT;
