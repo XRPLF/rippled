@@ -1109,7 +1109,10 @@ private:
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, bool withFix) {
-            Env env{*this, features};
+            // This regression requires the open-ended vault lifecycle: deposit,
+            // originate and repay a loan, then claw back shares. LP V1.1
+            // independently rejects attaching a broker to an open-ended vault.
+            Env env{*this, features - featureLendingProtocolV1_1};
 
             auto const setup = makeRoundTripOvershootVault(env);
             if (!BEAST_EXPECT(setup))
@@ -1170,7 +1173,10 @@ private:
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, bool withFix) {
-            Env env{*this, features};
+            // This regression requires the open-ended vault lifecycle: deposit,
+            // originate and repay a loan, then withdraw shares. LP V1.1
+            // independently rejects attaching a broker to an open-ended vault.
+            Env env{*this, features - featureLendingProtocolV1_1};
 
             auto const setup = makeRoundTripOvershootVault(env);
             if (!BEAST_EXPECT(setup))
