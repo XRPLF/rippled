@@ -352,21 +352,20 @@ TEST(ConfidentialCrypto, BulletproofSingleAndAggregated)
 {
     Scalar r = mustRandomScalar();
     CompressedPoint pc{};
-    ASSERT_TRUE(pedersenCommit(0, r, pc));
+    ASSERT_TRUE(pedersenCommit(5, r, pc));
+    std::array<std::uint8_t, kSingleBulletproofBytes> p5{};
+    ASSERT_TRUE(proveBulletproofSingle(pc, 5, r, p5));
+    EXPECT_TRUE(verifyBulletproofSingle(pc, Slice(p5.data(), p5.size())));
+
+    CompressedPoint pc0{};
+    Scalar r0v = mustRandomScalar();
+    ASSERT_TRUE(pedersenCommit(0, r0v, pc0));
     std::array<std::uint8_t, kSingleBulletproofBytes> p0{};
-    ASSERT_TRUE(proveBulletproofSingle(pc, 0, r, p0));
-    EXPECT_TRUE(verifyBulletproofSingle(pc, Slice(p0.data(), p0.size())));
+    ASSERT_TRUE(proveBulletproofSingle(pc0, 0, r0v, p0));
+    EXPECT_TRUE(verifyBulletproofSingle(pc0, Slice(p0.data(), p0.size())));
 
-    CompressedPoint pcMax{};
-    Scalar rMax = mustRandomScalar();
-    constexpr std::uint64_t kMax = std::numeric_limits<std::uint64_t>::max();
-    ASSERT_TRUE(pedersenCommit(kMax, rMax, pcMax));
-    std::array<std::uint8_t, kSingleBulletproofBytes> pMax{};
-    ASSERT_TRUE(proveBulletproofSingle(pcMax, kMax, rMax, pMax));
-    EXPECT_TRUE(verifyBulletproofSingle(pcMax, Slice(pMax.data(), pMax.size())));
-
-    pMax.back() ^= 0x01;
-    EXPECT_FALSE(verifyBulletproofSingle(pcMax, Slice(pMax.data(), pMax.size())));
+    p5.back() ^= 0x01;
+    EXPECT_FALSE(verifyBulletproofSingle(pc, Slice(p5.data(), p5.size())));
 
     Scalar r0 = mustRandomScalar();
     Scalar r1 = mustRandomScalar();
@@ -378,4 +377,14 @@ TEST(ConfidentialCrypto, BulletproofSingleAndAggregated)
     ASSERT_TRUE(proveBulletproofAggregated(c0, c1, 5, 7, r0, r1, agg));
     EXPECT_TRUE(verifyBulletproofAggregated(c0, c1, Slice(agg.data(), agg.size())));
     EXPECT_FALSE(verifyBulletproofAggregated(c1, c0, Slice(agg.data(), agg.size())));
+
+    // Aggregated proofs cache 128 generators; a later 64-bit proof must still
+    // MSM against exactly 64 of them (Bünz et al. 2017/1066, n = 64).
+    Scalar rAfter = mustRandomScalar();
+    CompressedPoint pcAfter{};
+    ASSERT_TRUE(pedersenCommit(3, rAfter, pcAfter));
+    std::array<std::uint8_t, kSingleBulletproofBytes> pAfter{};
+    ASSERT_TRUE(proveBulletproofSingle(pcAfter, 3, rAfter, pAfter));
+    EXPECT_TRUE(
+        verifyBulletproofSingle(pcAfter, Slice(pAfter.data(), pAfter.size())));
 }

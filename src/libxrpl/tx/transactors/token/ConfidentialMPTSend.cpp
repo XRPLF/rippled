@@ -201,7 +201,7 @@ ConfidentialMPTSend::doApply()
     pub.balanceC1 = spending.c1;
     pub.balanceC2 = spending.c2;
 
-    auto const version = (*sleSrc)[~sfConfidentialBalanceVersion].value_or(0);
+    auto const version = (*sleSrc)[~sfConfidentialBalanceVersion].valueOr(0);
     auto const ctxId = confidential::transactionContextIDSend(
         static_cast<std::uint16_t>(ctx_.tx.getTxnType()),
         Slice(account.data(), account.size()),

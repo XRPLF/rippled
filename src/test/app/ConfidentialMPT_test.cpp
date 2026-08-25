@@ -1,4 +1,5 @@
 #include <test/jtx.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
@@ -115,8 +116,6 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         Account const alice("alice");
         Account const carol("carol");
         Env env(*this, features);
-        env.fund(XRP(10'000), gw, alice, carol);
-
         MPTTester mpt(env, gw, {.holders = {alice, carol}});
         mpt.create(
             {.pay = {{std::vector<Account>{alice, carol}, 50}},
@@ -160,7 +159,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
                     kp.sk, kp.pk, Slice(ctxId.data(), ctxId.size()), proof));
                 jv[sfZKProof] = hexOf(proof);
             }
-            env(jv);
+            env(jv, Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         };
 
@@ -176,7 +175,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ConfidentialMPTMergeInbox;
             jv[jss::Account] = alice.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
-            env(jv);
+            env(jv, Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
 
@@ -195,7 +194,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             bad[sfBalanceCommitment] = hexPoint(aliceKp.pk);
             std::array<std::uint8_t, confidential::kConvertBackZkProofBytes> dummy{};
             bad[sfZKProof] = hexOf(dummy);
-            env(bad, ter(temBAD_AMOUNT));
+            env(bad, Ter(temBAD_AMOUNT), Fee(XRP(1)));
         }
 
         Scalar rAmt = mustRandomScalar();
@@ -264,7 +263,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[sfAmountCommitment] = hexPoint(pcM);
             jv[sfBalanceCommitment] = hexPoint(pcB);
             jv[sfZKProof] = strHex(Slice(zk.data(), zk.size()));
-            env(jv);
+            env(jv, Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
 
@@ -273,13 +272,14 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ConfidentialMPTMergeInbox;
             jv[jss::Account] = carol.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
-            env(jv);
+            env(jv, Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
 
+        std::uint64_t const backAmt = 5;
         Scalar rBack = mustRandomScalar();
-        auto backH = mustEncrypt(carolKp.pk, sendAmt, rBack);
-        auto backI = mustEncrypt(issuer.pk, sendAmt, rBack);
+        auto backH = mustEncrypt(carolKp.pk, backAmt, rBack);
+        auto backI = mustEncrypt(issuer.pk, backAmt, rBack);
         Scalar rhoB = mustRandomScalar();
         CompressedPoint pcBal{};
         BEAST_EXPECT(confidential::pedersenCommit(sendAmt, rhoB, pcBal));
@@ -306,10 +306,9 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         BEAST_EXPECT(confidential::proveConvertBackSigma(
             cbPub, cbWit, Slice(cbCtx.data(), cbCtx.size()), cbSigma));
         CompressedPoint remC{};
-        // remaining = 0 after converting the full spending balance
-        BEAST_EXPECT(confidential::pedersenCommit(0, rhoB, remC));
+        BEAST_EXPECT(confidential::pedersenCommit(sendAmt - backAmt, rhoB, remC));
         std::array<std::uint8_t, confidential::kSingleBulletproofBytes> cbBp{};
-        BEAST_EXPECT(confidential::proveBulletproofSingle(remC, 0, rhoB, cbBp));
+        BEAST_EXPECT(confidential::proveBulletproofSingle(remC, sendAmt - backAmt, rhoB, cbBp));
         std::vector<std::uint8_t> cbZk(confidential::kConvertBackZkProofBytes);
         std::memcpy(cbZk.data(), cbSigma.data(), cbSigma.size());
         std::memcpy(cbZk.data() + cbSigma.size(), cbBp.data(), cbBp.size());
@@ -319,19 +318,19 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
             jv[jss::Account] = carol.human();
             jv[sfMPTokenIssuanceID] = to_string(id);
-            jv[sfMPTAmount] = std::to_string(sendAmt);
+            jv[sfMPTAmount] = std::to_string(backAmt);
             jv[sfHolderEncryptedAmount] = hexCipher(backH);
             jv[sfIssuerEncryptedAmount] = hexCipher(backI);
             jv[sfBlindingFactor] = to_string(scalarToUint(rBack));
             jv[sfBalanceCommitment] = hexPoint(pcBal);
             jv[sfZKProof] = strHex(Slice(cbZk.data(), cbZk.size()));
-            env(jv);
+            env(jv, Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
-        BEAST_EXPECT(mpt.checkMPTokenAmount(carol, 60));
+        BEAST_EXPECT(mpt.checkMPTokenAmount(carol, 55));
         {
             auto const sle = env.le(keylet::mptIssuance(id));
-            BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 30);
+            BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 35);
         }
 
         auto const sleAlice2 = env.le(keylet::mptoken(id, alice.id()));
@@ -359,12 +358,12 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             jv[sfMPTokenIssuanceID] = to_string(id);
             jv[sfMPTAmount] = "30";
             jv[sfZKProof] = hexOf(clProof);
-            env(jv);
+            env(jv, Fee(XRP(1)));
             BEAST_EXPECT(env.ter() == tesSUCCESS);
         }
         {
             auto const sle = env.le(keylet::mptIssuance(id));
-            BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 0);
+            BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 5);
             BEAST_EXPECT((*sle)[sfOutstandingAmount] == 70);
         }
         BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 10));
