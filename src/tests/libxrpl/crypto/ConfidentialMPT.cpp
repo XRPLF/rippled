@@ -216,6 +216,21 @@ TEST(ConfidentialMPTHelpers, VersionWrapAndSetCiphertextField)
     ASSERT_TRUE(parseCiphertext(Slice(blob.data(), blob.size()), parsed));
     EXPECT_EQ(parsed.c1, ct.c1);
     EXPECT_EQ(parsed.c2, ct.c2);
+
+    auto issuance = makeIssuance(issuer, 1);
+    issuance[sfConfidentialHolderCount] = 1;
+    mpt.setFieldVL(sfHolderEncryptionKey, Slice(kp.pk.data(), kp.pk.size()));
+    setCiphertextField(mpt, sfConfidentialBalanceInbox, ct);
+    setCiphertextField(mpt, sfIssuerEncryptedBalance, ct);
+    mpt[sfAuditorKeyVersion] = 1;
+    EXPECT_EQ(clearConfidentialState(issuance, mpt), tesSUCCESS);
+    EXPECT_EQ(issuance[sfConfidentialHolderCount], 0u);
+    EXPECT_FALSE(mpt.isFieldPresent(sfHolderEncryptionKey));
+    EXPECT_FALSE(mpt.isFieldPresent(sfConfidentialBalanceSpending));
+    EXPECT_FALSE(mpt.isFieldPresent(sfConfidentialBalanceInbox));
+    EXPECT_FALSE(mpt.isFieldPresent(sfIssuerEncryptedBalance));
+    EXPECT_FALSE(mpt.isFieldPresent(sfAuditorKeyVersion));
+    EXPECT_EQ(clearConfidentialState(issuance, mpt), tecINTERNAL);
 }
 
 TEST(ConfidentialMPTHelpers, BaseFeeWithAndWithoutSigners)
