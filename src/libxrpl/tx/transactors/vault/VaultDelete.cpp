@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -100,6 +101,19 @@ VaultDelete::doApply()
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    // Remove any credentials pinned to the vault pseudo-account before anything
+    // else. They would otherwise keep its owner directory alive and block
+    // deletion with tecHAS_OBLIGATIONS. Doing it first means a bounded,
+    // tecINCOMPLETE cleanup can be resumed by a later transaction without having
+    // already torn down the vault.
+    if (view().rules().enabled(fixCleanup3_4_0))
+    {
+        if (auto const ter = credentials::deletePseudoAccountCredentials(
+                view(), vault->at(sfAccount), kMaxDeletablePseudoAccountCredentials, j_);
+            !isTesSuccess(ter))
+            return ter;
+    }
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
