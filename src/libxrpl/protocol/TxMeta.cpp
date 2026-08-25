@@ -180,6 +180,12 @@ TxMeta::getAffectedMPTs() const
                     {
                         list.insert(mptID->value());
                     }
+                    else if (
+                        auto amount = dynamic_cast<STAmount const*>(&field);
+                        (amount != nullptr) && amount->holds<MPTIssue>())
+                    {
+                        list.insert(amount->get<MPTIssue>().getMptID());
+                    }
                 }
             }
         }
