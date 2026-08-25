@@ -440,6 +440,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         testcase("delete exited confidential holder");
         mpt.pay(alice, carol, 10);
         mpt.authorize({.account = alice, .flags = tfMPTUnauthorize});
+        BEAST_EXPECTS(env.ter() == tesSUCCESS, transToken(env.ter()));
         BEAST_EXPECTS(
             !env.le(keylet::mptoken(id, alice.id())),
             "zero-balance holder can delete confidential registration");
