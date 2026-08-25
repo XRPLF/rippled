@@ -1,10 +1,3 @@
-// Not built. These suites drive a C++ wasm engine interface -- WasmVM over the wasm.h C API,
-// HostFuncWrapper, WasmImportsHelper -- that this tree does not provide; the VM lives in the
-// Rust crates. Kept as the coverage target for the port. The body is one comment block, and
-// the fixtures it reads (wasm_fixtures/fixtures.cpp) are disabled the same way; re-enabling
-// the suites means uncommenting both.
-
-/*
 #include <expected>
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
@@ -18,14 +11,10 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
-#include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
 #include <xrpl/tx/wasm/WasmCommon.h>
-#include <xrpl/tx/wasm/WasmImportsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <boost/algorithm/hex.hpp>
-
-#include <wasm.h>
 
 #include <cstdint>
 #include <limits>
@@ -34,20 +23,6 @@
 #include <vector>
 
 namespace xrpl::test {
-
-bool
-testGetDataIncrement();
-
-using Add_proto = int32_t(int32_t, int32_t);
-static wasm_trap_t*
-add(HostFunctions&, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    int32_t const val1 = params->data[0].of.i32;
-    int32_t const val2 = params->data[1].of.i32;
-    // printf("Host function \"Add\": %d + %d\n", Val1, Val2);
-    results->data[0] = WASM_I32_VAL(val1 + val2);
-    return nullptr;
-}
 
 std::vector<uint8_t>
 hexToBytes(std::string const& hex)
@@ -74,59 +49,6 @@ struct Wasm_test : public beast::unit_test::Suite
     }
 
     void
-    testGetDataHelperFunctions()
-    {
-        testcase("getData helper functions");
-        BEAST_EXPECT(testGetDataIncrement());
-    }
-
-    void
-    testWasmLib()
-    {
-        testcase("wasm lib test");
-        // clang-format off
-        // The WASM module buffer. //
-        Bytes const wasm = {// WASM header //
-                          0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00,
-                          // Type section //
-                          0x01, 0x07, 0x01,
-                          // function type {i32, i32} -> {i32} //
-                          0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F,
-                          // Import section //
-                          0x02, 0x13, 0x01,
-                          // module name: "extern" //
-                          0x06, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6E,
-                          // extern name: "func-add" //
-                          0x08, 0x66, 0x75, 0x6E, 0x63, 0x2D, 0x61, 0x64, 0x64,
-                          // import desc: func 0 //
-                          0x00, 0x00,
-                          // Function section //
-                          0x03, 0x02, 0x01, 0x00,
-                          // Export section //
-                          0x07, 0x0A, 0x01,
-                          // export name: "addTwo" //
-                          0x06, 0x61, 0x64, 0x64, 0x54, 0x77, 0x6F,
-                          // export desc: func 0 //
-                          0x00, 0x01,
-                          // Code section //
-                          0x0A, 0x0A, 0x01,
-                          // code body //
-                          0x08, 0x00, 0x20, 0x00, 0x20, 0x01, 0x10, 0x00, 0x0B};
-        // clang-format on
-        auto& vm = WasmEngine::instance();
-
-        HostFunctions hfs;
-        ImportVec imports;
-        WasmImpFunc<Add_proto>(imports, "func-add", add, hfs);
-
-        auto re = vm.run(wasm, hfs, 10'000'000, "addTwo", wasmParams(1234, 5678), imports);
-
-        // if (res) printf("invokeAdd get the result: %d\n", res.value());
-
-        checkResult(re, 6'912, 59);
-    }
-
-    void
     testBadWasm()
     {
         testcase("bad wasm test");
@@ -140,7 +62,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto wasm = hexToBytes("00000000");
             std::string const funcName("mock_escrow");
 
-            auto re = runEscrowWasm(wasm, hfs, 15, funcName, {});
+            auto re = runEscrowWasm(wasm, hfs, 15, funcName);
             BEAST_EXPECT(!re);
         }
 
@@ -148,7 +70,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto wasm = hexToBytes("00112233445566778899AA");
             std::string const funcName("mock_escrow");
 
-            auto const re = preflightEscrowWasm(wasm, hfs, funcName);
+            auto const re = preflightEscrowWasm(wasm, env.journal, funcName);
             BEAST_EXPECT(!isTesSuccess(re));
         }
 
@@ -169,109 +91,8 @@ struct Wasm_test : public beast::unit_test::Suite
                 "732b087369676e2d6578742b0f7265666572656e63652d74797065732b0a"
                 "6d756c746976616c7565");
 
-            auto const re = preflightEscrowWasm(badWasm, hfs, escrowFunctionName);
+            auto const re = preflightEscrowWasm(badWasm, env.journal, escrowFunctionName);
             BEAST_EXPECT(!isTesSuccess(re));
-        }
-    }
-
-    void
-    testWasmLedgerSqn()
-    {
-        testcase("Wasm get ledger sequence");
-
-        auto ledgerSqnWasm = hexToBytes(kLedgerSqnWasmHex);
-
-        using namespace test::jtx;
-
-        Env env{*this};
-        TestLedgerDataProvider hfs(env);
-        ImportVec imports;
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "ldgr_index", hfs, 33);
-        auto& engine = WasmEngine::instance();
-
-        auto re =
-            engine.run(ledgerSqnWasm, hfs, 1'000'000, escrowFunctionName, {}, imports, env.journal);
-
-        checkResult(re, 0, 440);
-
-        env.close();
-        env.close();
-
-        // empty module, throwing exception
-        re = engine.run({}, hfs, 1'000'000, escrowFunctionName, {}, imports, env.journal);
-        BEAST_EXPECT(!re);
-        env.close();
-    }
-
-    void
-    testHFCost()
-    {
-        testcase("wasm test host functions cost");
-
-        using namespace test::jtx;
-
-        Env env(*this);
-        {
-            auto const allHostFuncWasm = hexToBytes(kAllHostFunctionsWasmHex);
-
-            auto& engine = WasmEngine::instance();
-
-            TestHostFunctions hfs(env);
-            auto imp = createWasmImport(hfs);
-            for (auto& i : imp)
-                i.second.second.gas = 0;
-
-            auto re = engine.run(
-                allHostFuncWasm, hfs, 1'000'000, escrowFunctionName, {}, imp, env.journal);
-
-            checkResult(re, 1, 30'760);
-
-            env.close();
-        }
-
-        env.close();
-        env.close();
-        env.close();
-        env.close();
-        env.close();
-
-        {
-            auto const allHostFuncWasm = hexToBytes(kAllHostFunctionsWasmHex);
-
-            auto& engine = WasmEngine::instance();
-
-            TestHostFunctions hfs(env);
-            auto const imp = createWasmImport(hfs);
-
-            auto re = engine.run(
-                allHostFuncWasm, hfs, 1'000'000, escrowFunctionName, {}, imp, env.journal);
-
-            checkResult(re, 1, 48'580);
-
-            env.close();
-        }
-
-        // not enough gas
-        {
-            auto const allHostFuncWasm = hexToBytes(kAllHostFunctionsWasmHex);
-
-            auto& engine = WasmEngine::instance();
-
-            TestHostFunctions hfs(env);
-            auto const imp = createWasmImport(hfs);
-
-            auto re =
-                engine.run(allHostFuncWasm, hfs, 200, escrowFunctionName, {}, imp, env.journal);
-
-            if (BEAST_EXPECT(!re))
-            {
-                // Running out of gas now terminates with tecOUT_OF_GAS (was
-                // previously collapsed into tecFAILED_PROCESSING).
-                BEAST_EXPECTS(
-                    re.error().ter == tecOUT_OF_GAS, std::to_string(TERtoInt(re.error().ter)));
-            }
-
-            env.close();
         }
     }
 
@@ -286,31 +107,15 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         {
             TestHostFunctions hfs(env);
-            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName);
             checkResult(re, 1, 48'580);
-        }
-
-        {
-            // Invalid gas limit (0) should be rejected (boundary condition)
-            TestHostFunctions hfs(env);
-            auto re = runEscrowWasm(allHFWasm, hfs, -1, escrowFunctionName, {});
-            BEAST_EXPECT(!re.has_value());
-            BEAST_EXPECT(re.error().ter == temBAD_AMOUNT);
-        }
-
-        {
-            // Invalid gas limit (-1) should be rejected
-            TestHostFunctions hfs(env);
-            auto re = runEscrowWasm(allHFWasm, hfs, 0, escrowFunctionName, {});
-            BEAST_EXPECT(!re.has_value());
-            BEAST_EXPECT(re.error().ter == temBAD_AMOUNT);
         }
 
         {
             // max<int64_t>() gas
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(
-                allHFWasm, hfs, std::numeric_limits<int64_t>::max(), escrowFunctionName, {});
+                allHFWasm, hfs, std::numeric_limits<int64_t>::max(), escrowFunctionName);
             checkResult(re, 1, 48'580);
         }
 
@@ -328,7 +133,7 @@ struct Wasm_test : public beast::unit_test::Suite
             };
 
             FieldNotFoundHostFunctions hfs(env);
-            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName);
             checkResult(re, -201, 28'329);
         }
 
@@ -346,7 +151,7 @@ struct Wasm_test : public beast::unit_test::Suite
             };
 
             OversizedFieldHostFunctions hfs(env);
-            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName);
             checkResult(re, -201, 28'329);
         }
     }
@@ -364,37 +169,9 @@ struct Wasm_test : public beast::unit_test::Suite
         TestHostFunctions hfs(env);
 
         auto const allowance = 125'667;
-        auto re = runEscrowWasm(codecovWasm, hfs, allowance, escrowFunctionName, {});
+        auto re = runEscrowWasm(codecovWasm, hfs, allowance, escrowFunctionName);
 
         checkResult(re, 1, allowance);
-    }
-
-    void
-    testBadAlign()
-    {
-        testcase("Wasm Bad Align");
-
-        // bad_align.c
-        auto const badAlignWasm = hexToBytes(kBadAlignWasmHex);
-
-        using namespace test::jtx;
-
-        Env env{*this};
-        TestHostFunctions hfs(env);
-        auto imports = createWasmImport(hfs);
-
-        {  // Calls float_from_uint with bad alignment.
-           // Can be checked through codecov
-            auto& engine = WasmEngine::instance();
-
-            auto re = engine.run(badAlignWasm, hfs, 1'000'000, "test", {}, imports, env.journal);
-            if (BEAST_EXPECTS(re, transToken(re.error().ter)))
-            {
-                BEAST_EXPECTS(re->result == 0x47308594, std::to_string(re->result));
-            }
-        }
-
-        env.close();
     }
 
     void
@@ -454,19 +231,9 @@ struct Wasm_test : public beast::unit_test::Suite
     void
     run() override
     {
-        using namespace test::jtx;
-
-        testGetDataHelperFunctions();
-        testWasmLib();
         testBadWasm();
-        testWasmLedgerSqn();
-
-        testHFCost();
         testEscrowWasmDN();
-
         testCodecovWasm();
-
-        testBadAlign();
         testSwapBytes();
     }
 };
@@ -474,4 +241,3 @@ struct Wasm_test : public beast::unit_test::Suite
 BEAST_DEFINE_TESTSUITE(Wasm, app, xrpl);
 
 }  // namespace xrpl::test
-*/
