@@ -155,7 +155,7 @@ const ALL_IMPORTS: [&str; 61] = [
     import::FLOAT_FROM_MANT_EXP,
     import::FLOAT_CMP,
     import::FLOAT_ADD,
-    import::FLOAT_SUB,
+const ALL_IMPORTS: [&str; 60] = [
     import::FLOAT_MULT,
     import::FLOAT_DIV,
     import::FLOAT_POW,
