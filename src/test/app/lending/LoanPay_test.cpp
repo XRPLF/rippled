@@ -1216,12 +1216,84 @@ private:
         BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
     }
 
+    // computeLatePayment() must agree with isPaymentLate() at the exact
+    // due-date boundary: once fixCleanup3_4_0 is enabled, a payment due
+    // exactly "now" is not yet late, so a tfLoanLatePayment submitted at
+    // that same instant must be rejected with tecTOO_SOON rather than being
+    // admitted and charged the late interest/fee.
+    void
+    testLoanLatePaymentAtExactDueDateRejectedPostAmendment()
+    {
+        testcase("LoanPay(tfLoanLatePayment) at exact due date rejected with fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            kLateInterestRate(TenthBips32(percentageToTenthBips(24))),
+            kLatePaymentFee(asset(50).value()),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 12);
+
+        // Overpay generously so that, if the late-payment path were
+        // incorrectly admitted, funds would not be the limiting factor;
+        // we want to isolate the timing check itself.
+        STAmount const generousAmount{
+            asset,
+            roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale) * 2};
+
+        // Set NextPaymentDueDate to exactly the current parentCloseTime,
+        // without closing the ledger again.
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        // At this exact instant the loan is not yet late (Exclusive
+        // comparison), so even an explicit late payment must be rejected
+        // as premature, matching the plain-payment path.
+        //
+        // Note: deliberately not calling env.close() after this, for the
+        // same reason given in testLoanPayAtExactDueDateSucceedsPostAmendment
+        // above: closing would discard the direct NextPaymentDueDate
+        // override made via rawReplace().
+        env(pay(borrower, loanKeylet.key, generousAmount, tfLoanLatePayment), Ter(tecTOO_SOON));
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining);
+        BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
+    }
+
     void
     runAmendmentIndependent()
     {
         testLoanSetNearZeroInterestRateSucceeds();
         testLoanPayAtExactDueDateSucceedsPostAmendment();
         testLoanPayAtExactDueDateFailsPreAmendment();
+        testLoanLatePaymentAtExactDueDateRejectedPostAmendment();
         testRepayIntoUnauthorizedVault();
     }
 

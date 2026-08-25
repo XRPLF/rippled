@@ -1056,8 +1056,11 @@ computeLatePayment(
     std::int32_t const loanScale = loan->at(sfLoanScale);
 
     // Check if the due date has passed. If not, reject the payment as
-    // being too soon
-    if (!hasExpired(view, nextDueDate))
+    // being too soon. Uses isPaymentLate() so this agrees with the
+    // regular payment path on whether the loan is actually late at the
+    // exact due date boundary (amendment-gated: Exclusive once
+    // fixCleanup3_4_0 is enabled, Inclusive otherwise).
+    if (!isPaymentLate(view, loan))
         return std::unexpected(tecTOO_SOON);
 
     // Calculate the penalty interest based on how long the payment is overdue.
