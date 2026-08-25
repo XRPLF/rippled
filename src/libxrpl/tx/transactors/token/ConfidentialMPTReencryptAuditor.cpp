@@ -43,7 +43,7 @@ ConfidentialMPTReencryptAuditor::preclaim(PreclaimContext const& ctx)
     if ((*sleIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return temMALFORMED;
     if (!auditorMigrationPending(*sleIssuance) ||
-        (*sleIssuance)[~sfAuditorMigrationCount].valueOr(0) == 0)
+        (*sleIssuance)[~sfAuditorMigrationCount].value_or(0) == 0)
         return tecNO_PERMISSION;
     if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
