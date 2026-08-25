@@ -305,9 +305,20 @@ VaultWithdraw::doApply()
         if (amount.asset() == vaultAsset)
         {
             // Fixed assets, variable shares.
+            //
+            // Pre-fixCleanup3_4_0: shares were rounded to nearest, so the
+            // round-trip back to assets could exceed the requested amount.
+            // That over-delivers to the depositor and can bypass the
+            // preclaim canWithdraw check on the destination, which was
+            // validated against the requested amount only.
+            // Post-amendment: truncate shares so assetsWithdrawn <=
+            // requested amount by construction. If truncation yields zero
+            // shares, the tecPRECISION_LOSS guard below fires.
+            auto const truncate =
+                view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
             {
                 auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleIssuance, amount, TruncateShares::No, waiveUnrealizedLoss);
+                    vault, sleIssuance, amount, truncate, waiveUnrealizedLoss);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
