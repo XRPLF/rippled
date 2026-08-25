@@ -118,9 +118,9 @@ public:
         std::vector<ForkInfo> res;
 
         // Loop over all pairs of uniqueUNLs
-        for (auto i = 0uz; i < uniqueUNLs.size(); ++i)
+        for (int i = 0; i < uniqueUNLs.size(); ++i)
         {
-            for (auto j = i + 1; j < uniqueUNLs.size(); ++j)
+            for (int j = (i + 1); j < uniqueUNLs.size(); ++j)
             {
                 auto const& unlA = uniqueUNLs[i];
                 auto const& unlB = uniqueUNLs[j];

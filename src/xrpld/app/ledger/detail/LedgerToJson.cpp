@@ -135,7 +135,7 @@ fillJsonTx(
     {
         copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::Values::DisableApiPriorV2, false));
         txJson[jss::hash] = to_string(txn->getTransactionID());
-        rpc::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
+        RPC::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
         if (stMeta)
         {
@@ -144,7 +144,7 @@ fillJsonTx(
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
             {
-                rpc::insertDeliveredAmount(
+                RPC::insertDeliveredAmount(
                     txJson[jss::meta],
                     fill.ledger,
                     txn,
@@ -152,7 +152,7 @@ fillJsonTx(
             }
 
             // If applicable, insert mpt issuance id
-            rpc::insertMPTokenIssuanceID(
+            RPC::insertMPTokenIssuanceID(
                 txJson[jss::meta], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
@@ -172,7 +172,7 @@ fillJsonTx(
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::Values::None));
-        rpc::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
+        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::Values::None);
@@ -180,7 +180,7 @@ fillJsonTx(
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
             {
-                rpc::insertDeliveredAmount(
+                RPC::insertDeliveredAmount(
                     txJson[jss::metaData],
                     fill.ledger,
                     txn,
@@ -188,7 +188,7 @@ fillJsonTx(
             }
 
             // If applicable, insert mpt issuance id
-            rpc::insertMPTokenIssuanceID(
+            RPC::insertMPTokenIssuanceID(
                 txJson[jss::metaData], txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
@@ -337,7 +337,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
             fill.ledger.header(),
             bFull,
             ((fill.context != nullptr) ? fill.context->apiVersion
-                                       : rpc::kApiMaximumSupportedVersion));
+                                       : RPC::kApiMaximumSupportedVersion));
     }
 
     if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpTxrp)) != 0))

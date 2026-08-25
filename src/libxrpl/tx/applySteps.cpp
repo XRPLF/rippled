@@ -251,7 +251,7 @@ TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::kZero)
     , potentialSpend_(beast::kZero)
-    , seqProx_(SeqProxy::rawSequence(0))
+    , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
     XRPL_ASSERT(

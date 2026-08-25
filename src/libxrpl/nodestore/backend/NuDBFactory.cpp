@@ -16,6 +16,8 @@
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/system/detail/errc.hpp>
 
 #include <nudb/context.hpp>
@@ -34,17 +36,15 @@
 #include <cstdint>
 #include <cstdio>
 #include <exception>
-#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <system_error>
 #include <utility>
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 class NuDBBackend : public Backend
 {
@@ -131,12 +131,12 @@ public:
     void
     open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt) override
     {
-        using namespace std::filesystem;
+        using namespace boost::filesystem;
         if (db.is_open())
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "xrpl::node_store::NuDBBackend::open : database is already "
+                "xrpl::NodeStore::NuDBBackend::open : database is already "
                 "open");
             JLOG(j.error()) << "database is already open";
             return;
@@ -194,12 +194,11 @@ public:
 
             if (deletePath)
             {
-                std::error_code fsec;
-                std::filesystem::remove_all(name, fsec);
-                if (fsec)
+                boost::filesystem::remove_all(name, ec);
+                if (ec)
                 {
-                    JLOG(j.fatal()) << "Filesystem remove_all of " << name
-                                    << " failed with: " << fsec.message();
+                    JLOG(j.fatal())
+                        << "Filesystem remove_all of " << name << " failed with: " << ec.message();
                 }
             }
         }
@@ -353,7 +352,7 @@ private:
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {
-        using namespace std::filesystem;
+        using namespace boost::filesystem;
         auto const folder = path(name);
         auto const kp = (folder / "nudb.key").string();
 
@@ -442,4 +441,4 @@ registerNuDBFactory(Manager& manager)
     static NuDBFactory const kInstance{manager};
 }
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

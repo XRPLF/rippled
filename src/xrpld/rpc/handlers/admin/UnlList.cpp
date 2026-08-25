@@ -12,7 +12,7 @@
 namespace xrpl {
 
 json::Value
-doUnlList(rpc::JsonContext& context)
+doUnlList(RPC::JsonContext& context)
 {
     json::Value obj(json::ValueType::Object);
 

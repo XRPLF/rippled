@@ -2,9 +2,6 @@
 
 #include <array>
 #include <cstdint>
-#include <format>
-#include <string>
-#include <string_view>
 
 namespace xrpl {
 
@@ -12,29 +9,9 @@ namespace xrpl {
 
 // These pragmas are built at startup and applied to all database
 // connections, unless otherwise noted.
-//
-// They are exposed as functions rather than as format-string constants so
-// that the un-substituted template can never reach sqlite: an unrecognized
-// pragma value is silently ignored, so forgetting to interpolate would
-// leave the setting at its default instead of failing loudly.
-[[nodiscard]] inline std::string
-commonDbPragmaJournal(std::string_view journalMode)
-{
-    return std::format("PRAGMA journal_mode={};", journalMode);
-}
-
-[[nodiscard]] inline std::string
-commonDbPragmaSync(std::string_view synchronous)
-{
-    return std::format("PRAGMA synchronous={};", synchronous);
-}
-
-[[nodiscard]] inline std::string
-commonDbPragmaTemp(std::string_view tempStore)
-{
-    return std::format("PRAGMA temp_store={};", tempStore);
-}
-
+inline constexpr char const* kCommonDbPragmaJournal{"PRAGMA journal_mode=%s;"};
+inline constexpr char const* kCommonDbPragmaSync{"PRAGMA synchronous=%s;"};
+inline constexpr char const* kCommonDbPragmaTemp{"PRAGMA temp_store=%s;"};
 // A warning will be logged if any lower-safety sqlite tuning settings
 // are used and at least this much ledger history is configured. This
 // includes full history nodes. This is because such a large amount of

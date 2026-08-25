@@ -5,10 +5,13 @@
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/format.hpp>  // IWYU pragma: keep
+
 #include <soci/into.h>
 
 #include <cstdint>
-#include <filesystem>
 #include <iostream>
 #include <memory>
 
@@ -17,12 +20,12 @@ namespace xrpl {
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
-    std::filesystem::path const dbPath = setup.dataDir / kTxDbName;
+    boost::filesystem::path const dbPath = setup.dataDir / kTxDbName;
 
-    uintmax_t const dbSize = std::filesystem::file_size(dbPath);
+    uintmax_t const dbSize = file_size(dbPath);
     XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1), "xrpl::doVacuumDB : file_size succeeded");
 
-    if (auto available = std::filesystem::space(dbPath.parent_path()).available; available < dbSize)
+    if (auto available = space(dbPath.parent_path()).available; available < dbSize)
     {
         std::cerr << "The database filesystem must have at least as "
                      "much free space as the size of "
@@ -38,7 +41,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
     // Only the most trivial databases will fit in memory on typical
     // (recommended) hardware. Force temp files to be written to disk
     // regardless of the config settings.
-    session << commonDbPragmaTemp("file");
+    session << boost::format(kCommonDbPragmaTemp) % "file";
     session << "PRAGMA page_size;", soci::into(pageSize);
 
     std::cout << "VACUUM beginning. page_size: " << pageSize << std::endl;

@@ -21,18 +21,18 @@ namespace xrpl::test::jtx::sponsor {
 json::Value
 set(jtx::Account const& account,
     uint32_t flags,
-    std::optional<int32_t> const reserveCountDelta,
-    std::optional<STAmount> const feeAmountDelta,
+    std::optional<uint32_t> const reserveCount,
+    std::optional<STAmount> const feeAmount,
     std::optional<STAmount> const maxFee)
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
     jv[sfFlags.jsonName] = flags;
-    if (reserveCountDelta)
-        jv[sfRemainingOwnerCountDelta.jsonName] = *reserveCountDelta;
-    if (feeAmountDelta)
-        jv[sfFeeAmountDelta.jsonName] = feeAmountDelta->getJson(JsonOptions::Values::None);
+    if (reserveCount)
+        jv[sfRemainingOwnerCount.jsonName] = *reserveCount;
+    if (feeAmount)
+        jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::Values::None);
     if (maxFee)
         jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::Values::None);
     return jv;

@@ -15,10 +15,6 @@
 #include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-// boost::optional (not std::optional) appears in the declarations below,
-// because SOCI's into()/use() bindings only support boost::optional.
-#include <boost/optional/optional.hpp>
-
 #include <cstdint>
 #include <memory>
 #include <optional>

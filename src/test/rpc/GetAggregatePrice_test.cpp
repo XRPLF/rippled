@@ -320,48 +320,6 @@ public:
             BEAST_EXPECT(ret[jss::median] == "74");
             BEAST_EXPECT(ret[jss::time] == 946695000);
         }
-
-        // Duplicate oracle entries should be deduplicated.
-        // Two separate oracles with different prices give size=2.
-        // Listing the first oracle twice in the query must not
-        // inflate the size to 3.
-        {
-            Env env(*this);
-            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-
-            Account const owner1{"owner1"};
-            Account const owner2{"owner2"};
-            env.fund(XRP(1'000), owner1);
-            env.fund(XRP(1'000), owner2);
-            Oracle const oracle1(
-                env, {.owner = owner1, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
-            Oracle const oracle2(
-                env, {.owner = owner2, .series = {{"XRP", "USD", 840, 1}}, .fee = baseFee});
-
-            // Query with both oracles listed once
-            OraclesData const single = {
-                {owner1, oracle1.documentID()}, {owner2, oracle2.documentID()}};
-            auto const retSingle = Oracle::aggregatePrice(env, "XRP", "USD", single);
-
-            // Query with oracle1 listed twice
-            OraclesData const duplicated = {
-                {owner1, oracle1.documentID()},
-                {owner1, oracle1.documentID()},
-                {owner2, oracle2.documentID()}};
-            auto const retDup = Oracle::aggregatePrice(env, "XRP", "USD", duplicated);
-
-            // Results should be identical - duplicates must not be
-            // double-counted
-            BEAST_EXPECT(
-                retSingle[jss::entire_set][jss::size] == retDup[jss::entire_set][jss::size]);
-            BEAST_EXPECT(retDup[jss::entire_set][jss::size].asUInt() == 2);
-            BEAST_EXPECT(
-                retSingle[jss::entire_set][jss::mean] == retDup[jss::entire_set][jss::mean]);
-            BEAST_EXPECT(
-                retSingle[jss::entire_set][jss::standard_deviation] ==
-                retDup[jss::entire_set][jss::standard_deviation]);
-            BEAST_EXPECT(retSingle[jss::median] == retDup[jss::median]);
-        }
     }
 
     void

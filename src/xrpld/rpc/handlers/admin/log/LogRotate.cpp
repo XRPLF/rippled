@@ -9,10 +9,10 @@
 namespace xrpl {
 
 json::Value
-doLogRotate(rpc::JsonContext& context)
+doLogRotate(RPC::JsonContext& context)
 {
     context.app.getPerfLog().rotate();
-    return rpc::makeObjectValue(context.app.getLogs().rotate());
+    return RPC::makeObjectValue(context.app.getLogs().rotate());
 }
 
 }  // namespace xrpl

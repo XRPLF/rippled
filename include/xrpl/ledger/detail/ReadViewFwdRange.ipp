@@ -65,6 +65,13 @@ ReadViewFwdRange<ValueType>::Iterator::operator==(Iterator const& other) const
 }
 
 template <class ValueType>
+bool
+ReadViewFwdRange<ValueType>::Iterator::operator!=(Iterator const& other) const
+{
+    return !(*this == other);
+}
+
+template <class ValueType>
 auto
 ReadViewFwdRange<ValueType>::Iterator::operator*() const -> reference
 {

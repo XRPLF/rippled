@@ -1,11 +1,11 @@
 #include <xrpl/crypto/RFC1751.h>
 
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/copied.hpp>
 
 #include <cctype>
@@ -397,7 +397,7 @@ RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
 
     std::string strTrimmed(strHuman);
 
-    strTrimmed = trimWhitespace(strTrimmed);
+    boost::algorithm::trim(strTrimmed);
 
     boost::algorithm::split(
         vWords, strTrimmed, boost::algorithm::is_space(), boost::algorithm::token_compress_on);

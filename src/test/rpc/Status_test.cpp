@@ -12,7 +12,7 @@
 #include <exception>
 #include <string>
 
-namespace xrpl::rpc {
+namespace xrpl::RPC {
 
 class codeString_test : public beast::unit_test::Suite
 {
@@ -202,6 +202,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(fillJson, rpc, xrpl);
+BEAST_DEFINE_TESTSUITE(fillJson, rpc, RPC);
 
-}  // namespace xrpl::rpc
+}  // namespace xrpl::RPC

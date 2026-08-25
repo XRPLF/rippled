@@ -21,7 +21,7 @@ class TicketCreateBuilder;
  * Type: ttTICKET_CREATE (10)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use TicketCreateBuilder to construct new transactions.

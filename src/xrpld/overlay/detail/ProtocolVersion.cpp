@@ -14,9 +14,7 @@
 #include <functional>
 #include <iterator>
 #include <optional>
-#include <ranges>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -29,21 +27,35 @@ namespace xrpl {
  */
 
 constexpr ProtocolVersion const kSupportedProtocolList[]{
+    {2, 1},
     {2, 2},
-    {2, 3},
 };
 
-// There should be at least one protocol we're willing to speak.
+// This ugly construct ensures that supportedProtocolList is sorted in strictly
+// ascending order and doesn't contain any duplicates.
+// FIXME: With C++20 we can use std::is_sorted with an appropriate comparator
 static_assert(
-    !std::ranges::empty(kSupportedProtocolList),
-    "There must be at least one supported protocol.");
+    []() constexpr -> bool {
+        auto const len =
+            std::distance(std::begin(kSupportedProtocolList), std::end(kSupportedProtocolList));
 
-// Searching for an adjacent pair where the first element is not less than the
-// second one proves the list is sorted in strictly ascending order, which in
-// turn means it holds no duplicates.
-static_assert(
-    std::ranges::adjacent_find(kSupportedProtocolList, std::ranges::greater_equal{}) ==
-        std::ranges::end(kSupportedProtocolList),
+        // There should be at least one protocol we're willing to speak.
+        if (len == 0)
+            return false;
+
+        // A list with only one entry is, by definition, sorted so we don't
+        // need to check it.
+        if (len != 1)
+        {
+            for (auto i = 0; i != len - 1; ++i)
+            {
+                if (kSupportedProtocolList[i] >= kSupportedProtocolList[i + 1])
+                    return false;
+            }
+        }
+
+        return true;
+    }(),
     "The list of supported protocols isn't properly sorted.");
 
 std::string
@@ -53,7 +65,7 @@ to_string(ProtocolVersion const& p)
 }
 
 std::vector<ProtocolVersion>
-parseProtocolVersions(std::string_view value)
+parseProtocolVersions(boost::beast::string_view const& value)
 {
     static boost::regex const kRE(
         "^"                        // start of line
@@ -120,7 +132,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
 }
 
 std::optional<ProtocolVersion>
-negotiateProtocolVersion(std::string_view versions)
+negotiateProtocolVersion(boost::beast::string_view const& versions)
 {
     auto const them = parseProtocolVersions(versions);
 

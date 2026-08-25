@@ -94,36 +94,6 @@ protected:
         return proof;
     }
 
-    // Generate a forged single bulletproof for a single value and blinding factor.
-    // Used to test ConvertBack overdraft prevention via bulletproof verification.
-    static Buffer
-    getForgedSingleBulletproof(
-        uint64_t value,
-        Buffer const& blindingFactor,
-        uint256 const& contextHash)
-    {
-        auto* const ctx = mpt_secp256k1_context();
-
-        secp256k1_pubkey h;
-        secp256k1_mpt_get_h_generator(ctx, &h);
-
-        Buffer proof(kEcSingleBulletproofLength);
-        size_t proofLen = kEcSingleBulletproofLength;
-
-        if (secp256k1_bulletproof_prove_agg(
-                ctx,
-                proof.data(),
-                &proofLen,
-                &value,
-                blindingFactor.data(),
-                1,  // m = 1 (single bulletproof)
-                &h,
-                contextHash.data()) == 0)
-            Throw<std::runtime_error>("Failed to generate forged single bulletproof");
-
-        return proof;
-    }
-
     // Get a bad ciphertext with valid structure but cryptographic invalid for
     // testing purposes. For preflight test purposes.
     static Buffer const&

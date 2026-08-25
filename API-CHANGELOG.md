@@ -42,7 +42,6 @@ This section contains changes targeting a future version.
 
 ### Bugfixes
 
-- `get_aggregate_price`: Duplicate entries in the `oracles` request array are now ignored. [#6586](https://github.com/XRPLF/rippled/pull/6586)
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 - `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)
 - gRPC `GetLedgerDiff`: Fixed error message that incorrectly said "base ledger not validated" when the desired ledger was not validated. [#6730](https://github.com/XRPLF/rippled/pull/6730)
@@ -54,11 +53,6 @@ This section contains changes targeting a future version.
 - `submit`: The `fail_hard` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
-- `vault_info`: Errors now identify what the request got wrong instead of reporting every failure as the unregistered token `malformedRequest`, and the `error`, `error_code` and `error_message` fields now agree with each other. An invalid `vault_id` or `seq` returns `invalidParams`, an invalid `owner` returns `actMalformed`, and a request that mixes `vault_id` with `owner`/`seq` or supplies neither returns `invalidParams` with a message naming the accepted combinations. [#8015](https://github.com/XRPLF/rippled/pull/8015)
-- `vault_info`: A well-formed all-zero `vault_id` now returns `entryNotFound` instead of being rejected as malformed, and `entryNotFound` responses now include `error_code` and `error_message`. Clients that request `ripplerpc` 3.0 or above therefore receive HTTP 400 with that error rather than HTTP 200. [#8015](https://github.com/XRPLF/rippled/pull/8015)
-- `vault_info`: `vault_id` and `owner` must now be strings, matching how `ledger_entry` reads the same fields. An object or an array in either field previously produced an internal error, and a number was silently converted to its decimal text; `vault_id` now returns `invalidParams` and `owner` returns `actMalformed`. [#8015](https://github.com/XRPLF/rippled/pull/8015)
-- `gateway_balances`: The `account` and `ident` fields now return an `invalidParams` error if the value is not a string, instead of an `internal` error. [#7655](https://github.com/XRPLF/rippled/pull/7655)
-- `account_lines`: The `peer` field now returns an error if the value is not a string. [#7728](https://github.com/XRPLF/rippled/pull/7728)
 
 ## XRP Ledger server version 3.1.0
 

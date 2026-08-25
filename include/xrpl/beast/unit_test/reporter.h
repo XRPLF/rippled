@@ -8,6 +8,7 @@
 #include <xrpl/beast/unit_test/runner.h>
 #include <xrpl/beast/unit_test/suite_info.h>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 
 #include <algorithm>
@@ -187,7 +188,7 @@ Reporter<Unused>::fmtdur(clock_type::duration const& d)
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
     if (ms < seconds{1})
-        return std::to_string(ms.count()) + "ms";
+        return boost::lexical_cast<std::string>(ms.count()) + "ms";
     std::stringstream ss;
     ss << std::fixed << std::setprecision(1) << (ms.count() / 1000.) << "s";
     return ss.str();

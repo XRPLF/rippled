@@ -14,7 +14,7 @@
 #include <string>
 #include <utility>
 
-namespace beast::ip {
+namespace beast::IP {
 
 Endpoint::Endpoint() : port_(0)
 {
@@ -176,4 +176,4 @@ operator>>(std::istream& is, Endpoint& endpoint)
     return is;
 }
 
-}  // namespace beast::ip
+}  // namespace beast::IP

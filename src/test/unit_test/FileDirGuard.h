@@ -3,8 +3,9 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
 
+#include <boost/filesystem.hpp>
+
 #include <exception>
-#include <filesystem>
 #include <fstream>
 #include <ostream>
 #include <stdexcept>
@@ -19,7 +20,7 @@ namespace xrpl::detail {
 class DirGuard
 {
 protected:
-    using path = std::filesystem::path;
+    using path = boost::filesystem::path;
 
 private:
     path subDir_;
@@ -46,7 +47,7 @@ public:
     DirGuard(beast::unit_test::Suite& test, path subDir, bool useCounter = true)
         : subDir_(std::move(subDir)), test_(test)
     {
-        using namespace std::filesystem;
+        using namespace boost::filesystem;
 
         static auto kSubDirCounter = 0;
         if (useCounter)
@@ -72,7 +73,7 @@ public:
     {
         try
         {
-            using namespace std::filesystem;
+            using namespace boost::filesystem;
 
             if (rmSubDir_)
                 rmDir(subDir_);
@@ -129,7 +130,7 @@ public:
     {
         try
         {
-            using namespace std::filesystem;
+            using namespace boost::filesystem;
             if (exists(file_))
             {
                 remove(file_);
@@ -159,7 +160,7 @@ public:
     [[nodiscard]] bool
     fileExists() const
     {
-        return std::filesystem::exists(file_);
+        return boost::filesystem::exists(file_);
     }
 };
 

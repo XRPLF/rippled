@@ -21,7 +21,7 @@ class OracleDeleteBuilder;
  * Type: ttORACLE_DELETE (52)
  * Delegable: Delegation::Delegable
  * Amendment: featurePriceOracle
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OracleDeleteBuilder to construct new transactions.

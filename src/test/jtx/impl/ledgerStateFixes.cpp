@@ -9,7 +9,7 @@
 
 #include <cstdint>
 
-namespace xrpl::test::jtx::ledger_state_fix {
+namespace xrpl::test::jtx::ledgerStateFix {
 
 // Fix NFTokenPage links on owner's account.  acct pays fee.
 json::Value
@@ -35,4 +35,4 @@ bookExchangeRate(jtx::Account const& acct, uint256 const& bookDir)
     return jv;
 }
 
-}  // namespace xrpl::test::jtx::ledger_state_fix
+}  // namespace xrpl::test::jtx::ledgerStateFix

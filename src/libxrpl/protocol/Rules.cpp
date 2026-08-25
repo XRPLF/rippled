@@ -194,6 +194,12 @@ Rules::operator==(Rules const& other) const
 }
 
 bool
+Rules::operator!=(Rules const& other) const
+{
+    return !(*this == other);
+}
+
+bool
 isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
 {
     auto const& rules = getCurrentTransactionRules();

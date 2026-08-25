@@ -23,16 +23,6 @@ By default, `CODEGEN_VENV_DIR` points to `.venv` in the project root. The
 `setup_code_gen` target creates a venv there and installs the required packages.
 The `code_gen` target then uses the venv's Python interpreter to run generation.
 
-Generation is pure Python, so the same targets are also available as a
-standalone project that needs neither the dependencies nor a compiler. This is
-what CI uses, and it is handy if you only want to regenerate these files:
-
-```bash
-cmake -S cmake/codegen -B build/codegen
-cmake --build build/codegen --target setup_code_gen
-cmake --build build/codegen --target code_gen
-```
-
 ### Python Dependencies
 
 The code generation requires the following Python packages (installed by `setup_code_gen`):

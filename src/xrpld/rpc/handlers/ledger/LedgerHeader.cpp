@@ -18,10 +18,10 @@ namespace xrpl {
 //   ledger_index : <ledger_index>
 // }
 json::Value
-doLedgerHeader(rpc::JsonContext& context)
+doLedgerHeader(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    auto jvResult = rpc::lookupLedger(lpLedger, context);
+    auto jvResult = RPC::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;

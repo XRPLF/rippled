@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -417,24 +416,9 @@ SponsorshipTransfer::doApply()
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            // The owner reclaims the reserve burden when the object is no longer
-            // sponsored, so it must be able to hold that reserve on its own once the
-            // sponsorship is removed. This mirrors the account-level End check below,
-            // keeping the behavior consistent across accounts and objects: a
-            // sponsorship can only be ended if the sponsee self-funds, another sponsor
-            // steps in (Reassign), or the object/account is deleted.
-            if (view().rules().enabled(fixCleanup3_4_0))
-            {
-                if (auto const ter = checkReserve(
-                        ctx_.getApplyViewContext(),
-                        sponseeSle,
-                        balanceBeforeFee(sponseeSle),
-                        SLE::pointer(),
-                        {.ownerCountDelta = ownerCountDelta},
-                        ctx_.journal);
-                    !isTesSuccess(ter))
-                    return ter;
-            }
+            // The owner reclaims the reserve burden when the object is no longer sponsored.
+            // We do not check the sponsee's reserve here (via `checkReserve`) so that a sponsor can
+            // always end a sponsorship, even if the sponsee lacks sufficient reserve.
 
             // Decrement sponsored count
             if (auto const ter = decrementSponsorCount(

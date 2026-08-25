@@ -57,15 +57,6 @@ public:
         return transactions_.end();
     }
 
-    /**
-     * The last accepted transaction. Precondition: size() > 0.
-     */
-    [[nodiscard]] AcceptedLedgerTx const&
-    back() const
-    {
-        return *transactions_.back();
-    }
-
 private:
     std::shared_ptr<ReadView const> ledger_;
     std::vector<std::unique_ptr<AcceptedLedgerTx>> transactions_;

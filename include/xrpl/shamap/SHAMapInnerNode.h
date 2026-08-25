@@ -62,8 +62,8 @@ private:
      *
      * @param i index of the requested child
      */
-    std::optional<unsigned int>
-    getChildIndex(unsigned int i) const;
+    std::optional<int>
+    getChildIndex(int i) const;
 
     /**
      * Call the `f` callback for all 16 (branchFactor) branches - even if
@@ -125,28 +125,28 @@ public:
     isEmpty() const;
 
     bool
-    isEmptyBranch(unsigned int branch) const;
+    isEmptyBranch(int m) const;
 
-    unsigned int
+    int
     getBranchCount() const;
 
     SHAMapHash const&
-    getChildHash(unsigned int branch) const;
+    getChildHash(int m) const;
 
     void
-    setChild(unsigned int branch, SHAMapTreeNodePtr child);
+    setChild(int m, SHAMapTreeNodePtr child);
 
     void
-    shareChild(unsigned int branch, SHAMapTreeNodePtr const& child);
+    shareChild(int m, SHAMapTreeNodePtr const& child);
 
     SHAMapTreeNode*
-    getChildPointer(unsigned int branch);
+    getChildPointer(int branch);
 
     SHAMapTreeNodePtr
-    getChild(unsigned int branch);
+    getChild(int branch);
 
     SHAMapTreeNodePtr
-    canonicalizeChild(unsigned int branch, SHAMapTreeNodePtr node);
+    canonicalizeChild(int branch, SHAMapTreeNodePtr node);
 
     // sync functions
     bool
@@ -190,12 +190,12 @@ SHAMapInnerNode::isEmpty() const
 }
 
 inline bool
-SHAMapInnerNode::isEmptyBranch(unsigned int branch) const
+SHAMapInnerNode::isEmptyBranch(int m) const
 {
-    return (isBranch_ & (1u << branch)) == 0u;
+    return (isBranch_ & (1 << m)) == 0;
 }
 
-inline unsigned int
+inline int
 SHAMapInnerNode::getBranchCount() const
 {
     return popcnt16(isBranch_);

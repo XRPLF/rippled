@@ -3,12 +3,13 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/rpc/Context.h>
 
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+
+#include <boost/algorithm/string/case_conv.hpp>
 
 #include <cstdint>
 #include <limits>
@@ -18,10 +19,10 @@ namespace xrpl {
 
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
 json::Value
-doCanDelete(rpc::JsonContext& context)
+doCanDelete(RPC::JsonContext& context)
 {
     if (!context.app.getSHAMapStore().advisoryDelete())
-        return rpc::makeError(RpcNotEnabled);
+        return RPC::makeError(RpcNotEnabled);
 
     json::Value ret(json::ValueType::Object);
 
@@ -37,7 +38,7 @@ doCanDelete(rpc::JsonContext& context)
         else
         {
             std::string canDeleteStr = canDelete.asString();
-            canDeleteStr = toLower(canDeleteStr);
+            boost::to_lower(canDeleteStr);
 
             if (canDeleteStr.find_first_not_of("0123456789") == std::string::npos)
             {
@@ -55,20 +56,20 @@ doCanDelete(rpc::JsonContext& context)
             {
                 canDeleteSeq = context.app.getSHAMapStore().getLastRotated();
                 if (canDeleteSeq == 0u)
-                    return rpc::makeError(RpcNotReady);
+                    return RPC::makeError(RpcNotReady);
             }
             else if (uint256 lh; lh.parseHex(canDeleteStr))
             {
                 auto ledger = context.ledgerMaster.getLedgerByHash(lh);
 
                 if (!ledger)
-                    return rpc::makeError(RpcLgrNotFound, "ledgerNotFound");
+                    return RPC::makeError(RpcLgrNotFound, "ledgerNotFound");
 
                 canDeleteSeq = ledger->header().seq;
             }
             else
             {
-                return rpc::makeError(RpcInvalidParams);
+                return RPC::makeError(RpcInvalidParams);
             }
         }
 

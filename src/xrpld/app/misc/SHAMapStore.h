@@ -8,7 +8,6 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/protocol/Protocol.h>
 
-#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -35,8 +34,8 @@ public:
     virtual void
     start() = 0;
 
-    [[nodiscard]] virtual bool
-    rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const = 0;
+    virtual void
+    rendezvous() const = 0;
 
     virtual void
     stop() = 0;
@@ -44,7 +43,7 @@ public:
     [[nodiscard]] virtual std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const = 0;
 
-    virtual std::unique_ptr<node_store::Database>
+    virtual std::unique_ptr<NodeStore::Database>
     makeNodeStore(int readThreads) = 0;
 
     /**
@@ -102,5 +101,5 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-makeSHAMapStore(Application& app, node_store::Scheduler& scheduler, beast::Journal journal);
+makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
 }  // namespace xrpl

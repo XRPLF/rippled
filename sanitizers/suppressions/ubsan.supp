@@ -102,10 +102,6 @@ undefined:nudb
 # Snappy compression library intentional overflows
 unsigned-integer-overflow:snappy.cc
 
-# fast_float parses floats with a SWAR trick (parse_eight_digits_unrolled) that
-# multiplies eight packed digits modulo 2^64; the wraparound is by design.
-unsigned-integer-overflow:fast_float
-
 # Abseil intentional overflows in hashing, RNG and time arithmetic.
 # Matched at library scope (like boost above): the wraparound is by design
 # across many absl files (hash mixing, raw_hash_set probing, duration math,
@@ -196,9 +192,8 @@ unsigned-integer-overflow:rpc/handlers/orderbook/GetAggregatePrice.cpp
 # Test-only intentional overflow/underflow in fixture and unit-test arithmetic.
 unsigned-integer-overflow:tests/libxrpl/basics/RangeSet.cpp
 unsigned-integer-overflow:test/app/Batch_test.cpp
-unsigned-integer-overflow:test/app/ConfidentialTransfer_test.cpp
 unsigned-integer-overflow:test/app/Invariants_test.cpp
-unsigned-integer-overflow:test/app/lending/LoanSecurity_test.cpp
+unsigned-integer-overflow:test/app/Loan_test.cpp
 unsigned-integer-overflow:test/app/NFToken_test.cpp
 unsigned-integer-overflow:test/app/OfferMPT_test.cpp
 unsigned-integer-overflow:test/app/Offer_test.cpp

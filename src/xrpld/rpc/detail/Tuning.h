@@ -6,7 +6,7 @@
  * Tuned constants.
  */
 /** @{ */
-namespace xrpl::rpc::tuning {
+namespace xrpl::RPC::Tuning {
 
 /**
  * Represents RPC limit parameter values that have a min, default and max.
@@ -98,5 +98,5 @@ static constexpr int kMaxSrcCur = 18;
  */
 static constexpr int kMaxAutoSrcCur = 88;
 
-}  // namespace xrpl::rpc::tuning
+}  // namespace xrpl::RPC::Tuning
 /** @} */

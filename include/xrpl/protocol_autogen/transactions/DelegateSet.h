@@ -21,7 +21,7 @@ class DelegateSetBuilder;
  * Type: ttDELEGATE_SET (64)
  * Delegable: Delegation::NotDelegable
  * Amendment: featurePermissionDelegationV1_1
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DelegateSetBuilder to construct new transactions.

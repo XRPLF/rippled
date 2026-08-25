@@ -16,6 +16,7 @@
 #include <xrpl/rdb/SociDB.h>
 #include <xrpl/server/Manifest.h>
 
+#include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/blob-exchange.h>  // IWYU pragma: keep
@@ -28,8 +29,6 @@
 #include <soci/use.h>
 
 #include <array>
-#include <cstddef>
-#include <format>
 #include <functional>
 #include <memory>
 #include <string>
@@ -78,9 +77,7 @@ getManifests(
                 continue;
             }
 
-            // Only trusted manifests are persisted (see saveManifests), so
-            // anything loaded from the DB bypasses the untrusted cap.
-            cache.applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped);
+            cache.applyManifest(std::move(*mo));
         }
         else
         {
@@ -110,27 +107,19 @@ saveManifests(
 {
     soci::transaction tr(session);
     session << "DELETE FROM " << dbTable;
-    // Count skipped untrusted manifests and log one summary afterwards, since
-    // the cache can hold many and per-entry logging would flood at shutdown.
-    std::size_t skipped = 0;
     for (auto const& v : map)
     {
-        // Persist only trusted keys. Untrusted gossip is left out so a flood
-        // cannot survive a restart on disk.
-        if (!isTrusted(v.second.masterKey))
+        // Save all revocation manifests,
+        // but only save trusted non-revocation manifests.
+        if (!v.second.revoked() && !isTrusted(v.second.masterKey))
         {
-            ++skipped;
+            JLOG(j.info()) << "Untrusted manifest in cache not saved to db";
             continue;
         }
 
         saveManifest(session, dbTable, v.second.serialized);
     }
     tr.commit();
-
-    if (skipped != 0)
-    {
-        JLOG(j.info()) << skipped << " untrusted manifest(s) in cache not saved to db";
-    }
 }
 
 void
@@ -172,10 +161,11 @@ getNodeIdentity(soci::session& session)
     // If a valid identity wasn't found, we randomly generate a new one:
     auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
 
-    session << std::format(
-        "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-        "VALUES ('{}','{}');",
-        toBase58(TokenType::NodePublic, newpublicKey),
+    session << str(
+        boost::format(
+            "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+            "VALUES ('%s','%s');") %
+        toBase58(TokenType::NodePublic, newpublicKey) %
         toBase58(TokenType::NodePrivate, newsecretKey));
 
     return {newpublicKey, newsecretKey};

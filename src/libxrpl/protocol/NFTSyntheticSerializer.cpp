@@ -9,7 +9,7 @@
 
 #include <memory>
 
-namespace xrpl::rpc {
+namespace xrpl::RPC {
 
 void
 insertNFTSyntheticInJson(
@@ -21,4 +21,4 @@ insertNFTSyntheticInJson(
     insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
 }
 
-}  // namespace xrpl::rpc
+}  // namespace xrpl::RPC

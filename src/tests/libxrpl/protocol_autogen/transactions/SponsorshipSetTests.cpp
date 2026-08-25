@@ -31,9 +31,9 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const counterpartySponsorValue = canonical_ACCOUNT();
     auto const sponseeValue = canonical_ACCOUNT();
-    auto const feeAmountDeltaValue = canonical_AMOUNT();
+    auto const feeAmountValue = canonical_AMOUNT();
     auto const maxFeeValue = canonical_AMOUNT();
-    auto const remainingOwnerCountDeltaValue = canonical_INT32();
+    auto const remainingOwnerCountValue = canonical_UINT32();
 
     SponsorshipSetBuilder builder{
         accountValue,
@@ -44,9 +44,9 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setCounterpartySponsor(counterpartySponsorValue);
     builder.setSponsee(sponseeValue);
-    builder.setFeeAmountDelta(feeAmountDeltaValue);
+    builder.setFeeAmount(feeAmountValue);
     builder.setMaxFee(maxFeeValue);
-    builder.setRemainingOwnerCountDelta(remainingOwnerCountDeltaValue);
+    builder.setRemainingOwnerCount(remainingOwnerCountValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -81,11 +81,11 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = feeAmountDeltaValue;
-        auto const actualOpt = tx.getFeeAmountDelta();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFeeAmountDelta should be present";
-        expectEqualField(expected, *actualOpt, "sfFeeAmountDelta");
-        EXPECT_TRUE(tx.hasFeeAmountDelta());
+        auto const& expected = feeAmountValue;
+        auto const actualOpt = tx.getFeeAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFeeAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfFeeAmount");
+        EXPECT_TRUE(tx.hasFeeAmount());
     }
 
     {
@@ -97,11 +97,11 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = remainingOwnerCountDeltaValue;
-        auto const actualOpt = tx.getRemainingOwnerCountDelta();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRemainingOwnerCountDelta should be present";
-        expectEqualField(expected, *actualOpt, "sfRemainingOwnerCountDelta");
-        EXPECT_TRUE(tx.hasRemainingOwnerCountDelta());
+        auto const& expected = remainingOwnerCountValue;
+        auto const actualOpt = tx.getRemainingOwnerCount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRemainingOwnerCount should be present";
+        expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
+        EXPECT_TRUE(tx.hasRemainingOwnerCount());
     }
 
 }
@@ -122,9 +122,9 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const counterpartySponsorValue = canonical_ACCOUNT();
     auto const sponseeValue = canonical_ACCOUNT();
-    auto const feeAmountDeltaValue = canonical_AMOUNT();
+    auto const feeAmountValue = canonical_AMOUNT();
     auto const maxFeeValue = canonical_AMOUNT();
-    auto const remainingOwnerCountDeltaValue = canonical_INT32();
+    auto const remainingOwnerCountValue = canonical_UINT32();
 
     // Build an initial transaction
     SponsorshipSetBuilder initialBuilder{
@@ -135,9 +135,9 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
 
     initialBuilder.setCounterpartySponsor(counterpartySponsorValue);
     initialBuilder.setSponsee(sponseeValue);
-    initialBuilder.setFeeAmountDelta(feeAmountDeltaValue);
+    initialBuilder.setFeeAmount(feeAmountValue);
     initialBuilder.setMaxFee(maxFeeValue);
-    initialBuilder.setRemainingOwnerCountDelta(remainingOwnerCountDeltaValue);
+    initialBuilder.setRemainingOwnerCount(remainingOwnerCountValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -171,10 +171,10 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = feeAmountDeltaValue;
-        auto const actualOpt = rebuiltTx.getFeeAmountDelta();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFeeAmountDelta should be present";
-        expectEqualField(expected, *actualOpt, "sfFeeAmountDelta");
+        auto const& expected = feeAmountValue;
+        auto const actualOpt = rebuiltTx.getFeeAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFeeAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfFeeAmount");
     }
 
     {
@@ -185,10 +185,10 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = remainingOwnerCountDeltaValue;
-        auto const actualOpt = rebuiltTx.getRemainingOwnerCountDelta();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRemainingOwnerCountDelta should be present";
-        expectEqualField(expected, *actualOpt, "sfRemainingOwnerCountDelta");
+        auto const& expected = remainingOwnerCountValue;
+        auto const actualOpt = rebuiltTx.getRemainingOwnerCount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRemainingOwnerCount should be present";
+        expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
     }
 
 }
@@ -250,12 +250,12 @@ TEST(TransactionsSponsorshipSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCounterpartySponsor().has_value());
     EXPECT_FALSE(tx.hasSponsee());
     EXPECT_FALSE(tx.getSponsee().has_value());
-    EXPECT_FALSE(tx.hasFeeAmountDelta());
-    EXPECT_FALSE(tx.getFeeAmountDelta().has_value());
+    EXPECT_FALSE(tx.hasFeeAmount());
+    EXPECT_FALSE(tx.getFeeAmount().has_value());
     EXPECT_FALSE(tx.hasMaxFee());
     EXPECT_FALSE(tx.getMaxFee().has_value());
-    EXPECT_FALSE(tx.hasRemainingOwnerCountDelta());
-    EXPECT_FALSE(tx.getRemainingOwnerCountDelta().has_value());
+    EXPECT_FALSE(tx.hasRemainingOwnerCount());
+    EXPECT_FALSE(tx.getRemainingOwnerCount().has_value());
 }
 
 }

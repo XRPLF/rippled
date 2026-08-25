@@ -16,7 +16,7 @@
 #include <ios>
 #include <vector>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
     : store_(store), clock_(clock), journal_(journal), whenUpdate_(clock_.now())
@@ -78,7 +78,7 @@ void
 Bootcache::load()
 {
     clear();
-    auto const n(store_.load([this](beast::ip::Endpoint const& endpoint, int valence) {
+    auto const n(store_.load([this](beast::IP::Endpoint const& endpoint, int valence) {
         auto const result(this->map_.insert(value_type(endpoint, valence)));
         if (!result.second)
         {
@@ -96,7 +96,7 @@ Bootcache::load()
 }
 
 bool
-Bootcache::insert(beast::ip::Endpoint const& endpoint)
+Bootcache::insert(beast::IP::Endpoint const& endpoint)
 {
     auto const result(map_.insert(value_type(endpoint, 0)));
     if (result.second)
@@ -109,7 +109,7 @@ Bootcache::insert(beast::ip::Endpoint const& endpoint)
 }
 
 bool
-Bootcache::insertStatic(beast::ip::Endpoint const& endpoint)
+Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 {
     auto result(map_.insert(value_type(endpoint, kStaticValence)));
 
@@ -130,7 +130,7 @@ Bootcache::insertStatic(beast::ip::Endpoint const& endpoint)
 }
 
 void
-Bootcache::onSuccess(beast::ip::Endpoint const& endpoint)
+Bootcache::onSuccess(beast::IP::Endpoint const& endpoint)
 {
     auto result(map_.insert(value_type(endpoint, 1)));
     if (result.second)
@@ -144,7 +144,7 @@ Bootcache::onSuccess(beast::ip::Endpoint const& endpoint)
         ++entry.valence();
         map_.erase(result.first);
         result = map_.insert(value_type(endpoint, entry));
-        XRPL_ASSERT(result.second, "xrpl::peer_finder::Bootcache::onSuccess : endpoint inserted");
+        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::onSuccess : endpoint inserted");
     }
     Entry const& entry(result.first->right);
     JLOG(journal_.info()) << std::left << std::setw(18) << "Bootcache connect " << endpoint
@@ -154,7 +154,7 @@ Bootcache::onSuccess(beast::ip::Endpoint const& endpoint)
 }
 
 void
-Bootcache::onFailure(beast::ip::Endpoint const& endpoint)
+Bootcache::onFailure(beast::IP::Endpoint const& endpoint)
 {
     auto result(map_.insert(value_type(endpoint, -1)));
     if (result.second)
@@ -168,7 +168,7 @@ Bootcache::onFailure(beast::ip::Endpoint const& endpoint)
         --entry.valence();
         map_.erase(result.first);
         result = map_.insert(value_type(endpoint, entry));
-        XRPL_ASSERT(result.second, "xrpl::peer_finder::Bootcache::onFailure : endpoint inserted");
+        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::onFailure : endpoint inserted");
     }
     Entry const& entry(result.first->right);
     auto const n(std::abs(entry.valence()));
@@ -201,11 +201,11 @@ Bootcache::onWrite(beast::PropertyStream::Map& map)
 void
 Bootcache::prune()
 {
-    if (size() <= tuning::kBootcacheSize)
+    if (size() <= Tuning::kBootcacheSize)
         return;
 
     // Calculate the amount to remove
-    auto count((size() * tuning::kBootcachePrunePercent) / 100);
+    auto count((size() * Tuning::kBootcachePrunePercent) / 100);
     decltype(count) pruned(0);
 
     // Work backwards because bimap doesn't handle
@@ -215,7 +215,7 @@ Bootcache::prune()
     {
         --count;
         --iter;
-        beast::ip::Endpoint const& endpoint(iter->get_left());
+        beast::IP::Endpoint const& endpoint(iter->get_left());
         Entry const& entry(iter->get_right());
         JLOG(journal_.trace()) << std::left << std::setw(18) << "Bootcache pruned" << endpoint
                                << " at valence " << entry.valence();
@@ -244,7 +244,7 @@ Bootcache::update()
     store_.save(list);
     // Reset the flag and cooldown timer
     needsUpdate_ = false;
-    whenUpdate_ = clock_.now() + tuning::kBootcacheCooldownTime;
+    whenUpdate_ = clock_.now() + Tuning::kBootcacheCooldownTime;
 }
 
 // Checks the clock and calls update if we are off the cooldown.
@@ -263,4 +263,4 @@ Bootcache::flagForUpdate()
     checkUpdate();
 }
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

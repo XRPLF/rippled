@@ -15,7 +15,7 @@
 namespace beast {
 
 std::string
-printIdentifiers(SemanticVersion::IdentifierList const& list)
+printIdentifiers(SemanticVersion::identifier_list const& list)
 {
     std::string ret;
 
@@ -115,7 +115,7 @@ extractIdentifier(std::string& value, bool allowLeadingZeroes, std::string& inpu
 
 bool
 extractIdentifiers(
-    SemanticVersion::IdentifierList& identifiers,
+    SemanticVersion::identifier_list& identifiers,
     bool allowLeadingZeroes,
     std::string& input)
 {

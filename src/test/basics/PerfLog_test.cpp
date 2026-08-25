@@ -15,10 +15,14 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <boost/filesystem/file_status.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/system/detail/error_code.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iterator>
@@ -27,7 +31,6 @@
 #include <ostream>
 #include <random>
 #include <string>
-#include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -40,7 +43,7 @@ class PerfLog_test : public beast::unit_test::Suite
 {
     enum class WithFile : bool { No = false, Yes = true };
 
-    using path = std::filesystem::path;
+    using path = boost::filesystem::path;
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
@@ -63,14 +66,14 @@ class PerfLog_test : public beast::unit_test::Suite
             // The error code is intentionally ignored: if the path doesn't
             // exist (the common case on a clean runner) remove_all returns
             // an error, and that's fine — there's nothing to clean up.
-            using namespace std::filesystem;
-            std::error_code ec;
+            using namespace boost::filesystem;
+            boost::system::error_code ec;
             remove_all(logDir(), ec);
         }
 
         ~Fixture()
         {
-            using namespace std::filesystem;
+            using namespace boost::filesystem;
 
             auto const dir{logDir()};
             auto const file{logFile()};
@@ -93,7 +96,7 @@ class PerfLog_test : public beast::unit_test::Suite
         static path
         logDir()
         {
-            using namespace std::filesystem;
+            using namespace boost::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
@@ -126,7 +129,7 @@ class PerfLog_test : public beast::unit_test::Suite
         static void
         wait()
         {
-            using namespace std::filesystem;
+            using namespace boost::filesystem;
 
             auto const path = logFile();
             if (!exists(path))
@@ -198,7 +201,7 @@ public:
     void
     testFileCreation()
     {
-        using namespace std::filesystem;
+        using namespace boost::filesystem;
 
         {
             // Verify a PerfLog creates its file when constructed.
@@ -247,30 +250,28 @@ public:
             // Put a write protected file where PerfLog wants to write its
             // file.  Make sure that PerfLog tries to shutdown the server
             // since it can't open its file.
-            using std::filesystem::perms;
-
             Fixture fixture{env_.app(), j_};
             if (!BEAST_EXPECT(!exists(fixture.logDir())))
                 return;
 
             // Construct and write protect a file to prevent PerfLog
             // from creating its file.
-            std::error_code ec;
-            std::filesystem::create_directories(fixture.logDir(), ec);
+            boost::system::error_code ec;
+            boost::filesystem::create_directories(fixture.logDir(), ec);
             if (!BEAST_EXPECT(!ec))
                 return;
 
-            auto fileWriteable = [](std::filesystem::path const& p) -> bool {
-                return std::ofstream{p, std::ios::out | std::ios::app}.is_open();
+            auto fileWriteable = [](boost::filesystem::path const& p) -> bool {
+                return std::ofstream{p.c_str(), std::ios::out | std::ios::app}.is_open();
             };
 
             if (!BEAST_EXPECT(fileWriteable(fixture.logFile())))
                 return;
 
-            std::filesystem::permissions(
+            boost::filesystem::permissions(
                 fixture.logFile(),
-                perms::owner_write | perms::others_write | perms::group_write,
-                std::filesystem::perm_options::remove);
+                perms::remove_perms | perms::owner_write | perms::others_write |
+                    perms::group_write);
 
             // If the test is running as root, then the write protect may have
             // no effect.  Make sure write protect worked before proceeding.
@@ -294,10 +295,9 @@ public:
             perfLog->stop();
 
             // Fix file permissions so the file can be cleaned up.
-            std::filesystem::permissions(
+            boost::filesystem::permissions(
                 fixture.logFile(),
-                perms::owner_write | perms::others_write | perms::group_write,
-                std::filesystem::perm_options::add);
+                perms::add_perms | perms::owner_write | perms::others_write | perms::group_write);
         }
     }
 
@@ -312,7 +312,7 @@ public:
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
-        std::vector<char const*> labels = test::jtx::makeVector(xrpl::rpc::getHandlerNames());
+        std::vector<char const*> labels = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
         std::shuffle(labels.begin(), labels.end(), defaultPrng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at
@@ -483,7 +483,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -804,7 +804,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -944,7 +944,7 @@ public:
 
             json::Value parsedLastLine;
             json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!rpc::containsError(parsedLastLine)))
+            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -962,7 +962,7 @@ public:
         // We can't fully test rotate because unit tests must run on Windows,
         // and Windows doesn't (may not?) support rotate.  But at least call
         // the interface and see that it doesn't crash.
-        using namespace std::filesystem;
+        using namespace boost::filesystem;
 
         Fixture fixture{env_.app(), j_};
         BEAST_EXPECT(!exists(fixture.logDir()));

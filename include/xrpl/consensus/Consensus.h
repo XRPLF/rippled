@@ -21,7 +21,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include <ranges>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -1580,13 +1579,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         JLOG(j_.info()) << ss.str();
         CLOG(clog) << ss.str();
 
-        // Walk the votes highest-time first so that, among close times tied
-        // for the most votes, the earliest wins. The smaller value is the
-        // safer choice: without close-time consensus this round, the winner
-        // only updates our position for the next proposal, and a too-early
-        // time is bounded below by the prior ledger's close time. Only the
-        // tie-break changes; the bin with the most votes still wins.
-        for (auto const& [t, v] : std::views::reverse(closeTimeVotes))
+        for (auto const& [t, v] : closeTimeVotes)
         {
             JLOG(j_.debug()) << "CCTime: seq "
                              << static_cast<std::uint32_t>(previousLedger_.seq()) + 1 << ": "

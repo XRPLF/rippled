@@ -21,7 +21,7 @@ class DepositPreauthBuilder;
  * Type: ttDEPOSIT_PREAUTH (19)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DepositPreauthBuilder to construct new transactions.

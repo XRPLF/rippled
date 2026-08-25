@@ -21,7 +21,7 @@ class ConfidentialMPTMergeInboxBuilder;
  * Type: ttCONFIDENTIAL_MPT_MERGE_INBOX (86)
  * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTMergeInboxBuilder to construct new transactions.

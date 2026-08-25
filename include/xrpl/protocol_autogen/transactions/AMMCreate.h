@@ -21,7 +21,7 @@ class AMMCreateBuilder;
  * Type: ttAMM_CREATE (35)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: Privilege::CreatePseudoAcct | Privilege::MayCreateMpt
+ * Privileges: CreatePseudoAcct | MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMCreateBuilder to construct new transactions.

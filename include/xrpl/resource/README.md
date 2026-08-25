@@ -1,4 +1,4 @@
-# resource::Manager
+# Resource::Manager
 
 The ResourceManager module has these responsibilities:
 
@@ -36,7 +36,7 @@ to the general public.
 ## Consumer Types
 
 Consumers are placed into three classifications (as identified by the
-resource::Kind enumeration):
+Resource::Kind enumeration):
 
 - InBound,
 - OutBound, and
@@ -72,6 +72,6 @@ drop connections to those IP addresses that occur commonly in the gossip.
 
 ## Access
 
-In xrpld, the Application holds a unique instance of resource::Manager,
+In xrpld, the Application holds a unique instance of Resource::Manager,
 which may be retrieved by calling the method
 `Application::getResourceManager()`.

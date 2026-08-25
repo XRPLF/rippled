@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <iterator>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace beast::rfc2616 {
@@ -187,7 +186,7 @@ splitCommas(FwdIt first, FwdIt last)
 
 template <class Result = std::vector<std::string>>
 Result
-splitCommas(std::string_view s)
+splitCommas(boost::beast::string_view const& s)
 {
     return splitCommas(s.begin(), s.end());
 }
@@ -228,6 +227,12 @@ public:
     operator==(ListIterator const& other) const
     {
         return other.it_ == it_ && other.end_ == end_ && other.value_.size() == value_.size();
+    }
+
+    bool
+    operator!=(ListIterator const& other) const
+    {
+        return !(*this == other);
     }
 
     reference

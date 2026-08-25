@@ -199,7 +199,7 @@ public:
         std::optional<Asset> const& asset2 = std::nullopt,
         std::optional<AccountID> const& ammAccount = std::nullopt,
         bool ignoreParams = false,
-        unsigned apiVersion = rpc::kApiInvalidVersion) const;
+        unsigned apiVersion = RPC::kApiInvalidVersion) const;
 
     [[nodiscard]] json::Value
     ammRpcInfo(

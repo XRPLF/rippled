@@ -153,10 +153,7 @@ public:
             SerialIter sit{kPayload8};
 
             auto val = std::make_shared<STValidation>(
-                sit,
-                [](PublicKey const& pk) { return calcNodeID(pk); },
-                STValidation::DeserializeOptions{
-                    .checkSignature = true, .requireCanonicalOrder = false});
+                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, true);
 
             BEAST_EXPECT(val);
             BEAST_EXPECT(val->isFieldPresent(sfLedgerSequence));
@@ -177,10 +174,7 @@ public:
         {
             SerialIter sit{kPayload1};
             auto val = std::make_shared<xrpl::STValidation>(
-                sit,
-                [](PublicKey const& pk) { return calcNodeID(pk); },
-                STValidation::DeserializeOptions{
-                    .checkSignature = false, .requireCanonicalOrder = false});
+                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -192,10 +186,7 @@ public:
         {
             SerialIter sit{kPayload2};
             auto val = std::make_shared<xrpl::STValidation>(
-                sit,
-                [](PublicKey const& pk) { return calcNodeID(pk); },
-                STValidation::DeserializeOptions{
-                    .checkSignature = false, .requireCanonicalOrder = false});
+                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -207,10 +198,7 @@ public:
         {
             SerialIter sit{kPayload3};
             auto val = std::make_shared<xrpl::STValidation>(
-                sit,
-                [](PublicKey const& pk) { return calcNodeID(pk); },
-                STValidation::DeserializeOptions{
-                    .checkSignature = false, .requireCanonicalOrder = false});
+                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -222,10 +210,7 @@ public:
         {
             SerialIter sit{kPayload4};
             auto val = std::make_shared<xrpl::STValidation>(
-                sit,
-                [](PublicKey const& pk) { return calcNodeID(pk); },
-                STValidation::DeserializeOptions{
-                    .checkSignature = false, .requireCanonicalOrder = false});
+                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -239,10 +224,7 @@ public:
         {
             SerialIter sit{kPayload5};
             auto val = std::make_shared<STValidation>(
-                sit,
-                [](PublicKey const& pk) { return calcNodeID(pk); },
-                STValidation::DeserializeOptions{
-                    .checkSignature = false, .requireCanonicalOrder = false});
+                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
             fail("Expected exception not thrown from validation");
         }
         catch (std::exception const& ex)
@@ -254,10 +236,7 @@ public:
         {
             SerialIter sit{kPayload6};
             auto val = std::make_shared<STValidation>(
-                sit,
-                [](PublicKey const& pk) { return calcNodeID(pk); },
-                STValidation::DeserializeOptions{
-                    .checkSignature = false, .requireCanonicalOrder = false});
+                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
             fail("Expected exception not thrown from validation");
         }
         catch (std::exception const& ex)
@@ -270,10 +249,7 @@ public:
             SerialIter sit{kPayload7};
 
             auto val = std::make_shared<STValidation>(
-                sit,
-                [](PublicKey const& pk) { return calcNodeID(pk); },
-                STValidation::DeserializeOptions{
-                    .checkSignature = false, .requireCanonicalOrder = false});
+                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
 
             fail("Expected exception not thrown from validation");
         }
@@ -303,10 +279,7 @@ public:
                 SerialIter sit{makeSlice(v2)};
 
                 auto val = std::make_shared<STValidation>(
-                    sit,
-                    [](PublicKey const& pk) { return calcNodeID(pk); },
-                    STValidation::DeserializeOptions{
-                        .checkSignature = true, .requireCanonicalOrder = false});
+                    sit, [](PublicKey const& pk) { return calcNodeID(pk); }, true);
 
                 fail("Mutated validation signature checked out: offset=" + std::to_string(i));
             }

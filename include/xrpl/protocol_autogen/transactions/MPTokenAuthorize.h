@@ -21,7 +21,7 @@ class MPTokenAuthorizeBuilder;
  * Type: ttMPTOKEN_AUTHORIZE (57)
  * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: Privilege::MustAuthorizeMpt
+ * Privileges: MustAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenAuthorizeBuilder to construct new transactions.

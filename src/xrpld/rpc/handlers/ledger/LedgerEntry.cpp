@@ -18,7 +18,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -67,11 +66,11 @@ parseObjectID(
     json::StaticString const fieldName,
     std::string const& expectedType = "hex string or object")
 {
-    if (auto const uNodeIndex = ledger_entry_helpers::parse<uint256>(params))
+    if (auto const uNodeIndex = LedgerEntryHelpers::parse<uint256>(params))
     {
         return *uNodeIndex;
     }
-    return ledger_entry_helpers::invalidFieldError("malformedRequest", fieldName, expectedType);
+    return LedgerEntryHelpers::invalidFieldError("malformedRequest", fieldName, expectedType);
 }
 
 static std::expected<uint256, json::Value>
@@ -102,12 +101,12 @@ parseAccountRoot(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    if (auto const account = ledger_entry_helpers::parse<AccountID>(params))
+    if (auto const account = LedgerEntryHelpers::parse<AccountID>(params))
     {
         return keylet::account(*account).key;
     }
 
-    return ledger_entry_helpers::invalidFieldError("malformedAddress", fieldName, "AccountID");
+    return LedgerEntryHelpers::invalidFieldError("malformedAddress", fieldName, "AccountID");
 }
 
 auto const parseAmendments = fixed(keylet::amendments());
@@ -123,18 +122,17 @@ parseAMM(
         return parseObjectID(params, fieldName);
     }
 
-    if (auto const value = ledger_entry_helpers::hasRequired(params, {jss::asset, jss::asset2});
+    if (auto const value = LedgerEntryHelpers::hasRequired(params, {jss::asset, jss::asset2});
         !value)
     {
         return std::unexpected(value.error());
     }
 
-    auto const asset = ledger_entry_helpers::requiredAsset(params, jss::asset, "malformedRequest");
+    auto const asset = LedgerEntryHelpers::requiredAsset(params, jss::asset, "malformedRequest");
     if (!asset)
         return std::unexpected(asset.error());
 
-    auto const asset2 =
-        ledger_entry_helpers::requiredAsset(params, jss::asset2, "malformedRequest");
+    auto const asset2 = LedgerEntryHelpers::requiredAsset(params, jss::asset2, "malformedRequest");
     if (!asset2)
         return std::unexpected(asset2.error());
 
@@ -149,7 +147,7 @@ parseBridge(
 {
     if (!params.isMember(jss::bridge))
     {
-        return std::unexpected(ledger_entry_helpers::missingFieldError(jss::bridge));
+        return std::unexpected(LedgerEntryHelpers::missingFieldError(jss::bridge));
     }
 
     if (params[jss::bridge].isString())
@@ -157,11 +155,11 @@ parseBridge(
         return parseObjectID(params, fieldName);
     }
 
-    auto const bridge = ledger_entry_helpers::parseBridgeFields(params[jss::bridge]);
+    auto const bridge = LedgerEntryHelpers::parseBridgeFields(params[jss::bridge]);
     if (!bridge)
         return std::unexpected(bridge.error());
 
-    auto const account = ledger_entry_helpers::requiredAccountID(
+    auto const account = LedgerEntryHelpers::requiredAccountID(
         params, jss::bridge_account, "malformedBridgeAccount");
     if (!account)
         return std::unexpected(account.error());
@@ -169,7 +167,7 @@ parseBridge(
     STXChainBridge::ChainType const chainType =
         STXChainBridge::srcChain(account.value() == bridge->lockingChainDoor());
     if (account.value() != bridge->door(chainType))
-        return ledger_entry_helpers::malformedError("malformedRequest", "");
+        return LedgerEntryHelpers::malformedError("malformedRequest", "");
 
     return keylet::bridge(*bridge, chainType).key;
 }
@@ -195,16 +193,16 @@ parseCredential(
     }
 
     auto const subject =
-        ledger_entry_helpers::requiredAccountID(cred, jss::subject, "malformedRequest");
+        LedgerEntryHelpers::requiredAccountID(cred, jss::subject, "malformedRequest");
     if (!subject)
         return std::unexpected(subject.error());
 
     auto const issuer =
-        ledger_entry_helpers::requiredAccountID(cred, jss::issuer, "malformedRequest");
+        LedgerEntryHelpers::requiredAccountID(cred, jss::issuer, "malformedRequest");
     if (!issuer)
         return std::unexpected(issuer.error());
 
-    auto const credType = ledger_entry_helpers::requiredHexBlob(
+    auto const credType = LedgerEntryHelpers::requiredHexBlob(
         cred, jss::credential_type, kMaxCredentialTypeLength, "malformedRequest");
     if (!credType)
         return std::unexpected(credType.error());
@@ -224,12 +222,12 @@ parseDelegate(
     }
 
     auto const account =
-        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+        LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!account)
         return std::unexpected(account.error());
 
     auto const authorize =
-        ledger_entry_helpers::requiredAccountID(params, jss::authorize, "malformedAddress");
+        LedgerEntryHelpers::requiredAccountID(params, jss::authorize, "malformedAddress");
     if (!authorize)
         return std::unexpected(authorize.error());
 
@@ -241,7 +239,7 @@ parseAuthorizeCredentials(json::Value const& jv)
 {
     if (!jv.isArray())
     {
-        return ledger_entry_helpers::invalidFieldError(
+        return LedgerEntryHelpers::invalidFieldError(
             "malformedAuthorizedCredentials", jss::authorized_credentials, "array");
     }
 
@@ -249,7 +247,7 @@ parseAuthorizeCredentials(json::Value const& jv)
     if (n > kMaxCredentialsArraySize)
     {
         return std::unexpected(
-            ledger_entry_helpers::malformedError(
+            LedgerEntryHelpers::malformedError(
                 "malformedAuthorizedCredentials",
                 "Invalid field '" + std::string(jss::authorized_credentials) +
                     "', array too long."));
@@ -258,7 +256,7 @@ parseAuthorizeCredentials(json::Value const& jv)
     if (n == 0)
     {
         return std::unexpected(
-            ledger_entry_helpers::malformedError(
+            LedgerEntryHelpers::malformedError(
                 "malformedAuthorizedCredentials",
                 "Invalid field '" + std::string(jss::authorized_credentials) + "', array empty."));
     }
@@ -268,23 +266,23 @@ parseAuthorizeCredentials(json::Value const& jv)
     {
         if (!jo.isObject())
         {
-            return ledger_entry_helpers::invalidFieldError(
+            return LedgerEntryHelpers::invalidFieldError(
                 "malformedAuthorizedCredentials", jss::authorized_credentials, "array of objects");
         }
 
-        if (auto const value = ledger_entry_helpers::hasRequired(
+        if (auto const value = LedgerEntryHelpers::hasRequired(
                 jo, {jss::issuer, jss::credential_type}, "malformedAuthorizedCredentials");
             !value)
         {
             return std::unexpected(value.error());
         }
 
-        auto const issuer = ledger_entry_helpers::requiredAccountID(
+        auto const issuer = LedgerEntryHelpers::requiredAccountID(
             jo, jss::issuer, "malformedAuthorizedCredentials");
         if (!issuer)
             return std::unexpected(issuer.error());
 
-        auto const credentialType = ledger_entry_helpers::requiredHexBlob(
+        auto const credentialType = LedgerEntryHelpers::requiredHexBlob(
             jo, jss::credential_type, kMaxCredentialTypeLength, "malformedAuthorizedCredentials");
         if (!credentialType)
             return std::unexpected(credentialType.error());
@@ -311,13 +309,13 @@ parseDepositPreauth(
 
     if ((dp.isMember(jss::authorized) == dp.isMember(jss::authorized_credentials)))
     {
-        return ledger_entry_helpers::malformedError(
+        return LedgerEntryHelpers::malformedError(
             "malformedRequest",
             "Must have exactly one of `authorized` and "
             "`authorized_credentials`.");
     }
 
-    auto const owner = ledger_entry_helpers::requiredAccountID(dp, jss::owner, "malformedOwner");
+    auto const owner = LedgerEntryHelpers::requiredAccountID(dp, jss::owner, "malformedOwner");
     if (!owner)
     {
         return std::unexpected(owner.error());
@@ -325,11 +323,11 @@ parseDepositPreauth(
 
     if (dp.isMember(jss::authorized))
     {
-        if (auto const authorized = ledger_entry_helpers::parse<AccountID>(dp[jss::authorized]))
+        if (auto const authorized = LedgerEntryHelpers::parse<AccountID>(dp[jss::authorized]))
         {
             return keylet::depositPreauth(*owner, *authorized).key;
         }
-        return ledger_entry_helpers::invalidFieldError(
+        return LedgerEntryHelpers::invalidFieldError(
             "malformedAuthorized", jss::authorized, "AccountID");
     }
 
@@ -342,7 +340,7 @@ parseDepositPreauth(
     if (sorted.empty())
     {
         // TODO: this error message is bad/inaccurate
-        return ledger_entry_helpers::invalidFieldError(
+        return LedgerEntryHelpers::invalidFieldError(
             "malformedAuthorizedCredentials", jss::authorized_credentials, "array");
     }
 
@@ -355,10 +353,10 @@ parseDID(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    auto const account = ledger_entry_helpers::parse<AccountID>(params);
+    auto const account = LedgerEntryHelpers::parse<AccountID>(params);
     if (!account)
     {
-        return ledger_entry_helpers::invalidFieldError("malformedAddress", fieldName, "AccountID");
+        return LedgerEntryHelpers::invalidFieldError("malformedAddress", fieldName, "AccountID");
     }
 
     return keylet::did(*account).key;
@@ -379,13 +377,12 @@ parseDirectoryNode(
         (!params[jss::sub_index].isConvertibleTo(json::ValueType::UInt) ||
          params[jss::sub_index].isBool()))
     {
-        return ledger_entry_helpers::invalidFieldError(
-            "malformedRequest", jss::sub_index, "number");
+        return LedgerEntryHelpers::invalidFieldError("malformedRequest", jss::sub_index, "number");
     }
 
     if (params.isMember(jss::owner) == params.isMember(jss::dir_root))
     {
-        return ledger_entry_helpers::malformedError(
+        return LedgerEntryHelpers::malformedError(
             "malformedRequest", "Must have exactly one of `owner` and `dir_root` fields.");
     }
 
@@ -393,27 +390,27 @@ parseDirectoryNode(
 
     if (params.isMember(jss::dir_root))
     {
-        if (auto const uDirRoot = ledger_entry_helpers::parse<uint256>(params[jss::dir_root]))
+        if (auto const uDirRoot = LedgerEntryHelpers::parse<uint256>(params[jss::dir_root]))
         {
             return keylet::page(*uDirRoot, uSubIndex).key;
         }
 
-        return ledger_entry_helpers::invalidFieldError("malformedDirRoot", jss::dir_root, "hash");
+        return LedgerEntryHelpers::invalidFieldError("malformedDirRoot", jss::dir_root, "hash");
     }
 
     if (params.isMember(jss::owner))
     {
-        auto const ownerID = ledger_entry_helpers::parse<AccountID>(params[jss::owner]);
+        auto const ownerID = LedgerEntryHelpers::parse<AccountID>(params[jss::owner]);
         if (!ownerID)
         {
-            return ledger_entry_helpers::invalidFieldError(
+            return LedgerEntryHelpers::invalidFieldError(
                 "malformedAddress", jss::owner, "AccountID");
         }
 
         return keylet::page(keylet::ownerDir(*ownerID), uSubIndex).key;
     }
 
-    return ledger_entry_helpers::malformedError("malformedRequest", "");
+    return LedgerEntryHelpers::malformedError("malformedRequest", "");
 }
 
 static std::expected<uint256, json::Value>
@@ -427,15 +424,14 @@ parseEscrow(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
     if (!id)
         return std::unexpected(id.error());
-    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedSeq");
+    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedSeq");
     if (!seq)
         return std::unexpected(seq.error());
 
-    auto const seqProxy = SeqProxy::rawSequence(*seq);
-    return keylet::escrow(*id, seqProxy).key;
+    return keylet::escrow(*id, *seq).key;
 }
 
 auto const parseFeeSettings = fixed(keylet::feeSettings());
@@ -453,7 +449,7 @@ parseFixed(
     }
     if (!params.asBool())
     {
-        return ledger_entry_helpers::invalidFieldError("invalidParams", fieldName, "true");
+        return LedgerEntryHelpers::invalidFieldError("invalidParams", fieldName, "true");
     }
 
     return keylet.key;
@@ -490,15 +486,14 @@ parseLoanBroker(
         return parseObjectID(params, fieldName, "hex string");
     }
 
-    auto const id = ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
     if (!id)
         return std::unexpected(id.error());
-    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedSeq");
+    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedSeq");
     if (!seq)
         return std::unexpected(seq.error());
 
-    auto const seqProxy = SeqProxy::rawSequence(*seq);
-    return keylet::loanBroker(*id, seqProxy).key;
+    return keylet::loanBroker(*id, *seq).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -513,15 +508,14 @@ parseLoan(
     }
 
     auto const id =
-        ledger_entry_helpers::requiredUInt256(params, jss::loan_broker_id, "malformedBroker");
+        LedgerEntryHelpers::requiredUInt256(params, jss::loan_broker_id, "malformedBroker");
     if (!id)
         return std::unexpected(id.error());
-    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::loan_seq, "malformedSeq");
+    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::loan_seq, "malformedSeq");
     if (!seq)
         return std::unexpected(seq.error());
 
-    auto const seqProxy = SeqProxy::rawSequence(*seq);
-    return keylet::loan(*id, seqProxy).key;
+    return keylet::loan(*id, *seq).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -535,13 +529,13 @@ parseMPToken(
         return parseObjectID(params, fieldName);
     }
 
-    auto const mptIssuanceID = ledger_entry_helpers::requiredUInt192(
-        params, jss::mpt_issuance_id, "malformedMPTIssuanceID");
+    auto const mptIssuanceID =
+        LedgerEntryHelpers::requiredUInt192(params, jss::mpt_issuance_id, "malformedMPTIssuanceID");
     if (!mptIssuanceID)
         return std::unexpected(mptIssuanceID.error());
 
     auto const account =
-        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAccount");
+        LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAccount");
     if (!account)
         return std::unexpected(account.error());
 
@@ -554,10 +548,10 @@ parseMPTokenIssuance(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    auto const mptIssuanceID = ledger_entry_helpers::parse<uint192>(params);
+    auto const mptIssuanceID = LedgerEntryHelpers::parse<uint192>(params);
     if (!mptIssuanceID)
     {
-        return ledger_entry_helpers::invalidFieldError(
+        return LedgerEntryHelpers::invalidFieldError(
             "malformedMPTokenIssuance", fieldName, "Hash192");
     }
 
@@ -595,17 +589,15 @@ parseOffer(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id =
-        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!id)
         return std::unexpected(id.error());
 
-    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!seq)
         return std::unexpected(seq.error());
 
-    auto const seqProxy = SeqProxy::rawSequence(*seq);
-    return keylet::offer(*id, seqProxy).key;
+    return keylet::offer(*id, *seq).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -619,13 +611,12 @@ parseOracle(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id =
-        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAccount");
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAccount");
     if (!id)
         return std::unexpected(id.error());
 
-    auto const seq = ledger_entry_helpers::requiredUInt32(
-        params, jss::oracle_document_id, "malformedDocumentID");
+    auto const seq =
+        LedgerEntryHelpers::requiredUInt32(params, jss::oracle_document_id, "malformedDocumentID");
     if (!seq)
         return std::unexpected(seq.error());
 
@@ -654,21 +645,20 @@ parsePermissionedDomain(
 
     if (!pd.isObject())
     {
-        return ledger_entry_helpers::invalidFieldError(
+        return LedgerEntryHelpers::invalidFieldError(
             "malformedRequest", fieldName, "hex string or object");
     }
 
     auto const account =
-        ledger_entry_helpers::requiredAccountID(pd, jss::account, "malformedAddress");
+        LedgerEntryHelpers::requiredAccountID(pd, jss::account, "malformedAddress");
     if (!account)
         return std::unexpected(account.error());
 
-    auto const seq = ledger_entry_helpers::requiredUInt32(pd, jss::seq, "malformedRequest");
+    auto const seq = LedgerEntryHelpers::requiredUInt32(pd, jss::seq, "malformedRequest");
     if (!seq)
         return std::unexpected(seq.error());
 
-    auto const seqProxy = SeqProxy::rawSequence(pd[jss::seq].asUInt());
-    return keylet::permissionedDomain(*account, seqProxy).key;
+    return keylet::permissionedDomain(*account, pd[jss::seq].asUInt()).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -685,7 +675,7 @@ parseRippleState(
     }
 
     if (auto const value =
-            ledger_entry_helpers::hasRequired(jvRippleState, {jss::currency, jss::accounts});
+            LedgerEntryHelpers::hasRequired(jvRippleState, {jss::currency, jss::accounts});
         !value)
     {
         return std::unexpected(value.error());
@@ -693,27 +683,27 @@ parseRippleState(
 
     if (!jvRippleState[jss::accounts].isArray() || jvRippleState[jss::accounts].size() != 2)
     {
-        return ledger_entry_helpers::invalidFieldError(
+        return LedgerEntryHelpers::invalidFieldError(
             "malformedRequest", jss::accounts, "length-2 array of Accounts");
     }
 
-    auto const id1 = ledger_entry_helpers::parse<AccountID>(jvRippleState[jss::accounts][0u]);
-    auto const id2 = ledger_entry_helpers::parse<AccountID>(jvRippleState[jss::accounts][1u]);
+    auto const id1 = LedgerEntryHelpers::parse<AccountID>(jvRippleState[jss::accounts][0u]);
+    auto const id2 = LedgerEntryHelpers::parse<AccountID>(jvRippleState[jss::accounts][1u]);
     if (!id1 || !id2)
     {
-        return ledger_entry_helpers::invalidFieldError(
+        return LedgerEntryHelpers::invalidFieldError(
             "malformedAddress", jss::accounts, "array of Accounts");
     }
     if (id1 == id2)
     {
-        return ledger_entry_helpers::malformedError(
+        return LedgerEntryHelpers::malformedError(
             "malformedRequest", "Cannot have a trustline to self.");
     }
 
     if (!jvRippleState[jss::currency].isString() || jvRippleState[jss::currency] == "" ||
         !toCurrency(uCurrency, jvRippleState[jss::currency].asString()))
     {
-        return ledger_entry_helpers::invalidFieldError(
+        return LedgerEntryHelpers::invalidFieldError(
             "malformedCurrency", jss::currency, "Currency");
     }
 
@@ -739,12 +729,12 @@ parseSponsorship(
         return parseObjectID(params, fieldName);
 
     auto const sponsorID =
-        ledger_entry_helpers::requiredAccountID(params, jss::sponsor, "malformedSponsor");
+        LedgerEntryHelpers::requiredAccountID(params, jss::sponsor, "malformedSponsor");
     if (!sponsorID)
         return std::unexpected(sponsorID.error());
 
     auto const sponseeID =
-        ledger_entry_helpers::requiredAccountID(params, jss::sponsee, "malformedSponsee");
+        LedgerEntryHelpers::requiredAccountID(params, jss::sponsee, "malformedSponsee");
     if (!sponseeID)
         return std::unexpected(sponseeID.error());
 
@@ -786,18 +776,16 @@ parseTicket(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id =
-        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!id)
         return std::unexpected(id.error());
 
     auto const seq =
-        ledger_entry_helpers::requiredUInt32(params, jss::ticket_seq, "malformedRequest");
+        LedgerEntryHelpers::requiredUInt32(params, jss::ticket_seq, "malformedRequest");
     if (!seq)
         return std::unexpected(seq.error());
 
-    auto const seqProxy = SeqProxy::rawTicket(*seq);
-    return keylet::ticket(*id, seqProxy).key;
+    return getTicketIndex(*id, *seq);
 }
 
 static std::expected<uint256, json::Value>
@@ -811,16 +799,15 @@ parseVault(
         return parseObjectID(params, fieldName);
     }
 
-    auto const id = ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
     if (!id)
         return std::unexpected(id.error());
 
-    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!seq)
         return std::unexpected(seq.error());
 
-    auto const seqProxy = SeqProxy::rawSequence(*seq);
-    return keylet::vault(*id, seqProxy).key;
+    return keylet::vault(*id, *seq).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -834,11 +821,11 @@ parseXChainOwnedClaimID(
         return parseObjectID(claimId, fieldName);
     }
 
-    auto const bridgeSpec = ledger_entry_helpers::parseBridgeFields(claimId);
+    auto const bridgeSpec = LedgerEntryHelpers::parseBridgeFields(claimId);
     if (!bridgeSpec)
         return std::unexpected(bridgeSpec.error());
 
-    auto const seq = ledger_entry_helpers::requiredUInt32(
+    auto const seq = LedgerEntryHelpers::requiredUInt32(
         claimId, jss::xchain_owned_claim_id, "malformedXChainOwnedClaimID");
     if (!seq)
     {
@@ -860,11 +847,11 @@ parseXChainOwnedCreateAccountClaimID(
         return parseObjectID(claimId, fieldName);
     }
 
-    auto const bridgeSpec = ledger_entry_helpers::parseBridgeFields(claimId);
+    auto const bridgeSpec = LedgerEntryHelpers::parseBridgeFields(claimId);
     if (!bridgeSpec)
         return std::unexpected(bridgeSpec.error());
 
-    auto const seq = ledger_entry_helpers::requiredUInt32(
+    auto const seq = LedgerEntryHelpers::requiredUInt32(
         claimId,
         jss::xchain_owned_create_account_claim_id,
         "malformedXChainOwnedCreateAccountClaimID");
@@ -890,7 +877,7 @@ struct LedgerEntry
 //   ...
 // }
 json::Value
-doLedgerEntry(rpc::JsonContext& context)
+doLedgerEntry(RPC::JsonContext& context)
 {
     static auto kLedgerEntryParsers = std::to_array<LedgerEntry>({
 #pragma push_macro("LEDGER_ENTRY")
@@ -929,11 +916,11 @@ doLedgerEntry(rpc::JsonContext& context)
 
     if (hasMoreThanOneMember)
     {
-        return rpc::makeParamError("Too many fields provided.");
+        return RPC::makeParamError("Too many fields provided.");
     }
 
     std::shared_ptr<ReadView const> lpLedger;
-    auto jvResult = rpc::lookupLedger(lpLedger, context);
+    auto jvResult = RPC::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
@@ -973,7 +960,7 @@ doLedgerEntry(rpc::JsonContext& context)
                 jvResult[jss::error] = "unknownOption";
                 return jvResult;
             }
-            return rpc::makeParamError("No ledger_entry params provided.");
+            return RPC::makeParamError("No ledger_entry params provided.");
         }
     }
     catch (json::Error const& e)
@@ -982,7 +969,7 @@ doLedgerEntry(rpc::JsonContext& context)
         {
             // For apiVersion 2 onwards, any parsing failures that throw
             // this exception return an invalidParam error.
-            return rpc::makeError(RpcInvalidParams);
+            return RPC::makeError(RpcInvalidParams);
         }
 
         throw;
@@ -993,7 +980,7 @@ doLedgerEntry(rpc::JsonContext& context)
 
     if (uNodeIndex.isZero())
     {
-        rpc::injectError(RpcEntryNotFound, jvResult);
+        RPC::injectError(RpcEntryNotFound, jvResult);
         return jvResult;
     }
 
@@ -1006,13 +993,13 @@ doLedgerEntry(rpc::JsonContext& context)
     if (!sleNode)
     {
         // Not found.
-        rpc::injectError(RpcEntryNotFound, jvResult);
+        RPC::injectError(RpcEntryNotFound, jvResult);
         return jvResult;
     }
 
     if ((expectedType != ltANY) && (expectedType != sleNode->getType()))
     {
-        rpc::injectError(RpcUnexpectedLedgerType, jvResult);
+        RPC::injectError(RpcUnexpectedLedgerType, jvResult);
         return jvResult;
     }
 
@@ -1033,14 +1020,14 @@ doLedgerEntry(rpc::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
-doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context)
+doLedgerEntryGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context)
 {
     org::xrpl::rpc::v1::GetLedgerEntryRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerEntryResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = rpc::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
         if (status.toErrorCode() == RpcInvalidParams)

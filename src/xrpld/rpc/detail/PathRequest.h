@@ -64,7 +64,7 @@ public:
     PathRequest(
         Application& app,
         std::function<void(void)> completion,
-        resource::Consumer& consumer,
+        Resource::Consumer& consumer,
         int id,
         PathRequestManager&,
         beast::Journal journal);
@@ -137,7 +137,7 @@ private:
 
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
     std::function<void(void)> fCompletion_;
-    resource::Consumer& consumer_;  // Charge according to source currencies
+    Resource::Consumer& consumer_;  // Charge according to source currencies
 
     json::Value jvId_;
     json::Value jvStatus_;  // Last result

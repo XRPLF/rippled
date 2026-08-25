@@ -21,7 +21,7 @@ class SponsorshipSetBuilder;
  * Type: ttSPONSORSHIP_SET (91)
  * Delegable: Delegation::Delegable
  * Amendment: featureSponsor
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SponsorshipSetBuilder to construct new transactions.
@@ -100,29 +100,29 @@ public:
     }
 
     /**
-     * @brief Get sfFeeAmountDelta (SoeOptional)
+     * @brief Get sfFeeAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_AMOUNT::type::value_type>
-    getFeeAmountDelta() const
+    getFeeAmount() const
     {
-        if (hasFeeAmountDelta())
+        if (hasFeeAmount())
         {
-            return this->tx_->at(sfFeeAmountDelta);
+            return this->tx_->at(sfFeeAmount);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfFeeAmountDelta is present.
+     * @brief Check if sfFeeAmount is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasFeeAmountDelta() const
+    hasFeeAmount() const
     {
-        return this->tx_->isFieldPresent(sfFeeAmountDelta);
+        return this->tx_->isFieldPresent(sfFeeAmount);
     }
 
     /**
@@ -152,29 +152,29 @@ public:
     }
 
     /**
-     * @brief Get sfRemainingOwnerCountDelta (SoeOptional)
+     * @brief Get sfRemainingOwnerCount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_INT32::type::value_type>
-    getRemainingOwnerCountDelta() const
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRemainingOwnerCount() const
     {
-        if (hasRemainingOwnerCountDelta())
+        if (hasRemainingOwnerCount())
         {
-            return this->tx_->at(sfRemainingOwnerCountDelta);
+            return this->tx_->at(sfRemainingOwnerCount);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfRemainingOwnerCountDelta is present.
+     * @brief Check if sfRemainingOwnerCount is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasRemainingOwnerCountDelta() const
+    hasRemainingOwnerCount() const
     {
-        return this->tx_->isFieldPresent(sfRemainingOwnerCountDelta);
+        return this->tx_->isFieldPresent(sfRemainingOwnerCount);
     }
 };
 
@@ -243,13 +243,13 @@ public:
     }
 
     /**
-     * @brief Set sfFeeAmountDelta (SoeOptional)
+     * @brief Set sfFeeAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setFeeAmountDelta(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setFeeAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
     {
-        object_[sfFeeAmountDelta] = value;
+        object_[sfFeeAmount] = value;
         return *this;
     }
 
@@ -265,13 +265,13 @@ public:
     }
 
     /**
-     * @brief Set sfRemainingOwnerCountDelta (SoeOptional)
+     * @brief Set sfRemainingOwnerCount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setRemainingOwnerCountDelta(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    setRemainingOwnerCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfRemainingOwnerCountDelta] = value;
+        object_[sfRemainingOwnerCount] = value;
         return *this;
     }
 

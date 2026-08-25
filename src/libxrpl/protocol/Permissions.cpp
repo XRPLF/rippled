@@ -10,7 +10,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/TxSettings.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -41,24 +40,16 @@ Permission::GranularPermissionEntry::GranularPermissionEntry(
 Permission::Permission()
 {
     {
-#pragma push_macro("UNWRAP")
-#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, settings, ...)                               \
-    {                                                                              \
-        TxSettings const s = UNWRAP settings;                                      \
-        txDelegationMap_[static_cast<TxType>(value)] = {s.amendment, s.delegable}; \
-    }
+#define TRANSACTION(tag, value, name, delegable, amendment, ...) \
+    txDelegationMap_[static_cast<TxType>(value)] = {amendment, delegable};
 
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
-#undef UNWRAP
-#pragma pop_macro("UNWRAP")
     }
 
     granularPermissionsByName_ = {
@@ -251,7 +242,7 @@ Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
 
     // Tx-level permissions require the transaction type itself to be delegable, and
     // the corresponding amendment enabled.
-    return txIt != txDelegationMap_.end() && txIt->second.delegable != Delegation::NotDelegable &&
+    return txIt != txDelegationMap_.end() && txIt->second.delegable != NotDelegable &&
         amendmentEnabled(txIt->second);
 }
 

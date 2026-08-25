@@ -14,7 +14,7 @@
 #include <string>
 #include <string_view>
 
-namespace xrpl::resource {
+namespace xrpl::Resource {
 
 /**
  * Tracks load and resource consumption.
@@ -32,10 +32,10 @@ public:
      * IP if proxied.
      */
     virtual Consumer
-    newInboundEndpoint(beast::ip::Endpoint const& address) = 0;
+    newInboundEndpoint(beast::IP::Endpoint const& address) = 0;
     virtual Consumer
     newInboundEndpoint(
-        beast::ip::Endpoint const& address,
+        beast::IP::Endpoint const& address,
         bool const proxy,
         std::string_view forwardedFor) = 0;
 
@@ -43,13 +43,13 @@ public:
      * Create a new endpoint keyed by outbound IP address and port.
      */
     virtual Consumer
-    newOutboundEndpoint(beast::ip::Endpoint const& address) = 0;
+    newOutboundEndpoint(beast::IP::Endpoint const& address) = 0;
 
     /**
      * Create a new unlimited endpoint keyed by forwarded IP.
      */
     virtual Consumer
-    newUnlimitedEndpoint(beast::ip::Endpoint const& address) = 0;
+    newUnlimitedEndpoint(beast::IP::Endpoint const& address) = 0;
 
     /**
      * Extract packaged consumer information for export.
@@ -78,4 +78,4 @@ public:
 std::unique_ptr<Manager>
 makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
-}  // namespace xrpl::resource
+}  // namespace xrpl::Resource

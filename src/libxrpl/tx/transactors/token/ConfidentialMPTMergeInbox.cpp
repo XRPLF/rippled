@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -50,14 +49,7 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTMergeInbox::preclaim : issuer derived from the MPT ID must "
-            "match the ledger's stored issuer");
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleMptoken =
         ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
@@ -90,26 +82,14 @@ ConfidentialMPTMergeInbox::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTMergeInbox::doApply : preclaim already validated the "
-            "MPToken exists");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // sanity check
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
     {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTMergeInbox::doApply : preclaim already validated these "
-            "fields are present");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // Merge inbox into spending: spending = spending + inbox
@@ -134,14 +114,7 @@ ConfidentialMPTMergeInbox::doApply()
         encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
     if (!zeroEncryption)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTMergeInbox::doApply : canonical zero encryption cannot fail "
-            "for an already-valid holder public key");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     (*sleMptoken)[sfConfidentialBalanceInbox] = std::move(*zeroEncryption);
 

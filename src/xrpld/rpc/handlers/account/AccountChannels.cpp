@@ -3,7 +3,6 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -22,6 +21,9 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Fees.h>
+
+#include <boost/lexical_cast.hpp>
+#include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -67,17 +69,17 @@ addChannel(json::Value& jsonLines, SLE const& line)
 //   marker: opaque                 // optional, resume previous query
 // }
 json::Value
-doAccountChannels(rpc::JsonContext& context)
+doAccountChannels(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     if (!params.isMember(jss::account))
-        return rpc::missingFieldError(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return rpc::invalidFieldError(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = rpc::lookupLedger(ledger, context);
+    auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
@@ -95,7 +97,7 @@ doAccountChannels(rpc::JsonContext& context)
     if (params.isMember(jss::destination_account))
     {
         if (!params[jss::destination_account].isString())
-            return rpc::invalidFieldError(jss::destination_account);
+            return RPC::invalidFieldError(jss::destination_account);
         strDst = params[jss::destination_account].asString();
     }
 
@@ -106,7 +108,7 @@ doAccountChannels(rpc::JsonContext& context)
         return rpcError(RpcActMalformed);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, rpc::tuning::kAccountChannels, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kAccountChannels, context))
         return *err;
 
     json::Value jsonChannels{json::ValueType::Array};
@@ -124,10 +126,10 @@ doAccountChannels(rpc::JsonContext& context)
     if (params.isMember(jss::marker))
     {
         if (!params[jss::marker].isString())
-            return rpc::expectedFieldError(jss::marker, "string");
+            return RPC::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter as a decimal integer.
+        // former will be read as hex, and the latter using boost lexical cast.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -139,10 +141,14 @@ doAccountChannels(rpc::JsonContext& context)
         if (!std::getline(marker, value, ','))
             return rpcError(RpcInvalidParams);
 
-        auto const hint = toUInt64(value);
-        if (!hint.has_value())
+        try
+        {
+            startHint = boost::lexical_cast<std::uint64_t>(value);
+        }
+        catch (boost::bad_lexical_cast&)
+        {
             return rpcError(RpcInvalidParams);
-        startHint = *hint;
+        }
 
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
@@ -151,7 +157,7 @@ doAccountChannels(rpc::JsonContext& context)
         if (!sle)
             return rpcError(RpcInvalidParams);
 
-        if (!rpc::isRelatedToAccount(*ledger, sle, accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(RpcInvalidParams);
     }
 
@@ -176,7 +182,7 @@ doAccountChannels(rpc::JsonContext& context)
                 if (++count == limit)
                 {
                     marker = sleCur->key();
-                    nextHint = rpc::getStartHint(sleCur, visitData.accountID);
+                    nextHint = RPC::getStartHint(sleCur, visitData.accountID);
                 }
 
                 if (count <= limit && sleCur->getType() == ltPAYCHAN &&
@@ -207,7 +213,7 @@ doAccountChannels(rpc::JsonContext& context)
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);
 
-    context.loadType = resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     result[jss::channels] = std::move(jsonChannels);
     return result;
 }

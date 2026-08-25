@@ -21,7 +21,7 @@ class NFTokenMintBuilder;
  * Type: ttNFTOKEN_MINT (25)
  * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: Privilege::ChangeNftCounts
+ * Privileges: ChangeNftCounts
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenMintBuilder to construct new transactions.

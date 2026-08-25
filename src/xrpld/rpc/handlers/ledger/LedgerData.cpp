@@ -36,12 +36,12 @@ namespace xrpl {
 //     state:        array of state nodes
 //     marker:       resume point, if any
 json::Value
-doLedgerData(rpc::JsonContext& context)
+doLedgerData(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
     auto const& params = context.params;
 
-    auto jvResult = rpc::lookupLedger(lpLedger, context);
+    auto jvResult = RPC::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
 
@@ -51,14 +51,14 @@ doLedgerData(rpc::JsonContext& context)
     {
         json::Value const& jMarker = params[jss::marker];
         if (!(jMarker.isString() && key.parseHex(jMarker.asString())))
-            return rpc::expectedFieldError(jss::marker, "valid");
+            return RPC::expectedFieldError(jss::marker, "valid");
     }
 
     bool isBinary = false;
     if (params.isMember(jss::binary))
     {
         if (!params[jss::binary].isBool())
-            return rpc::expectedFieldError(jss::binary, "boolean");
+            return RPC::expectedFieldError(jss::binary, "boolean");
         isBinary = params[jss::binary].asBool();
     }
 
@@ -67,12 +67,12 @@ doLedgerData(rpc::JsonContext& context)
     {
         json::Value const& jLimit = params[jss::limit];
         if (!jLimit.isIntegral())
-            return rpc::expectedFieldError(jss::limit, "integer");
+            return RPC::expectedFieldError(jss::limit, "integer");
 
         limit = jLimit.asInt();
     }
 
-    auto maxLimit = rpc::tuning::pageLength(isBinary);
+    auto maxLimit = RPC::Tuning::pageLength(isBinary);
     if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
@@ -86,7 +86,7 @@ doLedgerData(rpc::JsonContext& context)
             *lpLedger, &context, isBinary ? static_cast<int>(LedgerFill::Options::Binary) : 0));
     }
 
-    auto [rpcStatus, type] = rpc::chooseLedgerEntryType(params);
+    auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
     if (rpcStatus)
     {
         jvResult.clear();
@@ -131,14 +131,14 @@ doLedgerData(rpc::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
+doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
 {
     org::xrpl::rpc::v1::GetLedgerDataRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = rpc::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
         if (status.toErrorCode() == RpcInvalidParams)
@@ -177,7 +177,7 @@ doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
         e = ledger->sles.upperBound(*key);
     }
 
-    int maxLimit = rpc::tuning::pageLength(true);
+    int maxLimit = RPC::Tuning::pageLength(true);
 
     for (auto i = ledger->sles.upperBound(startKey); i != e; ++i)
     {

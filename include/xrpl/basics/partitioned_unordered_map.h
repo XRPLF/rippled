@@ -116,6 +116,12 @@ public:
         {
             return lhs.map == rhs.map && lhs.ait == rhs.ait && lhs.mit == rhs.mit;
         }
+
+        friend bool
+        operator!=(Iterator const& lhs, Iterator const& rhs)
+        {
+            return !(lhs == rhs);
+        }
     };
 
     struct ConstIterator
@@ -182,6 +188,12 @@ public:
         operator==(ConstIterator const& lhs, ConstIterator const& rhs)
         {
             return lhs.map == rhs.map && lhs.ait == rhs.ait && lhs.mit == rhs.mit;
+        }
+
+        friend bool
+        operator!=(ConstIterator const& lhs, ConstIterator const& rhs)
+        {
+            return !(lhs == rhs);
         }
     };
 

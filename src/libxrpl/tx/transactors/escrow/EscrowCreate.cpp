@@ -304,11 +304,11 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (isFrozen(ctx.view, account, *sleIssuance))
+    if (isFrozen(ctx.view, account, mptIssue))
         return tecLOCKED;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, *sleIssuance))
+    if (isFrozen(ctx.view, dest, mptIssue))
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
@@ -476,7 +476,7 @@ EscrowCreate::doApply()
 
     // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqProxy());
+    Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = amount;
     (*slep)[sfAccount] = accountID_;
@@ -489,7 +489,7 @@ EscrowCreate::doApply()
 
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
-        (*slep)[sfSequence] = ctx_.tx.getSeqProxy().value();
+        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
     }
 
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))

@@ -13,7 +13,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
-#include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <optional>
@@ -28,16 +27,14 @@ namespace xrpl {
 //   signature: signature to verify
 // }
 json::Value
-doChannelVerify(rpc::JsonContext& context)
+doChannelVerify(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     for (auto const& p : {jss::public_key, jss::channel_id, jss::amount, jss::signature})
     {
         if (!params.isMember(p))
-            return rpc::missingFieldError(p);
+            return RPC::missingFieldError(p);
     }
-
-    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     std::optional<PublicKey> pk;
     {

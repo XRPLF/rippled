@@ -19,30 +19,30 @@
 namespace xrpl {
 
 json::Value
-doAccountCurrencies(rpc::JsonContext& context)
+doAccountCurrencies(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
-        return rpc::missingFieldError(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     std::string strIdent;
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return rpc::invalidFieldError(jss::account);
+            return RPC::invalidFieldError(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
         if (!params[jss::ident].isString())
-            return rpc::invalidFieldError(jss::ident);
+            return RPC::invalidFieldError(jss::ident);
         strIdent = params[jss::ident].asString();
     }
 
     // Get the current ledger
     std::shared_ptr<ReadView const> ledger;
-    auto result = rpc::lookupLedger(ledger, context);
+    auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
@@ -50,7 +50,7 @@ doAccountCurrencies(rpc::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
-        rpc::injectError(RpcActMalformed, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};

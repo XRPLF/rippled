@@ -260,7 +260,7 @@ calcAccountID(PublicKey const& pk);
 
 inline std::string
 getFingerprint(
-    beast::ip::Endpoint const& address,
+    beast::IP::Endpoint const& address,
     std::optional<PublicKey> const& publicKey = std::nullopt,
     std::optional<std::string> const& id = std::nullopt)
 {

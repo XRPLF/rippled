@@ -3,6 +3,7 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -94,21 +95,6 @@ enum class SHAMapState {
  *
  * See https://en.wikipedia.org/wiki/Merkle_tree
  */
-
-/**
- * Holds a SHAMap node's identity, leaf status, and serialized data. Used by
- * getNodeFat to return node data for peer synchronization.
- */
-struct SHAMapNodeData
-{
-    SHAMapNodeID nodeID;
-    // The `data` field (a Blob, 8-byte aligned) needs 4 bytes of padding after the `nodeID` field
-    // (36 bytes, 4-byte aligned) regardless of what comes between them, so `isLeaf` costs nothing
-    // extra here. Moving it after `data` would add 8 bytes to the size of this struct instead.
-    bool isLeaf;
-    Blob data;
-};
-
 class SHAMap
 {
 private:
@@ -303,10 +289,10 @@ public:
     std::vector<std::pair<SHAMapNodeID, uint256>>
     getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
 
-    [[nodiscard]] bool
+    bool
     getNodeFat(
         SHAMapNodeID const& wanted,
-        std::vector<SHAMapNodeData>& data,
+        std::vector<std::pair<SHAMapNodeID, Blob>>& data,
         bool fatLeaves,
         std::uint32_t depth) const;
 
@@ -335,45 +321,10 @@ public:
     void
     serializeRoot(Serializer& s) const;
 
-    /**
-     * Add a root node to the SHAMap during synchronization.
-     *
-     * This function is used when receiving the root node of a SHAMap from a peer during ledger
-     * synchronization. The node must already have been deserialized.
-     *
-     * @param hash The expected hash of the root node.
-     * @param rootNode A deserialized root node to add.
-     * @param filter Optional sync filter to track received nodes.
-     * @return Status indicating whether the node was useful, duplicate, or invalid.
-     *
-     * @note This function expects the rootNode to be a valid, deserialized SHAMapTreeNode. The
-     *       caller is responsible for deserialization and basic validation before calling this
-     *       function.
-     */
     SHAMapAddNode
-    addRootNode(SHAMapHash const& hash, SHAMapTreeNodePtr rootNode, SHAMapSyncFilter const* filter);
-
-    /**
-     * Add a known node at a specific position in the SHAMap during synchronization.
-     *
-     * This function is used when receiving nodes from peers during ledger synchronization. The node
-     * is inserted at the position specified by nodeID. The node must already have been
-     * deserialized.
-     *
-     * @param nodeID The position in the tree where this node belongs.
-     * @param treeNode A deserialized tree node to add.
-     * @param filter Optional sync filter to track received nodes.
-     * @return Status indicating whether the node was useful, duplicate, or invalid.
-     *
-     * @note This function expects the treeNode to be a valid, deserialized SHAMapTreeNode. The
-     *       caller is responsible for deserialization and basic validation before calling this
-     *       function. This also means that the nodeID must be consistent with the node's content.
-     */
+    addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter const* filter);
     SHAMapAddNode
-    addKnownNode(
-        SHAMapNodeID const& nodeID,
-        SHAMapTreeNodePtr treeNode,
-        SHAMapSyncFilter const* filter);
+    addKnownNode(SHAMapNodeID const& nodeID, Slice const& rawNode, SHAMapSyncFilter const* filter);
 
     // status functions
     void
@@ -484,36 +435,31 @@ private:
 
     // returns the first item at or below this node
     SHAMapLeafNode*
-    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, unsigned int branch = 0u) const;
+    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = 0) const;
 
     // returns the last item at or below this node
     SHAMapLeafNode*
-    lastBelow(
-        SHAMapTreeNodePtr node,
-        SharedPtrNodeStack& stack,
-        unsigned int branch = kBranchFactor) const;
-
-    // direction in which belowHelper scans an inner node's branches
-    enum class BelowDirection { First, Last };
+    lastBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = kBranchFactor) const;
 
     // helper function for firstBelow and lastBelow
     SHAMapLeafNode*
     belowHelper(
         SHAMapTreeNodePtr node,
         SharedPtrNodeStack& stack,
-        unsigned int branch,
-        BelowDirection direction) const;
+        int branch,
+        std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams)
+        const;
 
     // Simple descent
     // Get a child of the specified node
     SHAMapTreeNode*
-    descend(SHAMapInnerNode*, unsigned int branch) const;
+    descend(SHAMapInnerNode*, int branch) const;
     SHAMapTreeNode*
-    descendThrow(SHAMapInnerNode*, unsigned int branch) const;
+    descendThrow(SHAMapInnerNode*, int branch) const;
     SHAMapTreeNodePtr
-    descend(SHAMapInnerNode&, unsigned int branch) const;
+    descend(SHAMapInnerNode&, int branch) const;
     SHAMapTreeNodePtr
-    descendThrow(SHAMapInnerNode&, unsigned int branch) const;
+    descendThrow(SHAMapInnerNode&, int branch) const;
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
@@ -521,7 +467,7 @@ private:
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
-        unsigned int branch,
+        int branch,
         SHAMapSyncFilter const* filter,
         bool& pending,
         descendCallback&&) const;
@@ -530,13 +476,13 @@ private:
     descend(
         SHAMapInnerNode* parent,
         SHAMapNodeID const& parentID,
-        unsigned int branch,
+        int branch,
         SHAMapSyncFilter const* filter) const;
 
     // Non-storing
     // Does not hook the returned node to its parent
     SHAMapTreeNodePtr
-    descendNoStore(SHAMapInnerNode&, unsigned int branch) const;
+    descendNoStore(SHAMapInnerNode&, int branch) const;
 
     /**
      * If there is only one leaf below this node, get its contents
@@ -586,8 +532,8 @@ private:
         using StackEntry = std::tuple<
             SHAMapInnerNode*,  // pointer to the node
             SHAMapNodeID,      // the node's ID
-            unsigned int,      // which child we check first
-            unsigned int,      // which child we check next
+            int,               // while child we check first
+            int,               // which child we check next
             bool>;             // whether we've found any missing children yet
 
         // We explicitly choose to specify the use of std::deque here, because
@@ -601,7 +547,7 @@ private:
         using DeferredNode = std::tuple<
             SHAMapInnerNode*,    // parent node
             SHAMapNodeID,        // parent node ID
-            unsigned int,        // branch
+            int,                 // branch
             SHAMapTreeNodePtr>;  // node
 
         int deferred;
@@ -792,6 +738,12 @@ operator==(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
         "xrpl::operator==(SHAMap::const_iterator, SHAMap::const_iterator) : "
         "inputs map do match");
     return x.item_ == y.item_;
+}
+
+inline bool
+operator!=(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
+{
+    return !(x == y);
 }
 
 inline SHAMap::ConstIterator

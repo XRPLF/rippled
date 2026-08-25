@@ -18,7 +18,7 @@ struct LedgerFill
 {
     LedgerFill(
         ReadView const& l,
-        rpc::Context const* ctx,
+        RPC::Context const* ctx,
         int o = 0,
         std::vector<TxQ::TxDetails> q = {})
         : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
@@ -40,7 +40,7 @@ struct LedgerFill
     ReadView const& ledger;
     int options;
     std::vector<TxQ::TxDetails> txQueue;
-    rpc::Context const* context;
+    RPC::Context const* context;
     std::optional<NetClock::time_point> closeTime;
 };
 

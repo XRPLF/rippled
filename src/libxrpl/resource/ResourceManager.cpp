@@ -23,7 +23,7 @@
 #include <string_view>
 #include <thread>
 
-namespace xrpl::resource {
+namespace xrpl::Resource {
 
 class ManagerImp : public Manager
 {
@@ -58,14 +58,14 @@ public:
     }
 
     Consumer
-    newInboundEndpoint(beast::ip::Endpoint const& address) override
+    newInboundEndpoint(beast::IP::Endpoint const& address) override
     {
         return logic_.newInboundEndpoint(address);
     }
 
     Consumer
     newInboundEndpoint(
-        beast::ip::Endpoint const& address,
+        beast::IP::Endpoint const& address,
         bool const proxy,
         std::string_view forwardedFor) override
     {
@@ -85,13 +85,13 @@ public:
     }
 
     Consumer
-    newOutboundEndpoint(beast::ip::Endpoint const& address) override
+    newOutboundEndpoint(beast::IP::Endpoint const& address) override
     {
         return logic_.newOutboundEndpoint(address);
     }
 
     Consumer
-    newUnlimitedEndpoint(beast::ip::Endpoint const& address) override
+    newUnlimitedEndpoint(beast::IP::Endpoint const& address) override
     {
         return logic_.newUnlimitedEndpoint(address);
     }
@@ -136,7 +136,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("resource::Mngr");
+        beast::setCurrentThreadName("Resource::Mngr");
         for (;;)
         {
             logic_.periodicActivity();
@@ -164,4 +164,4 @@ makeManager(beast::insight::Collector::ptr const& collector, beast::Journal jour
     return std::make_unique<ManagerImp>(collector, journal);
 }
 
-}  // namespace xrpl::resource
+}  // namespace xrpl::Resource

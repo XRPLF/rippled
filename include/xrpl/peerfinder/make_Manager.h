@@ -10,7 +10,7 @@
 
 #include <memory>
 
-namespace xrpl::peer_finder {
+namespace xrpl::PeerFinder {
 
 /**
  * @brief Create a new Manager.
@@ -33,4 +33,4 @@ makeManager(
     Store& store,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace xrpl::peer_finder
+}  // namespace xrpl::PeerFinder

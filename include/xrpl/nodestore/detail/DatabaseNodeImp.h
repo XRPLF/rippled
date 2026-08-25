@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 class DatabaseNodeImp : public Database
 {
@@ -68,7 +68,7 @@ public:
 
         XRPL_ASSERT(
             backend_,
-            "xrpl::node_store::DatabaseNodeImp::DatabaseNodeImp : non-null "
+            "xrpl::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }
 
@@ -138,4 +138,4 @@ private:
     }
 };
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

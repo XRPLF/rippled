@@ -27,7 +27,7 @@ makeOverlay(
     Application& app,
     Overlay::Setup const& setup,
     ServerHandler& serverHandler,
-    resource::Manager& resourceManager,
+    Resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,

@@ -167,7 +167,7 @@ enum WarningCodeI {
 
 // VFALCO NOTE these should probably not be in the RPC namespace.
 
-namespace rpc {
+namespace RPC {
 
 /**
  * Maps an rpc error code to its token, default message, and HTTP status.
@@ -337,7 +337,7 @@ containsError(json::Value const& json);
 int
 errorCodeHttpStatus(ErrorCodeI code);
 
-}  // namespace rpc
+}  // namespace RPC
 
 /**
  * Returns a single string with the contents of an RPC error.

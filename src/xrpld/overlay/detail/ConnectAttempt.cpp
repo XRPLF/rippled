@@ -49,10 +49,10 @@ ConnectAttempt::ConnectAttempt(
     Application& app,
     boost::asio::io_context& ioContext,
     endpoint_type remoteEndpoint,
-    resource::Consumer usage,
+    Resource::Consumer usage,
     shared_context const& context,
     Peer::id_t id,
-    std::shared_ptr<peer_finder::Slot> const& slot,
+    std::shared_ptr<PeerFinder::Slot> const& slot,
     beast::Journal journal,
     OverlayImpl& overlay)
     : Child(overlay)
@@ -462,7 +462,7 @@ ConnectAttempt::processResponse()
 
         auto const result =
             overlay_.peerFinder().activate(slot_, publicKey, static_cast<bool>(member));
-        if (result != peer_finder::Result::Success)
+        if (result != PeerFinder::Result::Success)
         {
             fail("Outbound " + std::string(to_string(result)));
             return;

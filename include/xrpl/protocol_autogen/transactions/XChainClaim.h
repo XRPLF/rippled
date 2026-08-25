@@ -21,7 +21,7 @@ class XChainClaimBuilder;
  * Type: ttXCHAIN_CLAIM (43)
  * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainClaimBuilder to construct new transactions.

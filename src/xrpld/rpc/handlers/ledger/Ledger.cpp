@@ -34,7 +34,7 @@
 #include <utility>
 
 namespace xrpl {
-namespace rpc {
+namespace RPC {
 
 LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
 {
@@ -107,7 +107,7 @@ LedgerHandler::check()
         {
             return RpcTooBusy;
         }
-        context_.loadType = binary ? resource::kFeeMediumBurdenRpc : resource::kFeeHeavyBurdenRpc;
+        context_.loadType = binary ? Resource::kFeeMediumBurdenRpc : Resource::kFeeHeavyBurdenRpc;
     }
 
     if (*queue)
@@ -162,10 +162,10 @@ LedgerHandler::writeResult(json::Value& value)
         value[jss::warnings] = std::move(warnings);
 }
 
-}  // namespace rpc
+}  // namespace RPC
 
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
-doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
+doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {
     auto begin = std::chrono::system_clock::now();
     org::xrpl::rpc::v1::GetLedgerRequest const& request = context.params;
@@ -173,7 +173,7 @@ doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = rpc::ledgerFromRequest(ledger, context))
+    if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
         if (status.toErrorCode() == RpcInvalidParams)

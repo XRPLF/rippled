@@ -169,7 +169,7 @@ PaymentChannelCreate::doApply()
     //
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqProxy());
+    Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
@@ -185,7 +185,7 @@ PaymentChannelCreate::doApply()
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
-        (*slep)[sfSequence] = ctx_.tx.getSeqProxy().value();
+        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
     }
 
     ctx_.view().insert(slep);

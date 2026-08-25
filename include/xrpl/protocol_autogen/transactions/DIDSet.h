@@ -21,7 +21,7 @@ class DIDSetBuilder;
  * Type: ttDID_SET (49)
  * Delegable: Delegation::Delegable
  * Amendment: featureDID
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DIDSetBuilder to construct new transactions.

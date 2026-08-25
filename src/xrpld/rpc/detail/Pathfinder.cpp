@@ -962,10 +962,14 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 void
 addUniquePath(STPathSet& pathSet, STPath const& path)
 {
-    if (!pathSet.contains(path))
+    // TODO(tom): building an STPathSet this way is quadratic in the size
+    // of the STPathSet!
+    for (auto const& p : pathSet)
     {
-        pathSet.pushBack(path);
+        if (p == path)
+            return;
     }
+    pathSet.pushBack(path);
 }
 
 void

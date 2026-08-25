@@ -13,7 +13,7 @@
 #include <optional>
 #include <string>
 
-namespace beast::ip {
+namespace beast::IP {
 
 using Port = std::uint16_t;
 
@@ -110,6 +110,12 @@ public:
     operator==(Endpoint const& lhs, Endpoint const& rhs);
     friend bool
     operator<(Endpoint const& lhs, Endpoint const& rhs);
+
+    friend bool
+    operator!=(Endpoint const& lhs, Endpoint const& rhs)
+    {
+        return !(lhs == rhs);
+    }
     friend bool
     operator>(Endpoint const& lhs, Endpoint const& rhs)
     {
@@ -217,7 +223,7 @@ operator<<(OutputStream& os, Endpoint const& endpoint)
 std::istream&
 operator>>(std::istream& is, Endpoint& endpoint);
 
-}  // namespace beast::ip
+}  // namespace beast::IP
 
 //------------------------------------------------------------------------------
 
@@ -226,12 +232,12 @@ namespace std {
  * std::hash support.
  */
 template <>
-struct hash<::beast::ip::Endpoint>
+struct hash<::beast::IP::Endpoint>
 {
     hash() = default;
 
     std::size_t
-    operator()(::beast::ip::Endpoint const& endpoint) const
+    operator()(::beast::IP::Endpoint const& endpoint) const
     {
         return ::beast::Uhash<>{}(endpoint);
     }
@@ -243,12 +249,12 @@ namespace boost {
  * boost::hash support.
  */
 template <>
-struct hash<::beast::ip::Endpoint>
+struct hash<::beast::IP::Endpoint>
 {
     hash() = default;
 
     std::size_t
-    operator()(::beast::ip::Endpoint const& endpoint) const
+    operator()(::beast::IP::Endpoint const& endpoint) const
     {
         return ::beast::Uhash<>{}(endpoint);
     }

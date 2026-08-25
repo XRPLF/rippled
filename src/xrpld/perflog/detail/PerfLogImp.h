@@ -109,7 +109,7 @@ class PerfLogImp : public PerfLog
     Application& app_;
     beast::Journal const j_;
     std::function<void()> const signalStop_;
-    Counters counters_{xrpl::rpc::getHandlerNames(), JobTypes::instance()};
+    Counters counters_{xrpl::RPC::getHandlerNames(), JobTypes::instance()};
     std::ofstream logFile_;
     std::thread thread_;
     std::mutex mutex_;

@@ -118,7 +118,6 @@ public:
         Sandbox& view,
         SLE const& ammSle,
         AccountID const account,
-        std::optional<AccountID> const& clawbackIssuer,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
@@ -139,11 +138,6 @@ public:
      * @param view
      * @param ammSle AMM ledger entry
      * @param ammAccount AMM account
-     * @param clawbackIssuer when set (AMMClawback path), the issuer performing
-     *        the clawback. A recreated MPToken is only auto-authorized when the
-     *        asset's issuer matches this account, so a clawback cannot grant
-     *        authorization on behalf of a different (paired-asset) issuer.
-     * @param account LP account
      * @param amountBalance current LP asset1 balance
      * @param amountWithdraw asset1 withdraw amount
      * @param amount2Withdraw asset2 withdraw amount
@@ -159,7 +153,6 @@ public:
         Sandbox& view,
         SLE const& ammSle,
         AccountID const& ammAccount,
-        std::optional<AccountID> const& clawbackIssuer,
         AccountID const& account,
         STAmount const& amountBalance,
         STAmount const& amountWithdraw,

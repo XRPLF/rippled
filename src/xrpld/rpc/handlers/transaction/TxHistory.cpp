@@ -16,12 +16,12 @@ namespace xrpl {
 //   start: <index>
 // }
 json::Value
-doTxHistory(rpc::JsonContext& context)
+doTxHistory(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
         return rpcError(RpcNotEnabled);
 
-    context.loadType = resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     if (!context.params.isMember(jss::start))
         return rpcError(RpcInvalidParams);
@@ -40,7 +40,7 @@ doTxHistory(rpc::JsonContext& context)
     for (auto const& t : trans)
     {
         json::Value txJson = t->getJson(JsonOptions::Values::None);
-        rpc::insertDeliverMax(txJson, t->getSTransaction()->getTxnType(), context.apiVersion);
+        RPC::insertDeliverMax(txJson, t->getSTransaction()->getTxnType(), context.apiVersion);
         txs.append(txJson);
     }
 

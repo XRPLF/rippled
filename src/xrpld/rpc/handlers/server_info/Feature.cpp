@@ -18,7 +18,7 @@ namespace xrpl {
 //   vetoed : true/false
 // }
 json::Value
-doFeature(rpc::JsonContext& context)
+doFeature(RPC::JsonContext& context)
 {
     if (context.params.isMember(jss::feature))
     {

@@ -9,7 +9,6 @@
 #include <set>  // IWYU pragma: keep
 #include <stack>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -88,14 +87,14 @@ public:
     }
 
     void
-    output(std::string_view bytes)
+    output(boost::beast::string_view const& bytes)
     {
         markStarted();
         output_(bytes);
     }
 
     void
-    stringOutput(std::string_view bytes)
+    stringOutput(boost::beast::string_view const& bytes)
     {
         markStarted();
         std::size_t position = 0, writtenUntil = 0;

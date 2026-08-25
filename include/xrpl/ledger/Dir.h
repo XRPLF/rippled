@@ -59,6 +59,12 @@ public:
     bool
     operator==(ConstIterator const& other) const;
 
+    bool
+    operator!=(ConstIterator const& other) const
+    {
+        return !(*this == other);
+    }
+
     reference
     operator*() const;
 

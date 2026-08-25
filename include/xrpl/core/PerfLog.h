@@ -4,9 +4,10 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/json/json_value.h>
 
+#include <boost/filesystem.hpp>
+
 #include <chrono>
 #include <cstdint>
-#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
@@ -43,7 +44,7 @@ public:
      */
     struct Setup
     {
-        std::filesystem::path perfLog;
+        boost::filesystem::path perfLog;
         // log_interval is in milliseconds to support faster testing.
         milliseconds logInterval{seconds(1)};
     };
@@ -148,7 +149,7 @@ public:
 };
 
 PerfLog::Setup
-setupPerfLog(Section const& section, std::filesystem::path const& configDir);
+setupPerfLog(Section const& section, boost::filesystem::path const& configDir);
 
 std::unique_ptr<PerfLog>
 makePerfLog(

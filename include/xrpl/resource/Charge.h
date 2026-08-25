@@ -4,7 +4,7 @@
 #include <ostream>
 #include <string>
 
-namespace xrpl::resource {
+namespace xrpl::Resource {
 
 /**
  * A consumption charge.
@@ -32,7 +32,7 @@ public:
     label() const;
 
     /**
-     * Return the cost of the charge in resource::Manager units.
+     * Return the cost of the charge in Resource::Manager units.
      */
     [[nodiscard]] value_type
     cost() const;
@@ -60,4 +60,4 @@ private:
 std::ostream&
 operator<<(std::ostream& os, Charge const& v);
 
-}  // namespace xrpl::resource
+}  // namespace xrpl::Resource

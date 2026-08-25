@@ -26,7 +26,7 @@ namespace xrpl {
 /**
  * Processes XRPL RPC calls.
  */
-namespace rpc_call {
+namespace RPCCall {
 
 int
 fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs);
@@ -47,7 +47,7 @@ fromNetwork(
     std::function<void(json::Value const& jvInput)> callbackFuncP =
         std::function<void(json::Value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
-}  // namespace rpc_call
+}  // namespace RPCCall
 
 json::Value
 rpcCmdToJson(

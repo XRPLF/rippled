@@ -6,6 +6,9 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/rdb/SociDB.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/boost-optional.h>  // IWYU pragma: keep
@@ -17,7 +20,6 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
-#include <filesystem>
 #include <iterator>
 #include <limits>
 #include <stdexcept>
@@ -30,7 +32,7 @@ class SociDB_test final : public TestSuite
 {
 private:
     static void
-    setupSQLiteConfig(BasicConfig& config, std::filesystem::path const& dbPath)
+    setupSQLiteConfig(BasicConfig& config, boost::filesystem::path const& dbPath)
     {
         config.overwrite(Sections::kSqdb, Keys::kBackend, "sqlite");
         auto value = dbPath.string();
@@ -39,18 +41,18 @@ private:
     }
 
     static void
-    cleanupDatabaseDir(std::filesystem::path const& dbPath)
+    cleanupDatabaseDir(boost::filesystem::path const& dbPath)
     {
-        using namespace std::filesystem;
+        using namespace boost::filesystem;
         if (!exists(dbPath) || !is_directory(dbPath) || !is_empty(dbPath))
             return;
         remove(dbPath);
     }
 
     static void
-    setupDatabaseDir(std::filesystem::path const& dbPath)
+    setupDatabaseDir(boost::filesystem::path const& dbPath)
     {
-        using namespace std::filesystem;
+        using namespace boost::filesystem;
         if (!exists(dbPath))
         {
             create_directory(dbPath);
@@ -63,10 +65,10 @@ private:
             Throw<std::runtime_error>("Cannot create directory: " + dbPath.string());
         }
     }
-    static std::filesystem::path
+    static boost::filesystem::path
     getDatabasePath()
     {
-        return std::filesystem::current_path() / "socidb_test_databases";
+        return boost::filesystem::current_path() / "socidb_test_databases";
     }
 
 public:
@@ -106,7 +108,7 @@ public:
         for (auto const& i : d)
         {
             DBConfig const sc(c, i.first);
-            BEAST_EXPECT(sc.connectionString().ends_with(i.first + i.second));
+            BEAST_EXPECT(boost::ends_with(sc.connectionString(), i.first + i.second));
         }
     }
     void
@@ -156,7 +158,7 @@ public:
             checkValues(s);
         }
         {
-            namespace bfs = std::filesystem;
+            namespace bfs = boost::filesystem;
             // Remove the database
             bfs::path const dbPath(sc.connectionString());
             if (bfs::is_regular_file(dbPath))
@@ -230,7 +232,7 @@ public:
             // boost::tuple. DO NOT USE soci row!
         }
         {
-            namespace bfs = std::filesystem;
+            namespace bfs = boost::filesystem;
             // Remove the database
             bfs::path const dbPath(sc.connectionString());
             if (bfs::is_regular_file(dbPath))
@@ -282,7 +284,7 @@ public:
             s << "SELECT LedgerSeq FROM Ledgers;", soci::into(ledgersLS);
             BEAST_EXPECT(ledgersLS.size() == numRows);
         }
-        namespace bfs = std::filesystem;
+        namespace bfs = boost::filesystem;
         // Remove the database
         bfs::path const dbPath(sc.connectionString());
         if (bfs::is_regular_file(dbPath))

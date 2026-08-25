@@ -25,12 +25,6 @@ struct Vault
         Asset asset;
         std::optional<std::uint32_t> flags =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
-        std::optional<std::uint8_t> vaultKind =
-            std::nullopt;  // NOLINT(readability-redundant-member-init)
-        std::optional<std::uint32_t> subscriptionDate =
-            std::nullopt;  // NOLINT(readability-redundant-member-init)
-        std::optional<std::uint32_t> redemptionDate =
-            std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
     /**

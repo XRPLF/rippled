@@ -21,7 +21,7 @@ class OracleSetBuilder;
  * Type: ttORACLE_SET (51)
  * Delegable: Delegation::Delegable
  * Amendment: featurePriceOracle
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OracleSetBuilder to construct new transactions.

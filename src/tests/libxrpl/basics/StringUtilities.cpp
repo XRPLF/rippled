@@ -290,44 +290,4 @@ TEST_F(StringUtilitiesTest, to_string)
     EXPECT_EQ(result, "hello");
 }
 
-TEST_F(StringUtilitiesTest, trimWhitespace)
-{
-    EXPECT_EQ(trimWhitespace(""), "");
-    EXPECT_EQ(trimWhitespace("   "), "");
-    EXPECT_EQ(trimWhitespace("abc"), "abc");
-    EXPECT_EQ(trimWhitespace("  abc"), "abc");
-    EXPECT_EQ(trimWhitespace("abc  "), "abc");
-    EXPECT_EQ(trimWhitespace(" \t\n\v\f\r abc \t\n\v\f\r "), "abc");
-
-    // Interior whitespace is preserved.
-    EXPECT_EQ(trimWhitespace("  a b\tc  "), "a b\tc");
-}
-
-TEST_F(StringUtilitiesTest, toLower)
-{
-    EXPECT_EQ(toLower(""), "");
-    EXPECT_EQ(toLower("ABC"), "abc");
-    EXPECT_EQ(toLower("AbC123"), "abc123");
-    EXPECT_EQ(toLower("already lower"), "already lower");
-
-    // Only 'A'-'Z' are remapped. Neighbouring punctuation and digits, which a
-    // buggy range check could catch, must survive untouched.
-    EXPECT_EQ(toLower("@[`{_^"), "@[`{_^");
-}
-
-// Both helpers are documented as depending only on their input. Guard that by
-// checking the bytes just outside ASCII, which a locale-aware isspace/tolower
-// could classify differently.
-TEST_F(StringUtilitiesTest, trimAndLowerIgnoreLocale)
-{
-    // 0xA0 is NO-BREAK SPACE in Latin-1 and is whitespace to some locales.
-    std::string const nbsp("\xA0", 1);
-    EXPECT_EQ(trimWhitespace(nbsp), nbsp);
-    EXPECT_EQ(trimWhitespace(" " + nbsp + " "), nbsp);
-
-    // 0xC0 is LATIN CAPITAL LETTER A WITH GRAVE in Latin-1.
-    std::string const agrave("\xC0", 1);
-    EXPECT_EQ(toLower(agrave), agrave);
-}
-
 }  // namespace xrpl

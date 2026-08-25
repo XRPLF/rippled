@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -73,14 +72,7 @@ verifyProofs(
     std::shared_ptr<SLE const> const& mptoken)
 {
     if (!mptoken->isFieldPresent(sfHolderEncryptionKey))
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::verifyProofs : preclaim already validated the holder encryption key is "
-            "present");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
     auto const account = tx[sfAccount];
@@ -177,14 +169,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     // already checked in preflight, but should also check that issuer on
     // the issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == account)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTConvertBack::preclaim : issuer derived from the MPT ID must "
-            "match the ledger's stored issuer");
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleMptoken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
     if (!sleMptoken)
@@ -200,14 +185,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     // Sanity check: holder's MPToken must have auditor balance field if auditing
     // is enabled
     if (requiresAuditor && !sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTConvertBack::preclaim : issuance-level auditing implies the "
-            "MPToken already carries an auditor balance");
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // if the total circulating confidential balance is smaller than what the
     // holder is trying to convert back, we know for sure this txn should
@@ -237,25 +215,11 @@ ConfidentialMPTConvertBack::doApply()
 
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTConvertBack::doApply : preclaim already validated the "
-            "MPToken exists");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ConfidentialMPTConvertBack::doApply : preclaim already validated the "
-            "issuance exists");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const amtToConvertBack = ctx_.tx[sfMPTAmount];
     auto const amt = (*sleMptoken)[~sfMPTAmount].valueOr(0);

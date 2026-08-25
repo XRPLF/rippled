@@ -186,8 +186,8 @@ buildHandshake(
     boost::beast::http::fields& h,
     xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::ip::Address publicIp,
-    beast::ip::Address remoteIp,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     Application& app)
 {
     if (networkID)
@@ -213,7 +213,7 @@ buildHandshake(
     if (!app.config().serverDomain.empty())
         h.insert("Server-Domain", app.config().serverDomain);
 
-    if (beast::ip::isPublic(remoteIp))
+    if (beast::IP::isPublic(remoteIp))
         h.insert("Remote-IP", remoteIp.to_string());
 
     if (!publicIp.is_unspecified())
@@ -231,8 +231,8 @@ verifyHandshake(
     boost::beast::http::fields const& headers,
     xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::ip::Address publicIp,
-    beast::ip::Address remote,
+    beast::IP::Address publicIp,
+    beast::IP::Address remote,
     Application& app)
 {
     if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
@@ -331,7 +331,7 @@ verifyHandshake(
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
 
-        if (beast::ip::isPublic(remote) && remote != localIp)
+        if (beast::IP::isPublic(remote) && remote != localIp)
         {
             throw std::runtime_error(
                 "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
@@ -346,7 +346,7 @@ verifyHandshake(
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::ip::isPublic(remote) && !beast::ip::isUnspecified(publicIp))
+        if (beast::IP::isPublic(remote) && !beast::IP::isUnspecified(publicIp))
         {
             // We know our public IP and peer reports our connection came
             // from some other IP.
@@ -374,7 +374,7 @@ makeRequest(
     m.method(boost::beast::http::verb::get);
     m.target("/");
     m.version(11);
-    m.insert("User-Agent", build_info::getFullVersionString());
+    m.insert("User-Agent", BuildInfo::getFullVersionString());
     m.insert("Upgrade", supportedProtocolVersions());
     m.insert("Connection", "Upgrade");
     m.insert("Connect-As", "Peer");
@@ -390,8 +390,8 @@ http_response_type
 makeResponse(
     bool crawlPublic,
     http_request_type const& req,
-    beast::ip::Address publicIp,
-    beast::ip::Address remoteIp,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion protocol,
@@ -403,7 +403,7 @@ makeResponse(
     resp.insert("Connection", "Upgrade");
     resp.insert("Upgrade", to_string(protocol));
     resp.insert("Connect-As", "Peer");
-    resp.insert("Server", build_info::getFullVersionString());
+    resp.insert("Server", BuildInfo::getFullVersionString());
     resp.insert("Crawl", crawlPublic ? "public" : "private");
     resp.insert(
         "X-Protocol-Ctl",

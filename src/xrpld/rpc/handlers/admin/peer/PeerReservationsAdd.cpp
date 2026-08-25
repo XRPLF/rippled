@@ -15,12 +15,12 @@
 namespace xrpl {
 
 json::Value
-doPeerReservationsAdd(rpc::JsonContext& context)
+doPeerReservationsAdd(RPC::JsonContext& context)
 {
     auto const& params = context.params;
 
     if (!params.isMember(jss::public_key))
-        return rpc::missingFieldError(jss::public_key);
+        return RPC::missingFieldError(jss::public_key);
 
     // Returning JSON from every function ruins any attempt to encapsulate
     // the pattern of "get field F as type T, and diagnose an error if it is
@@ -36,7 +36,7 @@ doPeerReservationsAdd(rpc::JsonContext& context)
     // essentially an optional (the "maybe monad" in Haskell) with a non-unit
     // type for the failure case to capture more information.
     if (!params[jss::public_key].isString())
-        return rpc::expectedFieldError(jss::public_key, "a string");
+        return RPC::expectedFieldError(jss::public_key, "a string");
 
     // Same for the pattern of "if field F is present, make sure it has type T
     // and get it".
@@ -44,7 +44,7 @@ doPeerReservationsAdd(rpc::JsonContext& context)
     if (params.isMember(jss::description))
     {
         if (!params[jss::description].isString())
-            return rpc::expectedFieldError(jss::description, "a string");
+            return RPC::expectedFieldError(jss::description, "a string");
         desc = params[jss::description].asString();
     }
 

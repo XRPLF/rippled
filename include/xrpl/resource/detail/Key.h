@@ -7,17 +7,17 @@
 #include <cstddef>
 #include <utility>
 
-namespace xrpl::resource {
+namespace xrpl::Resource {
 
 // The consumer key
 struct Key
 {
     Kind kind;
-    beast::ip::Endpoint address;
+    beast::IP::Endpoint address;
 
     Key() = delete;
 
-    Key(Kind k, beast::ip::Endpoint addr) : kind(k), address(std::move(addr))
+    Key(Kind k, beast::IP::Endpoint addr) : kind(k), address(std::move(addr))
     {
     }
 
@@ -47,4 +47,4 @@ struct Key
     };
 };
 
-}  // namespace xrpl::resource
+}  // namespace xrpl::Resource

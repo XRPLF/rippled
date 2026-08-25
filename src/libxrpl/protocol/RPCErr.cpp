@@ -13,7 +13,7 @@ json::Value
 rpcError(ErrorCodeI iError)
 {
     json::Value jvResult(json::ValueType::Object);
-    rpc::injectError(iError, jvResult);
+    RPC::injectError(iError, jvResult);
     return jvResult;
 }
 

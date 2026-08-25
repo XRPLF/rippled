@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -374,7 +373,7 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
  * increases quality of AMM steps, increasing the strand's composite
  * quality as the result.
  */
-template <StepAmount TOutAmt>
+template <typename TOutAmt>
 inline TOutAmt
 limitOut(
     ReadView const& v,
@@ -412,29 +411,21 @@ limitOut(
         auto const out = qf->outFromAvgQ(limitQuality);
         if (!out)
             return remainingOut;
-        if constexpr (std::is_same_v<TOutAmt, XRPAmount> || std::is_same_v<TOutAmt, MPTAmount>)
+        if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
         {
-            auto const roundedOut = TOutAmt{*out};
-            // Integral outputs that round above the continuous target can
-            // realize worse average quality than the requested limit. Keep the
-            // default rounded value when it still satisfies the limit, since it
-            // is the largest matching offer; otherwise round down.
-            if (v.rules().enabled(featureMPTokensV2) && roundedOut > *out &&
-                !qf->satisfiesAvgQ(limitQuality, roundedOut))
-            {
-                NumberRoundModeGuard const g(Number::RoundingMode::Downward);
-                return TOutAmt{*out};
-            }
-            return roundedOut;
+            return XRPAmount{*out};
         }
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
         {
             return IOUAmount{*out};
         }
+        else if constexpr (std::is_same_v<TOutAmt, MPTAmount>)
+        {
+            return MPTAmount{*out};
+        }
         else
         {
-            static constexpr bool kAlwaysFalse = !std::is_same_v<TOutAmt, TOutAmt>;
-            static_assert(kAlwaysFalse, "Unhandled StepAmount type");
+            return STAmount{remainingOut.asset(), out->mantissa(), out->exponent()};
         }
     }();
     // A tiny difference could be due to the round off

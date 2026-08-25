@@ -4,7 +4,7 @@
 
 #include <memory>
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 /**
  * Parsed key/value blob into NodeObject components.
@@ -49,4 +49,4 @@ private:
     int dataBytes_;
 };
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

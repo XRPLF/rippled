@@ -2,8 +2,6 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -18,7 +16,7 @@ namespace xrpl {
 class SponsorshipSet : public Transactor
 {
 public:
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit SponsorshipSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -49,15 +47,6 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
-
-private:
-    TER
-    createSponsorship(
-        Keylet const& sponsorshipKeylet,
-        AccountID const& sponsorID,
-        AccountID const& sponseeID,
-        SLE::ref sponsorAccSle,
-        SLE::ref reserveSponsorAccSle);
 };
 
 }  // namespace xrpl

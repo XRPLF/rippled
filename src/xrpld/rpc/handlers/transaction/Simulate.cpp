@@ -44,7 +44,7 @@
 namespace xrpl {
 
 static std::expected<std::uint32_t, json::Value>
-getAutofillSequence(json::Value const& txJson, rpc::JsonContext& context)
+getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
 {
     // autofill Sequence
     bool const hasTicketSeq = txJson.isMember(sfTicketSequence.jsonName);
@@ -53,14 +53,14 @@ getAutofillSequence(json::Value const& txJson, rpc::JsonContext& context)
     {
         // sanity check, should fail earlier
         // LCOV_EXCL_START
-        return std::unexpected(rpc::invalidFieldError("tx.Account"));
+        return std::unexpected(RPC::invalidFieldError("tx.Account"));
         // LCOV_EXCL_STOP
     }
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
     {
         return std::unexpected(
-            rpc::makeError(RpcSrcActMalformed, rpc::invalidFieldMessage("tx.Account")));
+            RPC::makeError(RpcSrcActMalformed, RPC::invalidFieldMessage("tx.Account")));
     }
     SLE::const_pointer const sle =
         context.app.getOpenLedger().current()->read(keylet::account(*srcAddressID));
@@ -88,7 +88,7 @@ autofillSignature(json::Value& sigObject, std::string const& fieldPrefix = "tx")
     if (sigObject.isMember(jss::Signers))
     {
         if (!sigObject[jss::Signers].isArray())
-            return rpc::invalidFieldError(fieldPrefix + ".Signers");
+            return RPC::invalidFieldError(fieldPrefix + ".Signers");
         // check multisigned signers
         for (unsigned index = 0; index < sigObject[jss::Signers].size(); index++)
         {
@@ -96,7 +96,7 @@ autofillSignature(json::Value& sigObject, std::string const& fieldPrefix = "tx")
             if (!signer.isObject() || !signer.isMember(jss::Signer) ||
                 !signer[jss::Signer].isObject())
             {
-                return rpc::invalidFieldError(
+                return RPC::invalidFieldError(
                     fieldPrefix + ".Signers[" + std::to_string(index) + "]");
             }
 
@@ -133,7 +133,7 @@ autofillSignature(json::Value& sigObject, std::string const& fieldPrefix = "tx")
 }
 
 static std::optional<json::Value>
-autofillTx(json::Value& txJson, rpc::JsonContext& context)
+autofillTx(json::Value& txJson, RPC::JsonContext& context)
 {
     if (auto error = autofillSignature(txJson))
         return error;
@@ -142,7 +142,7 @@ autofillTx(json::Value& txJson, rpc::JsonContext& context)
     {
         auto& sponsorSignature = txJson[sfSponsorSignature.jsonName];
         if (!sponsorSignature.isObject())
-            return rpc::objectFieldError(sfSponsorSignature.jsonName);
+            return RPC::objectFieldError(sfSponsorSignature.jsonName);
 
         if (auto const error = autofillSignature(sponsorSignature, "tx.SponsorSignature"))
             return error;
@@ -167,7 +167,7 @@ autofillTx(json::Value& txJson, rpc::JsonContext& context)
     {
         // Autofill Fee after normalizing nested signer fields so the fee
         // estimator sees the full transaction shape.
-        auto feeOrError = rpc::getCurrentNetworkFee(
+        auto feeOrError = RPC::getCurrentNetworkFee(
             context.role,
             context.app.config(),
             context.app.getFeeTrack(),
@@ -191,18 +191,18 @@ getTxJsonFromParams(json::Value const& params)
     {
         if (params.isMember(jss::tx_json))
         {
-            return rpc::makeParamError("Can only include one of `tx_blob` and `tx_json`.");
+            return RPC::makeParamError("Can only include one of `tx_blob` and `tx_json`.");
         }
 
         auto const txBlob = params[jss::tx_blob];
         if (!txBlob.isString())
         {
-            return rpc::invalidFieldError(jss::tx_blob);
+            return RPC::invalidFieldError(jss::tx_blob);
         }
 
         auto unHexed = strUnHex(txBlob.asString());
         if (!unHexed || unHexed->empty())
-            return rpc::invalidFieldError(jss::tx_blob);
+            return RPC::invalidFieldError(jss::tx_blob);
 
         try
         {
@@ -211,7 +211,7 @@ getTxJsonFromParams(json::Value const& params)
         }
         catch (std::runtime_error const&)
         {
-            return rpc::invalidFieldError(jss::tx_blob);
+            return RPC::invalidFieldError(jss::tx_blob);
         }
     }
     else if (params.isMember(jss::tx_json))
@@ -219,30 +219,30 @@ getTxJsonFromParams(json::Value const& params)
         txJson = params[jss::tx_json];
         if (!txJson.isObject())
         {
-            return rpc::objectFieldError(jss::tx_json);
+            return RPC::objectFieldError(jss::tx_json);
         }
     }
     else
     {
-        return rpc::makeParamError("Neither `tx_blob` nor `tx_json` included.");
+        return RPC::makeParamError("Neither `tx_blob` nor `tx_json` included.");
     }
 
     // basic sanity checks for transaction shape
     if (!txJson.isMember(jss::TransactionType))
     {
-        return rpc::missingFieldError("tx.TransactionType");
+        return RPC::missingFieldError("tx.TransactionType");
     }
 
     if (!txJson.isMember(jss::Account))
     {
-        return rpc::missingFieldError("tx.Account");
+        return RPC::missingFieldError("tx.Account");
     }
 
     return txJson;
 }
 
 static json::Value
-simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
+simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 {
     json::Value jvResult;
     // Process the transaction
@@ -290,11 +290,11 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::Values::None);
-            rpc::insertDeliveredAmount(
+            RPC::insertDeliveredAmount(
                 jvResult[jss::meta], view, transaction->getSTransaction(), *result.metadata);
-            rpc::insertNFTSyntheticInJson(
+            RPC::insertNFTSyntheticInJson(
                 jvResult, transaction->getSTransaction(), *result.metadata);
-            rpc::insertMPTokenIssuanceID(
+            RPC::insertMPTokenIssuanceID(
                 jvResult[jss::meta], transaction->getSTransaction(), *result.metadata);
         }
     }
@@ -317,23 +317,23 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
 //   binary: <bool>
 // }
 json::Value
-doSimulate(rpc::JsonContext& context)
+doSimulate(RPC::JsonContext& context)
 {
-    context.loadType = resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     json::Value txJson;  // the tx as a JSON
 
     // check validity of `binary` param
     if (context.params.isMember(jss::binary) && !context.params[jss::binary].isBool())
     {
-        return rpc::invalidFieldError(jss::binary);
+        return RPC::invalidFieldError(jss::binary);
     }
 
     for (auto const field : {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
     {
         if (context.params.isMember(field))
         {
-            return rpc::invalidFieldError(field);
+            return RPC::invalidFieldError(field);
         }
     }
 
@@ -365,13 +365,13 @@ doSimulate(rpc::JsonContext& context)
 
     if (stTx->getTxnType() == ttBATCH)
     {
-        return rpc::makeError(RpcNotImpl);
+        return RPC::makeError(RpcNotImpl);
     }
 
     // Reject transactions with the tfInnerBatchTxn flag.
     if (stTx->isFlag(tfInnerBatchTxn))
     {
-        return rpc::makeError(
+        return RPC::makeError(
             RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
     }
 

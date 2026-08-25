@@ -24,7 +24,6 @@
 #include <optional>
 #include <set>
 #include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -35,11 +34,6 @@ enum class SkipEntry : bool { No = false, Yes };
 // Observers
 //
 //------------------------------------------------------------------------------
-
-/**
- * Whether an expiration check should be inclusive or exclusive.
- */
-enum class ExpiryComparison { Inclusive, Exclusive };
 
 /**
  * Determines whether the given expiration time has passed.
@@ -60,16 +54,11 @@ enum class ExpiryComparison { Inclusive, Exclusive };
  *
  * @param view The ledger whose parent time is used as the clock.
  * @param exp The optional expiration time we want to check.
- * @param comparison Whether the boundary is inclusive (`now >= exp`, the
- *                   default) or exclusive (`now > exp`).
  *
  * @return `true` if `exp` is in the past; `false` otherwise.
  */
 [[nodiscard]] bool
-hasExpired(
-    ReadView const& view,
-    std::optional<std::uint32_t> const& exp,
-    ExpiryComparison comparison = ExpiryComparison::Inclusive);
+hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
 
 // Note, depth parameter is used to limit the recursion depth
 [[nodiscard]] bool
@@ -80,38 +69,11 @@ isVaultPseudoAccountFrozen(
     std::uint8_t depth);
 
 [[nodiscard]] bool
-isVaultPseudoAccountFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    SLE const& issuanceSle,
-    std::uint8_t depth);
-
-[[nodiscard]] bool
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
     Asset const& asset,
     Asset const& asset2);
-
-/**
- * Check whether an AMM LPToken may be transferred between @p from and @p to.
- *
- * @p lpTokenIssuer is the issuer of the LPToken being moved. If it is not an
- * AMM account the token is not an LPToken and the transfer is unconditionally
- * permitted. Otherwise, for each MPT pool asset of that AMM, canTransfer() must
- * permit the transfer (which exempts the MPT issuer). Non-MPT pool assets are
- * always transferable by this check, so it is implicitly gated by
- * featureMPTokensV2 (MPTs can only be AMM pool assets once V2 is enabled).
- *
- * @return tesSUCCESS if permitted, otherwise the canTransfer() failure code
- * (e.g. tecNO_AUTH) of the first MPT pool asset that disallows it.
- */
-[[nodiscard]] TER
-canTransferLPToken(
-    ReadView const& view,
-    AccountID const& from,
-    AccountID const& to,
-    AccountID const& lpTokenIssuer);
 
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
@@ -199,10 +161,7 @@ dirLink(
  *      if withdrawing to self.
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
- *      the sender has it (account-based or credential-based).
- *    - Expects any credentials passed in to already exist in the ledger, and
- *      returns an internal error otherwise. Validate them beforehand with
- *      credentials::valid().
+ *      the sender has it.
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */
@@ -213,8 +172,7 @@ canWithdraw(
     AccountID const& to,
     SLE::const_ref toSle,
     STAmount const& amount,
-    bool hasDestinationTag,
-    std::optional<std::vector<uint256>> const& credentialIDs = std::nullopt);
+    bool hasDestinationTag);
 
 /**
  * Checks that can withdraw funds from an object to itself or a destination.
@@ -227,10 +185,7 @@ canWithdraw(
  *      if withdrawing to self.
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
- *      the sender has it (account-based or credential-based).
- *    - Expects any credentials passed in to already exist in the ledger, and
- *      returns an internal error otherwise. Validate them beforehand with
- *      credentials::valid().
+ *      the sender has it.
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */
@@ -240,25 +195,20 @@ canWithdraw(
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount,
-    bool hasDestinationTag,
-    std::optional<std::vector<uint256>> const& credentialIDs = std::nullopt);
+    bool hasDestinationTag);
 
 /**
  * Checks that can withdraw funds from an object to itself or a destination.
  *
  * The receiver may be either the submitting account (sfAccount) or a different
- * destination account (sfDestination). Credentials, if any, are taken from the
- * transaction's sfCredentialIDs field.
+ * destination account (sfDestination).
  *
  *    - Checks that the receiver account exists.
  *    - If the receiver requires a destination tag, check that one exists, even
  *      if withdrawing to self.
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
- *      the sender has it (account-based or credential-based).
- *    - Expects any credentials in sfCredentialIDs to already exist in the
- *      ledger, and returns an internal error otherwise. Validate them
- *      beforehand with credentials::valid().
+ *      the sender has it.
  *    - Checks that the receiver will not exceed the limit (IOU trustline limit
  *      or MPT MaximumAmount).
  */

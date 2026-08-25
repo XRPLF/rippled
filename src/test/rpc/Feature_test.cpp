@@ -187,13 +187,13 @@ class Feature_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        std::string const name = "fixCleanup3_1_3";
+        std::string const name = "fixAMMOverflowOffer";
         auto jrr = env.rpc("feature", name)[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
         auto const expected = to_string(sha512Half(Slice(name.data(), name.size())));
-        char const sha[] = "303ACB16CF8DBD3B5C34F131A9D19A7DE01AE05F480A8A682B869D1B4AAC8CFC";
+        char const sha[] = "12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E2A87F1D8107";
         BEAST_EXPECT(expected == sha);
         BEAST_EXPECT(jrr.isMember(expected));
         auto feature = *(jrr.begin());
@@ -475,7 +475,7 @@ class Feature_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Env env{*this, FeatureBitset{featurePriceOracle}};
-        static constexpr char const* kFeatureName = "fixCleanup3_1_3";
+        static constexpr char const* kFeatureName = "fixAMMOverflowOffer";
 
         auto jrr = env.rpc("feature", kFeatureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))

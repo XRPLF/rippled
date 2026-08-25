@@ -94,6 +94,12 @@ operator==(STCurrency const& lhs, STCurrency const& rhs)
 }
 
 inline bool
+operator!=(STCurrency const& lhs, STCurrency const& rhs)
+{
+    return !operator==(lhs, rhs);
+}
+
+inline bool
 operator<(STCurrency const& lhs, STCurrency const& rhs)
 {
     return lhs.currency() < rhs.currency();

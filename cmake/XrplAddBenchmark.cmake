@@ -1,5 +1,3 @@
-include_guard()
-
 include(isolate_headers)
 
 # Define a benchmark executable for the module `name`.

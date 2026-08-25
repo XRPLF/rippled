@@ -21,7 +21,7 @@ class LoanBrokerCoverClawbackBuilder;
  * Type: ttLOAN_BROKER_COVER_CLAWBACK (78)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: Privilege::NoPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerCoverClawbackBuilder to construct new transactions.

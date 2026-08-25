@@ -16,7 +16,7 @@
 #include <mutex>
 #include <string>
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 class DatabaseRotatingImp : public DatabaseRotating
 {
@@ -41,7 +41,7 @@ public:
 
     void
     rotate(
-        std::unique_ptr<node_store::Backend>&& newBackend,
+        std::unique_ptr<NodeStore::Backend>&& newBackend,
         std::function<void(std::string const& writableName, std::string const& archiveName)> const&
             f) override;
 
@@ -94,4 +94,4 @@ private:
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override;
 };
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

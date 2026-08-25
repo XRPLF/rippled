@@ -8,7 +8,7 @@
 namespace xrpl {
 
 json::Value
-doBlackList(rpc::JsonContext& context)
+doBlackList(RPC::JsonContext& context)
 {
     auto& rm = context.app.getResourceManager();
     if (context.params.isMember(jss::threshold))

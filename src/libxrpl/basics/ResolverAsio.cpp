@@ -255,7 +255,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        std::vector<beast::ip::Endpoint> addresses;
+        std::vector<beast::IP::Endpoint> addresses;
         auto iter = results.begin();
 
         // If we get an error message back, we don't return any
@@ -283,7 +283,7 @@ public:
         // first attempt to parse as an endpoint (IP addr + port).
         // If that doesn't succeed, fall back to generic name + port parsing
 
-        if (auto const result = beast::ip::Endpoint::fromStringChecked(str))
+        if (auto const result = beast::IP::Endpoint::fromStringChecked(str))
         {
             return make_pair(result->address().to_string(), std::to_string(result->port()));
         }

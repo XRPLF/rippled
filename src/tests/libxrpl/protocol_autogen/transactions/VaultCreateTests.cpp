@@ -36,9 +36,6 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const dataValue = canonical_VL();
     auto const scaleValue = canonical_UINT8();
-    auto const vaultKindValue = canonical_UINT8();
-    auto const subscriptionDateValue = canonical_UINT32();
-    auto const redemptionDateValue = canonical_UINT32();
 
     VaultCreateBuilder builder{
         accountValue,
@@ -54,9 +51,6 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     builder.setWithdrawalPolicy(withdrawalPolicyValue);
     builder.setData(dataValue);
     builder.setScale(scaleValue);
-    builder.setVaultKind(vaultKindValue);
-    builder.setSubscriptionDate(subscriptionDateValue);
-    builder.setRedemptionDate(redemptionDateValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -128,30 +122,6 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasScale());
     }
 
-    {
-        auto const& expected = vaultKindValue;
-        auto const actualOpt = tx.getVaultKind();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultKind should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultKind");
-        EXPECT_TRUE(tx.hasVaultKind());
-    }
-
-    {
-        auto const& expected = subscriptionDateValue;
-        auto const actualOpt = tx.getSubscriptionDate();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubscriptionDate should be present";
-        expectEqualField(expected, *actualOpt, "sfSubscriptionDate");
-        EXPECT_TRUE(tx.hasSubscriptionDate());
-    }
-
-    {
-        auto const& expected = redemptionDateValue;
-        auto const actualOpt = tx.getRedemptionDate();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionDate should be present";
-        expectEqualField(expected, *actualOpt, "sfRedemptionDate");
-        EXPECT_TRUE(tx.hasRedemptionDate());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -175,9 +145,6 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const dataValue = canonical_VL();
     auto const scaleValue = canonical_UINT8();
-    auto const vaultKindValue = canonical_UINT8();
-    auto const subscriptionDateValue = canonical_UINT32();
-    auto const redemptionDateValue = canonical_UINT32();
 
     // Build an initial transaction
     VaultCreateBuilder initialBuilder{
@@ -193,9 +160,6 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setWithdrawalPolicy(withdrawalPolicyValue);
     initialBuilder.setData(dataValue);
     initialBuilder.setScale(scaleValue);
-    initialBuilder.setVaultKind(vaultKindValue);
-    initialBuilder.setSubscriptionDate(subscriptionDateValue);
-    initialBuilder.setRedemptionDate(redemptionDateValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -260,27 +224,6 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getScale();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfScale should be present";
         expectEqualField(expected, *actualOpt, "sfScale");
-    }
-
-    {
-        auto const& expected = vaultKindValue;
-        auto const actualOpt = rebuiltTx.getVaultKind();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultKind should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultKind");
-    }
-
-    {
-        auto const& expected = subscriptionDateValue;
-        auto const actualOpt = rebuiltTx.getSubscriptionDate();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubscriptionDate should be present";
-        expectEqualField(expected, *actualOpt, "sfSubscriptionDate");
-    }
-
-    {
-        auto const& expected = redemptionDateValue;
-        auto const actualOpt = rebuiltTx.getRedemptionDate();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionDate should be present";
-        expectEqualField(expected, *actualOpt, "sfRedemptionDate");
     }
 
 }
@@ -352,12 +295,6 @@ TEST(TransactionsVaultCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getData().has_value());
     EXPECT_FALSE(tx.hasScale());
     EXPECT_FALSE(tx.getScale().has_value());
-    EXPECT_FALSE(tx.hasVaultKind());
-    EXPECT_FALSE(tx.getVaultKind().has_value());
-    EXPECT_FALSE(tx.hasSubscriptionDate());
-    EXPECT_FALSE(tx.getSubscriptionDate().has_value());
-    EXPECT_FALSE(tx.hasRedemptionDate());
-    EXPECT_FALSE(tx.getRedemptionDate().has_value());
 }
 
 }

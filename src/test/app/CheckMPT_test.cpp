@@ -31,7 +31,6 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -654,32 +653,6 @@ class CheckMPT_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
-
-        {
-            Env env{*this, features};
-
-            env.fund(XRP(1'000), gw, alice, bob);
-
-            // MPT DeliverMin should not be capped at half of the legal range.
-            std::uint64_t constexpr deliverMin = (kMaxMpTokenAmount / 2) + 1;
-            MPT const usd = MPTTester(
-                {.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = kMaxMpTokenAmount});
-
-            env(pay(gw, alice, usd(deliverMin)));
-            env.close();
-
-            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, usd(deliverMin)));
-            env.close();
-
-            env(check::cash(bob, chkId, check::DeliverMin(usd(deliverMin))));
-            verifyDeliveredAmount(env, usd(deliverMin));
-            env.require(Balance(alice, usd(0)));
-            env.require(Balance(bob, usd(deliverMin)));
-            BEAST_EXPECT(checksOnAccount(env, alice).empty());
-            BEAST_EXPECT(checksOnAccount(env, bob).empty());
-        }
-
         {
             // Examine the effects of the asfRequireAuth flag.
             Env env(*this, features);
@@ -832,32 +805,6 @@ class CheckMPT_test : public beast::unit_test::Suite
         verifyDeliveredAmount(env, usd(100));
         env.require(Balance(alice, usd(1'000 - 125)));
         env.require(Balance(bob, usd(0 + 100)));
-        BEAST_EXPECT(checksOnAccount(env, alice).empty());
-        BEAST_EXPECT(checksOnAccount(env, bob).empty());
-
-        // With the maximum transfer fee, this is the largest output whose
-        // fee-adjusted debit is still within SendMax.
-        std::uint64_t constexpr maxDeliver = (kMaxMpTokenAmount / 3) * 2;
-        MPT const eur = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice, bob},
-             .transferFee = kMaxTransferFee,
-             .maxAmt = kMaxMpTokenAmount});
-
-        env(pay(gw, alice, eur(kMaxMpTokenAmount)));
-        env.close();
-
-        uint256 const chkIdMax{getCheckIndex(alice, env.seq(alice))};
-        env(check::create(alice, bob, eur(kMaxMpTokenAmount)));
-        env.close();
-
-        // The DeliverMin cap must divide SendMax by the rate before flow()
-        // computes the fee-adjusted input.
-        env(check::cash(bob, chkIdMax, check::DeliverMin(eur(maxDeliver))));
-        verifyDeliveredAmount(env, eur(maxDeliver));
-        env.require(Balance(alice, eur(1)));
-        env.require(Balance(bob, eur(maxDeliver)));
         BEAST_EXPECT(checksOnAccount(env, alice).empty());
         BEAST_EXPECT(checksOnAccount(env, bob).empty());
     }

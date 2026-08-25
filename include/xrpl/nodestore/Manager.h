@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-namespace xrpl::node_store {
+namespace xrpl::NodeStore {
 
 /**
  * Singleton for managing NodeStore factories and back ends.
@@ -98,4 +98,4 @@ public:
         beast::Journal journal) = 0;
 };
 
-}  // namespace xrpl::node_store
+}  // namespace xrpl::NodeStore

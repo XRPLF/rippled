@@ -265,9 +265,19 @@ public:
         return v == data_;
     }
     bool
+    operator!=(Blob const& v) const
+    {
+        return v != data_;
+    }
+    bool
     operator==(Serializer const& v) const
     {
         return v.data_ == data_;
+    }
+    bool
+    operator!=(Serializer const& v) const
+    {
+        return v.data_ != data_;
     }
 
     static int

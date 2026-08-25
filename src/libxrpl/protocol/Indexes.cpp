@@ -181,13 +181,26 @@ getQuality(uint256 const& uBase)
     return boost::endian::load_big_u64(uBase.end() - 8);
 }
 
+uint256
+getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
+{
+    return indexHash(LedgerNameSpace::Ticket, account, ticketSeq);
+}
+
+uint256
+getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
+{
+    XRPL_ASSERT(ticketSeq.isTicket(), "xrpl::getTicketIndex : valid input");
+    return getTicketIndex(account, ticketSeq.value());
+}
+
 MPTID
-makeMptID(std::uint32_t const sequence, AccountID const& account)
+makeMptID(std::uint32_t sequence, AccountID const& account)
 {
     MPTID u;
-    auto const bigEndianSequence = boost::endian::native_to_big(sequence);
-    memcpy(u.data(), &bigEndianSequence, sizeof(bigEndianSequence));
-    memcpy(u.data() + sizeof(bigEndianSequence), account.data(), sizeof(account));
+    sequence = boost::endian::native_to_big(sequence);
+    memcpy(u.data(), &sequence, sizeof(sequence));
+    memcpy(u.data() + sizeof(sequence), account.data(), sizeof(account));
     return u;
 }
 
@@ -274,13 +287,13 @@ trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) 
 }
 
 Keylet
-offer(AccountID const& id, SeqProxy const& seq) noexcept
+offer(AccountID const& id, std::uint32_t seq) noexcept
 {
-    return {ltOFFER, indexHash(LedgerNameSpace::Offer, id, seq.value())};
+    return {ltOFFER, indexHash(LedgerNameSpace::Offer, id, seq)};
 }
 
 Keylet
-quality(Keylet const& k, std::uint64_t const q) noexcept
+quality(Keylet const& k, std::uint64_t q) noexcept
 {
     XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::quality : valid input type");
 
@@ -308,17 +321,22 @@ next(Keylet const& k)
 }
 
 Keylet
-ticket(AccountID const& id, SeqProxy const& seq)
+ticket(AccountID const& id, std::uint32_t ticketSeq)
 {
-    XRPL_ASSERT(seq.isTicket(), "xrpl::keylet::ticket : valid input");
-    return {ltTICKET, indexHash(LedgerNameSpace::Ticket, id, seq.value())};
+    return {ltTICKET, getTicketIndex(id, ticketSeq)};
+}
+
+Keylet
+ticket(AccountID const& id, SeqProxy ticketSeq)
+{
+    return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
 
 // This function is presently static, since it's never accessed from anywhere
 // else. If we ever support multiple pages of signer lists, this would be the
 // keylet used to locate them.
 static Keylet
-signerList(AccountID const& account, std::uint32_t const page) noexcept
+signerList(AccountID const& account, std::uint32_t page) noexcept
 {
     return {ltSIGNER_LIST, indexHash(LedgerNameSpace::SignerList, account, page)};
 }
@@ -336,9 +354,9 @@ sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept
 }
 
 Keylet
-check(AccountID const& id, SeqProxy const& seq) noexcept
+check(AccountID const& id, std::uint32_t seq) noexcept
 {
-    return {ltCHECK, indexHash(LedgerNameSpace::Check, id, seq.value())};
+    return {ltCHECK, indexHash(LedgerNameSpace::Check, id, seq)};
 }
 
 Keylet
@@ -385,7 +403,7 @@ ownerDir(AccountID const& id) noexcept
 }
 
 Keylet
-page(uint256 const& key, std::uint64_t const index) noexcept
+page(uint256 const& key, std::uint64_t index) noexcept
 {
     if (index == 0)
         return {ltDIR_NODE, key};
@@ -394,15 +412,15 @@ page(uint256 const& key, std::uint64_t const index) noexcept
 }
 
 Keylet
-escrow(AccountID const& src, SeqProxy const& seq) noexcept
+escrow(AccountID const& src, std::uint32_t seq) noexcept
 {
-    return {ltESCROW, indexHash(LedgerNameSpace::Escrow, src, seq.value())};
+    return {ltESCROW, indexHash(LedgerNameSpace::Escrow, src, seq)};
 }
 
 Keylet
-payChannel(AccountID const& src, AccountID const& dst, SeqProxy const& seq) noexcept
+payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 {
-    return {ltPAYCHAN, indexHash(LedgerNameSpace::XRPPaymentChannel, src, dst, seq.value())};
+    return {ltPAYCHAN, indexHash(LedgerNameSpace::XRPPaymentChannel, src, dst, seq)};
 }
 
 Keylet
@@ -429,9 +447,9 @@ nftokenPage(Keylet const& k, uint256 const& token)
 }
 
 Keylet
-nftokenOffer(AccountID const& owner, SeqProxy const& seq)
+nftokenOffer(AccountID const& owner, std::uint32_t seq)
 {
-    return {ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NftokenOffer, owner, seq.value())};
+    return {ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NftokenOffer, owner, seq)};
 }
 
 Keylet
@@ -503,7 +521,7 @@ bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
 }
 
 Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
+xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq)
 {
     return {
         ltXCHAIN_OWNED_CLAIM_ID,
@@ -517,7 +535,7 @@ xChainClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
 }
 
 Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
+xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq)
 {
     return {
         ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
@@ -537,9 +555,15 @@ did(AccountID const& account) noexcept
 }
 
 Keylet
-oracle(AccountID const& account, std::uint32_t const documentID) noexcept
+oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 {
     return {ltORACLE, indexHash(LedgerNameSpace::Oracle, account, documentID)};
+}
+
+Keylet
+mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
+{
+    return mptokenIssuance(makeMptID(seq, issuer));
 }
 
 Keylet
@@ -567,29 +591,27 @@ credential(AccountID const& subject, AccountID const& issuer, Slice const& credT
 }
 
 Keylet
-vault(AccountID const& owner, SeqProxy const& seq) noexcept
+vault(AccountID const& owner, std::uint32_t seq) noexcept
 {
-    return vault(indexHash(LedgerNameSpace::Vault, owner, seq.value()));
+    return vault(indexHash(LedgerNameSpace::Vault, owner, seq));
 }
 
 Keylet
-loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept
+loanBroker(AccountID const& owner, std::uint32_t seq) noexcept
 {
-    return loanBroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq.value()));
+    return loanBroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq));
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
+loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept
 {
-    return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
+    return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq));
 }
 
 Keylet
-permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept
+permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept
 {
-    return {
-        ltPERMISSIONED_DOMAIN,
-        indexHash(LedgerNameSpace::PermissionedDomain, account, seq.value())};
+    return {ltPERMISSIONED_DOMAIN, indexHash(LedgerNameSpace::PermissionedDomain, account, seq)};
 }
 
 Keylet
