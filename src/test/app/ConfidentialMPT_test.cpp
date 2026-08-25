@@ -1459,37 +1459,60 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             return true;
         });
 
-        // Spending changed without version bump
-        runInvariant("invalid confidential MPT state", [](Account const& a1, Account const& a2, ApplyContext& ac) {
-            auto const sle = ac.view().peek(keylet::account(a1.id()));
-            if (!sle)
-                return false;
-            MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
-            auto iss = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
-            iss->setAccountID(sfIssuer, a1.id());
-            iss->setFieldU32(sfSequence, sle->getFieldU32(sfSequence));
-            iss->setFieldU64(sfOutstandingAmount, 10);
-            iss->setFieldU64(sfMaximumAmount, 100);
-            iss->setFieldU32(sfFlags, lsfMPTCanHoldConfidentialBalance);
-            ac.view().insert(iss);
+        {
+            Env env(*this, features);
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+            OpenView view{*env.current()};
+            auto const account = view.read(keylet::account(a1.id()));
+            MPTIssue const mpt{
+                makeMptID(account->getFieldU32(sfSequence), a1)};
+            auto issuance =
+                std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+            issuance->setAccountID(sfIssuer, a1.id());
+            issuance->setFieldU32(
+                sfSequence, account->getFieldU32(sfSequence));
+            issuance->setFieldU64(sfOutstandingAmount, 10);
+            issuance->setFieldU64(sfMaximumAmount, 100);
+            issuance->setFieldU32(
+                sfFlags, lsfMPTCanHoldConfidentialBalance);
+            view.insert(issuance);
+
             std::vector<std::uint8_t> key(33, 0x02);
             std::vector<std::uint8_t> ct(66, 0x02);
-            auto before = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a2));
+            auto before =
+                std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a2));
             before->setAccountID(sfAccount, a2.id());
             before->setFieldH192(sfMPTokenIssuanceID, mpt.getMptID());
             before->setFieldU64(sfMPTAmount, 10);
-            before->setFieldVL(sfHolderEncryptionKey, Slice(key.data(), key.size()));
-            before->setFieldVL(sfConfidentialBalanceSpending, Slice(ct.data(), ct.size()));
-            before->setFieldVL(sfConfidentialBalanceInbox, Slice(ct.data(), ct.size()));
-            before->setFieldVL(sfIssuerEncryptedBalance, Slice(ct.data(), ct.size()));
+            before->setFieldVL(
+                sfHolderEncryptionKey, Slice(key.data(), key.size()));
+            before->setFieldVL(
+                sfConfidentialBalanceSpending,
+                Slice(ct.data(), ct.size()));
+            before->setFieldVL(
+                sfConfidentialBalanceInbox, Slice(ct.data(), ct.size()));
+            before->setFieldVL(
+                sfIssuerEncryptedBalance, Slice(ct.data(), ct.size()));
             before->setFieldU32(sfConfidentialBalanceVersion, 3);
-            ac.view().insert(before);
-            auto after = ac.view().peek(keylet::mptoken(mpt.getMptID(), a2));
+            auto after = std::make_shared<SLE>(*before);
             std::vector<std::uint8_t> ct2(66, 0x03);
-            after->setFieldVL(sfConfidentialBalanceSpending, Slice(ct2.data(), ct2.size()));
-            ac.view().update(after);
-            return true;
-        });
+            after->setFieldVL(
+                sfConfidentialBalanceSpending,
+                Slice(ct2.data(), ct2.size()));
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ValidConfidentialMPT checker;
+            checker.visitEntry(false, before, after);
+            STTx tx{ttACCOUNT_SET, [](STObject&) {}};
+            BEAST_EXPECT(!checker.finalize(
+                tx, tesSUCCESS, XRPAmount{}, view, jlog));
+            BEAST_EXPECT(
+                sink.messages().str().find(
+                    "invalid confidential MPT state") !=
+                std::string::npos);
+        }
     }
 
 public:
