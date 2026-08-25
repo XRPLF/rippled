@@ -498,9 +498,9 @@ Env::postconditions(
          !test.expect(
              parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
              "apply " + locStr + ": Got RPC result "s +
-                 (parsed.rpcCode ? RPC::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
+                 (parsed.rpcCode ? rpc::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
                  " (" + parsed.rpcMessage + "); Expected " +
-                 RPC::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
+                 rpc::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
                  ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is

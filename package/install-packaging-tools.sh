@@ -22,6 +22,16 @@ case "${ID}" in
         ;;
 esac
 
+# Packaging runs in a vanilla distro image, so the tooling comes from the distro's
+# archive rather than from nixpkgs:
+#
+#   - debhelper and dpkg-dev build the DEB
+#   - rpm-build builds the RPM, with systemd-rpm-macros and redhat-rpm-config
+#     supplying the systemd and find-debuginfo macros the spec uses
+#   - rpm-sign and gnupg2 sign the built RPM
+#   - python3 runs the packaging scripts
+#   - git gives build_pkg.py the commit timestamp it stamps files with
+#   - ca-certificates lets git and the packaging scripts verify TLS
 function install() {
     case "${ID}" in
         debian | ubuntu)
@@ -31,14 +41,18 @@ function install() {
                 debhelper \
                 debhelper-compat \
                 dpkg-dev \
-                git
+                git \
+                python3
             ;;
 
         rhel | centos | rocky | almalinux)
             dnf install -y --setopt=install_weak_deps=False \
                 git \
-                rpm-build \
+                gnupg2 \
+                python3 \
                 redhat-rpm-config \
+                rpm-build \
+                rpm-sign \
                 systemd-rpm-macros
             ;;
     esac

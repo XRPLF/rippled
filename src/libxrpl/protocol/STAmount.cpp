@@ -1445,6 +1445,59 @@ public:
     operator=(DontAffectNumberRoundMode const&) = delete;
 };
 
+Number::RoundingMode
+roundMode(bool const resultNegative, bool const roundUp)
+{
+    using enum Number::RoundingMode;
+    // STAmount roundUp means "away from zero". The legacy scaled-mantissa
+    // multiply and divide paths reach that result with slightly different
+    // mechanics, including a final TowardsZero materialization in multiply.
+    //
+    // The MPT/V2 Number path already performs the operation under the directed
+    // mode below. Use the same mode again when converting back to STAmount so a
+    // fractional integral result stays consistently rounded after Number
+    // arithmetic, independent of whether the operation was multiply or divide.
+    return roundUp ^ resultNegative ? Upward : Downward;
+}
+
+STAmount
+roundNumberResult(
+    Asset const& asset,
+    bool const resultNegative,
+    bool const roundUp,
+    Number const& number)
+{
+    // MPT/V2 Number arithmetic uses directed rounding both for the operation
+    // and for materializing the final integral amount.
+    NumberRoundModeGuard const finalRound(roundMode(resultNegative, roundUp));
+    auto result = STAmount{asset, number};
+    [[maybe_unused]] bool const nonzeroPositiveRoundUp =
+        roundUp && !resultNegative && number != beast::kZero;
+    ALWAYS(
+        !nonzeroPositiveRoundUp || result != beast::kZero,
+        "xrpl::roundNumberResult : positive rounded-up MPT result is representable");
+
+    if (roundUp && !resultNegative && !result)
+    {
+        // Intended to preserve existing mulRound/divRound behavior for a
+        // positive result too small to represent in the target asset.
+        //
+        // Unreachable in practice: when roundUp is set, roundMode() above
+        // selects Upward, and materializing a Number into an STAmount honors
+        // that mode (Number::operator rep()), so any positive value rounds up
+        // to at least the smallest representable unit. Hence, a positive result
+        // is never !result here; the only zero case is a zero operand, which
+        // the mulRound/divRound callers handle before reaching this function.
+        // LCOV_EXCL_START
+        if (asset.integral())
+            return STAmount{asset, 1};
+        return STAmount{asset, STAmount::kMinValue, STAmount::kMinOffset, false};
+        // LCOV_EXCL_STOP
+    }
+
+    return result;
+}
+
 }  // anonymous namespace
 
 // Pass the canonicalizeRound function pointer as a template parameter.
@@ -1486,6 +1539,22 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
         return STAmount(asset, minV * maxV);
     }
 
+    bool const resultNegative = v1.negative() != v2.negative();
+
+    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false))
+    {
+        // MPT DEX can combine 63-bit MPT amounts with IOU-shaped transfer
+        // rates. Use Number arithmetic under MPTokensV2 so the rounded
+        // operation is not limited by the legacy uint64_t scaled mantissa.
+        Number result;
+        {
+            NumberRoundModeGuard const operationRound(roundMode(resultNegative, roundUp));
+            result = Number{v1} * Number{v2};
+        }
+
+        return roundNumberResult(asset, resultNegative, roundUp, result);
+    }
+
     std::uint64_t value1 = v1.mantissa(), value2 = v2.mantissa();
     int offset1 = v1.exponent(), offset2 = v2.exponent();
 
@@ -1506,9 +1575,6 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
             --offset2;
         }
     }
-
-    bool const resultNegative = v1.negative() != v2.negative();
-
     // We multiply the two mantissas (each is between 10^15
     // and 10^16), so their product is in the 10^30 to 10^32
     // range. Dividing their product by 10^14 maintains the
@@ -1575,6 +1641,22 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
     if (num == beast::kZero)
         return {asset};
 
+    bool const resultNegative = (num.negative() != den.negative());
+
+    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false))
+    {
+        // Match the multiply path above: Number performs the rounded
+        // operation, then STAmount materializes the final MPT amount using the
+        // same final rounding mode as the legacy path below.
+        Number result;
+        {
+            NumberRoundModeGuard const operationRound(roundMode(resultNegative, roundUp));
+            result = Number{num} / Number{den};
+        }
+
+        return roundNumberResult(asset, resultNegative, roundUp, result);
+    }
+
     std::uint64_t numVal = num.mantissa(), denVal = den.mantissa();
     int numOffset = num.exponent(), denOffset = den.exponent();
 
@@ -1595,8 +1677,6 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
             --denOffset;
         }
     }
-
-    bool const resultNegative = (num.negative() != den.negative());
 
     // We divide the two mantissas (each is between 10^15
     // and 10^16). To maintain precision, we multiply the
