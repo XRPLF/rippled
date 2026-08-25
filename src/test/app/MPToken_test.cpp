@@ -7906,11 +7906,10 @@ class MPToken_test : public beast::unit_test::Suite
                 auto sle = view.read(keylet::mptIssuance(mptAlice.issuanceID()));
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle, sle->key());
-                if (replacement->isFieldPresent(sfTransferFee) &&
-                    replacement->getFieldU16(sfTransferFee) == 0)
-                    replacement->makeFieldAbsent(sfTransferFee);
-                replacement->setFieldU64(sfConfidentialOutstandingAmount, 1);
+                // Copy without SLE(STObject, key) so applyTemplate is not re-run on
+                // already-templated NonPresent SoeDefault placeholders (e.g. TransferFee).
+                auto replacement = std::make_shared<SLE>(*sle);
+                (*replacement)[sfConfidentialOutstandingAmount] = 1;
                 view.rawReplace(replacement);
                 return true;
             });
@@ -7927,11 +7926,8 @@ class MPToken_test : public beast::unit_test::Suite
                 auto sle = view.read(keylet::mptIssuance(mptAlice.issuanceID()));
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle, sle->key());
-                if (replacement->isFieldPresent(sfTransferFee) &&
-                    replacement->getFieldU16(sfTransferFee) == 0)
-                    replacement->makeFieldAbsent(sfTransferFee);
-                replacement->setFieldU64(sfConfidentialOutstandingAmount, 7);
+                auto replacement = std::make_shared<SLE>(*sle);
+                (*replacement)[sfConfidentialOutstandingAmount] = 7;
                 view.rawReplace(replacement);
                 return true;
             });
@@ -7951,10 +7947,7 @@ class MPToken_test : public beast::unit_test::Suite
                 auto sle = view.read(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle, sle->key());
-                if (replacement->isFieldPresent(sfTransferFee) &&
-                    replacement->getFieldU16(sfTransferFee) == 0)
-                    replacement->makeFieldAbsent(sfTransferFee);
+                auto replacement = std::make_shared<SLE>(*sle);
                 std::vector<std::uint8_t> key(33, 0x02);
                 replacement->setFieldVL(sfHolderEncryptionKey, Slice(key.data(), key.size()));
                 view.rawReplace(replacement);
