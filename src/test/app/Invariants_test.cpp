@@ -2619,6 +2619,38 @@ class Invariants_test : public beast::unit_test::Suite
         return loanBrokerKeylet;
     };
 
+    // Build an ltLOAN SLE with every SoeRequired field explicitly set and
+    // every SoeDefault field the invariants read via `at()` materialised, so
+    // rawInsert-based tests don't accidentally trip an unrelated invariant
+    // or throw from a missing SoeDefault field.
+    static SLE::pointer
+    makeLoanSle(
+        uint256 const& loanBrokerID,
+        std::uint32_t loanSeq,
+        AccountID const& borrower)
+    {
+        auto sleLoan =
+            std::make_shared<SLE>(keylet::loan(loanBrokerID, SeqProxy::rawSequence(loanSeq)));
+        // SoeRequired fields.
+        sleLoan->at(sfLoanBrokerID) = loanBrokerID;
+        sleLoan->at(sfLoanSequence) = loanSeq;
+        sleLoan->at(sfBorrower) = borrower;
+        sleLoan->at(sfStartDate) = 0u;
+        sleLoan->at(sfPaymentInterval) = 1u;
+        sleLoan->at(sfPeriodicPayment) = Number(1);
+        // SoeDefault fields read unconditionally by ValidLoan::finalize.
+        sleLoan->at(sfLoanServiceFee) = Number(0);
+        sleLoan->at(sfLatePaymentFee) = Number(0);
+        sleLoan->at(sfClosePaymentFee) = Number(0);
+        sleLoan->at(sfPrincipalOutstanding) = Number(0);
+        sleLoan->at(sfTotalValueOutstanding) = Number(0);
+        sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+        sleLoan->setFieldU32(sfPaymentRemaining, 0);
+        sleLoan->makeFieldPresent(sfOwnerNode);
+        sleLoan->makeFieldPresent(sfLoanBrokerNode);
+        return sleLoan;
+    }
+
     void
     testNoModifiedUnmodifiableFields()
     {
@@ -2703,14 +2735,13 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
                     sleLoan->setFieldU32(sfFlags, c.before);
                     ov.rawInsert(sleLoan);
@@ -2759,14 +2790,13 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
                     sleLoan->setFieldU32(sfFlags, before);
                     ov.rawInsert(sleLoan);
@@ -3394,6 +3424,9 @@ class Invariants_test : public beast::unit_test::Suite
             int totalValueOutstanding = 0;
             int managementFeeOutstanding = 0;
             AccountID borrower = beast::kZero;
+            // Real broker key the created loan should reference. If unset,
+            // the vault key is used as a fallback for legacy callers.
+            uint256 brokerKey = beast::kZero;
         };
         struct Adjustments
         {
@@ -3514,20 +3547,17 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const& lp = *args.createLoan;
                 bool const anyOutstanding = lp.principalOutstanding != 0 ||
                     lp.totalValueOutstanding != 0 || lp.managementFeeOutstanding != 0;
+                // If the caller supplied a broker key, use it; otherwise fall
+                // back to the vault key so pre-existing callers keep working.
+                uint256 const brokerKey = lp.brokerKey != beast::kZero ? lp.brokerKey : keylet.key;
                 for (std::uint32_t seq = 1; seq <= static_cast<std::uint32_t>(args.loanCount);
                      ++seq)
                 {
-                    auto sleLoan =
-                        std::make_shared<SLE>(keylet::loan(keylet.key, SeqProxy::rawSequence(seq)));
+                    auto sleLoan = makeLoanSle(brokerKey, seq, lp.borrower);
                     sleLoan->at(sfPrincipalOutstanding) = Number(lp.principalOutstanding);
                     sleLoan->at(sfTotalValueOutstanding) = Number(lp.totalValueOutstanding);
                     sleLoan->at(sfManagementFeeOutstanding) = Number(lp.managementFeeOutstanding);
-                    // ValidLoan requires a positive periodic payment, and that a
-                    // loan with payments remaining is not fully paid off.
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, anyOutstanding ? 1 : 0);
-                    sleLoan->setAccountID(sfBorrower, lp.borrower);
-                    sleLoan->makeFieldPresent(sfOwnerNode);
                     ac.insert(sleLoan);
                 }
             }
@@ -4385,16 +4415,15 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const brokerKeylet =
+                keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             // Pre-existing loan in the base view; modifying it in the apply
             // view is what the cardinality check must reject for a set.
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -4410,6 +4439,7 @@ class Invariants_test : public beast::unit_test::Suite
             // Move the vault balance and available assets to match the
             // principal requested, so the funding checks pass and only the
             // cardinality shape is left to trip.
+            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
             if (!BEAST_EXPECT(kAdjust(
                     ac.view(),
                     vaultKeylet,
@@ -4578,20 +4608,9 @@ class Invariants_test : public beast::unit_test::Suite
                             .principalOutstanding = 100,
                             .totalValueOutstanding = 100,
                             .borrower = a2.id(),
+                            .brokerKey = brokerKeylet.key,
                         }})))
                 return;
-
-            // Point the loan at the real broker so afterBroker_[0].key ==
-            // loan.loanBrokerID, otherwise the earlier cardinality check
-            // trips first.
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-            {
-                auto sleLoan = ac.view().peek(loanKeylet);
-                if (!BEAST_EXPECT(sleLoan))
-                    return;
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
-                ac.view().update(sleLoan);
-            }
 
             // Touch the broker so before/afterBroker_ snapshots are captured
             // with matching keys, but leave sfDebtTotal at its base value.
@@ -4667,6 +4686,7 @@ class Invariants_test : public beast::unit_test::Suite
                             .principalOutstanding = 100,
                             .totalValueOutstanding = 100,
                             .borrower = a2.id(),
+                            .brokerKey = brokerKeylet.key,
                         }})))
                 return;
 
@@ -4678,16 +4698,6 @@ class Invariants_test : public beast::unit_test::Suite
                     return;
                 sleA3->at(sfBalance) = *sleA3->at(sfBalance) + 50;
                 ac.view().update(sleA3);
-            }
-
-            // Point the loan at the real broker.
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-            {
-                auto sleLoan = ac.view().peek(loanKeylet);
-                if (!BEAST_EXPECT(sleLoan))
-                    return;
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
-                ac.view().update(sleLoan);
             }
 
             // Broker's DebtTotal must grow by owedToVault (100) so the
@@ -4764,6 +4774,7 @@ class Invariants_test : public beast::unit_test::Suite
                             .principalOutstanding = 100,
                             .totalValueOutstanding = 100,
                             .borrower = a2.id(),
+                            .brokerKey = brokerKeylet.key,
                         }})))
                 return;
 
@@ -4777,14 +4788,13 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleA3);
             }
 
-            // Point the loan at the real broker and stamp the origination
-            // fee so the borrower-net-of-fee expected value is 90.
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            // Stamp the origination fee so the borrower-net-of-fee expected
+            // value is 90.
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
                 auto sleLoan = ac.view().peek(loanKeylet);
                 if (!BEAST_EXPECT(sleLoan))
                     return;
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
                 sleLoan->at(sfLoanOriginationFee) = Number(10);
                 ac.view().update(sleLoan);
             }
@@ -4864,17 +4874,9 @@ class Invariants_test : public beast::unit_test::Suite
                             .principalOutstanding = 100,
                             .totalValueOutstanding = 100,
                             .borrower = a2.id(),
+                            .brokerKey = brokerKeylet.key,
                         }})))
                 return;
-
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-            {
-                auto sleLoan = ac.view().peek(loanKeylet);
-                if (!BEAST_EXPECT(sleLoan))
-                    return;
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
-                ac.view().update(sleLoan);
-            }
 
             // Bump DebtTotal by owedToVault (100) so the earlier DebtTotal
             // check passes.
@@ -5180,13 +5182,13 @@ class Invariants_test : public beast::unit_test::Suite
 
                 // Seed a loan in the base view with `owedToVault` == 100 so
                 // the magnitude check has a definite target.
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
                     sleLoan->setFieldU32(sfFlags, c.beforeLoanFlags);
                     ov.rawInsert(sleLoan);
@@ -5261,14 +5263,13 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
                     sleLoan->setFieldU32(sfFlags, c.before);
                     ov.rawInsert(sleLoan);
@@ -5342,14 +5343,13 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
                     sleLoan->setFieldU32(sfFlags, c.before);
                     ov.rawInsert(sleLoan);
@@ -5413,14 +5413,13 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
                     sleLoan->setFieldU32(sfFlags, c.before);
                     ov.rawInsert(sleLoan);
@@ -5466,19 +5465,14 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             // Pre-insert a loan that is not yet defaulted but has a
             // NextPaymentDueDate set; the apply-view mutation below flips
             // lsfLoanDefault (so the "must newly set" check passes) while
             // leaving the due date behind.
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfPrincipalOutstanding) = Number(0);
-                sleLoan->at(sfTotalValueOutstanding) = Number(0);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
-                sleLoan->setFieldU32(sfPaymentRemaining, 0);
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->setFieldU32(sfNextPaymentDueDate, 123);
                 ov.rawInsert(sleLoan);
             }
@@ -5718,15 +5712,14 @@ class Invariants_test : public beast::unit_test::Suite
             OpenView ov{*env.current()};
 
             auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+            auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
             // Insert a pre-existing loan into the base view; modifying it in the
             // apply view is then seen as a loan modification (before/after).
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -5791,13 +5784,12 @@ class Invariants_test : public beast::unit_test::Suite
             OpenView ov{*env.current()};
 
             auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -5872,14 +5864,13 @@ class Invariants_test : public beast::unit_test::Suite
 
                 OpenView ov{*env.current()};
 
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, 2);
                     sleLoan->setFieldU32(sfPaymentInterval, 10);
                     sleLoan->setFieldU32(sfNextPaymentDueDate, c.beforeDue);
@@ -5896,6 +5887,8 @@ class Invariants_test : public beast::unit_test::Suite
 
                 // Cash inflow of 50 with matching bookkeeping so the earlier
                 // conservation checks pass and the due-date check is reached.
+                auto const vaultKeylet =
+                    keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 if (!BEAST_EXPECT(kAdjust(
                         ac.view(),
                         vaultKeylet,
@@ -5964,14 +5957,11 @@ class Invariants_test : public beast::unit_test::Suite
             // Insert a pre-existing loan pointing at the real broker so
             // finalizeLoanPay's broker lookup succeeds and the inflow-sum
             // check is actually reached.
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -6107,14 +6097,11 @@ class Invariants_test : public beast::unit_test::Suite
                     sleBroker->at(sfDebtTotal) = Number(150);
                     ov.rawReplace(sleBroker);
                 }
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                    sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, 2);
                     sleLoan->setFieldU32(sfPaymentInterval, 10);
                     sleLoan->setFieldU32(sfNextPaymentDueDate, 1000);
@@ -6229,14 +6216,11 @@ class Invariants_test : public beast::unit_test::Suite
                 sleBroker->at(sfDebtTotal) = Number(150);
                 ov.rawReplace(sleBroker);
             }
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 2);
                 sleLoan->setFieldU32(sfPaymentInterval, 10);
                 sleLoan->setFieldU32(sfNextPaymentDueDate, 1000);
@@ -6379,14 +6363,11 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -6493,14 +6474,11 @@ class Invariants_test : public beast::unit_test::Suite
                 sleBroker->at(sfDebtTotal) = Number(100);
                 ov.rawReplace(sleBroker);
             }
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -6631,14 +6609,11 @@ class Invariants_test : public beast::unit_test::Suite
                 sleBroker->at(sfDebtTotal) = Number(100);
                 ov.rawReplace(sleBroker);
             }
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 sleLoan->setFieldU32(sfFlags, lsfLoanImpaired);
                 ov.rawInsert(sleLoan);
@@ -6737,14 +6712,11 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -6835,14 +6807,11 @@ class Invariants_test : public beast::unit_test::Suite
                 sleBroker->at(sfDebtTotal) = Number(100);
                 ov.rawReplace(sleBroker);
             }
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -6941,14 +6910,11 @@ class Invariants_test : public beast::unit_test::Suite
                 sleBroker->at(sfDebtTotal) = Number(100);
                 ov.rawReplace(sleBroker);
             }
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -7056,14 +7022,11 @@ class Invariants_test : public beast::unit_test::Suite
                 sleBroker->at(sfDebtTotal) = Number(100);
                 ov.rawReplace(sleBroker);
             }
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -7139,15 +7102,13 @@ class Invariants_test : public beast::unit_test::Suite
             OpenView ov{*env.current()};
 
             auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
             // Pre-insert a loan carrying a default (zero) sfLoanBrokerID so
             // the invariant's broker lookup returns nullopt.
+            auto const loanKeylet = keylet::loan(uint256{}, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                auto sleLoan = makeLoanSle(uint256{}, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ov.rawInsert(sleLoan);
             }
@@ -7279,19 +7240,14 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView ov{*env.current()};
 
-            auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-            auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
+            auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             // Seed a loan whose only outstanding obligation is on `field`,
             // with sfPaymentRemaining already at zero so the paid-off
             // disjunct being tested is the balance field alone.
             {
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfPrincipalOutstanding) = Number(0);
-                sleLoan->at(sfTotalValueOutstanding) = Number(0);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(*field) = Number(10);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
-                sleLoan->setFieldU32(sfPaymentRemaining, 0);
                 ov.rawInsert(sleLoan);
             }
 
@@ -7378,15 +7334,11 @@ class Invariants_test : public beast::unit_test::Suite
         // while every individual field stays non-negative.
         doInvariantCheck(
             {"Loan interest due is negative"},
-            [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(90);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ac.view().insert(sleLoan);
                 return true;
@@ -7413,15 +7365,10 @@ class Invariants_test : public beast::unit_test::Suite
                 *field == sfTotalValueOutstanding || *field == sfManagementFeeOutstanding;
             doInvariantCheck(
                 {field->getName() + " is negative"},
-                [&, field](Account const& a1, Account const&, ApplyContext& ac) {
-                    auto const vaultKeylet =
-                        keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                    auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                    sleLoan->at(sfPrincipalOutstanding) = Number(0);
-                    sleLoan->at(sfTotalValueOutstanding) = Number(0);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->at(sfPeriodicPayment) = Number(1);
+                [&, field](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const brokerKeylet =
+                        keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                     sleLoan->at(*field) = Number(-10);
                     sleLoan->setFieldU32(sfPaymentRemaining, isOutstanding ? 1 : 0);
                     ac.view().insert(sleLoan);
@@ -7436,16 +7383,11 @@ class Invariants_test : public beast::unit_test::Suite
         {
             doInvariantCheck(
                 {std::string{sfPeriodicPayment.getName()} + " is zero or negative"},
-                [&, badValue](Account const& a1, Account const&, ApplyContext& ac) {
-                    auto const vaultKeylet =
-                        keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                    auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                    sleLoan->at(sfPrincipalOutstanding) = Number(0);
-                    sleLoan->at(sfTotalValueOutstanding) = Number(0);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                [&, badValue](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const brokerKeylet =
+                        keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                     sleLoan->at(sfPeriodicPayment) = badValue;
-                    sleLoan->setFieldU32(sfPaymentRemaining, 0);
                     ac.view().insert(sleLoan);
                     return true;
                 });
@@ -7458,14 +7400,11 @@ class Invariants_test : public beast::unit_test::Suite
         // check has a chance to run.
         doInvariantCheck(
             {"Loan with zero payments remaining has not been paid off"},
-            [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
                 sleLoan->at(sfPeriodicPayment) = Number(1);
                 sleLoan->setFieldU32(sfPaymentRemaining, 0);
                 ac.view().insert(sleLoan);
@@ -7477,15 +7416,9 @@ class Invariants_test : public beast::unit_test::Suite
         // fully-zeroed loan with sfPaymentRemaining = 1 to trip the check.
         doInvariantCheck(
             {"Fully paid off Loan still has payments remaining"},
-            [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfPrincipalOutstanding) = Number(0);
-                sleLoan->at(sfTotalValueOutstanding) = Number(0);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ac.view().insert(sleLoan);
                 return true;
@@ -7497,16 +7430,8 @@ class Invariants_test : public beast::unit_test::Suite
         // which resolves to no broker, and the broker-existence check trips.
         doInvariantCheck(
             {"Loan broker does not exist"},
-            [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto const vaultKeylet =
-                    keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto const loanKeylet = keylet::loan(vaultKeylet.key, SeqProxy::rawSequence(1));
-                auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                sleLoan->at(sfPrincipalOutstanding) = Number(0);
-                sleLoan->at(sfTotalValueOutstanding) = Number(0);
-                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
-                sleLoan->setFieldU32(sfPaymentRemaining, 0);
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleLoan = makeLoanSle(uint256{}, 1, a2.id());
                 ac.view().insert(sleLoan);
                 return true;
             });
@@ -8733,16 +8658,11 @@ class Invariants_test : public beast::unit_test::Suite
                 // Synthesize a Loan whose final scheduled payment lands
                 // exactly at RedemptionDate: StartDate = red, interval = 60,
                 // remaining = 1 => red + 60 >= red.
-                auto sleLoan = std::make_shared<SLE>(
-                    keylet::loan(closedEndedBrokerKeylet.key, SeqProxy::rawSequence(loanSeq)));
-                sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
-                sleLoan->at(sfLoanSequence) = loanSeq;
-                sleLoan->at(sfBorrower) = a1.id();
+                auto sleLoan = makeLoanSle(closedEndedBrokerKeylet.key, loanSeq, a1.id());
                 sleLoan->at(sfStartDate) = closedEndedRed;
                 sleLoan->at(sfPaymentInterval) = 60;
                 sleLoan->at(sfPaymentRemaining) = 1;
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                sleLoan->at(sfPeriodicPayment) = Number(1);
                 ac.view().insert(sleLoan);
                 return true;
             },
