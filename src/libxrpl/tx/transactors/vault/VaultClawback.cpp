@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -93,6 +94,15 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.error()) << "VaultClawback: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // A pseudo-account issues the shares it stands for, so it never holds any and a clawback
+    // naming it can move nothing. Left to run, an implicit amount ends in tecPRECISION_LOSS and an
+    // explicit one debits the vault and then trips the invariant that shares must move.
+    if (ctx.view.rules().enabled(fixCleanup3_4_0) && isPseudoAccount(ctx.view, holder))
+    {
+        JLOG(ctx.j.debug()) << "VaultClawback: holder is a pseudo-account.";
+        return tecNO_PERMISSION;
     }
 
     Asset const share = MPTIssue{mptIssuanceID};

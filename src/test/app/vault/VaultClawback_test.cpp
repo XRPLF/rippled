@@ -1107,12 +1107,95 @@ private:
         }
     }
 
+    // The vault's pseudo-account issues the shares, so it never holds any, and naming it as Holder
+    // asks for a clawback that cannot move anything. Before the rule an implicit amount resolved to
+    // zero shares and ended in tecPRECISION_LOSS, while an explicit one debited the vault first and
+    // was caught by the invariant that shares must move.
+    void
+    testClawbackPseudoAccountHolder()
+    {
+        using namespace test::jtx;
+
+        auto const runScenario = [this](FeatureBitset features, std::string const& prefix) {
+            bool const guarded = features[fixCleanup3_4_0];
+            Env env{*this, features};
+
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const issuer{"issuer"};
+
+            env.fund(XRP(1'000), owner, depositor, issuer);
+            env.close();
+
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000), owner);
+            env.trust(asset(1'000), depositor);
+            env(pay(issuer, depositor, asset(200)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const vaultSle = env.le(keylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+            env.memoize(pseudo);
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            auto const assetsBefore = [&]() -> Number {
+                auto const sle = env.le(keylet);
+                if (!BEAST_EXPECT(sle))
+                    return Number{};
+                return sle->at(sfAssetsTotal);
+            }();
+
+            {
+                testcase("VaultClawback - " + prefix + " pseudo-account holder, implicit amount");
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = pseudo,
+                    }),
+                    Ter(guarded ? TER{tecNO_PERMISSION} : TER{tecPRECISION_LOSS}));
+                env.close();
+            }
+
+            {
+                testcase("VaultClawback - " + prefix + " pseudo-account holder, explicit amount");
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = pseudo,
+                        .amount = asset(10).value(),
+                    }),
+                    Ter(guarded ? TER{tecNO_PERMISSION} : TER{tecINVARIANT_FAILED}));
+                env.close();
+            }
+
+            // Neither attempt may touch the vault, whichever way it was refused.
+            auto const sleAfter = env.le(keylet);
+            BEAST_EXPECT(sleAfter && sleAfter->at(sfAssetsTotal) == assetsBefore);
+        };
+
+        runScenario(all_, "post-rule");
+        runScenario(all_ - fixCleanup3_4_0, "pre-rule");
+    }
+
 public:
     void
     run() override
     {
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
+        testClawbackPseudoAccountHolder();
         testVaultEscrowedMPT();
     }
 };
