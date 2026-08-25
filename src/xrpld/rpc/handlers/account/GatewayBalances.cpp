@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -151,6 +152,14 @@ doGatewayBalances(rpc::JsonContext& context)
     // Traverse the cold wallet's trust lines
     {
         forEachItem(*ledger, accountID, [&](SLE::const_ref sle) {
+            if (!sle)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::doGatewayBalances : null SLE");
+                return;
+                // LCOV_EXCL_STOP
+            }
+
             if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
