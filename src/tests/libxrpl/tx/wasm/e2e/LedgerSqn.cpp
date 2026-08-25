@@ -24,10 +24,9 @@ TEST_F(LedgerSqnE2e, ContractReadsTheRealLedgerSequence)
     (i32.load (i32.const 0))))
 )wat";
 
-    auto const outcome = runWat(kWat);
+    auto const outcome = run(kWat);
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);
-    EXPECT_EQ(
-        outcome->result, static_cast<std::int32_t>(ledger.getOpenLedger().header().seq));
+    EXPECT_EQ(outcome->result, static_cast<std::int32_t>(ledger.getOpenLedger().header().seq));
 }
 
 }  // namespace xrpl::test

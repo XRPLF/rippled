@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include <helpers/CaptureSink.h>
 #include <tx/wasm/MockHostFunctions.h>
-#include <xrpl_wasm_testkit_cxxbridge/lib.h>
+#include <tx/wasm/WasmRun.h>
 
 #include <cstdint>
 #include <expected>
@@ -18,30 +18,16 @@
 
 namespace xrpl::test {
 
-// Assemble `wat`. Throws `rust::Error` on a typo, which gtest reports against the test that
-// holds it.
-//
-// A free function because not every wasm test needs a host: `preflightEscrowWasm` takes none,
-// so its fixture derives from `testing::Test` rather than from `WasmTest`.
-inline Bytes
-assembleWat(std::string_view wat)
-{
-    auto const wasm = rs::wasm_testkit::compile_wat(rust::Str{wat.data(), wat.size()});
-    return Bytes{wasm.begin(), wasm.end()};
-}
-
-// Base for every wasm test that runs a contract: a mocked host whose log is captured, and one
-// way into the engine.
+// Base for every wasm test that runs a contract against a MOCKED host whose log is captured.
+// Its real-host counterpart is `RealVmTest`; both run a WAT guest through the real VM and
+// forward to the shared `runWat` harness (`WasmRun.h`), differing only in the host.
 //
 // Modules are written as WebAssembly text and assembled by `assembleWat`. The assembler is in
 // a test-only crate: the engine itself refuses text
 // (`the_vm_refuses_a_text_format_module`), because a text assembler on the consensus path
 // would make a transaction's validity a build flag.
-struct WasmTest : testing::Test
+struct MockVmTest : testing::Test
 {
-    // Enough for every module here to run to completion; a test about budgets passes its own.
-    static constexpr std::int64_t kAmpleGas = 100'000;
-
     // Keeps what a run logged. The host's default journal is a null sink, which would let a
     // swallowed condition pass a test that only checks the TER.
     CaptureSink sink{beast::Severity::Warning};
@@ -51,7 +37,7 @@ struct WasmTest : testing::Test
     // something on its own — which is the kind of surprise a test suite exists to catch.
     testing::StrictMock<MockHostFunctions> host{beast::Journal{sink}};
 
-    WasmTest()
+    MockVmTest()
     {
         // `runEscrowWasm` asks every run whether the host is clean, so under a strict mock
         // every test would have to say so. Declared once here, and any number of times
@@ -71,7 +57,7 @@ struct WasmTest : testing::Test
         std::int64_t gas = kAmpleGas,
         std::string_view entryPoint = escrowFunctionName)
     {
-        return runEscrowWasm(assemble(wat), host, gas, entryPoint);
+        return runWat(host, wat, gas, entryPoint);
     }
 
     std::expected<EscrowResult, WasmTER>
@@ -93,7 +79,7 @@ struct WasmTest : testing::Test
 // Base for the per-host-function fixtures. Each derives, supplies the module that exercises
 // its own import, and runs it through `callHost()` — so a test says only what the host was
 // asked and what came back.
-struct HostCallTest : WasmTest
+struct HostCallTest : MockVmTest
 {
     // The module under test. One import, one `escrow_finish` that calls it.
     [[nodiscard]] virtual std::string
