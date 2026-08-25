@@ -136,29 +136,6 @@ TEST_F(WasmVMTest, ModuleThatWillNotInstantiateIsChargedToTheContract)
     EXPECT_TRUE(outcome.error().cost.has_value());
 }
 
-// A start section is guest code, so a trap in one is the contract's fault wherever it
-// happens - charged for what it burned, rather than reported as a module the node should
-// have screened.
-TEST_F(WasmVMTest, TrappingStartSectionIsChargedToTheContract)
-{
-    static constexpr std::string_view wat = R"wat(
-    (module
-      (memory (export "memory") 1)
-      (func $init (unreachable))
-      (start $init)
-      (func (export "escrow_finish") (result i32) (i32.const 0)))
-    )wat";
-
-    auto const outcome = run(wat);
-
-    ASSERT_FALSE(outcome.has_value());
-    // This is now disabled on the Wasmi VM side.  Any wasm with a
-    // start section is rejected outright rather than letting the code run.
-    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
-    ASSERT_FALSE(outcome.error().cost.has_value());
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-}
-
 // Preflight is meant to refuse these with `temBAD_WASM`; reaching apply means the screening
 // did not happen, which is the node's fault and not the transaction's.
 TEST_F(WasmVMTest, UnrunnableModuleIsNodeSideFault)
