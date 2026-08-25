@@ -50,7 +50,7 @@ create(Account const& proposer, json::Value const& proposedTx, std::uint32_t exp
  */
 json::Value
 cancel(Account const& account, uint256 const& proposalID);
-  
+
 /*
  * @brief Conditions that check what a proposal transaction did to the ledger.
  *
