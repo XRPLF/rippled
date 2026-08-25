@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -58,8 +57,7 @@ PermissionedDomainDelete::doApply()
     if (!view().dirRemove(keylet::ownerDir(accountID_), page, slePd->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Unable to delete permissioned domain directory entry.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete permissioned domain directory entry."};
         // LCOV_EXCL_STOP
     }
 

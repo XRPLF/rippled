@@ -71,8 +71,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     //   tfLimitLPToken: Amount and EPrice
     if (std::popcount(flags & tfDepositSubTx) != 1)
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
-        return temMALFORMED;
+        return {temMALFORMED, "AMM Deposit: invalid flags."};
     }
     if (ctx.tx.isFlag(tfLPToken))
     {
@@ -125,8 +124,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (lpTokens && *lpTokens <= beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Deposit: invalid LPTokens"};
     }
 
     if (amount)
@@ -167,8 +165,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (tradingFee > kTradingFeeThreshold)
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid trading fee.";
-        return temBAD_FEE;
+        return {temBAD_FEE, "AMM Deposit: invalid trading fee."};
     }
 
     return tesSUCCESS;
@@ -182,8 +179,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: Invalid asset pair.";
-        return terNO_AMM;
+        return {terNO_AMM, "AMM Deposit: Invalid asset pair."};
     }
 
     auto const expected = ammHolds(
@@ -204,8 +200,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         if (amountBalance != beast::kZero || amount2Balance != beast::kZero)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not zero.";
-            return tecINTERNAL;
+            return {tecINTERNAL, "AMM Deposit: tokens balance is not zero."};
             // LCOV_EXCL_STOP
         }
     }
@@ -217,8 +212,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             lptAMMBalance < beast::kZero)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.debug()) << "AMM Deposit: reserves or tokens balance is zero.";
-            return tecINTERNAL;
+            return {tecINTERNAL, "AMM Deposit: reserves or tokens balance is zero."};
             // LCOV_EXCL_STOP
         }
     }
@@ -382,8 +376,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const lpTokens = ctx.tx[~sfLPTokenOut];
         lpTokens && lpTokens->asset() != lptAMMBalance.asset())
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens.";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Deposit: invalid LPTokens."};
     }
 
     // Check the reserve for LPToken trustline if not LP.
@@ -394,8 +387,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         // Insufficient reserve
         if (xrpBalance <= beast::kZero)
         {
-            JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
-            return tecINSUF_RESERVE_LINE;
+            return {tecINSUF_RESERVE_LINE, "AMM Instance: insufficient reserves"};
         }
     }
 

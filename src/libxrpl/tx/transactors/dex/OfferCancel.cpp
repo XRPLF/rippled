@@ -18,8 +18,7 @@ OfferCancel::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfOfferSequence] == 0u)
     {
-        JLOG(ctx.j.trace()) << "OfferCancel::preflight: missing sequence";
-        return temBAD_SEQUENCE;
+        return {temBAD_SEQUENCE, "OfferCancel::preflight: missing sequence"};
     }
 
     return tesSUCCESS;

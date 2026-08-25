@@ -100,14 +100,12 @@ TrustSet::preflight(PreflightContext const& ctx)
 
     if (badCurrency() == saLimitAmount.get<Issue>().currency)
     {
-        JLOG(j.trace()) << "Malformed transaction: specifies XRP as IOU";
-        return temBAD_CURRENCY;
+        return {temBAD_CURRENCY, "Malformed transaction: specifies XRP as IOU"};
     }
 
     if (saLimitAmount < beast::kZero)
     {
-        JLOG(j.trace()) << "Malformed transaction: Negative credit limit.";
-        return temBAD_LIMIT;
+        return {temBAD_LIMIT, "Malformed transaction: Negative credit limit."};
     }
 
     // Check if destination makes sense.
@@ -115,8 +113,7 @@ TrustSet::preflight(PreflightContext const& ctx)
 
     if (!issuer || issuer == noAccount())
     {
-        JLOG(j.trace()) << "Malformed transaction: no destination account.";
-        return temDST_NEEDED;
+        return {temDST_NEEDED, "Malformed transaction: no destination account."};
     }
 
     return tesSUCCESS;
@@ -165,8 +162,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     if (bSetAuth && !sle->isFlag(lsfRequireAuth))
     {
-        JLOG(ctx.j.trace()) << "Retry: Auth not required.";
-        return tefNO_AUTH_REQUIRED;
+        return {tefNO_AUTH_REQUIRED, "Retry: Auth not required."};
     }
 
     auto const saLimitAmount = ctx.tx[sfLimitAmount];
@@ -354,8 +350,7 @@ TrustSet::doApply()
 
     if (!sleDst)
     {
-        JLOG(j_.trace()) << "Delay transaction: Destination account does not exist.";
-        return tecNO_DST;
+        return {tecNO_DST, "Delay transaction: Destination account does not exist."};
     }
 
     STAmount saLimitAllow = saLimitAmount;
@@ -683,8 +678,7 @@ TrustSet::doApply()
                                                   // setting default quality out.
         (!bSetAuth))
     {
-        JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
-        return tecNO_LINE_REDUNDANT;
+        return {tecNO_LINE_REDUNDANT, "Redundant: Setting non-existent ripple line to defaults."};
     }
     // reserve is not scaled by load
     else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)

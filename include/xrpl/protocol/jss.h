@@ -239,6 +239,7 @@ JSS(enabled);                        // out: AmendmentTable
 JSS(engine_result);                  // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_code);             // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_message);          // out: NetworkOPs, TransactionSign, Submit
+JSS(engine_result_reason);           // out: NetworkOPs, TransactionSign, Submit
 JSS(entire_set);                     // out: get_aggregate_price
 JSS(ephemeral_key);                  // out: ValidatorInfo
                                      // in/out: Manifest

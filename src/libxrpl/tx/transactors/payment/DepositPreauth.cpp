@@ -55,9 +55,9 @@ DepositPreauth::preflight(PreflightContext const& ctx)
     if (authPresent + authCredPresent != 1)
     {
         // There can only be 1 field out of 4 or the transaction is malformed.
-        JLOG(ctx.j.trace()) << "Malformed transaction: "
-                               "Invalid Authorize and Unauthorize field combination.";
-        return temMALFORMED;
+        return {
+            temMALFORMED,
+            "Malformed transaction: Invalid Authorize and Unauthorize field combination."};
     }
 
     if (authPresent != 0)
@@ -67,16 +67,17 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         AccountID const& target(optAuth ? *optAuth : *optUnauth);
         if (!target)
         {
-            JLOG(ctx.j.trace()) << "Malformed transaction: Authorized or Unauthorized "
-                                   "field zeroed.";
-            return temINVALID_ACCOUNT_ID;
+            return {
+                temINVALID_ACCOUNT_ID,
+                "Malformed transaction: Authorized or Unauthorized field zeroed."};
         }
 
         // An account may not preauthorize itself.
         if (optAuth && (target == ctx.tx[sfAccount]))
         {
-            JLOG(ctx.j.trace()) << "Malformed transaction: Attempting to DepositPreauth self.";
-            return temCANNOT_PREAUTH_SELF;
+            return {
+                temCANNOT_PREAUTH_SELF,
+                "Malformed transaction: Attempting to DepositPreauth self."};
         }
     }
     else
@@ -274,8 +275,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
     if (!slePreauth)
     {
-        JLOG(j.warn()) << "Selected DepositPreauth does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Selected DepositPreauth does not exist."};
     }
 
     AccountID const account{(*slePreauth)[sfAccount]};
@@ -283,8 +283,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     if (!view.dirRemove(keylet::ownerDir(account), page, preauthIndex, false))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete DepositPreauth from owner.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete DepositPreauth from owner."};
         // LCOV_EXCL_STOP
     }
 

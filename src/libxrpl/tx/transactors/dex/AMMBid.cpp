@@ -78,8 +78,7 @@ AMMBid::preflight(PreflightContext const& ctx)
         auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
         if (authAccounts.size() > kAuctionSlotMaxAuthAccounts)
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
-            return temMALFORMED;
+            return {temMALFORMED, "AMM Bid: Invalid number of AuthAccounts."};
         }
         if (ctx.rules.enabled(fixAMMv1_3))
         {
@@ -90,8 +89,7 @@ AMMBid::preflight(PreflightContext const& ctx)
                 auto authAccount = obj[sfAccount];
                 if (authAccount == account || unique.contains(authAccount))
                 {
-                    JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
-                    return temMALFORMED;
+                    return {temMALFORMED, "AMM Bid: Invalid auth.account."};
                 }
                 unique.insert(authAccount);
             }
@@ -107,8 +105,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
-        return terNO_AMM;
+        return {terNO_AMM, "AMM Bid: Invalid asset pair."};
     }
 
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
@@ -121,8 +118,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         {
             if (!ctx.view.read(keylet::account(account[sfAccount])))
             {
-                JLOG(ctx.j.debug()) << "AMM Bid: Invalid Account.";
-                return terNO_ACCOUNT;
+                return {terNO_ACCOUNT, "AMM Bid: Invalid Account."};
             }
         }
     }
@@ -131,8 +127,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     // Not LP
     if (lpTokens == beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
-        return tecAMM_INVALID_TOKENS;
+        return {tecAMM_INVALID_TOKENS, "AMM Bid: account is not LP."};
     }
 
     auto const bidMin = ctx.tx[~sfBidMin];
@@ -141,13 +136,11 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         if (bidMin->asset() != lpTokens.asset())
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
-            return temBAD_AMM_TOKENS;
+            return {temBAD_AMM_TOKENS, "AMM Bid: Invalid LPToken."};
         }
         if (*bidMin > lpTokens || *bidMin >= lpTokensBalance)
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
-            return tecAMM_INVALID_TOKENS;
+            return {tecAMM_INVALID_TOKENS, "AMM Bid: Invalid Tokens."};
         }
     }
 
@@ -156,20 +149,17 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         if (bidMax->asset() != lpTokens.asset())
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
-            return temBAD_AMM_TOKENS;
+            return {temBAD_AMM_TOKENS, "AMM Bid: Invalid LPToken."};
         }
         if (*bidMax > lpTokens || *bidMax >= lpTokensBalance)
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
-            return tecAMM_INVALID_TOKENS;
+            return {tecAMM_INVALID_TOKENS, "AMM Bid: Invalid Tokens."};
         }
     }
 
     if (bidMin && bidMax && bidMin > bidMax)
     {
-        JLOG(ctx.j.debug()) << "AMM Bid: Invalid Max/MinSlotPrice.";
-        return tecAMM_INVALID_TOKENS;
+        return {tecAMM_INVALID_TOKENS, "AMM Bid: Invalid Max/MinSlotPrice."};
     }
 
     return tesSUCCESS;

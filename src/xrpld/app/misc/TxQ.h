@@ -251,8 +251,8 @@ public:
             , seqProxy(seqProxy)
             , txn(txn)
             , retriesRemaining(retriesRemaining)
-            , preflightResult(preflightResult)
-            , lastResult(lastResult)
+            , preflightResult(std::move(preflightResult))
+            , lastResult(std::move(lastResult))
         {
         }
 

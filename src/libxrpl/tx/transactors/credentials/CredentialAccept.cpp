@@ -36,15 +36,13 @@ CredentialAccept::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx[sfIssuer])
     {
-        JLOG(ctx.j.trace()) << "Malformed transaction: Issuer field zeroed.";
-        return temINVALID_ACCOUNT_ID;
+        return {temINVALID_ACCOUNT_ID, "Malformed transaction: Issuer field zeroed."};
     }
 
     auto const credType = ctx.tx[sfCredentialType];
     if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
-        JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: invalid size of CredentialType."};
     }
 
     return tesSUCCESS;

@@ -47,16 +47,14 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
-        JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "LoanBroker does not exist."};
     }
 
     auto const brokerOwner = sleBroker->at(sfOwner);
 
     if (account != brokerOwner)
     {
-        JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Account is not the owner of the LoanBroker."};
     }
     if (auto const ownerCount = sleBroker->at(sfOwnerCount); ownerCount != 0)
     {
@@ -184,18 +182,21 @@ LoanBrokerDelete::doApply()
     // obligations associated with the broker or broker pseudo-account.
     if (*brokerPseudoSLE->at(sfBalance))
     {
-        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a balance";
-        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
+        return {
+            tecHAS_OBLIGATIONS,
+            "LoanBrokerDelete: Pseudo-account has a balance"};  // LCOV_EXCL_LINE
     }
     if (brokerPseudoSLE->at(sfOwnerCount) != 0)
     {
-        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account still owns objects";
-        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
+        return {
+            tecHAS_OBLIGATIONS,
+            "LoanBrokerDelete: Pseudo-account still owns objects"};  // LCOV_EXCL_LINE
     }
     if (auto const directory = keylet::ownerDir(brokerPseudoID); view().read(directory))
     {
-        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a directory";
-        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
+        return {
+            tecHAS_OBLIGATIONS,
+            "LoanBrokerDelete: Pseudo-account has a directory"};  // LCOV_EXCL_LINE
     }
 
     view().erase(brokerPseudoSLE);

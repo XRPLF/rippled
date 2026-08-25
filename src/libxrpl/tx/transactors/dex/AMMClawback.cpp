@@ -59,8 +59,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     if (issuer == holder)
     {
-        JLOG(ctx.j.trace()) << "AMMClawback: holder cannot be the same as issuer.";
-        return temMALFORMED;
+        return {temMALFORMED, "AMMClawback: holder cannot be the same as issuer."};
     }
 
     std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
@@ -72,23 +71,20 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFlag(tfClawTwoAssets) && asset.getIssuer() != asset2.getIssuer())
     {
-        JLOG(ctx.j.trace()) << "AMMClawback: tfClawTwoAssets can only be enabled when two "
-                               "assets in the AMM pool are both issued by the issuer";
-        return temINVALID_FLAG;
+        return {
+            temINVALID_FLAG,
+            "AMMClawback: tfClawTwoAssets can only be enabled when two assets in the AMM pool are "
+            "both issued by the issuer"};
     }
 
     if (asset.getIssuer() != issuer)
     {
-        JLOG(ctx.j.trace()) << "AMMClawback: Asset's account does not "
-                               "match Account field.";
-        return temMALFORMED;
+        return {temMALFORMED, "AMMClawback: Asset's account does not match Account field."};
     }
 
     if (clawAmount && clawAmount->asset() != asset)
     {
-        JLOG(ctx.j.trace()) << "AMMClawback: Amount's asset subfield "
-                               "does not match Asset field";
-        return temBAD_AMOUNT;
+        return {temBAD_AMOUNT, "AMMClawback: Amount's asset subfield does not match Asset field"};
     }
 
     if (clawAmount && *clawAmount <= beast::kZero)
@@ -112,8 +108,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Clawback: Invalid asset pair.";
-        return terNO_AMM;
+        return {terNO_AMM, "AMM Clawback: Invalid asset pair."};
     }
 
     if (!ctx.view.rules().enabled(featureMPTokensV2))

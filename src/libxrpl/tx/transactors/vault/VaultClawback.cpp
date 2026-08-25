@@ -36,8 +36,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "VaultClawback: zero/empty vault ID.";
-        return temMALFORMED;
+        return {temMALFORMED, "VaultClawback: zero/empty vault ID."};
     }
 
     auto const amount = ctx.tx[~sfAmount];
@@ -50,8 +49,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
         }
         if (isXRP(amount->asset()))
         {
-            JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
-            return temMALFORMED;
+            return {temMALFORMED, "VaultClawback: cannot clawback XRP."};
         }
     }
 
@@ -90,8 +88,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     if (!sleShareIssuance)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultClawback: missing issuance of vault shares.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultClawback: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
 
@@ -100,8 +97,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     // Ambiguous case: If Issuer is Owner they must specify the asset
     if (!maybeAmount && !vaultAsset.native() && vaultAsset.getIssuer() == vault->at(sfOwner))
     {
-        JLOG(ctx.j.debug()) << "VaultClawback: must specify amount when issuer is owner.";
-        return tecWRONG_ASSET;
+        return {tecWRONG_ASSET, "VaultClawback: must specify amount when issuer is owner."};
     }
 
     auto const amount = clawbackAmount(vault, maybeAmount, account);
@@ -115,8 +111,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         // Only the Vault Owner may clawback shares
         if (account != vault->at(sfOwner))
         {
-            JLOG(ctx.j.debug()) << "VaultClawback: only vault owner can clawback shares.";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "VaultClawback: only vault owner can clawback shares."};
         }
 
         auto const assetsTotal = vault->at(sfAssetsTotal);
@@ -126,9 +121,9 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         // Owner can clawback funds when the vault has shares but no assets
         if (sharesTotal == 0 || (assetsTotal != 0 || assetsAvailable != 0))
         {
-            JLOG(ctx.j.debug()) << "VaultClawback: vault owner can clawback shares only"
-                                   " when vault has no assets.";
-            return tecNO_PERMISSION;
+            return {
+                tecNO_PERMISSION,
+                "VaultClawback: vault owner can clawback shares only when vault has no assets."};
         }
 
         // If amount is non-zero, the VaultOwner must burn all shares
@@ -145,9 +140,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             // The VaultOwner must burn all shares
             if (amount != sharesHeld)
             {
-                JLOG(ctx.j.debug()) << "VaultClawback: vault owner must clawback all "
-                                       "shares.";
-                return tecLIMIT_EXCEEDED;
+                return {tecLIMIT_EXCEEDED, "VaultClawback: vault owner must clawback all shares."};
             }
         }
 
@@ -160,22 +153,19 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         // XRP cannot be clawed back
         if (vaultAsset.native())
         {
-            JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "VaultClawback: cannot clawback XRP."};
         }
 
         // Only the Asset Issuer may clawback the asset
         if (account != vaultAsset.getIssuer())
         {
-            JLOG(ctx.j.debug()) << "VaultClawback: only asset issuer can clawback asset.";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "VaultClawback: only asset issuer can clawback asset."};
         }
 
         // The issuer cannot clawback from itself
         if (account == holder)
         {
-            JLOG(ctx.j.debug()) << "VaultClawback: issuer cannot be the holder.";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "VaultClawback: issuer cannot be the holder."};
         }
 
         return vaultAsset.visit(
@@ -186,9 +176,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
                 if (!mptIssue->isFlag(lsfMPTCanClawback))
                 {
-                    JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
-                                           "MPT vault asset.";
-                    return tecNO_PERMISSION;
+                    return {tecNO_PERMISSION, "VaultClawback: cannot clawback MPT vault asset."};
                 }
 
                 return tesSUCCESS;
@@ -198,16 +186,13 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 if (!issuerSle)
                 {
                     // LCOV_EXCL_START
-                    JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
-                    return tefINTERNAL;
+                    return {tefINTERNAL, "VaultClawback: missing submitter account."};
                     // LCOV_EXCL_STOP
                 }
 
                 if (!issuerSle->isFlag(lsfAllowTrustLineClawback) || issuerSle->isFlag(lsfNoFreeze))
                 {
-                    JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
-                                           "IOU vault asset.";
-                    return tecNO_PERMISSION;
+                    return {tecNO_PERMISSION, "VaultClawback: cannot clawback IOU vault asset."};
                 }
 
                 return tesSUCCESS;
@@ -341,8 +326,7 @@ VaultClawback::doApply()
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultClawback: missing issuance of vault shares.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultClawback: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
     MPTIssue const share{mptIssuanceID};
@@ -454,8 +438,7 @@ VaultClawback::doApply()
                 j_) < beast::kZero)
         {
             // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultClawback: negative balance of vault assets.";
-            return tefINTERNAL;
+            return {tefINTERNAL, "VaultClawback: negative balance of vault assets."};
             // LCOV_EXCL_STOP
         }
     }

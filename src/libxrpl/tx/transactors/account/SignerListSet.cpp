@@ -89,8 +89,7 @@ SignerListSet::preflight(PreflightContext const& ctx)
     if (std::get<3>(result) == Operation::Unknown)
     {
         // Neither a set nor a destroy.  Malformed.
-        JLOG(ctx.j.trace()) << "Malformed transaction: Invalid signer set list format.";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: Invalid signer set list format."};
     }
 
     if (std::get<3>(result) == Operation::Set)
@@ -208,8 +207,7 @@ removeSignersFromLedger(
     if (!view.dirRemove(ownerDirKeylet, hint, signerListKeylet.key, false))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete SignerList from owner.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete SignerList from owner."};
         // LCOV_EXCL_STOP
     }
 
@@ -249,8 +247,7 @@ SignerListSet::validateQuorumAndSignerEntries(
         std::size_t const signerCount = signers.size();
         if (signerCount < STTx::kMinMultiSigners || signerCount > STTx::kMaxMultiSigners)
         {
-            JLOG(j.trace()) << "Too many or too few signers in signer list.";
-            return temMALFORMED;
+            return {temMALFORMED, "Too many or too few signers in signer list."};
         }
     }
 
@@ -261,8 +258,7 @@ SignerListSet::validateQuorumAndSignerEntries(
         "signers");
     if (std::ranges::adjacent_find(signers) != signers.end())
     {
-        JLOG(j.trace()) << "Duplicate signers in signer list";
-        return temBAD_SIGNER;
+        return {temBAD_SIGNER, "Duplicate signers in signer list"};
     }
 
     // Make sure no signers reference this account.  Also make sure the
@@ -273,24 +269,21 @@ SignerListSet::validateQuorumAndSignerEntries(
         std::uint32_t const weight = signer.weight;
         if (weight <= 0)
         {
-            JLOG(j.trace()) << "Every signer must have a positive weight.";
-            return temBAD_WEIGHT;
+            return {temBAD_WEIGHT, "Every signer must have a positive weight."};
         }
 
         allSignersWeight += signer.weight;
 
         if (signer.account == account)
         {
-            JLOG(j.trace()) << "A signer may not self reference account.";
-            return temBAD_SIGNER;
+            return {temBAD_SIGNER, "A signer may not self reference account."};
         }
         // Don't verify that the signer accounts exist.  Non-existent accounts
         // may be phantom accounts (which are permitted).
     }
     if ((quorum <= 0) || (allSignersWeight < quorum))
     {
-        JLOG(j.trace()) << "Quorum is unreachable";
-        return temBAD_QUORUM;
+        return {temBAD_QUORUM, "Quorum is unreachable"};
     }
     return tesSUCCESS;
 }

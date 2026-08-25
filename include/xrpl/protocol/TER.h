@@ -604,7 +604,7 @@ class CanCvtToNotTEC<TEScodes> : public std::true_type
 {
 };
 
-using NotTEC = TERSubset<CanCvtToNotTEC>;
+using NotTECRaw = TERSubset<CanCvtToNotTEC>;
 
 //------------------------------------------------------------------------------
 
@@ -639,48 +639,188 @@ class CanCvtToTER<TECcodes> : public std::true_type
 {
 };
 template <>
+class CanCvtToTER<NotTECRaw> : public std::true_type
+{
+};
+
+// TERRaw allows all of the subsets (the plain numeric code, no reason string).
+using TERRaw = TERSubset<CanCvtToTER>;
+
+//------------------------------------------------------------------------------
+// Forward declaration required by TER constructors below (TER.cpp provides the
+// definition).  The full public declaration is repeated after the struct.
+std::string
+transHuman(TERRaw code);
+
+//------------------------------------------------------------------------------
+// TERBase<RawType, Trait>: shared implementation for TER and NotTEC.
+//
+// RawType – the underlying plain-integer subset (TERRaw or NotTECRaw).
+// Trait   – the trait class restricting which TE*codes values are accepted.
+//
+// When no reason is supplied the standard description from transHuman() is used
+// automatically, so existing bare return statements compile unchanged:
+//   return tesSUCCESS;   // in a TER-returning function
+//   return temMALFORMED; // in a NotTEC-returning preflight
+//
+// To attach a more specific reason at a particular return site write:
+//   return {tecNO_DST, "destination account has been deleted"};
+//   return {temMALFORMED, "SignerEntries must be present for a non-zero quorum"};
+//
+template <typename RawType, template <typename> class Trait>
+struct TERBase
+{
+    RawType code;
+    std::string reason;
+
+    // Default-construct to tesSUCCESS.
+    TERBase() : code(tesSUCCESS), reason(transHuman(TERRaw{code}))
+    {
+    }
+
+    TERBase(TERBase const&) = default;
+    TERBase(TERBase&&) = default;
+    TERBase&
+    operator=(TERBase const&) = default;
+    TERBase&
+    operator=(TERBase&&) = default;
+
+    // --- construction from RawType ---
+
+    // Without explicit reason: populate from transHuman.
+    TERBase(RawType c)  // NOLINT(google-explicit-constructor)
+        : code(c), reason(transHuman(TERRaw{code}))
+    {
+    }
+
+    // With explicit reason.
+    TERBase(RawType c, std::string r) : code(c), reason(std::move(r))
+    {
+    }
+
+    // --- construction from any TE*codes enum satisfying Trait ---
+
+    // Without explicit reason: populate from transHuman.
+    template <typename T>
+    TERBase(T c)  // NOLINT(google-explicit-constructor)
+        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+        : code(c), reason(transHuman(TERRaw{code}))
+    {
+    }
+
+    // With explicit reason.
+    template <typename T>
+    TERBase(T c, std::string r)
+        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+        : code(c), reason(std::move(r))
+    {
+    }
+
+    // --- cross-construction from a compatible TERBase specialization ---
+    // Carries the reason string across (e.g. NotTEC → TER preserves a
+    // custom reason set during preflight).
+    template <typename OtherRaw, template <typename> class OtherTrait>
+    TERBase(TERBase<OtherRaw, OtherTrait> const& other)  // NOLINT(google-explicit-constructor)
+        requires(Trait<OtherRaw>::value)
+        : code(other.code), reason(other.reason)
+    {
+    }
+
+    // Build from a raw integer (used by transCode).
+    static TERBase
+    fromInt(int from)
+    {
+        return TERBase(RawType::fromInt(from));
+    }
+
+    // Implicit conversion to RawType for backward compatibility.
+    operator RawType() const  // NOLINT(google-explicit-constructor)
+    {
+        return code;
+    }
+
+    // True when the code is anything other than tesSUCCESS.
+    explicit
+    operator bool() const
+    {
+        return static_cast<bool>(code);
+    }
+
+    // Allow assignment to json::Objects without casting.
+    operator json::Value() const  // NOLINT(google-explicit-constructor)
+    {
+        return json::Value{TERtoInt(code)};
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, TERBase const& rhs)
+    {
+        return os << TERtoInt(rhs.code);
+    }
+};
+
+// TER    – full result code for apply-phase transactors (all TE*codes).
+using TER = TERBase<TERRaw, CanCvtToTER>;
+
+// NotTEC – result code for preflight functions (tel*, tem*, tef*, ter*, tes*;
+//           excludes tec* to prevent fee charging without a valid signature).
+using NotTEC = TERBase<NotTECRaw, CanCvtToNotTEC>;
+
+// Expose underlying integers for the comparison operator templates.
+inline TERUnderlyingType
+TERtoInt(TER const& v)
+{
+    return TERtoInt(v.code);
+}
+
+inline TERUnderlyingType
+TERtoInt(NotTEC const& v)
+{
+    return TERtoInt(v.code);
+}
+
+// Allow TERRaw (and therefore transHuman/transToken/transResultInfo) to accept
+// a NotTEC directly, enabling one-step implicit conversion via TERtoInt(NotTEC).
+template <>
 class CanCvtToTER<NotTEC> : public std::true_type
 {
 };
 
-// TER allows all of the subsets.
-using TER = TERSubset<CanCvtToTER>;
-
 //------------------------------------------------------------------------------
 
 inline bool
-isTelLocal(TER x) noexcept
+isTelLocal(TER const& x) noexcept
 {
     return (x >= telLOCAL_ERROR && x < temMALFORMED);
 }
 
 inline bool
-isTemMalformed(TER x) noexcept
+isTemMalformed(TER const& x) noexcept
 {
     return (x >= temMALFORMED && x < tefFAILURE);
 }
 
 inline bool
-isTefFailure(TER x) noexcept
+isTefFailure(TER const& x) noexcept
 {
     return (x >= tefFAILURE && x < terRETRY);
 }
 
 inline bool
-isTerRetry(TER x) noexcept
+isTerRetry(TER const& x) noexcept
 {
     return (x >= terRETRY && x < tesSUCCESS);
 }
 
 inline bool
-isTesSuccess(TER x) noexcept
+isTesSuccess(TER const& x) noexcept
 {
-    // Makes use of TERSubset::operator bool()
+    // Makes use of TER::operator bool()
     return !x;
 }
 
 inline bool
-isTecClaim(TER x) noexcept
+isTecClaim(TER const& x) noexcept
 {
     return (x >= tecCLAIM);
 }
@@ -689,13 +829,10 @@ std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* c
 transResults();
 
 bool
-transResultInfo(TER code, std::string& token, std::string& text);
+transResultInfo(TERRaw code, std::string& token, std::string& text);
 
 std::string
-transToken(TER code);
-
-std::string
-transHuman(TER code);
+transToken(TERRaw code);
 
 std::optional<TER>
 transCode(std::string const& token);

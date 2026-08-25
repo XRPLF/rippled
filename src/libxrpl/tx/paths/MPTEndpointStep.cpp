@@ -822,14 +822,12 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
     // The following checks apply for both payments and offer crossing.
     if (!src_ || !dst_)
     {
-        JLOG(j_.debug()) << "MPTEndpointStep: specified bad account.";
-        return temBAD_PATH;
+        return {temBAD_PATH, "MPTEndpointStep: specified bad account."};
     }
 
     if (src_ == dst_)
     {
-        JLOG(j_.debug()) << "MPTEndpointStep: same src and dst.";
-        return temBAD_PATH;
+        return {temBAD_PATH, "MPTEndpointStep: same src and dst."};
     }
 
     auto const sleSrc = ctx.view.read(keylet::account(src_));
@@ -884,15 +882,13 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
     // MPT can only be an endpoint
     if (!ctx.isLast && !ctx.isFirst)
     {
-        JLOG(j_.warn()) << "MPTEndpointStep: MPT can only be an endpoint";
-        return temBAD_PATH;
+        return {temBAD_PATH, "MPTEndpointStep: MPT can only be an endpoint"};
     }
 
     auto const& issuer = mptIssue_.getIssuer();
     if ((src_ != issuer && dst_ != issuer) || (src_ == issuer && dst_ == issuer))
     {
-        JLOG(j_.warn()) << "MPTEndpointStep: invalid src/dst";
-        return temBAD_PATH;
+        return {temBAD_PATH, "MPTEndpointStep: invalid src/dst"};
     }
 
     return static_cast<TDerived const*>(this)->check(ctx, sleSrc);

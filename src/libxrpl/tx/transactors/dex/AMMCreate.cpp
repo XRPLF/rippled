@@ -59,8 +59,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
 
     if (amount.asset() == amount2.asset())
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: tokens can not have the same asset.";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Instance: tokens can not have the same asset."};
     }
 
     if (auto const err = invalidAMMAmount(amount))
@@ -77,8 +76,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
 
     if (ctx.tx[sfTradingFee] > kTradingFeeThreshold)
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: invalid trading fee.";
-        return temBAD_FEE;
+        return {temBAD_FEE, "AMM Instance: invalid trading fee."};
     }
 
     return tesSUCCESS;
@@ -102,8 +100,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     if (auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
         ctx.view.read(ammKeylet))
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: ltAMM already exists.";
-        return tecDUPLICATE;
+        return {tecDUPLICATE, "AMM Instance: ltAMM already exists."};
     }
 
     if (auto const ter = requireAuth(ctx.view, amount.asset(), accountID); !isTesSuccess(ter))
@@ -122,13 +119,11 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkFrozen(ctx.view, accountID, amount.asset()); !isTesSuccess(ter))
 
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: involves frozen or locked asset.";
-        return ter;
+        return {ter, "AMM Instance: involves frozen or locked asset."};
     }
     if (auto const ter = checkFrozen(ctx.view, accountID, amount2.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: involves frozen or locked asset.";
-        return ter;
+        return {ter, "AMM Instance: involves frozen or locked asset."};
     }
 
     auto noDefaultRipple = [](ReadView const& view, Asset const& asset) {
@@ -143,8 +138,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     if (noDefaultRipple(ctx.view, amount.asset()) || noDefaultRipple(ctx.view, amount2.asset()))
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: DefaultRipple not set";
-        return terNO_RIPPLE;
+        return {terNO_RIPPLE, "AMM Instance: DefaultRipple not set"};
     }
 
     // Check the reserve for LPToken trustline
@@ -152,8 +146,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     // Insufficient reserve
     if (xrpBalance <= beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
-        return tecINSUF_RESERVE_LINE;
+        return {tecINSUF_RESERVE_LINE, "AMM Instance: insufficient reserves"};
     }
 
     auto insufficientBalance = [&](STAmount const& amount) {

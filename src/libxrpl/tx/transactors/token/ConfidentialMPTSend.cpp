@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -333,9 +332,9 @@ ConfidentialMPTSend::doApply()
         if (!newSpending)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTSend failed homomorphic subtract for sender spending balance.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL,
+                "ConfidentialMPTSend failed homomorphic subtract for sender spending balance."};
             // LCOV_EXCL_STOP
         }
 
@@ -349,9 +348,9 @@ ConfidentialMPTSend::doApply()
         if (!newIssuerEnc)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTSend failed homomorphic subtract for sender issuer balance.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL,
+                "ConfidentialMPTSend failed homomorphic subtract for sender issuer balance."};
             // LCOV_EXCL_STOP
         }
 
@@ -366,9 +365,9 @@ ConfidentialMPTSend::doApply()
         if (!newAuditorEnc)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTSend failed homomorphic subtract for sender auditor balance.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL,
+                "ConfidentialMPTSend failed homomorphic subtract for sender auditor balance."};
             // LCOV_EXCL_STOP
         }
 
@@ -393,9 +392,8 @@ ConfidentialMPTSend::doApply()
         if (!newInbox)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTSend failed homomorphic add for destination inbox.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL, "ConfidentialMPTSend failed homomorphic add for destination inbox."};
             // LCOV_EXCL_STOP
         }
 
@@ -420,9 +418,9 @@ ConfidentialMPTSend::doApply()
         if (!newIssuerEnc)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTSend failed homomorphic add for destination issuer balance.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL,
+                "ConfidentialMPTSend failed homomorphic add for destination issuer balance."};
             // LCOV_EXCL_STOP
         }
 
@@ -448,9 +446,9 @@ ConfidentialMPTSend::doApply()
         if (!newAuditorEnc)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTSend failed homomorphic add for destination auditor balance.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL,
+                "ConfidentialMPTSend failed homomorphic add for destination auditor balance."};
             // LCOV_EXCL_STOP
         }
 

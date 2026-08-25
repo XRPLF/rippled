@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -120,9 +119,7 @@ ConfidentialMPTMergeInbox::doApply()
     if (!sum)
     {
         // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTMergeInbox failed homomorphic add for inbox merge.";
-        return tecINTERNAL;
+        return {tecINTERNAL, "ConfidentialMPTMergeInbox failed homomorphic add for inbox merge."};
         // LCOV_EXCL_STOP
     }
 

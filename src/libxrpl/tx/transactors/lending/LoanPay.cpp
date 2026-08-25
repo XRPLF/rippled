@@ -218,14 +218,12 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     auto const loanSle = ctx.view.read(keylet::loan(loanID));
     if (!loanSle)
     {
-        JLOG(ctx.j.warn()) << "Loan does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Loan does not exist."};
     }
 
     if (loanSle->at(sfBorrower) != account)
     {
-        JLOG(ctx.j.warn()) << "Loan does not belong to the account.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Loan does not belong to the account."};
     }
 
     if (tx.isFlag(tfLoanOverpayment) && !loanSle->isFlag(lsfLoanOverpayment))
@@ -239,8 +237,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
 
     if (paymentRemaining == 0 || principalOutstanding == 0)
     {
-        JLOG(ctx.j.warn()) << "Loan is already paid off.";
-        return tecKILLED;
+        return {tecKILLED, "Loan is already paid off."};
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
@@ -249,8 +246,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     {
         // This should be impossible
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal()) << "LoanBroker does not exist.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "LoanBroker does not exist."};
         // LCOV_EXCL_STOP
     }
     auto const vaultID = loanBrokerSle->at(sfVaultID);
@@ -259,8 +255,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     {
         // This should be impossible
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal()) << "Vault does not exist.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Vault does not exist."};
         // LCOV_EXCL_STOP
     }
     auto const asset = vaultSle->at(sfAsset);
@@ -268,8 +263,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
 
     if (amount.asset() != asset)
     {
-        JLOG(ctx.j.warn()) << "Loan amount does not match the Vault asset.";
-        return tecWRONG_ASSET;
+        return {tecWRONG_ASSET, "Loan amount does not match the Vault asset."};
     }
 
     if (auto const ret = checkFrozen(ctx.view, account, asset))
@@ -446,8 +440,7 @@ LoanPay::doApply()
         paymentParts->feePaid < 0)
     {
         // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Loan payment computation returned invalid values.";
-        return tecLIMIT_EXCEEDED;
+        return {tecLIMIT_EXCEEDED, "Loan payment computation returned invalid values."};
         // LCOV_EXCL_STOP
     }
 

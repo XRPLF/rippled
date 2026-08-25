@@ -54,13 +54,11 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
-        JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "LoanBroker does not exist."};
     }
     if (account != sleBroker->at(sfOwner))
     {
-        JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Account is not the owner of the LoanBroker."};
     }
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)

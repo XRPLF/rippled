@@ -87,8 +87,7 @@ VaultDeposit::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
-        return temMALFORMED;
+        return {temMALFORMED, "VaultDeposit: zero/empty vault ID."};
     }
 
     if (ctx.tx[sfAmount] <= beast::kZero)
@@ -127,8 +126,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const& vaultAccount = vault->at(sfAccount);
     if (auto ter = canTransfer(ctx.view, vaultAsset, account, vaultAccount); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "VaultDeposit: vault assets are non-transferable.";
-        return ter;
+        return {ter, "VaultDeposit: vault assets are non-transferable."};
     }
 
     auto const mptIssuanceID = vault->at(sfShareMPTID);
@@ -136,8 +134,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (vaultShare == amount.asset())
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: vault shares and assets cannot be same.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultDeposit: vault shares and assets cannot be same."};
         // LCOV_EXCL_STOP
     }
 
@@ -145,16 +142,14 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultDeposit: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
 
     if (sleIssuance->isFlag(lsfMPTLocked))
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: issuance of vault shares is locked.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultDeposit: issuance of vault shares is locked."};
         // LCOV_EXCL_STOP
     }
 
@@ -257,8 +252,7 @@ VaultDeposit::doApply()
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDeposit: missing issuance of vault shares.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultDeposit: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
 
@@ -327,8 +321,7 @@ VaultDeposit::doApply()
         if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-            return tecINTERNAL;
+            return {tecINTERNAL, "VaultDeposit: would take more than offered."};
             // LCOV_EXCL_STOP
         }
         // What a deposit transfers is not the requested amount but that amount truncated to a
@@ -387,8 +380,7 @@ VaultDeposit::doApply()
                 AuthHandling::IgnoreAuth,
                 j_) < beast::kZero)
         {
-            JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
-            return tefINTERNAL;
+            return {tefINTERNAL, "VaultDeposit: negative balance of account assets."};
         }
     }
 

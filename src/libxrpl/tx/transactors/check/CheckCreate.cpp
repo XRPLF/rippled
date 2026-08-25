@@ -42,8 +42,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
         // They wrote a check to themselves.
-        JLOG(ctx.j.warn()) << "Malformed transaction: Check to self.";
-        return temREDUNDANT;
+        return {temREDUNDANT, "Malformed transaction: Check to self."};
     }
 
     {
@@ -57,8 +56,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
 
         if (badAsset() == sendMax.asset())
         {
-            JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
-            return temBAD_CURRENCY;
+            return {temBAD_CURRENCY, "Malformed transaction: Bad currency."};
         }
     }
 
@@ -66,8 +64,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
     {
         if (*optExpiry == 0)
         {
-            JLOG(ctx.j.warn()) << "Malformed transaction: bad expiration";
-            return temBAD_EXPIRATION;
+            return {temBAD_EXPIRATION, "Malformed transaction: bad expiration"};
         }
     }
 
@@ -82,8 +79,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     auto const sleDst = ctx.view.read(keylet::account(dstId));
     if (!sleDst)
     {
-        JLOG(ctx.j.warn()) << "Destination account does not exist.";
-        return tecNO_DST;
+        return {tecNO_DST, "Destination account does not exist."};
     }
 
     // Check if the destination has disallowed incoming checks
@@ -101,8 +97,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
-        JLOG(ctx.j.warn()) << "Malformed transaction: DestinationTag required.";
-        return tecDST_TAG_NEEDED;
+        return {tecDST_TAG_NEEDED, "Malformed transaction: DestinationTag required."};
     }
 
     {
@@ -113,8 +108,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
             AccountID const& issuerId{sendMax.getIssuer()};
             if (auto const ter = checkGlobalFrozen(ctx.view, sendMax.asset()); !isTesSuccess(ter))
             {
-                JLOG(ctx.j.warn()) << "Creating a check for frozen or locked asset";
-                return ter;
+                return {ter, "Creating a check for frozen or locked asset"};
             }
             auto const err = sendMax.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
@@ -131,8 +125,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                         if (sleTrust &&
                             sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
                         {
-                            JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
-                            return tecFROZEN;
+                            return TER{tecFROZEN, "Creating a check for frozen trustline."};
                         }
                     }
                     if (issuerId != dstId)
@@ -143,9 +136,8 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                         if (sleTrust &&
                             sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
                         {
-                            JLOG(ctx.j.warn()) << "Creating a check for "
-                                                  "destination frozen trustline.";
-                            return tecFROZEN;
+                            return TER{
+                                tecFROZEN, "Creating a check for destination frozen trustline."};
                         }
                     }
 
@@ -154,19 +146,16 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                 [&](MPTIssue const& issue) -> std::optional<TER> {
                     if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
                     {
-                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
-                        return tecLOCKED;
+                        return TER{tecLOCKED, "Creating a check for locked MPT."};
                     }
                     if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
                     {
-                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
-                        return tecLOCKED;
+                        return TER{tecLOCKED, "Creating a check for locked MPT."};
                     }
                     if (auto const ter = canTransfer(ctx.view, issue, srcId, dstId);
                         !isTesSuccess(ter))
                     {
-                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
-                        return ter;
+                        return TER{ter, "MPT transfer is disabled."};
                     }
 
                     return std::nullopt;
@@ -177,8 +166,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     }
     if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
     {
-        JLOG(ctx.j.warn()) << "Creating a check that has already expired.";
-        return tecEXPIRED;
+        return {tecEXPIRED, "Creating a check that has already expired."};
     }
 
     return tesSUCCESS;

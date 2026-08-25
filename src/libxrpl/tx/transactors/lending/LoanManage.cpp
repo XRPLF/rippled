@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -52,9 +53,10 @@ LoanManage::preflight(PreflightContext const& ctx)
         auto const flags = *flagField & tfUniversalMask;
         if ((flags & (flags - 1)) != 0)
         {
-            JLOG(ctx.j.warn()) << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or "
-                                  "tfLoanUnimpair can be set.";
-            return temINVALID_FLAG;
+            return {
+                temINVALID_FLAG,
+                "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or tfLoanUnimpair can be "
+                "set."};
         }
     }
 
@@ -72,8 +74,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     auto const loanSle = ctx.view.read(keylet::loan(loanID));
     if (!loanSle)
     {
-        JLOG(ctx.j.warn()) << "Loan does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Loan does not exist."};
     }
     // Impairment only allows certain transitions.
     // 1. Once it's in default, it can't be changed.
@@ -83,31 +84,27 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     // 4. If it's in a state, it can't be put in that state again.
     if (loanSle->isFlag(lsfLoanDefault))
     {
-        JLOG(ctx.j.warn()) << "Loan is in default. A defaulted loan can not be modified.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Loan is in default. A defaulted loan can not be modified."};
     }
     if (loanSle->isFlag(lsfLoanImpaired) && tx.isFlag(tfLoanImpair))
     {
-        JLOG(ctx.j.warn()) << "Loan is impaired. A loan can not be impaired twice.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Loan is impaired. A loan can not be impaired twice."};
     }
     if (!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) &&
         (tx.isFlag(tfLoanUnimpair)))
     {
-        JLOG(ctx.j.warn()) << "Loan is unimpaired. Can not be unimpaired again.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Loan is unimpaired. Can not be unimpaired again."};
     }
     if (loanSle->at(sfPaymentRemaining) == 0)
     {
-        JLOG(ctx.j.warn()) << "Loan is fully paid. A loan can not be modified "
-                              "after it is fully paid.";
-        return tecNO_PERMISSION;
+        return {
+            tecNO_PERMISSION,
+            "Loan is fully paid. A loan can not be modified after it is fully paid."};
     }
     if (tx.isFlag(tfLoanDefault) &&
         !hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod)))
     {
-        JLOG(ctx.j.warn()) << "A loan can not be defaulted before the next payment due date.";
-        return tecTOO_SOON;
+        return {tecTOO_SOON, "A loan can not be defaulted before the next payment due date."};
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
@@ -119,9 +116,10 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     }
     if (loanBrokerSle->at(sfOwner) != account)
     {
-        JLOG(ctx.j.warn()) << "LoanBroker for Loan does not belong to the account. LoanManage "
-                              "can only be submitted by the Loan Broker.";
-        return tecNO_PERMISSION;
+        return {
+            tecNO_PERMISSION,
+            "LoanBroker for Loan does not belong to the account. LoanManage can only be submitted "
+            "by the Loan Broker."};
     }
 
     return tesSUCCESS;
@@ -182,8 +180,7 @@ LoanManage::defaultLoan(
         if (vaultTotalProxy < vaultDefaultAmount)
         {
             // LCOV_EXCL_START
-            JLOG(j.warn()) << "Vault total assets is less than the vault default amount";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "Vault total assets is less than the vault default amount"};
             // LCOV_EXCL_STOP
         }
 
@@ -227,8 +224,7 @@ LoanManage::defaultLoan(
             if (vaultLossUnrealizedProxy < totalDefaultAmount)
             {
                 // LCOV_EXCL_START
-                JLOG(j.warn()) << "Vault unrealized loss is less than the default amount";
-                return tefBAD_LEDGER;
+                return {tefBAD_LEDGER, "Vault unrealized loss is less than the default amount"};
                 // LCOV_EXCL_STOP
             }
             adjustImpreciseNumber(
@@ -247,8 +243,7 @@ LoanManage::defaultLoan(
         if (coverAvailableProxy < defaultCovered)
         {
             // LCOV_EXCL_START
-            JLOG(j.warn()) << "LoanBroker cover available is less than amount covered";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "LoanBroker cover available is less than amount covered"};
             // LCOV_EXCL_STOP
         }
         coverAvailableProxy -= defaultCovered;
@@ -301,9 +296,8 @@ LoanManage::impairLoan(
     {
         // Having a loss greater than the vault's unavailable assets
         // will leave the vault in an invalid / inconsistent state.
-        JLOG(j.warn()) << "Vault unrealized loss is too large, and will "
-                          "corrupt the vault.";
-        return tecLIMIT_EXCEEDED;
+        return {
+            tecLIMIT_EXCEEDED, "Vault unrealized loss is too large, and will corrupt the vault."};
     }
     view.update(vaultSle);
 
@@ -340,8 +334,7 @@ LoanManage::unimpairLoan(
     if (vaultLossUnrealizedProxy < lossReversed)
     {
         // LCOV_EXCL_START
-        JLOG(j.warn()) << "Vault unrealized loss is less than the amount to be cleared";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Vault unrealized loss is less than the amount to be cleared"};
         // LCOV_EXCL_STOP
     }
     // Reverse the "paper loss"

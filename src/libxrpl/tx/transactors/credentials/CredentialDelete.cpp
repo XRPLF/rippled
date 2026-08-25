@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/credentials/CredentialDelete.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -36,24 +35,19 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     if (!subject && !issuer)
     {
         // Neither field is present, the transaction is malformed.
-        JLOG(ctx.j.trace()) << "Malformed transaction: "
-                               "No Subject or Issuer fields.";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: No Subject or Issuer fields."};
     }
 
     // Make sure that the passed account is valid.
     if ((subject && subject->isZero()) || (issuer && issuer->isZero()))
     {
-        JLOG(ctx.j.trace()) << "Malformed transaction: Subject or Issuer "
-                               "field zeroed.";
-        return temINVALID_ACCOUNT_ID;
+        return {temINVALID_ACCOUNT_ID, "Malformed transaction: Subject or Issuer field zeroed."};
     }
 
     auto const credType = ctx.tx[sfCredentialType];
     if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
-        JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: invalid size of CredentialType."};
     }
 
     return tesSUCCESS;
@@ -87,8 +81,7 @@ CredentialDelete::doApply()
     if ((subject != accountID_) && (issuer != accountID_) &&
         !checkExpired(*sleCred, ctx_.view().header().parentCloseTime))
     {
-        JLOG(j_.trace()) << "Can't delete non-expired credential.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Can't delete non-expired credential."};
     }
 
     return deleteSLE(view(), sleCred, j_);

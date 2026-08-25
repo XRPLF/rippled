@@ -53,26 +53,22 @@ NotTEC
 CredentialCreate::preflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
-    auto& j = ctx.j;
 
     if (!tx[sfSubject])
     {
-        JLOG(j.trace()) << "Malformed transaction: Invalid Subject";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: Invalid Subject"};
     }
 
     auto const uri = tx[~sfURI];
     if (uri && (uri->empty() || (uri->size() > kMaxCredentialUriLength)))
     {
-        JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: invalid size of URI."};
     }
 
     auto const credType = tx[sfCredentialType];
     if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
-        JLOG(j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: invalid size of CredentialType."};
     }
 
     return tesSUCCESS;
@@ -88,14 +84,12 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
 
     if (!subjectSle)
     {
-        JLOG(ctx.j.trace()) << "Subject doesn't exist.";
-        return tecNO_TARGET;
+        return {tecNO_TARGET, "Subject doesn't exist."};
     }
 
     if (ctx.view.exists(keylet::credential(subject, ctx.tx[sfAccount], credType)))
     {
-        JLOG(ctx.j.trace()) << "Credential already exists.";
-        return tecDUPLICATE;
+        return {tecDUPLICATE, "Credential already exists."};
     }
 
     if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(subjectSle))
@@ -126,9 +120,7 @@ CredentialCreate::doApply()
 
         if (closeTime > *optExp)
         {
-            JLOG(j_.trace()) << "Malformed transaction: "
-                                "Expiration time is in the past.";
-            return tecEXPIRED;
+            return {tecEXPIRED, "Malformed transaction: Expiration time is in the past."};
         }
 
         sleCred->setFieldU32(sfExpiration, *optExp);

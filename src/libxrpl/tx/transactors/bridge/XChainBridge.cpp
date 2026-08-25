@@ -133,9 +133,9 @@ checkAttestationPublicKey(
             // master key
             if (sleAttestationSigningAccount->isFlag(lsfDisableMaster))
             {
-                JLOG(j.trace()) << "Attempt to add an attestation with "
-                                   "disabled master key.";
-                return tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR;
+                return {
+                    tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR,
+                    "Attempt to add an attestation with disabled master key."};
             }
         }
         else
@@ -165,9 +165,10 @@ checkAttestationPublicKey(
         // account does not exist.
         if (calcAccountID(pk) != attestationSignerAccount)
         {
-            JLOG(j.trace()) << "Attempt to add an attestation with non-existant account "
-                               "and mismatched pk/account pair.";
-            return tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR;
+            return {
+                tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR,
+                "Attempt to add an attestation with non-existant account and mismatched pk/account "
+                "pair."};
         }
     }
 
@@ -465,8 +466,7 @@ transferHelper(
             }
             if (amt < psb.fees().reserve)
             {
-                JLOG(j.trace()) << "Insufficient payment to create account.";
-                return tecNO_DST_INSUF_XRP;
+                return {tecNO_DST_INSUF_XRP, "Insufficient payment to create account."};
             }
 
             // Create the account.

@@ -61,8 +61,7 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     if (tx.isFieldPresent(sfSponsorFlags) && isReserveSponsored(tx))
     {
-        JLOG(ctx.j.debug()) << "LoanSet: reserve sponsorship is not allowed.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "LoanSet: reserve sponsorship is not allowed."};
     }
 
     // Special case for Batch inner transactions
@@ -83,8 +82,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     }();
     if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig)
     {
-        JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
-        return temBAD_SIGNER;
+        return {temBAD_SIGNER, "LoanSet transaction must have a CounterpartySignature."};
     }
 
     if (counterPartySig)
@@ -247,29 +245,27 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // mostly so that unit tests can test that specific case.
         if (grace > timeAvailable)
         {
-            JLOG(ctx.j.warn()) << "Grace period exceeds protocol time limit.";
-            return tecKILLED;
+            return {tecKILLED, "Grace period exceeds protocol time limit."};
         }
 
         if (interval > timeAvailable)
         {
-            JLOG(ctx.j.warn()) << "Payment interval exceeds protocol time limit.";
-            return tecKILLED;
+            return {tecKILLED, "Payment interval exceeds protocol time limit."};
         }
 
         if (total > timeAvailable)
         {
-            JLOG(ctx.j.warn()) << "Payment total exceeds protocol time limit.";
-            return tecKILLED;
+            return {tecKILLED, "Payment total exceeds protocol time limit."};
         }
 
         auto const timeLastPayment = timeAvailable - grace;
 
         if (timeLastPayment / interval < total)
         {
-            JLOG(ctx.j.warn()) << "Last payment due date, or grace period for "
-                                  "last payment exceeds protocol time limit.";
-            return tecKILLED;
+            return {
+                tecKILLED,
+                "Last payment due date, or grace period for last payment exceeds protocol time "
+                "limit."};
         }
     }
 
@@ -281,16 +277,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     {
         // This can only be hit if there's a counterparty specified, otherwise
         // it'll fail in the signature check
-        JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "LoanBroker does not exist."};
     }
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
     if (account != brokerOwner && counterparty != brokerOwner)
     {
-        JLOG(ctx.j.warn()) << "Neither Account nor Counterparty are the owner "
-                              "of the LoanBroker.";
-        return tecNO_PERMISSION;
+        return {
+            tecNO_PERMISSION, "Neither Account nor Counterparty are the owner of the LoanBroker."};
     }
     auto const brokerPseudo = brokerSle->at(sfAccount);
 
@@ -299,8 +293,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     {
         // It may not be possible to hit this case, because it'll fail the
         // signature check with terNO_ACCOUNT.
-        JLOG(ctx.j.warn()) << "Borrower does not exist.";
-        return terNO_ACCOUNT;
+        return {terNO_ACCOUNT, "Borrower does not exist."};
     }
 
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
@@ -338,8 +331,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 
     if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
-        JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
-        return tecLIMIT_EXCEEDED;
+        return {tecLIMIT_EXCEEDED, "Vault at maximum assets limit. Can't add another loan."};
     }
 
     Asset const asset = vault->at(sfAsset);
@@ -442,8 +434,8 @@ LoanSet::doApply()
     auto const vaultScale = getAssetsTotalScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
-        JLOG(j_.warn()) << "Insufficient assets available in the Vault to fund the loan.";
-        return tecINSUFFICIENT_FUNDS;
+        return {
+            tecINSUFFICIENT_FUNDS, "Insufficient assets available in the Vault to fund the loan."};
     }
 
     TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
@@ -473,8 +465,7 @@ LoanSet::doApply()
 
     if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
     {
-        JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
-        return tecLIMIT_EXCEEDED;
+        return {tecLIMIT_EXCEEDED, "Loan would exceed the maximum assets of the vault"};
     }
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
@@ -523,8 +514,7 @@ LoanSet::doApply()
     if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
         debtMaximum != 0 && debtMaximum < newDebtTotal)
     {
-        JLOG(j_.warn()) << "Loan would exceed the maximum debt limit of the LoanBroker.";
-        return tecLIMIT_EXCEEDED;
+        return {tecLIMIT_EXCEEDED, "Loan would exceed the maximum debt limit of the LoanBroker."};
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
@@ -542,8 +532,7 @@ LoanSet::doApply()
         }();
         if (brokerSle->at(sfCoverAvailable) < minCover)
         {
-            JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
-            return tecINSUFFICIENT_FUNDS;
+            return {tecINSUFFICIENT_FUNDS, "Insufficient first-loss capital to cover the loan."};
         }
     }
 
