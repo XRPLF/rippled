@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace xrpl {
@@ -114,8 +115,15 @@ private:
 /** Verify confidential MPT field and accounting consistency. */
 class ValidConfidentialMPT
 {
+    struct Holding
+    {
+        uint192 issuanceID;
+        bool hasAuditorBalance;
+        std::optional<std::uint32_t> auditorKeyVersion;
+    };
+
     bool invalid_{false};
-    std::vector<uint192> confidentialHoldings_;
+    std::vector<Holding> confidentialHoldings_;
 
 public:
     void

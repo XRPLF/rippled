@@ -41,6 +41,8 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
     // Confidential outstanding amount must also be zero before deletion.
     if ((*sleMPT)[sfConfidentialOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
+    if (sleMPT->isFieldPresent(sfPendingAuditorEncryptionKey))
+        return tecHAS_OBLIGATIONS;
 
     return tesSUCCESS;
 }

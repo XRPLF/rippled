@@ -36,6 +36,8 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(issuanceID));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
+    if (auditorMigrationPending(*sleIssuance))
+        return tecLOCKED;
     if ((*sleIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return temMALFORMED;
     if (!ctx.view.exists(keylet::account(ctx.tx[sfHolder])))

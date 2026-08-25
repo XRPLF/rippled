@@ -11,6 +11,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include <limits>
+
 namespace xrpl {
 namespace {
 
@@ -73,6 +75,8 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(issuanceID));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
+    if (auditorMigrationPending(*sleIssuance))
+        return tecLOCKED;
     if (account == (*sleIssuance)[sfIssuer])
         return temMALFORMED;
     if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
@@ -188,6 +192,11 @@ ConfidentialMPTConvert::doApply()
 
     if (initializing)
     {
+        auto const holderCount = (*sleIssuance)[sfConfidentialHolderCount];
+        if (holderCount == std::numeric_limits<std::uint32_t>::max())
+            return tecINTERNAL;
+        (*sleIssuance)[sfConfidentialHolderCount] = holderCount + 1;
+
         sleMpt->setFieldVL(
             sfHolderEncryptionKey,
             Slice(holderPk.data(), holderPk.size()));
@@ -213,6 +222,9 @@ ConfidentialMPTConvert::doApply()
                 return ter;
             confidential::serializeCiphertext(zeroA, Slice(raw.data(), raw.size()));
             sleMpt->setFieldVL(sfAuditorEncryptedBalance, Slice(raw.data(), raw.size()));
+            sleMpt->setFieldU32(
+                sfAuditorKeyVersion,
+                (*sleIssuance)[sfAuditorKeyVersion]);
         }
         sleMpt->setFieldU32(sfConfidentialBalanceVersion, 0);
     }

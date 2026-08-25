@@ -15,6 +15,9 @@ namespace xrpl {
 XRPAmount
 confidentialMptBaseFee(ReadView const& view, STTx const& tx);
 
+[[nodiscard]] bool
+auditorMigrationPending(SLE const& issuance) noexcept;
+
 NotTEC
 preflightCiphertext(Slice blob);
 

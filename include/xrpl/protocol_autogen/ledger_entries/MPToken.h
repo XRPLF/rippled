@@ -269,6 +269,30 @@ public:
     }
 
     /**
+     * @brief Get sfAuditorKeyVersion (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAuditorKeyVersion() const
+    {
+        if (hasAuditorKeyVersion())
+            return this->sle_->at(sfAuditorKeyVersion);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorKeyVersion is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorKeyVersion() const
+    {
+        return this->sle_->isFieldPresent(sfAuditorKeyVersion);
+    }
+
+    /**
      * @brief Get sfConfidentialBalanceVersion (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -466,6 +490,17 @@ public:
     setAuditorEncryptedBalance(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfAuditorEncryptedBalance] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorKeyVersion (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setAuditorKeyVersion(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAuditorKeyVersion] = value;
         return *this;
     }
 

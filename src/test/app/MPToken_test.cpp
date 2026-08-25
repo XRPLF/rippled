@@ -36,6 +36,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
@@ -50,6 +51,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -7782,7 +7784,7 @@ class MPToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanHoldConfidentialBalance));
         }
 
-        // Set: enable + keys; auditor requires issuer; bad key length
+        // Set: enable + keys; auditor requires an issuer view key; bad key length
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
@@ -7791,7 +7793,10 @@ class MPToken_test : public beast::unit_test::Suite
                  .flags = tfMPTCanTransfer,
                  .mutableFlags = tmfMPTCanMutateTransferFee});
 
-            mptAlice.set({.account = alice, .auditorEncryptionKey = auditorKey, .err = temMALFORMED});
+            mptAlice.set(
+                {.account = alice,
+                 .auditorEncryptionKey = auditorKey,
+                 .err = tecNO_PERMISSION});
             mptAlice.set(
                 {.account = alice,
                  .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
@@ -7838,6 +7843,125 @@ class MPToken_test : public beast::unit_test::Suite
             MPTTester mptAlice(env, alice);
             mptAlice.create({.ownerCount = 1, .flags = tfMPTCanHoldConfidentialBalance});
             mptAlice.destroy({.ownerCount = 0});
+        }
+
+        // IssuanceSet confidential feature / field / permission gaps
+        {
+            Env env{*this, features - featureConfidentialTransfer};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                 .issuerEncryptionKey = issuerKey,
+                 .err = temDISABLED});
+        }
+        {
+            Env env{*this, features};
+            Account const bob("bobConf");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags = tmfMPTCanMutateTransferFee | tmfMPTCanMutateCanTransfer});
+
+            mptAlice.set(
+                {.account = alice,
+                 .holder = bob,
+                 .issuerEncryptionKey = issuerKey,
+                 .err = temMALFORMED});
+
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                 .issuerEncryptionKey = issuerKey,
+                 .auditorEncryptionKey = shortKey,
+                 .err = temMALFORMED});
+
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                 .transferFee = 50,
+                 .err = temBAD_TRANSFER_FEE});
+
+            mptAlice.set(
+                {.account = alice, .issuerEncryptionKey = issuerKey, .err = tecNO_PERMISSION});
+
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanTransfer});
+            mptAlice.set({.account = alice, .transferFee = 25});
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                 .err = tecNO_PERMISSION});
+        }
+
+        // Keys rejected when COA != 0
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer});
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto sle = view.read(keylet::mptIssuance(mptAlice.issuanceID()));
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                if (replacement->isFieldPresent(sfTransferFee) &&
+                    replacement->getFieldU16(sfTransferFee) == 0)
+                    replacement->makeFieldAbsent(sfTransferFee);
+                replacement->setFieldU64(sfConfidentialOutstandingAmount, 1);
+                view.rawReplace(replacement);
+                return true;
+            });
+            mptAlice.set(
+                {.account = alice, .issuerEncryptionKey = issuerKey, .err = tecNO_PERMISSION});
+        }
+
+        // Destroy blocked when COA != 0 while OA == 0
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanHoldConfidentialBalance});
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto sle = view.read(keylet::mptIssuance(mptAlice.issuanceID()));
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                if (replacement->isFieldPresent(sfTransferFee) &&
+                    replacement->getFieldU16(sfTransferFee) == 0)
+                    replacement->makeFieldAbsent(sfTransferFee);
+                replacement->setFieldU64(sfConfidentialOutstandingAmount, 7);
+                view.rawReplace(replacement);
+                return true;
+            });
+            mptAlice.destroy({.err = tecHAS_OBLIGATIONS});
+        }
+
+        // Unauthorize blocked while holder encryption key present
+        {
+            Env env{*this, features};
+            Account const bob("bobAuthConf");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .pay = {{std::vector<Account>{bob}, 10}},
+                 .flags = tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer});
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto sle = view.read(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                if (replacement->isFieldPresent(sfTransferFee) &&
+                    replacement->getFieldU16(sfTransferFee) == 0)
+                    replacement->makeFieldAbsent(sfTransferFee);
+                std::vector<std::uint8_t> key(33, 0x02);
+                replacement->setFieldVL(sfHolderEncryptionKey, Slice(key.data(), key.size()));
+                view.rawReplace(replacement);
+                return true;
+            });
+            mptAlice.authorize(
+                {.account = bob, .flags = tfMPTUnauthorize, .err = tecHAS_OBLIGATIONS});
         }
     }
 

@@ -32,6 +32,7 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const confidentialBalanceInboxValue = canonical_VL();
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
+    auto const auditorKeyVersionValue = canonical_UINT32();
     auto const confidentialBalanceVersionValue = canonical_UINT32();
 
     MPTokenBuilder builder{
@@ -49,6 +50,7 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setConfidentialBalanceInbox(confidentialBalanceInboxValue);
     builder.setIssuerEncryptedBalance(issuerEncryptedBalanceValue);
     builder.setAuditorEncryptedBalance(auditorEncryptedBalanceValue);
+    builder.setAuditorKeyVersion(auditorKeyVersionValue);
     builder.setConfidentialBalanceVersion(confidentialBalanceVersionValue);
 
     builder.setLedgerIndex(index);
@@ -147,6 +149,14 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = auditorKeyVersionValue;
+        auto const actualOpt = entry.getAuditorKeyVersion();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAuditorKeyVersion");
+        EXPECT_TRUE(entry.hasAuditorKeyVersion());
+    }
+
+    {
         auto const& expected = confidentialBalanceVersionValue;
         auto const actualOpt = entry.getConfidentialBalanceVersion();
         ASSERT_TRUE(actualOpt.has_value());
@@ -179,6 +189,7 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const confidentialBalanceInboxValue = canonical_VL();
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
+    auto const auditorKeyVersionValue = canonical_UINT32();
     auto const confidentialBalanceVersionValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
@@ -195,6 +206,7 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfConfidentialBalanceInbox) = confidentialBalanceInboxValue;
     sle->at(sfIssuerEncryptedBalance) = issuerEncryptedBalanceValue;
     sle->at(sfAuditorEncryptedBalance) = auditorEncryptedBalanceValue;
+    sle->at(sfAuditorKeyVersion) = auditorKeyVersionValue;
     sle->at(sfConfidentialBalanceVersion) = confidentialBalanceVersionValue;
 
     MPTokenBuilder builderFromSle{sle};
@@ -348,6 +360,19 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = auditorKeyVersionValue;
+
+        auto const fromSleOpt = entryFromSle.getAuditorKeyVersion();
+        auto const fromBuilderOpt = entryFromBuilder.getAuditorKeyVersion();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAuditorKeyVersion");
+        expectEqualField(expected, *fromBuilderOpt, "sfAuditorKeyVersion");
+    }
+
+    {
         auto const& expected = confidentialBalanceVersionValue;
 
         auto const fromSleOpt = entryFromSle.getConfidentialBalanceVersion();
@@ -436,6 +461,8 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getIssuerEncryptedBalance().has_value());
     EXPECT_FALSE(entry.hasAuditorEncryptedBalance());
     EXPECT_FALSE(entry.getAuditorEncryptedBalance().has_value());
+    EXPECT_FALSE(entry.hasAuditorKeyVersion());
+    EXPECT_FALSE(entry.getAuditorKeyVersion().has_value());
     EXPECT_FALSE(entry.hasConfidentialBalanceVersion());
     EXPECT_FALSE(entry.getConfidentialBalanceVersion().has_value());
 }

@@ -35,8 +35,12 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const mutableFlagsValue = canonical_UINT32();
     auto const referenceHoldingValue = canonical_UINT256();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
+    auto const confidentialHolderCountValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
+    auto const auditorKeyVersionValue = canonical_UINT32();
+    auto const pendingAuditorEncryptionKeyValue = canonical_VL();
+    auto const auditorMigrationCountValue = canonical_UINT32();
 
     MPTokenIssuanceBuilder builder{
         issuerValue,
@@ -56,8 +60,12 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setMutableFlags(mutableFlagsValue);
     builder.setReferenceHolding(referenceHoldingValue);
     builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
+    builder.setConfidentialHolderCount(confidentialHolderCountValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
+    builder.setAuditorKeyVersion(auditorKeyVersionValue);
+    builder.setPendingAuditorEncryptionKey(pendingAuditorEncryptionKeyValue);
+    builder.setAuditorMigrationCount(auditorMigrationCountValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -177,6 +185,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = confidentialHolderCountValue;
+        auto const actualOpt = entry.getConfidentialHolderCount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfConfidentialHolderCount");
+        EXPECT_TRUE(entry.hasConfidentialHolderCount());
+    }
+
+    {
         auto const& expected = issuerEncryptionKeyValue;
         auto const actualOpt = entry.getIssuerEncryptionKey();
         ASSERT_TRUE(actualOpt.has_value());
@@ -190,6 +206,30 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptionKey");
         EXPECT_TRUE(entry.hasAuditorEncryptionKey());
+    }
+
+    {
+        auto const& expected = auditorKeyVersionValue;
+        auto const actualOpt = entry.getAuditorKeyVersion();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAuditorKeyVersion");
+        EXPECT_TRUE(entry.hasAuditorKeyVersion());
+    }
+
+    {
+        auto const& expected = pendingAuditorEncryptionKeyValue;
+        auto const actualOpt = entry.getPendingAuditorEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPendingAuditorEncryptionKey");
+        EXPECT_TRUE(entry.hasPendingAuditorEncryptionKey());
+    }
+
+    {
+        auto const& expected = auditorMigrationCountValue;
+        auto const actualOpt = entry.getAuditorMigrationCount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAuditorMigrationCount");
+        EXPECT_TRUE(entry.hasAuditorMigrationCount());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -220,8 +260,12 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const mutableFlagsValue = canonical_UINT32();
     auto const referenceHoldingValue = canonical_UINT256();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
+    auto const confidentialHolderCountValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
+    auto const auditorKeyVersionValue = canonical_UINT32();
+    auto const pendingAuditorEncryptionKeyValue = canonical_VL();
+    auto const auditorMigrationCountValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(MPTokenIssuance::entryType, index);
 
@@ -240,8 +284,12 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfMutableFlags) = mutableFlagsValue;
     sle->at(sfReferenceHolding) = referenceHoldingValue;
     sle->at(sfConfidentialOutstandingAmount) = confidentialOutstandingAmountValue;
+    sle->at(sfConfidentialHolderCount) = confidentialHolderCountValue;
     sle->at(sfIssuerEncryptionKey) = issuerEncryptionKeyValue;
     sle->at(sfAuditorEncryptionKey) = auditorEncryptionKeyValue;
+    sle->at(sfAuditorKeyVersion) = auditorKeyVersionValue;
+    sle->at(sfPendingAuditorEncryptionKey) = pendingAuditorEncryptionKeyValue;
+    sle->at(sfAuditorMigrationCount) = auditorMigrationCountValue;
 
     MPTokenIssuanceBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -430,6 +478,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = confidentialHolderCountValue;
+
+        auto const fromSleOpt = entryFromSle.getConfidentialHolderCount();
+        auto const fromBuilderOpt = entryFromBuilder.getConfidentialHolderCount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfConfidentialHolderCount");
+        expectEqualField(expected, *fromBuilderOpt, "sfConfidentialHolderCount");
+    }
+
+    {
         auto const& expected = issuerEncryptionKeyValue;
 
         auto const fromSleOpt = entryFromSle.getIssuerEncryptionKey();
@@ -453,6 +514,45 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfAuditorEncryptionKey");
         expectEqualField(expected, *fromBuilderOpt, "sfAuditorEncryptionKey");
+    }
+
+    {
+        auto const& expected = auditorKeyVersionValue;
+
+        auto const fromSleOpt = entryFromSle.getAuditorKeyVersion();
+        auto const fromBuilderOpt = entryFromBuilder.getAuditorKeyVersion();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAuditorKeyVersion");
+        expectEqualField(expected, *fromBuilderOpt, "sfAuditorKeyVersion");
+    }
+
+    {
+        auto const& expected = pendingAuditorEncryptionKeyValue;
+
+        auto const fromSleOpt = entryFromSle.getPendingAuditorEncryptionKey();
+        auto const fromBuilderOpt = entryFromBuilder.getPendingAuditorEncryptionKey();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPendingAuditorEncryptionKey");
+        expectEqualField(expected, *fromBuilderOpt, "sfPendingAuditorEncryptionKey");
+    }
+
+    {
+        auto const& expected = auditorMigrationCountValue;
+
+        auto const fromSleOpt = entryFromSle.getAuditorMigrationCount();
+        auto const fromBuilderOpt = entryFromBuilder.getAuditorMigrationCount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAuditorMigrationCount");
+        expectEqualField(expected, *fromBuilderOpt, "sfAuditorMigrationCount");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -537,9 +637,17 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getReferenceHolding().has_value());
     EXPECT_FALSE(entry.hasConfidentialOutstandingAmount());
     EXPECT_FALSE(entry.getConfidentialOutstandingAmount().has_value());
+    EXPECT_FALSE(entry.hasConfidentialHolderCount());
+    EXPECT_FALSE(entry.getConfidentialHolderCount().has_value());
     EXPECT_FALSE(entry.hasIssuerEncryptionKey());
     EXPECT_FALSE(entry.getIssuerEncryptionKey().has_value());
     EXPECT_FALSE(entry.hasAuditorEncryptionKey());
     EXPECT_FALSE(entry.getAuditorEncryptionKey().has_value());
+    EXPECT_FALSE(entry.hasAuditorKeyVersion());
+    EXPECT_FALSE(entry.getAuditorKeyVersion().has_value());
+    EXPECT_FALSE(entry.hasPendingAuditorEncryptionKey());
+    EXPECT_FALSE(entry.getPendingAuditorEncryptionKey().has_value());
+    EXPECT_FALSE(entry.hasAuditorMigrationCount());
+    EXPECT_FALSE(entry.getAuditorMigrationCount().has_value());
 }
 }

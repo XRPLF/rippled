@@ -638,6 +638,12 @@ ValidConfidentialMPT::visitEntry(
         auto const confidential = (*current)[~sfConfidentialOutstandingAmount].value_or(0);
         if (confidential > (*current)[sfOutstandingAmount])
             invalid_ = true;
+        auto const pending = current->isFieldPresent(sfPendingAuditorEncryptionKey);
+        auto const remaining = (*current)[~sfAuditorMigrationCount].value_or(0);
+        if (pending != (remaining != 0) ||
+            remaining > (*current)[sfConfidentialHolderCount] ||
+            (pending && !current->isFieldPresent(sfIssuerEncryptionKey)))
+            invalid_ = true;
         return;
     }
 
@@ -650,6 +656,7 @@ ValidConfidentialMPT::visitEntry(
             sle.isFieldPresent(sfConfidentialBalanceInbox) ||
             sle.isFieldPresent(sfIssuerEncryptedBalance) ||
             sle.isFieldPresent(sfAuditorEncryptedBalance) ||
+            sle.isFieldPresent(sfAuditorKeyVersion) ||
             sle.isFieldPresent(sfConfidentialBalanceVersion);
     };
     auto const hasRequiredState = [](SLE const& sle) {
@@ -662,7 +669,13 @@ ValidConfidentialMPT::visitEntry(
 
     if (hasConfidentialState(*current))
     {
-        confidentialHoldings_.push_back((*current)[sfMPTokenIssuanceID]);
+        std::optional<std::uint32_t> auditorVersion;
+        if (auto const version = (*current)[~sfAuditorKeyVersion])
+            auditorVersion = *version;
+        confidentialHoldings_.push_back(
+            {(*current)[sfMPTokenIssuanceID],
+             current->isFieldPresent(sfAuditorEncryptedBalance),
+             auditorVersion});
         if (!hasRequiredState(*current) || isDelete)
             invalid_ = true;
     }
@@ -703,13 +716,42 @@ ValidConfidentialMPT::finalize(
         return false;
     }
 
-    for (auto const& id : confidentialHoldings_)
+    for (auto const& holding : confidentialHoldings_)
     {
-        auto const issuance = view.read(keylet::mptIssuance(id));
+        auto const issuance = view.read(keylet::mptIssuance(holding.issuanceID));
         if (!issuance || !issuance->isFlag(lsfMPTCanHoldConfidentialBalance))
         {
             JLOG(j.fatal()) << "Invariant failed: confidential balance without enabled issuance";
             return false;
+        }
+
+        auto const currentVersion = (*issuance)[sfAuditorKeyVersion];
+        if (!issuance->isFieldPresent(sfPendingAuditorEncryptionKey))
+        {
+            auto const hasAuditor = issuance->isFieldPresent(sfAuditorEncryptionKey);
+            if (holding.hasAuditorBalance != hasAuditor ||
+                holding.auditorKeyVersion.has_value() != hasAuditor ||
+                (hasAuditor && *holding.auditorKeyVersion != currentVersion))
+            {
+                JLOG(j.fatal()) << "Invariant failed: confidential auditor mirror version";
+                return false;
+            }
+        }
+        else
+        {
+            auto const targetVersion = currentVersion + 1;
+            if (holding.auditorKeyVersion &&
+                (*holding.auditorKeyVersion != currentVersion &&
+                 *holding.auditorKeyVersion != targetVersion))
+            {
+                JLOG(j.fatal()) << "Invariant failed: confidential auditor migration version";
+                return false;
+            }
+            if (holding.auditorKeyVersion && !holding.hasAuditorBalance)
+            {
+                JLOG(j.fatal()) << "Invariant failed: confidential auditor mirror missing";
+                return false;
+            }
         }
     }
     return true;
