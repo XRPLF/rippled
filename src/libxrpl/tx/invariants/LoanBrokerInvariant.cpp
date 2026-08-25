@@ -23,28 +23,19 @@ namespace xrpl {
 void
 ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // Track LoanBroker deletions so the finalize can enforce (a) that only
-    // ttLOAN_BROKER_DELETE removes a broker, (b) that at most one broker is
-    // removed per transaction, and (c) that the broker's pre-state DebtTotal
-    // and OwnerCount were zero at deletion. `before` holds the entry's state
-    // prior to erasure.
+    // Track LoanBroker deletions so finalize() can enforce:
+    //   (a) only ttLOAN_BROKER_DELETE removes a broker
+    //   (b) at most one broker is removed per transaction
+    //   (c) DebtTotal and OwnerCount were zero before deletion
+    // `before` holds the entry's state prior to erasure.
     //
-    // Deleted trust lines and MPTokens are also recorded (from `before`) so
-    // finalize can rediscover the affected broker through its pseudo-account
-    // and confirm CoverAvailable stayed consistent with the pseudo-account
-    // balance -- a holding removed while cover remains must not slip past. A
-    // deleted pseudo-account (ltACCOUNT_ROOT) is deliberately not recorded:
-    // during a legitimate LoanBrokerDelete the broker is erased alongside it,
-    // and reviving it here would trip the finalize "Loan Broker missing"
-    // check. The live-reference branch below is gated by !isDelete for the
-    // same reason -- on deletion `after` still carries the erased SLE (see
-    // ApplyStateTable::visit).
-    if (isDelete)
+    // Deleted trust lines/MPTokens are recorded (from `before`) so finalize() can find the broker
+    // via its pseudo-account and check CoverAvailable still matches the pseudo-account balance.
+    if (isDelete && before)
     {
-        if (before)
+        switch (before->getType())
         {
-            if (before->getType() == ltLOAN_BROKER)
-            {
+            case (ltLOAN_BROKER):
                 if (deletedBroker_)
                 {
                     multipleBrokerDeletions_ = true;
@@ -53,19 +44,17 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
                 {
                     deletedBroker_ = before;
                 }
-            }
-            else if (before->getType() == ltRIPPLE_STATE)
-            {
+                break;
+            case (ltRIPPLE_STATE):
                 lines_.emplace_back(before);
-            }
-            else if (before->getType() == ltMPTOKEN)
-            {
+                break;
+            case (ltMPTOKEN):
                 mpts_.emplace_back(before);
-            }
+                break;
+            default:
+                return;
         }
-        return;
     }
-
     if (after)
     {
         if (after->getType() == ltLOAN_BROKER)
@@ -153,30 +142,29 @@ ValidLoanBroker::finalize(
     // delete.
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-        if (multipleBrokerDeletions_)
+       if (multipleBrokerDeletions_)
         {
-            JLOG(j.fatal()) << "Invariant failed: more than one Loan Broker "
-                               "deleted in a single transaction";
+            JLOG(j.fatal())
+                << "Invariant failed: more than one Loan Broker deleted in a single transaction";
             return false;
         }
         if (deletedBroker_)
         {
             if (tx.getTxnType() != ttLOAN_BROKER_DELETE)
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted by a "
-                                   "transaction other than LoanBrokerDelete";
+                JLOG(j.fatal()) << "Invariant failed: " <<  //
+                    "Loan Broker deleted by a transaction other than LoanBrokerDelete";
                 return false;
             }
             if (deletedBroker_->at(sfDebtTotal) != beast::kZero)
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with "
-                                   "non-zero debt total";
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with non-zero debt total";
                 return false;
             }
             if (deletedBroker_->at(sfOwnerCount) != 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with "
-                                   "non-zero owner count";
+                JLOG(j.fatal())
+                    << "Invariant failed: Loan Broker deleted with non-zero owner count";
                 return false;
             }
         }
