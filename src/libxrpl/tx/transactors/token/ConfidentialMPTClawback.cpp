@@ -94,37 +94,9 @@ ConfidentialMPTClawback::doApply()
         (*sleIssuance)[sfConfidentialOutstandingAmount] - amount;
     (*sleIssuance)[sfOutstandingAmount] = (*sleIssuance)[sfOutstandingAmount] - amount;
 
-    confidential::CompressedPoint holderPk{};
-    if (!confidential::parseCompressedPoint((*sleMpt)[sfHolderEncryptionKey], holderPk))
-        return tecINTERNAL;
-    confidential::Ciphertext zeroH{};
-    confidential::Ciphertext zeroI{};
-    if (auto const ter = encZeroFor(view(), *sleIssuance, holder, holderPk, zeroH);
+    if (auto const ter = clearConfidentialState(*sleIssuance, *sleMpt);
         !isTesSuccess(ter))
         return ter;
-    if (auto const ter = encZeroFor(view(), *sleIssuance, holder, issuerPk, zeroI);
-        !isTesSuccess(ter))
-        return ter;
-    confidential::CiphertextBytes raw{};
-    confidential::serializeCiphertext(zeroH, Slice(raw.data(), raw.size()));
-    sleMpt->setFieldVL(sfConfidentialBalanceSpending, Slice(raw.data(), raw.size()));
-    sleMpt->setFieldVL(sfConfidentialBalanceInbox, Slice(raw.data(), raw.size()));
-    confidential::serializeCiphertext(zeroI, Slice(raw.data(), raw.size()));
-    sleMpt->setFieldVL(sfIssuerEncryptedBalance, Slice(raw.data(), raw.size()));
-    if (sleMpt->isFieldPresent(sfAuditorEncryptedBalance) &&
-        sleIssuance->isFieldPresent(sfAuditorEncryptionKey))
-    {
-        confidential::CompressedPoint audPk{};
-        if (!confidential::parseCompressedPoint((*sleIssuance)[sfAuditorEncryptionKey], audPk))
-            return tecINTERNAL;
-        confidential::Ciphertext zeroA{};
-        if (auto const ter = encZeroFor(view(), *sleIssuance, holder, audPk, zeroA);
-            !isTesSuccess(ter))
-            return ter;
-        confidential::serializeCiphertext(zeroA, Slice(raw.data(), raw.size()));
-        sleMpt->setFieldVL(sfAuditorEncryptedBalance, Slice(raw.data(), raw.size()));
-    }
-    incrementConfidentialVersion(*sleMpt);
     view().update(sleMpt);
     view().update(sleIssuance);
     return tesSUCCESS;

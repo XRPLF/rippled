@@ -188,8 +188,13 @@ ConfidentialMPTConvertBack::doApply()
                 confidential::kSingleBulletproofBytes)))
         return tecBAD_PROOF;
 
+    confidential::Scalar e{};
+    if (!confidential::extractSigmaChallenge(
+            Slice(zk.data(), confidential::kConvertBackSigmaProofBytes), e))
+        return tecBAD_PROOF;
+
     confidential::Ciphertext newSpend{};
-    if (!confidential::elgamalSub(spending, holderCt, newSpend))
+    if (!confidential::elgamalSub(spending, holderCt, holderPk, e, newSpend))
         return tecBAD_PROOF;
     setCiphertextField(*sleMpt, sfConfidentialBalanceSpending, newSpend);
 
@@ -200,7 +205,7 @@ ConfidentialMPTConvertBack::doApply()
             !isTesSuccess(ter))
             return ter;
         confidential::Ciphertext next{};
-        if (!confidential::elgamalSub(issBal, issuerCt, next))
+        if (!confidential::elgamalSub(issBal, issuerCt, issuerPk, e, next))
             return tecBAD_PROOF;
         setCiphertextField(*sleMpt, sfIssuerEncryptedBalance, next);
     }
@@ -211,7 +216,7 @@ ConfidentialMPTConvertBack::doApply()
             !isTesSuccess(ter))
             return ter;
         confidential::Ciphertext next{};
-        if (!confidential::elgamalSub(audBal, *auditorCt, next))
+        if (!confidential::elgamalSub(audBal, *auditorCt, *auditorPk, e, next))
             return tecBAD_PROOF;
         setCiphertextField(*sleMpt, sfAuditorEncryptedBalance, next);
     }

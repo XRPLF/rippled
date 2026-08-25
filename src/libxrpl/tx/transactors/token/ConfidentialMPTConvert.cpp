@@ -108,7 +108,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     }
 
     if (isFrozen(ctx.view, account, MPTIssue{issuanceID}))
-        return tecFROZEN;
+        return tecLOCKED;
 
     return tesSUCCESS;
 }

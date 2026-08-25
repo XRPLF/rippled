@@ -47,6 +47,9 @@ void
 setCiphertextField(SLE& sle, SField const& field, confidential::Ciphertext const& ct);
 
 [[nodiscard]] TER
+clearConfidentialState(SLE& issuance, SLE& mpt);
+
+[[nodiscard]] TER
 checkPlaintextCiphertexts(
     std::uint64_t amount,
     confidential::Scalar const& r,

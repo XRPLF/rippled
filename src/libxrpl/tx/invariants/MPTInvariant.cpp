@@ -669,15 +669,18 @@ ValidConfidentialMPT::visitEntry(
 
     if (hasConfidentialState(*current))
     {
-        std::optional<std::uint32_t> auditorVersion;
-        if (auto const version = (*current)[~sfAuditorKeyVersion])
-            auditorVersion = *version;
-        confidentialHoldings_.push_back(
-            {(*current)[sfMPTokenIssuanceID],
-             current->isFieldPresent(sfAuditorEncryptedBalance),
-             auditorVersion});
-        if (!hasRequiredState(*current) || isDelete)
+        if (!hasRequiredState(*current))
             invalid_ = true;
+        else if (!isDelete)
+        {
+            std::optional<std::uint32_t> auditorVersion;
+            if (auto const version = (*current)[~sfAuditorKeyVersion])
+                auditorVersion = *version;
+            confidentialHoldings_.push_back(
+                {(*current)[sfMPTokenIssuanceID],
+                 current->isFieldPresent(sfAuditorEncryptedBalance),
+                 auditorVersion});
+        }
     }
 
     if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
@@ -688,7 +691,9 @@ ValidConfidentialMPT::visitEntry(
             (beforeHas &&
              before->getFieldVL(sfConfidentialBalanceSpending) !=
                  after->getFieldVL(sfConfidentialBalanceSpending));
-        if (spendingChanged && beforeHas)
+        // A successful full-balance exit removes the entire confidential
+        // field set and decrements the issuance holder census atomically.
+        if (spendingChanged && beforeHas && afterHas)
         {
             if (!before->isFieldPresent(sfConfidentialBalanceVersion) ||
                 !after->isFieldPresent(sfConfidentialBalanceVersion) ||

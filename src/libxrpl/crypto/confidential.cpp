@@ -567,9 +567,17 @@ elgamalAdd(Ciphertext const& a, Ciphertext const& b, Ciphertext& out) noexcept
 }
 
 bool
-elgamalSub(Ciphertext const& a, Ciphertext const& b, Ciphertext& out) noexcept
+elgamalSub(
+    Ciphertext const& a,
+    Ciphertext const& b,
+    CompressedPoint const& pk,
+    Scalar const& r,
+    Ciphertext& out) noexcept
 {
-    return pointSub(a.c1, b.c1, out.c1) && pointSub(a.c2, b.c2, out.c2);
+    Ciphertext rerandomized{};
+    return elgamalRerandomize(a, pk, r, rerandomized) &&
+        pointSub(rerandomized.c1, b.c1, out.c1) &&
+        pointSub(rerandomized.c2, b.c2, out.c2);
 }
 
 bool

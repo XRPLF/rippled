@@ -7753,11 +7753,17 @@ class MPToken_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Account const alice("alice");
+        Account const auditor("auditor");
 
-        // 33-byte compressed pubkey placeholder (length-checked only here)
-        std::string const issuerKey(33, '\x02');
-        std::string const auditorKey(33, '\x03');
+        auto const keyBytes = [](Account const& account) {
+            auto const slice = account.pk().slice();
+            return std::string(
+                reinterpret_cast<char const*>(slice.data()), slice.size());
+        };
+        std::string const issuerKey = keyBytes(alice);
+        std::string const auditorKey = keyBytes(auditor);
         std::string const shortKey(32, '\x02');
+        std::string const invalidKey(33, '\x02');
 
         // Confidential flags require featureConfidentialTransfer
         {
@@ -7801,6 +7807,11 @@ class MPToken_test : public beast::unit_test::Suite
                 {.account = alice,
                  .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
                  .issuerEncryptionKey = shortKey,
+                 .err = temMALFORMED});
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
+                 .issuerEncryptionKey = invalidKey,
                  .err = temMALFORMED});
 
             mptAlice.set(
@@ -7934,14 +7945,13 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.destroy({.err = tecHAS_OBLIGATIONS});
         }
 
-        // Unauthorize blocked while holder encryption key present
+        // Unauthorize blocked while confidential circulation is non-zero
         {
             Env env{*this, features};
             Account const bob("bobAuthConf");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create(
                 {.ownerCount = 1,
-                 .pay = {{std::vector<Account>{bob}, 10}},
                  .flags = tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer});
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
                 auto sle = view.read(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
@@ -7951,6 +7961,12 @@ class MPToken_test : public beast::unit_test::Suite
                 std::vector<std::uint8_t> key(33, 0x02);
                 replacement->setFieldVL(sfHolderEncryptionKey, Slice(key.data(), key.size()));
                 view.rawReplace(replacement);
+                auto issuance = view.read(keylet::mptIssuance(mptAlice.issuanceID()));
+                if (!issuance)
+                    return false;
+                auto issuanceReplacement = std::make_shared<SLE>(*issuance);
+                (*issuanceReplacement)[sfConfidentialOutstandingAmount] = 1;
+                view.rawReplace(issuanceReplacement);
                 return true;
             });
             mptAlice.authorize(

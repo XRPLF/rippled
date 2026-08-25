@@ -109,12 +109,19 @@ TEST(ConfidentialCrypto, ElGamalHomomorphismAndEncZero)
     Ciphertext sum{};
     ASSERT_TRUE(elgamalAdd(c1, c2, sum));
 
-    // Homomorphic check against fresh encryption of 18 with r1+r2 is awkward
-    // without scalar export; check subtract cancels.
+    Ciphertext expectedBack{};
+    ASSERT_TRUE(elgamalRerandomize(c1, alice.pk, r2, expectedBack));
     Ciphertext back{};
-    ASSERT_TRUE(elgamalSub(sum, c2, back));
-    EXPECT_EQ(back.c1, c1.c1);
-    EXPECT_EQ(back.c2, c1.c2);
+    ASSERT_TRUE(elgamalSub(sum, c2, alice.pk, r2, back));
+    EXPECT_EQ(back.c1, expectedBack.c1);
+    EXPECT_EQ(back.c2, expectedBack.c2);
+
+    Ciphertext fullDebit{};
+    Ciphertext expectedZero{};
+    ASSERT_TRUE(elgamalSub(c1, c1, alice.pk, r2, fullDebit));
+    ASSERT_TRUE(elgamalEncrypt(alice.pk, 0, r2, expectedZero));
+    EXPECT_EQ(fullDebit.c1, expectedZero.c1);
+    EXPECT_EQ(fullDebit.c2, expectedZero.c2);
 
     Ciphertext zero{};
     ASSERT_TRUE(elgamalEncrypt(alice.pk, 0, r1, zero));
@@ -375,6 +382,12 @@ TEST(ConfidentialCrypto, BulletproofSingleAndAggregated)
     ASSERT_TRUE(proveBulletproofAggregated(c0, c1, 5, 7, r0, r1, agg));
     EXPECT_TRUE(verifyBulletproofAggregated(c0, c1, Slice(agg.data(), agg.size())));
     EXPECT_FALSE(verifyBulletproofAggregated(c1, c0, Slice(agg.data(), agg.size())));
+
+    std::array<std::uint8_t, kAggregatedBulletproofBytes> sendProof{};
+    ASSERT_TRUE(proveBulletproofSend(c0, c1, 5, 7, r0, r1, sendProof));
+    EXPECT_TRUE(verifyBulletproofSend(c0, c1, Slice(sendProof.data(), sendProof.size())));
+    EXPECT_FALSE(proveBulletproofSend(pc0, c1, 0, 7, r0v, r1, sendProof));
+    EXPECT_FALSE(verifyBulletproofSend(pc0, c1, Slice(agg.data(), agg.size())));
 
     // Aggregated proofs cache 128 generators; a later 64-bit proof must still
     // MSM against exactly 64 of them (Bünz et al. 2017/1066, n = 64).

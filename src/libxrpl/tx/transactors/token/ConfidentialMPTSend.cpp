@@ -222,7 +222,7 @@ ConfidentialMPTSend::doApply()
     confidential::CompressedPoint remaining{};
     if (!confidential::pointSub(pub.balanceCommitment, pub.amountCommitment, remaining))
         return tecBAD_PROOF;
-    if (!confidential::verifyBulletproofAggregated(
+    if (!confidential::verifyBulletproofSend(
             pub.amountCommitment,
             remaining,
             Slice(
@@ -236,7 +236,7 @@ ConfidentialMPTSend::doApply()
         return tecBAD_PROOF;
 
     confidential::Ciphertext newSpend{};
-    if (!confidential::elgamalSub(spending, encSender, newSpend))
+    if (!confidential::elgamalSub(spending, encSender, senderPk, e, newSpend))
         return tecBAD_PROOF;
     setCiphertextField(*sleSrc, sfConfidentialBalanceSpending, newSpend);
 
@@ -247,7 +247,7 @@ ConfidentialMPTSend::doApply()
             !isTesSuccess(ter))
             return ter;
         confidential::Ciphertext next{};
-        if (!confidential::elgamalSub(issBal, encIssuer, next))
+        if (!confidential::elgamalSub(issBal, encIssuer, issuerPk, e, next))
             return tecBAD_PROOF;
         setCiphertextField(*sleSrc, sfIssuerEncryptedBalance, next);
     }
@@ -258,7 +258,7 @@ ConfidentialMPTSend::doApply()
             !isTesSuccess(ter))
             return ter;
         confidential::Ciphertext next{};
-        if (!confidential::elgamalSub(audBal, *encAud, next))
+        if (!confidential::elgamalSub(audBal, *encAud, *auditorPk, e, next))
             return tecBAD_PROOF;
         setCiphertextField(*sleSrc, sfAuditorEncryptedBalance, next);
     }

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <mutex>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -279,62 +280,46 @@ numsPoint(std::string_view tag, std::uint32_t index, CompressedPoint& out)
     return false;
 }
 
-std::vector<secp256k1_pubkey> const&
+std::vector<secp256k1_pubkey>
+generatorPrefix(
+    std::string_view tag,
+    std::size_t n,
+    std::vector<secp256k1_pubkey>& cache,
+    std::mutex& mutex)
+{
+    std::lock_guard const lock(mutex);
+    auto const have = cache.size();
+    if (have < n)
+    {
+        cache.resize(n);
+        for (std::size_t i = have; i < n; ++i)
+        {
+            CompressedPoint p{};
+            if (!numsPoint(tag, static_cast<std::uint32_t>(i), p) ||
+                !parsePk(p, cache[i]))
+            {
+                cache.resize(have);
+                return {};
+            }
+        }
+    }
+    return {cache.begin(), cache.begin() + static_cast<std::ptrdiff_t>(n)};
+}
+
+std::vector<secp256k1_pubkey>
 gensG(std::size_t n)
 {
-    static std::vector<secp256k1_pubkey> g;
-    static std::size_t have = 0;
-    if (have < n)
-    {
-        g.resize(n);
-        for (std::size_t i = have; i < n; ++i)
-        {
-            CompressedPoint p{};
-            if (!numsPoint("CMPT_BP_G", static_cast<std::uint32_t>(i), p) ||
-                !parsePk(p, g[i]))
-            {
-                g.clear();
-                have = 0;
-                break;
-            }
-        }
-        have = g.size();
-    }
-    return g;
+    static std::vector<secp256k1_pubkey> cache;
+    static std::mutex mutex;
+    return generatorPrefix("CMPT_BP_G", n, cache, mutex);
 }
 
-std::vector<secp256k1_pubkey> const&
+std::vector<secp256k1_pubkey>
 gensH(std::size_t n)
 {
-    static std::vector<secp256k1_pubkey> h;
-    static std::size_t have = 0;
-    if (have < n)
-    {
-        h.resize(n);
-        for (std::size_t i = have; i < n; ++i)
-        {
-            CompressedPoint p{};
-            if (!numsPoint("CMPT_BP_H", static_cast<std::uint32_t>(i), p) ||
-                !parsePk(p, h[i]))
-            {
-                h.clear();
-                have = 0;
-                break;
-            }
-        }
-        have = h.size();
-    }
-    return h;
-}
-
-// gensG/gensH grow a process-wide cache. MSM requires |pts| == |scalars|, so
-// callers must use exactly N generators even after a larger proof warmed the cache.
-std::vector<secp256k1_pubkey>
-takePrefix(std::vector<secp256k1_pubkey> const& v, std::size_t n)
-{
-    if (v.size() < n)
-        return {};
-    return {v.begin(), v.begin() + static_cast<std::ptrdiff_t>(n)};
+    static std::vector<secp256k1_pubkey> cache;
+    static std::mutex mutex;
+    return generatorPrefix("CMPT_BP_H", n, cache, mutex);
 }
 
 void
@@ -525,8 +510,8 @@ proveRange(
     if ((1ull << logN) != N)
         return false;
 
-    auto const Gv = takePrefix(gensG(N), N);
-    auto const Hv = takePrefix(gensH(N), N);
+    auto const Gv = gensG(N);
+    auto const Hv = gensH(N);
     if (Gv.size() != N || Hv.size() != N)
         return false;
 
@@ -851,8 +836,8 @@ verifyRange(std::vector<CompressedPoint> const& Vs, RangeProof const& proof)
     if (proof.L.size() != logN || proof.R.size() != logN)
         return false;
 
-    auto const Gv = takePrefix(gensG(N), N);
-    auto const Hv = takePrefix(gensH(N), N);
+    auto const Gv = gensG(N);
+    auto const Hv = gensH(N);
     if (Gv.size() != N || Hv.size() != N)
         return false;
     secp256k1_pubkey H{};
@@ -1145,6 +1130,50 @@ verifyBulletproofAggregated(
     if (!parseProof(proof, 7, p))
         return false;
     return verifyRange({commitment0, commitment1}, p);
+}
+
+bool
+proveBulletproofSend(
+    CompressedPoint const& amountCommitment,
+    CompressedPoint const& remainingCommitment,
+    std::uint64_t amount,
+    std::uint64_t remaining,
+    Scalar const& amountBlinding,
+    Scalar const& remainingBlinding,
+    std::array<std::uint8_t, kAggregatedBulletproofBytes>& out) noexcept
+{
+    if (amount == 0)
+        return false;
+
+    CompressedPoint oneG{};
+    CompressedPoint positiveAmountCommitment{};
+    if (!pointMulBase(amountToScalar(1), oneG) ||
+        !pointSub(amountCommitment, oneG, positiveAmountCommitment))
+        return false;
+
+    return proveBulletproofAggregated(
+        positiveAmountCommitment,
+        remainingCommitment,
+        amount - 1,
+        remaining,
+        amountBlinding,
+        remainingBlinding,
+        out);
+}
+
+bool
+verifyBulletproofSend(
+    CompressedPoint const& amountCommitment,
+    CompressedPoint const& remainingCommitment,
+    Slice proof) noexcept
+{
+    CompressedPoint oneG{};
+    CompressedPoint positiveAmountCommitment{};
+    if (!pointMulBase(amountToScalar(1), oneG) ||
+        !pointSub(amountCommitment, oneG, positiveAmountCommitment))
+        return false;
+    return verifyBulletproofAggregated(
+        positiveAmountCommitment, remainingCommitment, proof);
 }
 
 }  // namespace confidential

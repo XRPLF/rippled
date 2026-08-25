@@ -45,7 +45,7 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     if (sleIssuance->isFlag(lsfMPTRequireAuth) && !sleMpt->isFlag(lsfMPTAuthorized))
         return tecNO_AUTH;
-    if (sleMpt->isFlag(lsfMPTLocked) || sleIssuance->isFlag(lsfMPTLocked))
+    if (isFrozen(ctx.view, account, MPTIssue{issuanceID}))
         return tecLOCKED;
     return tesSUCCESS;
 }
