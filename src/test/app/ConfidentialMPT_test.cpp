@@ -1224,6 +1224,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
         };
         convert(alice, aliceKey, 10);
         convert(bob, bobKey, 20);
+        env.close();
 
         {
             auto const issuance = env.le(keylet::mptIssuance(id));
