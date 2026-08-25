@@ -897,6 +897,66 @@ private:
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(400));
             }
         });
+
+        // Regression for a review finding on PR 8057: clampToAssetsTotalScale
+        // canonicalizes sfAssetsTotal under RoundingMode::Upward, and since
+        // sfAssetsTotal/sfAssetsAvailable are NUMBER fields (more precise
+        // than an STAmount's 16 significant digits), that canonicalization
+        // can *amplify* the magnitude when sfAssetsTotal sits mid-grid, e.g.
+        // T=10000000000000005, delta=6: round_up(T) - round_up(T - 6) ==
+        // 10000000000000010 - 9999999999999999 == 11 > 6. assetsToClawback
+        // had already clamped assetsRecovered to sfAssetsAvailable (== 6
+        // here) *before* that scale clamp runs, so without a re-check the
+        // amplified value (11) would flow into doApply()'s
+        // `assetsAvailable -= assetsRecovered`, driving assetsAvailable
+        // negative. Force this exact mid-grid state via `peek` (real deposit
+        // math can't reach a 17-significant-digit total) and confirm the
+        // clawback clamps back down to sfAssetsAvailable instead.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback re-clamped after mid-grid amplification");
+
+            // depositor's balance is capped to 200 by the shared harness fixture.
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(100));
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{6};
+            d.peek([&](SLE& vault, SLE& shares) -> bool {
+                vault[sfAssetsTotal] = midGridTotal;
+                vault[sfAssetsAvailable] = available;
+                // Keep the share:asset ratio at exactly 1:1 so the
+                // shares<->assets round trip inside assetsToClawback
+                // introduces no rounding of its own.
+                shares[sfOutstandingAmount] = static_cast<std::uint64_t>(10000000000000005ull);
+                return true;
+            });
+
+            // sfAmount absent means "clawback everything the holder has";
+            // the holder's 100 shares would convert to ~100 assets, clamped
+            // to sfAssetsAvailable (6) before the sfAssetsTotal scale clamp
+            // amplifies it to 11.
+            // Deliberately read the vault before env.close(): the peek()
+            // mutation above lives only in the open ledger (it bypasses the
+            // normal transaction-apply path), so closing the ledger would
+            // re-derive the vault from the last validated (un-peeked, real
+            // 100/100) state and mask the scenario under test. Reading via
+            // env.le(), which is current()->read(), still returns the open
+            // ledger while the tx result is still in it.
+            tx = d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tesSUCCESS));
+
+            auto const sle = env.le(d.keylet);
+            BEAST_EXPECT(sle != nullptr);
+            // Never negative: the fix re-clamps assetsRecovered to
+            // sfAssetsAvailable after the scale clamp amplifies it.
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == STAmount(d.asset, Number(0)));
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == STAmount(d.asset, midGridTotal - available));
+        });
     }
 
     void

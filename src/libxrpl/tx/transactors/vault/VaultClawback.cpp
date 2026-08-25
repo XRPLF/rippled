@@ -329,6 +329,14 @@ VaultClawback::assetsToClawback(
             // no asset return.
             if (assetsRecovered <= beast::kZero)
                 return std::unexpected(tecPRECISION_LOSS);
+            // clampToAssetsTotalScale canonicalizes both endpoints under RoundingMode::Upward
+            // before subtracting (see its docstring), so when sfAssetsTotal sits mid-grid the
+            // returned magnitude can exceed the pre-clamp value by up to one grid step, even
+            // though assetsRecovered was already clamped to *assetsAvailable above. Clamp again
+            // so the debit in doApply() can never drive assetsAvailable negative; sharesDestroyed
+            // is left as-is, consistent with the note above that it is not re-derived here.
+            if (assetsRecovered > *assetsAvailable)
+                assetsRecovered = *assetsAvailable;
         }
     }
     catch (std::overflow_error const&)
