@@ -82,9 +82,6 @@ DerivedData
 AGENTS.local.md
 CLAUDE.local.md
 GEMINI.local.md
-.aider.chat.history.md
-.aider.input.history
-.aider.tags.cache.v3
 
 # Python
 __pycache__
