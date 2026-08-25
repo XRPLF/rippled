@@ -313,15 +313,17 @@
       "name": "ledger.validate",
       "category": "ledger",
       "parent": null,
-      "required_attributes": ["ledger_seq", "validations"],
-      "config_flag": "trace_ledger"
+      "required_attributes": ["ledger_hash", "ledger_seq", "validations"],
+      "config_flag": "trace_ledger",
+      "note": "ledger_hash is required because it is the trace-join key, not merely a descriptive attribute: this span is the anchor of the per_ledger group in trace_join_groups, and the join is computed by hashing that value. Both it and ledger_seq are stamped unconditionally by LedgerMaster::makeLedgerTraceSpan (LedgerMaster.cpp:186-190, called at :1089), so requiring it costs nothing on a healthy run. Without this the only symptom of a lost join key would be assert_trace_join_groups reporting that spans landed in separate traces, which names the consequence rather than the cause."
     },
     {
       "name": "ledger.store",
       "category": "ledger",
       "parent": null,
-      "required_attributes": ["ledger_seq"],
-      "config_flag": "trace_ledger"
+      "required_attributes": ["ledger_hash", "ledger_seq"],
+      "config_flag": "trace_ledger",
+      "note": "ledger_hash is required for the same reason as on ledger.validate: it is the per_ledger trace-join key, stamped unconditionally by LedgerMaster::makeLedgerTraceSpan (called at LedgerMaster.cpp:511). This span is the required_member of that join group, so a missing key here breaks the join from the other end."
     },
     {
       "name": "ledger.acquire",

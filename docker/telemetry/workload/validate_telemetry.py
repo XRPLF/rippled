@@ -1077,10 +1077,34 @@ async def assert_sync_diagnostics_metrics(
         )
         return
 
-    for metric_name in metrics:
-        await _check_prometheus_metric(
-            session, prometheus_url, metric_name, SYNC_DIAGNOSTICS_GROUP, report
+    # Same fan-out shape as validate_metrics(): ONE shared deadline for the
+    # whole group, so the phase costs a single poll window instead of one per
+    # metric, and a semaphore so the fan-out cannot exhaust the Prometheus
+    # connection pool.
+    #
+    # _check_prometheus_metric RETURNS its CheckResult rather than recording it,
+    # so each result must be added here. Discarding them would let the group
+    # pass silently whatever Prometheus holds, which is the more dangerous half
+    # of the defect this replaces: the original call also passed `report` where
+    # `deadline` belongs and omitted `sem` entirely, raising TypeError before
+    # any check ran and taking the four later validation phases down with it.
+    deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
+    sem = asyncio.Semaphore(METRIC_POLL_CONCURRENCY)
+    checks = await asyncio.gather(
+        *(
+            _check_prometheus_metric(
+                session,
+                prometheus_url,
+                metric_name,
+                SYNC_DIAGNOSTICS_GROUP,
+                deadline,
+                sem,
+            )
+            for metric_name in metrics
         )
+    )
+    for check in checks:
+        report.add(check)
 
 
 # ---------------------------------------------------------------------------
