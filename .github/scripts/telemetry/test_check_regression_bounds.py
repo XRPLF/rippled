@@ -13,7 +13,7 @@ Two groups:
   is the documented bootstrap state, while a missing, unreadable or malformed
   input must FAIL. A checker that returns success without having checked
   anything is the failure this whole gate exists to prevent;
-* one case per rule (A to E), so a rule that stops flagging is caught.
+* one case per rule (A to F), so a rule that stops flagging is caught.
 
 stdlib unittest only; the repo installs no third-party runner for CI.
 """
@@ -192,6 +192,66 @@ class TestRules(CheckerCase):
         code, out = self.run_checker()
         self.assertEqual(code, 1, out)
         self.assertIn("(rule D)", out)
+
+    def test_rule_a_ignores_an_excluded_key(self):
+        """An excluded key must not read as a baseline that was never captured.
+
+        The unmodified tree already exercises this — span.ledger.validate p95
+        and p99 are declared by the names x quantiles product, excluded, and
+        absent from the baseline — so this asserts the subtraction is what makes
+        it pass, by naming the keys in the reported exclusion line.
+        """
+        code, out = self.run_checker()
+        self.assertEqual(code, 0, out)
+        self.assertIn("span.ledger.validate.p95", out)
+        self.assertIn("deliberately not gated", out)
+
+    def test_rule_f_flags_exclusion_that_subtracts_nothing(self):
+        """A misspelt or stale exclusion silently narrows nothing — catch it."""
+        self.edit_json(
+            METRICS,
+            lambda d: d["excluded_keys"].update({"span.ledger.validate.p97": "typo"}),
+        )
+        code, out = self.run_checker()
+        self.assertEqual(code, 1, out)
+        self.assertIn("(rule F)", out)
+        self.assertIn("subtracts nothing", out)
+
+    def test_rule_f_flags_exclusion_without_a_reason(self):
+        self.edit_json(
+            METRICS,
+            lambda d: d["excluded_keys"].update({"span.ledger.validate.p95": "   "}),
+        )
+        code, out = self.run_checker()
+        self.assertEqual(code, 1, out)
+        self.assertIn("(rule F)", out)
+        self.assertIn("no reason", out)
+
+    def test_rule_f_flags_override_left_behind(self):
+        """An excluded key still carrying a bound reads as gated."""
+        self.edit_json(
+            THRESHOLDS,
+            lambda d: d["overrides"]["span.ledger.validate"].update(
+                {"p95": {"max_pct_increase": 50.0, "max_abs_increase_ms": 0.25}}
+            ),
+        )
+        code, out = self.run_checker()
+        self.assertEqual(code, 1, out)
+        self.assertIn("(rule F)", out)
+        self.assertIn("still has a threshold override", out)
+
+    def test_rule_f_flags_baseline_value_left_behind(self):
+        """Excluded but still in the baseline: rule A passes, nothing gates."""
+        self.edit_json(
+            BASELINE,
+            lambda d: d["metrics"].update(
+                {"span.ledger.validate.p95": {"unit": "ms", "value": 0.24}}
+            ),
+        )
+        code, out = self.run_checker()
+        self.assertEqual(code, 1, out)
+        self.assertIn("(rule F)", out)
+        self.assertIn("still has a baseline value", out)
 
     def test_rule_e_flags_ladder_floor_signature(self):
         """ledger.store's quantiles were the ladder floor times the quantile."""

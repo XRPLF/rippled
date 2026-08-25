@@ -26,7 +26,7 @@ bucket ``(lo, hi]`` of its ladder, with ``hi_next`` the next edge above ``hi``,
     max_abs_increase_* == hi_next - baseline
 
 so the gate trips only when the reading clears the bucket *above* the
-baseline's own. Five rules are checked:
+baseline's own. Six rules are checked:
 
   A  the baseline's key set equals the surface ``regression-metrics.json``
      declares (a stale key left behind reads as covered but never gates);
@@ -38,7 +38,15 @@ baseline's own. Five rules are checked:
      stops being true;
   E  no baseline carries the ladder-floor signature ``quantile x first_edge``,
      which means every sample landed in the first bucket and the number is
-     interpolation arithmetic rather than a latency.
+     interpolation arithmetic rather than a latency;
+  F  every entry in ``excluded_keys`` names a key the surface would otherwise
+     declare, carries a reason, and has neither a threshold override nor a
+     baseline value left behind.
+
+Rule A subtracts ``excluded_keys`` before comparing, so a quantile removed from
+the gated set does not read as a missing baseline. Rule F is what keeps that
+subtraction honest: an exclusion is the one edit here that makes the gate cover
+LESS, so a stale or misspelt entry must fail rather than silently widen itself.
 
 A PLACEHOLDER baseline -- ``"placeholder": true`` or an empty ``metrics``
 object -- exits 0, because that is the documented bootstrap state and CI has to
@@ -119,6 +127,10 @@ def declared_keys(metrics_cfg):
     Deliberately reimplemented rather than imported from ``prom_queries.py``,
     which pulls in aiohttp; CI telemetry checks stay dependency-free. The key
     format is fixed by that file's own ``_key_format`` field.
+
+    ``excluded_keys`` is NOT subtracted here: rule F needs the full product to
+    tell a real exclusion from a misspelt one. Callers that want the gated
+    surface subtract it themselves.
     """
     keys = set()
     spans = metrics_cfg.get("spans", {})
@@ -152,6 +164,57 @@ def resolve_override(key, thresholds):
     """Return the override rule for a key, or None if it falls back to defaults."""
     group, quantile = key.rsplit(".", 1)
     return thresholds.get("overrides", {}).get(group, {}).get(quantile)
+
+
+def check_exclusions(metrics_cfg, thresholds, baseline_metrics, declared):
+    """Apply rule F to every entry in ``excluded_keys``.
+
+    An exclusion is the only edit to this config that makes the gate cover
+    LESS, so each entry has to prove it is deliberate and complete:
+
+      * it names a key the names x quantiles product would otherwise declare,
+        so a typo or a stale entry surviving a surface change is caught rather
+        than silently subtracting nothing;
+      * it carries a non-empty reason, because "why is this not gated" is the
+        question a future maintainer will ask and prose is the only answer;
+      * no threshold override and no baseline value are left behind, since
+        either would read as gated to anyone grepping for the key.
+
+    Args:
+        metrics_cfg:      Parsed regression-metrics.json.
+        thresholds:       Parsed regression-thresholds.json.
+        baseline_metrics: The baseline's ``metrics`` map.
+        declared:         Output of declared_keys(), before exclusions come off.
+
+    Returns:
+        A list of failure strings, empty when every entry is well formed.
+    """
+    failures = []
+    for key, reason in sorted(metrics_cfg.get("excluded_keys", {}).items()):
+        if key not in declared:
+            failures.append(
+                f"{key}: listed in excluded_keys but not produced by the "
+                f"names x quantiles product, so it subtracts nothing -- fix the "
+                f"spelling or drop the entry (rule F)"
+            )
+            continue
+        if not isinstance(reason, str) or not reason.strip():
+            failures.append(
+                f"{key}: excluded with no reason. Record why it is not gated, "
+                f"with the measurement behind it (rule F)"
+            )
+        if resolve_override(key, thresholds) is not None:
+            failures.append(
+                f"{key}: excluded but still has a threshold override, which "
+                f"reads as gated -- remove it from {THRESHOLDS} (rule F)"
+            )
+        if key in baseline_metrics:
+            failures.append(
+                f"{key}: excluded but still has a baseline value, so rule A "
+                f"would pass while nothing gates it -- remove it from "
+                f"{BASELINE} (rule F)"
+            )
+    return failures
 
 
 def check_key(key, entry, thresholds, ladders):
@@ -242,6 +305,10 @@ def main():
     failures = []
 
     declared = declared_keys(metrics_cfg)
+    failures.extend(check_exclusions(metrics_cfg, thresholds, gated, declared))
+    # Rule A compares against the GATED surface, so a deliberately excluded
+    # quantile is not reported as a baseline that was never captured.
+    declared -= set(metrics_cfg.get("excluded_keys", {}))
     for key in sorted(set(gated) - declared):
         failures.append(
             f"{key}: in the baseline but not declared by {METRICS}, so it is "
@@ -258,11 +325,19 @@ def main():
             failures.extend(check_key(key, gated[key], thresholds, ladders))
 
     if not failures:
+        excluded = metrics_cfg.get("excluded_keys", {})
         print(
             f"OK: {len(gated)} gated key(s); every absolute bound equals "
             f"hi_next - baseline, every key has an override, and the absolute "
             f"bound is the operative half of the AND for all of them"
         )
+        # Printed, not silent: an exclusion narrows the gate, so the count
+        # belongs in the CI log where a reviewer sees it without opening a file.
+        if excluded:
+            print(
+                f"    {len(excluded)} declared key(s) deliberately not gated: "
+                f"{', '.join(sorted(excluded))} (see excluded_keys in {METRICS})"
+            )
         return 0
 
     print(

@@ -3729,12 +3729,21 @@ Key properties:
   metric it guarded, and a 10x regression injected into each key in turn was
   caught on only 5 of 28.
 - **The detection floor is `hi_next / baseline`, so some keys are only weakly
-  guarded.** It ranges 2.02x to 9.43x over the current baseline;
-  `span.ledger.build.p50` and `span.ledger.validate.p99` are effectively
-  not guarded at 9.4x. `baselines/README.md` lists all ten weak keys and the
-  ladder edges that would fix them.
+  guarded.** It ranges 2.02x to 9.42x over the current baseline;
+  `span.ledger.build.p50` is effectively not guarded at 9.4x.
+  `baselines/README.md` lists all nine weak keys and the ladder edges that would
+  fix them.
+- **The bound covers quantization noise only, so a key whose run-to-run variance
+  exceeds it cannot be gated.** `span.ledger.validate.p95` and `.p99` are
+  excluded for exactly that reason — measured spreads of 5.9x and 66.8x across
+  four CI runs, both reaching past their trip points on healthy runs, because
+  the span's duration follows peer-validation arrival timing rather than code
+  speed. Widening their bounds would gate nothing, so they are listed in
+  `excluded_keys` in `regression-metrics.json` and `check_regression_bounds.py`
+  rule F keeps that exclusion honest. Before gating any key, check its observed
+  maximum across runs against `baseline + bound`; see `baselines/README.md`.
 - **For every currently gated metric the absolute bound decides; the percentage
-  bound does not.** Measured, the bound is 102%-843% of its own baseline, above
+  bound does not.** Measured, the bound is 102%-842% of its own baseline, above
   both configured percentage bounds. This is _not_ a general property: the span
   ladder's top steps are only 1.25x-1.5x apart, so a baseline between about
   2667-3000 ms or 3334-4000 ms gets an absolute bound worth under 50% of itself

@@ -239,7 +239,8 @@ How it runs inside the validation pipeline:
 
 1. `run-full-validation.sh` executes the normal workload and validation suite.
 2. After validation, `capture_timings.py` queries Prometheus for every
-   metric in `regression-metrics.json` and writes `reports/timings.json`.
+   metric `regression-metrics.json` declares and does not list in
+   `excluded_keys`, then writes `reports/timings.json`.
 3. `compare_to_baseline.py` reads `timings.json`,
    `baselines/baseline-timings.json`, and `regression-thresholds.json`,
    then either:
@@ -269,6 +270,12 @@ Per-run tuning:
   top of the next bucket up — so refreshing the baseline obliges you to
   re-derive the bounds. See `_absolute_bound_derivation` in that file;
   `.github/scripts/telemetry/check_regression_bounds.py` enforces it in CI.
+- That bound budgets for **quantization** noise only, so a key whose run-to-run
+  variance is larger than it cannot be gated at all — `span.ledger.validate.p95`
+  and `.p99` are excluded for that reason and are listed, with the measurements,
+  in `excluded_keys` in `regression-metrics.json`. Check a key's observed maximum
+  across runs against `baseline + bound` before gating it; widening the bound is
+  not the fix. See `baselines/README.md`.
 
 See [`baselines/README.md`](./baselines/README.md) for the baseline
 lifecycle and refresh process.

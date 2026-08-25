@@ -58,14 +58,6 @@
       "unit": "ms",
       "value": 0.07787769784172663
     },
-    "span.ledger.validate.p95": {
-      "unit": "ms",
-      "value": 0.2404310344827586
-    },
-    "span.ledger.validate.p99": {
-      "unit": "ms",
-      "value": 1.060000000000033
-    },
     "span.rpc.ws_message.p50": {
       "unit": "ms",
       "value": 0.15990942879094971
