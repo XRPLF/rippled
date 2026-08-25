@@ -1,7 +1,7 @@
 # Build Linux packages from the pre-built xrpld and validator-keys artifacts:
 #
 #   - one job per distro, taken from "package_configs" in linux.json
-#   - each job runs in that distro's container, which is what decides DEB or RPM
+#   - each entry names its container image and the format it builds there
 #   - with 'publish: true' a job also uploads what it built
 #     (see package/publish_pkg.py)
 #
@@ -97,11 +97,12 @@ jobs:
 
       - name: Build package
         env:
+          PACKAGE_TYPE: ${{ matrix.package_type }}
           PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
           CHANNEL: ${{ steps.release_info.outputs.channel }}
         run: |
           ./package/build_pkg.py \
-              --package-type "${{ matrix.distro == 'rhel' && 'rpm' || 'deb' }}" \
+              --package-type "${PACKAGE_TYPE}" \
               --build-dir "${BUILD_DIR}" \
               --pkg-release "${PKG_RELEASE}" \
               --channel "${CHANNEL}"
@@ -109,7 +110,7 @@ jobs:
       # Before the upload, so the artifact and the published package are the
       # same bytes. DEBs are not signed, so the key is never set on that job.
       - name: Sign RPM
-        if: ${{ inputs.publish && matrix.distro == 'rhel' }}
+        if: ${{ inputs.publish && matrix.package_type == 'rpm' }}
         env:
           PKG_SIGNING_KEY: ${{ secrets.signing_key }}
         run: ./package/sign_rpm.py --package-dir "${BUILD_DIR}"

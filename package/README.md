@@ -28,8 +28,9 @@ Packaging targets and their container images are declared in
 under `package_configs`, one entry per distro. Today only `linux/amd64` is
 emitted. Each entry pins its full container image in an `image` field; to move
 to a new image, edit that field and both CI and local builds pick it up. The
-package format is passed to `build_pkg.py` as `--package-type`, so it has to
-match the image the job runs in.
+entry also declares the format that image builds in a `package_type` field,
+which CI passes to `build_pkg.py` as `--package-type`; the two have to stay in
+step.
 
 | Package type | Image (`package_configs.<distro>[].image` in `linux.json`) | Tools required                                      |
 | ------------ | ---------------------------------------------------------- | --------------------------------------------------- |
@@ -51,10 +52,10 @@ Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
 `reusable-package.yml`. That workflow generates its own packaging matrix from
 `package_configs` in `linux.json` (via `generate.py --packaging`) and fans out
 one job per distro. Each job downloads the pre-built `xrpld` and `validator-keys`
-binary artifacts and runs in that distro's container, so the package format
-follows from the container's package manager. The packaging script derives the
-package version from the downloaded binary's `xrpld --version` output; no CMake
-configure or build step is needed inside the packaging job.
+binary artifacts and runs in that distro's container, building the format its
+`package_type` declares. The packaging script derives the package version from
+the downloaded binary's `xrpld --version` output; no CMake configure or build
+step is needed inside the packaging job.
 
 The binaries come from the `debian` and `rhel` build configurations in
 `linux.json`'s `configs` section, which pass `-Dvalidator_keys=ON` so that the
@@ -202,9 +203,13 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 | `3.2.0-b1`         | `3.2.0~b1-1%{?dist}`         | `3.2.0~b1-1`         |
 | `3.2.0-rc1`        | `3.2.0~rc1-1%{?dist}`        | `3.2.0~rc1-1`        |
 
-The Debian changelog entry carries the channel passed as `--channel`
-(`PKG_CHANNEL`), defaulting to `unstable`. An unsupported pre-release, and build
-metadata on a final release such as `3.2.0+abc123`, are both rejected.
+`build_pkg.py` defines `dist` as `.el9` rather than letting rpmbuild take it
+from the build host, so the RHEL image can track a newer release without
+changing what the packages claim to target.
+
+The Debian changelog entry carries the channel passed as `--channel`,
+defaulting to `unstable`. An unsupported pre-release, and build metadata on a
+final release such as `3.2.0+abc123`, are both rejected.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
@@ -216,10 +221,10 @@ so a job never silently builds the wrong format for the image it runs in; the
 matching build tool still has to be on PATH.
 
 Every input is a named argument. CMake passes `--package-type`, `--build-dir`
-and `--pkg-release`; CI adds `--channel`. The repository root is not an argument at all: the script
-reads it from its own location. Only secrets stay in the environment, so they
-never reach the process list -- `PKG_SIGNING_KEY` for `sign_rpm.py`, and
-`NEXUS_USERNAME` / `NEXUS_PASSWORD` for `publish_pkg.py`.
+and `--pkg-release`; CI adds `--channel`. The repository root is not an argument
+at all: the script reads it from its own location. Only secrets stay in the
+environment, so they never reach the process list -- `PKG_SIGNING_KEY` for
+`sign_rpm.py`, and `NEXUS_USERNAME` / `NEXUS_PASSWORD` for `publish_pkg.py`.
 
 Signing is not part of this script. `sign_rpm.py` does it in a separate CI step
 that only runs when publishing, so a published RPM is always signed and a local
@@ -228,9 +233,9 @@ build never needs a key.
 It resolves the build directory to an absolute path, then calls
 `stage_common()` to copy the `xrpld` and `validator-keys` binaries, config files,
 and shared support files into the staging area, and invokes the platform build
-tool. Both binaries must be present in the build directory and must run in the packaging
-environment; a missing or non-runnable one fails early. That runtime check is
-what catches a binary still linked against the Nix store's ELF loader (see
+tool. Both binaries must be present in the build directory and must run in the
+packaging environment; a missing or non-runnable one fails early. That runtime
+check is what catches a binary still linked against the Nix store's ELF loader (see
 `patch_nix_binary` in `cmake/PatchNixBinary.cmake`).
 
 ### RPM
@@ -276,9 +281,9 @@ lintian -I debbuild/*.deb
 
 ## Reproducibility
 
-`build_pkg.py` sets `SOURCE_DATE_EPOCH` from the latest git commit time, or the
-current time outside a git tree, and exports it; the RPM spec clamps file
-modification times to it via `%build_mtime_policy`. The remaining variables
+`build_pkg.py` sets `SOURCE_DATE_EPOCH` from the latest git commit time and
+exports it; the RPM spec clamps file modification times to it via
+`%build_mtime_policy`. The remaining variables
 below further improve reproducibility but are _not_ set by the script — export
 them yourself if needed:
 
