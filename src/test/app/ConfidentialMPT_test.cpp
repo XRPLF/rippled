@@ -394,6 +394,7 @@ class ConfidentialMPT_test : public beast::unit_test::Suite
             BEAST_EXPECT(sle && (*sle)[sfConfidentialOutstandingAmount] == 35);
         }
 
+        testcase("confidential clawback and holder exit");
         auto const sleAlice2 = env.le(keylet::mptoken(id, alice.id()));
         Ciphertext aliceIss{};
         BEAST_EXPECT(
