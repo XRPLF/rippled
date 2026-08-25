@@ -225,7 +225,20 @@ ConfidentialMPTConvertBack::doApply()
     (*sleIssuance)[sfConfidentialOutstandingAmount] =
         (*sleIssuance)[sfConfidentialOutstandingAmount] - amount;
 
-    incrementConfidentialVersion(*sleMpt);
+    // Once global confidential supply reaches zero, non-negativity guarantees
+    // every confidential component is zero. The final converter can leave
+    // confidential mode immediately; other zero holders may self-delete via
+    // MPTokenAuthorize under the same global-zero condition.
+    if ((*sleIssuance)[sfConfidentialOutstandingAmount] == 0)
+    {
+        if (auto const ter = clearConfidentialState(*sleIssuance, *sleMpt);
+            !isTesSuccess(ter))
+            return ter;
+    }
+    else
+    {
+        incrementConfidentialVersion(*sleMpt);
+    }
     view().update(sleMpt);
     view().update(sleIssuance);
     return tesSUCCESS;
