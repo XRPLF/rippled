@@ -132,7 +132,7 @@ hash); `tx.preflight` is stateless and omits both.
 | `consensus.phase.open`         | Consensus.h      | --                                                                                                                                                                                                                           | Open phase duration (child of round)                                                                                                  |
 | `consensus.proposal.send`      | RCLConsensus.cpp | `consensus_round`, `is_bow_out`                                                                                                                                                                                              | Consensus proposal broadcast                                                                                                          |
 | `consensus.ledger_close`       | RCLConsensus.cpp | `ledger_seq`, `consensus_mode`                                                                                                                                                                                               | Ledger close event                                                                                                                    |
-| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                           | Establish phase duration (child of round)                                                                                             |
+| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`, `disputes_count` (all overwritten each iteration); `close_time_avalanche_state` (terminal regime, set once when the span ends)                                           | Establish phase duration (child of round)                                                                                             |
 | `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`                                                                                                                                                                            | Position update and dispute resolution (see Events below)                                                                             |
 | `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `proposers_finished`, `consensus_stalled`, `establish_count`, `consensus_result`                                      | Consensus threshold check                                                                                                             |
 | `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                  | Ledger accepted by consensus                                                                                                          |
@@ -553,13 +553,13 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 #### Counters
 
-| Prometheus Metric         | Source                | Description                    |
-| ------------------------- | --------------------- | ------------------------------ |
-| `rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `warn`                    | Logic.h:33            | Resource manager warning count |
-| `drop`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                | Description                    |
+| ------------------------------- | --------------------- | ------------------------------ |
+| `rpc_requests_total`            | ServerHandler.cpp:108 | Total RPC request count        |
+| `ledger_fetches_total`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
+| `ledger_history_mismatch_total` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
+| `warn_total`                    | Logic.h:33            | Resource manager warning count |
+| `drop_total`                    | Logic.h:34            | Resource manager drop count    |
 
 #### Histograms
 
@@ -663,7 +663,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 | Panel                       | Type       | PromQL                                                                                                                     | Labels Used              |
 | --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| RPC Request Rate by Command | timeseries | `sum by (command) (rate(span_calls_total{span_name=~"rpc.command.*"}[5m]))`                                                | `command`                |
+| RPC Request Rate by Command | timeseries | `sum by (command) (rate(span_calls_total{span_name=~"rpc.command.*"}[$__rate_interval]))`                                  | `command`                |
 | RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                      | `command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
@@ -676,10 +676,10 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 | Panel                              | Type           | PromQL                                                                                       | Labels Used                         |
 | ---------------------------------- | -------------- | -------------------------------------------------------------------------------------------- | ----------------------------------- |
-| Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                        | `span_name`                         |
+| Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[$__rate_interval])` and `tx.receive`          | `span_name`                         |
 | Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
-| Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[5m]))`                    | `local`                             |
-| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[5m])`                                         | —                                   |
+| Transaction Path Distribution      | piechart       | `sum by (local) (increase(span_calls_total{span_name="tx.process"}[$__rate_interval]))`      | `local`                             |
+| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[$__rate_interval])`                           | —                                   |
 | TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
 | TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
 | TX Apply Failed Rate               | stat           | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result`               |
@@ -687,18 +687,18 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### Consensus Health (`consensus-health`)
 
-| Panel                         | Type       | PromQL                                                                      | Labels Used      |
-| ----------------------------- | ---------- | --------------------------------------------------------------------------- | ---------------- |
-| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`       | —                |
-| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[5m])`           | —                |
-| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`        | —                |
-| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[5m])`         | —                |
-| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})` | —                |
-| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[5m])`            | —                |
-| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                | `consensus_mode` |
-| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                         | —                |
-| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                     | —                |
-| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                        | `le`             |
+| Panel                         | Type       | PromQL                                                                            | Labels Used      |
+| ----------------------------- | ---------- | --------------------------------------------------------------------------------- | ---------------- |
+| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`             | —                |
+| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[$__rate_interval])`   | —                |
+| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`              | —                |
+| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[$__rate_interval])` | —                |
+| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`       | —                |
+| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[$__rate_interval])`    | —                |
+| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                      | `consensus_mode` |
+| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                               | —                |
+| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                           | —                |
+| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                              | `le`             |
 
 ### Ledger Operations (`ledger-operations`)
 
@@ -741,7 +741,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                                                | —           |
 | FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                                            | —           |
 | Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                                      | —           |
-| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`                               | —           |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[$__rate_interval]) / 1000000`                 | —           |
 | All Jobs Execution Time (Detail)       | timeseries | `histogram_quantile($quantile, rate(job_running_us_bucket[5m])) by job_type` — µs  | `quantile`  |
 | All Jobs Dequeue Wait (Detail)         | timeseries | `histogram_quantile($quantile, rate(job_queued_us_bucket[5m])) by job_type` — µs   | `quantile`  |
 
@@ -764,7 +764,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 | Panel                     | Type       | PromQL                                           | Labels Used |
 | ------------------------- | ---------- | ------------------------------------------------ | ----------- |
-| RPC Request Rate          | stat       | `rate(rpc_requests[5m])`                         | —           |
+| RPC Request Rate          | stat       | `rate(rpc_requests_total[$__rate_interval])`     | —           |
 | RPC Response Time         | timeseries | `histogram_quantile(0.95, rpc_time_bucket)`      | —           |
 | RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_bucket)`      | —           |
 | RPC Response Time Heatmap | heatmap    | `rpc_time_bucket`                                | —           |
