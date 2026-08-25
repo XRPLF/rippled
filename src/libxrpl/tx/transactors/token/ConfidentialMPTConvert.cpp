@@ -92,8 +92,8 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if ((*sleMpt)[sfMPTAmount] < amount)
         return tecINSUFFICIENT_FUNDS;
 
-    if (sleIssuance->isFieldPresent(sfAuditorEncryptionKey) &&
-        !ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
+    if (sleIssuance->isFieldPresent(sfAuditorEncryptionKey) !=
+        ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
         return tecNO_PERMISSION;
 
     bool const initializing = !sleMpt->isFieldPresent(sfHolderEncryptionKey);
