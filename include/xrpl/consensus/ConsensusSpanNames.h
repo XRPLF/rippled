@@ -88,8 +88,6 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-#include <string_view>
-
 namespace xrpl::telemetry::consensus::span {
 
 // ===== Span name segments ====================================================
