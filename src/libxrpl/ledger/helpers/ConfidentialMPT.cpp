@@ -48,8 +48,10 @@ preflightPoint33(Slice blob)
 TER
 parseCiphertextField(Slice blob, confidential::Ciphertext& out)
 {
+    // Apply-time parse: tem* is preflight-only. Malformed ledger or
+    // post-preflight ciphertext is a claimed failure, not a local malformation.
     if (!confidential::parseCiphertext(blob, out))
-        return temBAD_CIPHERTEXT;
+        return tecBAD_PROOF;
     return tesSUCCESS;
 }
 

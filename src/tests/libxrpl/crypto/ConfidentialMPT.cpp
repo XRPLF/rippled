@@ -131,7 +131,7 @@ TEST(ConfidentialMPTHelpers, PreflightAndParseRejectMalformed)
     Ciphertext ct{};
     EXPECT_EQ(
         parseCiphertextField(Slice(shortCt.data(), shortCt.size()), ct),
-        temBAD_CIPHERTEXT);
+        tecBAD_PROOF);
 
     std::array<std::uint8_t, 33> badPt{};
     badPt[0] = 0x04;
