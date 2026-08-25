@@ -23,22 +23,14 @@ namespace xrpl {
 void
 ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // Track LoanBroker deletions so the finalize can enforce (a) that only
-    // ttLOAN_BROKER_DELETE removes a broker, (b) that at most one broker is
-    // removed per transaction, and (c) that the broker's pre-state DebtTotal
-    // and OwnerCount were zero at deletion. `before` holds the entry's state
-    // prior to erasure.
+    // Track LoanBroker deletions so finalize() can enforce:
+    //   (a) only ttLOAN_BROKER_DELETE removes a broker
+    //   (b) at most one broker is removed per transaction
+    //   (c) DebtTotal and OwnerCount were zero before deletion
+    // `before` holds the entry's state prior to erasure.
     //
-    // Deleted trust lines and MPTokens are also recorded (from `before`) so
-    // finalize can rediscover the affected broker through its pseudo-account
-    // and confirm CoverAvailable stayed consistent with the pseudo-account
-    // balance -- a holding removed while cover remains must not slip past. A
-    // deleted pseudo-account (ltACCOUNT_ROOT) is deliberately not recorded:
-    // during a legitimate LoanBrokerDelete the broker is erased alongside it,
-    // and reviving it here would trip the finalize "Loan Broker missing"
-    // check. The live-reference branch below is gated by !isDelete for the
-    // same reason -- on deletion `after` still carries the erased SLE (see
-    // ApplyStateTable::visit).
+    // Deleted trust lines/MPTokens are recorded (from `before`) so finalize() can find the broker
+    // via its pseudo-account and check CoverAvailable still matches the pseudo-account balance.
     if (isDelete)
     {
         if (before)
