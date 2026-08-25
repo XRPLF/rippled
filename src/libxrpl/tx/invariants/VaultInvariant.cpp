@@ -380,6 +380,7 @@ ValidVault::finalize(
     beast::Journal const& j)
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
+    bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
@@ -570,7 +571,7 @@ ValidVault::finalize(
     else
     {
         bool const gapExceeded = [&] {
-            if (!view.rules().enabled(fixCleanup3_4_0))
+            if (!fixEnabled)
             {
                 return afterVault.lossUnrealized >
                     afterVault.assetsTotal - afterVault.assetsAvailable;
@@ -592,7 +593,7 @@ ValidVault::finalize(
         }
     }
 
-    if (view.rules().enabled(fixCleanup3_4_0) && afterVault.lossUnrealized < kZero)
+    if (fixEnabled && afterVault.lossUnrealized < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: loss unrealized must not be negative";
         result = false;
@@ -821,8 +822,6 @@ ValidVault::finalize(
                     return false;  // That's all we can do
                 }
 
-                bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
-
                 // Get the posterior scale to round calculations to
                 auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
 
@@ -993,16 +992,14 @@ ValidVault::finalize(
                 // value merely rounds down to zero, so a missing delta while
                 // the pool still held positive effective value indicates a
                 // real accounting bug, not this exception.
-                bool const zeroDeltaIsLegitimate = view.rules().enabled(fixCleanup3_4_0) &&
-                    !maybeVaultDeltaAssets && beforeVault.assetsTotal == beforeVault.lossUnrealized;
+                bool const zeroDeltaIsLegitimate = fixEnabled && !maybeVaultDeltaAssets &&
+                    beforeVault.assetsTotal == beforeVault.lossUnrealized;
 
                 if (!maybeVaultDeltaAssets && !zeroDeltaIsLegitimate)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must change vault balance";
                     return false;  // That's all we can do
                 }
-
-                bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
 
                 DeltaInfo const vaultDeltaAssets = maybeVaultDeltaAssets.value_or(
                     DeltaInfo{.delta = kNumZero, .scale = std::nullopt});
@@ -1212,8 +1209,6 @@ ValidVault::finalize(
                         JLOG(j.fatal()) << "Invariant failed: clawback must decrease vault balance";
                         result = false;
                     }
-
-                    bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
 
                     auto const assetsTotalDelta = roundToAsset(
                         vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
