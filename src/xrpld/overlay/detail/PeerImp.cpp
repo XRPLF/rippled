@@ -1321,18 +1321,27 @@ PeerImp::handleTransaction(
         // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
         // a job-queue worker and end on that thread — no detach step is needed.
         auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
-        span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
-        span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
-        // The current (open) ledger index when the relayed tx was received —
-        // the ledger being worked on. Correlates this tx.receive to the ledger
-        // trace; not yet applied to a specific ledger here, so no hash.
-        span->setAttribute(
-            tx_span::attr::currentLedgerSeq,
-            static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
-        if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
-            span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
-        if (auto const version = getVersion(); !version.empty())
-            span->setAttribute(tx_span::attr::peerVersion, version.c_str());
+        // Guarded on the span being live because these values are not free and
+        // this runs for every inbound transaction, including duplicates: the
+        // hash string allocates, and the open-ledger index takes the ledger
+        // master's lock. The compiled-out guard's operator bool() is a literal
+        // false, so the block disappears entirely in that build; with telemetry
+        // compiled in it is skipped whenever this span is not being recorded.
+        if (*span)
+        {
+            span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
+            span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+            // The current (open) ledger index when the relayed tx was received
+            // — the ledger being worked on. Correlates this tx.receive to the
+            // ledger trace; not yet applied to a specific ledger, so no hash.
+            span->setAttribute(
+                tx_span::attr::currentLedgerSeq,
+                static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
+            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            if (auto const version = getVersion(); !version.empty())
+                span->setAttribute(tx_span::attr::peerVersion, version.c_str());
+        }
         // Note: suppressed and txStatus are set once at each exit path
         // (not as defaults here) to avoid OTel SDK attribute duplication.
 

@@ -1511,22 +1511,31 @@ NetworkOPsImp::processTransaction(
     // and end on the batch worker thread that later applies this transaction —
     // no detach step is needed.
     auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
-    span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
-    span->setAttribute(tx_span::attr::local, bLocal);
-    // The current (open) ledger index at submission/relay time — the ledger
-    // being worked on. Correlates this tx.process to the ledger trace; the tx
-    // has not yet been applied to a specific ledger here, so there is no hash.
-    span->setAttribute(
-        tx_span::attr::currentLedgerSeq,
-        static_cast<std::int64_t>(ledgerMaster_.getCurrentLedgerIndex()));
-    if (auto const& stx = transaction->getSTransaction())
+    // Guarded on the span being live because these values are not free and this
+    // runs for every submitted and relayed transaction: the hash string
+    // allocates, and the open-ledger index takes the ledger master's lock. The
+    // compiled-out guard's operator bool() is a literal false, so the block
+    // disappears entirely in that build; with telemetry compiled in it is
+    // skipped whenever this span is not being recorded.
+    if (*span)
     {
-        if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
-            span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+        span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
+        span->setAttribute(tx_span::attr::local, bLocal);
+        // The current (open) ledger index at submission/relay time — the ledger
+        // being worked on. Correlates this tx.process to the ledger trace; the
+        // tx has not yet been applied to a specific ledger, so there is no hash.
         span->setAttribute(
-            tx_span::attr::fee, static_cast<int64_t>(stx->getFieldAmount(sfFee).xrp().drops()));
-        span->setAttribute(
-            tx_span::attr::sequence, static_cast<int64_t>(stx->getSeqProxy().value()));
+            tx_span::attr::currentLedgerSeq,
+            static_cast<std::int64_t>(ledgerMaster_.getCurrentLedgerIndex()));
+        if (auto const& stx = transaction->getSTransaction())
+        {
+            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            span->setAttribute(
+                tx_span::attr::fee, static_cast<int64_t>(stx->getFieldAmount(sfFee).xrp().drops()));
+            span->setAttribute(
+                tx_span::attr::sequence, static_cast<int64_t>(stx->getSeqProxy().value()));
+        }
     }
 
     auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
