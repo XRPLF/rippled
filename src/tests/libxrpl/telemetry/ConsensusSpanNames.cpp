@@ -47,6 +47,17 @@
 
 using namespace xrpl::telemetry::consensus::span;
 
+// The phase-span tests below reach their constants through the directive above.
+// The validation-accept tests further down spell the path out from `consensus`,
+// which that directive does NOT make visible: it imports the members of
+// consensus::span, not the enclosing namespace name.
+//
+// An alias rather than a second `using namespace xrpl::telemetry;`, which would
+// pull xrpl::telemetry::attr (SpanNames.h:117) into scope alongside
+// consensus::span::attr and make every bare `attr::` in the phase-span tests
+// ambiguous.
+namespace consensus = xrpl::telemetry::consensus;
+
 TEST(ConsensusSpanNames, phase_open_start_attribute_keys)
 {
     // Set once when the open-phase span is created in startRoundInternal().
@@ -273,5 +284,3 @@ TEST(ConsensusSpanNames, validationStatusValue_is_a_compile_time_rule)
     static_assert(consensus::span::validationStatusValue(-1) == "unknown");
     SUCCEED();
 }
-
-}  // namespace
