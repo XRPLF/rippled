@@ -385,7 +385,6 @@ private:
             isRounded(broker.asset, newState.principalOutstanding, originalState.loanScale));
     }
 
-    // Reproduces the scenario raised in PR #7732 review: the 3.11.5
     // non-full-payment invariant asserts that a successful LoanPay strictly
     // decreases PaymentRemaining and advances NextPaymentDueDate. doPayment
     // deliberately leaves those schedule fields unchanged for
@@ -443,7 +442,6 @@ private:
 
         auto const payFee = Fee(env.current()->fees().base * 2);
 
-        // Scenario A - the reviewer's "extra-only" overpayment. The amount does
         // not cover a scheduled payment, so makeRegularPayment makes zero
         // scheduled payments and returns tecINSUFFICIENT_PAYMENT before the
         // Extra branch runs. The invariant is therefore never reached. Were the

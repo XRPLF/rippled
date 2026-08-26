@@ -48,7 +48,7 @@ ValidLoan::finalize(
     // is not enabled, so there's no need to check it.
 
     auto const txType = tx.getTxnType();
-    bool const v1Enabled = view.rules().enabled(featureLendingProtocolV1_1);
+    bool const lpV11Enabled = view.rules().enabled(featureLendingProtocolV1_1);
 
     // Ledger entry validation checks.
     for (auto const& [before, after] : loans_)
@@ -105,7 +105,7 @@ ValidLoan::finalize(
         }
 
         // The flag immutability check has been moved to InvariantChecks.cpp
-        if (!v1Enabled && before &&
+        if (!lpV11Enabled && before &&
             (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment)))
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
@@ -138,7 +138,7 @@ ValidLoan::finalize(
                 return false;
             }
         }
-        if (v1Enabled)
+        if (lpV11Enabled)
         {
             // Only LoanSet may create a loan. This is an object-existence rule, not
             // a transaction post-condition, so it applies even when apply failed.
@@ -206,7 +206,7 @@ ValidLoan::finalize(
 
     // Deletion by the wrong transaction is an invalid object transition even
     // when apply failed, so check it before the success-only post-conditions.
-    if (v1Enabled && txType != ttLOAN_DELETE && !deletedLoans_.empty())
+    if (lpV11Enabled && txType != ttLOAN_DELETE && !deletedLoans_.empty())
     {
         JLOG(j.fatal()) << "Invariant failed: Loan deleted by a transaction "
                            "other than LoanDelete";
