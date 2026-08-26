@@ -14,8 +14,8 @@ To build from source instead, see [BUILD.md](../BUILD.md).
 Packages are published to four channels:
 
 - `stable` - the latest production release
-- `unstable` - release candidates
-- `experimental` - beta builds
+- `rc` - release candidates
+- `beta` - beta builds
 - `develop` - every push to the [`develop` branch](https://github.com/XRPLF/rippled/tree/develop)
 
 See [Publishing packages](../package/README.md#publishing-packages) for how channels are produced.
@@ -92,11 +92,11 @@ wherever it appears in the repository configuration.
 2.  Add the repository, using the channel you picked in [Release channels](#release-channels):
 
     ```bash
-    cat << REPOFILE | sudo tee /etc/yum.repos.d/xrplf.repo
+    cat << 'REPOFILE' | sudo tee /etc/yum.repos.d/xrplf.repo
     [xrplf-stable]
     name=XRP Ledger Packages
     enabled=1
-    baseurl=https://packages.xrplf.org/repository/rpm-stable/
+    baseurl=https://packages.xrplf.org/repository/rpm-stable/$basearch/
     gpgcheck=1
     repo_gpgcheck=1
     gpgkey=https://packages.xrplf.org/xrplf.asc

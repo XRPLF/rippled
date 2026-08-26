@@ -1877,13 +1877,19 @@ public:
 
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
             Vault const vault{env};
-            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+            // accepts closed-ended vaults; build one and advance past
+            // SubscriptionDate before creating a loan.
+            auto [vaultTx, vaultKeylet, subscriptionDate] =
+                vault.createClosedEnded({.owner = alice, .asset = xrpAsset});
             env(vaultTx);
             env.close();
 
             env(vault.deposit(
                 {.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(1000)}));
             env.close();
+
+            vault.closePastSubscription(subscriptionDate);
 
             auto const brokerKeylet =
                 keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));

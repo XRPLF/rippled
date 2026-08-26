@@ -61,9 +61,9 @@ runs:
         elif [[ -z "${pre_release}" ]]; then
             channel=stable
         elif [[ "${pre_release}" =~ ^rc[0-9]+(\+.*)?$ ]]; then
-            channel=unstable
+            channel=rc
         elif [[ "${pre_release}" =~ ^b(0|[1-9][0-9]*)(\+.*)?$ ]]; then
-            channel=experimental
+            channel=beta
         else
             echo "Unsupported pre-release in tag '${REF_NAME}'. Use bN or rcN." >&2
             exit 1
