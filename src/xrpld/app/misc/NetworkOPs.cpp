@@ -1523,7 +1523,8 @@ NetworkOPsImp::processTransaction(
     // runs for every submitted and relayed transaction: the hash string
     // allocates, and the open-ledger index takes the ledger master's lock. With
     // telemetry compiled out the span is null; with it compiled in the block is
-    // skipped for any span not being recorded.
+    // skipped when telemetry is disabled at runtime or the transaction category
+    // is off.
     if (span && *span)
     {
         span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());

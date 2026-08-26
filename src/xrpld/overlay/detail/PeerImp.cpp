@@ -1334,7 +1334,8 @@ PeerImp::handleTransaction(
         // this runs for every inbound transaction, including duplicates: the
         // hash string allocates, and the open-ledger index takes the ledger
         // master's lock. With telemetry compiled out the span is null; with it
-        // compiled in the block is skipped for any span not being recorded.
+        // compiled in the block is skipped when telemetry is disabled at runtime
+        // or the transaction category is off.
         if (span && *span)
         {
             span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
