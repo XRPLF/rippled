@@ -268,9 +268,10 @@ VaultClawback::assetsToClawback(
 
         if (clawbackAmount == beast::kZero)
         {
-            // A waiver implies the holder owns the entire outstanding share
-            // supply, which sleShareIssuance already tells us; avoid a
-            // redundant MPToken read via accountHolds in that case.
+            // isSoleShareholder already established that the holder owns the
+            // entire outstanding share supply whenever the waiver applies, so
+            // sfOutstandingAmount gives sharesDestroyed directly, avoiding a
+            // redundant MPToken read via accountHolds.
             sharesDestroyed = waiveUnrealizedLoss == WaiveUnrealizedLoss::Yes
                 ? STAmount{share, sleShareIssuance->at(sfOutstandingAmount)}
                 : accountHolds(
