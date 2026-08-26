@@ -57,23 +57,53 @@ on:
         default: false
 
   push:
-    branches:
-      - "pratik/otel-phase*"
-      - "feature/otel-*"
-      - "feature/telemetry-*"
+    # No branches filter, deliberately. Branch names are not something this
+    # repository controls, so gating on one decides whether telemetry gets
+    # validated by what a branch is CALLED rather than by what it CHANGED. The
+    # previous list ("pratik/otel-phase*", "feature/otel-*",
+    # "feature/telemetry-*") silently excluded every other name, and because
+    # GitHub ANDs the branch and path filters the effect was total: pushes to
+    # pratik/otel-sync-diagnostics matched the paths below but not the branch
+    # glob, so this workflow was never dispatched there at all -- not queued,
+    # not skipped, no run to look at. Two rounds of harness fixes on that branch
+    # produced no signal before anyone noticed. The paths below already express
+    # the real question, which is whether a change can affect telemetry.
+    #
     # Keep these globs pointing at paths that actually exist. Two earlier
     # entries (include/xrpl/basics/Telemetry*.h, src/xrpld/app/misc/Telemetry*)
     # matched zero tracked files, so a pure C++ telemetry change never
     # triggered this workflow on push — only edits under docker/telemetry/**
-    # or to this file did. The telemetry sources live in the three telemetry
-    # module directories below.
+    # or to this file did.
     paths:
+      # This workflow, and the harness it runs.
       - ".github/workflows/telemetry-validation.yml"
       - "docker/telemetry/**"
+      # The telemetry modules themselves.
       - "include/xrpl/telemetry/**"
       - "src/libxrpl/telemetry/**"
-      - "src/libxrpl/beast/insight/**"
       - "src/xrpld/telemetry/**"
+      # beast::insight, whose gauges and counters this workflow asserts on.
+      # Both halves: the interface headers decide what the OTel collector can
+      # publish, so editing one moves the metric surface as surely as editing
+      # the implementation does.
+      - "include/xrpl/beast/insight/**"
+      - "src/libxrpl/beast/insight/**"
+      # The span-name and metric-name constants. These are the wire contract the
+      # harness asserts against by literal string, so a rename here compiles
+      # cleanly and silently empties the assertions. Matched by filename rather
+      # than directory because the convention colocates each header with the
+      # class it serves: they live under consensus/, overlay/, app/ledger/,
+      # app/main/, app/misc/, rpc/ and tx/, not under a telemetry/ directory.
+      - "**/*SpanNames.h"
+      - "**/*MetricNames.h"
+      # The GTests that pin those same constants.
+      - "src/tests/libxrpl/telemetry/**"
+      # The checkers that gate this surface. otel-naming derives the legal
+      # attribute and metric names from the headers above; the telemetry scripts
+      # enforce the histogram-bucket parity and regression-bound rules the
+      # harness depends on.
+      - ".github/scripts/otel-naming/**"
+      - ".github/scripts/telemetry/**"
 
 concurrency:
   group: telemetry-validation-${{ github.ref }}

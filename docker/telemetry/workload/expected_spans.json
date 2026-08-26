@@ -25,7 +25,7 @@
       "required_attributes": [],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "HTTP-only. Created solely in ServerHandler::processRequest() (ServerHandler.cpp:705), which is reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path that roots rpc.http_request at ServerHandler.cpp:640-641. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so this span cannot appear under the WebSocket-only harness workload."
+      "note": "HTTP-only. Created solely in ServerHandler::processRequest() (ServerHandler.cpp:705), which is reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path that roots rpc.http_request at ServerHandler.cpp:640-641. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so this span never appears under a WebSocket request. It does still appear under this harness, 5 traces on a normal run, because run-full-validation.sh polls each node over HTTP with curl (:449, :502) and those requests take the HTTP path. Corrected 2026-08-26; this note previously concluded the span cannot appear at all, which sent a reader looking for a way to make the harness speak HTTP that it already speaks."
     },
     {
       "name": "rpc.command.*",
@@ -42,7 +42,7 @@
       "required_attributes": ["request_payload_size"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "HTTP/JSON-RPC root span. The harness load generator is WebSocket-only, so this does not fire."
+      "note": "HTTP/JSON-RPC root span. It DOES fire under this harness, 5 traces on a normal run -- one per node -- even though the load generator is WebSocket-only, because run-full-validation.sh polls each node's HTTP port with curl for readiness and validated-ledger progress (:449, :502). Corrected 2026-08-26; this note previously said it does not fire. Kept optional rather than promoted to required because those polls are harness scaffolding rather than workload: a future change to how the script waits for a node could remove them without anything being wrong with the node."
     },
     {
       "name": "tx.process",
@@ -403,7 +403,7 @@
       "child": "rpc.command.*",
       "description": "Processing span contains per-command span (HTTP/JSON-RPC path only)",
       "skip": true,
-      "skip_reason": "Real relationship, but unreachable here: rpc.process only exists on the HTTP/JSON-RPC path and the harness load generator is WebSocket-only, so there are no rpc.process traces to check. The WS-path equivalent (rpc.ws_message -> rpc.command.*) is asserted above instead."
+      "skip_reason": "Real relationship, skipped for a VALIDATOR limitation, not for absence: _validate_parent_child() resolves the wildcard child to one literal probe name, so it cannot assert a family whose members vary per request. Corrected 2026-08-26 -- the earlier reason claimed there are no rpc.process traces to check because that span exists only on the HTTP/JSON-RPC path while the load generator is WebSocket-only. The premise is right and the conclusion is wrong: rpc.process DOES appear, 5 traces on a normal run, because run-full-validation.sh polls each node's HTTP port with curl for readiness and validated-ledger progress (:449, :502). Those curl calls are what produce rpc.http_request and its rpc.process child, entirely independently of the load generator. Anyone acting on the old reason would have gone looking for a way to make the harness speak HTTP, which it already does. That same reason also said the WS-path equivalent is 'asserted above instead'; it is not, rpc.ws_message -> rpc.command.* is skipped for this identical wildcard limitation. To assert either, teach _validate_parent_child to accept a wildcard child by matching any span whose name has the declared prefix."
     },
     {
       "parent": "ledger.build",
@@ -426,6 +426,62 @@
       "description": "Pathfind request contains the compute sub-span",
       "skip": true,
       "skip_reason": "Real relationship (pathfind.compute is created inside PathRequest::doUpdate at PathRequest.cpp:749-750, under the pathfind.request scope), but the child never exists on the harness because pathfinding is disabled on every node: Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for all five nodes (:308) with no [path_search*] override, and doRipplePathFind returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 before constructing a PathRequest. The parent used to appear anyway, because its ScopedSpanGuard is created at RipplePathFind.cpp:35, above that guard; since 2026-08-25 not even the parent appears, the ripple_path_find load having been removed from rpc_load_generator.py, so both ends of this relationship are now absent. Liquidity has nothing to do with it — the earlier 'no liquidity, returns before computing' reason was wrong, because no path search is attempted at all. Asserting this relationship needs the load restored AND a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
+    },
+
+    {
+      "parent": "rpc.http_request",
+      "child": "rpc.process",
+      "description": "The HTTP request span contains the request-processing span. ServerHandler::processRequest() opens rpc.process as a scoped child and its own comment names rpc.http_request as the parent; processRequest has exactly one caller. Both ends emit on every run: the harness polls each node's HTTP port with curl, so this is the one rpc hierarchy that is assertable without a wildcard."
+    },
+    {
+      "parent": "tx.process",
+      "child": "txq.enqueue",
+      "description": "Transaction processing contains the queue-admission span."
+    },
+    {
+      "parent": "txq.enqueue",
+      "child": "txq.apply_direct",
+      "description": "Queue admission contains the direct-apply path taken when the transaction is applied straight to the open ledger instead of being queued."
+    },
+    {
+      "parent": "txq.accept",
+      "child": "txq.accept_tx",
+      "description": "The queue's accept pass contains the per-transaction accept span."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.phase.open",
+      "description": "A consensus round contains its open phase."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.establish",
+      "description": "A consensus round contains its establish phase."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.proposal.send",
+      "description": "A consensus round contains the proposals this node sends during it."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.ledger_close",
+      "description": "A consensus round contains the ledger close it performs."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.mode_change",
+      "description": "A consensus round contains any mode transition that happens inside it."
+    },
+    {
+      "parent": "consensus.establish",
+      "child": "consensus.update_positions",
+      "description": "The establish phase contains each position-update pass."
+    },
+    {
+      "parent": "consensus.establish",
+      "child": "consensus.check",
+      "description": "The establish phase contains each consensus-reached check."
     }
   ],
   "total_span_types": 41,
