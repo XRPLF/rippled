@@ -3597,15 +3597,15 @@ docker/telemetry/workload/run-full-validation.sh --cleanup
 
 Harness options (`run-full-validation.sh`):
 
-| Flag                | Default           | Effect                                                                                                                                    |
-| ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `--xrpld PATH`      | `.build/xrpld`    | Binary to run. Also settable via the `XRPLD` env var.                                                                                     |
-| `--nodes NUM`       | `5`               | Size of the local validator cluster.                                                                                                      |
-| `--profile NAME`    | `full-validation` | Load profile from `workload-profiles.json` (`full-validation`, `quick-smoke`, `stress`). This is the **only** thing that sets load shape. |
-| `--skip-loki`       | off               | Skip the log-trace correlation checks and their per-leg diagnostics. Local exploration only; CI does not pass this.                       |
-| `--skip-regression` | off               | Skip timing capture and the baseline comparison. Local exploration only.                                                                  |
-| `--with-benchmark`  | off               | Also run `benchmark.sh` (telemetry-off vs telemetry-on overhead) after validation.                                                        |
-| `--cleanup`         | —                 | Tear everything down and exit.                                                                                                            |
+| Flag                | Default           | Effect                                                                                                                                                            |
+| ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--xrpld PATH`      | `.build/xrpld`    | Binary to run. Also settable via the `XRPLD` env var.                                                                                                             |
+| `--nodes NUM`       | `5`               | Size of the local validator cluster.                                                                                                                              |
+| `--profile NAME`    | `full-validation` | Load profile from `workload-profiles.json` (`full-validation`, `quick-smoke`, `stress`). This is the **only** thing that sets load shape.                         |
+| `--skip-loki`       | off               | Skip the log-trace correlation checks and their per-leg diagnostics. Local exploration only; CI does not pass this.                                               |
+| `--skip-regression` | off               | Skip the baseline comparison. Timings are still captured, so the run still leaves a `timings.json` artifact to refresh the baseline from. Local exploration only. |
+| `--with-benchmark`  | off               | Also run `benchmark.sh` (telemetry-off vs telemetry-on overhead) after validation.                                                                                |
+| `--cleanup`         | —                 | Tear everything down and exit.                                                                                                                                    |
 
 `--rpc-rate`, `--rpc-duration`, `--tx-tps` and `--tx-duration` are accepted by the
 parser but **never read** — they predate profiles and have no effect. Use
@@ -3613,7 +3613,9 @@ parser but **never read** — they predate profiles and have no effect. Use
 
 Exit codes: `0` all checks and the regression gate passed; `1` a validation check
 failed or the gate detected a regression; `2` infrastructure error (stack or
-cluster did not come up, or timing capture failed).
+cluster did not come up, or timing capture failed while the regression gate was
+active). Every `die` in the script exits 2, including a bad command line, so read
+`die` rather than this summary if the two ever disagree.
 
 ### What Gets Validated
 
