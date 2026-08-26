@@ -22,6 +22,10 @@
 
 #include <xrpld/telemetry/MetricsRegistry.h>
 
+// Unguarded because the constructor's `beast::Journal journal` parameter is
+// declared in both configurations; only the member it initialises is guarded.
+#include <xrpl/beast/utility/Journal.h>
+
 #ifdef XRPL_ENABLE_TELEMETRY
 
 // The app and overlay includes below are why
@@ -53,7 +57,6 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UptimeClock.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>

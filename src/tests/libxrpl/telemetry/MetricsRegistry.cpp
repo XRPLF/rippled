@@ -428,10 +428,8 @@ TEST(MetricsRegistryScaledMean, default_scale_is_one)
 
 #include <boost/asio/io_context.hpp>
 
-#include <optional>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 
 using namespace xrpl;
 
@@ -699,8 +697,8 @@ public:
     [[nodiscard]] std::optional<uint256> const&
     getTrapTxID() const override
     {
-        static std::optional<uint256> const empty;
-        return empty;
+        static std::optional<uint256> const kEmpty;
+        return kEmpty;
     }
     DatabaseCon&
     getWalletDB() override

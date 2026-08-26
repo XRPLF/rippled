@@ -76,7 +76,6 @@
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
-#include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/tx/apply.h>
@@ -116,6 +115,13 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The TMGetObjectByHash metric names and label keys. Every use of them sits in
+// an XRPL_METRIC_* argument list, and those macros expand to nothing when
+// telemetry is off, so the include is guarded like its uses.
+#include <xrpl/telemetry/GetObjectMetricNames.h>
+#endif
 
 using namespace std::chrono_literals;
 
@@ -2857,10 +2863,13 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     int const requested = packet.objects_size();
     int const iterLimit = std::min(requested, tuning::kHardMaxReplyNodes);
 
+#ifdef XRPL_ENABLE_TELEMETRY
     // Time the whole loop once, not each iteration: the loop can run up to
     // kHardMaxReplyNodes times, so per-iteration clock reads would cost more
-    // than the lookups they measure.
+    // than the lookups they measure. Both clock reads serve only the metric
+    // recorded below, so neither happens when telemetry is compiled out.
     auto const lookupStart = std::chrono::steady_clock::now();
+#endif
 
     for (int i = 0; i < iterLimit; ++i)
     {
@@ -2886,8 +2895,12 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
             newObj.set_ledgerseq(obj.ledgerseq());
     }
 
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Measured here rather than at the call below, which would fold the fee
+    // computation and charge() into the reported lookup latency.
     auto const lookupElapsed = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now() - lookupStart);
+#endif
 
     // Apply work-proportional charge. `charge()` posts the disconnect
     // step (if any) back to strand_, so it is safe to call from this
@@ -2902,12 +2915,15 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     resource::Charge const fee = computeGetObjectByHashFee(requested, reply.objects_size());
     charge(fee, "processed get object by hash request");
 
+#ifdef XRPL_ENABLE_TELEMETRY
     recordGetObjectMetrics(requested, reply.objects_size(), lookupElapsed, fee);
+#endif
 
     JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of " << requested;
     send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
 }
 
+#ifdef XRPL_ENABLE_TELEMETRY
 void
 PeerImp::recordGetObjectMetrics(
     int const requested,
@@ -2936,9 +2952,9 @@ PeerImp::recordGetObjectMetrics(
     // negative -- the counter takes an unsigned amount, where a wrap would
     // read as ~1.8e19 rather than as an error.
     //
-    // Written as two calls rather than a loop over a {hit, miss} pair: the
-    // macros expand to empty statements in a telemetry-off build, which would
-    // leave a loop's induction variable unused and fail the -Werror build.
+    // Written as two calls rather than a loop over a {hit, miss} pair: the two
+    // amounts come from different expressions, so there is no single value to
+    // iterate over.
     XRPL_METRIC_COUNTER_ADD_LABELED(
         app_,
         kGetObjectLookupsTotal,
@@ -2953,6 +2969,7 @@ PeerImp::recordGetObjectMetrics(
         static_cast<std::uint64_t>(std::max(0, requested - found)),
         {{kLabelResult, std::string(kResultMiss)}});
 }
+#endif  // XRPL_ENABLE_TELEMETRY
 
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)

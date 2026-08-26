@@ -701,6 +701,7 @@ private:
         std::shared_ptr<protocol::TMGetLedger> const& m,
         std::vector<SHAMapNodeID> nodeIDs);
 
+#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Record the OTel metrics for one completed `TMGetObjectByHash` request.
      *
@@ -711,8 +712,9 @@ private:
      *
      * Records `getobject_request_objects`, `getobject_lookup_us`,
      * `getobject_charge`, and both label values of
-     * `getobject_lookups_total`. Compiles to nothing when telemetry is
-     * disabled, because the `XRPL_METRIC_*` macros do.
+     * `getobject_lookups_total`. Every statement is an `XRPL_METRIC_*` record,
+     * so the whole method — and its one call site — is compiled out when
+     * telemetry is disabled rather than left as an empty function.
      *
      * @param requested     Objects the peer asked for (`objects_size()`).
      * @param found         Objects returned, i.e. the reply's object count.
@@ -728,6 +730,7 @@ private:
         int const found,
         std::chrono::microseconds const lookupElapsed,
         resource::Charge const& fee);
+#endif  // XRPL_ENABLE_TELEMETRY
 
 protected:
     // Kept `protected` so test subclasses (see

@@ -33,17 +33,22 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// std::ranges::sort / std::ranges::find_if and std::optional / std::nullopt are
+// used only by the gauge-helper suite below, so they are guarded like its uses.
+#include <algorithm>
+#include <optional>
+#endif
 
 namespace xrpl::node_store {
 

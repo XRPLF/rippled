@@ -143,11 +143,8 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <algorithm>
-#include <atomic>
 #include <cstdint>
-#include <functional>
 #include <limits>
-#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -158,6 +155,13 @@
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
+
+// These three serve only the telemetry-only members below, so they are guarded
+// like their uses: std::atomic by callbacksDetached_, std::function by the
+// ObserveFn sink, std::shared_ptr by provider_.
+#include <atomic>
+#include <functional>
+#include <memory>
 #endif
 
 namespace xrpl {
