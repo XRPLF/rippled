@@ -638,7 +638,12 @@ LoanPay::doApply()
         ? STAmount{asset, 0}
         : conservationBalance(view, brokerPayee, asset, j_);
 
-    if (totalPaidToVault != beast::kZero)
+    // Only ledgers without the rule below reach these payee checks. Once it is in force
+    // requireAuth can no longer reject a pseudo-account, so the whole block goes away with the
+    // gate.
+    bool const skipPayeeAuth = view.rules().enabled(fixCleanup3_4_0);
+
+    if (!skipPayeeAuth && totalPaidToVault != beast::kZero)
     {
         if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
             return ter;
@@ -662,8 +667,11 @@ LoanPay::doApply()
                 return ter;
             }
         }
-        if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
-            return ter;
+        if (!skipPayeeAuth)
+        {
+            if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
+                return ter;
+        }
     }
 
     if (auto const ter = accountSendMulti(

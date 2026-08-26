@@ -1117,6 +1117,259 @@ private:
         env.close();
     }
 
+    // Pre-fixCleanup3_4_0 bug: VaultWithdraw for a fixed *share* amount that
+    // rounds to zero assets trips tecINVARIANT_FAILED instead of failing
+    // cleanly or succeeding, depending on why it's zero. The fixed-shares
+    // branch had no zero guard, unlike the fixed-assets branch.
+    // XRP case: pool value is nonzero (2,000,000) but 1 share's worth (0.5
+    // drops) truncates to zero drops -> real precision loss -> tecPRECISION_LOSS.
+    // IOU case: loan drew 100% of the vault and is fully impaired, so
+    // AssetsTotal == LossUnrealized exactly -> pool value is genuinely zero
+    // -> legitimate zero-value withdrawal -> tesSUCCESS.
+    void
+    testBugVaultWithdrawFixedSharesRoundsToZero(FeatureBitset features)
+    {
+        testcase("bug: VaultWithdraw fixed shares round down to zero assets");
+
+        using namespace jtx;
+        using namespace loan;
+
+        bool const fixed = features[fixCleanup3_4_0];
+
+        Env env(*this, features);
+
+        Account const lender{"lender"};
+        Account const depositorB{"depositorB"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, depositorB, borrower);
+        env.close();
+
+        // asset(n) == n drops.
+        PrettyAsset const xrpAsset{xrpIssue(), 1};
+
+        auto const broker = createVaultAndBroker(
+            env,
+            xrpAsset,
+            lender,
+            {.vaultDeposit = 1'000'000, .debtMax = 3'000'000, .coverDeposit = 1'000'000});
+
+        Vault const v{env};
+        env(v.deposit(
+            {.depositor = depositorB,
+             .id = broker.vaultKeylet().key,
+             .amount = xrpAsset(3'000'000)}));
+        env.close();
+
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, Number{2'000'000}),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(2),
+            kPaymentInterval(600),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Impair the loan so LossUnrealized > 0.
+        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        BEAST_EXPECT(vaultSle->at(sfLossUnrealized) > beast::kZero);
+
+        // (AssetsTotal 4M - LossUnrealized 2M) * 1 share / 4M shares = 0.5,
+        // rounds down to zero drops.
+        auto const shareAsset = vaultSle->at(sfShareMPTID);
+        STAmount const oneShare{MPTIssue{shareAsset}, Number(1)};
+
+        env(v.withdraw({.depositor = lender, .id = broker.vaultKeylet().key, .amount = oneShare}),
+            Ter(fixed ? tecPRECISION_LOSS : tecINVARIANT_FAILED));
+        env.close();
+
+        // Same bug, IOU asset. Needs a 2nd, minimal depositor: a sole
+        // shareholder would waive the loss subtraction (fixCleanup3_2_0),
+        // returning full value instead of zero.
+        {
+            Account const issuer{"issuer"};
+            Account const iouLender{"iouLender"};
+            Account const iouDepositorB{"iouDepositorB"};
+            Account const iouBorrower{"iouBorrower"};
+
+            env.fund(XRP(10'000'000), issuer, iouLender, iouDepositorB, iouBorrower);
+            env.close();
+
+            PrettyAsset const iouAsset = issuer[iouCurrency_];
+            env(trust(iouLender, iouAsset(10'000'000)));
+            env(trust(iouDepositorB, iouAsset(10'000'000)));
+            env(trust(iouBorrower, iouAsset(10'000'000)));
+            // iouLender funds the vault deposit and the broker's cover deposit.
+            env(pay(issuer, iouLender, iouAsset(9'000'000)));
+            env(pay(issuer, iouDepositorB, iouAsset(1)));
+            env.close();
+
+            // No management fee -> LossUnrealized ends up == AssetsTotal.
+            auto const iouBroker = createVaultAndBroker(
+                env,
+                iouAsset,
+                iouLender,
+                {.vaultDeposit = 3'999'999,
+                 .debtMax = 4'000'000,
+                 .coverDeposit = 4'000'000,
+                 .managementFeeRate = TenthBips16{0}});
+
+            env(v.deposit(
+                {.depositor = iouDepositorB,
+                 .id = iouBroker.vaultKeylet().key,
+                 .amount = iouAsset(1)}));
+            env.close();
+
+            auto const iouBrokerSle = env.le(iouBroker.brokerKeylet());
+            if (!BEAST_EXPECT(iouBrokerSle))
+                return;
+            auto const iouLoanKeylet = keylet::loan(
+                iouBroker.brokerID, SeqProxy::rawSequence(iouBrokerSle->at(sfLoanSequence)));
+
+            // Draw the entire vault out as a single loan.
+            env(set(iouBorrower, iouBroker.brokerID, Number{4'000'000}),
+                Sig(sfCounterpartySignature, iouLender),
+                kPaymentTotal(2),
+                kPaymentInterval(600),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            env(manage(iouLender, iouLoanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+
+            auto const iouVaultSle = env.le(iouBroker.vaultKeylet());
+            if (!BEAST_EXPECT(iouVaultSle))
+                return;
+            BEAST_EXPECT(iouVaultSle->at(sfLossUnrealized) == iouVaultSle->at(sfAssetsTotal));
+
+            auto const iouShareAsset = iouVaultSle->at(sfShareMPTID);
+            STAmount const oneIouShare{MPTIssue{iouShareAsset}, Number(1)};
+
+            auto const iouLenderBalanceBefore = env.balance(iouLender, iouAsset);
+            auto const iouVaultAvailableBefore = iouVaultSle->at(sfAssetsAvailable);
+            // Env::balance can't be used for shares: it resolves the issuer
+            // name, and the share issuer is the vault pseudo-account, which
+            // Env doesn't know.
+            auto const lenderShares = [&]() -> std::uint64_t {
+                auto const sle = env.le(keylet::mptoken(iouShareAsset, iouLender.id()));
+                return sle ? sle->at(sfMPTAmount) : 0;
+            };
+            auto const iouLenderSharesBefore = lenderShares();
+            auto const iouIssuanceBefore = env.le(keylet::mptokenIssuance(iouShareAsset));
+            if (!BEAST_EXPECT(iouIssuanceBefore))
+                return;
+            auto const iouSharesOutstandingBefore = iouIssuanceBefore->at(sfOutstandingAmount);
+            env(v.withdraw(
+                    {.depositor = iouLender,
+                     .id = iouBroker.vaultKeylet().key,
+                     .amount = oneIouShare}),
+                fixed ? Ter(tesSUCCESS) : Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            if (fixed)
+            {
+                // Confirm this was a true zero-value transfer: balances
+                // unchanged even though a share was burned.
+                BEAST_EXPECT(env.balance(iouLender, iouAsset) == iouLenderBalanceBefore);
+                BEAST_EXPECT(lenderShares() == iouLenderSharesBefore - 1);
+                auto const iouIssuanceAfter = env.le(keylet::mptokenIssuance(iouShareAsset));
+                if (BEAST_EXPECT(iouIssuanceAfter))
+                {
+                    BEAST_EXPECT(
+                        iouIssuanceAfter->at(sfOutstandingAmount) ==
+                        iouSharesOutstandingBefore - 1);
+                }
+                auto const iouVaultAfter = env.le(iouBroker.vaultKeylet());
+                if (BEAST_EXPECT(iouVaultAfter))
+                {
+                    BEAST_EXPECT(iouVaultAfter->at(sfAssetsAvailable) == iouVaultAvailableBefore);
+                }
+            }
+        }
+    }
+
+    // Companion to the Vault_test dust-debit tests, which use a single
+    // depositor so AssetsTotal == AssetsAvailable and both debitIsNonZeroDust
+    // operands in VaultWithdraw::doApply trip together. Here a loan draws
+    // almost the entire vault, leaving AssetsTotal (1e7) far above
+    // AssetsAvailable (100): redeeming 1 share moves 1e-10 assets, which is
+    // dust against AssetsTotal but representable against AssetsAvailable, so
+    // the AssetsTotal operand alone carries the rejection.
+    void
+    testBugVaultWithdrawDustVsAssetsTotal(FeatureBitset features)
+    {
+        testcase("bug: VaultWithdraw dust debit vs AssetsTotal only");
+
+        using namespace jtx;
+        using namespace loan;
+
+        bool const fixed = features[fixCleanup3_4_0];
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), issuer, lender, borrower);
+        env.close();
+
+        PrettyAsset const iouAsset = issuer[iouCurrency_];
+        env(trust(lender, iouAsset(100'000'000)));
+        env(trust(borrower, iouAsset(100'000'000)));
+        env(pay(issuer, lender, iouAsset(20'000'000)));
+        env.close();
+
+        // Scale 10 so 1 share is worth 1e-10 assets against the 1e7 pool.
+        auto const broker = createVaultAndBroker(
+            env,
+            iouAsset,
+            lender,
+            {.vaultDeposit = 10'000'000,
+             .debtMax = 10'000'000,
+             .coverDeposit = 1'000'000,
+             .vaultScale = 10});
+
+        // Draw all but 100 units: AssetsAvailable drops to 100 while
+        // AssetsTotal stays at 1e7 (the loan is still an asset of the vault).
+        env(set(borrower, broker.brokerID, Number{9'999'900}),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(2),
+            kPaymentInterval(600),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        BEAST_EXPECT(vaultSle->at(sfAssetsTotal) == Number{10'000'000});
+        BEAST_EXPECT(vaultSle->at(sfAssetsAvailable) == Number{100});
+
+        // 1 share redeems 1e7 * 1 / 1e17 = 1e-10 assets. Subtracting that
+        // from AssetsTotal needs 18 significant digits and canonicalizes
+        // straight back to 1e7 (no-op), while AssetsAvailable would become
+        // 99.9999999999 — perfectly representable.
+        auto const shareAsset = vaultSle->at(sfShareMPTID);
+        STAmount const oneShare{MPTIssue{shareAsset}, Number(1)};
+
+        Vault const v{env};
+        env(v.withdraw({.depositor = lender, .id = broker.vaultKeylet().key, .amount = oneShare}),
+            Ter(fixed ? tecPRECISION_LOSS : tecINVARIANT_FAILED));
+        env.close();
+    }
+
     // A near-zero interest rate on a 100 USD loan
     // produces total interest of ~6 units at loanScale -9. Numerical error
     // in the amortization formula pushes the theoretical principal above
@@ -1194,6 +1447,10 @@ private:
             testYieldTheftRounding(flags);
         testBugOverpaymentPrincipalChange();
         testBugOverpayUnroundedAmount();
+        testBugVaultWithdrawFixedSharesRoundsToZero(all_ - fixCleanup3_4_0);
+        testBugVaultWithdrawFixedSharesRoundsToZero(all_);
+        testBugVaultWithdrawDustVsAssetsTotal(all_ - fixCleanup3_4_0);
+        testBugVaultWithdrawDustVsAssetsTotal(all_);
         testBugInterestDueDeltaCrash();
         testMultiLoanDefaultDriftFixVsLegacy(all_);
     }
