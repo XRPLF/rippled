@@ -2864,9 +2864,11 @@ protected:
                     // within each payment interval, so the loan is never
                     // late here; skip the impair rather than perturb the
                     // payment schedule.
-                    bool const impairAllowed = canImpairLoan(env, broker, state) &&
+                    auto const loanSle = env.le(loanKeylet);
+                    bool const impairAllowed = BEAST_EXPECT(loanSle) &&
+                        canImpairLoan(env, broker, state) &&
                         (!env.current()->rules().enabled(fixCleanup3_4_0) ||
-                         isPaymentLate(*env.current(), env.le(loanKeylet)));
+                         isPaymentLate(*env.current(), loanSle));
                     if (impairAllowed)
                     {
                         // Making a payment will unimpair the loan
