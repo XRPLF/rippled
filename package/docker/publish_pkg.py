@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Publish the packages built by build_pkg.py to the XRPLF repositories on Nexus.
+"""Publish built DEB and RPM packages to the XRPLF repositories on Nexus.
+
+Takes packages and a channel, and nothing else, so it publishes whatever built
+them; see package/README.md, "Publishing from other repositories".
 
 RPMs are uploaded to the hosted repository, but yum clients install from the
 'rpm-<channel>' group repository in front of it, which serves signed metadata.

@@ -6,13 +6,13 @@ on:
       - develop
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - "package/Dockerfile"
-      - "package/install-packaging-tools.sh"
+      - "bin/install-packaging-tools.sh"
+      - "package/docker/**"
   pull_request:
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - "package/Dockerfile"
-      - "package/install-packaging-tools.sh"
+      - "bin/install-packaging-tools.sh"
+      - "package/docker/**"
   workflow_dispatch:
 
 concurrency:
@@ -44,6 +44,6 @@ jobs:
     uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@65d5a0bd72be4ecea95cff0673a6e0672ab5243a
     with:
       image_name: xrpld/packaging-${{ matrix.distro.name }}
-      dockerfile: package/Dockerfile
+      dockerfile: package/docker/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
       push: ${{ github.event_name == 'push' }}

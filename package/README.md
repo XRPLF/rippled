@@ -10,7 +10,9 @@ a build configured with `-Dvalidator_keys=ON`.
 package/
   build_pkg.py        Staging and build script (called by the CMake `package` target and CI)
   sign_rpm.py         Signs the built RPMs (called by CI when publishing)
-  publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI)
+  docker/
+    Dockerfile          Packaging image, built by `build-packaging-images.yml`; installs its tooling with `bin/install-packaging-tools.sh`
+    publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
   rpm/
     xrpld.spec      RPM spec
   debian/           Debian control files (control, rules, copyright, xrpld.docs, xrpld.links, source/format)
@@ -175,6 +177,12 @@ Nexus owns the repository metadata; nothing here indexes anything. Worth knowing
   POST and the yum PUT replace an existing asset.
 - The `develop` repositories gain a package per push, so they need a cleanup
   policy to stay bounded; tagged channels publish each version once.
+
+### Publishing from other repositories
+
+`publish_pkg.py` knows nothing about `xrpld`, so the packaging image
+installs it at `/usr/local/bin/publish_pkg.py` for other XRPLF repositories that
+build their packages elsewhere.
 
 ## How `build_pkg.py` works
 
