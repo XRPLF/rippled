@@ -473,11 +473,16 @@ async def validate_spans(
     # function. Note the tag-values API is not service-scoped, so in a stack
     # where something other than xrpld also sent traces this list would be a
     # superset; on the harness only xrpld exports spans.
+    #
+    # The tag is the bare intrinsic `name`, NOT `span.name`. A span's name is a
+    # TraceQL intrinsic, not a span-scoped attribute, so `span.name` resolves to
+    # an attribute nothing sets and Tempo answers 200 with an empty tagValues
+    # list -- indistinguishable from an empty backend, which is how the wrong
+    # tag went unnoticed. Verified against tempo 2.9.4 holding one span:
+    # `span.name` -> {"tagValues":[]}, `name` -> that span's name.
     emitted_span_names: list[str] = []
     try:
-        async with session.get(
-            f"{tempo_url}/api/v2/search/tag/span.name/values"
-        ) as resp:
+        async with session.get(f"{tempo_url}/api/v2/search/tag/name/values") as resp:
             ops_data = await resp.json()
             tag_values = ops_data.get("tagValues", [])
             emitted_span_names = [tv.get("value", "") for tv in tag_values]
