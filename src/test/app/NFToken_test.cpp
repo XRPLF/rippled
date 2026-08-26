@@ -29,6 +29,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -6350,7 +6351,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Run `verifyMeta` against the metadata of the most recent
         // transaction as reported by the `tx`, `ledger` and `account_tx`
         // RPCs, so that the synthetic fields are checked in every response
-        // that carries them.
+        // that carries them. Runs under both api_version 1 (`tx`/`meta`)
+        // and the latest api_version (`tx_json`/synthetic fields alongside
+        // it), since the two versions place fields differently.
         auto verifyMetaInAllResponses = [&](auto verifyMeta) {
             // Get the hash for the most recent transaction.
             std::string const txHash{
@@ -6358,52 +6361,62 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             env.close();
 
-            // Test 1: Check tx RPC response
-            json::Value const txResult = env.rpc("tx", txHash)[jss::result];
-            verifyMeta(txResult[jss::meta]);
-
-            // Test 2: Check ledger RPC response with expanded transactions
-            json::Value ledgerParams;
-            ledgerParams[jss::ledger_index] = txResult[jss::ledger_index].asUInt();
-            ledgerParams[jss::transactions] = true;
-            ledgerParams[jss::expand] = true;
-
-            auto const ledgerResult = env.rpc("json", "ledger", to_string(ledgerParams));
-            auto const& ledgerTx = ledgerResult[jss::result][jss::ledger][jss::transactions][0u];
-
-            // Verify transaction hash matches
-            BEAST_EXPECT(getHash(ledgerTx) == txHash);
-
-            if (auto const* meta = getMeta(ledgerTx); BEAST_EXPECT(meta != nullptr))
-                verifyMeta(*meta);
-
-            // Test 3: Check account_tx RPC response
-            // The transaction is not necessarily alice's, so query account_tx
-            // for the account that actually submitted it.
-            json::Value accountTxParams;
-            accountTxParams[jss::account] = txResult.isMember(jss::tx_json)
-                ? txResult[jss::tx_json][jss::Account].asString()
-                : txResult[jss::Account].asString();
-
-            auto const accountTxResult = env.rpc("json", "account_tx", to_string(accountTxParams));
-
-            // account_tx ordering is not guaranteed, so find our transaction
-            // by hash rather than assuming it is the most recent one.
-            json::Value const* accountTx = nullptr;
-            for (auto const& entry : accountTxResult[jss::result][jss::transactions])
+            for (unsigned const apiVersion :
+                 {unsigned{rpc::kApiMinimumSupportedVersion},
+                  unsigned{rpc::kApiMaximumSupportedVersion}})
             {
-                if (getHash(entry) == txHash)
+                // Test 1: Check tx RPC response
+                json::Value const txResult = env.rpc(apiVersion, "tx", txHash)[jss::result];
+                verifyMeta(txResult[jss::meta]);
+
+                // Test 2: Check ledger RPC response with expanded
+                // transactions
+                json::Value ledgerParams;
+                ledgerParams[jss::ledger_index] = txResult[jss::ledger_index].asUInt();
+                ledgerParams[jss::transactions] = true;
+                ledgerParams[jss::expand] = true;
+
+                auto const ledgerResult =
+                    env.rpc(apiVersion, "json", "ledger", to_string(ledgerParams));
+                auto const& ledgerTx =
+                    ledgerResult[jss::result][jss::ledger][jss::transactions][0u];
+
+                // Verify transaction hash matches
+                BEAST_EXPECT(getHash(ledgerTx) == txHash);
+
+                if (auto const* meta = getMeta(ledgerTx); BEAST_EXPECT(meta != nullptr))
+                    verifyMeta(*meta);
+
+                // Test 3: Check account_tx RPC response
+                // The transaction is not necessarily alice's, so query
+                // account_tx for the account that actually submitted it.
+                json::Value accountTxParams;
+                accountTxParams[jss::account] = txResult.isMember(jss::tx_json)
+                    ? txResult[jss::tx_json][jss::Account].asString()
+                    : txResult[jss::Account].asString();
+
+                auto const accountTxResult =
+                    env.rpc(apiVersion, "json", "account_tx", to_string(accountTxParams));
+
+                // account_tx ordering is not guaranteed, so find our
+                // transaction by hash rather than assuming it is the most
+                // recent one.
+                json::Value const* accountTx = nullptr;
+                for (auto const& entry : accountTxResult[jss::result][jss::transactions])
                 {
-                    accountTx = &entry;
-                    break;
+                    if (getHash(entry) == txHash)
+                    {
+                        accountTx = &entry;
+                        break;
+                    }
                 }
+
+                if (!BEAST_EXPECT(accountTx != nullptr))
+                    continue;
+
+                if (auto const* meta = getMeta(*accountTx); BEAST_EXPECT(meta != nullptr))
+                    verifyMeta(*meta);
             }
-
-            if (!BEAST_EXPECT(accountTx != nullptr))
-                return;
-
-            if (auto const* meta = getMeta(*accountTx); BEAST_EXPECT(meta != nullptr))
-                verifyMeta(*meta);
         };
 
         // Verify `nftoken_id` value equals to the NFTokenID that was
@@ -6461,20 +6474,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
         auto verifyNFTokenOfferID = [&](uint256 const& offerID) {
-            // Get the hash for the most recent transaction.
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            verifyMetaInAllResponses([&](json::Value const& meta) {
+                // Expect offer_id field and verify the value
+                if (!BEAST_EXPECT(meta.isMember(jss::offer_id)))
+                    return;
 
-            env.close();
-            json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
-
-            // Expect offer_id field and verify the value
-            if (!BEAST_EXPECT(meta.isMember(jss::offer_id)))
-                return;
-
-            uint256 metaOfferID;
-            BEAST_EXPECT(metaOfferID.parseHex(meta[jss::offer_id].asString()));
-            BEAST_EXPECT(metaOfferID == offerID);
+                uint256 metaOfferID;
+                BEAST_EXPECT(metaOfferID.parseHex(meta[jss::offer_id].asString()));
+                BEAST_EXPECT(metaOfferID == offerID);
+            });
         };
 
         // Check new fields in tx meta when for all NFTtransactions

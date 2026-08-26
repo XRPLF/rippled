@@ -4,7 +4,8 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
+#include <xrpl/protocol/NFTokenID.h>
+#include <xrpl/protocol/NFTokenOfferID.h>
 
 #include <memory>
 
@@ -18,7 +19,8 @@ insertAllSyntheticInJson(
     TxMeta const& transactionMeta)
 {
     insertDeliveredAmount(metadata, ledger, transaction, transactionMeta);
-    insertNFTSyntheticInJson(metadata, transaction, transactionMeta);
+    insertNFTokenID(metadata, transaction, transactionMeta);
+    insertNFTokenOfferID(metadata, transaction, transactionMeta);
     insertMPTokenIssuanceID(metadata, transaction, transactionMeta);
 }
 
@@ -30,7 +32,8 @@ insertAllSyntheticInJson(
     TxMeta const& transactionMeta)
 {
     insertDeliveredAmount(metadata, context, transaction, transactionMeta);
-    insertNFTSyntheticInJson(metadata, transaction, transactionMeta);
+    insertNFTokenID(metadata, transaction, transactionMeta);
+    insertNFTokenOfferID(metadata, transaction, transactionMeta);
     insertMPTokenIssuanceID(metadata, transaction, transactionMeta);
 }
 
