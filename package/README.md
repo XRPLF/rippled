@@ -23,16 +23,16 @@ package/
 
 ## Prerequisites
 
-Packaging targets and their container images are declared in
-[`.github/scripts/strategy-matrix/linux.json`](../.github/scripts/strategy-matrix/linux.json)
-under `package_configs`, one entry per distro. Today only `linux/amd64` is
-emitted. Each entry pins its full container image in an `image` field; to move
-to a new image, edit that field and both CI and local builds pick it up. The
-entry also declares the format that image builds in a `package_type` field,
-which CI passes to `build_pkg.py` as `--package-type`; the two have to stay in
-step.
+Packaging is declared on the build configs themselves, in
+[`.github/scripts/strategy-matrix/linux.json`](../.github/scripts/strategy-matrix/linux.json):
+a config that is also packaged carries a `package` map, so its binaries and its
+packaging job cannot drift apart. Today only `linux/amd64` is emitted. The map
+pins the full container image in `image` — edit that field to move to a new
+image and both CI and local builds pick it up — and names the format that image
+builds in `type`, which CI passes to `build_pkg.py` as `--package-type`; the two
+have to stay in step.
 
-| Package type | Image (`package_configs.<distro>[].image` in `linux.json`) | Tools required                                      |
+| Package type | Image (`configs.<distro>[].package.image` in `linux.json`) | Tools required                                      |
 | ------------ | ---------------------------------------------------------- | --------------------------------------------------- |
 | RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`, `rpmsign`                               |
 | DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, debhelper with compat level 13 |
@@ -50,19 +50,20 @@ To print the full packaging matrix (artifact names and images) for the current
 
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
 `reusable-package.yml`. That workflow generates its own packaging matrix from
-`package_configs` in `linux.json` (via `generate.py --packaging`) and fans out
-one job per distro. Each job downloads the pre-built `xrpld` and `validator-keys`
-binary artifacts and runs in that distro's container, building the format its
-`package_type` declares. The packaging script derives the package version from
-the downloaded binary's `xrpld --version` output; no CMake configure or build
-step is needed inside the packaging job.
+the configs that carry a `package` map (via `generate.py --packaging`) and fans
+out one job per distro. Each job downloads the pre-built `xrpld` and
+`validator-keys` binary artifacts and runs in that distro's container, building
+the format `package.type` declares. The packaging script derives the package
+version from the downloaded binary's `xrpld --version` output; no CMake
+configure or build step is needed inside the packaging job.
 
-The binaries come from the `debian` and `rhel` build configurations in
-`linux.json`'s `configs` section, which pass `-Dvalidator_keys=ON` so that the
+The binaries come from the `debian` and `rhel` build configs themselves — the
+ones carrying the `package` map — which pass `-Dvalidator_keys=ON` so that the
 build job produces `validator-keys` next to `xrpld` and uploads it as the
-`validator-keys-<config name>` artifact. The packaging entry for a distro names
-both artifacts (`xrpld_artifact_name` and `validator_keys_artifact_name`), so a
-packaged configuration must keep `-Dvalidator_keys=ON`.
+`validator-keys-<config name>` artifact. The packaging matrix names both
+artifacts (`xrpld_artifact_name` and `validator_keys_artifact_name`) after that
+same config, so a packaged config must keep `-Dvalidator_keys=ON`. Those configs
+are not `minimal`, so `on-pr.yml` only packages once a PR runs the full matrix.
 
 `validator-keys` is fetched from an exact commit pinned in
 [`cmake/XrplValidatorKeys.cmake`](../cmake/XrplValidatorKeys.cmake), so a given
@@ -75,10 +76,10 @@ With `xrpld` and `validator-keys` binaries already built at `build/xrpld` and
 The image tag is derived from `linux.json` so you don't need to hardcode a SHA.
 
 ```bash
-# From the repo root. Each distro's container image is the `image` field of its
-# package_configs entry in linux.json. Example for the rpm-producing image (use
-# .package_configs.debian[0].image and --package-type deb for the other one):
-IMAGE=$(jq -r '.package_configs.rhel[0].image' .github/scripts/strategy-matrix/linux.json)
+# From the repo root. Each distro's container image is the `package.image` field
+# of its config in linux.json. Example for the rpm-producing image (use
+# .configs.debian[0].package.image and --package-type deb for the other one):
+IMAGE=$(jq -r '.configs.rhel[0].package.image' .github/scripts/strategy-matrix/linux.json)
 
 PKG_RELEASE=1
 
@@ -86,7 +87,10 @@ docker run --rm \
     -v "$(pwd):/src" \
     -w /src \
     "${IMAGE}" \
-    ./package/build_pkg.py --package-type rpm --pkg-release "${PKG_RELEASE}"
+    ./package/build_pkg.py \
+    --package-type rpm \
+    --pkg-release "${PKG_RELEASE}" \
+    --channel UNRELEASED
 
 # Output:
 #   build/debbuild/*.deb         (DEB + dbgsym; Debian names both .deb)
@@ -114,9 +118,9 @@ The `cmake/XrplPackaging.cmake` module defines the `package` target only if at
 least one of `rpmbuild` / `dpkg-buildpackage` is present and both the `xrpld` and
 `validator-keys` targets exist (`-Dxrpld=ON -Dvalidator_keys=ON`); the target
 builds both binaries before packaging, passing `--package-type deb` when
-`dpkg-buildpackage` is present and `rpm` otherwise. The packaging script installs to
-FHS-standard paths (`/usr/bin`, `/etc/xrpld`, etc.) regardless of
-`CMAKE_INSTALL_PREFIX`.
+`dpkg-buildpackage` is present and `rpm` otherwise, and `--channel UNRELEASED`.
+The packaging script installs to FHS-standard paths (`/usr/bin`, `/etc/xrpld`,
+etc.) regardless of `CMAKE_INSTALL_PREFIX`.
 
 The package version is not a CMake input on this path: `build_pkg.py` derives it
 from the just-built `xrpld` binary's `xrpld --version` output. The package
@@ -128,13 +132,13 @@ Packages are published to the XRPLF repositories on Sonatype Nexus at
 `https://packages.xrplf.org`. The `release-info` action decides the channel from
 the event, and `publish_pkg.py` maps that channel to its repositories:
 
-| Event                    | Version           | Channel        | DEB repository     | RPM upload repository     |
-| ------------------------ | ----------------- | -------------- | ------------------ | ------------------------- |
-| tag                      | `X.Y.Z`           | `stable`       | `deb-stable`       | `rpm-stable-hosted`       |
-| tag                      | `X.Y.Z-rcN`       | `unstable`     | `deb-unstable`     | `rpm-unstable-hosted`     |
-| tag                      | `X.Y.Z-bN`        | `experimental` | `deb-experimental` | `rpm-experimental-hosted` |
-| push to `develop`        | `xrpld --version` | `develop`      | `deb-develop`      | `rpm-develop-hosted`      |
-| tag, non-public codebase | _any_             | `private`      | `deb-private`      | `rpm-private-hosted`      |
+| Event                    | Version           | Channel   | DEB repository | RPM upload repository |
+| ------------------------ | ----------------- | --------- | -------------- | --------------------- |
+| tag                      | `X.Y.Z`           | `stable`  | `deb-stable`   | `rpm-stable-hosted`   |
+| tag                      | `X.Y.Z-rcN`       | `rc`      | `deb-rc`       | `rpm-rc-hosted`       |
+| tag                      | `X.Y.Z-bN`        | `beta`    | `deb-beta`     | `rpm-beta-hosted`     |
+| push to `develop`        | `xrpld --version` | `develop` | `deb-develop`  | `rpm-develop-hosted`  |
+| tag, non-public codebase | _any_             | `private` | `deb-private`  | `rpm-private-hosted`  |
 
 Only a tag names a channel — do not extend that to `develop`, where
 `BuildInfo.cpp`'s `versionString` moves through `-bN`, `-rcN` and even the final
@@ -207,9 +211,11 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 from the build host, so the RHEL image can track a newer release without
 changing what the packages claim to target.
 
-The Debian changelog entry carries the channel passed as `--channel`,
-defaulting to `unstable`. An unsupported pre-release, and build metadata on a
-final release such as `3.2.0+abc123`, are both rejected.
+The Debian changelog entry carries the channel passed as `--channel`, which
+only accepts the channels in the table above plus `UNRELEASED`, the Debian
+convention for a build that targets no channel at all — what local and CMake
+builds pass, since nothing publishes them. An unsupported pre-release, and
+build metadata on a final release such as `3.2.0+abc123`, are both rejected.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
@@ -220,8 +226,8 @@ The package format is `--package-type`, either `deb` or `rpm`. It is required,
 so a job never silently builds the wrong format for the image it runs in; the
 matching build tool still has to be on PATH.
 
-Every input is a named argument. CMake passes `--package-type`, `--build-dir`
-and `--pkg-release`; CI adds `--channel`. The repository root is not an argument
+Every input is a named argument, and every argument but `--build-dir` and
+`--pkg-release` is required. The repository root is not an argument
 at all: the script reads it from its own location. Only secrets stay in the
 environment, so they never reach the process list -- `PKG_SIGNING_KEY` for
 `sign_rpm.py`, and `NEXUS_USERNAME` / `NEXUS_PASSWORD` for `publish_pkg.py`.

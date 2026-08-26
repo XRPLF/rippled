@@ -23,6 +23,19 @@ _SANITIZER_SUFFIX: dict[str, str] = {
 }
 
 
+def config_name(
+    distro: str,
+    compiler: str,
+    build_type: str,
+    arch: str,
+    suffix: str = "",
+    sanitizer: str = "",
+) -> str:
+    """Name a config. Its artifacts are named after it, so packaging reuses this."""
+    parts = [s for s in [suffix, _SANITIZER_SUFFIX.get(sanitizer, "")] if s]
+    return "-".join([f"{distro}-{compiler}-{build_type.lower()}-{arch}", *parts])
+
+
 def get_cmake_args(build_type: str, extra_args: str) -> str:
     """Get the full list of CMake arguments for a config."""
     args = _BASE_CMAKE_ARGS.copy()
@@ -37,17 +50,27 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
 
 
 # Every config must declare 'minimal'. Minimal configs form the reduced matrix
-# built for pull requests by default; the full matrix adds the rest. Packaging
-# configs declare it too, but packaging is gated in the workflow, not by it.
+# built for pull requests by default; the full matrix adds the rest.
 #
-# Configs may also opt into 'benchmark' to smoke-run the benchmarks. Note that
-# the flag applies to every entry a config expands into, so only set it on
-# configs that expand to a single combination.
+# Configs may also opt into 'benchmark' to smoke-run the benchmarks, or carry a
+# 'package' map to be packaged as well. Note that either applies to every entry
+# a config expands into, so only set them on configs that expand to a single
+# combination.
+
+
+@dataclasses.dataclass
+class PackageConfig:
+    """The 'package' map of a config whose binaries are also packaged."""
+
+    type: str  # "deb" or "rpm"; has to match what the image provides
+    # The packaging container image: a vanilla distro image, not the nix image
+    # the config itself builds in.
+    image: str
 
 
 @dataclasses.dataclass
 class LinuxConfig:
-    """One entry in linux.json's 'configs' or 'package_configs' arrays."""
+    """One entry in a linux.json 'configs' array."""
 
     compiler: list[str]
     build_type: list[str]
@@ -57,9 +80,11 @@ class LinuxConfig:
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
     extra_cmake_args: str = ""
-    # The two below are only used by package_configs entries.
-    image: str = ""
-    package_type: str = ""  # "deb" or "rpm"; has to match what image provides
+    package: PackageConfig | None = None  # set to also package this config
+
+    def __post_init__(self) -> None:
+        if isinstance(self.package, dict):
+            self.package = PackageConfig(**self.package)
 
 
 @dataclasses.dataclass
@@ -68,22 +93,16 @@ class LinuxFile:
 
     image_tag: str
     configs: dict[str, list[LinuxConfig]]  # distro → configs
-    package_configs: dict[str, list[LinuxConfig]]  # distro → packaging configs
 
     @classmethod
     def load(cls, path: Path) -> "LinuxFile":
         data = json.loads(path.read_text())
-
-        def parse(section: dict) -> dict[str, list[LinuxConfig]]:
-            return {
-                distro: [LinuxConfig(**c) for c in cfgs]
-                for distro, cfgs in section.items()
-            }
-
         return cls(
             image_tag=data["image_tag"],
-            configs=parse(data["configs"]),
-            package_configs=parse(data.get("package_configs", {})),
+            configs={
+                distro: [LinuxConfig(**c) for c in cfgs]
+                for distro, cfgs in data["configs"].items()
+            },
         )
 
 
@@ -199,13 +218,9 @@ def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
                 effective_sanitizers,
                 effective_archs.items(),
             ):
-                name = f"{distro}-{compiler}-{build_type.lower()}-{arch}"
-                suffix_parts = [
-                    s for s in [cfg.suffix, _SANITIZER_SUFFIX.get(sanitizer, "")] if s
-                ]
-                if suffix_parts:
-                    name += "-" + "-".join(suffix_parts)
-
+                name = config_name(
+                    distro, compiler, build_type, arch, cfg.suffix, sanitizer
+                )
                 entries.append(
                     MatrixEntry(
                         config_name=name,
@@ -225,27 +240,33 @@ def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
 
 
 def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
-    """Generate the packaging matrix from a LinuxFile's package_configs section.
+    """Generate the packaging matrix from the configs that carry a 'package' map.
 
-    Packaging uses vanilla distro images (debian:bookworm, almalinux:9) instead of
-    the nix-based build images, because deb/rpm tooling (debhelper, rpm-build)
-    is taken from the distro's archive rather than from nixpkgs. Each config
-    entry carries its own 'image'.
+    Packaging consumes the binaries that config's build job uploaded, so the
+    artifact names come from the same config name, and a packaged config is one
+    that passes -Dvalidator_keys=ON.
 
-    The artifact names must match what the build job uploads: one artifact per
-    binary, each named after the build config.
+    Packaging itself runs in vanilla distro images (debian:trixie, almalinux:10)
+    instead of the nix-based build images, because deb/rpm tooling (debhelper,
+    rpm-build) is taken from the distro's archive rather than from nixpkgs.
     """
     entries = []
-    for distro, configs in linux.package_configs.items():
+    for distro, configs in linux.configs.items():
         for cfg in configs:
-            for compiler, build_type in itertools.product(cfg.compiler, cfg.build_type):
-                config_name = f"{distro}-{compiler}-{build_type.lower()}-amd64"
+            if cfg.package is None:
+                continue
+            for compiler, build_type, arch in itertools.product(
+                cfg.compiler, cfg.build_type, cfg.arch
+            ):
+                # The packaging workflow hardcodes an amd64 runner.
+                assert arch == "amd64", f"cannot package {distro} on {arch}"
+                name = config_name(distro, compiler, build_type, arch, cfg.suffix)
                 entries.append(
                     PackagingEntry(
-                        xrpld_artifact_name=f"xrpld-{config_name}",
-                        validator_keys_artifact_name=f"validator-keys-{config_name}",
-                        image=cfg.image,
-                        package_type=cfg.package_type,
+                        xrpld_artifact_name=f"xrpld-{name}",
+                        validator_keys_artifact_name=f"validator-keys-{name}",
+                        image=cfg.package.image,
+                        package_type=cfg.package.type,
                     )
                 )
 
