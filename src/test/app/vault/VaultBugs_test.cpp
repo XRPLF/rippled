@@ -29,6 +29,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <chrono>
 #include <cstdint>
@@ -1377,7 +1378,9 @@ private:
         int const holderDeposit = 10'000 - otherDeposit;
         env(pay(issuer, holder, usd(holderDeposit)));
         if (otherDeposit != 0)
+        {
             env(pay(issuer, other, usd(otherDeposit)));
+        }
         env.close();
 
         Vault const vault{env};
@@ -1394,8 +1397,10 @@ private:
         env(vault.deposit(
             {.depositor = holder, .id = vaultKeylet.key, .amount = usd(holderDeposit)}));
         if (otherDeposit != 0)
+        {
             env(vault.deposit(
                 {.depositor = other, .id = vaultKeylet.key, .amount = usd(otherDeposit)}));
+        }
         env.close();
 
         vault.closePastSubscription(subscriptionDate);
@@ -1451,27 +1456,31 @@ private:
 
         auto runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
             Env env(*this, features);
-            auto const setup = makeImpairedLoanVault(env, 0);
-            if (!BEAST_EXPECT(setup))
+            auto const maybeSetup = makeImpairedLoanVault(env, 0);
+            if (!maybeSetup)
+            {
+                BEAST_EXPECT(false);
                 return;
+            }
+            ImpairedLoanVault const& setup = *maybeSetup;
 
-            auto const tokenBefore = env.le(keylet::mptoken(setup->shareId, setup->holder.id()));
+            auto const tokenBefore = env.le(keylet::mptoken(setup.shareId, setup.holder.id()));
             if (!BEAST_EXPECT(tokenBefore))
                 return;
             std::uint64_t const sharesBefore = tokenBefore->getFieldU64(sfMPTAmount);
 
-            env(clawbackHolder(*setup, setup->usd(19'000).value()), Ter(expected));
+            env(clawbackHolder(setup, setup.usd(19'000).value()), Ter(expected));
             env.close();
             if (expected != tesSUCCESS)
                 return;
 
-            auto const vaultAfter = env.le(setup->vaultKeylet);
+            auto const vaultAfter = env.le(setup.vaultKeylet);
             if (!BEAST_EXPECT(vaultAfter))
                 return;
-            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == setup->usd(0).value());
-            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == setup->usd(1'000).value());
-            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == setup->usd(1'000).value());
-            auto const tokenAfter = env.le(keylet::mptoken(setup->shareId, setup->holder.id()));
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == setup.usd(0).value());
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == setup.usd(1'000).value());
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == setup.usd(1'000).value());
+            auto const tokenAfter = env.le(keylet::mptoken(setup.shareId, setup.holder.id()));
             if (!BEAST_EXPECT(tokenAfter))
                 return;
             BEAST_EXPECT(tokenAfter->getFieldU64(sfMPTAmount) == sharesBefore / 10);
@@ -1486,12 +1495,16 @@ private:
         testcase("VaultClawback after impaired loan, non-sole holder");
         {
             Env env(*this, all_);
-            auto const setup = makeImpairedLoanVault(env, 1'000);
-            if (!BEAST_EXPECT(setup))
+            auto const maybeSetup = makeImpairedLoanVault(env, 1'000);
+            if (!maybeSetup)
+            {
+                BEAST_EXPECT(false);
                 return;
+            }
+            ImpairedLoanVault const& setup = *maybeSetup;
             // The waiver does not apply, so the holder's 9,000 shares are
             // still priced at the discounted rate and cannot cover 9,000.
-            env(clawbackHolder(*setup, setup->usd(9'000).value()), Ter(tecINSUFFICIENT_FUNDS));
+            env(clawbackHolder(setup, setup.usd(9'000).value()), Ter(tecINSUFFICIENT_FUNDS));
         }
     }
 
