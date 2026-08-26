@@ -25,10 +25,14 @@ was invoked with. Capture and comparison are profile-agnostic — they only read
 Prometheus — so all existing profiles (`full-validation`, `quick-smoke`, `stress`)
 continue to work unchanged.
 
-## Current state: 23 metrics gate, on a baseline captured 2026-08-24
+## Current state: 20 metrics gate, on a baseline captured 2026-08-26
 
-`baseline-timings.json` holds real captured values for the 23 keys the harness gates. The
-previous entries, captured on 2026-06-05, were voided into a placeholder first: they predated the
+`baseline-timings.json` holds real captured values for the 20 keys the harness gates, from CI run
+`32964262700` at `8418d474a7`, profile `full-validation`, window `3m`. It replaced a capture taken
+at `6a82fc6f37` that predated two workload changes — the removal of the refused path-finding RPC
+load (`59a0595a6e`) and everything after it — so its numbers described a workload the harness no
+longer runs. The entries before that, captured on 2026-06-05, were voided into a placeholder: they
+predated the
 spanmetrics ladder re-cut of 2026-08-04 (`3860c93db2`), which made every sub-millisecond quantile
 in that capture bucket-edge arithmetic rather than a latency (a p95 of `0.95` ms is `0.95 × 1 ms`).
 Because the comparator only flags a metric when the current value _exceeds_ the baseline, a
@@ -64,11 +68,17 @@ Two earlier generations of this bound were wrong, in opposite directions:
 | ------------------------------ | -------------------------------------------- | --------------------- | ---------------------------------------- |
 | flat                           | 10 ms `p50`/`p95`, 15 ms `p99`, 20000 us job | 5 / 28 keys           | 2 / 25 keys                              |
 | 2 × enclosing bucket width     | per metric                                   | 28 / 28 keys          | **21 / 25 keys**                         |
-| `hi_next − baseline` (current) | per metric                                   | 23 / 23 keys          | **0 / 23 keys**                          |
+| `hi_next − baseline` (current) | per metric                                   | 19 / 20 keys          | **0 / 20 keys**                          |
 
 The first two rows were measured when 28 and 25 keys were gated; the current row was re-measured
-over today's 23 by injecting a 10x regression into each gated key in turn against a real CI
-`timings.json`, which the gate flagged in all 23 cases. The zero in the last column is by
+over today's 20 by injecting a 10x regression into each gated key in turn against a real CI
+`timings.json`. The gate flagged 19. The exception is `job.acceptLedger.running.p95`, whose
+detection floor is 16.28x: 10x reaches 61429 us against a 100000 us trip point, and the gate first
+fires at 16.28x (measured — 16.2x passes, 16.28x fails). At **20x the sweep catches 20 of 20**. That
+is the ladder, not the rule; the key is listed under
+[weakly guarded](#which-keys-are-only-weakly-guarded) below. On the 2026-08-24 baseline the same key
+had a 5.74x floor and 10x did catch it, which is what a baseline refresh can silently do to
+sensitivity. The zero in the last column is by
 construction rather than by sampling: rule C in
 [`check_regression_bounds.py`](../../../../.github/scripts/telemetry/check_regression_bounds.py)
 fails the build unless every trip point is exactly `hi_next`, and a trip point at a bucket edge
@@ -94,26 +104,35 @@ signature described below.
 
 The guarantee costs sensitivity where the ladder is coarse: the detection floor is
 `hi_next / baseline`, so a baseline sitting just above an edge is guarded loosely. Measured over
-the current baseline the floor ranges 2.02x to 9.42x. Do **not** read these as guarded:
+the current baseline the floor ranges 2.21x to 16.28x. Do **not** read these as guarded:
 
-| key                               | baseline   | fires at  | floor |
-| --------------------------------- | ---------- | --------- | ----- |
-| `span.ledger.build.p50`           | 1.0612 ms  | 10 ms     | 9.42x |
-| `span.tx.process.p95`             | 0.7240 ms  | 5 ms      | 6.91x |
-| `span.tx.apply.p50`               | 0.7917 ms  | 5 ms      | 6.32x |
-| `span.rpc.ws_message.p95`         | 0.8443 ms  | 5 ms      | 5.92x |
-| `job.acceptLedger.running.p95`    | 17428.6 us | 100000 us | 5.74x |
-| `span.consensus.accept.p50`       | 1.7436 ms  | 10 ms     | 5.74x |
-| `span.consensus.ledger_close.p99` | 0.9314 ms  | 5 ms      | 5.37x |
-| `span.rpc.ws_message.p99`         | 0.9878 ms  | 5 ms      | 5.06x |
-| `span.tx.process.p99`             | 0.9945 ms  | 5 ms      | 5.03x |
+| key                               | baseline  | fires at  | floor  | limiting ladder step |
+| --------------------------------- | --------- | --------- | ------ | -------------------- |
+| `job.acceptLedger.running.p95`    | 6142.9 us | 100000 us | 16.28x | 25000 us → 100000 us |
+| `span.consensus.accept.p50`       | 0.5287 ms | 5 ms      | 9.46x  | 1 ms → 5 ms          |
+| `job.transaction.running.p95`     | 600.0 us  | 5000 us   | 8.33x  | 1000 us → 5000 us    |
+| `span.tx.process.p95`             | 0.6100 ms | 5 ms      | 8.20x  | 1 ms → 5 ms          |
+| `span.rpc.ws_message.p95`         | 0.6977 ms | 5 ms      | 7.17x  | 1 ms → 5 ms          |
+| `span.consensus.ledger_close.p95` | 0.7830 ms | 5 ms      | 6.39x  | 1 ms → 5 ms          |
+| `span.rpc.ws_message.p99`         | 0.9757 ms | 5 ms      | 5.12x  | 1 ms → 5 ms          |
 
-`span.ledger.build.p50` is the one that matters most: ledger construction is the hot path this
-gate exists to guard, and at a 9.42x floor it could get almost ten times slower and still pass.
-All nine are limited by two 5x-wide
-ladder steps, 1 ms → 5 ms and 5000 us → 25000 us. The fix is a 2 ms edge (ideally 3 ms as well) in
-the collector's spanmetrics `buckets` list plus the matching entries in `kMillisecondBuckets`, and
-a 10000 us edge in `kMicrosecondBuckets`. That work belongs to the branch that owns the ladders.
+`job.acceptLedger.running.p95` is the one that matters most, because it is the only gated key a
+10x regression does not catch (see the generation table above). Its floor moved there **in this
+refresh**, from 5.74x: the baseline fell from 17428.6 us to 6142.9 us while `hi_next` stayed at
+100000 us. It does **not** fire on any observed run — its worst reading is 0.16 of its trip point —
+so it stays gated, and the weak floor is recorded here so it is visible rather than surprising. The
+fix is a 2 ms edge (ideally 3 ms as well) in the collector's spanmetrics `buckets` list plus the
+matching entries in `kMillisecondBuckets`, and 2000 us plus 50000 us edges in `kMicrosecondBuckets`.
+That work belongs to the branch that owns the ladders.
+
+`span.tx.apply.p50` is absent from this table because it is **no longer gated at all** — see
+[what all five excluded keys have in common](#what-all-five-excluded-keys-have-in-common). Beyond
+its variance it had a second, independent problem: its baseline of `0.00597` ms sat inside the
+ladder's **first** bucket `(0, 0.01]`, so the reported figure was interpolation across that bucket,
+tracking the _fraction_ of applies finishing under 10 us rather than a latency — the same mechanism
+that disqualified `ledger.store` below. Rule E did not flag it, correctly: the value is not
+`quantile × first_edge` exactly, so some mass does sit above 0.01 ms. Restoring the key therefore
+needs a finer low-end ladder **as well as** a spread-aware baseline.
 
 ## Known exclusion: `ledger.store` is below the ladder's resolution
 
@@ -148,7 +167,7 @@ Measured across four CI runs:
 
 | key                               | baseline  | trip point | observed min | observed max | spread |
 | --------------------------------- | --------- | ---------- | ------------ | ------------ | ------ |
-| `span.ledger.validate.p50` (kept) | 0.0779 ms | 0.25 ms    | 0.0484 ms    | 0.0778 ms    | 1.6x   |
+| `span.ledger.validate.p50` (kept) | 0.0647 ms | 0.25 ms    | 0.0484 ms    | 0.0778 ms    | 1.6x   |
 | `span.ledger.validate.p95`        | 0.2404 ms | 0.5 ms     | 0.1281 ms    | 0.7500 ms    | 5.9x   |
 | `span.ledger.validate.p99`        | 1.0600 ms | 10 ms      | 0.3875 ms    | 25.8750 ms   | 66.8x  |
 
@@ -181,12 +200,60 @@ the bound is simply the wrong size and the gate reddens on a healthy run.
 
 **Before gating any key, check its observed maximum across several runs against its trip point
 (`baseline + bound`), and gate it only if the maximum stays below that with margin.** Spread alone
-proves nothing: `span.tx.apply.p50` swings 364x across runs (0.0064 → 2.3378 ms) and never fires,
-because its 5 ms trip point absorbs the whole range. It is spread **relative to the trip point**
-that decides. Measured over the runs behind this baseline, the worst surviving key reaches 0.67 of
-its trip point (`span.consensus.ledger_close.p95`) and the other 22 sit at or below 0.60 — the two
-excluded keys, at 1.50 and 2.59, were the only ones above 1.0. A key that fails this test is not
-fixed by widening its bound; exclude it and say why.
+proves nothing; it is spread **relative to the trip point** that decides. And because the trip
+point is derived from the baseline, a baseline that lands at the **low end** of a metric's own
+range shrinks that trip point without anything about the metric having changed.
+
+That is what the 2026-08-26 refresh did to three `p50` keys, and **all three are now excluded** —
+this rule being applied, not a new exception. Measured across the three CI runs `32862589645`,
+`32867433073` and `32964262700` (the last of which is this baseline):
+
+| key                               | bound     | trip point | observed max | max ÷ trip | spread |
+| --------------------------------- | --------- | ---------- | ------------ | ---------- | ------ |
+| `span.tx.apply.p50`               | 0.0440 ms | 0.05 ms    | 2.3378 ms    | **46.76x** | 391.8x |
+| `span.ledger.build.p50`           | 0.3849 ms | 0.5 ms     | 2.3826 ms    | **4.77x**  | 20.7x  |
+| `span.consensus.ledger_close.p50` | 0.0613 ms | 0.1 ms     | 0.2377 ms    | **2.38x**  | 6.1x   |
+
+Before the exclusion, replaying **either** older run against this baseline reported exactly those
+three and nothing else — and run `32867433073` carries the same post-path-finding-removal workload
+as the baseline itself, so the movement was metric variance, not a workload difference. Those two
+runs are what would have reddened CI. After the exclusion both replay clean.
+
+The evidence that settles it is `span.tx.apply.p50`'s own history. It read **0.7917 ms** in the
+previous baseline and **0.00597 ms** in this one — a 132x difference between two runs of the same
+workload. At the old value the identical `hi_next − baseline` rule produced a 4.21 ms bound whose
+5 ms trip point absorbed the entire range; at the new value it produces 0.0440 ms and cannot.
+Nothing about the metric changed. **Whether the gate functioned was decided by where in its own
+distribution the captured run happened to land** — which is not a threshold that needs tuning, it
+is a key that cannot be gated from a single-run baseline at all.
+
+So the remedy is the `excluded_keys` entry with the measurement behind it, exactly as
+`ledger.validate` p95 and p99 got — **not** a widened bound, and **not** re-baselining until a run
+lands favourably. A key that fails this test is never fixed by widening its bound. The remaining
+20 gated keys sit at or below 0.58 of their trip points, the worst being `span.consensus.accept.p50`.
+
+### What all five excluded keys have in common
+
+| key                               | trip point | observed max | mechanism                             |
+| --------------------------------- | ---------- | ------------ | ------------------------------------- |
+| `span.tx.apply.p50`               | 0.05 ms    | 2.3378 ms    | baseline in the ladder's first bucket |
+| `span.consensus.ledger_close.p50` | 0.1 ms     | 0.2377 ms    | baseline in a low bucket              |
+| `span.ledger.build.p50`           | 0.5 ms     | 2.3826 ms    | baseline in a low bucket              |
+| `span.ledger.validate.p95`        | 0.5 ms     | 0.7500 ms    | baseline in a low bucket              |
+| `span.ledger.validate.p99`        | 10 ms      | 25.8750 ms   | spread too large for any bound        |
+
+One invariant covers all five: **the observed maximum exceeds `baseline + bound`**, so an ordinary
+run clears the trip point with nothing having regressed. Two mechanisms produce it. Four of the five
+have a baseline sitting low in the ladder, where the derived bound is tiny because the bound _is_
+the distance to the next edge up. The fifth, `ledger.validate.p99`, has a comparatively generous
+8.94 ms bound and still fails, because a 66.8x spread reaches 25.875 ms against a 10 ms trip point.
+
+**The follow-up that would restore coverage**, stated rather than left implied: a baseline captured
+from a **single run** cannot support these keys, because one sample carries no information about
+spread and the bound is derived from that one sample alone. What would let them be gated again is a
+**multi-run baseline** — or a spread measurement captured alongside the baseline — so a bound can be
+sized against observed variance instead of against the ladder only. That is not implemented; it is
+the design change these five exclusions are waiting on.
 
 ## Bootstrapping the baseline
 

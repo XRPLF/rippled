@@ -300,6 +300,23 @@ def _log_query_window() -> dict[str, str]:
     }
 
 
+class TempoQueryError(RuntimeError):
+    """Tempo answered a query with a failure, as distinct from "nothing found".
+
+    The two must not be conflated. An empty search result and a 404 on a trace
+    id are legitimate answers meaning the data is not there; an HTTP 5xx, a 401
+    or a 400 mean the question was never answered, and reporting that as "0
+    traces" or "0 spans" turns a broken backend into a green-looking negative
+    result. Callers that loop over candidates catch absence and move on; this
+    exception is what they must NOT swallow.
+    """
+
+
+def _short_body(text: str, limit: int = 300) -> str:
+    """Collapse a response body to one bounded line, for a log or a message."""
+    return " ".join(text.split())[:limit] or "(empty body)"
+
+
 async def _tempo_search(
     session: aiohttp.ClientSession,
     tempo_url: str,
@@ -319,6 +336,19 @@ async def _tempo_search(
     """
     params = {"q": query, "limit": str(limit)}
     async with session.get(f"{tempo_url}/api/search", params=params) as resp:
+        # /api/search answers 200 with an empty (or absent) "traces" list when
+        # nothing matches, so there is no "legitimately absent" status to
+        # tolerate here: every non-200 is a real failure. Left unchecked,
+        # resp.json() on an error body yields a dict with no "traces" key and
+        # this returns [], which every caller reports as "no traces found" --
+        # indistinguishable from a healthy Tempo holding nothing. That is the
+        # same silent-failure shape as a span query that returned 200 with an
+        # empty list, and it must not be reproduced here.
+        if resp.status != 200:
+            raise TempoQueryError(
+                f"GET /api/search returned HTTP {resp.status}: "
+                f"{_short_body(await resp.text())}"
+            )
         data = await resp.json()
         return data.get("traces", [])
 
@@ -337,10 +367,36 @@ async def _tempo_get_trace(
         tempo_url: Tempo API base URL.
         trace_id:  Hex trace ID string.
 
+    A 404 means Tempo holds no such trace, which is returned as an empty list
+    rather than raised: see the note in the body. Any other non-200 raises
+    TempoQueryError.
+
     Returns:
-        Flat list of span dicts with 'name' and 'attributes' keys.
+        Flat list of span dicts with 'name' and 'attributes' keys. Empty when
+        Tempo has no trace with this id.
+
+    Raises:
+        TempoQueryError: Tempo answered with a status other than 200 or 404.
     """
     async with session.get(f"{tempo_url}/api/traces/{trace_id}") as resp:
+        # 404 is Tempo's answer for "no trace with that id", and for an id read
+        # out of a log line that is an ordinary outcome, not an error: the span
+        # may not have been exported yet, or its block may not be searchable.
+        # Every caller either loops over candidate ids or over several traces
+        # and relies on an empty list meaning "not this one", so a 404 must stay
+        # absent -- raising here would turn a normal miss into a check failure
+        # and abort the loop over the remaining candidates.
+        if resp.status == 404:
+            return []
+        # Anything else is a real failure. Unchecked, resp.json() on an error
+        # body yields a dict with no "batches" key, so this returned [] and the
+        # caller reported "0 spans" -- a backend fault laundered into a
+        # negative result.
+        if resp.status != 200:
+            raise TempoQueryError(
+                f"GET /api/traces/{trace_id} returned HTTP {resp.status}: "
+                f"{_short_body(await resp.text())}"
+            )
         data = await resp.json()
         spans: list[dict[str, Any]] = []
         for batch in data.get("batches", []):
@@ -1585,6 +1641,20 @@ async def _loki_json(
     """
     try:
         async with session.get(f"{loki_url}{path}", params=params or {}) as resp:
+            if resp.status != 200:
+                # Loki reports a rejected query as text/plain, so resp.json()
+                # would raise ContentTypeError and the log would carry a
+                # mimetype complaint instead of Loki's own explanation. Read
+                # the body and print it: a diagnostic that swallows the
+                # server's reason is worse than no diagnostic.
+                body = " ".join((await resp.text()).split())
+                logger.warning(
+                    "Loki diagnostic: GET %s returned HTTP %d: %s",
+                    path,
+                    resp.status,
+                    body[:500] or "(empty body)",
+                )
+                return None
             return await resp.json()
     except Exception as exc:  # noqa: BLE001 - diagnostic must never raise
         logger.warning("Loki diagnostic: GET %s failed: %s", path, exc)
@@ -1658,11 +1728,23 @@ async def _log_loki_diagnostics(session: aiohttp.ClientSession, loki_url: str) -
             "Loki diagnostic: service_name values: %s", ", ".join(found) or "(none)"
         )
 
+    # sum() is load-bearing, not cosmetic. The filelog receiver's regex_parser
+    # leaves message, timestamp, trace_id and span_id as log-record attributes,
+    # and Loki's OTLP path stores those as structured metadata, which joins the
+    # label set of a metric query. Because `message` and `timestamp` are unique
+    # per line, an unaggregated count_over_time returns ONE SERIES PER LOG LINE
+    # and blows past limits_config.max_query_series (500) at a few hundred
+    # lines: Loki answers HTTP 400 "maximum number of series (500) reached for
+    # a single query", both legs report "unavailable", and the diagnostic loses
+    # the one distinction it exists to draw. Aggregating collapses the result to
+    # a single series regardless of line count. An empty result still decodes to
+    # 0, so the deliberate "0 entries" versus "could not answer" split above is
+    # preserved.
     for label, query in (
-        ("selector only", f"count_over_time({LOG_STREAM_SELECTOR}{window})"),
+        ("selector only", f"sum(count_over_time({LOG_STREAM_SELECTOR}{window}))"),
         (
             "selector + line filter",
-            f"count_over_time({LOG_CORRELATION_QUERY} {window})",
+            f"sum(count_over_time({LOG_CORRELATION_QUERY} {window}))",
         ),
     ):
         total = await _loki_count(session, loki_url, query)
@@ -1673,6 +1755,71 @@ async def _log_loki_diagnostics(session: aiohttp.ClientSession, loki_url: str) -
             LOG_QUERY_WINDOW_SECONDS,
             query,
         )
+
+
+async def _poll_tempo_for_logged_ids(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    unique_ids: list[str],
+) -> tuple[str | None, int, int, str | None]:
+    """Resolve one of ``unique_ids`` in Tempo, retrying until a deadline.
+
+    Every id is tried on each pass, not just the first: one unexported trace
+    must not fail the check while correlation demonstrably works for another.
+
+    The pass is then repeated until the shared poll window closes, because a
+    trace id reaches a log line the instant its span is created but only becomes
+    queryable after the exporter batches it, Tempo ingests it and its block is
+    searchable. A single pass therefore races that pipeline exactly the way the
+    metric checks used to race the export-plus-scrape pipeline, and it is fixed
+    the same way -- with METRIC_POLL_TIMEOUT_SEC and METRIC_POLL_INTERVAL_SEC,
+    the constants that already bound every other poll in this file, rather than
+    a second timeout of its own.
+
+    Retrying does not weaken the assertion. The check still passes only on a
+    logged id that Tempo really returns spans for; what changes is that a
+    failure now means the id was absent for the whole window, which is a
+    confirmed absence rather than a snapshot taken at one moment.
+
+    A Tempo request that FAILS is not the same as a trace that is absent, and
+    the two are reported differently. A 404 is absence and returns no spans, so
+    the next candidate is tried. Any other failure is remembered and polling
+    continues -- a transient blip mid-window should not fail a check that would
+    otherwise pass -- but if the window closes with nothing resolved, the last
+    failure is returned so the caller can say the query broke instead of
+    claiming the spans were never exported. Swallowing it would reproduce the
+    silent failure this change exists to remove.
+
+    Args:
+        session:    aiohttp client session.
+        tempo_url:  Base URL for the Tempo API.
+        unique_ids: Candidate trace ids read from Loki, already deduplicated.
+
+    Returns:
+        ``(trace_id, span_count, attempts, error)``. ``error`` is None unless a
+        Tempo request failed and nothing resolved; ``(None, 0, n, None)`` means
+        every id was genuinely absent for the whole window.
+    """
+    deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
+    attempts = 0
+    last_error: str | None = None
+    while True:
+        attempts += 1
+        for candidate in unique_ids:
+            try:
+                spans = await _tempo_get_trace(session, tempo_url, candidate)
+            except Exception as exc:  # noqa: BLE001 - a poll must not abort here
+                last_error = f"{type(exc).__name__}: {exc}"
+                continue
+            if spans:
+                # Resolved, so whatever failed earlier in the window did not
+                # matter -- do not report a stale error alongside a pass.
+                return candidate, len(spans), attempts, None
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return None, 0, attempts, last_error
+        # Never sleep past the deadline, matching _poll_series_count.
+        await asyncio.sleep(min(METRIC_POLL_INTERVAL_SEC, remaining))
 
 
 async def validate_log_trace_correlation(
@@ -1778,36 +1925,45 @@ async def validate_log_trace_correlation(
                 )
             )
         else:
-            # Try every id found, not just the first: one unexported trace
-            # should not fail the check while correlation demonstrably works.
-            resolved: str | None = None
-            span_count = 0
             unique_ids = list(dict.fromkeys(logged_ids))
-            for candidate in unique_ids:
-                try:
-                    spans = await _tempo_get_trace(session, tempo_url, candidate)
-                except Exception:  # noqa: BLE001 - a 404 is "not found", not an error
-                    continue
-                if spans:
-                    resolved, span_count = candidate, len(spans)
-                    break
-
+            resolved, span_count, attempts, poll_error = (
+                await _poll_tempo_for_logged_ids(session, tempo_url, unique_ids)
+            )
+            if resolved:
+                message = (
+                    f"logged trace_id {resolved[:16]}... resolves to "
+                    f"{span_count} spans in Tempo"
+                )
+            elif poll_error:
+                # Distinct from the absence message below on purpose: "Tempo
+                # never answered" and "the spans were not exported" call for
+                # different investigations, and printing the second for the
+                # first sends the reader to the wrong subsystem.
+                message = (
+                    f"could not verify {len(unique_ids)} logged trace_id(s): "
+                    f"Tempo queries failed over {METRIC_POLL_TIMEOUT_SEC:g}s "
+                    f"({attempts} attempt(s)); last error was {poll_error}"
+                )
+            else:
+                message = (
+                    f"none of {len(unique_ids)} logged trace_id(s) resolve in "
+                    f"Tempo after {attempts} attempt(s) over "
+                    f"{METRIC_POLL_TIMEOUT_SEC:g}s; the spans they name were "
+                    "not exported"
+                )
             report.add(
                 CheckResult(
                     name="log.trace_id_cross_reference",
                     category="log",
                     passed=resolved is not None,
-                    message=(
-                        f"logged trace_id {resolved[:16]}... resolves to "
-                        f"{span_count} spans in Tempo"
-                        if resolved
-                        else f"none of {len(unique_ids)} logged trace_id(s) resolve in "
-                        "Tempo; the spans they name were not exported"
-                    ),
+                    message=message,
                     details={
                         "trace_id": resolved,
                         "span_count": span_count,
                         "candidates": len(unique_ids),
+                        "poll_attempts": attempts,
+                        "poll_timeout_sec": METRIC_POLL_TIMEOUT_SEC,
+                        "poll_error": poll_error,
                     },
                 )
             )

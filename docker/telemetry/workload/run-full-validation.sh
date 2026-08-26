@@ -614,9 +614,22 @@ diag_validator_const() {
 # rather than as zero — "Loki said none" and "Loki did not answer" are
 # different findings.
 diag_loki_count() {
-    local body
-    body=$(diag_run curl -sfG --max-time 10 "$LOKI_URL/loki/api/v1/query" \
+    local raw status body
+    # No -f here on purpose. curl -f discards the response body on a 4xx, and
+    # Loki explains a rejected query only in that body (as text/plain), so -f
+    # turned a self-describing failure into a bare "unavailable". Append the
+    # status code instead and read the body either way.
+    raw=$(diag_run curl -sG --max-time 10 -w $'\n%{http_code}' \
+        "$LOKI_URL/loki/api/v1/query" \
         --data-urlencode "query=$1" --data-urlencode "time=$2" 2>/dev/null) || return 1
+    status=${raw##*$'\n'}
+    body=${raw%$'\n'*}
+    if [ "$status" != "200" ]; then
+        # To stderr: this function's stdout is the count its caller captures.
+        printf '    Loki rejected the diagnostic query (HTTP %s): %.300s\n' \
+            "$status" "$(printf '%s' "$body" | tr -s '[:space:]' ' ')" >&2
+        return 1
+    fi
     printf '%s' "$body" |
         jq -er '[.data.result[].value[1] | tonumber] | add // 0' 2>/dev/null || return 1
 }
@@ -796,8 +809,14 @@ diag_loki_stream() {
         "$DIAG_LOG_SELECTOR $DIAG_LOG_FILTER")
     [ -n "$selector" ] || selector="$DIAG_LOG_SELECTOR"
     [ -n "$correlation" ] || correlation="$DIAG_LOG_SELECTOR $DIAG_LOG_FILTER"
-    query_all="count_over_time($selector[${DIAG_LOG_WINDOW_SECONDS}s])"
-    query_filtered="count_over_time($correlation [${DIAG_LOG_WINDOW_SECONDS}s])"
+    # sum() is required, for the reason recorded at _log_loki_diagnostics in
+    # validate_telemetry.py: the filelog regex_parser leaves message/timestamp
+    # as log-record attributes, Loki's OTLP path turns those into structured
+    # metadata that joins a metric query's label set, so an unaggregated
+    # count_over_time yields one series per log line and Loki rejects the query
+    # with HTTP 400 past 500 series. Both legs then print "unavailable".
+    query_all="sum(count_over_time($selector[${DIAG_LOG_WINDOW_SECONDS}s]))"
+    query_filtered="sum(count_over_time($correlation [${DIAG_LOG_WINDOW_SECONDS}s]))"
     echo "    validator LogQL:  $correlation"
     echo "    diagnostic LogQL: $query_all"
     echo "                      $query_filtered"

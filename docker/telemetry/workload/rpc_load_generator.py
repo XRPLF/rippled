@@ -30,6 +30,7 @@ Usage:
 
 import argparse
 import asyncio
+import itertools
 import json
 import logging
 import math
@@ -90,9 +91,16 @@ DRAIN_TIMEOUT_S = RECV_TIMEOUT_S + 2.0
 
 # Requests allowed to own one connection's recv() at a time. websockets
 # rejects a second concurrent recv() on the same socket, so this must stay 1
-# unless request/response correlation by id is added. Concurrency comes from
-# spreading requests round-robin over the endpoints instead.
+# until a single reader task per connection demultiplexes replies to their
+# waiters; correlating by id, which send_rpc now does, is necessary for that
+# but not sufficient on its own. Concurrency comes from spreading requests
+# round-robin over the endpoints instead.
 MAX_INFLIGHT_PER_CONNECTION = 1
+
+# Source of the ``id`` sent with every request. xrpld echoes a request's id at
+# the top level of the reply, which is what lets send_rpc tell its own reply
+# from one that an earlier, timed-out request left in the receive buffer.
+_request_ids = itertools.count(1)
 
 # Fraction of dispatched requests that must reach the server for a run to
 # count as a measurement. The gate is one connection deep, so the ceiling is
@@ -364,6 +372,59 @@ def choose_command(weights: dict[str, int]) -> str:
 # ---------------------------------------------------------------------------
 
 
+async def _recv_matching_reply(
+    conn: Connection, request_id: int, command: str
+) -> dict[str, Any]:
+    """Read replies on ``conn`` until the one for ``request_id`` arrives.
+
+    Cancelling a ``recv()`` does not discard the reply it was waiting for: the
+    library queues incoming messages independently of any reader, so a request
+    that hit RECV_TIMEOUT_S leaves its reply in the buffer. The next request on
+    that connection used to read it and time its own round trip against
+    somebody else's reply -- a near-zero latency, and a ``status`` belonging to
+    a different command. The skew was permanent, because every later request on
+    the connection stayed one reply behind for the rest of the run, so a single
+    timeout quietly invalidated that connection's whole latency distribution.
+    Discarding replies by id puts the stream back in step.
+
+    The caller holds ``conn.gate``, so no other request can consume a reply
+    while this loop runs. The deadline covers the whole exchange rather than
+    each message, so a run of buffered replies cannot extend the wait without
+    bound.
+
+    Args:
+        conn:       Connection to read from, with its gate already held.
+        request_id: The ``id`` sent with this request.
+        command:    RPC command name, for logging.
+
+    Returns:
+        The parsed reply whose ``id`` matches, or that carries no ``id``.
+
+    Raises:
+        asyncio.TimeoutError: If no matching reply arrived within
+                              RECV_TIMEOUT_S.
+    """
+    deadline = time.monotonic() + RECV_TIMEOUT_S
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise asyncio.TimeoutError(f"{command} (id {request_id}) got no reply")
+        raw = await asyncio.wait_for(conn.ws.recv(), timeout=remaining)
+        reply = json.loads(raw)
+        # A reply with no id counts as this request's: a few xrpld error paths
+        # answer before the id is parsed, and treating those as stale would
+        # turn a reported error into a timeout.
+        reply_id = reply.get("id")
+        if reply_id is None or reply_id == request_id:
+            return reply
+        logger.debug(
+            "Discarded a reply for id %s while awaiting id %s (%s)",
+            reply_id,
+            request_id,
+            command,
+        )
+
+
 async def send_rpc(
     conn: Connection,
     command: str,
@@ -388,6 +449,8 @@ async def send_rpc(
                              to the request for context propagation testing.
     """
     request = build_rpc_request(command)
+    request_id = next(_request_ids)
+    request["id"] = request_id
 
     # Inject W3C traceparent for context propagation testing.
     # The rippled WebSocket handler extracts this from the JSON body
@@ -404,11 +467,11 @@ async def send_rpc(
         # being counted as one more failed request.
         try:
             await conn.ws.send(json.dumps(request))
-            raw = await asyncio.wait_for(conn.ws.recv(), timeout=RECV_TIMEOUT_S)
+            reply = await _recv_matching_reply(conn, request_id, command)
             latency = time.monotonic() - t0
             # Native WS responses have {"status": "success", "result": {...}}
             # or {"status": "error", "error": "...", "error_message": "..."}.
-            success = json.loads(raw).get("status") == "success"
+            success = reply.get("status") == "success"
         except REQUEST_FAILURES as exc:
             logger.debug("RPC %s failed: %s", command, exc)
             # No reply, so no latency sample -- see LoadStats.record().
