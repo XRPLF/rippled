@@ -660,6 +660,10 @@ RCLConsensus::Adaptor::doAccept(
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
+    // txCount and the per-transaction event feed the span and nothing else, so
+    // both are guarded on the span being active. Unguarded, every accepted
+    // ledger builds one 64-character hash string per transaction that no one
+    // reads.
     int64_t txCount = 0;
     for (auto const& item : *result.txns.map)
     {
@@ -667,9 +671,12 @@ RCLConsensus::Adaptor::doAccept(
         {
             retriableTxs.insert(std::make_shared<STTx const>(SerialIter{item.slice()}));
             JLOG(j_.debug()) << "    Tx: " << item.key();
-            ++txCount;
-            auto const txHash = to_string(item.key());
-            doAcceptSpan.addEvent(cs::event::txIncluded, {{cs::attr::txId, txHash}});
+            if (doAcceptSpan)
+            {
+                ++txCount;
+                auto const txHash = to_string(item.key());
+                doAcceptSpan.addEvent(cs::event::txIncluded, {{cs::attr::txId, txHash}});
+            }
         }
         catch (std::exception const& ex)
         {
@@ -677,7 +684,10 @@ RCLConsensus::Adaptor::doAccept(
             JLOG(j_.warn()) << "    Tx: " << item.key() << " throws: " << ex.what();
         }
     }
-    doAcceptSpan.setAttribute(cs::attr::txCount, txCount);
+    if (doAcceptSpan)
+    {
+        doAcceptSpan.setAttribute(cs::attr::txCount, txCount);
+    }
 
     auto built = buildLCL(
         prevLedger,
