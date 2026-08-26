@@ -766,8 +766,8 @@ PathRequest::doUpdate(
     // value costs a base58check encode of the issuer (two SHA-256 rounds), a
     // SHA-512Half over the result and three string allocations. The compiled-out
     // guard's operator bool() is a literal false, so the block disappears
-    // entirely in that build; with telemetry compiled in it is skipped whenever
-    // this span is not being recorded.
+    // entirely in that build; with telemetry compiled in it is skipped when
+    // telemetry is disabled at runtime or the pathfind category is off.
     if (span)
     {
         span.setAttribute(pathfind_span::attr::fast, fast);

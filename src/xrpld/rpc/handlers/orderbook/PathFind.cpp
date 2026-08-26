@@ -31,7 +31,7 @@ doPathFind(rpc::JsonContext& context)
     // That is two copies and two hashes on every path_find call. The
     // compiled-out guard's operator bool() is a literal false, so the block
     // disappears entirely in that build; with telemetry compiled in it is
-    // skipped whenever this span is not being recorded.
+    // skipped when telemetry is disabled at runtime or the category is off.
     if (span)
     {
         // Addresses are hashed before emission for privacy. Read through a
