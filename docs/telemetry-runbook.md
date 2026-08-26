@@ -827,7 +827,7 @@ flowchart TB
     pSend["consensus.proposal.send<br/>(broadcast our position)"]:::span
     PEST["consensus.establish<br/>(phaseEstablish; avalanche round ↻<br/>threshold 50→65→70→95%)"]:::span
     UPOS["consensus.update_positions<br/>(add/drop disputed txs; child of establish)"]:::span
-    acqTx(["acquireTxSet → gotTxSet<br/>(async peer tx set; no span)"]):::plain
+    acqTx["acquireTxSet → gotTxSet<br/>(async peer tx set)<br/>txset.acquire spans the fetch;<br/>gotTxSet delivery has no span"]:::span
     PAUSE(["shouldPause?<br/>(wait on laggards; no span)"]):::plain
     CHECK["consensus.check<br/>(checkConsensus; child of establish)"]:::span
     CTC(["haveCloseTimeConsensus?<br/>(else agree-to-disagree +1s; no span)"]):::plain
@@ -888,6 +888,9 @@ Consensus loops and branches (evidence):
 - **acquireTxSet / gotTxSet loop**: a disagreeing peer position triggers an async
   `acquireTxSet`; the later `gotTxSet` regenerates disputes and can extend the
   establish phase ([Consensus.h:931](../include/xrpl/consensus/Consensus.h#L931)).
+  The fetch is spanned as `txset.acquire` and records one `round.request` event
+  per round that asked for the set; the `gotTxSet` delivery itself has no span,
+  so a set arriving too late to be used leaves no trace of its own.
 - **Bow-out / mode change**: `handleWrongLedger → leaveConsensus` sends a bow-out
   proposal and demotes Proposing → Observing for the rest of the round
   ([Consensus.h:1976](../include/xrpl/consensus/Consensus.h#L1976)); `startRound`
