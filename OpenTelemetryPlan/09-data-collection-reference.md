@@ -391,55 +391,63 @@ Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 
 #### Consensus Attributes
 
-| Attribute                   | Type    | Set On                                                                                             | Description                                              |
-| --------------------------- | ------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `consensus_ledger_id`       | string  | `consensus.round`                                                                                  | Previous-ledger id anchoring the round                   |
-| `ledger_seq`                | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept.apply`, `consensus.validation.send` | Ledger sequence number                                   |
-| `consensus_mode`            | string  | `consensus.round`, `consensus.ledger_close`                                                        | Node mode: `"Proposing"`, `"Observing"`, `"Wrong"`, etc. |
-| `consensus_round_id`        | int64   | `consensus.round`                                                                                  | Round identifier                                         |
-| `consensus_phase`           | string  | `consensus.round`                                                                                  | Current phase name (updated on each transition)          |
-| `trace_strategy`            | string  | `consensus.round`                                                                                  | Trace-id strategy (`deterministic` / `attribute`)        |
-| `previous_ledger_seq`       | int64   | `consensus.round`                                                                                  | Sequence of the previous ledger                          |
-| `previous_proposers`        | int64   | `consensus.round`                                                                                  | Proposer count in the previous round                     |
-| `previous_round_time_ms`    | int64   | `consensus.round`                                                                                  | Duration of the previous round                           |
-| `consensus_round`           | int64   | `consensus.proposal.send`                                                                          | Proposal sequence number for the broadcast proposal      |
-| `is_bow_out`                | boolean | `consensus.proposal.send`                                                                          | Whether the proposal is a bow-out (resigning the round)  |
-| `tx_count_open`             | int64   | `consensus.ledger_close`                                                                           | Transactions in the open ledger at close                 |
-| `close_time_resolution_ms`  | int64   | `consensus.ledger_close`                                                                           | Close-time rounding granularity                          |
-| `converge_percent`          | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.check`                             | Convergence percentage                                   |
-| `establish_count`           | int64   | `consensus.establish`, `consensus.check`                                                           | Establish-phase iteration count                          |
-| `proposers`                 | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.accept`                            | Number of proposers                                      |
-| `disputes_count`            | int64   | `consensus.establish`, `consensus.update_positions`                                                | Number of disputed transactions                          |
-| `tx_id`                     | string  | `consensus.update_positions`                                                                       | Disputed transaction id (per-dispute event)              |
-| `dispute_our_vote`          | boolean | `consensus.update_positions`                                                                       | Our vote on the disputed tx                              |
-| `dispute_yays`              | int64   | `consensus.update_positions`                                                                       | Yes votes on the disputed tx                             |
-| `dispute_nays`              | int64   | `consensus.update_positions`                                                                       | No votes on the disputed tx                              |
-| `avalanche_threshold`       | int64   | `consensus.update_positions`                                                                       | Escalated weight needed to change our vote               |
-| `close_time_threshold`      | int64   | `consensus.update_positions`                                                                       | Close-time agreement threshold percentage                |
-| `agree_count`               | int64   | `consensus.check`                                                                                  | Agreeing proposer count                                  |
-| `disagree_count`            | int64   | `consensus.check`                                                                                  | Disagreeing proposer count                               |
-| `threshold_percent`         | int64   | `consensus.check`                                                                                  | Agreement threshold percentage                           |
-| `have_close_time_consensus` | boolean | `consensus.update_positions`, `consensus.check`                                                    | Whether the close time reached consensus                 |
-| `proposers_finished`        | int64   | `consensus.check`                                                                                  | Proposers that have already validated the next ledger    |
-| `consensus_stalled`         | boolean | `consensus.check`                                                                                  | Whether `checkConsensus` reported a stall                |
-| `consensus_result`          | string  | `consensus.check`                                                                                  | Check outcome                                            |
-| `quorum`                    | int64   | `consensus.accept`                                                                                 | Quorum required                                          |
-| `round_time_ms`             | int64   | `consensus.accept`, `consensus.accept.apply`                                                       | Total consensus round duration in milliseconds           |
-| `consensus_state`           | string  | `consensus.accept.apply`                                                                           | Consensus outcome: `"finished"` or `"moved_on"`          |
-| `close_time`                | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (epoch seconds)            |
-| `close_time_correct`        | boolean | `consensus.accept.apply`                                                                           | Whether validators agreed on close time                  |
-| `close_resolution_ms`       | int64   | `consensus.accept.apply`                                                                           | Close-time rounding granularity in milliseconds          |
-| `proposing`                 | boolean | `consensus.accept.apply`, `consensus.validation.send`                                              | Whether this node was a proposer                         |
-| `parent_close_time`         | int64   | `consensus.accept.apply`                                                                           | Parent ledger close time                                 |
-| `close_time_self`           | int64   | `consensus.accept.apply`                                                                           | This node's close-time vote                              |
-| `close_time_vote_bins`      | string  | `consensus.accept.apply`                                                                           | Distribution of close-time votes                         |
-| `resolution_direction`      | string  | `consensus.accept.apply`                                                                           | Whether close resolution increased/decreased/unchanged   |
-| `tx_count`                  | int64   | `consensus.accept.apply`                                                                           | Transactions in the accepted set                         |
-| `ledger_hash`               | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (shared with peer)     |
-| `full_validation`           | boolean | `consensus.validation.send`                                                                        | Whether this is a full validation                        |
-| `validation_sign_time`      | int64   | `consensus.validation.send`                                                                        | Validation signing time                                  |
-| `mode_old`                  | string  | `consensus.mode_change`                                                                            | Operating mode before the transition                     |
-| `mode_new`                  | string  | `consensus.mode_change`                                                                            | Operating mode after the transition                      |
+| Attribute                    | Type    | Set On                                                                                             | Description                                                |
+| ---------------------------- | ------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `consensus_ledger_id`        | string  | `consensus.round`                                                                                  | Previous-ledger id anchoring the round                     |
+| `ledger_seq`                 | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept.apply`, `consensus.validation.send` | Ledger sequence number                                     |
+| `consensus_mode`             | string  | `consensus.round`, `consensus.ledger_close`                                                        | Node mode: `"Proposing"`, `"Observing"`, `"Wrong"`, etc.   |
+| `consensus_round_id`         | int64   | `consensus.round`                                                                                  | Round identifier                                           |
+| `consensus_phase`            | string  | `consensus.round`                                                                                  | Current phase name (updated on each transition)            |
+| `trace_strategy`             | string  | `consensus.round`                                                                                  | Trace-id strategy (`deterministic` / `attribute`)          |
+| `previous_ledger_seq`        | int64   | `consensus.round`                                                                                  | Sequence of the previous ledger                            |
+| `previous_proposers`         | int64   | `consensus.round`                                                                                  | Proposer count in the previous round                       |
+| `previous_round_time_ms`     | int64   | `consensus.round`                                                                                  | Duration of the previous round                             |
+| `consensus_round`            | int64   | `consensus.proposal.send`                                                                          | Proposal sequence number for the broadcast proposal        |
+| `is_bow_out`                 | boolean | `consensus.proposal.send`                                                                          | Whether the proposal is a bow-out (resigning the round)    |
+| `tx_count_open`              | int64   | `consensus.ledger_close`                                                                           | Transactions in the open ledger at close                   |
+| `close_time_resolution_ms`   | int64   | `consensus.ledger_close`                                                                           | Close-time rounding granularity                            |
+| `start_reason`               | string  | `consensus.phase.open`                                                                             | Entry path: `"initial"` or `"recovered"`                   |
+| `previous_close_agree`       | boolean | `consensus.phase.open`                                                                             | Whether the prior ledger's close time was agreed           |
+| `peer_positions_at_open`     | int64   | `consensus.phase.open`                                                                             | Positions held after buffered proposals are replayed       |
+| `early_close_triggered`      | boolean | `consensus.phase.open`                                                                             | Round skipped the timer because peers had already closed   |
+| `tx_sets_acquired`           | int64   | `consensus.phase.open`                                                                             | Peer transaction sets held at close, excluding our own     |
+| `close_reason`               | string  | `consensus.phase.open`                                                                             | `"anomaly"`, `"others_closed"`, `"idle"`, or `"normal"`    |
+| `proposers_validated`        | int64   | `consensus.phase.open`                                                                             | Trusted validators of the previous ledger, at close        |
+| `converge_percent`           | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.check`                             | Convergence percentage                                     |
+| `establish_count`            | int64   | `consensus.establish`, `consensus.check`                                                           | Establish-phase iteration count                            |
+| `close_time_avalanche_state` | string  | `consensus.establish`                                                                              | Terminal regime: `"init"`, `"mid"`, `"late"`, or `"stuck"` |
+| `proposers`                  | int64   | `consensus.establish`, `consensus.update_positions`, `consensus.accept`                            | Number of proposers                                        |
+| `disputes_count`             | int64   | `consensus.establish`, `consensus.update_positions`                                                | Number of disputed transactions                            |
+| `tx_id`                      | string  | `consensus.update_positions`                                                                       | Disputed transaction id (per-dispute event)                |
+| `dispute_our_vote`           | boolean | `consensus.update_positions`                                                                       | Our vote on the disputed tx                                |
+| `dispute_yays`               | int64   | `consensus.update_positions`                                                                       | Yes votes on the disputed tx                               |
+| `dispute_nays`               | int64   | `consensus.update_positions`                                                                       | No votes on the disputed tx                                |
+| `avalanche_threshold`        | int64   | `consensus.update_positions`                                                                       | Escalated weight needed to change our vote                 |
+| `close_time_threshold`       | int64   | `consensus.update_positions`                                                                       | Close-time agreement threshold percentage                  |
+| `agree_count`                | int64   | `consensus.check`                                                                                  | Agreeing proposer count                                    |
+| `disagree_count`             | int64   | `consensus.check`                                                                                  | Disagreeing proposer count                                 |
+| `threshold_percent`          | int64   | `consensus.check`                                                                                  | Agreement threshold percentage                             |
+| `have_close_time_consensus`  | boolean | `consensus.update_positions`, `consensus.check`                                                    | Whether the close time reached consensus                   |
+| `proposers_finished`         | int64   | `consensus.check`                                                                                  | Proposers that have already validated the next ledger      |
+| `consensus_stalled`          | boolean | `consensus.check`                                                                                  | Whether `checkConsensus` reported a stall                  |
+| `consensus_result`           | string  | `consensus.check`                                                                                  | Check outcome                                              |
+| `quorum`                     | int64   | `consensus.accept`                                                                                 | Quorum required                                            |
+| `round_time_ms`              | int64   | `consensus.accept`, `consensus.accept.apply`                                                       | Total consensus round duration in milliseconds             |
+| `consensus_state`            | string  | `consensus.accept.apply`                                                                           | Consensus outcome: `"finished"` or `"moved_on"`            |
+| `close_time`                 | int64   | `consensus.accept.apply`                                                                           | Agreed-upon ledger close time (epoch seconds)              |
+| `close_time_correct`         | boolean | `consensus.accept.apply`                                                                           | Whether validators agreed on close time                    |
+| `close_resolution_ms`        | int64   | `consensus.accept.apply`                                                                           | Close-time rounding granularity in milliseconds            |
+| `proposing`                  | boolean | `consensus.accept.apply`, `consensus.validation.send`                                              | Whether this node was a proposer                           |
+| `parent_close_time`          | int64   | `consensus.accept.apply`                                                                           | Parent ledger close time                                   |
+| `close_time_self`            | int64   | `consensus.accept.apply`                                                                           | This node's close-time vote                                |
+| `close_time_vote_bins`       | string  | `consensus.accept.apply`                                                                           | Distribution of close-time votes                           |
+| `resolution_direction`       | string  | `consensus.accept.apply`                                                                           | Whether close resolution increased/decreased/unchanged     |
+| `tx_count`                   | int64   | `consensus.accept.apply`                                                                           | Transactions in the accepted set                           |
+| `ledger_hash`                | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (shared with peer)       |
+| `full_validation`            | boolean | `consensus.validation.send`                                                                        | Whether this is a full validation                          |
+| `validation_sign_time`       | int64   | `consensus.validation.send`                                                                        | Validation signing time                                    |
+| `mode_old`                   | string  | `consensus.mode_change`                                                                            | Operating mode before the transition                       |
+| `mode_new`                   | string  | `consensus.mode_change`                                                                            | Operating mode after the transition                        |
 
 > **`quorum` is on `consensus.accept` only.** Its single set site is
 > `RCLConsensus::Adaptor::makeAcceptSpan()`
@@ -598,15 +606,26 @@ These are system-level metrics emitted by xrpld's `beast::insight` framework via
 [insight]
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=xrpld
 ```
+
+`server=otel` is the only key here that changes what gets exported. No `prefix` is
+shown because it would do nothing on this path: `OTelCollector` routes every
+instrument name through its `static formatName()`, which only lowercases the raw
+name and maps `.` and space to `_`, and the only place the class reads `prefix_`
+is its startup log line. Exported names are therefore the lowercased raw names
+(`jobq_job_count`, `rpc_requests_total`) and the service is identified by the OTel
+resource `service.name`, not by a name prefix. `endpoint` is read from this section
+but likewise reaches only that log line — the real exporter URL is derived inside
+`Telemetry::initMetrics()` from `[telemetry] endpoint`, by swapping the trailing
+`/v1/traces` for `/v1/metrics`.
 
 Fallback (StatsD). `StatsDCollector` is still selected by this value, but the
 stack in `docker/telemetry/` no longer receives it: using this path also requires
 re-adding the `statsd` receiver to `otel-collector-config.yaml` and uncommenting
 port 8125 in `docker-compose.yml`, otherwise the metrics go to a port nothing
-listens on. Note also that `StatsDCollector` applies `prefix` to the metric name
-while `OTelCollector` does not, so switching transports renames every series.
+listens on. `prefix` does appear below, because `StatsDCollector` really does
+prepend it to every metric name it serializes — so switching transports renames
+every series.
 
 ```ini
 [insight]
@@ -677,21 +696,17 @@ prefix=xrpld
 | Prometheus Metric | Source File       | Unit | Description                    |
 | ----------------- | ----------------- | ---- | ------------------------------ |
 | `rpc_time`        | ServerHandler.cpp | ms   | RPC response time distribution |
-| `rpc_size`        | ServerHandler.cpp | ms\* | RPC response size (see note)   |
+| `rpc_size`        | ServerHandler.cpp | By\* | RPC response size (see note)   |
 | `ios_latency`     | Application.cpp   | ms   | I/O service loop latency       |
 | `pathfind_fast`   | PathRequests.h    | ms   | Fast pathfinding duration      |
 | `pathfind_full`   | PathRequests.h    | ms   | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
-\* **`rpc_size` now records bytes as bytes (fixed).** It used to go through the
-millisecond-scaled event histogram and export as `rpc_size_milliseconds_bucket`
-on a ladder topping out at 5000, so the 24.9% of responses larger than 5 kB all
-landed in the last bucket and every percentile read back as a flat 5000 — a
-plausible-looking constant rather than a byte size. `beast::insight::Event` now
+\* **`rpc_size` records bytes, not a duration.** `beast::insight::Event`
 declares a `Unit`, so this instrument is created with unit `By` and exports as
 **`rpc_size_bytes_bucket`** on `kByteBuckets` (512 B to 1 MiB, placed from the
-measured distribution). Queries and panels must use the new name.
+measured distribution). Queries and panels must use that name.
 
 **Grafana dashboards**: _Node Health_ (`ios_latency`), _RPC & Pathfinding_ (`rpc_time`, `rpc_size`, `pathfind_*`)
 
@@ -1202,23 +1217,38 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 > below as **families currently emitting** (idle nodes under-report — workload-gated metrics such as
 > per-RPC/error counters appear only once exercised, which is Phase 10's purpose).
 
-| Category                       | Expected Count      | Validation Method                | Config File             |
-| ------------------------------ | ------------------- | -------------------------------- | ----------------------- |
-| Trace spans                    | 40 of 41 emitted    | Tempo API query                  | `expected_spans.json`   |
-| Span attributes                | 67 required         | Per-span attribute assertion     | `expected_spans.json`   |
-| Legacy beast::insight families | ~270 (≈224 traffic) | Prometheus `__name__` query      | `expected_metrics.json` |
-| Native MetricsRegistry         | 35 instruments      | Prometheus query                 | `expected_metrics.json` |
-| Call-site `XRPL_METRIC_*`      | 7 instruments       | Prometheus query                 | `expected_metrics.json` |
-| Per-job-type gauges            | 105 (35 types × 3)  | Prometheus `__name__` query      | `expected_metrics.json` |
-| SpanMetrics RED                | 4 per span          | Prometheus query                 | `expected_metrics.json` |
-| Grafana dashboards             | all 15 on disk      | Dashboard API load + panel count | `expected_metrics.json` |
-| Log-trace links                | Present             | Loki query + Tempo reverse check | —                       |
+| Category                       | Expected Count      | Validation Method                           | Config File             |
+| ------------------------------ | ------------------- | ------------------------------------------- | ----------------------- |
+| Trace spans                    | 40 of 41 emitted    | Tempo API query                             | `expected_spans.json`   |
+| Span attributes                | 67 required         | Per-span attribute assertion                | `expected_spans.json`   |
+| Legacy beast::insight families | ~270 (≈224 traffic) | Named subset asserted; rest regex-accounted | `expected_metrics.json` |
+| Native MetricsRegistry         | 35 instruments      | Prometheus query                            | `expected_metrics.json` |
+| Call-site `XRPL_METRIC_*`      | 7 instruments       | Prometheus query                            | `expected_metrics.json` |
+| Per-job-type gauges            | 105 (35 types × 3)  | 6 by literal name; rest regex-accounted     | `expected_metrics.json` |
+| SpanMetrics RED                | 4 per span          | Prometheus query                            | `expected_metrics.json` |
+| Grafana dashboards             | all 15 on disk      | Dashboard API load + panel count            | `expected_metrics.json` |
+| Log-trace links                | Present             | Loki query + Tempo reverse check            | —                       |
 
 > **These are the harness's numbers, not the code's, and two of them differ.**
 > `docker/telemetry/workload/expected_spans.json` carries 40 span entries against
 > the **41** families the code emits ([§1.1](#11-complete-span-inventory-41-spans)) —
 > `rpc.ws_upgrade` has no entry — and 67 distinct required attributes (the
 > manifest's own `total_unique_attributes: 58` field is stale).
+> The **Validation Method** column for the two bulk beast rows used to read
+> "Prometheus `__name__` query", which never described anything real:
+> `expected_metrics.json` contains no `__name__` query and
+> `validate_telemetry.py` issues none. The single `__name__` string in that file
+> is prose quoting a `ledger-data-sync` dashboard query, not a check. What is
+> actually asserted in both rows is a subset named literally —
+> `overlay_traffic` asserts the four `total_*` families out of ~228, and
+> `job_queue_per_type_gauges` asserts 6 of the 105 per-job-type gauges. The
+> remainder is now **accounted for** rather than asserted: anchored regexes
+> under the top-level `accounted_patterns` list declare both cross products, so
+> the `metric.reverse_coverage` check does not report them, while any name
+> outside those shapes surfaces as unaccounted. That check warns and never
+> fails; see the reverse-coverage row in
+> [`docs/telemetry-runbook.md`](../docs/telemetry-runbook.md).
+>
 > `expected_metrics.json` lists all **15** dashboard uids in
 > `docker/telemetry/grafana/dashboards/`, so dashboard coverage does not differ;
 > `log-derived-insights` is listed for the provisioning check only, and its panel
@@ -2193,7 +2223,6 @@ enabled=1
 [insight]
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=xrpld
 ```
 
 ### Production Setup
@@ -2209,8 +2238,11 @@ max_queue_size=4096
 [insight]
 server=otel
 endpoint=http://otel-collector:4318/v1/metrics
-prefix=xrpld
 ```
+
+Neither block sets `[insight] prefix`: on the `server=otel` path it is inert and
+would only mislead — see [§2 Configuration](#configuration). It applies solely to
+`server=statsd`.
 
 ### Trace Category Toggle
 

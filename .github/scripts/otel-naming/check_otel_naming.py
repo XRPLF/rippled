@@ -1840,8 +1840,24 @@ def metric_prefixes(names: Set[str]) -> Set[str]:
 #   statsd_gauges / statsd_counters -- beast::insight metrics, whose wire names
 #     come from formatName() lowercasing an insight metric path;
 #   spanmetrics -- synthesised by the collector's spanmetrics connector from
-#     span names, not declared in C++ at all.
-NON_OTEL_METRIC_GROUPS = frozenset({"statsd_gauges", "statsd_counters", "spanmetrics"})
+#     span names, not declared in C++ at all;
+#   job_queue_per_type_gauges -- beast::insight gauges in the "jobq" group,
+#     created per job type by JobTypeData's constructor, so the wire name embeds
+#     a job-type name and there is no declared instrument to point at. This
+#     group needs the exemption only because the jobq_ FAMILY became owned when
+#     jobq_saturation was declared in MetricNames.h: Rule K checks a name only
+#     when its family is owned, so before that these entries were skipped for
+#     the accidental reason that nothing in the family was declared. Declaring
+#     constants for them is not an option -- there is one triple per job type,
+#     minted at runtime.
+NON_OTEL_METRIC_GROUPS = frozenset(
+    {
+        "statsd_gauges",
+        "statsd_counters",
+        "spanmetrics",
+        "job_queue_per_type_gauges",
+    }
+)
 
 
 def expected_metric_names(

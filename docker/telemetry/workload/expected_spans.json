@@ -1,5 +1,5 @@
 {
-  "description": "Expected span inventory for xrpld telemetry validation. Attribute keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form; dotted xrpl.* reserved for resource attributes). Sourced from the *SpanNames.h headers and verified against the emitting call sites. Spans marked \"optional\": true are conditional — they only fire under traffic the harness may not produce (e.g. gRPC client, missing-ledger fetch, mode transitions) and are not failed when absent. \"parent\" is documentation only (validate_telemetry.py asserts hierarchy from parent_child_relationships, not from this field) and records the parent as the code actually produces it: null means the span is a root or an explicit freshRoot. required_attributes lists only attributes set on EVERY code path that creates the span — attributes set after an early return are described in the span's note instead, because _validate_span_attributes_otlp samples a single trace and would fail on a legitimate short-circuit path. total_unique_attributes is the size of the union of all required_attributes; total_span_types is len(spans). Span EVENTS (consensus.round phase.*/outcome.*, consensus.update_positions dispute.resolve, consensus.accept.apply tx.included) are NOT represented: validate_telemetry.py reads only span name, attributes and timestamps from Tempo, so an \"events\" key would be silently ignored. They are documented in the relevant span notes until the validator gains event support.",
+  "description": "Expected span inventory for xrpld telemetry validation. Attribute keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form; dotted xrpl.* reserved for resource attributes). Sourced from the *SpanNames.h headers and verified against the emitting call sites. Spans marked \"optional\": true are conditional — they only fire under traffic the harness may not produce (e.g. gRPC client, path-finding RPC, missing-ledger fetch, mode transitions) and are not failed when absent. \"parent\" is documentation only (validate_telemetry.py asserts hierarchy from parent_child_relationships, not from this field) and records the parent as the code actually produces it: null means the span is a root or an explicit freshRoot. required_attributes lists only attributes set on EVERY code path that creates the span — attributes set after an early return are described in the span's note instead, because _validate_span_attributes_otlp samples a single trace and would fail on a legitimate short-circuit path. total_unique_attributes is the size of the union of all required_attributes; total_span_types is len(spans). Span EVENTS (consensus.round phase.*/outcome.*, consensus.update_positions dispute.resolve, consensus.accept.apply tx.included) are NOT represented: validate_telemetry.py reads only span name, attributes and timestamps from Tempo, so an \"events\" key would be silently ignored. They are documented in the relevant span notes until the validator gains event support.",
   "spans": [
     {
       "name": "rpc.ws_message",
@@ -438,7 +438,8 @@
         "pathfind_dest_account"
       ],
       "config_flag": "trace_rpc",
-      "note": "Fires on ripple_path_find / path_find RPC. Driven by the ripple_path_find load in rpc_load_generator.py. Created as an ambient (scoped) child inside the RPC command handler (RipplePathFind.cpp:35-36, PathFind.cpp:26-27), so its parent is the enclosing rpc.command.* span — RipplePathFind.cpp:30 states this explicitly."
+      "optional": true,
+      "note": "Fires on ripple_path_find / path_find RPC. Optional because the harness issues neither: the ripple_path_find weight was removed from rpc_load_generator.py's DEFAULT_WEIGHTS on 2026-08-25, and no workload-profiles.json phase names a path-finding command in a weights override, so no such RPC reaches a node at all. Created as an ambient (scoped) child inside the RPC command handler (RipplePathFind.cpp:35-36, PathFind.cpp:26-27), so its parent is the enclosing rpc.command.* span — RipplePathFind.cpp:30 states this explicitly. Note the span does NOT need pathfinding to be ENABLED, only the RPC to be issued: the ScopedSpanGuard is constructed at RipplePathFind.cpp:35, above the 'if (pathSearchMax == 0) return rpcError(RpcNotSupported)' guard at :48-49, so even a refused call opens and closes it. That positional accident is why the load alone used to satisfy this entry while pathfind.compute and pathfind.discover below stayed unasserted — and why those refusals were also manufacturing a steady ~3% STATUS_CODE_ERROR floor in span_calls_total, which removing the load has now cleared. Restoring the load alone would make this span required again and bring that error floor back; covering the whole family needs pathfinding actually enabled (a [path_search_max] override in run-full-validation.sh — see the pathfind.compute entry below). The workload README section 'Pathfinding is not exercised' carries the full restore recipe."
     },
     {
       "name": "pathfind.compute",
@@ -447,7 +448,7 @@
       "required_attributes": ["pathfind_fast"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Only fires when PathRequest::doUpdate runs a computation; the self-to-self XRP probe from the load generator returns early without computing paths in a fresh cluster with no liquidity."
+      "note": "Created by PathRequest::doUpdate (PathRequest.cpp:749-750), which the harness never reaches: pathfinding is disabled on every harness node, so no PathRequest is ever constructed. Config.cpp:725-726 sets pathSearchMax to 0 when a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for every node (:308) and has no [path_search*] override, and doRipplePathFind then returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 — above the request-construction branches and below the pathfind.request span guard at :35. Liquidity is not the reason and never was: the call is refused before any path search is attempted, so the outcome does not depend on what the ledger holds. Since 2026-08-25 there is a second, independent reason: the harness sends no path-finding RPC at all, the ripple_path_find weight having been removed from rpc_load_generator.py. Enabling this span therefore needs BOTH a [path_search_max] override (or a non-validator node) in run-full-validation.sh AND the load restored — see the workload README section 'Pathfinding is not exercised'."
     },
     {
       "name": "pathfind.discover",
@@ -456,7 +457,7 @@
       "required_attributes": ["pathfind_search_level", "pathfind_num_paths"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Graph exploration; only fires under pathfind.compute, which needs real path liquidity not present in the fresh test cluster."
+      "note": "Graph exploration; only fires under pathfind.compute, which the harness never reaches because pathfinding is disabled on every node (see the pathfind.compute entry above for the config chain). Liquidity is not the reason: the RPC is refused before any search runs."
     },
     {
       "name": "pathfind.update_all",
@@ -465,7 +466,7 @@
       "required_attributes": ["pathfind_ledger_index", "pathfind_num_requests"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Async recomputation at ledger close; only fires when there are active path_find subscriptions (the one-shot ripple_path_find load does not register one)."
+      "note": "Async recomputation at ledger close. PathRequestManager::updateAll emits the span only when requests_ is non-empty (PathRequestManager.cpp:88-95), so it needs a live path_find subscription. On the harness requests_ can never become non-empty at all: the only two insertPathRequest call sites are makePathRequest (:268) and makeLegacyPathRequest (:296), and both handlers return rpcNOT_SUPPORTED first because pathfinding is disabled on every node (PathFind.cpp:39, RipplePathFind.cpp:48; see the pathfind.compute entry above for the config chain)."
     },
     {
       "name": "grpc.*",
@@ -490,7 +491,7 @@
       "child": "rpc.command.*",
       "description": "WebSocket message contains the per-command span — the real relationship on the harness WS path (rpc::doCommand at RPCHandler.cpp:271 creates an ambient child of the rpc.ws_message scope inside the same coroutine)",
       "skip": true,
-      "skip_reason": "Code-verified real, but not assertable by the current validator. _validate_parent_child() collapses the wildcard to the single literal name via child_name.replace(\"*\", \"server_info\") and samples only the 3 most recent parent traces. Each rpc.ws_message trace carries exactly one command, and server_info is 25/103 of rpc_load_generator.py's DEFAULT_WEIGHTS, so roughly 43% of healthy runs would sample three non-server_info traces and fail. Asserting this needs the validator to accept a wildcard child as a prefix match (or to raise the trace sample size); until then the relationship is documented, not enforced."
+      "skip_reason": "Code-verified real, but not assertable by the current validator. _validate_parent_child() collapses the wildcard to the single literal name via child_name.replace(\"*\", \"server_info\") and samples only the 3 most recent parent traces. Each rpc.ws_message trace carries exactly one command, and server_info is 25/100 of rpc_load_generator.py's DEFAULT_WEIGHTS, so roughly 42% of healthy runs would sample three non-server_info traces and fail. Asserting this needs the validator to accept a wildcard child as a prefix match (or to raise the trace sample size); until then the relationship is documented, not enforced."
     },
     {
       "parent": "rpc.process",
@@ -519,7 +520,7 @@
       "child": "pathfind.compute",
       "description": "Pathfind request contains the compute sub-span",
       "skip": true,
-      "skip_reason": "pathfind.compute only fires when a path computation actually runs; the self-to-self XRP probe in a fresh cluster with no liquidity returns before computing, so the child is not emitted under the harness workload."
+      "skip_reason": "Real relationship (pathfind.compute is created inside PathRequest::doUpdate at PathRequest.cpp:749-750, under the pathfind.request scope), but the child never exists on the harness because pathfinding is disabled on every node: Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for all five nodes (:308) with no [path_search*] override, and doRipplePathFind returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 before constructing a PathRequest. The parent used to appear anyway, because its ScopedSpanGuard is created at RipplePathFind.cpp:35, above that guard; since 2026-08-25 not even the parent appears, the ripple_path_find load having been removed from rpc_load_generator.py, so both ends of this relationship are now absent. Liquidity has nothing to do with it — the earlier 'no liquidity, returns before computing' reason was wrong, because no path search is attempted at all. Asserting this relationship needs the load restored AND a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
     },
     {
       "parent": "ledger.acquire",

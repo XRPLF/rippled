@@ -234,7 +234,7 @@ jobs:
           # and never reads them. Load shape comes from the default
           # --profile full-validation. They are still passed so the flags stay
           # exercised if they are ever wired up.
-          ARGS="--xrpld ${{ env.BUILD_DIR }}/xrpld --skip-loki"
+          ARGS="--xrpld ${{ env.BUILD_DIR }}/xrpld"
           ARGS="$ARGS --rpc-rate $RPC_RATE"
           ARGS="$ARGS --rpc-duration $RPC_DURATION"
           ARGS="$ARGS --tx-tps $TX_TPS"

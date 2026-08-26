@@ -9,7 +9,8 @@ Validation categories:
   1. Span validation     — Every required span type in expected_spans.json, each
                            carrying its required attributes
   2. Metric validation   — SpanMetrics, StatsD, and MetricsRegistry OTLP metrics
-                           are non-zero
+                           are non-zero, and each group's required_labels reach
+                           Prometheus with non-empty values
   3. Sync diagnostics    — Fresh-node sync signals (bootstrap + acquire
                            pipeline) declared in the "sync_diagnostics" group
   4. Log-trace correlation — Loki logs contain trace_id/span_id fields
@@ -49,6 +50,16 @@ import aiohttp
 # someone re-runs it later to investigate a result.
 LOG_QUERY_WINDOW_SECONDS = 4 * 60 * 60
 
+# Loki's OTLP ingestion promotes service.name to the stream label
+# `service_name`; a `job` attribute arrives as structured metadata, which a
+# stream selector cannot match (see otel-collector-config.yaml). Declared once
+# so both log checks and the diagnostic below report on the same query -- a
+# diagnostic that queried something else would describe a different failure
+# than the one being investigated.
+LOG_STREAM_SELECTOR = '{service_name="xrpld"}'
+LOG_TRACE_LINE_FILTER = '|= "trace_id="'
+LOG_CORRELATION_QUERY = f"{LOG_STREAM_SELECTOR} {LOG_TRACE_LINE_FILTER}"
+
 logger = logging.getLogger("validate_telemetry")
 
 # ---------------------------------------------------------------------------
@@ -85,6 +96,12 @@ SYNC_DIAGNOSTICS_GROUP = "sync_diagnostics"
 # how many /api/v1/series requests are in flight at a time, so the fan-out does
 # not hammer the single-container Prometheus the harness runs.
 METRIC_POLL_CONCURRENCY = 8
+
+# The Prometheus exporter splits one histogram instrument into three series
+# names. Reverse coverage folds them back onto the base family so a contract
+# entry (or an accounted_patterns regex) written for the family accounts for
+# all three, and so a triple is never reported as three separate gaps.
+HISTOGRAM_SUFFIXES = ("_bucket", "_count", "_sum")
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +191,95 @@ class ValidationReport:
             "end_time": self.end_time,
             "checks": [c.to_dict() for c in self.checks],
         }
+
+
+# ---------------------------------------------------------------------------
+# Reverse coverage: what is emitted but not accounted for
+# ---------------------------------------------------------------------------
+#
+# The forward checks read the contract and ask Prometheus/Tempo whether each
+# listed name exists. That direction cannot see a name the contract omits, and
+# omissions are how a 345-family metric gap and 7 unknown spans went unnoticed:
+# both emitted inventories were already being fetched, and neither was compared
+# back against the contract.
+#
+# These helpers close the loop. They are deliberately WARN-ONLY. Downstream
+# branches legitimately add telemetry that an upstream contract has not seen
+# (the sync-diagnostics branch emits 7 spans this contract does not list), so a
+# hard failure here would redden every one of them for doing the right thing.
+# The value is visibility: name the gaps, in a form a human can read in a CI
+# log and diff between runs, and let a person decide.
+
+
+def _log_name_list(header: str, names: list[str]) -> None:
+    """Log a name list one entry per line, sorted.
+
+    A single-line Python list repr of 422 metric families is ~15 kB on one CI
+    log line: unreadable, and impossible to diff between runs. One name per line
+    makes two runs' logs comparable. Emitted as a single log record so the
+    lines cannot be interleaved by another task's output.
+
+    Args:
+        header: Line printed above the list; the count is appended to it.
+        names:  Names to print. Sorted here, so callers need not be.
+    """
+    body = "\n".join(f"  {name}" for name in sorted(names)) or "  (none)"
+    logger.info("%s (%d total):\n%s", header, len(names), body)
+
+
+def _reverse_coverage_result(
+    check_name: str,
+    category: str,
+    noun: str,
+    emitted_count: int,
+    unaccounted: list[str],
+) -> CheckResult:
+    """Build the always-passing CheckResult for one reverse coverage check.
+
+    ``passed`` is hardcoded True. This is the single place that decides the
+    check cannot fail CI, so the guarantee is auditable in one line rather than
+    spread over two call sites. The finding travels in ``message`` and in
+    ``details["unaccounted"]``, and the names are also logged one per line by
+    the caller.
+
+    Args:
+        check_name:    Report check name (e.g. "metric.reverse_coverage").
+        category:      Report category ("metric" or "span").
+        noun:          Plural noun for the message ("metric families", "span names").
+        emitted_count: How many names the backend reported.
+        unaccounted:   Names the contract does not account for.
+
+    Returns:
+        A CheckResult that always passes.
+    """
+    if emitted_count == 0:
+        message = (
+            f"reverse coverage not evaluated: no {noun} were reported "
+            f"(backend unreachable or empty) — warning only, never fails"
+        )
+    elif unaccounted:
+        message = (
+            f"WARNING: {len(unaccounted)} of {emitted_count} emitted {noun} are "
+            f"not accounted for by the contract: {', '.join(sorted(unaccounted)[:5])}"
+            f"{' …' if len(unaccounted) > 5 else ''} "
+            f"(full list logged above; warning only, never fails)"
+        )
+    else:
+        message = f"all {emitted_count} emitted {noun} are accounted for"
+
+    return CheckResult(
+        name=check_name,
+        category=category,
+        passed=True,
+        message=message,
+        details={
+            "emitted": emitted_count,
+            "accounted": emitted_count - len(unaccounted),
+            "unaccounted_count": len(unaccounted),
+            "unaccounted": sorted(unaccounted),
+            "enforced": False,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -275,6 +381,33 @@ def _span_name_matches(emitted_name: str, expected_name: str) -> bool:
     return emitted_name == expected_name
 
 
+def _unaccounted_span_names(emitted: list[str], expected: dict[str, Any]) -> list[str]:
+    """Names Tempo reports that no expected_spans.json entry accounts for.
+
+    "Accounted for" is the same relation the forward check uses, so a contract
+    glob such as "rpc.command.*" covers every command it expands to, and an
+    entry marked ``optional`` still accounts for its name — being unasserted is
+    not the same as being unknown. No separate pattern list is needed for spans
+    because the contract already carries globs.
+
+    Args:
+        emitted:  Span names as reported by Tempo's span.name tag values.
+        expected: The parsed expected_spans.json contract.
+
+    Returns:
+        Sorted list of emitted names with no matching contract entry.
+    """
+    contract = [span_def["name"] for span_def in expected.get("spans", [])]
+    return sorted(
+        name
+        for name in emitted
+        if name
+        and not any(
+            _span_name_matches(name, expected_name) for expected_name in contract
+        )
+    )
+
+
 # ---------------------------------------------------------------------------
 # Span Validation (Tempo API)
 # ---------------------------------------------------------------------------
@@ -334,21 +467,21 @@ async def validate_spans(
         )
         return
 
-    # Diagnostic: list all available operations (span names) for the xrpld
-    # service.  This output appears in CI logs and helps debug missing-span
-    # failures without needing to reproduce the full stack locally.
+    # List every span name Tempo holds. This is both a diagnostic (it makes a
+    # missing-span failure debuggable without reproducing the stack locally)
+    # and the input to the reverse coverage check added at the end of this
+    # function. Note the tag-values API is not service-scoped, so in a stack
+    # where something other than xrpld also sent traces this list would be a
+    # superset; on the harness only xrpld exports spans.
+    emitted_span_names: list[str] = []
     try:
         async with session.get(
             f"{tempo_url}/api/v2/search/tag/span.name/values"
         ) as resp:
             ops_data = await resp.json()
             tag_values = ops_data.get("tagValues", [])
-            operations = [tv.get("value", "") for tv in tag_values]
-            logger.info(
-                "Tempo operations (%d total): %s",
-                len(operations),
-                operations,
-            )
+            emitted_span_names = [tv.get("value", "") for tv in tag_values]
+            _log_name_list("Tempo span names", emitted_span_names)
     except Exception as exc:
         logger.warning("Failed to fetch Tempo operations: %s", exc)
 
@@ -453,6 +586,25 @@ async def validate_spans(
             )
             continue
         await _validate_parent_child(session, tempo_url, rel, report)
+
+    # Reverse direction: span names Tempo holds that the contract never mentions.
+    # Added last so no existing check's position in the report moves.
+    unaccounted_spans = _unaccounted_span_names(emitted_span_names, expected)
+    if unaccounted_spans:
+        _log_name_list(
+            "Span names emitted but NOT accounted for by expected_spans.json "
+            "(warning only, does not fail CI)",
+            unaccounted_spans,
+        )
+    report.add(
+        _reverse_coverage_result(
+            check_name="span.reverse_coverage",
+            category="span",
+            noun="span names",
+            emitted_count=len(emitted_span_names),
+            unaccounted=unaccounted_spans,
+        )
+    )
 
 
 async def _check_attributes_on_first_trace(
@@ -808,93 +960,220 @@ SKIPPED_METRIC_GROUPS = ("description", "grafana_dashboards", SYNC_DIAGNOSTICS_G
 
 async def _log_prometheus_metric_names(
     session: aiohttp.ClientSession, prometheus_url: str
-) -> None:
-    """Log the harness-relevant metric names Prometheus currently knows.
+) -> list[str]:
+    """Log every metric family name Prometheus knows, and return the list.
 
-    Diagnostic only — this output appears in CI logs and helps debug name
-    mismatches between expected_metrics.json and actual emissions. Failures
-    are warnings, never check failures.
+    Two jobs. It is the diagnostic that makes a name mismatch between
+    expected_metrics.json and actual emissions debuggable from a CI log, and it
+    is the emitted inventory the reverse coverage check compares the contract
+    against. Failures are warnings, never check failures; an empty return means
+    "could not determine", which the reverse check reports as not evaluated
+    rather than as a clean run.
+
+    Deliberately unfiltered. This used to keep only names matching 19
+    hard-coded prefixes, which made it useless for the job it exists to do: on
+    the last CI run it printed 147 of 422 families, and none of the prefixes
+    covered state_accounting_*, node_family_*, overlay_peer_disconnects or the
+    pathfind_* histograms, so a coverage gap in exactly those families could
+    not be seen here. An allow-list can only ever show names someone already
+    thought to look for, which is the opposite of what a discovery aid needs
+    to do. The whole list is a few kilobytes of CI log, so there is nothing to
+    save by truncating it.
+
+    Sorted and printed one name per line so two runs' output can be diffed
+    directly; the Prometheus API does not promise an order, and the whole list
+    on one log line was neither readable nor diffable.
 
     Args:
         session:        aiohttp client session.
         prometheus_url: Prometheus base URL.
+
+    Returns:
+        Sorted metric family names, or an empty list if the fetch failed.
     """
     try:
         async with session.get(
             f"{prometheus_url}/api/v1/label/__name__/values"
         ) as resp:
             label_data = await resp.json()
-            all_metrics = label_data.get("data", [])
-            relevant = [
-                m
-                for m in all_metrics
-                if m.startswith(
-                    (
-                        "span_",
-                        "rpc_method",
-                        "cache_",
-                        "txq_",
-                        "object_count",
-                        "load_factor",
-                        "nodestore",
-                        "ledgermaster",
-                        "peer_finder",
-                        "jobq_",
-                        "total_bytes",
-                        "total_messages",
-                        "validation_agreement",
-                        "validator_health",
-                        "peer_quality",
-                        "ledger_economy",
-                        "state_tracking",
-                        "storage_detail",
-                        # Fresh-node sync diagnostics. Two of these only exist
-                        # under specific conditions (a rejected handshake, a
-                        # configured UNL site), so listing them here is how a
-                        # failed run shows whether the metric was absent or
-                        # merely misnamed.
-                        "dns_resolve",
-                        "overlay_connect",
-                        "overlay_dial",
-                        "handshake_",
-                        "unl_",
-                        "clock_close_offset",
-                        # Sync-state signals. sync_state carries the gate,
-                        # stall-seconds, ledgers-behind and time-to-first-FULL
-                        # sub-series; state_changes_total is now labelled with
-                        # the {from,to} transition edge, and
-                        # server_stall_events_total is the stall episode count.
-                        "sync_state",
-                        "state_changes_total",
-                        "server_stall_events",
-                        # Acquire + SHAMap signals. sync_acquire carries the
-                        # missing-node, stash-depth and in-flight sub-series and
-                        # shamap_cache_hit_rate the tree-node cache rate; both
-                        # are asserted. The sync_acquire_* / sync_addnode_total
-                        # counters are listed here for diagnosis only -- they
-                        # need a real ledger acquire, so they are not asserted
-                        # (see _acquire_note in expected_metrics.json).
-                        "sync_acquire",
-                        "sync_addnode_total",
-                        "shamap_cache_hit_rate",
-                        # JobQueue saturation signals. jobq_saturation carries
-                        # the pool running_tasks/worker_threads/total_waiting
-                        # sub-series and is asserted. No new prefix entry is
-                        # needed -- the "jobq_" prefix above already matches it
-                        # (it was added for the StatsD jobq_job_count gauge),
-                        # so listing it again would only duplicate the
-                        # diagnostic output.
-                    )
-                )
-            ]
-            logger.info(
-                "Prometheus metrics (relevant, %d of %d total): %s",
-                len(relevant),
-                len(all_metrics),
-                relevant,
-            )
+            all_metrics = sorted(label_data.get("data", []))
+            _log_name_list("Prometheus metric families", all_metrics)
+            return all_metrics
     except Exception as exc:
         logger.warning("Failed to fetch Prometheus metric names: %s", exc)
+        return []
+
+
+def _selector_metric_name(selector: str) -> str:
+    """Strip any label matcher from a contract selector, leaving the name.
+
+    Contract entries are usually bare names but some carry a matcher, e.g.
+    ``ledger_economy{metric="base_fee_xrp"}``. Reverse coverage compares family
+    names, and Prometheus reports one ``__name__`` per family regardless of how
+    many label combinations it has, so the matcher must come off first.
+
+    Args:
+        selector: A metric name, optionally followed by a brace matcher group.
+
+    Returns:
+        The bare metric family name.
+    """
+    return selector.split("{", 1)[0].strip()
+
+
+def _metric_family_candidates(name: str) -> list[str]:
+    """The names a contract entry could use to account for an emitted series.
+
+    One histogram instrument reaches Prometheus as three names. Folding the
+    ``_bucket``/``_count``/``_sum`` suffix back off gives the base family, so a
+    contract entry or a regex written for the family covers all three.
+
+    The unfolded name is always kept as a candidate too, and a name is
+    accounted for if *any* candidate matches. That is what makes folding
+    ``_count`` safe even though a plain gauge can legitimately end in it
+    (``jobq_job_count`` does): the gauge matches on its own full name, and the
+    extra ``jobq_job`` candidate can only ever add coverage, never remove it.
+
+    Args:
+        name: Emitted Prometheus metric family name.
+
+    Returns:
+        ``[name]``, plus the base family if ``name`` carries a histogram suffix.
+    """
+    candidates = [name]
+    for suffix in HISTOGRAM_SUFFIXES:
+        if name.endswith(suffix) and len(name) > len(suffix):
+            candidates.append(name[: -len(suffix)])
+            break
+    return candidates
+
+
+def _accounted_metric_names(
+    expected: dict[str, Any],
+) -> tuple[set[str], list[re.Pattern[str]]]:
+    """Everything expected_metrics.json accounts for, in family-name form.
+
+    Three sources, all of which count as "the contract has considered this
+    name" — which is what reverse coverage asks, not "is this name asserted":
+
+    * every selector under a group's ``metrics`` (asserted),
+    * every key of ``not_asserted.metrics_excluded`` (deliberately unasserted
+      with a written reason),
+    * every regex under the top-level ``accounted_patterns`` (bulk families).
+
+    Literal histogram entries are expanded to the whole triple plus the base
+    family, so listing only ``foo_bucket`` still accounts for ``foo_count`` and
+    ``foo_sum``. The expansion is keyed off ``_bucket``/``_sum`` only, never off
+    ``_count`` alone, so a gauge named ``..._count`` does not silently claim a
+    shorter base family that nothing emits.
+
+    Args:
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        A (literal family names, compiled patterns) pair.
+    """
+    literals: set[str] = set()
+    for group in expected.values():
+        if not isinstance(group, dict):
+            continue
+        for selector in group.get("metrics", []):
+            literals.add(_selector_metric_name(selector))
+        # not_asserted records its entries under metrics_excluded, keyed by name.
+        literals.update(group.get("metrics_excluded", {}))
+
+    for name in list(literals):
+        for suffix in ("_bucket", "_sum"):
+            if name.endswith(suffix) and len(name) > len(suffix):
+                base = name[: -len(suffix)]
+                literals.add(base)
+                literals.update(base + s for s in HISTOGRAM_SUFFIXES)
+                break
+
+    patterns = [
+        re.compile(entry["pattern"])
+        for entry in expected.get("accounted_patterns", [])
+        if entry.get("pattern")
+    ]
+    return literals, patterns
+
+
+def _unaccounted_metric_names(
+    emitted: list[str], expected: dict[str, Any]
+) -> list[str]:
+    """Metric families Prometheus holds that the contract never mentions.
+
+    Args:
+        emitted:  Metric family names from the Prometheus __name__ label.
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        Sorted list of emitted family names nothing in the contract accounts for.
+    """
+    literals, patterns = _accounted_metric_names(expected)
+    unaccounted = []
+    for name in emitted:
+        candidates = _metric_family_candidates(name)
+        accounted = any(
+            candidate in literals
+            or any(pattern.fullmatch(candidate) for pattern in patterns)
+            for candidate in candidates
+        )
+        if not accounted:
+            unaccounted.append(name)
+    return sorted(unaccounted)
+
+
+def _metric_check_targets(
+    expected: dict[str, Any],
+) -> tuple[list[tuple[str, str]], list[tuple[str, str, list[str]]]]:
+    """Flatten expected_metrics.json into the two lists of check targets.
+
+    Args:
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        A (metric targets, label targets) pair. Metric targets are
+        (group, metric selector) for every name under a group's "metrics".
+        Label targets are (group, label, that group's metric selectors) for
+        every name under a group's "required_labels" — read for every group
+        that declares it, not just spanmetrics. Nothing read the key at all
+        until this was added, so the four labels the spanmetrics group
+        documented as required had never actually been checked.
+
+    Note:
+        A group is any top-level object EXCEPT those in SKIPPED_METRIC_GROUPS.
+        The contract also carries a string ("description"), a list
+        ("accounted_patterns") and an object that declares no metrics
+        ("grafana_dashboards"); the isinstance test skips the first two
+        structurally rather than by name, so adding another non-group key cannot
+        break this function, and the third contributes nothing because it has no
+        "metrics" key.
+
+        The name-based exclusion is still required for one group, so the
+        isinstance test alone is NOT equivalent to it. "sync_diagnostics" is an
+        object and does declare "metrics", but it has its own validator,
+        assert_sync_diagnostics_metrics, which polls and reports the same names.
+        Selecting it here as well would poll every metric in the group twice and
+        report each check twice, inflating the totals. It is excluded by name
+        because the reason is ownership, which no structural test can express.
+    """
+    groups = [
+        (category_key, category_data)
+        for category_key, category_data in expected.items()
+        if isinstance(category_data, dict) and category_key not in SKIPPED_METRIC_GROUPS
+    ]
+    targets = [
+        (category_key, metric_name)
+        for category_key, category_data in groups
+        for metric_name in category_data.get("metrics", [])
+    ]
+    label_targets = [
+        (category_key, label, category_data.get("metrics", []))
+        for category_key, category_data in groups
+        for label in category_data.get("required_labels", [])
+    ]
+    return targets, label_targets
 
 
 async def validate_metrics(
@@ -904,6 +1183,11 @@ async def validate_metrics(
 ) -> None:
     """Validate that expected metrics appear in Prometheus with non-zero values.
 
+    Two kinds of check come out of expected_metrics.json: every name under a
+    group's "metrics" must have at least one series, and every label under a
+    group's "required_labels" must reach at least one of that group's series
+    with a non-empty value.
+
     Args:
         session:        aiohttp client session.
         prometheus_url: Base URL for Prometheus API (e.g., http://localhost:9090).
@@ -911,49 +1195,115 @@ async def validate_metrics(
     """
     logger.info("--- Metric Validation (Prometheus) ---")
 
-    await _log_prometheus_metric_names(session, prometheus_url)
+    emitted_metric_names = await _log_prometheus_metric_names(session, prometheus_url)
 
     with open(EXPECTED_METRICS_FILE) as f:
         expected = json.load(f)
 
-    # Flatten every (category, metric) pair the contract asserts, then poll
-    # them concurrently against ONE shared deadline. Polling them serially made
-    # each metric own its own timeout, so the waits were additive: 58 metrics x
-    # 45 s = 43.5 min, which overran the CI job budget and lost the
-    # artifact-upload and summary diagnostics. Sharing the deadline bounds the
-    # whole phase to a single poll window.
-    targets = [
-        (category_key, metric_name)
-        for category_key, category_data in expected.items()
-        if category_key not in SKIPPED_METRIC_GROUPS
-        for metric_name in category_data.get("metrics", [])
-    ]
+    # Flatten the contract, then poll every target concurrently against ONE
+    # shared deadline. Polling them serially made each metric own its own
+    # timeout, so the waits were additive: 58 metrics x 45 s = 43.5 min, which
+    # overran the CI job budget and lost the artifact-upload and summary
+    # diagnostics. Sharing the deadline bounds the whole phase to a single
+    # poll window.
+    #
+    # _metric_check_targets applies SKIPPED_METRIC_GROUPS, which is what keeps
+    # "sync_diagnostics" out of this walk: it has its own validator,
+    # assert_sync_diagnostics_metrics, and letting both walk it would poll and
+    # report every metric in the group twice.
+    targets, label_targets = _metric_check_targets(expected)
 
     deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
     sem = asyncio.Semaphore(METRIC_POLL_CONCURRENCY)
-    checks = await asyncio.gather(
-        *(
-            _check_prometheus_metric(
-                session, prometheus_url, metric_name, category, deadline, sem
+    # Both kinds of check share the one deadline and the one concurrency bound,
+    # so the label checks cost no extra poll window and add no extra load.
+    metric_checks, label_checks = await asyncio.gather(
+        asyncio.gather(
+            *(
+                _check_prometheus_metric(
+                    session, prometheus_url, metric_name, category, deadline, sem
+                )
+                for category, metric_name in targets
             )
-            for category, metric_name in targets
-        )
+        ),
+        asyncio.gather(
+            *(
+                _check_metric_label(
+                    session,
+                    prometheus_url,
+                    category,
+                    label,
+                    metric_selectors,
+                    deadline,
+                    sem,
+                )
+                for category, label, metric_selectors in label_targets
+            )
+        ),
     )
 
     # Add in contract order, not completion order, so the report and its log
-    # lines stay deterministic across runs.
-    for check in checks:
+    # lines stay deterministic across runs. Existence checks keep their place
+    # ahead of the label checks, so no existing check's position moves.
+    for check in [*metric_checks, *label_checks]:
         report.add(check)
+
+    # Reverse direction: metric families Prometheus holds that the contract
+    # never mentions. Added last so no existing check's position moves.
+    unaccounted_metrics = _unaccounted_metric_names(emitted_metric_names, expected)
+    if unaccounted_metrics:
+        _log_name_list(
+            "Metric families emitted but NOT accounted for by expected_metrics.json "
+            "(warning only, does not fail CI)",
+            unaccounted_metrics,
+        )
+    report.add(
+        _reverse_coverage_result(
+            check_name="metric.reverse_coverage",
+            category="metric",
+            noun="metric families",
+            emitted_count=len(emitted_metric_names),
+            unaccounted=unaccounted_metrics,
+        )
+    )
+
+
+def _selector_with_label(metric_selector: str, label: str) -> str:
+    """Add a "label is present and non-empty" matcher to a metric selector.
+
+    ``<label>!=""`` is the only matcher that expresses the requirement. An
+    absent Prometheus label is indistinguishable from an empty-string one, so
+    ``<label>=~".*"`` matches series that never carried the label at all and a
+    check written that way would pass on a node that lost the attribute
+    entirely. ``!=""`` rejects both the absent and the blank case.
+
+    Selectors in expected_metrics.json are usually bare names, but some already
+    carry a matcher (``ledger_economy{metric="base_fee_xrp"}``), so the matcher
+    is merged into an existing brace group rather than appended after it.
+
+    Args:
+        metric_selector: A metric name, optionally with a brace matcher group.
+        label:           Prometheus label name that must be present, non-empty.
+
+    Returns:
+        The selector with the label matcher merged in.
+    """
+    matcher = label + '!=""'
+    if metric_selector.endswith("}"):
+        head = metric_selector[:-1].rstrip()
+        separator = "" if head.endswith("{") else ", "
+        return head + separator + matcher + "}"
+    return metric_selector + "{" + matcher + "}"
 
 
 async def _poll_series_count(
     session: aiohttp.ClientSession,
     prometheus_url: str,
-    metric_name: str,
+    selectors: list[str],
     deadline: float,
     sem: asyncio.Semaphore,
 ) -> int:
-    """Poll Prometheus until a metric has series or the deadline passes.
+    """Poll Prometheus until a selector has series or the deadline passes.
 
     Uses the /api/v1/series endpoint instead of an instant query.
     Beast::insight StatsD gauges only mark dirty on value *changes*, so a gauge
@@ -968,16 +1318,19 @@ async def _poll_series_count(
     Args:
         session:        aiohttp client session.
         prometheus_url: Prometheus base URL.
-        metric_name:    Prometheus metric name.
+        selectors:      One or more Prometheus selectors. /api/v1/series takes
+                        repeated match[] parameters and unions their results,
+                        so several selectors answer "does ANY of these have a
+                        series" in a single request.
         deadline:       Monotonic deadline shared by every metric in the run.
         sem:            Bounds how many requests reach Prometheus at once. It
                         is held only across the request, never across the
                         sleep, so one absent metric cannot starve the others.
 
     Returns:
-        Number of series found, or 0 if the metric never appeared.
+        Number of series found, or 0 if nothing ever appeared.
     """
-    params: dict[str, str] = {"match[]": metric_name}
+    params: list[tuple[str, str]] = [("match[]", s) for s in selectors]
     while True:
         async with sem:
             async with session.get(
@@ -1015,7 +1368,7 @@ async def _check_prometheus_metric(
     """
     try:
         series_count = await _poll_series_count(
-            session, prometheus_url, metric_name, deadline, sem
+            session, prometheus_url, [metric_name], deadline, sem
         )
         return CheckResult(
             name=f"metric.{category}.{metric_name}",
@@ -1121,9 +1474,200 @@ async def assert_sync_diagnostics_metrics(
         report.add(check)
 
 
+async def _check_metric_label(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    category: str,
+    label: str,
+    metric_selectors: list[str],
+    deadline: float,
+    sem: asyncio.Semaphore,
+) -> CheckResult:
+    """Check that a group's required label reaches Prometheus non-empty.
+
+    A "required_labels" entry names a label that at least one series of that
+    group must carry with a non-empty value. It is checked per group rather
+    than per metric because the requirement is about the label reaching
+    Prometheus at all, and one series carrying it proves the pipeline works.
+
+    The failure this guards against is a label going missing while every metric
+    in the group still exists, so the existence checks stay green. xrpl_node_id
+    is the case that motivated it: losing it makes Grafana Cloud trace ingest
+    fold distinct nodes into one.
+
+    Args:
+        session:          aiohttp client session.
+        prometheus_url:   Prometheus base URL.
+        category:         Group key from expected_metrics.json.
+        label:            Label name that must be present and non-empty.
+        metric_selectors: The group's asserted metric selectors.
+        deadline:         Monotonic deadline shared by every metric in the run.
+        sem:              Bounds how many requests reach Prometheus at once.
+
+    Returns:
+        The CheckResult for this (group, label) pair. The caller adds it to the
+        report so report order follows the contract file.
+    """
+    check_name = f"metric.{category}.label.{label}"
+
+    if not metric_selectors:
+        # required_labels on a group with no asserted metrics would be a check
+        # that silently never runs — the exact failure mode it exists to catch.
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=False,
+            message=(
+                f"{label}: group '{category}' declares required_labels but no "
+                "metrics, so there is nothing to check the label against"
+            ),
+        )
+
+    selectors = [_selector_with_label(m, label) for m in metric_selectors]
+    try:
+        series_count = await _poll_series_count(
+            session, prometheus_url, selectors, deadline, sem
+        )
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=series_count > 0,
+            message=(
+                f"{label}: present and non-empty on {series_count} "
+                f"{category} series"
+                if series_count > 0
+                else f"{label}: no {category} series carries it with a "
+                "non-empty value (an absent label and an empty one are the "
+                "same thing in Prometheus, so this covers both). If this "
+                "group's own metric checks also failed, the metrics are "
+                "missing rather than the label."
+            ),
+            details={"series_count": series_count, "selectors": selectors},
+        )
+    except Exception as exc:
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=False,
+            message=f"{label}: query failed ({exc})",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Log-Trace Correlation Validation (Loki API)
 # ---------------------------------------------------------------------------
+
+
+async def _loki_json(
+    session: aiohttp.ClientSession,
+    loki_url: str,
+    path: str,
+    params: dict[str, str] | None = None,
+) -> dict[str, Any] | None:
+    """GET one Loki API path and decode it, or None if that failed.
+
+    Diagnostic-only helper: every failure is a warning, so one unreachable
+    endpoint does not suppress the rest of the diagnostic.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+        path:     API path, including its leading slash.
+        params:   Optional query parameters.
+
+    Returns:
+        The decoded response body, or None when the request or decode failed.
+    """
+    try:
+        async with session.get(f"{loki_url}{path}", params=params or {}) as resp:
+            return await resp.json()
+    except Exception as exc:  # noqa: BLE001 - diagnostic must never raise
+        logger.warning("Loki diagnostic: GET %s failed: %s", path, exc)
+        return None
+
+
+async def _loki_count(
+    session: aiohttp.ClientSession, loki_url: str, query: str
+) -> int | None:
+    """Sum an instant LogQL count over every stream it returns.
+
+    Returns None rather than 0 when Loki could not be queried. "Loki holds
+    none" and "Loki did not answer" are different findings, and printing the
+    same number for both is how a diagnostic misleads.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+        query:    An instant LogQL metric query.
+
+    Returns:
+        Total entry count, or None when the query could not be evaluated.
+    """
+    params = {"query": query, "time": str(int(time.time()))}
+    data = await _loki_json(session, loki_url, "/loki/api/v1/query", params)
+    if data is None:
+        return None
+    try:
+        results = data.get("data", {}).get("result", [])
+        return sum(int(float(entry["value"][1])) for entry in results)
+    except Exception as exc:  # noqa: BLE001 - diagnostic must never raise
+        logger.warning("Loki diagnostic: could not read count for %s: %s", query, exc)
+        return None
+
+
+async def _log_loki_diagnostics(session: aiohttp.ClientSession, loki_url: str) -> None:
+    """Log what Loki holds for the stream the correlation checks select.
+
+    Same role as _log_prometheus_metric_names on the metric side, and the same
+    contract: diagnostic only, every failure a warning, never a check result.
+    A failed correlation check says a log line was not found; these numbers say
+    which of the three Loki-side reasons applies — nothing was ingested at all,
+    entries exist but none carry a trace id, or entries arrived under a label
+    set this selector cannot match (which the label inventory exposes).
+
+    Counted over exactly LOG_QUERY_WINDOW_SECONDS, the window the checks use.
+    A wider window here would report entries the checks cannot see, including a
+    previous run's, and describe a failure that is not the one at hand.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+    """
+    window = f"[{LOG_QUERY_WINDOW_SECONDS}s]"
+    logger.info("Loki diagnostic: the checks below query %s", LOG_CORRELATION_QUERY)
+
+    labels = await _loki_json(session, loki_url, "/loki/api/v1/labels")
+    if labels is not None:
+        names = labels.get("data") or []
+        logger.info(
+            "Loki diagnostic: stream labels Loki knows: %s",
+            ", ".join(names) or "(none)",
+        )
+
+    values = await _loki_json(
+        session, loki_url, "/loki/api/v1/label/service_name/values"
+    )
+    if values is not None:
+        found = values.get("data") or []
+        logger.info(
+            "Loki diagnostic: service_name values: %s", ", ".join(found) or "(none)"
+        )
+
+    for label, query in (
+        ("selector only", f"count_over_time({LOG_STREAM_SELECTOR}{window})"),
+        (
+            "selector + line filter",
+            f"count_over_time({LOG_CORRELATION_QUERY} {window})",
+        ),
+    ):
+        total = await _loki_count(session, loki_url, query)
+        logger.info(
+            "Loki diagnostic: %s = %s entries in the last %ds  [%s]",
+            label,
+            "unavailable" if total is None else total,
+            LOG_QUERY_WINDOW_SECONDS,
+            query,
+        )
 
 
 async def validate_log_trace_correlation(
@@ -1146,13 +1690,14 @@ async def validate_log_trace_correlation(
     """
     logger.info("--- Log-Trace Correlation Validation (Loki) ---")
 
+    # Numbers first, so a failure below is read next to the state that caused
+    # it. Never raises and never adds a check (see _log_loki_diagnostics).
+    await _log_loki_diagnostics(session, loki_url)
+
     # Check 1: Any logs with trace_id exist.
     try:
         params = {
-            # Loki's OTLP ingestion promotes service.name to the label
-            # `service_name`. A `job` attribute is structured metadata, which a
-            # stream selector cannot match — see otel-collector-config.yaml.
-            "query": '{service_name="xrpld"} |= "trace_id="',
+            "query": LOG_CORRELATION_QUERY,
             "limit": 5,
             "direction": "backward",
             **_log_query_window(),
@@ -1196,7 +1741,7 @@ async def validate_log_trace_correlation(
     # written to a log must resolve to a trace that was actually exported.
     try:
         loki_params = {
-            "query": '{service_name="xrpld"} |= "trace_id="',
+            "query": LOG_CORRELATION_QUERY,
             "limit": 5,
             "direction": "backward",
             **_log_query_window(),
