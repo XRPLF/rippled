@@ -222,6 +222,14 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
     }
 }
 
+// Telemetry-only helper, so it is compiled out with telemetry off. Left
+// running it would cost several json lookups, up to two string copies and a
+// handler-table lookup on every failed request, for a name nobody records.
+// Its result IS the span name, so `if (span)` cannot guard it: at that point
+// no span exists to test. The single call site is gated the same way, which
+// also keeps this file-static function referenced in both configurations.
+#ifdef XRPL_ENABLE_TELEMETRY
+
 // Resolve the span suffix / command attribute for a request that failed in
 // fillHandler. Returns the canonical handler name for a recognized command
 // (a finite, bounded set) or the literal "unknown" for a request that omits
@@ -255,6 +263,8 @@ resolveCommandSpanName(JsonContext const& context)
                                 : std::string_view{rpc_span::val::unknownCommand};
 }
 
+#endif  // XRPL_ENABLE_TELEMETRY
+
 }  // namespace
 
 Status
@@ -263,6 +273,11 @@ doCommand(rpc::JsonContext& context, json::Value& result)
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
+        // Every statement below only feeds the error span, and the span name
+        // itself comes from resolveCommandSpanName(), so there is no span
+        // object to test with `if (span)`. With telemetry off the whole block
+        // is compiled out and a storm of malformed requests pays nothing.
+#ifdef XRPL_ENABLE_TELEMETRY
         // Bound the span name and command attribute to the finite set of
         // registered handler names (plus "unknown") — see the helper for why
         // raw request input must not reach the telemetry pipeline.
@@ -278,6 +293,7 @@ doCommand(rpc::JsonContext& context, json::Value& result)
                                         : std::string_view(rpc_span::val::user));
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(getErrorInfo(error).token.cStr());
+#endif  // XRPL_ENABLE_TELEMETRY
 
         injectError(error, result);
         return error;
