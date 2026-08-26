@@ -704,14 +704,14 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
-        // Pre-fixCleanup3_4_0 the immutability of sfAsset, sfAccount
+        // Pre-featureLendingProtocolV1_1 the immutability of sfAsset, sfAccount
         // and sfShareMPTID is enforced by ValidVault directly, which reports
         // "violation of vault immutable data" on the first pass. ValidVault
         // returns early on the second pass (result already tec), so the check
-        // does not escalate to tef. Once fixCleanup3_4_0 activates, the same fields are
+        // does not escalate to tef. Once featureLendingProtocolV1_1 activates, the same fields are
         // covered by NoModifiedUnmodifiableFields (see the three cases above);
         // the two paths are mutually exclusive so both need coverage.
-        auto const preLendingV11Amendments = all_ - fixCleanup3_4_0;
+        auto const preLendingV11Amendments = all_ - featureLendingProtocolV1_1;
         doInvariantCheck(
             makeEnv(preLendingV11Amendments),
             {"violation of vault immutable data"},
@@ -1497,8 +1497,7 @@ class InvariantsVault_test : public InvariantsBase
         }
 
         // ttVAULT_SET: owner is immutable (enforced by
-        // NoModifiedUnmodifiableFields under fixCleanup3_4_0; sfOwner,
-        // sfWithdrawalPolicy and sfScale pre-date featureLendingProtocolV1_1).
+        // NoModifiedUnmodifiableFields under featureLendingProtocolV1_1.
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -1552,10 +1551,10 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
-        // fixCleanup3_4_0 moves the vault immutability checks from VaultInvariant to
+        // featureLendingProtocolV1_1 moves the vault immutability checks from VaultInvariant to
         // InvariantCheck.
         doInvariantCheck(
-            makeEnv(all_ - fixCleanup3_4_0),
+            makeEnv(all_),
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));

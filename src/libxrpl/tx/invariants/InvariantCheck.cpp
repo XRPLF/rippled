@@ -1233,11 +1233,8 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfOwner) ||
                         kFieldChanged(before, after, sfWithdrawalPolicy) ||
                         kFieldChanged(before, after, sfScale) ||
-                        kFieldChanged(before, after, sfLEVersion);
-                }
-                if (view.rules().enabled(fixCleanup3_4_0))
-                {
-                    bad = bad || kFieldChanged(before, after, sfAsset) ||
+                        kFieldChanged(before, after, sfLEVersion) ||
+                        kFieldChanged(before, after, sfAsset) ||
                         kFieldChanged(before, after, sfAccount) ||
                         kFieldChanged(before, after, sfShareMPTID);
                 }
