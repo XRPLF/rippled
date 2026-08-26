@@ -1164,7 +1164,7 @@ private:
                         .id = keylet.key,
                         .holder = pseudo,
                     }),
-                    Ter(guarded ? TER{tecNO_PERMISSION} : TER{tecPRECISION_LOSS}));
+                    Ter(guarded ? TER{tecPSEUDO_ACCOUNT} : TER{tecPRECISION_LOSS}));
                 env.close();
             }
 
@@ -1176,7 +1176,7 @@ private:
                         .holder = pseudo,
                         .amount = asset(10).value(),
                     }),
-                    Ter(guarded ? TER{tecNO_PERMISSION} : TER{tecINVARIANT_FAILED}));
+                    Ter(guarded ? TER{tecPSEUDO_ACCOUNT} : TER{tecINVARIANT_FAILED}));
                 env.close();
             }
 

@@ -96,14 +96,15 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    // A pseudo-account is the issuer of the shares, so a clawback from it is a no-op.
+    // A pseudo-account holds no vault shares, so a clawback naming one is a no-op: the vault's own
+    // pseudo-account issues the shares, and no flow hands them to another one.
     // Pre-fixCleanup3_4_0: an implicit amount ends in tecPRECISION_LOSS, an explicit one debits the
     // vault and trips the "shares must move" invariant.
     // Post-fixCleanup3_4_0: refused here.
     if (ctx.view.rules().enabled(fixCleanup3_4_0) && isPseudoAccount(ctx.view, holder))
     {
         JLOG(ctx.j.debug()) << "VaultClawback: holder is a pseudo-account.";
-        return tecNO_PERMISSION;
+        return tecPSEUDO_ACCOUNT;
     }
 
     Asset const share = MPTIssue{mptIssuanceID};
