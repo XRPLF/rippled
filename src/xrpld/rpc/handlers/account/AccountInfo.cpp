@@ -5,6 +5,8 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
@@ -17,19 +19,19 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/format/free_funcs.hpp>
-
 #include <array>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 namespace xrpl {
@@ -50,22 +52,16 @@ void
 injectSLE(json::Value& jv, SLE const& sle)
 {
     jv = sle.getJson(JsonOptions::Values::None);
-    if (sle.getType() == ltACCOUNT_ROOT)
+    XRPL_ASSERT(sle.getType() == ltACCOUNT_ROOT, "xrpl::injectSLE : sle is account root");
+    if (sle.isFieldPresent(sfEmailHash))
     {
-        if (sle.isFieldPresent(sfEmailHash))
-        {
-            auto const& hash = sle.getFieldH128(sfEmailHash);
-            Blob const b(hash.begin(), hash.end());
-            std::string md5 = strHex(makeSlice(b));
-            boost::to_lower(md5);
-            // VFALCO TODO Give a name to this constant and move it
-            //             to a more visible location.
-            jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
-        }
-    }
-    else
-    {
-        jv[jss::Invalid] = true;
+        auto const& hash = sle.getFieldH128(sfEmailHash);
+        Blob const b(hash.begin(), hash.end());
+        std::string md5 = strHex(makeSlice(b));
+        md5 = toLower(md5);
+        // VFALCO TODO Give a name to this constant and move it
+        //             to a more visible location.
+        jv[jss::urlgravatar] = std::format("https://www.gravatar.com/avatar/{}", md5);
     }
 }
 
@@ -84,7 +80,7 @@ injectSLE(json::Value& jv, SLE const& sle)
 
 // TODO(tom): what is that "default"?
 json::Value
-doAccountInfo(RPC::JsonContext& context)
+doAccountInfo(rpc::JsonContext& context)
 {
     auto& params = context.params;
 
@@ -92,22 +88,22 @@ doAccountInfo(RPC::JsonContext& context)
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return RPC::invalidFieldError(jss::account);
+            return rpc::invalidFieldError(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
         if (!params[jss::ident].isString())
-            return RPC::invalidFieldError(jss::ident);
+            return rpc::invalidFieldError(jss::ident);
         strIdent = params[jss::ident].asString();
     }
     else
     {
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
     }
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
@@ -116,34 +112,42 @@ doAccountInfo(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
-        RPC::injectError(RpcActMalformed, result);
+        rpc::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> kLsFlags{
-        {{"defaultRipple", lsfDefaultRipple},
-         {"depositAuth", lsfDepositAuth},
-         {"disableMasterKey", lsfDisableMaster},
-         {"disallowIncomingXRP", lsfDisallowXRP},
-         {"globalFreeze", lsfGlobalFreeze},
-         {"noFreeze", lsfNoFreeze},
-         {"passwordSpent", lsfPasswordSpent},
-         {"requireAuthorization", lsfRequireAuth},
-         {"requireDestinationTag", lsfRequireDestTag}}};
-
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
-        kDisallowIncomingFlags{
-            {{"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
+    // Flags that are always reported.
+    static constexpr auto kAccountRootFlags =
+        std::to_array<std::pair<std::string_view, LedgerSpecificFlags>>(
+            {{"allowTrustLineClawback", lsfAllowTrustLineClawback},
+             {"defaultRipple", lsfDefaultRipple},
+             {"depositAuth", lsfDepositAuth},
+             {"disableMasterKey", lsfDisableMaster},
              {"disallowIncomingCheck", lsfDisallowIncomingCheck},
+             {"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
              {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
-             {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
+             {"disallowIncomingTrustline", lsfDisallowIncomingTrustline},
+             {"disallowIncomingXRP", lsfDisallowXRP},
+             {"globalFreeze", lsfGlobalFreeze},
+             {"noFreeze", lsfNoFreeze},
+             {"passwordSpent", lsfPasswordSpent},
+             {"requireAuthorization", lsfRequireAuth},
+             {"requireDestinationTag", lsfRequireDestTag}});
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineClawbackFlag{
-        "allowTrustLineClawback", lsfAllowTrustLineClawback};
+    // Flags that are only reported when their amendment is enabled. This can't be `constexpr`,
+    // since the amendment IDs are computed at runtime.
+    static auto const kAmendmentGatedFlags =
+        std::to_array<std::tuple<std::string_view, LedgerSpecificFlags, uint256 const&>>(
+            {{"allowTrustLineLocking", lsfAllowTrustLineLocking, featureTokenEscrow}});
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineLockingFlag{
-        "allowTrustLineLocking", lsfAllowTrustLineLocking};
+    // Every `AccountRoot` flag must be reported by `account_info`, so if a new flag is added, it
+    // needs to be added to one of the arrays above. This can't be a `static_assert` because
+    // `getAccountRootFlags()` builds its map at runtime.
+    XRPL_ASSERT_PARTS(
+        kAccountRootFlags.size() + kAmendmentGatedFlags.size() == getAccountRootFlags().size(),
+        "xrpl::doAccountInfo",
+        "number of account flags");
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
@@ -154,7 +158,7 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // It doesn't make sense to request the queue
             // with any closed or validated ledger.
-            RPC::injectError(RpcInvalidParams, result);
+            rpc::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -163,19 +167,13 @@ doAccountInfo(RPC::JsonContext& context)
         result[jss::account_data] = jvAccepted;
 
         json::Value acctFlags{json::ValueType::Object};
-        for (auto const& lsf : kLsFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+        for (auto const& [name, flag] : kAccountRootFlags)
+            acctFlags[name.data()] = sleAccepted->isFlag(flag);
 
-        for (auto const& lsf : kDisallowIncomingFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-
-        acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
-            sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
-
-        if (ledger->rules().enabled(featureTokenEscrow))
+        for (auto const& [name, flag, amendment] : kAmendmentGatedFlags)
         {
-            acctFlags[kAllowTrustLineLockingFlag.first.data()] =
-                sleAccepted->isFlag(kAllowTrustLineLockingFlag.second);
+            if (ledger->rules().enabled(amendment))
+                acctFlags[name.data()] = sleAccepted->isFlag(flag);
         }
 
         result[jss::account_flags] = std::move(acctFlags);
@@ -206,7 +204,7 @@ doAccountInfo(RPC::JsonContext& context)
         if (context.apiVersion > 1u && params.isMember(jss::signer_lists) &&
             !params[jss::signer_lists].isBool())
         {
-            RPC::injectError(RpcInvalidParams, result);
+            rpc::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -260,7 +258,7 @@ doAccountInfo(RPC::JsonContext& context)
 
                 // We expect txs to be returned sorted by SeqProxy.  Verify
                 // that with a couple of asserts.
-                SeqProxy prevSeqProxy = SeqProxy::sequence(0);
+                SeqProxy prevSeqProxy = SeqProxy::rawSequence(0);
                 for (auto const& tx : txs)
                 {
                     json::Value jvTx = json::ValueType::Object;
@@ -331,7 +329,7 @@ doAccountInfo(RPC::JsonContext& context)
     else
     {
         result[jss::account] = toBase58(accountID);
-        RPC::injectError(RpcActNotFound, result);
+        rpc::injectError(RpcActNotFound, result);
     }
 
     return result;

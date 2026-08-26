@@ -235,7 +235,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 Ter(temMALFORMED));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, selfTicketSeq));
-            BEAST_EXPECT(env.le(keylet::ticket(target.id(), selfTicketSeq)));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(selfTicketSeq))));
             BEAST_EXPECT(ownerCount(env, target) == 2);
 
             // Consume the leftover Ticket so target's OwnerCount is back to

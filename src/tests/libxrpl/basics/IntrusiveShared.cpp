@@ -50,11 +50,11 @@ struct Barrier
 {
     std::mutex mtx;
     std::condition_variable cv;
-    int count;
-    int const initial;
+    std::size_t count;
+    std::size_t const initial;
     std::size_t generation{0};
 
-    explicit Barrier(int n) : count(n), initial(n)
+    explicit Barrier(std::size_t n) : count(n), initial(n)
     {
     }
 
@@ -92,6 +92,7 @@ public:
     static constexpr std::size_t kMaxStates = 128;
     static std::array<std::atomic<TrackedState>, kMaxStates> state;
     static std::atomic<std::size_t> nextId;
+
     static TrackedState
     getState(std::size_t id)
     {
@@ -100,13 +101,12 @@ public:
 
         return state[id].load(std::memory_order_acquire);
     }
+
     static void
     resetStates(bool resetCallback)
     {
         for (std::size_t i = 0; i < kMaxStates; ++i)
-        {
             state[i].store(TrackedState::Uninitialized, std::memory_order_release);
-        }
         nextId.store(0, std::memory_order_release);
         if (resetCallback)
             TIBase::tracingCallback = [](TrackedState, std::optional<TrackedState>) {};
@@ -120,6 +120,7 @@ public:
         {
             TIBase::resetStates(resetCallback);
         }
+
         ~ResetStatesGuard()
         {
             TIBase::resetStates(resetCallback);
@@ -130,6 +131,7 @@ public:
     {
         state[id].store(TrackedState::Alive, std::memory_order_relaxed);
     }
+
     ~TIBase() override
     {
         using enum TrackedState;
@@ -217,10 +219,8 @@ TEST(IntrusiveSharedTest, basics)
         auto id = b->id;
         EXPECT_EQ(TIBase::getState(id), Alive);
         EXPECT_EQ(b->useCount(), 1);
-        for (int i = 0; i < 10; ++i)
-        {
+        for (auto i = 0uz; i < 10; ++i)
             strong.push_back(b);
-        }
         b.reset();
         EXPECT_EQ(TIBase::getState(id), Alive);
         strong.resize(strong.size() - 1);
@@ -232,7 +232,7 @@ TEST(IntrusiveSharedTest, basics)
         id = b->id;
         EXPECT_EQ(TIBase::getState(id), Alive);
         EXPECT_EQ(b->useCount(), 1);
-        for (int i = 0; i < 10; ++i)
+        for (auto i = 0uz; i < 10; ++i)
         {
             weak.emplace_back(b);
             EXPECT_EQ(b->useCount(), 1);
@@ -244,8 +244,7 @@ TEST(IntrusiveSharedTest, basics)
         EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
         while (!weak.empty())
         {
-            weak.resize(weak.size() - 1);
-            if (!weak.empty())
+            if (weak.resize(weak.size() - 1); !weak.empty())
             {
                 EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
             }
@@ -280,17 +279,17 @@ TEST(IntrusiveSharedTest, basics)
         TIBase::ResetStatesGuard const rsg{true};
 
         using enum TrackedState;
-        using swu = SharedWeakUnion<TIBase>;
-        swu b = makeSharedIntrusive<TIBase>();
+        using SharedWeak = SharedWeakUnion<TIBase>;
+        SharedWeak b = makeSharedIntrusive<TIBase>();
         EXPECT_TRUE(b.isStrong() && b.useCount() == 1);
         auto id = b.get()->id;
         EXPECT_EQ(TIBase::getState(id), Alive);
-        swu w = b;
+        SharedWeak w = b;
         EXPECT_TRUE(TIBase::getState(id) == Alive);
         EXPECT_TRUE(w.isStrong() && b.useCount() == 2);
         w.convertToWeak();
         EXPECT_TRUE(w.isWeak() && b.useCount() == 1);
-        swu s = w;
+        SharedWeak s = w;
         EXPECT_TRUE(s.isWeak() && b.useCount() == 1);
         s.convertToStrong();
         EXPECT_TRUE(s.isStrong() && b.useCount() == 2);
@@ -380,43 +379,57 @@ TEST(IntrusiveSharedTest, partial_delete)
     std::atomic<bool> destructorRan{false};
     std::atomic<bool> partialDeleteRan{false};
     std::latch partialDeleteStartedSyncPoint{2};
+
     strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
-        if (next == DeletedStarted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            // strong goes out of scope while weak is still in scope
-            // This checks that partialDelete has run to completion
-            // before the destructor is called. A sleep is inserted
-            // inside the partial delete to make sure the destructor is
-            // given an opportunity to run during partial delete.
-            EXPECT_EQ(cur, PartiallyDeleted);
-        }
-        if (next == PartiallyDeletedStarted)
-        {
-            partialDeleteStartedSyncPoint.arrive_and_wait();
-            using namespace std::chrono_literals;
-            // Sleep and let the weak pointer go out of scope,
-            // potentially triggering a destructor while partial delete
-            // is running. The test is to make sure that doesn't happen.
-            std::this_thread::sleep_for(800ms);
-        }
-        if (next == PartiallyDeleted)
-        {
-            EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
-        }
-        if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan.exchange(true));
+            case DeletedStarted:
+                // strong goes out of scope while weak is still in scope
+                // This checks that partialDelete has run to completion
+                // before the destructor is called. A sleep is inserted
+                // inside the partial delete to make sure the destructor is
+                // given an opportunity to run during partial delete.
+                EXPECT_EQ(cur, PartiallyDeleted);
+                break;
+
+            case PartiallyDeletedStarted: {
+                partialDeleteStartedSyncPoint.arrive_and_wait();
+                using namespace std::chrono_literals;
+                // Sleep and let the weak pointer go out of scope,
+                // potentially triggering a destructor while partial delete
+                // is running. The test is to make sure that doesn't happen.
+                std::this_thread::sleep_for(800ms);
+                break;
+            }
+
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan.exchange(true));
+                break;
+
+            case Uninitialized:
+            case Alive:
+                break;
         }
     };
+
     std::thread t1{[&] {
         partialDeleteStartedSyncPoint.arrive_and_wait();
         weak.reset();  // Trigger a full delete as soon as the partial
                        // delete starts
     }};
+
     std::thread t2{[&] {
         strong.reset();  // Trigger a partial delete
     }};
+
     t1.join();
     t2.join();
 
@@ -444,13 +457,24 @@ TEST(IntrusiveSharedTest, destructor)
     std::latch weakResetSyncPoint{2};
     strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
-        }
-        if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan.exchange(true));
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan.exchange(true));
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     std::thread t1{[&] {
@@ -492,25 +516,36 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     auto createVecOfPointers = [&](auto const& toClone, std::default_random_engine& eng)
         -> std::vector<std::variant<SharedIntrusive<TIBase>, WeakIntrusive<TIBase>>> {
         std::vector<std::variant<SharedIntrusive<TIBase>, WeakIntrusive<TIBase>>> result;
-        std::uniform_int_distribution<> toCreateDist(4, 64);
+        std::uniform_int_distribution<std::size_t> toCreateDist(4, 64);
         std::uniform_int_distribution<> isStrongDist(0, 1);
         auto numToCreate = toCreateDist(eng);
         result.reserve(numToCreate);
-        for (int i = 0; i < numToCreate; ++i)
+        for (auto i = 0uz; i < numToCreate; ++i)
         {
             if (isStrongDist(eng))
             {
@@ -523,8 +558,8 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
         }
         return result;
     };
-    constexpr int kLoopIters = 2 * 1024;
-    constexpr int kNumThreads = 16;
+    constexpr auto kLoopIters = 2uz * 1024;
+    constexpr auto kNumThreads = 16uz;
     std::vector<SharedIntrusive<TIBase>> toClone;
     Barrier loopStartSyncPoint{kNumThreads};
     Barrier postCreateToCloneSyncPoint{kNumThreads};
@@ -533,7 +568,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
         std::random_device rd;
         std::vector<std::default_random_engine> result;
         result.reserve(kNumThreads);
-        for (int i = 0; i < kNumThreads; ++i)
+        for (auto i = 0uz; i < kNumThreads; ++i)
             result.emplace_back(rd());
         return result;
     }();
@@ -541,8 +576,8 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
     // cloneAndDestroy clones the strong pointer into a vector of mixed
     // strong and weak pointers and destroys them all at once.
     // threadId==0 is special.
-    auto cloneAndDestroy = [&](int threadId) {
-        for (int i = 0; i < kLoopIters; ++i)
+    auto cloneAndDestroy = [&](std::size_t threadId) {
+        for (auto i = 0uz; i < kLoopIters; ++i)
         {
             // ------ Sync Point ------
             loopStartSyncPoint.arriveAndWait();
@@ -582,11 +617,11 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
     };
     std::vector<std::thread> threads;
     threads.reserve(kNumThreads);
-    for (int i = 0; i < kNumThreads; ++i)
+    for (auto i = 0uz; i < kNumThreads; ++i)
     {
         threads.emplace_back(cloneAndDestroy, i);
     }
-    for (int i = 0; i < kNumThreads; ++i)
+    for (auto i = 0uz; i < kNumThreads; ++i)
     {
         threads[i].join();
     }
@@ -623,31 +658,42 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
     auto createVecOfPointers =
         [&](auto const& toClone,
             std::default_random_engine& eng) -> std::vector<SharedWeakUnion<TIBase>> {
         std::vector<SharedWeakUnion<TIBase>> result;
-        std::uniform_int_distribution<> toCreateDist(4, 64);
+        std::uniform_int_distribution<std::size_t> toCreateDist(4, 64);
         auto numToCreate = toCreateDist(eng);
         result.reserve(numToCreate);
-        for (int i = 0; i < numToCreate; ++i)
+        for (auto i = 0uz; i < numToCreate; ++i)
             result.emplace_back(SharedIntrusive<TIBase>(toClone));
         return result;
     };
-    constexpr int kLoopIters = 2 * 1024;
-    constexpr int kFlipPointersLoopIters = 256;
-    constexpr int kNumThreads = 16;
+    constexpr auto kLoopIters = 2uz * 1024;
+    constexpr auto kFlipPointersLoopIters = 256uz;
+    constexpr auto kNumThreads = 16uz;
     std::vector<SharedIntrusive<TIBase>> toClone;
     Barrier loopStartSyncPoint{kNumThreads};
     Barrier postCreateToCloneSyncPoint{kNumThreads};
@@ -657,7 +703,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
         std::random_device rd;
         std::vector<std::default_random_engine> result;
         result.reserve(kNumThreads);
-        for (int i = 0; i < kNumThreads; ++i)
+        for (auto i = 0uz; i < kNumThreads; ++i)
             result.emplace_back(rd());
         return result;
     }();
@@ -666,8 +712,8 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
     // mixed strong and weak pointers, runs a loop that randomly
     // changes strong pointers to weak pointers,  and destroys them
     // all at once.
-    auto cloneAndDestroy = [&](int threadId) {
-        for (int i = 0; i < kLoopIters; ++i)
+    auto cloneAndDestroy = [&](std::size_t threadId) {
+        for (auto i = 0uz; i < kLoopIters; ++i)
         {
             // ------ Sync Point ------
             loopStartSyncPoint.arriveAndWait();
@@ -702,7 +748,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
             postCreateVecOfPointersSyncPoint.arriveAndWait();
 
             std::uniform_int_distribution<> isStrongDist(0, 1);
-            for (int f = 0; f < kFlipPointersLoopIters; ++f)
+            for (auto f = 0uz; f < kFlipPointersLoopIters; ++f)
             {
                 for (auto& p : v)
                 {
@@ -725,11 +771,11 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
     };
     std::vector<std::thread> threads;
     threads.reserve(kNumThreads);
-    for (int i = 0; i < kNumThreads; ++i)
+    for (auto i = 0uz; i < kNumThreads; ++i)
     {
         threads.emplace_back(cloneAndDestroy, i);
     }
-    for (int i = 0; i < kNumThreads; ++i)
+    for (auto i = 0uz; i < kNumThreads; ++i)
     {
         threads[i].join();
     }
@@ -761,21 +807,32 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         auto [destructorRan, partialDeleteRan] = getDestructorState();
-        if (next == PartiallyDeleted)
+        if (!next)
+            return;
+
+        switch (*next)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            setPartialDeleteRan();
-        }
-        if (next == Deleted)
-        {
-            EXPECT_FALSE(destructorRan);
-            setDestructorRan();
+            case PartiallyDeleted:
+                EXPECT_FALSE(partialDeleteRan || destructorRan);
+                setPartialDeleteRan();
+                break;
+
+            case Deleted:
+                EXPECT_FALSE(destructorRan);
+                setDestructorRan();
+                break;
+
+            case Uninitialized:
+            case Alive:
+            case PartiallyDeletedStarted:
+            case DeletedStarted:
+                break;
         }
     };
 
-    constexpr int kLoopIters = 2 * 1024;
-    constexpr int kLockWeakLoopIters = 256;
-    constexpr int kNumThreads = 16;
+    constexpr auto kLoopIters = 2uz * 1024;
+    constexpr auto kLockWeakLoopIters = 256uz;
+    constexpr auto kNumThreads = 16uz;
     std::vector<SharedIntrusive<TIBase>> toLock;
     Barrier loopStartSyncPoint{kNumThreads};
     Barrier postCreateToLockSyncPoint{kNumThreads};
@@ -784,8 +841,8 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
     // lockAndDestroy creates weak pointers from the strong pointer
     // and runs a loop that locks the weak pointer. At the end of the loop
     // all the pointers are destroyed all at once.
-    auto lockAndDestroy = [&](int threadId) {
-        for (int i = 0; i < kLoopIters; ++i)
+    auto lockAndDestroy = [&](std::size_t threadId) {
+        for (auto i = 0uz; i < kLoopIters; ++i)
         {
             // ------ Sync Point ------
             loopStartSyncPoint.arriveAndWait();
@@ -816,7 +873,7 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
             // Multiple threads all create a weak pointer from the same
             // strong pointer
             WeakIntrusive const weak{toLock[threadId]};
-            for (int wi = 0; wi < kLockWeakLoopIters; ++wi)
+            for (auto wi = 0uz; wi < kLockWeakLoopIters; ++wi)
             {
                 EXPECT_FALSE(weak.expired());
                 auto strong = weak.lock();
@@ -831,11 +888,11 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
     };
     std::vector<std::thread> threads;
     threads.reserve(kNumThreads);
-    for (int i = 0; i < kNumThreads; ++i)
+    for (auto i = 0uz; i < kNumThreads; ++i)
     {
         threads.emplace_back(lockAndDestroy, i);
     }
-    for (int i = 0; i < kNumThreads; ++i)
+    for (auto i = 0uz; i < kNumThreads; ++i)
     {
         threads[i].join();
     }
