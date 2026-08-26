@@ -893,92 +893,127 @@ class InvariantsMisc_test : public InvariantsBase
         // components at a one-ULP overshoot to cover the boundary explicitly,
         // plus the exact-zero case to confirm the boundary itself is
         // accepted.
+        //
+        // The three components are each rounded to sfLoanScale independently,
+        // so for a non-integral (IOU) asset one unit at that scale is absorbed
+        // as quantization noise; for an integral asset (XRP/MPT) the boundary
+        // is enforced strictly. Every case below is therefore run twice: once
+        // against a real XRP-backed broker, so finalize resolves the vault
+        // asset and takes the strict path, and once against a synthetic broker
+        // ID, so the vault cannot be resolved and the tolerant path is taken.
+        // makeLoanSle leaves sfLoanScale at its SoeDefault of 0, making the
+        // tolerance exactly one unit - the same size as the perturbation, which
+        // is what separates the two paths.
         {
             struct Case
             {
                 Number totalValue;
                 Number principal;
                 Number managementFee;
-                bool expectFire;
+                bool expectFireIntegral;
+                bool expectFireTolerant;
             };
             // Baseline: Principal=100, TotalValue=100, MgmtFee=0
-            // (interest due = 0, exactly at the boundary). Each firing case
-            // perturbs one component by -1 or +1 so interest_due = -1.
+            // (interest due = 0, exactly at the boundary). The middle cases
+            // perturb one component by -1 or +1 so interest due = -1, which is
+            // within the tolerance; the last overshoots it at -2.
             auto const cases = std::to_array<Case>({
                 {.totalValue = Number(100),
                  .principal = Number(100),
                  .managementFee = Number(0),
-                 .expectFire = false},
+                 .expectFireIntegral = false,
+                 .expectFireTolerant = false},
                 {.totalValue = Number(99),
                  .principal = Number(100),
                  .managementFee = Number(0),
-                 .expectFire = true},
+                 .expectFireIntegral = true,
+                 .expectFireTolerant = false},
                 {.totalValue = Number(100),
                  .principal = Number(101),
                  .managementFee = Number(0),
-                 .expectFire = true},
+                 .expectFireIntegral = true,
+                 .expectFireTolerant = false},
                 {.totalValue = Number(100),
                  .principal = Number(100),
                  .managementFee = Number(1),
-                 .expectFire = true},
+                 .expectFireIntegral = true,
+                 .expectFireTolerant = false},
+                {.totalValue = Number(98),
+                 .principal = Number(100),
+                 .managementFee = Number(0),
+                 .expectFireIntegral = true,
+                 .expectFireTolerant = true},
             });
 
-            for (auto const& c : cases)
+            for (bool const integralAsset : {true, false})
             {
-                Env env{*this, all_};
-                Account const a1{"A1"};
-                env.fund(XRP(1000), a1);
-                env.close();
-
-                OpenView ov{*env.current()};
-
-                auto const brokerKeylet =
-                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
-                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
-                // Seed a loan whose interest due sits at the boundary
-                // (100 - 100 - 0 = 0). The apply-view update below moves it.
+                for (auto const& c : cases)
                 {
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
-                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
-                    sleLoan->at(sfTotalValueOutstanding) = Number(100);
-                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
-                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
-                    ov.rawInsert(sleLoan);
-                }
+                    Env env{*this, all_};
+                    Account const a1{"A1"};
+                    env.fund(XRP(1000), a1);
+                    env.close();
 
-                STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
-                test::StreamSink sink{beast::Severity::Warning};
-                beast::Journal const jlog{sink};
-                ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
-                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+                    std::optional<Keylet> realBrokerKeylet;
+                    if (integralAsset)
+                    {
+                        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                        realBrokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
+                        if (!BEAST_EXPECT(env.le(*realBrokerKeylet)))
+                            continue;
+                        env.close();
+                    }
 
-                auto sleLoan = ac.view().peek(loanKeylet);
-                if (!BEAST_EXPECT(sleLoan))
-                    continue;
-                sleLoan->at(sfTotalValueOutstanding) = c.totalValue;
-                sleLoan->at(sfPrincipalOutstanding) = c.principal;
-                sleLoan->at(sfManagementFeeOutstanding) = c.managementFee;
-                ac.view().update(sleLoan);
+                    OpenView ov{*env.current()};
 
-                auto transactor = makeTransactor(ac);
-                if (!BEAST_EXPECT(transactor))
-                    continue;
-                TER const result = transactor->checkInvariants(
-                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
-                auto const messages = sink.messages().str();
-                if (c.expectFire)
-                {
-                    BEAST_EXPECT(result == tecINVARIANT_FAILED);
-                    BEAST_EXPECT(messages.contains("Loan interest due is negative"));
-                }
-                else
-                {
-                    // The boundary case (interest due == 0) must not trip the
-                    // interest-due check. Other invariants may still fire
-                    // (e.g. the broker-existence check on this raw-inserted
-                    // loan), so only assert the specific message is absent.
-                    BEAST_EXPECT(!messages.contains("Loan interest due is negative"));
+                    auto const brokerKeylet = realBrokerKeylet.value_or(
+                        keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq())));
+                    auto const loanKeylet =
+                        keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                    // Seed a loan whose interest due sits at the boundary
+                    // (100 - 100 - 0 = 0). The apply-view update below moves it.
+                    {
+                        auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                        sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(100);
+                        sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                        sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                        ov.rawInsert(sleLoan);
+                    }
+
+                    STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+                    test::StreamSink sink{beast::Severity::Warning};
+                    beast::Journal const jlog{sink};
+                    ApplyContext ac{
+                        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                    auto sleLoan = ac.view().peek(loanKeylet);
+                    if (!BEAST_EXPECT(sleLoan))
+                        continue;
+                    sleLoan->at(sfTotalValueOutstanding) = c.totalValue;
+                    sleLoan->at(sfPrincipalOutstanding) = c.principal;
+                    sleLoan->at(sfManagementFeeOutstanding) = c.managementFee;
+                    ac.view().update(sleLoan);
+
+                    auto transactor = makeTransactor(ac);
+                    if (!BEAST_EXPECT(transactor))
+                        continue;
+                    TER const result = transactor->checkInvariants(
+                        tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                    auto const messages = sink.messages().str();
+                    if (integralAsset ? c.expectFireIntegral : c.expectFireTolerant)
+                    {
+                        BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                        BEAST_EXPECT(messages.contains("Loan interest due is negative"));
+                    }
+                    else
+                    {
+                        // Other invariants may still fire (e.g. the
+                        // broker-existence check on this raw-inserted loan), so
+                        // only assert the specific message is absent.
+                        BEAST_EXPECT(!messages.contains("Loan interest due is negative"));
+                    }
                 }
             }
         }
