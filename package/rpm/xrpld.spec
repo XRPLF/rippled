@@ -19,8 +19,10 @@ BuildRequires: systemd-rpm-macros
 
 %undefine _debugsource_packages
 %debug_package
-# Intentionally trade larger RPM artifacts for faster package validation.
-%global _binary_payload w.ufdio
+# Level 3 rather than the el9 default of 19: it shrinks the multi-gigabyte
+# debuginfo package roughly fourfold in about a second, where 19 would spend
+# minutes on it.
+%global _binary_payload w3.zstdio
 %global _find_debuginfo_dwz_opts %{nil}
 
 %build_mtime_policy clamp_to_source_date_epoch
@@ -32,6 +34,8 @@ BuildRequires: systemd-rpm-macros
 xrpld is the reference implementation of the XRP Ledger protocol. It
 participates in the peer-to-peer XRP Ledger network, processes
 transactions, and maintains the ledger database.
+This package also includes the validator-keys tool for validator key
+management.
 
 %prep
 :
@@ -41,6 +45,7 @@ transactions, and maintains the ledger database.
 
 %install
 install -Dm0755 %{_sourcedir}/xrpld                %{buildroot}%{_bindir}/%{name}
+install -Dm0755 %{_sourcedir}/validator-keys       %{buildroot}%{_bindir}/validator-keys
 install -Dm0644 %{_sourcedir}/xrpld.cfg            %{buildroot}%{_sysconfdir}/%{name}/xrpld.cfg
 install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{name}/validators.txt
 
@@ -59,6 +64,8 @@ install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/lo
 # Docs
 install -Dm0644 %{_sourcedir}/LICENSE.md %{buildroot}%{_docdir}/%{name}/LICENSE.md
 install -Dm0644 %{_sourcedir}/README.md  %{buildroot}%{_docdir}/%{name}/README.md
+# Upstream notice for the bundled validator-keys tool.
+install -Dm0644 %{_sourcedir}/validator-keys-LICENSE %{buildroot}%{_docdir}/%{name}/validator-keys-LICENSE
 
 # Legacy compatibility for pre-FHS package layouts.
 # TODO: remove after rippled fully deprecated.
@@ -80,11 +87,13 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 
 %files
 %license %{_docdir}/%{name}/LICENSE.md
+%license %{_docdir}/%{name}/validator-keys-LICENSE
 %doc %{_docdir}/%{name}/README.md
 
 %dir %{_sysconfdir}/%{name}
 
 %{_bindir}/%{name}
+%{_bindir}/validator-keys
 
 %config(noreplace) %{_sysconfdir}/%{name}/xrpld.cfg
 %config(noreplace) %{_sysconfdir}/%{name}/validators.txt

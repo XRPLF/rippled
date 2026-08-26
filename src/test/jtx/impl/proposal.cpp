@@ -291,7 +291,7 @@ verify::Create::operator()(Env& env, JTx& jt) const
         reserveSponsor ? std::optional{env.sponsoringOwnerCount(*reserveSponsor)} : std::nullopt;
     auto const proposalBefore = view.read(proposalKeylet);
     auto const targetBefore = view.read(keylet::account(target));
-    auto const ticketBefore = view.read(keylet::ticket(target, ticketSeq));
+    auto const ticketBefore = view.read(keylet::ticket(target, SeqProxy::rawTicket(ticketSeq)));
     auto const proposerDirBefore = ownerDirKeys(view, proposer.id());
     auto const targetDirBefore = ownerDirKeys(view, target);
 
@@ -321,7 +321,8 @@ verify::Create::operator()(Env& env, JTx& jt) const
         // The target's ticket is left for the proposed transaction, including
         // when the target is also the proposer.
         test.expect(
-            unchanged(ticketBefore, view.read(keylet::ticket(target, ticketSeq))),
+            unchanged(
+                ticketBefore, view.read(keylet::ticket(target, SeqProxy::rawTicket(ticketSeq)))),
             "proposal target ticket");
 
         // Nothing else of a distinct target's moves: the proposal belongs in

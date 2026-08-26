@@ -1,0 +1,80 @@
+# Clippy, coverage and documentation for the Rust crates in crates/. Each runs
+# as an independent job on a GitHub-hosted runner, but inside the same container
+# image used to build the crates in the C++/Corrosion path, so the toolchain
+# (and therefore the lints, coverage instrumentation and the cargo cache) matches
+# what production builds use.
+#
+# Rust unit tests are deliberately NOT run here. They run as part of the C++
+# build (reusable-build-test-config.yml), which already compiles the crates on a
+# self-hosted runner, so there is no need to provision a toolchain again.
+name: Rust
+
+on:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        description: "The Codecov token to use for uploading coverage reports."
+        required: true
+
+defaults:
+  run:
+    shell: bash
+    working-directory: crates
+
+permissions:
+  contents: read
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-a0074f8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use cargo artifacts cache
+        uses: ./.github/actions/cargo-cache
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+  coverage:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-a0074f8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use cargo artifacts cache
+        uses: ./.github/actions/cargo-cache
+
+      - name: Generate coverage report
+        run: cargo llvm-cov nextest --workspace --all-features --locked --no-tests=warn --lcov --output-path lcov.info
+
+      - name: Upload coverage report
+        if: ${{ github.repository == 'XRPLF/rippled' }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          disable_search: true
+          disable_telem: true
+          fail_ci_if_error: true
+          files: crates/lcov.info
+          flags: rust
+          plugins: noop
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
+  doc:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-a0074f8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use cargo artifacts cache
+        uses: ./.github/actions/cargo-cache
+
+      - name: Build documentation
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --workspace --no-deps --all-features --locked
