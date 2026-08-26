@@ -68,12 +68,20 @@ private:
             return sleIssuance->at(sfOutstandingAmount);
         };
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build vaults in this suite as
+        // closed-ended and advance past SubscriptionDate before creating
+        // brokers/loans. VaultClawback itself is not phase-gated. The
+        // subscription offset must be large enough that the deposit
+        // ledger close does not accidentally push us past SubscriptionDate
+        // (which would land the deposit in Investment phase and fail).
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
                                     Account const& depositor) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            auto const& [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -86,6 +94,10 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
                 Ter(tesSUCCESS));
             env.close();
+
+            // Move past SubscriptionDate so LoanBrokerSet/LoanSet run in
+            // the Investment phase.
+            vault.closePastSubscription(subscriptionDate);
 
             auto const& [availablePreDefault, totalPreDefault] = vaultAssetBalance(vaultKeylet);
             BEAST_EXPECT(availablePreDefault == totalPreDefault);
@@ -313,13 +325,21 @@ private:
         Env env(*this);
         env.enableFeature(fixCleanup3_1_3);
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults; some tests using this helper later
+        // attach loan brokers to the vault. Build it as closed-ended and
+        // advance past SubscriptionDate so subsequent broker/loan setup
+        // runs in the Investment phase. VaultClawback itself is not
+        // phase-gated. See the other setupVault (share tests) for why the
+        // subscription offset must be generous.
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
                                     Account const& depositor,
                                     Account const& issuer) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            auto const& [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -330,6 +350,8 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
                 Ter(tesSUCCESS));
             env.close();
+
+            vault.closePastSubscription(subscriptionDate);
 
             return std::make_pair(vault, vaultKeylet);
         };

@@ -3,7 +3,10 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
@@ -1947,6 +1950,192 @@ class InvariantsVault_test : public InvariantsBase
             });
     }
 
+    // Minimal impaired-loan setup for testVaultLossExceedsGap.  Kept
+    // inline here so this file has no dependency on LoanTestBase.
+    Keylet
+    makeImpairedVault(
+        test::jtx::Account const& owner,
+        test::jtx::Account const& borrower,
+        test::jtx::Account const& issuer,
+        test::jtx::Env& env)
+    {
+        using namespace test::jtx;
+
+        env.fund(XRP(1'000'000), issuer, borrower);
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+        env(trust(owner, trustLimit));
+        env(trust(borrower, trustLimit));
+        env.close();
+
+        env(pay(issuer, owner, usd(100'000)));
+        env(pay(issuer, borrower, usd(1'000)));
+        env.close();
+
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults. The 10-year investment window
+        // covers this helper's 120 monthly payments so LoanSet's
+        // RedemptionDate bound is satisfied.
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner,
+             .asset = usd,
+             .subscriptionOffset = std::chrono::seconds{60},
+             .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull}});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit(
+            {.depositor = owner, .id = vaultKeylet.key, .amount = usd(1'000).value()}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+
+        {
+            using namespace loan_broker;
+            env(set(owner, vaultKeylet.key),
+                kCoverRateMinimum(percentageToTenthBips(1)),
+                kCoverRateLiquidation(xrpl::lending::kMaxCoverRate),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+
+            env(coverDeposit(owner, brokerKeylet.key, usd(10'000).value()),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+        }
+
+        // LoanSet is gated on Investment; advance out of Subscription.
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerSle = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerSle))
+            return vaultKeylet;
+
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        {
+            using namespace loan;
+            env(set(borrower, brokerKeylet.key, usd(100).value()),
+                kCounterparty(owner),
+                kInterestRate(TenthBips32{1000}),
+                kPaymentTotal(120),
+                kPaymentInterval(86400u * 30u),
+                kGracePeriod(86400u * 30u),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 200));
+            env.close();
+
+            env(manage(owner, loanKeylet.key, tfLoanImpair));
+            env.close();
+        }
+
+        return vaultKeylet;
+    }
+
+    // Regression test for the loss-vs-gap invariant relaxation introduced
+    // by fixCleanup3_4_0.  Even with the one-unit tolerance, a loss value
+    // exceeding (T - A) by more than one ULP must still fire.  Two
+    // mutations exercise this:
+    //   1. L = (T - A) * 2  — fires under both amendment settings.
+    //   2. L = (T - A) + 2 * oneUnit  — fires post-amendment, catching
+    //      any accidental widening of the tolerance beyond one unit.
+    void
+    testVaultLossExceedsGap()
+    {
+        testcase("vault loss exceeds gap (fixCleanup3_4_0 tolerance)");
+        using namespace test::jtx;
+
+        auto const kExpectedLog = std::vector<std::string>{
+            "loss unrealized must not exceed the difference between assets "
+            "outstanding and available"};
+
+        for (auto const withFix : {false, true})
+        {
+            FeatureBitset amendments = all_;
+            if (!withFix)
+                amendments = amendments - fixCleanup3_4_0;
+
+            // Variant 1: L = (T - A) * 2. Fires under both settings.
+            {
+                Keylet vaultKeylet = keylet::vault(uint256{});
+                Account const issuer{"issuer_loss_gap"};
+                Account const borrower{"borrower_loss_gap"};
+
+                auto preclose = [&, this](Account const& owner, Account const&, Env& env) -> bool {
+                    vaultKeylet = this->makeImpairedVault(owner, borrower, issuer, env);
+                    return BEAST_EXPECT(env.le(vaultKeylet));
+                };
+
+                doInvariantCheck(
+                    makeEnv(amendments),
+                    kExpectedLog,
+                    [&vaultKeylet](Account const&, Account const&, ApplyContext& ac) -> bool {
+                        auto sle = ac.view().peek(vaultKeylet);
+                        if (!sle)
+                            return false;
+                        Number const total = sle->at(sfAssetsTotal);
+                        Number const available = sle->at(sfAssetsAvailable);
+                        (*sle)[sfLossUnrealized] = (total - available) * 2;
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{
+                        ttVAULT_DEPOSIT,
+                        [&vaultKeylet](STObject& tx) {
+                            tx.setFieldH256(sfVaultID, vaultKeylet.key);
+                        }},
+                    {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                    preclose,
+                    TxAccount::A1);
+            }
+
+            // Variant 2: L = (T - A) + 2 * oneUnit at scale(T).  Must fire
+            // post-fix because the tolerance is exactly one unit.  A
+            // regression that widened it to two units would silently accept
+            // this state.
+            {
+                Keylet vaultKeylet = keylet::vault(uint256{});
+                Account const issuer{"issuer_loss_gap2"};
+                Account const borrower{"borrower_loss_gap2"};
+
+                auto preclose = [&, this](Account const& owner, Account const&, Env& env) -> bool {
+                    vaultKeylet = this->makeImpairedVault(owner, borrower, issuer, env);
+                    return BEAST_EXPECT(env.le(vaultKeylet));
+                };
+
+                doInvariantCheck(
+                    makeEnv(amendments),
+                    kExpectedLog,
+                    [&vaultKeylet](Account const&, Account const&, ApplyContext& ac) -> bool {
+                        auto sle = ac.view().peek(vaultKeylet);
+                        if (!sle)
+                            return false;
+                        Number const total = sle->at(sfAssetsTotal);
+                        Number const available = sle->at(sfAssetsAvailable);
+                        Asset const asset = sle->at(sfAsset);
+                        Number const oneUnit{1, scale(total, asset)};
+                        (*sle)[sfLossUnrealized] = (total - available) + oneUnit * 2;
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{
+                        ttVAULT_DEPOSIT,
+                        [&vaultKeylet](STObject& tx) {
+                            tx.setFieldH256(sfVaultID, vaultKeylet.key);
+                        }},
+                    {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                    preclose,
+                    TxAccount::A1);
+            }
+        }
+    }
+
     void
     testVaultComputeCoarsestScale()
     {
@@ -2082,6 +2271,7 @@ class InvariantsVault_test : public InvariantsBase
     run() override
     {
         testVault();
+        testVaultLossExceedsGap();
         testVaultComputeCoarsestScale();
     }
 };
