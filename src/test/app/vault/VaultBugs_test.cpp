@@ -14,6 +14,7 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -1426,6 +1427,18 @@ private:
             Fee(env.current()->fees().base * 2),
             Ter(tesSUCCESS));
         env.close();
+
+        // Under fixCleanup3_4_0, LoanManage rejects tfLoanImpair with
+        // tecTOO_SOON unless the payment is already late; advance the ledger
+        // past sfNextPaymentDueDate so impairment succeeds. No-op otherwise.
+        if (env.current()->rules().enabled(fixCleanup3_4_0))
+        {
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return std::nullopt;
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+        }
 
         env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
