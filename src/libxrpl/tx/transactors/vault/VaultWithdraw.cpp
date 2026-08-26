@@ -443,6 +443,17 @@ VaultWithdraw::doApply()
     // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
     if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
     {
+        // Check availability against the unclamped amount first, so a withdrawal that is both
+        // over the vault's available balance and sub-ULP at the posterior sfAssetsTotal scale
+        // reports tecINSUFFICIENT_FUNDS rather than tecPRECISION_LOSS. The clamp below only ever
+        // shrinks assetsWithdrawn, so this check stays valid; the post-clamp check further down
+        // remains in place to catch the (now smaller) clamped value too.
+        if (*assetsAvailable < assetsWithdrawn)
+        {
+            JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
+            return tecINSUFFICIENT_FUNDS;
+        }
+
         // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
