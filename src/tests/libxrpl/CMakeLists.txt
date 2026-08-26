@@ -31,6 +31,7 @@ set(test_modules
     consensus
     crypto
     json
+    ledger
     nodestore
     peerfinder
     protocol
