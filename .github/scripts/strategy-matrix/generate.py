@@ -57,7 +57,9 @@ class LinuxConfig:
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
     extra_cmake_args: str = ""
-    image: str = ""  # only used by package_configs entries
+    # The two below are only used by package_configs entries.
+    image: str = ""
+    package_type: str = ""  # "deb" or "rpm"; has to match what image provides
 
 
 @dataclasses.dataclass
@@ -156,7 +158,7 @@ class PackagingEntry:
     xrpld_artifact_name: str
     validator_keys_artifact_name: str
     image: str
-    distro: str  # e.g. "debian" or "rhel"; drives package-format-specific steps
+    package_type: str  # "deb" or "rpm"; drives the format-specific steps
 
 
 # ---------------------------------------------------------------------------
@@ -243,7 +245,7 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
                         xrpld_artifact_name=f"xrpld-{config_name}",
                         validator_keys_artifact_name=f"validator-keys-{config_name}",
                         image=cfg.image,
-                        distro=distro,
+                        package_type=cfg.package_type,
                     )
                 )
 
