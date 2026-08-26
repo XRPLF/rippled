@@ -110,7 +110,9 @@ expectKeylet(EntryTestEnv& e, Keylet const& expected, std::string const& what, A
     Entry<ReadView> const r(args..., e.read());
     EXPECT_EQ(r.exists(), present) << what << ": read-only exists";
     if (present)
+    {
         EXPECT_EQ(r.key(), expected.key) << what << ": read-only key";
+    }
 
     // Not r.type(): for a typed entry that returns kEntryType, so checking it
     // would just be this same assertion spelled twice.
