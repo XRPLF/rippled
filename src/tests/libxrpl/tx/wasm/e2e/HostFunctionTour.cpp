@@ -8,13 +8,7 @@
 namespace xrpl::test {
 
 // A single contract that tours several host functions end to end — a ledger-header read, the
-// base fee, a hash, a keylet, and a data write — returning 1 only if every call succeeds. This
-// is the recognizable shape of the old `all_host_functions` guest tour, kept as one test.
-//
-// The per-function detail lives in `host_functions/` (each function's answer vs. a real ledger)
-// and `host_calls/` (each function's wire marshalling); this proves that a realistic multi-call
-// contract runs through the whole real stack — VM + HostContext + real impl + real ledger —
-// with the pieces agreeing. See ../README.md for the layering rationale.
+// base fee, a hash, a keylet, and a data write — returning 1 only if every call succeeds.
 struct HostFunctionTourE2e : RealVmTest
 {
 };
@@ -24,7 +18,7 @@ TEST_F(HostFunctionTourE2e, AContractTouringManyHostFunctionsSucceeds)
     // Each call must return >= 0 (a byte count, i.e. success); the guest returns the first
     // negative error code, or 1 if the whole tour succeeds. Output regions are disjoint so no
     // call clobbers another, and buffers are generous so exact value sizes don't matter.
-    static constexpr std::string_view kWat = R"wat(
+    static constexpr auto kWat = std::string_view{R"wat(
 (module
   (import "host_lib" "ldgr_index" (func $ldgr_index (param i32 i32) (result i32)))
   (import "host_lib" "base_fee" (func $base_fee (param i32 i32) (result i32)))
@@ -45,7 +39,7 @@ TEST_F(HostFunctionTourE2e, AContractTouringManyHostFunctionsSucceeds)
     (local.set $r (call $set_data (i32.const 0) (i32.const 8)))
     (if (i32.lt_s (local.get $r) (i32.const 0)) (then (return (local.get $r))))
     (i32.const 1)))
-)wat";
+)wat"};
 
     auto const outcome = run(kWat);
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);

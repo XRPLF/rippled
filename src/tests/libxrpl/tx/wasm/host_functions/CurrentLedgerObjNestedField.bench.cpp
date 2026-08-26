@@ -10,16 +10,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "home_le_inner";
-
-// Declared 110 against a direct read's 70 — the table's claim that walking a locator costs
-// about half a field read again. A one-step locator like this one is the cheapest such walk,
-// so it is the best case for that claim.
 void
 currentLedgerObjNestedFieldImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"home_le_inner"};
+
     benchmarkImpl(
         state,
         kWasmName,

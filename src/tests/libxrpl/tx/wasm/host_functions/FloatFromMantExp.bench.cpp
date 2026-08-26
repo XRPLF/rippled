@@ -7,15 +7,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "float_from_mant_exp";
-
-// Declared 100. Builds a float from parts the guest already split, so it is the inverse of
-// `FloatToMantExp` and priced 30 below it.
 void
 floatFromMantExpImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"float_from_mant_exp"};
+
     benchmarkImpl(
         state,
         kWasmName,

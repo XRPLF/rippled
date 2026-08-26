@@ -10,15 +10,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "le_inner";
-
-// Declared 110. A locator walk over a cached object: the nested read plus the slot lookup that
-// `LedgerObjField` measures on its own.
 void
 ledgerObjNestedFieldImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"le_inner"};
+
     benchmarkImpl(
         state,
         kWasmName,

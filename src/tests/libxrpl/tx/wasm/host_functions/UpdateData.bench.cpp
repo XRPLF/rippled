@@ -13,21 +13,7 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
 constexpr std::string_view kWasmName = "set_data";
-
-// Declared 1000, and the suite's purest measurement of what *moving bytes* costs.
-//
-// The impl does almost nothing but copy the guest's region into host-owned storage, so unlike
-// `sha512_half` there is no computation competing with the transfer. Swept over the input length
-// up to `kMaxWasmDataLength`, the `ThroughVm` case is close to a direct readout of the per-byte
-// term in the crossing — the number that, added to the fixed floor in `Crossing.bench.cpp`, should
-// predict every other function's `ThroughVm` minus `Impl` gap.
-//
-// It is also a flat price over a range spanning two orders of magnitude, the same
-// flat-price-for-linear-work question `Sha512Half.bench.cpp` asks.
-
 constexpr std::string_view kImport =
     R"(  (import "host_lib" "set_data" (func $set_data (param i32 i32) (result i32)))
 )";

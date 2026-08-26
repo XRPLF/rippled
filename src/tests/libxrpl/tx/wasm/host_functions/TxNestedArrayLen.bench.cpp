@@ -10,16 +10,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "tx_inner_arr_len";
-
-// Declared 70 against a direct count's 40 — the same locator surcharge the nested field getters
-// pay, expressed as a different ratio (1.75x here, 1.57x there). Both cannot be right unless a
-// locator walk costs a fixed amount, which is what these two pairs check.
 void
 txNestedArrayLenImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"tx_inner_arr_len"};
+
     benchmarkImpl(
         state,
         kWasmName,

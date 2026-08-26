@@ -4,37 +4,22 @@
 #include <tx/wasm/BenchFixtures.h>
 #include <tx/wasm/WasmBench.h>
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
 constexpr std::string_view kWasmName = "check_sig";
-
-// Declared 300 — and the one host function with a documented pricing disagreement, which makes it
-// the first one worth measuring.
-//
-// A prior C++ integration priced the same operation at 35000, a factor of over a hundred apart.
-// One of those is wrong, and a signature verification underpriced by 100x is the cheapest
-// denial-of-service a contract could buy: a secp256k1 verify, among the most expensive things the
-// host can be asked to do, for the price of three hundred guest instructions.
-//
-// The pair settles it. `Impl` is the verification; `ThroughVm` adds the crossing for three input
-// regions. If the two come out nearly equal, the cost is all verification and the crossing is
-// noise beside it — which is itself the answer.
 
 constexpr std::string_view kImport =
     R"(  (import "host_lib" "check_sig" (func $check_sig (param i32 i32 i32 i32 i32 i32) (result i32)))
 )";
 
-// Message, signature and public key are all variable-length, so each gets a fixed offset with room
-// to spare and the lengths come from the data itself.
-constexpr int kMessageOffset = 0;
-constexpr int kSignatureOffset = 256;
-constexpr int kPubkeyOffset = 512;
+constexpr std::int32_t kMessageOffset = 0;
+constexpr std::int32_t kSignatureOffset = 256;
+constexpr std::int32_t kPubkeyOffset = 512;
 
 void
 checkSignatureThroughVm(benchmark::State& state)

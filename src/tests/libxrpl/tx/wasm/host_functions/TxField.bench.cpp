@@ -9,16 +9,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "tx_field";
-
-// Declared 70. One `getFieldByCode` on the transaction being executed, then serialize the
-// result. Its pair with `CurrentLedgerObjField` (same price, an object instead of a tx) shows
-// whether the source matters to the cost; the declared table says it does not.
 void
 txFieldImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"tx_field"};
+
     benchmarkImpl(
         state,
         kWasmName,

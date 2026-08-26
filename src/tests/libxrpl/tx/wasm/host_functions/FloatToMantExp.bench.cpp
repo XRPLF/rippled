@@ -8,14 +8,7 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
 constexpr std::string_view kWasmName = "float_to_mant_exp";
-
-// Declared 130. The one call in the whole ABI that writes *two* output regions, so the one place
-// the crossing does two bounds checks and two writes — which is why it carries a `ThroughVm` case
-// despite being unremarkable arithmetic. Its gap over `floatToMantExpImpl` is the only measurement
-// of what a second output region costs, and nothing else in the suite can supply it.
 
 constexpr std::string_view kImport =
     R"(  (import "host_lib" "float_to_mant_exp" (func $split (param i32 i32 i32 i32 i32 i32) (result i32)))

@@ -9,16 +9,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "tx_arr_len";
-
-// Declared 40, the cheapest non-`trace` price in the table. Counting an array's elements does
-// not serialize them, which is what justifies pricing it below a field read's 70 — this case
-// and `TxField` together are whether that 40/70 split is the right size.
 void
 txArrayLenImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"tx_arr_len"};
+
     benchmarkImpl(
         state,
         kWasmName,

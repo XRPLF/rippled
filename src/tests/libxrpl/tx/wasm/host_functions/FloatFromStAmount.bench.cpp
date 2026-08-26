@@ -11,16 +11,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "float_from_stamount";
-
-// Declared 150, the joint-highest of the float conversions. Unlike `float_from_int` it starts
-// from a serialized ledger type, so it pays a parse before the conversion — which is what the
-// 50% premium over `float_from_int`'s 100 is for.
 void
 floatFromStAmountImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"float_from_stamount"};
+
     auto const amount = STAmount{Issue{toCurrency("USD"), benchAlice().id()}, 1234567, -3};
 
     benchmarkImpl(

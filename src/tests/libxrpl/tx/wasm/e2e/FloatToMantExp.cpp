@@ -12,7 +12,6 @@ namespace xrpl::test {
 
 // The only host function that writes to *two* output regions, and so the only place the
 // "one call, one answer" assumption in every other marshalling path is not what happens.
-//
 // `float_to_mant_exp` splits a float into an eight-byte mantissa and a four-byte exponent,
 // each into its own guest buffer, and answers with a status rather than a byte count. Two
 // regions means two independent bounds checks, two writes, and an ordering between them —
@@ -55,9 +54,10 @@ TEST_F(FloatToMantExpE2e, ContractReadsBothHalvesOfASplitFloat)
     // flip wrong is exactly the convention mismatch this layer exists to catch, and a
     // hard-coded constant would hide it.
     auto mantissa = std::int64_t{0};
-    for (auto i = 0; i < 8; ++i)
+    for (auto i = 0U; i < 8; ++i)
+    {
         mantissa = (mantissa << 8) | FloatTest::kPi[i];
-
+    }
     EXPECT_EQ(outcome->result, static_cast<std::int32_t>(mantissa & 0xFFFFFFFF));
 }
 

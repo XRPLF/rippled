@@ -7,12 +7,10 @@
 #include <benchmark/benchmark.h>
 #include <tx/wasm/RealHostFixture.h>
 #include <tx/wasm/WasmRun.h>
-#include <xrpl_wasm_testkit_cxxbridge/lib.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <limits>
 #include <span>
 #include <string>
 #include <string_view>
@@ -123,14 +121,8 @@ inline constexpr std::int64_t kTransferLimitBytes = 1 << 20;
 // an output region written — and the budget counts both. A size-swept case passes this as
 // its call count so the large end of the range does not silently turn into an error
 // benchmark; per-call numbers stay comparable across counts, which is what the report shows.
-inline int
-callsWithinTransferBudget(std::int64_t bytesPerCall)
-{
-    if (bytesPerCall <= 0)
-        return kCallsPerRun;
-    auto const affordable = (kTransferLimitBytes / 2) / bytesPerCall;
-    return static_cast<int>(std::clamp<std::int64_t>(affordable, 16, kCallsPerRun));
-}
+int
+callsWithinTransferBudget(std::int64_t bytesPerCall);
 
 // True when Google Benchmark was built with libpfm and `--benchmark_perf_counters` will
 // work. Reported as a counter so a JSON report records which mode produced it.
@@ -170,18 +162,11 @@ struct Timing
 // input is in place before the timed loop starts and the loop measures the host call rather
 // than the guest arranging its arguments. See `watEscaped` in WasmRun.h for why zeroed
 // memory will not do.
-inline std::string
-dataSegment(int offset, std::span<std::uint8_t const> bytes)
-{
-    return std::string{"  (data (i32.const "} + std::to_string(offset) + ") \"" +
-        watEscaped(bytes) + "\")\n";
-}
+std::string
+dataSegment(int offset, std::span<std::uint8_t const> bytes);
 
-inline std::string
-dataSegment(int offset, Bytes const& bytes)
-{
-    return dataSegment(offset, std::span<std::uint8_t const>{bytes.data(), bytes.size()});
-}
+std::string
+dataSegment(int offset, Bytes const& bytes);
 
 // A contract that runs `body` `count` times and returns the last result.
 //
@@ -193,29 +178,8 @@ dataSegment(int offset, Bytes const& bytes)
 //
 // `data` holds any `dataSegment` calls the case needs; it goes after the memory
 // declaration that gives those segments something to write into.
-inline std::string
-makeLoopWat(std::string_view imports, std::string_view data, std::string_view body, int count)
-{
-    return std::string{"(module\n"} + std::string{imports} +
-        R"wat(
-  (memory (export "memory") 1)
-)wat" + std::string{data} +
-        R"wat(
-  (func (export "escrow_finish") (result i32)
-    (local $i i32)
-    (local $r i32)
-    (local.set $i (i32.const )wat" +
-        std::to_string(count) + R"wat())
-    (block $done
-      (loop $again
-        (br_if $done (i32.eqz (local.get $i)))
-        (local.set $r )wat" +
-        std::string{body} + R"wat()
-        (local.set $i (i32.sub (local.get $i) (i32.const 1)))
-        (br $again)))
-    (local.get $r)))
-)wat";
-}
+std::string
+makeLoopWat(std::string_view imports, std::string_view data, std::string_view body, int count);
 
 // Run pre-assembled `wasm` once through the real VM, reporting wall time and gas.
 //
@@ -223,18 +187,8 @@ makeLoopWat(std::string_view imports, std::string_view data, std::string_view bo
 // test-only convenience from the `wasm_testkit` crate, not something a validator ever
 // does. Compilation *is* inside, because a validator does pay it — but it is identical
 // between a module and its baseline, so the subtraction removes it.
-inline Timing
-timeRun(HostFunctions& host, Bytes const& wasm)
-{
-    auto const start = std::chrono::steady_clock::now();
-    auto outcome = runEscrowWasm(wasm, host, kBenchGas);
-    auto const elapsed = std::chrono::steady_clock::now() - start;
-
-    benchmark::DoNotOptimize(outcome);
-    return {
-        .seconds = std::chrono::duration<double>(elapsed).count(),
-        .gas = outcome.has_value() ? outcome->cost : std::int64_t{0}};
-}
+Timing
+timeRun(HostFunctions& host, Bytes const& wasm);
 
 // Seconds of wall time one unit of gas buys on this machine.
 //
@@ -246,60 +200,16 @@ timeRun(HostFunctions& host, Bytes const& wasm)
 // function look cheap by comparison.
 //
 // Computed once per process and cached: it describes the machine, not the case.
-inline double
-secondsPerGas()
-{
-    static double const kValue = [] {
-        // A couple of guest instructions per iteration, no memory traffic, nothing the
-        // engine can fold away.
-        static constexpr std::string_view kBody = "(i32.add (local.get $r) (i32.const 1))";
-        auto const busy = assembleWat(makeLoopWat("", "", kBody, kCallsPerRun));
-        auto const idle = assembleWat(makeLoopWat("", "", kBody, 0));
-
-        BenchFixture fixture;
-
-        // Warm the instruction cache and the allocator before the pairs that count, so
-        // the first-run penalty does not land on one side of the subtraction.
-        for (int i = 0; i < 8; ++i)
-        {
-            timeRun(*fixture.makeHost(), busy);
-            timeRun(*fixture.makeHost(), idle);
-        }
-
-        // Best-of over several pairs: the minimum is the run least disturbed by the
-        // scheduler, which is the honest floor for what this machine can do.
-        auto best = std::numeric_limits<double>::max();
-        auto gasDelta = std::int64_t{1};
-        for (int i = 0; i < 32; ++i)
-        {
-            auto hotHost = fixture.makeHost();
-            auto const hot = timeRun(*hotHost, busy);
-            auto coldHost = fixture.makeHost();
-            auto const cold = timeRun(*coldHost, idle);
-            auto const delta = hot.seconds - cold.seconds;
-            if (delta > 0.0 && delta < best)
-            {
-                best = delta;
-                gasDelta = std::max(std::int64_t{1}, hot.gas - cold.gas);
-            }
-        }
-        return best == std::numeric_limits<double>::max() ? 0.0
-                                                          : best / static_cast<double>(gasDelta);
-    }();
-    return kValue;
-}
+double
+secondsPerGas();
 
 // What the gas table says a host function costs, by its guest import name.
 //
 // Read from the declaration through the `wasm_testkit` bridge rather than transcribed into
 // C++: 61 copied constants would drift from `crates/xrpl-host-functions/src/lib.rs` the first
 // time a price changed, and drift *silently*, because a benchmark has nothing to fail.
-inline double
-declaredGas(std::string_view wasmName)
-{
-    return static_cast<double>(
-        rs::wasm_testkit::declared_gas(rust::Str{wasmName.data(), wasmName.size()}));
-}
+double
+declaredGas(std::string_view wasmName);
 
 // The gas a host call costs before it does anything: region decode, bounds checks, the cxx hop.
 //
@@ -310,56 +220,8 @@ declaredGas(std::string_view wasmName)
 //
 // This is what makes a *suggested* price possible for a function that has only an `Impl` case:
 // the impl measures the work, and this measures the toll every call pays on top of it.
-inline double
-crossingFloorGas()
-{
-    static double const kValue = [] {
-        static constexpr std::string_view kImport =
-            R"(  (import "host_lib" "ldgr_index" (func $ldgr_index (param i32 i32) (result i32)))
-)";
-        static constexpr std::string_view kBody = "(call $ldgr_index (i32.const 0) (i32.const 4))";
-
-        auto const loaded = assembleWat(makeLoopWat(kImport, "", kBody, kCallsPerRun));
-        auto const baseline = assembleWat(makeLoopWat(kImport, "", kBody, 0));
-
-        BenchFixture fixture;
-
-        auto best = std::numeric_limits<double>::max();
-        for (int i = 0; i < 16; ++i)
-        {
-            auto hotHost = fixture.makeHost();
-            auto const hot = timeRun(*hotHost, loaded);
-            auto coldHost = fixture.makeHost();
-            auto const cold = timeRun(*coldHost, baseline);
-
-            auto const perCall = (hot.seconds - cold.seconds) / kCallsPerRun;
-            if (perCall > 0.0 && perCall < best)
-                best = perCall;
-        }
-        if (best == std::numeric_limits<double>::max())
-            return 0.0;
-
-        // The impl side is the same call without the VM. Subtracting it leaves the crossing.
-        auto implSeconds = std::numeric_limits<double>::max();
-        auto host = fixture.makeHost();
-        for (int i = 0; i < 16; ++i)
-        {
-            auto const start = std::chrono::steady_clock::now();
-            for (int c = 0; c < kCallsPerRun; ++c)
-            {
-                auto result = host->getLedgerSqn();
-                benchmark::DoNotOptimize(result);
-            }
-            auto const elapsed = std::chrono::steady_clock::now() - start;
-            implSeconds = std::min(
-                implSeconds, std::chrono::duration<double>(elapsed).count() / kCallsPerRun);
-        }
-
-        auto const perGas = secondsPerGas();
-        return perGas > 0.0 ? std::max(0.0, best - implSeconds) / perGas : 0.0;
-    }();
-    return kValue;
-}
+double
+crossingFloorGas();
 
 // Attach the calibration counters to a finished case.
 //
@@ -372,33 +234,13 @@ crossingFloorGas()
 // declaration. For a `ThroughVm` case that is simply what was measured, since the guest already
 // paid the crossing. For an `Impl` case the crossing has to be added back, because a guest
 // cannot make the call without it.
-inline void
+void
 report(
     benchmark::State& state,
     double secondsPerCall,
     double chargedGas,
     std::string_view wasmName,
-    bool throughVm)
-{
-    auto const perGas = secondsPerGas();
-    auto const implied = perGas > 0.0 ? secondsPerCall / perGas : 0.0;
-    auto const suggested = throughVm ? implied : implied + crossingFloorGas();
-
-    state.counters["implied_gas"] = implied;
-    state.counters["ns_per_call"] = secondsPerCall * 1e9;
-    state.counters["charged_gas"] = chargedGas;
-    state.counters["perf_counters"] = kPerfCountersAvailable ? 1 : 0;
-
-    if (wasmName.empty())
-        return;
-
-    auto const declared = declaredGas(wasmName);
-    state.counters["declared_gas"] = declared;
-    state.counters["suggested_gas"] = suggested;
-    // Above 1: the table charges more than the work costs. Below 1: underpriced, which is the
-    // direction that matters — an underpriced call is one a contract can buy too cheaply.
-    state.counters["price_ratio"] = suggested > 0.0 ? declared / suggested : 0.0;
-}
+    bool throughVm);
 
 // Measure a host function *through the whole stack* — guest, VM, marshalling, real impl,
 // real ledger — with everything but the host calls subtracted away.

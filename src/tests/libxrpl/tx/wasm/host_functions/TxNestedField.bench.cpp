@@ -11,18 +11,7 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
 constexpr std::string_view kWasmName = "tx_inner";
-
-// Declared 110 against a direct read's 70 — the table's claim that walking a locator costs about
-// half a field read again.
-//
-// This file carries the locator `ThroughVm` case for the whole nested family. A locator is a
-// variable-length path of little-endian i32 steps that the *guest* lays out and the host walks;
-// every other input shape in the ABI is a fixed-size value, so this is the only place the crossing
-// reads a length the guest chose. The other five nested getters are `Impl`-only.
-
 constexpr std::string_view kImport =
     R"(  (import "host_lib" "tx_inner" (func $tx_inner (param i32 i32 i32 i32) (result i32)))
 )";
@@ -38,7 +27,7 @@ txNestedFieldThroughVm(benchmark::State& state)
         auto bytes = Bytes{};
         for (auto const step : {sfMemos.getCode(), 0, sfMemoData.getCode()})
         {
-            for (auto i = 0; i < 4; ++i)
+            for (auto i = 0U; i < 4; ++i)
             {
                 bytes.push_back(static_cast<std::uint8_t>((step >> (8 * i)) & 0xFF));
             }

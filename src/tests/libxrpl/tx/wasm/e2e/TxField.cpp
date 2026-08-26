@@ -13,10 +13,7 @@
 
 namespace xrpl::test {
 
-// A contract reads a field of its transaction end to end. The fixture builds the tx (here an
-// MPTokenIssuanceCreate carrying an asset scale); the guest asks `tx_field` for it and returns
-// the value, proving the transaction's bytes reach the guest through the real VM + impl. A
-// different source than the ledger reads — the transaction rather than a ledger object.
+// A contract reads a field of its transaction end to end.
 struct TxFieldE2e : RealVmTest
 {
 };
@@ -25,7 +22,7 @@ TEST_F(TxFieldE2e, ContractReadsAFieldOfItsTransaction)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
-    constexpr std::uint8_t kScale = 8;
+    static constexpr auto kScale = std::uint8_t{8};
     auto const tx = mptIssuanceCreateTx(owner, kScale);
 
     // Ask the tx for `sfAssetScale` (a single byte) and return the i32 the guest loads — the

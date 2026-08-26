@@ -13,17 +13,12 @@
 namespace xrpl::test {
 
 // The error channel, driven by a real failure rather than a mock's canned one.
-//
 // Every other e2e case here proves a success path. But a contract spends most of its life
 // reacting to codes, and the path a *real* error takes is different from the one a mock
 // error takes: the impl returns a `HostFunctionError`, `HostContext` turns it into a wire
 // code, and the engine hands that back to the guest as a negative i32 without disturbing the
 // run. `host_calls` proves the middle step against a mock that was *told* to fail; nothing
 // until now has proved that a real impl's real failure comes out the far end intact.
-//
-// The distinction matters because the two halves are separately enumerated: a code the impl
-// can return but the bridge does not map, or maps to a different number, is invisible to
-// both of the other layers.
 struct HostErrorE2e : RealVmTest
 {
 };

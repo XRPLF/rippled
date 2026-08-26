@@ -13,21 +13,14 @@
 namespace xrpl::test {
 
 // The keylet -> cache -> read round trip: the only place a contract's host calls depend on
-// each other.
-//
-// Every other e2e case here is one call in isolation. This one is three, and each consumes
-// what the last produced: `accountroot_id` computes a key into guest memory, `cache_le`
+// each other. Every other e2e case here is one call in isolation. This one is three, and each
+// consumes what the last produced: `accountroot_id` computes a key into guest memory, `cache_le`
 // hands those same bytes back to the host and answers with a slot number, and `le_field`
 // uses that slot to read the object. The slot table is the one piece of host state that
 // outlives a single call, so this is the only test at any layer that can catch the two ends
 // of that state disagreeing — `host_calls` mocks the host, so its slot numbers are whatever
 // the mock was told to return, and `host_functions` calls the impl directly, so its slots
 // never cross the guest boundary at all.
-//
-// It is also the shape that would have caught the `seq`-as-region bug class described in
-// ../README.md: a key computed by one call and consumed by another only works if both ends
-// agree byte for byte, and here the ledger itself is the judge — a wrong key simply fails
-// to find the account.
 struct CacheLedgerObjE2e : RealVmTest
 {
 };
@@ -35,12 +28,6 @@ struct CacheLedgerObjE2e : RealVmTest
 TEST_F(CacheLedgerObjE2e, ContractComputesAKeyCachesTheObjectAndReadsItsField)
 {
     auto const owner = fund("owner");
-
-    // Memory: the 20-byte account at 0, the computed 32-byte keylet at 64, the field bytes
-    // read back at 128. Regions are disjoint so no call overwrites another's input.
-    //
-    // The contract returns a negative host error code the moment any step fails, so a
-    // failure names the step that broke rather than surfacing as a wrong byte count.
     auto const wat = std::string{R"wat(
 (module
   (import "host_lib" "accountroot_id" (func $accountroot_id (param i32 i32 i32 i32) (result i32)))

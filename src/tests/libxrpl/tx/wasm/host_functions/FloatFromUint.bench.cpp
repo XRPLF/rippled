@@ -7,15 +7,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "float_from_uint";
-
-// Declared 130 against `float_from_int`'s 100. The same conversion from an unsigned value, so
-// the 30% surcharge is a claim about the wider range needing more normalization work.
 void
 floatFromUintImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"float_from_uint"};
+
     benchmarkImpl(
         state,
         kWasmName,

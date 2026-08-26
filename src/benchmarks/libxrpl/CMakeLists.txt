@@ -21,11 +21,9 @@ xrpl_add_benchmark(nodestore)
 target_link_libraries(xrpl.bench.nodestore PRIVATE xrpl.imports.bench)
 add_dependencies(xrpl.benchmarks xrpl.bench.nodestore)
 
-# ---------------------------------------------------------------------------
 # xrpl.bench.wasm — gas calibration for the wasm host functions.
 #
-# Unlike `nodestore`, this module's sources do not live here: each `*.bench.cpp`
-# sits beside the test that covers the same host function, under
+# Each `*.bench.cpp` sits beside the test that covers the same host function, under
 # `src/tests/libxrpl/tx/wasm/`. Keeping the benchmark next to the test means the
 # two move together and share one fixture; a separate executable means benchmark
 # runtime never lands on the `ctest` path (the test binary filters `*.bench.cpp`
@@ -44,12 +42,19 @@ if(TARGET GTest::gtest)
     add_executable(
         xrpl.bench.wasm
         ${wasm_bench_sources}
-        # The fixtures under measurement: a real ledger, a real host, real accounts.
         "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/Account.cpp"
         "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/TestSink.cpp"
         "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/TxTest.cpp"
         "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/RealHostFixture.cpp"
         "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/NFTFixture.cpp"
+        # The benchmark harness and its shared ledger setup. Named without the
+        # `.bench.cpp` suffix because they are infrastructure rather than a benchmark,
+        # so the glob above does not find them and `xrpl_tests` excludes them by name.
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/BenchFixtures.cpp"
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/WasmBench.cpp"
+        # The WAT assembler, shared with the test binary rather than benchmark-only:
+        # both binaries compile their own copy.
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/WasmRun.cpp"
     )
 
     # Google Benchmark registers cases through static registrars declared in

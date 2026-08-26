@@ -7,15 +7,11 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
-constexpr std::string_view kWasmName = "float_to_int";
-
-// Declared 130. Decode a float, then round it to an integer under the given mode. Compare with
-// `FloatFromInt` at 100 — the table says decoding an operand costs about 30.
 void
 floatToIntImpl(benchmark::State& state)
 {
+    static constexpr auto kWasmName = std::string_view{"float_to_int"};
+
     benchmarkImpl(
         state,
         kWasmName,

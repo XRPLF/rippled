@@ -6,28 +6,16 @@
 #include <tx/wasm/WasmBench.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
 constexpr std::string_view kWasmName = "sha512_half";
 
-// Declared 2000 — a single flat price, no matter how many bytes it is asked to hash. Hashing is
-// linear in its input, so the declaration can only be exactly right at one length; the `Range`
-// here shows where that length is, and how far the flat price misses at the ends.
-//
-// What bounds the damage is `MAX_FIELD_BYTES` (crates/xrpl-wasm-vm/src/region.rs): no single value
-// may cross the boundary in either direction above 1 KiB, `DataFieldTooLarge` otherwise. So the
-// flat price is wrong over a 128x span, not an unbounded one — the worst a contract can extract is
-// the ratio between hashing 1 KiB and hashing 8 bytes, both for 2000 gas. That is what this sweep
-// puts a figure on, and why the range stops at 1024: past that the `ThroughVm` case cannot run at
-// all, and comparing it against an `Impl` case that can would be measuring two different things.
-
-constexpr int kMaxBytes = 1024;
+constexpr std::int16_t kMaxBytes = 1024;
 
 constexpr std::string_view kImport =
     R"(  (import "host_lib" "sha512_half" (func $sha512_half (param i32 i32 i32 i32) (result i32)))

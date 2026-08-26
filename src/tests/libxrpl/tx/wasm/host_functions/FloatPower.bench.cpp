@@ -8,20 +8,12 @@
 namespace xrpl::test::bench {
 namespace {
 
-// The guest import name, used to look up what `lib.rs` declares this call costs. Reading the
-// declaration rather than copying the number keeps the two from drifting apart.
 constexpr std::string_view kWasmName = "float_pow";
-
-// Declared 5500 — 34x `float_add`'s 160, and tied with `float_root` for the most expensive host
-// function that is not a signature check. Since both take the same 12-byte operand over the same
-// crossing, the entire 34x has to appear in the `Impl` number; the `ThroughVm` case is here to
-// confirm the crossing is the same one `FloatAdd` pays, and so cannot be what the 34x is for.
 
 constexpr std::string_view kImport =
     R"(  (import "host_lib" "float_pow" (func $float_pow (param i32 i32 i32 i32 i32 i32) (result i32)))
 )";
 
-// As with `float_add`, the mode goes last: (x_ptr, x_len, n, out_ptr, out_len, mode).
 constexpr std::string_view kBody =
     "(call $float_pow (i32.const 0) (i32.const 12) (i32.const 7) "
     "(i32.const 64) (i32.const 12) (i32.const 0))";
