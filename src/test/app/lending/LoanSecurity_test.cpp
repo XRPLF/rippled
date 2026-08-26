@@ -411,19 +411,27 @@ private:
         Account const depositor{"depositor"};
         auto const txFee = Fee(XRP(100));
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build one and advance past
+        // SubscriptionDate before creating the broker and the loan.
         Env env(*this);
         Vault const vault(env);
 
         env.fund(XRP(10'000), lender, issuer, borrower, depositor);
         env.close();
 
-        auto [tx, vaultKeyLet] = vault.create({.owner = lender, .asset = xrpIssue()});
+        auto [tx, vaultKeyLet, subscriptionDate] =
+            vault.createClosedEnded({.owner = lender, .asset = xrpIssue()});
         env(tx, txFee);
         env.close();
 
         env(vault.deposit({.depositor = depositor, .id = vaultKeyLet.key, .amount = XRP(1'000)}),
             txFee);
         env.close();
+
+        // Move into the Investment phase before creating the broker and
+        // the loan.
+        vault.closePastSubscription(subscriptionDate);
 
         auto const brokerKeyLet =
             keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));

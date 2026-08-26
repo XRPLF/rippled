@@ -1974,8 +1974,16 @@ class InvariantsVault_test : public InvariantsBase
         env(pay(issuer, borrower, usd(1'000)));
         env.close();
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults. The 10-year investment window
+        // covers this helper's 120 monthly payments so LoanSet's
+        // RedemptionDate bound is satisfied.
         Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = usd});
+        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner,
+             .asset = usd,
+             .subscriptionOffset = std::chrono::seconds{60},
+             .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull}});
         env(vaultTx);
         env.close();
 
@@ -1998,6 +2006,9 @@ class InvariantsVault_test : public InvariantsBase
                 Fee(env.current()->fees().base * 2));
             env.close();
         }
+
+        // LoanSet is gated on Investment; advance out of Subscription.
+        vault.closePastSubscription(subscriptionDate);
 
         auto const brokerSle = env.le(brokerKeylet);
         if (!BEAST_EXPECT(brokerSle))
