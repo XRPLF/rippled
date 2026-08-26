@@ -25,16 +25,27 @@ doPathFind(rpc::JsonContext& context)
     // thread) nest under it. doPathFind does not yield, so scoping is safe.
     auto span = ScopedSpanGuard(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
-    // Addresses are hashed before emission for privacy. Read through a const
-    // reference: the non-const json::Value::operator[] inserts a null for a
-    // missing key, which would make PathRequest::parseJson's isMember() checks
-    // see an absent field as present and return Malformed instead of Missing.
-    // Reading for telemetry must not alter what the request looks like.
-    auto const& params = std::as_const(context.params);
-    if (auto const& src = params[jss::source_account]; src.isString())
-        span.setAttribute(pathfind_span::attr::sourceAccount, redactAccount(src.asString()));
-    if (auto const& dst = params[jss::destination_account]; dst.isString())
-        span.setAttribute(pathfind_span::attr::destAccount, redactAccount(dst.asString()));
+    // Guarded on the span being live because setAttribute's arguments are
+    // evaluated whatever the build, and neither is free: asString() copies the
+    // address out of the JSON and redactAccount() takes a SHA-512Half over it.
+    // That is two copies and two hashes on every path_find call. The
+    // compiled-out guard's operator bool() is a literal false, so the block
+    // disappears entirely in that build; with telemetry compiled in it is
+    // skipped whenever this span is not being recorded.
+    if (span)
+    {
+        // Addresses are hashed before emission for privacy. Read through a
+        // const reference: the non-const json::Value::operator[] inserts a null
+        // for a missing key, which would make PathRequest::parseJson's
+        // isMember() checks see an absent field as present and return Malformed
+        // instead of Missing. Reading for telemetry must not alter what the
+        // request looks like.
+        auto const& params = std::as_const(context.params);
+        if (auto const& src = params[jss::source_account]; src.isString())
+            span.setAttribute(pathfind_span::attr::sourceAccount, redactAccount(src.asString()));
+        if (auto const& dst = params[jss::destination_account]; dst.isString())
+            span.setAttribute(pathfind_span::attr::destAccount, redactAccount(dst.asString()));
+    }
 
     if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);
