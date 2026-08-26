@@ -657,7 +657,7 @@ class FeeVote_test : public beast::unit_test::Suite
         Env env(*this, testableAmendments() | featureXRPFees);
 
         // establish what the current fees are
-        BEAST_EXPECT(env.current()->fees().base == XRPAmount{UNIT_TEST_REFERENCE_FEE});
+        BEAST_EXPECT(env.current()->fees().base == env.app().config().fees.referenceFee);
         BEAST_EXPECT(env.current()->fees().reserve == XRPAmount{200'000'000});
         BEAST_EXPECT(env.current()->fees().increment == XRPAmount{50'000'000});
 

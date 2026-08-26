@@ -270,10 +270,6 @@ if(xrpld)
     patch_nix_binary(xrpld)
     if(tests)
         target_compile_definitions(xrpld PUBLIC ENABLE_TESTS)
-        target_compile_definitions(
-            xrpld
-            PRIVATE UNIT_TEST_REFERENCE_FEE=${UNIT_TEST_REFERENCE_FEE}
-        )
     endif()
     target_include_directories(
         xrpld

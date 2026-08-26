@@ -16,6 +16,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <memory>
@@ -32,8 +33,6 @@ class LedgerMaster_test : public beast::unit_test::Suite
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
             cfg->networkId = networkID;
-            // This test relies on ledger hash so must lock it to fee 10.
-            cfg->fees.referenceFee = 10;
             return cfg;
         });
     }
@@ -46,7 +45,8 @@ class LedgerMaster_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        test::jtx::Env env{*this, makeNetworkConfig(11111)};
+        // This test relies on ledger hash so must lock it to fee 10.
+        test::jtx::Env env{*this, makeNetworkConfig(11111), XRPAmount(10)};
 
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);

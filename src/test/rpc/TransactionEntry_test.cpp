@@ -1,11 +1,8 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/envconfig.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
-
-#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -15,6 +12,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -30,10 +28,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
     {
         testcase("Invalid request params");
         using namespace test::jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = 10;
-                    return cfg;
-                })};
+        Env env{*this, XRPAmount(10)};
 
         {
             // no params
@@ -137,10 +132,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
     {
         testcase("Basic request API version " + std::to_string(apiVersion));
         using namespace test::jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = 10;
-                    return cfg;
-                })};
+        Env env{*this, XRPAmount(10)};
 
         auto checkTx = [this, &env, apiVersion](
                            int index,

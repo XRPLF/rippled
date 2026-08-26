@@ -322,11 +322,7 @@ public:
 
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->fees.referenceFee = 10;
-            cfg = singleThreadIo(std::move(cfg));
-            return cfg;
-        }));
+        Env env(*this, envconfig(singleThreadIo), nullptr, std::nullopt, XRPAmount(10));
         auto wsc = makeWSClient(env.app().config());
         json::Value stream{json::ValueType::Object};
 

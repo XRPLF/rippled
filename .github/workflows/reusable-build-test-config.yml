@@ -31,6 +31,12 @@ on:
         type: string
         default: ""
 
+      unittest_args:
+        description: "Additional arguments to pass to rippled when running tests"
+        required: false
+        type: string
+        default: ""
+
       cmake_target:
         description: "The CMake target to build."
         required: true
@@ -345,6 +351,7 @@ jobs:
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+          UNITTEST_ARGS: ${{ inputs.unittest_args }}
         run: |
           set -o pipefail
           # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness

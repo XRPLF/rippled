@@ -20,6 +20,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -270,10 +271,8 @@ class LedgerRPC_test : public beast::unit_test::Suite
         testcase("Lookup ledger");
         using namespace test::jtx;
 
-        auto cfg = envconfig();
-        cfg->fees.referenceFee = 10;
-        Env env{*this, std::move(cfg), FeatureBitset{}};  // hashes requested below
-                                                          // assume no amendments
+        Env env{*this, FeatureBitset{}, XRPAmount(10)};  // hashes requested below
+                                                         // assume no amendments
         env.fund(XRP(10000), "alice");
         env.close();
         env.fund(XRP(10000), "bob");
@@ -440,8 +439,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
             return cfg;
         });
 
-        cfg->fees.referenceFee = 10;
-        Env env(*this, std::move(cfg));
+        Env env(*this, std::move(cfg), XRPAmount(10));
 
         json::Value jv;
         jv[jss::ledger_index] = "current";

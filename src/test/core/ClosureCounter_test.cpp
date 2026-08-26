@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <optional>
+#include <string>
 #include <thread>
 #include <utility>
 
@@ -18,8 +19,8 @@ class ClosureCounter_test : public beast::unit_test::Suite
 {
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::Severity::Disabled};
-    beast::Journal j_{env_.app().getJournal("ClosureCounter_test")};
+    std::optional<test::jtx::Env> env_;
+    std::optional<beast::Journal> j_;
 
     void
     testConstruction()
@@ -259,7 +260,7 @@ class ClosureCounter_test : public beast::unit_test::Suite
 
         // Join with 0 count should not stall.
         using namespace std::chrono_literals;
-        voidCounter.join("testWrap", 1ms, j_);
+        voidCounter.join("testWrap", 1ms, *j_);
 
         // Wrapping a closure after join() should return std::nullopt.
         BEAST_EXPECT(voidCounter.wrap([]() {}) == std::nullopt);
@@ -280,7 +281,7 @@ class ClosureCounter_test : public beast::unit_test::Suite
         std::thread localThread([&voidCounter, &threadExited, this]() {
             // Should stall after calling join.
             using namespace std::chrono_literals;
-            voidCounter.join("testWaitOnJoin", 1ms, j_);
+            voidCounter.join("testWaitOnJoin", 1ms, *j_);
             threadExited.store(true);
         });
 
@@ -310,6 +311,9 @@ public:
     void
     run() override
     {
+        env_.emplace(*this, jtx::envconfig(), nullptr, beast::Severity::Disabled);
+        j_.emplace(env_->app().getJournal("ClosureCounter_test"));
+
         testConstruction();
         testArgs();
         testWrap();

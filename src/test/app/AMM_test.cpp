@@ -5247,13 +5247,7 @@ private:
         FeatureBitset const all{testableAmendments()};
 
         {
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = XRPAmount(1);
-                    return cfg;
-                }),
-                all);
+            Env env(*this, all, XRPAmount(1));
             fund(env, gw_, {alice_}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw_, XRP(10'000), USD(10'000));
             for (auto i = 0; i < kMaxDeletableAmmTrustLines + 10; ++i)
@@ -5305,13 +5299,7 @@ private:
         }
 
         {
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = XRPAmount(1);
-                    return cfg;
-                }),
-                all);
+            Env env(*this, all, XRPAmount(1));
             fund(env, gw_, {alice_}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw_, XRP(10'000), USD(10'000));
             for (auto i = 0; i < (kMaxDeletableAmmTrustLines * 2) + 10; ++i)
