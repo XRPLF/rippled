@@ -1,9 +1,9 @@
 # Build Linux packages from the pre-built xrpld and validator-keys artifacts:
 #
-#   - one job per distro, taken from "package_configs" in linux.json
-#   - each job runs in that distro's container, which is what decides DEB or RPM
+#   - one job per config that carries a "package" map in linux.json
+#   - that map names the container image and the format it builds there
 #   - with 'publish: true' a job also uploads what it built
-#     (see package/publish_pkg.sh)
+#     (see package/publish_pkg.py)
 #
 # Only linux/amd64 is supported; the runner is hardcoded in the job below.
 name: Package
@@ -28,6 +28,9 @@ on:
         required: false
       remote_password:
         description: "The password or token for that Nexus account."
+        required: false
+      signing_key:
+        description: "Armoured PGP private key used to sign the RPMs. Required when publishing."
         required: false
 
 defaults:
@@ -94,9 +97,23 @@ jobs:
 
       - name: Build package
         env:
+          PACKAGE_TYPE: ${{ matrix.package_type }}
           PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
-          PKG_CHANNEL: ${{ steps.release_info.outputs.channel }}
-        run: ./package/build_pkg.sh
+          CHANNEL: ${{ steps.release_info.outputs.channel }}
+        run: |
+          ./package/build_pkg.py \
+              --package-type "${PACKAGE_TYPE}" \
+              --build-dir "${BUILD_DIR}" \
+              --pkg-release "${PKG_RELEASE}" \
+              --channel "${CHANNEL}"
+
+      # Before the upload, so the artifact and the published package are the
+      # same bytes. DEBs are not signed, so the key is never set on that job.
+      - name: Sign RPM
+        if: ${{ inputs.publish && matrix.package_type == 'rpm' }}
+        env:
+          PKG_SIGNING_KEY: ${{ secrets.signing_key }}
+        run: ./package/sign_rpm.py --package-dir "${BUILD_DIR}"
 
       - name: Upload package artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -115,4 +132,8 @@ jobs:
           NEXUS_URL: ${{ inputs.nexus_url }}
           NEXUS_USERNAME: ${{ secrets.remote_username }}
           NEXUS_PASSWORD: ${{ secrets.remote_password }}
-        run: ./package/publish_pkg.sh "${CHANNEL}" "${BUILD_DIR}"
+        run: |
+          ./package/publish_pkg.py \
+              --channel "${CHANNEL}" \
+              --package-dir "${BUILD_DIR}" \
+              --nexus-url "${NEXUS_URL}"

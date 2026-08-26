@@ -318,6 +318,7 @@ words:
   - summands
   - superpeer
   - superpeers
+  - Swatinem
   - takergets
   - takerpays
   - ters
@@ -365,6 +366,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - vkeylet
   - wasmi
   - wextra
   - wptr
@@ -383,4 +385,5 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT
