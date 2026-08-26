@@ -1185,11 +1185,11 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
 
-                // lsfLoanOverpayment is immutable after creation. Check it ungated, as
-                // LoanInvariant did before V1_1; the enclosing featureLendingProtocol gate suffices
-                // because only that amendment creates ltLOAN entries. lsfLoanDefault may change
-                // only from unset to set through tfLoanDefault. Under V1_1, reject attempts to
-                // clear it, matching LoanInvariant's previous gate.
+                // lsfLoanOverpayment immutability was previously enforced by LoanInvariant and
+                // has been moved here under V1_1. lsfLoanDefault clearing is a new V1_1 rule
+                // (not a move): once set by LoanManage it may not be cleared by any transaction,
+                // making the flag effectively write-once when combined with LoanInvariant's rule
+                // that only LoanManage may change it.
                 {
                     if (view.rules().enabled(featureLendingProtocolV1_1))
                     {

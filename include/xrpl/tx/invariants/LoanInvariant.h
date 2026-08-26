@@ -28,7 +28,10 @@ namespace xrpl {
  *    c. The `lsfLoanImpaired` flag may only change through a `ttLOAN_MANAGE`
  *       or `ttLOAN_PAY` transaction.
  *    d. The `lsfLoanDefault` flag may only change through a `ttLOAN_MANAGE`
- *       transaction.
+ *       transaction. Combined with `NoModifiedUnmodifiableFields`, which
+ *       rejects any clearing of `lsfLoanDefault`, this makes the flag
+ *       write-once: `ttLOAN_MANAGE` may set it, and no transaction may
+ *       clear it.
  *    e. Interest due, computed as `TotalValueOutstanding -
  *       PrincipalOutstanding - ManagementFeeOutstanding`, must not be
  *       negative.

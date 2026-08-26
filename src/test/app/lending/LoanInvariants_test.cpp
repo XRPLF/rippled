@@ -385,19 +385,22 @@ private:
             isRounded(broker.asset, newState.principalOutstanding, originalState.loanScale));
     }
 
-    // non-full-payment invariant asserts that a successful LoanPay strictly
-    // decreases PaymentRemaining and advances NextPaymentDueDate. doPayment
-    // deliberately leaves those schedule fields unchanged for
-    // PaymentSpecialCase::Extra (an overpayment), so the concern is that an
+    // doPayment leaves PaymentRemaining and NextPaymentDueDate unchanged for
+    // PaymentSpecialCase::Extra (an overpayment). The concern is that an
     // "extra-only" overpayment - one that does not also cover a scheduled
-    // payment - would reach that branch and trip the invariant.
+    // payment - could reach that branch and advance neither the payment count
+    // nor the schedule, leaving the loan in a state where the borrower has
+    // paid principal but the schedule pretends nothing happened. This test
+    // pins the current behaviour: makeRegularPayment rejects such amounts
+    // with tecINSUFFICIENT_PAYMENT before the Extra branch runs, and a
+    // payment large enough to cover both a scheduled instalment and an extra
+    // does advance the schedule normally.
     //
-    // The invariant is gated behind featureLendingProtocolV1_1, which
-    // LoanTestBase::all_ excludes, so it is opted back in here.
+    // V1_1 is opted in explicitly because LoanTestBase::all_ excludes it.
     void
     testLoanPayOverpaymentScheduleInvariant(FeatureBitset features)
     {
-        testcase("LoanPay overpayment vs non-full-payment invariant");
+        testcase("LoanPay overpayment schedule advancement");
 
         using namespace jtx;
         using namespace loan;
@@ -443,9 +446,9 @@ private:
         auto const payFee = Fee(env.current()->fees().base * 2);
 
         // The amount does not cover a scheduled payment, so makeRegularPayment makes zero scheduled
-        // payments and returns tecINSUFFICIENT_PAYMENT before the Extra branch runs. The invariant
-        // is therefore never reached. Were the payment to succeed while touching only principal,
-        // the invariant would fire instead.
+        // payments and returns tecINSUFFICIENT_PAYMENT before the Extra branch runs. Were the
+        // payment to succeed while touching only principal, PaymentRemaining and NextPaymentDueDate
+        // would silently fail to advance.
         env(pay(borrower, loanKeylet.key, belowOnePayment, tfLoanOverpayment),
             payFee,
             Ter(tecINSUFFICIENT_PAYMENT));
@@ -458,7 +461,7 @@ private:
 
         // PaymentRemaining drops by one, NextPaymentDueDate advances by one interval, and
         // PrincipalOutstanding strictly decreases (by more than a plain payment thanks to the
-        // extra). The invariant must accept it.
+        // extra).
         STAmount const onePaymentPlusExtra = asset(5'000).value();
         env(pay(borrower, loanKeylet.key, onePaymentPlusExtra, tfLoanOverpayment), payFee);
         env.close();
@@ -1019,6 +1022,86 @@ private:
         runCase(/*coarseBorrower=*/false);
     }
 
+    // Under featureLendingProtocolV1_1, ValidLoan::finalize enforces
+    //   TotalValueOutstanding >= PrincipalOutstanding + ManagementFeeOutstanding
+    // ("interest due is non-negative"). This test drives the transactor
+    // through a multi-payment scenario with a non-zero management fee and
+    // messy IOU-scale rounding; if any rounding path in LoanPay were to
+    // inflate PrincipalOutstanding or ManagementFeeOutstanding relative to
+    // TotalValueOutstanding by even one ULP, the invariant would fire and
+    // the LoanPay would return tecINVARIANT_FAILED instead of tesSUCCESS.
+    void
+    testLoanPayInterestDueNonNegativeInvariant()
+    {
+        testcase("LoanPay interest-due non-negative invariant");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_ | featureLendingProtocolV1_1);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        PrettyAsset const iouAsset = createFundedIouAsset(env, issuer, lender, borrower);
+
+        // Default broker params carry managementFeeRate = 100 tenth-bips
+        // (1%), which is what makes managementFeeOutstanding accumulate
+        // non-trivially through the payment schedule.
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+        auto const loanKeylet = nextLoanKeylet(env, broker);
+
+        // Messy interest rate, non-trivial payment count. Values chosen so
+        // that periodicPayment and each roundedInterest/managementFee share
+        // are unlikely to be representable exactly at loanScale.
+        env(set(borrower, broker.brokerID, Number{1'000}),
+            Sig(sfCounterpartySignature, lender),
+            kInterestRate(TenthBips32{24'346}),
+            kPaymentTotal(24),
+            kPaymentInterval(86400 * 30),
+            loanSetFee);
+        env.close();
+
+        auto const payFee = Fee(env.current()->fees().base * 2);
+        // Boundary check up front on the freshly-created loan.
+        {
+            auto const initial = getCurrentState(env, broker, loanKeylet);
+            BEAST_EXPECT(
+                initial.totalValue >=
+                initial.principalOutstanding + initial.managementFeeOutstanding);
+        }
+
+        // Six regular scheduled payments. If the invariant fires the
+        // Ter(tesSUCCESS) assertion below catches it; the identity check
+        // then re-asserts it in the test for a clearer failure message.
+        std::uint32_t prevPaymentRemaining = 24;
+        for (int i = 0; i < 6; ++i)
+        {
+            auto const loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                return;
+            // Match the amount LoanPay expects for a scheduled payment:
+            // periodicPayment rounded at loanScale, plus the flat service
+            // fee (0 here by default, but included for robustness).
+            auto const payAmount = STAmount{
+                iouAsset,
+                roundPeriodicPayment(
+                    iouAsset, loanSle->at(sfPeriodicPayment), loanSle->at(sfLoanScale)) +
+                    loanSle->at(sfLoanServiceFee)};
+            env(pay(borrower, loanKeylet.key, payAmount), payFee, Ter(tesSUCCESS));
+            env.close();
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            BEAST_EXPECT(
+                state.totalValue >= state.principalOutstanding + state.managementFeeOutstanding);
+            BEAST_EXPECT(state.paymentRemaining == prevPaymentRemaining - 1);
+            prevPaymentRemaining = state.paymentRemaining;
+        }
+    }
+
     // Tests run under each entry in amendmentCombinations().
     void
     runAmendmentSensitive(FeatureBitset features)
@@ -1035,6 +1118,7 @@ public:
     run() override
     {
         testLoanSetRecipientScaleInvariant();
+        testLoanPayInterestDueNonNegativeInvariant();
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
