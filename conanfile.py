@@ -131,6 +131,13 @@ class Xrpl(ConanFile):
             self.options["boost"].visibility = "global"
         if self.settings.compiler in ["clang", "gcc"]:
             self.options["boost"].without_cobalt = True
+        # Google Benchmark can read hardware performance counters (instructions,
+        # cycles, ...) through libpfm, which its recipe only offers on Linux. The
+        # wasm gas-calibration benchmarks want instruction counts as a
+        # machine-independent cross-check on wall time, so enable it where it
+        # exists; elsewhere those benchmarks fall back to timing alone.
+        if self.options.benchmark and self.settings.os == "Linux":
+            self.options["benchmark"].enable_libpfm = True
 
     def requirements(self):
         if self.options.benchmark:

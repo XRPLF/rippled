@@ -20,3 +20,83 @@ target_link_libraries(
 xrpl_add_benchmark(nodestore)
 target_link_libraries(xrpl.bench.nodestore PRIVATE xrpl.imports.bench)
 add_dependencies(xrpl.benchmarks xrpl.bench.nodestore)
+
+# ---------------------------------------------------------------------------
+# xrpl.bench.wasm — gas calibration for the wasm host functions.
+#
+# Unlike `nodestore`, this module's sources do not live here: each `*.bench.cpp`
+# sits beside the test that covers the same host function, under
+# `src/tests/libxrpl/tx/wasm/`. Keeping the benchmark next to the test means the
+# two move together and share one fixture; a separate executable means benchmark
+# runtime never lands on the `ctest` path (the test binary filters `*.bench.cpp`
+# back out).
+#
+# Reusing those fixtures means compiling a few test sources and linking GTest:
+# `RealHostFixture` derives from `testing::Test`. Nothing here registers a test.
+find_package(GTest QUIET)
+if(TARGET GTest::gtest)
+    file(
+        GLOB_RECURSE wasm_bench_sources
+        CONFIGURE_DEPENDS
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/*.bench.cpp"
+    )
+
+    add_executable(
+        xrpl.bench.wasm
+        ${wasm_bench_sources}
+        # The fixtures under measurement: a real ledger, a real host, real accounts.
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/Account.cpp"
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/TestSink.cpp"
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/TxTest.cpp"
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/RealHostFixture.cpp"
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/NFTFixture.cpp"
+    )
+
+    # Google Benchmark registers cases through static registrars declared in
+    # anonymous namespaces; merging several such files into one unity translation
+    # unit collides them. Same reason as `xrpl_add_benchmark`.
+    #
+    # The output directory matches too: benchmarks land in the build root beside
+    # `xrpl_tests`, because they are run by hand and comparing two of them should
+    # not mean typing two long paths.
+    set_target_properties(
+        xrpl.bench.wasm
+        PROPERTIES
+            UNITY_BUILD OFF
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+
+    # The fixtures include their siblings as <helpers/...> and <tx/wasm/...>, the
+    # same spelling the test binary gives them.
+    target_include_directories(
+        xrpl.bench.wasm
+        PRIVATE "${CMAKE_SOURCE_DIR}/src/tests/libxrpl"
+    )
+    target_link_libraries(
+        xrpl.bench.wasm
+        PRIVATE
+            xrpl.imports.bench
+            GTest::gtest
+            GTest::gmock
+            xrpl_wasm_testkit_cxxbridge
+    )
+    add_dependencies(xrpl.bench.wasm xrpl_crates)
+
+    # Hardware performance counters (INSTRUCTIONS, CYCLES, ...) come from libpfm,
+    # which Google Benchmark only builds on Linux (see the `enable_libpfm` option
+    # set in conanfile.py). Where it is available the benchmarks advertise the
+    # `--benchmark_perf_counters=...` flag; elsewhere they report wall time only.
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_compile_definitions(
+            xrpl.bench.wasm
+            PRIVATE XRPL_BENCH_PERF_COUNTERS=1
+        )
+    endif()
+
+    add_dependencies(xrpl.benchmarks xrpl.bench.wasm)
+else()
+    message(
+        STATUS
+        "GTest not found; skipping xrpl.bench.wasm (it reuses the test fixtures)."
+    )
+endif()

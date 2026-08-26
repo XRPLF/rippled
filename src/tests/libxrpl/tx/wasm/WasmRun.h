@@ -9,6 +9,8 @@
 
 #include <cstdint>
 #include <expected>
+#include <span>
+#include <string>
 #include <string_view>
 
 namespace xrpl::test {
@@ -25,6 +27,34 @@ assembleWat(std::string_view wat)
 {
     auto const wasm = rs::wasm_testkit::compile_wat(rust::Str{wat.data(), wat.size()});
     return Bytes{wasm.begin(), wasm.end()};
+}
+
+// `bytes` as the escape sequence a WAT string literal wants (`\aa\bb...`), for seeding a
+// contract's memory through a `(data ...)` segment.
+//
+// Guest memory starts zeroed, and zeros are not a usable input to most host functions: an
+// all-zero account id is `InvalidAccount`, an all-zero float is non-canonical. A contract
+// that needs real bytes to work on gets them here, once at instantiation, rather than
+// building them out of `i32.store` instructions.
+inline std::string
+watEscaped(std::span<std::uint8_t const> bytes)
+{
+    static constexpr char kHex[] = "0123456789abcdef";
+    auto out = std::string{};
+    out.reserve(bytes.size() * 3);
+    for (auto const byte : bytes)
+    {
+        out += '\\';
+        out += kHex[byte >> 4];
+        out += kHex[byte & 0x0F];
+    }
+    return out;
+}
+
+inline std::string
+watEscaped(Bytes const& bytes)
+{
+    return watEscaped(std::span<std::uint8_t const>{bytes.data(), bytes.size()});
 }
 
 // Assemble and run `wat`'s `entryPoint` through the real VM, servicing host calls through

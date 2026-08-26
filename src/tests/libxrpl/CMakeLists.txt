@@ -55,6 +55,11 @@ foreach(module IN LISTS test_modules)
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
     )
+    # `*.bench.cpp` files live beside the tests they measure, but belong to the
+    # benchmark executables (src/benchmarks/libxrpl), not to this one: they define
+    # Google Benchmark registrars, and running them under ctest would make a test
+    # run take minutes. Keep them out of the test binary.
+    list(FILTER sources EXCLUDE REGEX "\\.bench\\.cpp$")
     target_sources(xrpl_tests PRIVATE ${sources})
 
     # Expose the module's private headers under their canonical include path.
@@ -75,6 +80,23 @@ file(
     "${CMAKE_CURRENT_SOURCE_DIR}/csf/*.cpp"
 )
 target_sources(xrpl_tests PRIVATE ${csf_sources})
+
+# `tx/wasm/WasmBench.h` and `tx/wasm/BenchFixtures.h` sit beside the tests they
+# measure but belong to `xrpl.bench.wasm`, so they include <benchmark/benchmark.h>
+# while nothing in this binary does. `verify_target_headers` below compiles *every*
+# header under this directory with this target's flags, so without the benchmark
+# headers on the path those two fail to parse — which also makes clang-tidy's
+# include-cleaner report nonsense for everything after the failed include.
+#
+# Carrying the include directory (not the library) is enough: the test binary
+# compiles nothing that uses Google Benchmark, and links nothing from it.
+if(benchmark AND TARGET benchmark::benchmark)
+    target_include_directories(
+        xrpl_tests
+        PRIVATE
+            $<TARGET_PROPERTY:benchmark::benchmark,INTERFACE_INCLUDE_DIRECTORIES>
+    )
+endif()
 
 # The test helpers and per-module test headers are not built with add_module,
 # so verify them against the test binary's own compile environment.
