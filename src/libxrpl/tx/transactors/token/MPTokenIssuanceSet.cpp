@@ -298,7 +298,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // Enabling confidential balances when COA > 0 is not permitted, regardless of
     // ConfidentialMPTKeyRotation.
-    if (enablesConfidentialAmount && hasConfidentialOA)
+    if (enablesConfidentialBalance && hasConfidentialOA)
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
