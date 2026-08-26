@@ -21,7 +21,7 @@ class TransactionProposalSignBuilder;
  * Type: ttTRANSACTION_PROPOSAL_SIGN (93)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureCosign
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use TransactionProposalSignBuilder to construct new transactions.
