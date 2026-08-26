@@ -456,9 +456,9 @@ private:
         BEAST_EXPECT(afterReject.principalOutstanding == before.principalOutstanding);
         BEAST_EXPECT(afterReject.nextPaymentDate == before.nextPaymentDate);
 
-        // This reaches the 3.11.5 invariant with tesSUCCESS: PaymentRemaining drops by one,
-        // NextPaymentDueDate advances by one interval, and PrincipalOutstanding strictly decreases
-        // (by more than a plain payment thanks to the extra). The invariant must accept it.
+        // PaymentRemaining drops by one, NextPaymentDueDate advances by one interval, and
+        // PrincipalOutstanding strictly decreases (by more than a plain payment thanks to the
+        // extra). The invariant must accept it.
         STAmount const onePaymentPlusExtra = asset(5'000).value();
         env(pay(borrower, loanKeylet.key, onePaymentPlusExtra, tfLoanOverpayment), payFee);
         env.close();
