@@ -56,10 +56,18 @@ without having checked anything is the same green-build-that-is-not failure this
 script exists to prevent, so renaming or deleting one of its inputs must not
 silence it.
 
+A baseline ENTRY that is not a positive finite number is rejected before any
+rule runs, by ``_unusable_baseline``. Every rule does arithmetic on that value,
+and a degenerate one made the script crash with a traceback (rule D divides by
+it) or emit advice about the wrong file (a negative value inverts rule D's
+comparison). Reporting malformed input is what this script is for, so it must
+name the key rather than die on it.
+
 Exit 0 when every rule holds, 1 with per-key detail otherwise.
 """
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -217,12 +225,77 @@ def check_exclusions(metrics_cfg, thresholds, baseline_metrics, declared):
     return failures
 
 
+def _unusable_baseline(key, value, unit):
+    """Reject a baseline value no rule below could evaluate, or None if it is fine.
+
+    Every rule downstream does arithmetic on this number, and two of them break
+    on a degenerate one rather than reporting it:
+
+      * rule D computes ``100 * bound / value``, which raises
+        ZeroDivisionError on ``0.0``. The script then dies with a traceback
+        instead of naming the key -- a validator that crashes where it should
+        report is the same green-build-that-is-not failure in reverse;
+      * a NEGATIVE value makes that same ratio negative, so ``pct >= ratio`` is
+        true for any configured percentage and rule D fires with a message
+        telling the maintainer to lower ``max_pct_increase``. The advice is
+        wrong: the fault is the baseline, not the threshold;
+      * a non-numeric value raises TypeError inside rule E's subtraction.
+
+    Rule E does not cover the zero case, which is easy to assume it does: its
+    test ``abs(value - quantile * first_edge) <= 1e-9 * first_edge`` reduces to
+    ``quantile <= 1e-9`` when value is ``0.0``, and that is false for every
+    quantile this harness captures (0.5, 0.95, 0.99).
+
+    None of these arise from the normal pipeline -- ``histogram_quantile`` over
+    a first-bucket-only histogram returns ``quantile x first_edge``, never zero,
+    and rule E is the guard for exactly that. They arise from a hand-edited or
+    truncated baseline, which is precisely the input this script exists to
+    reject.
+
+    Args:
+        key:   Flat metric key, for the message.
+        value: The baseline value as read from the file.
+        unit:  The entry's unit, for the message.
+
+    Returns:
+        A failure string, or None when the value is usable.
+    """
+    # bool is a subclass of int; True would otherwise pass as the number 1.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return (
+            f"{key}: baseline value {value!r} is not a number, so no bound can be "
+            f"derived from it. Recapture the baseline from a CI run rather than "
+            f"editing it by hand -- see baselines/README.md"
+        )
+    if not math.isfinite(value) or value <= 0:
+        return (
+            f"{key}: baseline is {value!r}{unit}, but a captured latency quantile "
+            f"is strictly positive and finite. A zero baseline leaves the "
+            f"percentage bound undefined, a negative one inverts it, and neither "
+            f"can bracket to a bucket -- so no rule below can be evaluated. "
+            f"Recapture the baseline from a CI run rather than editing it by hand "
+            f"-- see baselines/README.md"
+        )
+    return None
+
+
 def check_key(key, entry, thresholds, ladders):
-    """Apply rules B, C, D and E to one gated key. Returns a list of failures."""
+    """Apply rules B, C, D and E to one gated key. Returns a list of failures.
+
+    The rules assume the baseline entry holds a strictly positive, finite
+    number, which is what ``histogram_quantile`` yields. Anything else is
+    malformed input, and reporting malformed input is this script's whole job,
+    so it is rejected up front rather than arithmetic being attempted on it --
+    see ``_unusable_baseline``.
+    """
     value, unit = entry.get("value"), entry.get("unit", "")
     edges = ladders.get(unit)
     if value is None or edges is None:
         return [f"{key}: baseline has no value, or unknown unit {unit!r}"]
+
+    unusable = _unusable_baseline(key, value, unit)
+    if unusable:
+        return [unusable]
 
     failures = []
     first_edge = edges[0]

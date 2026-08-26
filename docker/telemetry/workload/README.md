@@ -271,11 +271,24 @@ Per-run tuning:
   re-derive the bounds. See `_absolute_bound_derivation` in that file;
   `.github/scripts/telemetry/check_regression_bounds.py` enforces it in CI.
 - That bound budgets for **quantization** noise only, so a key whose run-to-run
-  variance is larger than it cannot be gated at all — `span.ledger.validate.p95`
-  and `.p99` are excluded for that reason and are listed, with the measurements,
-  in `excluded_keys` in `regression-metrics.json`. Check a key's observed maximum
-  across runs against `baseline + bound` before gating it; widening the bound is
-  not the fix. See `baselines/README.md`.
+  variance is larger than it cannot be gated at all. **Five keys are excluded**
+  for that reason: `span.ledger.validate.p95` and `.p99`, plus
+  `span.tx.apply.p50`, `span.ledger.build.p50` and
+  `span.consensus.ledger_close.p50` as of the 2026-08-26 refresh. Each carries
+  its measurements in `excluded_keys` in `regression-metrics.json`. Check a key's
+  observed maximum across runs against `baseline + bound` before gating it;
+  widening the bound is not the fix, and neither is re-baselining until a run
+  lands favourably. See `baselines/README.md`.
+- A refresh moves sensitivity in **both** directions, because the trip point is
+  derived from the baseline, and a single run carries no information about
+  spread. The 2026-08-26 refresh loosened `job.acceptLedger.running.p95` from a
+  5.74x detection floor to 16.28x (it does not fire, so it stays gated) and cut
+  the three `p50` keys above from a bound that had absorbed their spread to one
+  that could not — `span.tx.apply.p50` read 0.7917 ms in the previous baseline
+  and 0.00597 ms in this one, a 132x move on the same workload, taking its bound
+  from 4.21 ms to 0.0440 ms. Gating those keys again needs a **multi-run
+  baseline** (or a spread measurement captured beside it), not a new threshold.
+  All of it is measured in `baselines/README.md`; re-check after every refresh.
 
 See [`baselines/README.md`](./baselines/README.md) for the baseline
 lifecycle and refresh process.
@@ -425,6 +438,42 @@ container-side view of `/var/log/xrpld`, the receiver's watched files and
 internal log-record counters, and Loki's own entry counts for the selector with
 and without the line filter. Read that block first; it identifies the broken leg
 without reproducing anything.
+
+Those two entry counts **must** be wrapped in `sum()`. The `filelog` receiver's
+`regex_parser` leaves `message` and `timestamp` as log-record attributes, and
+Loki's OTLP path stores them as structured metadata that joins the label set of a
+metric query — so an unaggregated `count_over_time` returns one series per log
+line and Loki rejects it with `HTTP 400 maximum number of series (500) reached`
+past a few hundred lines. That is not hypothetical: it made both legs print
+`unavailable` on runs `32877465763` and `32964262700`, at which point the block
+distinguished nothing. `_loki_json` in `validate_telemetry.py` and
+`diag_loki_count` in `run-full-validation.sh` now print the HTTP status and
+Loki's own plain-text body, so a future rejection names its own cause instead of
+surfacing as a mimetype error.
+
+`log.trace_id_cross_reference` polls Tempo for up to `METRIC_POLL_TIMEOUT_SEC`
+(45 s, the same window and interval every other poll in the file uses) before
+reporting that a logged trace id does not resolve. A trace id reaches a log line
+when its span is created but is queryable only after export, ingest and indexing,
+so a single query races that pipeline. A failure now means the id was absent for
+the whole window.
+
+The check distinguishes three outcomes, not two, because "Tempo never answered"
+and "the spans were not exported" send a reader to different subsystems:
+
+| outcome                           | Tempo said                               | reported as                       |
+| --------------------------------- | ---------------------------------------- | --------------------------------- |
+| resolved                          | 200 with spans                           | pass                              |
+| absent for the whole window       | 404, or 200 with no spans, every attempt | "…do not resolve; not exported"   |
+| query failed and nothing resolved | any other non-200 (4xx/5xx)              | "could not verify … last error …" |
+
+`_tempo_get_trace` treats **404 as absence** and returns an empty list, because a
+trace id read from a log line is legitimately not yet indexed and every caller
+loops over candidates relying on that. Any **other** non-200 raises
+`TempoQueryError` — previously an error body was fed straight to `resp.json()`,
+so a JSON 5xx read as "0 spans" and a `text/plain` 5xx surfaced as a mimetype
+complaint. `_tempo_search` has no absence status at all (an empty match is 200
+with an empty list), so there every non-200 raises.
 
 The same block prints locally:
 
