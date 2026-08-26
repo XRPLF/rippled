@@ -307,6 +307,8 @@ VaultDeposit::doApply()
     }
 
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
+
+    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
         // Compute exchange before transferring any amounts.
@@ -316,14 +318,20 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
+
         if (sharesCreated == beast::kZero)
             return tecPRECISION_LOSS;
 
+        // Convert shares back to assets so the depositor is debited for the amount actually minted.
+        // The truncated share count is worth <= amount; without this the difference would be
+        // credited to the vault for free.
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
+        // The round-trip must never return more than the original amount. If it does, a conversion
+        // helper is broken. Reject rather than overcharge the depositor.
         if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
@@ -331,13 +339,51 @@ VaultDeposit::doApply()
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        // What a deposit transfers is not the requested amount but that amount truncated to a
-        // whole number of shares and converted back, which can be smaller. Only here is that
-        // value known rather than recomputed, so this is where it can be checked against the
-        // depositor's balance before anything moves.
-        if (fix340Enabled && roundsToZeroForDepositor(view(), accountID_, *maybeAssets, j_))
-            return tecPRECISION_LOSS;
         assetsDeposited = *maybeAssets;
+
+        // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
+        // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
+        // representable delta.
+        if (fix340Enabled)
+        {
+            // Round down at the posterior sfAssetsTotal scale so the vault is credited by no more
+            // than the depositor paid.
+            auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
+            if (!maybeClamped)
+                return maybeClamped.error();
+            assetsDeposited = *maybeClamped;
+
+            // The pre-clamp share count would over-issue by the trimmed ULP and give the depositor
+            // more value than they credited.
+            auto const maybeReShares = assetsToSharesDeposit(vault, sleIssuance, assetsDeposited);
+            if (!maybeReShares)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            sharesCreated = *maybeReShares;
+
+            if (sharesCreated == beast::kZero)
+                return tecPRECISION_LOSS;
+
+            // The re-derived share count would over-issue if it round-trips back to more assets
+            // than the clamped amount actually paid. Unreachable unless a conversion helper is
+            // broken.
+            // LCOV_EXCL_START
+            auto const maybeReAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+            if (!maybeReAssets)
+                return tecINTERNAL;
+            if (*maybeReAssets > assetsDeposited)
+            {
+                JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
+                return tecINTERNAL;
+            }
+            // LCOV_EXCL_STOP
+
+            // The actual deposit amount is truncated to whole shares, converted back to assets,
+            // and clamped to the sfAssetsTotal scale (post-fixCleanup3_4_0). Check the depositor's
+            // balance here—after clamping—before making any state changes.
+            if (roundsToZeroForDepositor(view(), accountID_, assetsDeposited, j_))
+                return tecPRECISION_LOSS;
+        }
     }
     catch (std::overflow_error const&)
     {
