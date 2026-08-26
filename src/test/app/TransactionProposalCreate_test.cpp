@@ -32,7 +32,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <chrono>  // IWYU pragma: keep
 #include <cstddef>
 #include <cstdint>
 #include <functional>
