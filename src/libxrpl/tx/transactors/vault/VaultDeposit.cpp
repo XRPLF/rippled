@@ -339,12 +339,6 @@ VaultDeposit::doApply()
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        // What a deposit transfers is not the requested amount but that amount truncated to a
-        // whole number of shares and converted back, which can be smaller. Only here is that
-        // value known rather than recomputed, so this is where it can be checked against the
-        // depositor's balance before anything moves.
-        if (fix340Enabled && roundsToZeroForDepositor(view(), accountID_, *maybeAssets, j_))
-            return tecPRECISION_LOSS;
         assetsDeposited = *maybeAssets;
 
         // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
@@ -368,6 +362,26 @@ VaultDeposit::doApply()
             sharesCreated = *maybeReShares;
 
             if (sharesCreated == beast::kZero)
+                return tecPRECISION_LOSS;
+
+            // The re-derived share count would over-issue if it round-trips back to more assets
+            // than the clamped amount actually paid. Unreachable unless a conversion helper is
+            // broken.
+            // LCOV_EXCL_START
+            auto const maybeReAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+            if (!maybeReAssets)
+                return tecINTERNAL;
+            if (*maybeReAssets > assetsDeposited)
+            {
+                JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
+                return tecINTERNAL;
+            }
+            // LCOV_EXCL_STOP
+
+            // The actual deposit amount is truncated to whole shares, converted back to assets,
+            // and clamped to the sfAssetsTotal scale (post-fixCleanup3_4_0). Check the depositor's
+            // balance here—after clamping—before making any state changes.
+            if (roundsToZeroForDepositor(view(), accountID_, assetsDeposited, j_))
                 return tecPRECISION_LOSS;
         }
     }
