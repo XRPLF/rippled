@@ -1072,9 +1072,16 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     if (auto* mr = app_.getMetricsRegistry())
     {
         mr->incrementValidationsSent();
+#ifdef XRPL_ENABLE_TELEMETRY
         // Record our validation for the agreement tracker so it can
         // compare against network-validated ledgers.
-        mr->getValidationTracker().recordOurValidation(ledger.id(), ledger.seq());
+        //
+        // Only when enabled: recording takes the tracker's lock and inserts an
+        // entry, and nothing reconciles or drains those entries unless the
+        // observable gauges are running.
+        if (mr->isEnabled())
+            mr->getValidationTracker().recordOurValidation(ledger.id(), ledger.seq());
+#endif
     }
 }
 

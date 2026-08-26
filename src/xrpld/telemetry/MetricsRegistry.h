@@ -138,7 +138,11 @@
  * instrumentation site.
  */
 
+#ifdef XRPL_ENABLE_TELEMETRY
+// The tracker is held and exposed only in this configuration, where the gauge
+// callbacks that drain it exist.
 #include <xrpld/telemetry/ValidationTracker.h>
+#endif
 
 #include <xrpl/beast/utility/Journal.h>
 
@@ -655,10 +659,15 @@ public:
     void
     incrementTxqDropped(std::string_view reason);
 
+#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Access the validation agreement tracker.
      * Used by consensus and ledger hooks to record our validations and
      * network validations so the tracker can compute agreement percentages.
+     *
+     * Guarded, along with the tracker itself, because only the observable-gauge
+     * callbacks read it and those exist only in this configuration. Recording
+     * into it is not free: each call takes its lock and inserts an entry.
      * @return Reference to the internal ValidationTracker instance.
      */
     ValidationTracker&
@@ -667,7 +676,6 @@ public:
         return validationTracker_;
     }
 
-#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Access the shared OTel Meter for call-site instrument creation.
      * Used by the XRPL_METRIC_* macros (MetricMacros.h) so new synchronous
@@ -742,15 +750,17 @@ private:
      */
     bool const enabled_;
 
+#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Tracks validation agreement between this node and the network.
-     * Lives outside the XRPL_ENABLE_TELEMETRY guard because it is
-     * always safe to record events; the gauge callback simply won't
-     * fire when telemetry is disabled.
+     *
+     * Guarded because reconcile() -- which resolves and then prunes recorded
+     * events -- runs only from the observable-gauge callbacks. Recording
+     * without it accumulates one entry per validated ledger, so the tracker
+     * exists only where something drains it.
      */
     ValidationTracker validationTracker_;
 
-#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Reference to Application services for gauge callbacks.
      * Only needed when OTel is compiled in, since observable gauge
