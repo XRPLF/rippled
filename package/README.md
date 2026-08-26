@@ -182,14 +182,7 @@ Nexus owns the repository metadata; nothing here indexes anything. Worth knowing
 
 `publish_pkg.py` knows nothing about `xrpld`, so the Debian packaging image
 installs it at `/usr/local/bin/publish_pkg.py` for other XRPLF repositories that
-build their packages elsewhere. [`clio`](https://github.com/XRPLF/clio) builds
-its DEB with CPack and runs that copy, publishing to the same `deb-<channel>`
-repositories, which is fine as the package names differ.
-
-The channel-to-repository mapping is therefore an interface, and those consumers
-pick up a change to it only once the image is rebuilt and they bump the tag they
-pin. This repository is unaffected, running `./package/docker/publish_pkg.py`
-out of the checkout.
+build their packages elsewhere.
 
 ## How `build_pkg.py` works
 
