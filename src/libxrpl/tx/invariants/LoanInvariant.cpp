@@ -1,6 +1,7 @@
 #include <xrpl/tx/invariants/LoanInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
@@ -140,8 +141,7 @@ ValidLoan::finalize(
         }
         if (lpV11Enabled)
         {
-            // Only LoanSet may create a loan. This is an object-existence rule, not
-            // a transaction post-condition, so it applies even when apply failed.
+            // Only LoanSet may create a loan.
             if (!before && txType != ttLOAN_SET)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan created by a transaction "
@@ -179,13 +179,20 @@ ValidLoan::finalize(
             }
 
             // Interest due (the total value owed less principal and management fee)
-            // must never be negative.
-            if (after->at(sfTotalValueOutstanding) - after->at(sfPrincipalOutstanding) -
-                    after->at(sfManagementFeeOutstanding) <
-                beast::kZero)
+            // must never be negative. TotalValueOutstanding, PrincipalOutstanding and
+            // ManagementFeeOutstanding are each independently rounded to sfLoanScale
+            // by the accounting code, so their difference can carry one unit of
+            // quantization noise even when the underlying flow is correct. Absorb
+            // one unit at that scale, matching the pattern used in ValidVault.
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
-                return false;
+                auto const interestDue = after->at(sfTotalValueOutstanding) -
+                    after->at(sfPrincipalOutstanding) - after->at(sfManagementFeeOutstanding);
+                Number const tolerance{1, after->at(sfLoanScale)};
+                if (interestDue < -tolerance)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+                    return false;
+                }
             }
             // A loan must reference a live loan broker, and that broker must
             // reference a live vault; otherwise the loan is orphaned and its
@@ -204,8 +211,7 @@ ValidLoan::finalize(
         }
     }
 
-    // Deletion by the wrong transaction is an invalid object transition even
-    // when apply failed, so check it before the success-only post-conditions.
+    // Only LoanDelete may delete a loan.
     if (lpV11Enabled && txType != ttLOAN_DELETE && !deletedLoans_.empty())
     {
         JLOG(j.fatal()) << "Invariant failed: Loan deleted by a transaction "

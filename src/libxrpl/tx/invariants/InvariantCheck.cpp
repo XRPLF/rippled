@@ -1190,30 +1190,28 @@ NoModifiedUnmodifiableFields::finalize(
                 // (not a move): once set by LoanManage it may not be cleared by any transaction,
                 // making the flag effectively write-once when combined with LoanInvariant's rule
                 // that only LoanManage may change it.
+                if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
-                    if (view.rules().enabled(featureLendingProtocolV1_1))
+                    std::uint32_t const beforeFlags = before->getFlags();
+                    std::uint32_t const afterFlags = after->getFlags();
+                    bool const overpaymentChanged =
+                        (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
+                    if (overpaymentChanged)
                     {
-                        std::uint32_t const beforeFlags = before->getFlags();
-                        std::uint32_t const afterFlags = after->getFlags();
-                        bool const overpaymentChanged =
-                            (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
-                        if (overpaymentChanged)
-                        {
-                            JLOG(j.fatal()) << "Invariant failed: lsfLoanOverpayment flag "
-                                               "toggled on immutable ledger entry in "
-                                            << tx.getTransactionID();
-                        }
-                        bad = bad || overpaymentChanged;
-                        bool const defaultCleared = (beforeFlags & lsfLoanDefault) != 0 &&
-                            (afterFlags & lsfLoanDefault) == 0;
-                        if (defaultCleared)
-                        {
-                            JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault flag "
-                                               "cleared on immutable ledger entry in "
-                                            << tx.getTransactionID();
-                        }
-                        bad = bad || defaultCleared;
+                        JLOG(j.fatal()) << "Invariant failed: lsfLoanOverpayment flag "
+                                           "toggled on immutable ledger entry in "
+                                        << tx.getTransactionID();
                     }
+                    bad = bad || overpaymentChanged;
+                    bool const defaultCleared =
+                        (beforeFlags & lsfLoanDefault) != 0 && (afterFlags & lsfLoanDefault) == 0;
+                    if (defaultCleared)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault flag "
+                                           "cleared on immutable ledger entry in "
+                                        << tx.getTransactionID();
+                    }
+                    bad = bad || defaultCleared;
                 }
                 break;
             case ltVAULT:
