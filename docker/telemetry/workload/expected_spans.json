@@ -525,9 +525,17 @@
     {
       "parent": "ledger.acquire",
       "child": "ledger.acquire.astree",
-      "description": "Ledger acquire contains the account-state tree fetch phase",
-      "skip": true,
-      "skip_reason": "The parent ledger.acquire is itself optional: it only fires when a node must fetch a missing ledger, and a healthy 5-node cluster agreeing from genesis rarely back-fills history. The hierarchy check has no optional handling and fails when the parent produces no traces, so it is skipped rather than shipped red. The parenting itself is explicit and not thread-dependent -- beginPhaseSpan() parents through the acquire span's own captured SpanContext, not the ambient thread context -- so it holds on whichever worker opens a phase. Un-skip once the harness gains a step that forces a back-fill (start a sixth node with an empty database against the running cluster)."
+      "description": "Ledger acquire contains the account-state tree fetch phase. Un-skipped 2026-08-26. The old skip reason said the parent is optional because a healthy 5-node cluster agreeing from genesis rarely back-fills, so the check would fail on a parent with no traces. Run 32969481032 refutes the premise: ledger.acquire reported 5 traces and so did each of its three phase children, one per node. The parenting was never the doubtful part -- beginPhaseSpan() parents through the acquire span's own captured SpanContext rather than the ambient thread context, so it holds on whichever worker opens a phase."
+    },
+    {
+      "parent": "ledger.acquire",
+      "child": "ledger.acquire.header",
+      "description": "Ledger acquire contains the header fetch phase, which gates the two tree fetches. Added 2026-08-26: all three phases are opened identically through the parent's captured SpanContext and all three emitted 5 traces on run 32969481032, but only astree had ever been declared here, so two thirds of the phase hierarchy went unchecked."
+    },
+    {
+      "parent": "ledger.acquire",
+      "child": "ledger.acquire.txtree",
+      "description": "Ledger acquire contains the transaction-tree fetch phase. Added 2026-08-26 for the same reason as the header phase above. Worth asserting separately from astree despite the identical mechanism: these two are what distinguish an account-state-bound sync from a transaction-bound one, which is the question the phase spans exist to answer, so losing either one's nesting quietly removes that distinction."
     }
   ],
   "trace_join_groups": {
