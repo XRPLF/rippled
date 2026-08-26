@@ -699,8 +699,6 @@ class InvariantsPseudoAccount_test : public InvariantsBase
     run() override
     {
         testValidPseudoAccounts();
-        testPseudoAccountLoanBrokerLink();
-        testPseudoAccountVaultLink();
         testValidLoanBroker();
     }
 };

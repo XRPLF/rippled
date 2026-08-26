@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -44,6 +45,38 @@ namespace {
 isClosedEnded(std::optional<std::uint8_t> const& vaultKind)
 {
     return vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded);
+}
+
+// IOU accounting fields and balance deltas can be quantized independently.
+// Strict equality can therefore fire on a single unit of noise even when the
+// underlying flow is correct. Absorb one unit at the comparison scale.
+//
+// XRP and MPT are integer-domain assets (Asset::integral() is true) with no
+// sub-ULP quantization; treating a whole drop / MPT unit as "noise" would
+// hide real accounting bugs. Keep the strict comparison there. Note that
+// gating on the sign of `scale` would be wrong: IOU amounts >= 1e15 have a
+// non-negative STAmount exponent but still quantize.
+[[nodiscard]] bool
+agreesWithinOneUnit(Number const& lhs, Number const& rhs, Asset const& asset, std::int32_t scale)
+{
+    if (asset.integral())
+        return lhs == rhs;
+    auto const diff = lhs - rhs;
+    Number const tolerance{1, scale};
+    return (diff < beast::kZero ? -diff : diff) <= tolerance;
+}
+
+// L, T and A are each independently quantized; the strict L <= T - A check
+// can fire on residual noise even when the true relationship holds. Tolerate
+// one unit at scale(assetsTotal) - the coarsest of the three grids. As with
+// the delta check above, the tolerance is meaningful only for IOU
+// (Asset::integral() is false); XRP and MPT keep the strict comparison.
+[[nodiscard]] bool
+lessOrEqualPlusOneUnit(Number const& lhs, Number const& rhs, Asset const& asset, std::int32_t scale)
+{
+    if (asset.integral())
+        return lhs <= rhs;
+    return lhs <= rhs + Number{1, scale};
 }
 
 }  // namespace
@@ -440,7 +473,7 @@ ValidVault::checkLoanFunding(
         auto const expected = loan.owedToVault(afterVault.version);
         auto const residual = roundToAsset(
             vaultAsset, (afterBroker.debtTotal - beforeBroker.debtTotal) - expected, minScale);
-        if (residual != kZero)
+        if (!agreesWithinOneUnit(residual, kZero, vaultAsset, minScale))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan set must increase broker debt total by the amount the "
@@ -473,6 +506,19 @@ ValidVault::checkLoanFunding(
             id == vaultAsset.getIssuer();
     };
 
+    // A recipient's IOU balance can be at a coarser scale than the vault. In
+    // that case the transfer is quantized to the recipient's representable
+    // precision, so compare both sides at the coarsest observed scale.
+    auto const creditMatches = [&](std::optional<DeltaInfo> const& maybeDelta,
+                                   Number const& expected) {
+        auto const localScale =
+            maybeDelta ? std::max(minScale, computeCoarsestScale({*maybeDelta})) : minScale;
+        auto const received =
+            maybeDelta ? roundToAsset(vaultAsset, maybeDelta->delta, localScale) : kZero;
+        auto const expectedRounded = roundToAsset(vaultAsset, expected, localScale);
+        return agreesWithinOneUnit(received, expectedRounded, vaultAsset, localScale);
+    };
+
     // When the borrower and the broker owner are the same account, both
     // credits (principal net of origination fee, and the origination fee)
     // land on a single balance and are only observable as their sum. Fold
@@ -485,12 +531,7 @@ ValidVault::checkLoanFunding(
             auto maybeCombinedDelta = deltaAssets(loan.borrower);
             adjustForFee(maybeCombinedDelta, loan.borrower);
 
-            auto const combinedExpected =
-                roundToAsset(vaultAsset, tx[sfPrincipalRequested], minScale);
-            auto const combinedReceived = maybeCombinedDelta
-                ? roundToAsset(vaultAsset, maybeCombinedDelta->delta, minScale)
-                : kZero;
-            if (combinedReceived != combinedExpected)
+            if (!creditMatches(maybeCombinedDelta, tx[sfPrincipalRequested]))
             {
                 JLOG(j.fatal()) <<  //
                     "Invariant failed: loan set must credit the borrower (who is also the broker "
@@ -506,12 +547,7 @@ ValidVault::checkLoanFunding(
             auto maybeBorrowerDelta = deltaAssets(loan.borrower);
             adjustForFee(maybeBorrowerDelta, loan.borrower);
 
-            auto const borrowerExpected =
-                roundToAsset(vaultAsset, tx[sfPrincipalRequested] - loan.originationFee, minScale);
-            auto const borrowerReceived = maybeBorrowerDelta
-                ? roundToAsset(vaultAsset, maybeBorrowerDelta->delta, minScale)
-                : kZero;
-            if (borrowerReceived != borrowerExpected)
+            if (!creditMatches(maybeBorrowerDelta, tx[sfPrincipalRequested] - loan.originationFee))
             {
                 JLOG(j.fatal()) <<  //
                     "Invariant failed: loan set must credit the borrower with the principal net "
@@ -528,12 +564,7 @@ ValidVault::checkLoanFunding(
             auto maybeBrokerOwnerDelta = deltaAssets(afterBroker.owner);
             adjustForFee(maybeBrokerOwnerDelta, afterBroker.owner);
 
-            auto const brokerOwnerExpected =
-                roundToAsset(vaultAsset, loan.originationFee, minScale);
-            auto const brokerOwnerReceived = maybeBrokerOwnerDelta
-                ? roundToAsset(vaultAsset, maybeBrokerOwnerDelta->delta, minScale)
-                : kZero;
-            if (brokerOwnerReceived != brokerOwnerExpected)
+            if (!creditMatches(maybeBrokerOwnerDelta, loan.originationFee))
             {
                 JLOG(j.fatal()) <<  //
                     "Invariant failed: loan set must credit the broker owner with the origination "
@@ -559,7 +590,7 @@ ValidVault::checkLoanFunding(
                 (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
                 loan.owedToVault(afterVault.version),
             minScale);
-        if (residual != kZero)
+        if (!agreesWithinOneUnit(residual, kZero, vaultAsset, minScale))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan set assets outstanding must match the principal released "
@@ -606,45 +637,6 @@ ValidVault::finalizeLoanSet(
 
     return checkLoanFunding(tx, fee, view, j);
 }
-
-namespace {
-
-// sfAssetsTotal, sfAssetsAvailable and sfLossUnrealized are STNumber fields
-// with kSmdNeedsAsset, so IOU writes go through associateAsset -> roundToAsset
-// -> STAmount quantization. Since assetsTotal is the largest number, it lands
-// on the coarsest decimal grid, and strict equality on the deltas can fire on
-// a single unit of quantization noise even when the underlying flow is
-// correct. Absorb one unit at the coarsest scale.
-//
-// XRP and MPT are integer-domain assets (Asset::integral() is true) with no
-// sub-ULP quantization; treating a whole drop / MPT unit as "noise" would
-// hide real accounting bugs. Keep the strict comparison there. Note that
-// gating on the sign of `scale` would be wrong: IOU amounts >= 1e15 have a
-// non-negative STAmount exponent but still quantize.
-[[nodiscard]] bool
-agreesWithinOneUnit(Number const& lhs, Number const& rhs, Asset const& asset, std::int32_t scale)
-{
-    if (asset.integral())
-        return lhs == rhs;
-    auto const diff = lhs - rhs;
-    Number const tolerance{1, scale};
-    return (diff < beast::kZero ? -diff : diff) <= tolerance;
-}
-
-// L, T and A are each independently quantized; the strict L <= T - A check
-// can fire on residual noise even when the true relationship holds. Tolerate
-// one unit at scale(assetsTotal) - the coarsest of the three grids. As with
-// the delta check above, the tolerance is meaningful only for IOU
-// (Asset::integral() is false); XRP and MPT keep the strict comparison.
-[[nodiscard]] bool
-lessOrEqualPlusOneUnit(Number const& lhs, Number const& rhs, Asset const& asset, std::int32_t scale)
-{
-    if (asset.integral())
-        return lhs <= rhs;
-    return lhs <= rhs + Number{1, scale};
-}
-
-}  // namespace
 
 std::int32_t
 ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const
@@ -818,7 +810,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
             vaultAsset,
             (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
             minScale);
-        if (residual != kZero)
+        if (!agreesWithinOneUnit(residual, kZero, vaultAsset, minScale))
         {
             JLOG(j.fatal()) <<  //
                 (tx.isFlag(tfLoanImpair)
@@ -840,10 +832,11 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
     // `delta owedToVault == -beforeLoan.owedToVault(version)`, which under
     // cash-basis is `-PrincipalOutstanding` and under accrual is
     // `-(TotalValueOutstanding - ManagementFeeOutstanding)`, matching
-    // XLS-66 3.10.5 / 3.10.5.1. The residual is rounded once for the same
-    // reason as the other two identities - term-wise comparison of
-    // independently-rounded operands can drift by a ULP. Basis-aware via
-    // owedToVault().
+    // XLS-66 3.10.5 / 3.10.5.1. defaultLoan rounds the write-off downward at
+    // the pre-transaction AssetsTotal scale. The residual is therefore
+    // directional rounding dust in [0, one unit at that scale). The
+    // post-transaction scale may be finer after a large write-off, so it must
+    // not define the tolerance. Basis-aware via owedToVault().
     {
         auto const residual = roundToAsset(
             vaultAsset,
@@ -852,7 +845,11 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                 (afterLoan_[0].owedToVault(afterVault.version) -
                  beforeLoan_[0].owedToVault(afterVault.version)),
             minScale);
-        if (residual != kZero)
+        auto const beforeScale = scale(beforeVault.assetsTotal, vaultAsset);
+        Number const tolerance{1, beforeScale};
+        bool const validRoundingDust =
+            vaultAsset.integral() ? residual == kZero : residual >= kZero && residual < tolerance;
+        if (!validRoundingDust)
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan default assets outstanding must "
@@ -874,7 +871,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         vaultAsset,
         (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
         minScale);
-    if (residual != kZero)
+    if (!agreesWithinOneUnit(residual, kZero, vaultAsset, minScale))
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: loan default must decrease loss "
@@ -900,11 +897,10 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
         auto const maybeBrokerDelta = deltaAssets(brokerSle->at(sfAccount));
         auto const brokerDelta = maybeBrokerDelta.value_or(
             DeltaInfo{.delta = kZero, .scale = scale(afterVault.assetsTotal, vaultAsset)});
-        auto const coverScale =
-            std::max(minScale, computeCoarsestScale({vaultDelta, brokerDelta}));
+        auto const coverScale = std::max(minScale, computeCoarsestScale({vaultDelta, brokerDelta}));
         auto const coverResidual =
             roundToAsset(vaultAsset, vaultDelta.delta + brokerDelta.delta, coverScale);
-        if (coverResidual != kZero)
+        if (!agreesWithinOneUnit(coverResidual, kZero, vaultAsset, coverScale))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan default must move the first-loss "
@@ -954,7 +950,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
             vaultAsset,
             (afterVault.assetsAvailable - beforeVault.assetsAvailable) - defaultCovered,
             minScale);
-        if (availableResidual != kZero)
+        if (!agreesWithinOneUnit(availableResidual, kZero, vaultAsset, minScale))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan default must increase assets available by the "
@@ -974,7 +970,7 @@ ValidVault::finalizeLoanManage(STTx const& tx, ReadView const& view, beast::Jour
                 (afterLoan_[0].owedToVault(afterVault.version) -
                  beforeLoan_[0].owedToVault(afterVault.version)),
             minScale);
-        if (brokerResidual != kZero)
+        if (!agreesWithinOneUnit(brokerResidual, kZero, vaultAsset, minScale))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan default broker debt total must "
@@ -1135,7 +1131,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
             vaultAsset,
             (afterVault.lossUnrealized - beforeVault.lossUnrealized) - expectedDelta,
             minScale);
-        if (residual != kZero)
+        if (!agreesWithinOneUnit(residual, kZero, vaultAsset, minScale))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan pay must decrease loss unrealized by "
@@ -1163,7 +1159,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
             (afterVault.assetsAvailable - beforeVault.assetsAvailable) -
             (afterLoan_[0].owedToVault(version) - beforeLoan_[0].owedToVault(version)),
         minScale);
-    if (residual != kZero)
+    if (!agreesWithinOneUnit(residual, kZero, vaultAsset, minScale))
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: loan pay assets outstanding must "
@@ -1194,7 +1190,7 @@ ValidVault::finalizeLoanPay(STTx const& tx, ReadView const& view, beast::Journal
             (afterBroker_[0].debtTotal - beforeBroker_[0].debtTotal) -
                 (afterLoan_[0].owedToVault(version) - beforeLoan_[0].owedToVault(version)),
             minScale);
-        if (brokerResidual != kZero)
+        if (!agreesWithinOneUnit(brokerResidual, kZero, vaultAsset, minScale))
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: loan pay broker debt total must "

@@ -142,7 +142,7 @@ ValidLoanBroker::finalize(
     // delete.
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-       if (multipleBrokerDeletions_)
+        if (multipleBrokerDeletions_)
         {
             JLOG(j.fatal())
                 << "Invariant failed: more than one Loan Broker deleted in a single transaction";

@@ -1044,27 +1044,31 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp);
 
         Keylet loanSetBrokerKeylet = keylet::amendments();
-        auto const precloseXrpWithBroker = [&](Account const& a1,
-                                               Account const& a2,
-                                               Env& env) -> bool {
-            if (!precloseXrp(a1, a2, env))
+        Keylet loanSetVaultKeylet = keylet::amendments();
+        auto const precloseXrpWithBroker =
+            [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            env.fund(XRP(1000), a3, a4);
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            loanSetBrokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            auto const sleBroker = env.le(loanSetBrokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
                 return false;
-            auto const vaultKeylet =
-                keylet::vault(a1.id(), SeqProxy::rawSequence(env.current()->seq()));
-            loanSetBrokerKeylet =
-                keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
-            env(loan_broker::set(a1, vaultKeylet.key), Fee(kIncrement));
-            return BEAST_EXPECT(env.le(loanSetBrokerKeylet));
+            loanSetVaultKeylet = keylet::vault(sleBroker->at(sfVaultID));
+
+            Vault const vault{env};
+            env(vault.deposit({.depositor = a1, .id = loanSetVaultKeylet.key, .amount = XRP(10)}));
+            env(vault.deposit({.depositor = a2, .id = loanSetVaultKeylet.key, .amount = XRP(10)}));
+            env(vault.deposit({.depositor = a3, .id = loanSetVaultKeylet.key, .amount = XRP(10)}));
+            return true;
         };
 
         // ttLOAN_SET: principal matches, but more than one loan is created
         doInvariantCheck(
             {"lending transaction must touch exactly one loan"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(
                     ac.view(),
-                    keylet,
+                    loanSetVaultKeylet,
                     Adjustments{
                         .assetsAvailable = -200,
                         .vaultAssets = -200,
@@ -1080,7 +1084,9 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            // ValidVault skips its transaction-specific checks when the
+            // incoming result is already tec, so the second pass preserves it.
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrpWithBroker);
 
         // ttLOAN_SET: no new loan is created, but an existing loan is modified
@@ -1090,12 +1096,18 @@ class InvariantsVault_test : public InvariantsBase
             Account const a1{"A1"};
             Account const a2{"A2"};
             env.fund(XRP(1000), a1, a2);
-            BEAST_EXPECT(precloseXrp(a1, a2, env));
-            auto const vaultKeylet =
-                keylet::vault(a1.id(), SeqProxy::rawSequence(env.current()->seq()));
-            auto const brokerKeylet =
-                keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
-            env(loan_broker::set(a1, vaultKeylet.key), Fee(kIncrement));
+            env.fund(XRP(1000), a3);
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            auto const vaultKeylet = keylet::vault(sleBroker->at(sfVaultID));
+
+            Vault const vault{env};
+            env(vault.deposit({.depositor = a1, .id = vaultKeylet.key, .amount = XRP(10)}));
+            env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = XRP(10)}));
+            env(vault.deposit({.depositor = a3, .id = vaultKeylet.key, .amount = XRP(10)}));
             env.close();
 
             OpenView ov{*env.current()};
@@ -3764,6 +3776,108 @@ class InvariantsVault_test : public InvariantsBase
             BEAST_EXPECT(sink.messages().str().contains(
                 "loan default broker debt total must track the change in the "
                 "amount the loan owes to the vault"));
+        }
+
+        // ttLOAN_MANAGE (default): the write-off is rounded downward at the
+        // pre-default AssetsTotal scale. A near-total IOU default can leave
+        // valid positive dust while moving the posterior AssetsTotal to a much
+        // finer scale. The dust must be bounded by the former scale rather than
+        // compared with one unit at the posterior scale.
+        {
+            Env env{*this, all_ | featureLendingProtocolV1_1};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const borrower{"borrower"};
+            env.fund(XRP(1000), issuer, owner, borrower);
+            env.close();
+
+            PrettyAsset const iouAsset{issuer["IOU"]};
+            auto const brokerKeylet = createLoanBroker(owner, env, iouAsset);
+            auto const sleBrokerBase = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBrokerBase))
+                return;
+            auto const vaultKeylet = keylet::vault(sleBrokerBase->at(sfVaultID));
+            env.close();
+
+            Number const assetsTotalBefore{1, 1};
+            Number const loanOwed{9'999'999'999'999'999LL, -15};
+            Number const assetsTotalAfter{1, -14};
+            auto const beforeScale = scale(assetsTotalBefore, iouAsset);
+            auto const afterScale = scale(assetsTotalAfter, iouAsset);
+            Number const residual = (assetsTotalAfter - assetsTotalBefore) - (-loanOwed);
+            Number const beforeTolerance{1, beforeScale};
+            Number const afterTolerance{1, afterScale};
+
+            BEAST_EXPECT(afterScale < beforeScale);
+            BEAST_EXPECT(residual > beast::kZero && residual < beforeTolerance);
+            BEAST_EXPECT(residual > afterTolerance);
+
+            OpenView ov{*env.current()};
+            {
+                auto const sleVaultRead = ov.read(vaultKeylet);
+                if (!BEAST_EXPECT(sleVaultRead))
+                    return;
+                auto sleVault = std::make_shared<SLE>(*sleVaultRead);
+                sleVault->at(sfAssetsTotal) = assetsTotalBefore;
+                sleVault->at(sfAssetsAvailable) = Number(0);
+                ov.rawReplace(sleVault);
+            }
+            {
+                auto const sleBrokerRead = ov.read(brokerKeylet);
+                if (!BEAST_EXPECT(sleBrokerRead))
+                    return;
+                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                sleBroker->at(sfDebtTotal) = loanOwed;
+                ov.rawReplace(sleBroker);
+            }
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+            {
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower.id());
+                sleLoan->at(sfPrincipalOutstanding) = loanOwed;
+                sleLoan->at(sfTotalValueOutstanding) = loanOwed;
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ov.rawInsert(sleLoan);
+            }
+
+            STTx const tx{
+                ttLOAN_MANAGE, [](STObject& t) { t.setFieldU32(sfFlags, tfLoanDefault); }};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            {
+                auto sleVault = ac.view().peek(vaultKeylet);
+                if (!BEAST_EXPECT(sleVault))
+                    return;
+                sleVault->at(sfAssetsTotal) = assetsTotalAfter;
+                ac.view().update(sleVault);
+            }
+            {
+                auto sleBroker = ac.view().peek(brokerKeylet);
+                if (!BEAST_EXPECT(sleBroker))
+                    return;
+                sleBroker->at(sfDebtTotal) = Number(0);
+                ac.view().update(sleBroker);
+            }
+            {
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    return;
+                sleLoan->at(sfPrincipalOutstanding) = Number(0);
+                sleLoan->at(sfTotalValueOutstanding) = Number(0);
+                sleLoan->setFieldU32(sfPaymentRemaining, 0);
+                sleLoan->setFieldU32(sfFlags, lsfLoanDefault);
+                ac.view().update(sleLoan);
+            }
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(result == tesSUCCESS);
         }
 
         // ttLOAN_MANAGE (default): the invariant reads the broker through the

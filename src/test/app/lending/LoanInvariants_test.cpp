@@ -27,6 +27,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 
@@ -941,6 +942,88 @@ private:
             });
     }
 
+    void
+    testLoanSetRecipientScaleInvariant()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        auto const runCase = [&](bool coarseBorrower) {
+            testcase(
+                coarseBorrower ? "LoanSet borrower balance uses coarsest scale"
+                               : "LoanSet broker owner balance uses coarsest scale");
+
+            Env env(*this, all_ | featureLendingProtocolV1_1);
+            Account const issuer{"issuer"};
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+
+            Number const coarseBalance{100'000'000'000LL};
+            Number const regularBalance{100'000'000};
+            PrettyAsset const asset = createFundedRippleIouAsset(
+                env,
+                issuer,
+                lender,
+                borrower,
+                coarseBorrower ? regularBalance : coarseBalance,
+                coarseBorrower ? coarseBalance : regularBalance);
+
+            BrokerParameters const brokerParams{
+                .vaultDeposit = 1'000'000,
+                .debtMax = 0,
+                .coverRateMin = TenthBips32{0},
+                .coverDeposit = 0,
+                .managementFeeRate = TenthBips16{0},
+                .coverRateLiquidation = TenthBips32{0}};
+            BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+            Number const principal{1'012'345, -5};
+            Number const originationFee{123'456, -6};
+            Account const& recipient = coarseBorrower ? borrower : lender;
+            Number const expected = coarseBorrower ? principal : originationFee;
+            auto const before = env.balance(recipient, asset);
+
+            if (coarseBorrower)
+            {
+                env(set(borrower, broker.brokerID, principal),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    kInterestRate(TenthBips32{0}),
+                    kPaymentTotal(1),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(set(borrower, broker.brokerID, principal),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    kLoanOriginationFee(originationFee),
+                    kInterestRate(TenthBips32{0}),
+                    kPaymentTotal(1),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(tesSUCCESS));
+            }
+            env.close();
+
+            auto const after = env.balance(recipient, asset);
+            Number const received = after.number() - before.number();
+            auto const recipientScale =
+                std::max(before.value().exponent(), after.value().exponent());
+            auto const vaultScale = broker.vaultScale(env);
+            Number const tolerance{1, recipientScale};
+
+            BEAST_EXPECT(recipientScale > vaultScale);
+            BEAST_EXPECT(received != expected);
+            BEAST_EXPECT(
+                abs(roundToAsset(asset, received, recipientScale) -
+                    roundToAsset(asset, expected, recipientScale)) <= tolerance);
+        };
+
+        runCase(/*coarseBorrower=*/true);
+        runCase(/*coarseBorrower=*/false);
+    }
+
     // Tests run under each entry in amendmentCombinations().
     void
     runAmendmentSensitive(FeatureBitset features)
@@ -956,6 +1039,7 @@ public:
     void
     run() override
     {
+        testLoanSetRecipientScaleInvariant();
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);

@@ -139,8 +139,7 @@ ValidLoan::finalize(
                 bool const wasDefaulted = before->isFlag(lsfLoanDefault);
                 bool const isDefaulted = after->isFlag(lsfLoanDefault);
 
-                if (wasImpaired != isImpaired && txType != ttLOAN_MANAGE &&
-                    txType != ttLOAN_PAY)
+                if (wasImpaired != isImpaired && txType != ttLOAN_MANAGE && txType != ttLOAN_PAY)
                 {
                     JLOG(j.fatal()) << "Invariant failed: lsfLoanImpaired changed "
                                        "outside LoanManage or LoanPay";
