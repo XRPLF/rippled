@@ -739,7 +739,7 @@ InboundLedger::finalizeAcquireSpan(bool mayReadPeerCount) noexcept
                 ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
             // Read here rather than by the caller: getPeerCount() walks the
             // peer set and takes the Overlay lock for each one, so it must not
-            // run for an acquire whose span is not being recorded.
+            // run for an acquire that is not recording a span.
             if (mayReadPeerCount)
             {
                 acquireSpan_->setAttribute(
