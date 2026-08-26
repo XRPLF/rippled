@@ -157,7 +157,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     {
         // tryDB proved the ledger can never be acquired. This exit never
         // reaches done(), so finalize here or the span would carry no outcome.
-        finalizeAcquireSpan(getPeerCount());
+        finalizeAcquireSpan(/*mayReadPeerCount=*/true);
         return;
     }
 
@@ -192,7 +192,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     // The local store already had everything, so the fetch is over here and
     // never goes through done(). Finalize now: the span's duration then covers
     // only the store read, not the storeLedger/checkAccept work below.
-    finalizeAcquireSpan(getPeerCount());
+    finalizeAcquireSpan(/*mayReadPeerCount=*/true);
 
     XRPL_ASSERT(
         ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
@@ -332,7 +332,7 @@ InboundLedger::~InboundLedger()
     // The peer count is not read here: this destructor can run under the
     // InboundLedgers collection lock, and getPeerCount() would take the Overlay
     // lock underneath it.
-    finalizeAcquireSpan(std::nullopt);
+    finalizeAcquireSpan(/*mayReadPeerCount=*/false);
 }
 
 static std::vector<uint256>
@@ -700,7 +700,7 @@ InboundLedger::syncPhaseSpans() noexcept
 }
 
 void
-InboundLedger::finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcept
+InboundLedger::finalizeAcquireSpan(bool mayReadPeerCount) noexcept
 {
     // Close any phase still open BEFORE the parent ends, so no child span
     // outlives its parent. A phase open at this point is one that never
@@ -737,10 +737,13 @@ InboundLedger::finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcep
                 ledger_span::attr::outcome, ledger_span::acquireOutcome(failed_, complete_));
             acquireSpan_->setAttribute(
                 ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
-            if (peerCount)
+            // Read here rather than by the caller: getPeerCount() walks the
+            // peer set and takes the Overlay lock for each one, so it must not
+            // run for an acquire whose span is not being recorded.
+            if (mayReadPeerCount)
             {
                 acquireSpan_->setAttribute(
-                    ledger_span::attr::peerCount, static_cast<int64_t>(*peerCount));
+                    ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
             }
             // A by-hash acquire starts with seq_ == 0 and learns the sequence
             // only when the header arrives, so re-stamp it here. OTel
@@ -820,7 +823,7 @@ InboundLedger::done()
                                << stats_.get();
         // acquireActivation pops here, before the span is ended below.
     }
-    finalizeAcquireSpan(getPeerCount());
+    finalizeAcquireSpan(/*mayReadPeerCount=*/true);
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 
