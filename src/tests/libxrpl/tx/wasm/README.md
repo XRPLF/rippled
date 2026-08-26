@@ -67,9 +67,34 @@ design.
 new split verifies agreement **transitively**: the SDK repo tests the SDK against the ABI spec, and
 this repo tests the host against the same spec (`host_calls`, the `generated_abi.rs` spec table,
 `host_errors.rs`). That is sound as long as both conform to the spec; it would not catch a drift
-where the SDK and host diverge on an ambiguous point. Closing that gap is **not** a rippled unit
+where the SDK and host diverge on an ambiguous point. Closing that gap is **not** a xrpld unit
 test — it is a **cross-repo integration test** (compiled `xrpl-wasm-stdlib` guests run against a
-real rippled host) belonging in CI where the Rust→wasm toolchain exists.
+real xrpld host) belonging in CI where the Rust→wasm toolchain exists.
+
+## Out of scope — transactor-level (L5) tests deferred until the transactor is wired
+
+This migration ported `Wasm_test.cpp` + the `wasm_fixtures/` guests, which drive the VM directly
+via `runEscrowWasm`. In the upstream `ripple/smart-escrow` branch the **same fixtures** are also
+consumed by two **transactor-level** suites that are **not** part of this port and have **no
+equivalent here yet**, because the redesign branch does not yet wire `runEscrowWasm` into the
+`EscrowFinish` transactor (it has no caller under `src/xrpld`):
+
+- **`EscrowSmart_test.cpp`** — full `Env → EscrowFinish → ledger`. Its cases test things none of
+  the layers above cover, because they only exist once a transactor runs the contract:
+  - **`set_data` persistence** — "Update escrow data on failure" asserts the contract's data field
+    is written to the escrow ledger object **even on `tecBYTECODE_REJECTED`**. (Note: in _this_
+    branch `set_data` is _not_ persisted — there is no transactor caller yet — so this is a real
+    gap, not a redundancy.)
+  - **gas → fee / meta** — `sfGasUsed` and `sfVMReturnCode` surfaced in transaction metadata.
+  - **owner reserve / owner count** accounting for the bytecode-bearing escrow.
+  - **transactor-driven tours** — "Test all host functions", "Test all keylet host functions",
+    "Test large wasm modules".
+- **`PayChan_test.cpp`** — also consumes `wasm_fixtures` symbols at the transactor level.
+
+These belong to the **L5 transactor layer**. When `EscrowFinish` is wired to `runEscrowWasm` in the
+redesign, those cases need a home (as C++ transactor tests over a real `Env`), and the persistence /
+gas-in-meta / reserve behaviors should be pinned there — the WAT layers here deliberately stop at
+the VM boundary and do not exercise the transactor.
 
 ## Old → new test map
 

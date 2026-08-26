@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/RealVmTest.h>
 
+#include <string_view>
+
 namespace xrpl::test {
 
 // A single contract that tours several host functions end to end — a ledger-header read, the

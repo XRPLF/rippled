@@ -1,11 +1,17 @@
 #pragma once
 
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <tx/wasm/RealHostFixture.h>
 #include <tx/wasm/WasmRun.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <functional>
 #include <string_view>

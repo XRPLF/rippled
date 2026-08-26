@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/RealVmTest.h>
 
+#include <string_view>
+
 namespace xrpl::test {
 
 // A contract writes its data field end to end — the one mutation a contract can make. The
