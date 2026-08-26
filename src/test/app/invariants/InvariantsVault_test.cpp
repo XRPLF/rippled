@@ -2797,6 +2797,18 @@ class InvariantsVault_test : public InvariantsBase
                 Fee(env.current()->fees().base * 200));
             env.close();
 
+            // Under fixCleanup3_4_0 impair requires the payment to already
+            // be late, so advance past the loan's due date first.
+            if (env.current()->rules().enabled(fixCleanup3_4_0))
+            {
+                auto const loanSle = env.le(loanKeylet);
+                if (!BEAST_EXPECT(loanSle))
+                    return vaultKeylet;
+                std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
+                env.close(
+                    NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+            }
+
             env(manage(owner, loanKeylet.key, tfLoanImpair));
             env.close();
         }
