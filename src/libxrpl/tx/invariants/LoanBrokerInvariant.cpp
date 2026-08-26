@@ -35,7 +35,7 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
     {
         switch (before->getType())
         {
-            case (ltLOAN_BROKER):
+            case ltLOAN_BROKER:
                 if (deletedBroker_)
                 {
                     multipleBrokerDeletions_ = true;
@@ -45,10 +45,10 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
                     deletedBroker_ = before;
                 }
                 break;
-            case (ltRIPPLE_STATE):
+            case ltRIPPLE_STATE:
                 lines_.emplace_back(before);
                 break;
-            case (ltMPTOKEN):
+            case ltMPTOKEN:
                 mpts_.emplace_back(before);
                 break;
             default:

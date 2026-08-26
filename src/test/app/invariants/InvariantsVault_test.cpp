@@ -48,6 +48,7 @@
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
@@ -258,6 +259,18 @@ class InvariantsVault_test : public InvariantsBase
             env(vault.deposit({.depositor = a2, .id = keylet.key, .amount = XRP(10)}));
             env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = XRP(10)}));
             return true;
+        };
+
+        auto const createClosedXrpBroker = [&](Account const& owner, Env& env)
+            -> std::optional<std::pair<Keylet, Keylet>> {
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(owner, env, xrpAsset);
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return std::nullopt;
+            auto const vaultKeylet = keylet::vault(sleBroker->at(sfVaultID));
+            env.close(std::chrono::seconds{61});
+            return std::pair{vaultKeylet, brokerKeylet};
         };
 
         testcase << "Vault general checks";
@@ -1059,6 +1072,7 @@ class InvariantsVault_test : public InvariantsBase
             env(vault.deposit({.depositor = a1, .id = loanSetVaultKeylet.key, .amount = XRP(10)}));
             env(vault.deposit({.depositor = a2, .id = loanSetVaultKeylet.key, .amount = XRP(10)}));
             env(vault.deposit({.depositor = a3, .id = loanSetVaultKeylet.key, .amount = XRP(10)}));
+            env.close(std::chrono::seconds{61});
             return true;
         };
 
@@ -1164,10 +1178,9 @@ class InvariantsVault_test : public InvariantsBase
         doInvariantCheck(
             {"shares outstanding must only change by deposit, withdraw, or clawback"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(
                     ac.view(),
-                    keylet,
+                    loanSetVaultKeylet,
                     Adjustments{
                         .assetsAvailable = -200,
                         .sharesTotal = 10,
@@ -1178,6 +1191,7 @@ class InvariantsVault_test : public InvariantsBase
                             .principalOutstanding = 200,
                             .totalValueOutstanding = 200,
                             .borrower = a1.id(),
+                            .brokerKey = loanSetBrokerKeylet.key,
                         }});
             },
             XRPAmount{},
@@ -1188,7 +1202,7 @@ class InvariantsVault_test : public InvariantsBase
                     tx.makeFieldPresent(sfCounterpartySignature);
                 }},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            precloseXrp);
+            precloseXrpWithBroker);
 
         // ttLOAN_SET: everything balances (principal released, exactly one loan
         // created booking zero interest, shares untouched, assets outstanding
@@ -1200,10 +1214,9 @@ class InvariantsVault_test : public InvariantsBase
         doInvariantCheck(
             {"loan set principal outstanding must equal principal requested"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(
                     ac.view(),
-                    keylet,
+                    loanSetVaultKeylet,
                     Adjustments{
                         .assetsAvailable = -200,
                         .vaultAssets = -200,
@@ -1217,7 +1230,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrpWithBroker);
 
         // ttLOAN_SET pre-featureLendingProtocolV1_1: finalizeLoanSet short-
@@ -1275,7 +1288,7 @@ class InvariantsVault_test : public InvariantsBase
             // Fund the vault so it can release the principal.
             Vault const vault{env};
             env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = XRP(500)}));
-            env.close();
+            env.close(std::chrono::seconds{61});
 
             OpenView ov{*env.current()};
 
@@ -1352,7 +1365,7 @@ class InvariantsVault_test : public InvariantsBase
 
             Vault const vault{env};
             env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = XRP(500)}));
-            env.close();
+            env.close(std::chrono::seconds{61});
 
             OpenView ov{*env.current()};
 
@@ -1441,7 +1454,7 @@ class InvariantsVault_test : public InvariantsBase
 
             Vault const vault{env};
             env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = XRP(500)}));
-            env.close();
+            env.close(std::chrono::seconds{61});
 
             OpenView ov{*env.current()};
 
@@ -1539,7 +1552,7 @@ class InvariantsVault_test : public InvariantsBase
 
             Vault const vault{env};
             env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = XRP(500)}));
-            env.close();
+            env.close(std::chrono::seconds{61});
 
             OpenView ov{*env.current()};
 
@@ -1651,14 +1664,14 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
-        // ttLOAN_MANAGE: shares outstanding changes
+        // ttLOAN_MANAGE: shares outstanding changes.
         //
-        // ValidMPTPayment enforces its OutstandingAmount balance identity
-        // regardless of TER under featureLendingProtocolV1_1, and the harness runs both
-        // invariant passes against the same view (no reset in between), so
-        // visitEntry accumulates the MPT delta on the second pass and trips
-        // ValidMPTPayment alongside the share-change check -> escalation
-        // to tef. Real production always resets between passes.
+        // Pass 1 trips ValidVault's transaction-specific "shares outstanding
+        // must only change by deposit, withdraw, or clawback" check. Pass 2
+        // trips ValidMPTBalanceChanges' protocol-level OutstandingAmount
+        // balance identity, which correctly runs regardless of TER because
+        // a failed transaction must not have moved MPT value. Escalation to
+        // tef here is the intended protocol behaviour.
         doInvariantCheck(
             {"shares outstanding must only change by deposit, withdraw, or clawback"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -1922,9 +1935,6 @@ class InvariantsVault_test : public InvariantsBase
 
         // ttLOAN_MANAGE (impair): a successful impair must leave the loan
         // flagged as impaired and must not target an already-impaired loan.
-        // Each violation is set up bespoke because the shared harness cannot
-        // seed a pre-existing loan whose lsfLoanImpaired bit we can control
-        // across the before/after boundary.
         {
             struct Case
             {
@@ -1933,12 +1943,10 @@ class InvariantsVault_test : public InvariantsBase
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
-                // Impair a non-impaired loan but forget to set the flag.
                 {.before = 0,
                  .after = 0,
                  .expected =
                      "LoanManage(tfLoanImpair) must set lsfLoanImpaired on a non-impaired loan"},
-                // Impair an already-impaired loan (regardless of the resulting flag).
                 {.before = lsfLoanImpaired,
                  .after = lsfLoanImpaired,
                  .expected =
@@ -1951,13 +1959,12 @@ class InvariantsVault_test : public InvariantsBase
                 Account const a1{"A1"};
                 Account const a2{"A2"};
                 env.fund(XRP(1000), a1, a2);
-                BEAST_EXPECT(precloseXrp(a1, a2, env));
-                env.close();
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!keys)
+                    continue;
+                auto const& brokerKeylet = keys->second;
 
                 OpenView ov{*env.current()};
-
-                auto const brokerKeylet =
-                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
@@ -1992,16 +1999,8 @@ class InvariantsVault_test : public InvariantsBase
             }
         }
 
-        // Flag-transition scoping (featureLendingProtocolV1_1).
-        // lsfLoanImpaired may only change under ttLOAN_MANAGE or ttLOAN_PAY
-        // (LoanPay unimpairs before applying the payment when the loan was
-        // impaired); lsfLoanDefault may only change under ttLOAN_MANAGE.
-        // Any other transaction that moves either flag is manufacturing
-        // state.  Setup mirrors the impair/unimpair blocks: seed a
-        // pre-existing loan with a specific flag, then flip the flag under
-        // an out-of-scope transaction type.  The out-of-scope tx is
-        // ttACCOUNT_SET, chosen because it is a valid transaction type
-        // that lives outside the loan-manage / loan-pay switch.
+        // Loan flags may only change under the transaction types that own
+        // those transitions.
         {
             struct Case
             {
@@ -2016,10 +2015,6 @@ class InvariantsVault_test : public InvariantsBase
                 {.before = lsfLoanImpaired,
                  .after = 0,
                  .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay"},
-                // lsfLoanDefault: only the unset->set direction is exercised
-                // here because the reverse (set->unset) is separately blocked
-                // by NoModifiedUnmodifiableFields, whose fatal log fires first
-                // and would mask the ValidLoan message under test.
                 {.before = 0,
                  .after = lsfLoanDefault,
                  .expected = "lsfLoanDefault changed outside LoanManage"},
@@ -2031,13 +2026,12 @@ class InvariantsVault_test : public InvariantsBase
                 Account const a1{"A1"};
                 Account const a2{"A2"};
                 env.fund(XRP(1000), a1, a2);
-                BEAST_EXPECT(precloseXrp(a1, a2, env));
-                env.close();
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!keys)
+                    continue;
+                auto const& brokerKeylet = keys->second;
 
                 OpenView ov{*env.current()};
-
-                auto const brokerKeylet =
-                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
@@ -2071,10 +2065,8 @@ class InvariantsVault_test : public InvariantsBase
             }
         }
 
-        // ttLOAN_MANAGE (unimpair): the mirror of the impair check. A
-        // successful unimpair must leave the loan without lsfLoanImpaired and
-        // must not target a non-impaired loan. Setup mirrors the impair block
-        // above.
+        // ttLOAN_MANAGE (unimpair): a successful unimpair must clear the
+        // impaired flag and must target an impaired loan.
         {
             struct Case
             {
@@ -2083,12 +2075,10 @@ class InvariantsVault_test : public InvariantsBase
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
-                // Unimpair an impaired loan but forget to clear the flag.
                 {.before = lsfLoanImpaired,
                  .after = lsfLoanImpaired,
                  .expected =
                      "LoanManage(tfLoanUnimpair) must clear lsfLoanImpaired on an impaired loan"},
-                // Unimpair a non-impaired loan (regardless of the resulting flag).
                 {.before = 0,
                  .after = 0,
                  .expected =
@@ -2101,13 +2091,12 @@ class InvariantsVault_test : public InvariantsBase
                 Account const a1{"A1"};
                 Account const a2{"A2"};
                 env.fund(XRP(1000), a1, a2);
-                BEAST_EXPECT(precloseXrp(a1, a2, env));
-                env.close();
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!keys)
+                    continue;
+                auto const& brokerKeylet = keys->second;
 
                 OpenView ov{*env.current()};
-
-                auto const brokerKeylet =
-                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
@@ -2340,11 +2329,11 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
-        // ttLOAN_PAY: shares outstanding changes
+        // ttLOAN_PAY: shares outstanding changes.
         //
-        // Escalates to tef for the same harness reason as the ttLOAN_MANAGE
-        // shares-change case above: ValidMPTPayment fires on the second
-        // pass because visitEntry-accumulated MPT deltas double.
+        // Escalates to tef for the same reason as the ttLOAN_MANAGE
+        // shares-change case above: ValidMPTBalanceChanges' protocol-level
+        // OutstandingAmount balance identity runs on both passes.
         doInvariantCheck(
             {"shares outstanding must only change by deposit, withdraw, or clawback"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -2527,22 +2516,16 @@ class InvariantsVault_test : public InvariantsBase
         }
 
         // ttLOAN_PAY (non-full repayment): NextPaymentDueDate must advance by
-        // a positive multiple of PaymentInterval. The earlier "strictly
-        // decrease PrincipalOutstanding" and "decrease PaymentRemaining"
-        // checks are satisfied so the due-date check is the one that fires.
-        // Two failure modes: the due date does not advance at all, and the
-        // due date advances by an amount that is not a multiple of
-        // PaymentInterval.
+        // a positive multiple of PaymentInterval.
         {
             struct Case
             {
                 std::uint32_t beforeDue;
                 std::uint32_t afterDue;
-                std::string label;
             };
             auto const cases = std::to_array<Case>({
-                {.beforeDue = 1000, .afterDue = 1000, .label = "no advance"},
-                {.beforeDue = 1000, .afterDue = 1005, .label = "non-multiple advance"},
+                {.beforeDue = 1000, .afterDue = 1000},
+                {.beforeDue = 1000, .afterDue = 1005},
             });
 
             for (auto const& c : cases)
@@ -2551,13 +2534,12 @@ class InvariantsVault_test : public InvariantsBase
                 Account const a1{"A1"};
                 Account const a2{"A2"};
                 env.fund(XRP(1000), a1, a2);
-                BEAST_EXPECT(precloseXrp(a1, a2, env));
-                env.close();
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!keys)
+                    continue;
+                auto const& [vaultKeylet, brokerKeylet] = *keys;
 
                 OpenView ov{*env.current()};
-
-                auto const brokerKeylet =
-                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
                     auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
@@ -2577,9 +2559,6 @@ class InvariantsVault_test : public InvariantsBase
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-                // Cash inflow of 50 with matching bookkeeping so the earlier
-                // conservation checks pass and the due-date check is reached.
-                auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 if (!BEAST_EXPECT(kAdjust(
                         ac.view(),
                         vaultKeylet,
@@ -2593,8 +2572,6 @@ class InvariantsVault_test : public InvariantsBase
                 auto sleLoan = ac.view().peek(loanKeylet);
                 if (!BEAST_EXPECT(sleLoan))
                     continue;
-                // Strictly decrease principal and payments-remaining so the
-                // earlier ttLOAN_PAY checks pass.
                 sleLoan->at(sfPrincipalOutstanding) = Number(50);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
@@ -3821,6 +3798,15 @@ class InvariantsVault_test : public InvariantsBase
                 sleVault->at(sfAssetsTotal) = assetsTotalBefore;
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 ov.rawReplace(sleVault);
+
+                auto const sharesKeylet =
+                    keylet::mptokenIssuance(sleVaultRead->at(sfShareMPTID));
+                auto const sleSharesRead = ov.read(sharesKeylet);
+                if (!BEAST_EXPECT(sleSharesRead))
+                    return;
+                auto sleShares = std::make_shared<SLE>(*sleSharesRead);
+                sleShares->at(sfOutstandingAmount) = 1;
+                ov.rawReplace(sleShares);
             }
             {
                 auto const sleBrokerRead = ov.read(brokerKeylet);
@@ -3950,30 +3936,23 @@ class InvariantsVault_test : public InvariantsBase
             auto const precloseLoan = [&loanKeylet, this](
                                           Account const& a1, Account const& a2, Env& env) -> bool {
                 PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-
-                Vault const vault{env};
-                auto [tx, vaultKeylet] = vault.create({.owner = a1, .asset = xrpAsset});
-                env(tx);
-                env.close();
-                if (!BEAST_EXPECT(env.le(vaultKeylet)))
-                    return false;
-
-                env(vault.deposit(
-                    {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
-                env.close();
-
-                auto const brokerKeylet =
-                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
-                env(loan_broker::set(a1, vaultKeylet.key), Fee(kIncrement));
-                env.close();
+                auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
                 auto const brokerSle = env.le(brokerKeylet);
                 if (!BEAST_EXPECT(brokerSle))
                     return false;
+                auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
+                Vault const vault{env};
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
+                env.close(std::chrono::seconds{61});
 
                 loanKeylet = keylet::loan(
                     brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
                 env(loan::set(a2, brokerKeylet.key, xrpAsset(50).value()),
+                    loan::kCounterparty(a1),
                     Sig(sfCounterpartySignature, a1),
+                    loan::kPaymentInterval(60),
+                    loan::kPaymentTotal(1),
                     Fee(env.current()->fees().base * 2));
                 env.close();
                 return BEAST_EXPECT(env.le(loanKeylet));
@@ -4007,7 +3986,7 @@ class InvariantsVault_test : public InvariantsBase
                 eraseLoan,
                 XRPAmount{},
                 STTx{ttLOAN_DELETE, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 precloseLoan);
         }
 
@@ -4070,30 +4049,23 @@ class InvariantsVault_test : public InvariantsBase
             auto const precloseLoan = [&loanKeylet, this](
                                           Account const& a1, Account const& a2, Env& env) -> bool {
                 PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-
-                Vault const vault{env};
-                auto [tx, vaultKeylet] = vault.create({.owner = a1, .asset = xrpAsset});
-                env(tx);
-                env.close();
-                if (!BEAST_EXPECT(env.le(vaultKeylet)))
-                    return false;
-
-                env(vault.deposit(
-                    {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
-                env.close();
-
-                auto const brokerKeylet =
-                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
-                env(loan_broker::set(a1, vaultKeylet.key), Fee(kIncrement));
-                env.close();
+                auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
                 auto const brokerSle = env.le(brokerKeylet);
                 if (!BEAST_EXPECT(brokerSle))
                     return false;
+                auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
+                Vault const vault{env};
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
+                env.close(std::chrono::seconds{61});
 
                 loanKeylet = keylet::loan(
                     brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
                 env(loan::set(a2, brokerKeylet.key, xrpAsset(50).value()),
+                    loan::kCounterparty(a1),
                     Sig(sfCounterpartySignature, a1),
+                    loan::kPaymentInterval(60),
+                    loan::kPaymentTotal(1),
                     Fee(env.current()->fees().base * 2));
                 env.close();
                 return BEAST_EXPECT(env.le(loanKeylet));
