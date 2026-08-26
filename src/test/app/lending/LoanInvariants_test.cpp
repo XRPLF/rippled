@@ -25,7 +25,9 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 
@@ -381,6 +383,90 @@ private:
         BEAST_EXPECT(isRounded(broker.asset, newState.totalValue, originalState.loanScale));
         BEAST_EXPECT(
             isRounded(broker.asset, newState.principalOutstanding, originalState.loanScale));
+    }
+
+    // non-full-payment invariant asserts that a successful LoanPay strictly
+    // decreases PaymentRemaining and advances NextPaymentDueDate. doPayment
+    // deliberately leaves those schedule fields unchanged for
+    // PaymentSpecialCase::Extra (an overpayment), so the concern is that an
+    // "extra-only" overpayment - one that does not also cover a scheduled
+    // payment - would reach that branch and trip the invariant.
+    //
+    // The invariant is gated behind featureLendingProtocolV1_1, which
+    // LoanTestBase::all_ excludes, so it is opted back in here.
+    void
+    testLoanPayOverpaymentScheduleInvariant(FeatureBitset features)
+    {
+        testcase("LoanPay overpayment vs non-full-payment invariant");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env{*this, features | featureLendingProtocolV1_1};
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+
+        BrokerInfo const broker = createVaultAndBroker(
+            env,
+            asset,
+            lender,
+            {
+                .vaultDeposit = asset(100'000).value(),
+                .managementFeeRate = TenthBips16(10'000),
+            });
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+
+        // Principal 10,000 over 3 payments, overpayment enabled. One scheduled
+        // payment is ~3,333, so an amount well below that cannot cover one.
+        auto const loanKeylet = nextLoanKeylet(env, broker);
+        env(loan::set(borrower, broker.brokerID, asset(10'000).value(), tfLoanOverpayment),
+            Sig(sfCounterpartySignature, lender),
+            loan::kPaymentInterval(86400 * 30),
+            loan::kPaymentTotal(3),
+            loan::kOverpaymentInterestRate(TenthBips32(percentageToTenthBips(20))),
+            loanSetFee);
+        env.close();
+
+        auto const before = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(before.paymentRemaining == 3);
+
+        STAmount const belowOnePayment = asset(1'000).value();
+        BEAST_EXPECT((belowOnePayment < STAmount{asset, before.periodicPayment}));
+
+        auto const payFee = Fee(env.current()->fees().base * 2);
+
+        // The amount does not cover a scheduled payment, so makeRegularPayment makes zero scheduled
+        // payments and returns tecINSUFFICIENT_PAYMENT before the Extra branch runs. The invariant
+        // is therefore never reached. Were the payment to succeed while touching only principal,
+        // the invariant would fire instead.
+        env(pay(borrower, loanKeylet.key, belowOnePayment, tfLoanOverpayment),
+            payFee,
+            Ter(tecINSUFFICIENT_PAYMENT));
+        env.close();
+
+        auto const afterReject = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(afterReject.paymentRemaining == before.paymentRemaining);
+        BEAST_EXPECT(afterReject.principalOutstanding == before.principalOutstanding);
+        BEAST_EXPECT(afterReject.nextPaymentDate == before.nextPaymentDate);
+
+        // This reaches the 3.11.5 invariant with tesSUCCESS: PaymentRemaining drops by one,
+        // NextPaymentDueDate advances by one interval, and PrincipalOutstanding strictly decreases
+        // (by more than a plain payment thanks to the extra). The invariant must accept it.
+        STAmount const onePaymentPlusExtra = asset(5'000).value();
+        env(pay(borrower, loanKeylet.key, onePaymentPlusExtra, tfLoanOverpayment), payFee);
+        env.close();
+
+        auto const afterPay = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(afterPay.paymentRemaining == before.paymentRemaining - 1);
+        BEAST_EXPECT(afterPay.principalOutstanding < before.principalOutstanding);
+        BEAST_EXPECT(afterPay.nextPaymentDate == before.nextPaymentDate + before.paymentInterval);
     }
 
     void
@@ -851,12 +937,95 @@ private:
             });
     }
 
+    void
+    testLoanSetRecipientScaleInvariant()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        auto const runCase = [&](bool coarseBorrower) {
+            testcase(
+                coarseBorrower ? "LoanSet borrower balance uses coarsest scale"
+                               : "LoanSet broker owner balance uses coarsest scale");
+
+            Env env(*this, all_ | featureLendingProtocolV1_1);
+            Account const issuer{"issuer"};
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+
+            Number const coarseBalance{100'000'000'000LL};
+            Number const regularBalance{100'000'000};
+            PrettyAsset const asset = createFundedRippleIouAsset(
+                env,
+                issuer,
+                lender,
+                borrower,
+                coarseBorrower ? regularBalance : coarseBalance,
+                coarseBorrower ? coarseBalance : regularBalance);
+
+            BrokerParameters const brokerParams{
+                .vaultDeposit = 1'000'000,
+                .debtMax = 0,
+                .coverRateMin = TenthBips32{0},
+                .coverDeposit = 0,
+                .managementFeeRate = TenthBips16{0},
+                .coverRateLiquidation = TenthBips32{0}};
+            BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+            Number const principal{1'012'345, -5};
+            Number const originationFee{123'456, -6};
+            Account const& recipient = coarseBorrower ? borrower : lender;
+            Number const expected = coarseBorrower ? principal : originationFee;
+            auto const before = env.balance(recipient, asset);
+
+            if (coarseBorrower)
+            {
+                env(set(borrower, broker.brokerID, principal),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    kInterestRate(TenthBips32{0}),
+                    kPaymentTotal(1),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(set(borrower, broker.brokerID, principal),
+                    kCounterparty(lender),
+                    Sig(sfCounterpartySignature, lender),
+                    kLoanOriginationFee(originationFee),
+                    kInterestRate(TenthBips32{0}),
+                    kPaymentTotal(1),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(tesSUCCESS));
+            }
+            env.close();
+
+            auto const after = env.balance(recipient, asset);
+            Number const received = after.number() - before.number();
+            auto const recipientScale =
+                std::max(before.value().exponent(), after.value().exponent());
+            auto const vaultScale = broker.vaultScale(env);
+            Number const tolerance{1, recipientScale};
+
+            BEAST_EXPECT(recipientScale > vaultScale);
+            BEAST_EXPECT(received != expected);
+            BEAST_EXPECT(
+                abs(roundToAsset(asset, received, recipientScale) -
+                    roundToAsset(asset, expected, recipientScale)) <= tolerance);
+        };
+
+        runCase(/*coarseBorrower=*/true);
+        runCase(/*coarseBorrower=*/false);
+    }
+
     // Tests run under each entry in amendmentCombinations().
     void
     runAmendmentSensitive(FeatureBitset features)
     {
         testLoanPayComputePeriodicPaymentInvariants(features);
         testLoanPayDebtDecreaseInvariant(features);
+        testLoanPayOverpaymentScheduleInvariant(features);
         testAccountSendMptMinAmountInvariant(features);
         testMinimumBrokerCoverConsistency(features);
     }
@@ -865,6 +1034,7 @@ public:
     void
     run() override
     {
+        testLoanSetRecipientScaleInvariant();
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);

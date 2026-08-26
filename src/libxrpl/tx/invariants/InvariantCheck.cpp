@@ -1098,6 +1098,7 @@ ValidPseudoAccounts::finalize(
         if (enforce)
             return false;
     }
+
     return true;
 }
 
@@ -1123,10 +1124,21 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    static auto const kFieldChanged = [](auto const& before, auto const& after, auto const& field) {
+    // Non-static so it can capture `j` and `tx` and emit the specific field
+    // name on detection. The outer `bad || ...` chain short-circuits after the
+    // first change is seen, so only the first offending field is logged per
+    // entry - enough for diagnosis, and cheaper than accumulating all names.
+    auto const kFieldChanged = [&j, &tx](auto const& before, auto const& after, auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
-        return beforeField != afterField || (afterField && before->at(field) != after->at(field));
+        bool const changed =
+            beforeField != afterField || (afterField && before->at(field) != after->at(field));
+        if (changed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << field.getName()
+                            << " changed on immutable ledger entry in " << tx.getTransactionID();
+        }
+        return changed;
     };
     for (auto const& slePair : changedEntries_)
     {
@@ -1172,13 +1184,44 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
+
+                // lsfLoanOverpayment is immutable after creation. Check it ungated, as
+                // LoanInvariant did before V1_1; the enclosing featureLendingProtocol gate suffices
+                // because only that amendment creates ltLOAN entries. lsfLoanDefault may change
+                // only from unset to set through tfLoanDefault. Under V1_1, reject attempts to
+                // clear it, matching LoanInvariant's previous gate.
+                {
+                    if (view.rules().enabled(featureLendingProtocolV1_1))
+                    {
+                        std::uint32_t const beforeFlags = before->getFlags();
+                        std::uint32_t const afterFlags = after->getFlags();
+                        bool const overpaymentChanged =
+                            (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
+                        if (overpaymentChanged)
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: lsfLoanOverpayment flag "
+                                               "toggled on immutable ledger entry in "
+                                            << tx.getTransactionID();
+                        }
+                        bad = bad || overpaymentChanged;
+                        bool const defaultCleared = (beforeFlags & lsfLoanDefault) != 0 &&
+                            (afterFlags & lsfLoanDefault) == 0;
+                        if (defaultCleared)
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault flag "
+                                               "cleared on immutable ledger entry in "
+                                            << tx.getTransactionID();
+                        }
+                        bad = bad || defaultCleared;
+                    }
+                }
                 break;
             case ltVAULT:
                 /*
-                 * sfAccount, sfAsset and sfShareMPTID are already
-                 * captured by VaultInvariant. The additional fields
-                 * below are introduced by featureLendingProtocolV1_1
-                 * and only exist on V1_1 vaults.
+                 * Immutability of sfAccount, sfAsset and sfShareMPTID used to be enforced by
+                 * VaultInvariant, but is now checked here since InvariantCheck.cpp is where
+                 * immutability checks live. The additional fields below are introduced by
+                 * featureLendingProtocolV1_1 and only exist on V1_1 vaults.
                  */
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
@@ -1190,7 +1233,10 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfOwner) ||
                         kFieldChanged(before, after, sfWithdrawalPolicy) ||
                         kFieldChanged(before, after, sfScale) ||
-                        kFieldChanged(before, after, sfLEVersion);
+                        kFieldChanged(before, after, sfLEVersion) ||
+                        kFieldChanged(before, after, sfAsset) ||
+                        kFieldChanged(before, after, sfAccount) ||
+                        kFieldChanged(before, after, sfShareMPTID);
                 }
                 break;
             default:

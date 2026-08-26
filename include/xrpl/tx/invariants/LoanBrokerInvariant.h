@@ -19,6 +19,10 @@ namespace xrpl {
  * 1. If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most one
  *    node (the root), which will only hold entries for `RippleState` or
  * `MPToken` objects.
+ * 2. Under featureLendingProtocolV1_1, an `ltLOAN_BROKER` may only be deleted
+ *    by a `ttLOAN_BROKER_DELETE` transaction, and only when its pre-state
+ *    `DebtTotal` and `OwnerCount` are both zero.
+ * 3. At most one `ltLOAN_BROKER` may be deleted in a single transaction.
  *
  */
 class ValidLoanBroker
@@ -36,6 +40,14 @@ class ValidLoanBroker
     // pseudo-accounts. Key is the brokerID / index. It will be used to find the
     // LoanBroker object if brokerBefore and brokerAfter are nullptr
     std::map<uint256, BrokerInfo> brokers_;
+    // The broker whose ledger entry was deleted by this transaction, if any.
+    // Only ttLOAN_BROKER_DELETE removes a broker, and it removes exactly one;
+    // the final pre-deletion state is captured so the deletion invariants can
+    // inspect DebtTotal and OwnerCount.
+    SLE::const_pointer deletedBroker_ = nullptr;
+    // Set if visitEntry observes more than one ltLOAN_BROKER deletion in the
+    // same transaction. Enforced as its own invariant in finalize.
+    bool multipleBrokerDeletions_ = false;
     // Collect all the modified trust lines. Their high and low accounts will be
     // loaded to look for LoanBroker pseudo-accounts.
     std::vector<SLE::const_pointer> lines_;

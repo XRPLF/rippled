@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -13,6 +14,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
@@ -22,7 +24,13 @@ namespace xrpl {
 void
 ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    if (after && after->getType() == ltLOAN)
+    if (isDelete)
+    {
+        // `before` holds the loan's state before deletion.
+        if (before && before->getType() == ltLOAN)
+            deletedLoans_.emplace_back(before);
+    }
+    else if (after && after->getType() == ltLOAN)
     {
         loans_.emplace_back(before, after);
     }
@@ -39,6 +47,10 @@ ValidLoan::finalize(
     // Loans will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 
+    auto const txType = tx.getTxnType();
+    bool const lpV11Enabled = view.rules().enabled(featureLendingProtocolV1_1);
+
+    // Ledger entry validation checks.
     for (auto const& [before, after] : loans_)
     {
         // A closed-ended vault must not accept a loan whose final scheduled payment falls on or
@@ -91,7 +103,10 @@ ValidLoan::finalize(
             JLOG(j.fatal()) << "Invariant failed: Fully paid off Loan still has payments remaining";
             return false;
         }
-        if (before && (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment)))
+
+        // The flag immutability check has been moved to InvariantChecks.cpp
+        if (!lpV11Enabled && before &&
+            (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment)))
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
             return false;
@@ -123,6 +138,79 @@ ValidLoan::finalize(
                 return false;
             }
         }
+        if (lpV11Enabled)
+        {
+            // Only LoanSet may create a loan. This is an object-existence rule, not
+            // a transaction post-condition, so it applies even when apply failed.
+            if (!before && txType != ttLOAN_SET)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan created by a transaction "
+                                   "other than LoanSet";
+                return false;
+            }
+
+            if (after->at(sfPaymentRemaining) == 0 &&
+                after->at(~sfNextPaymentDueDate).value_or(0) != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan with zero payments must have zero next "
+                                   "payment due date";
+                return false;
+            }
+
+            if (before)
+            {
+                bool const wasImpaired = before->isFlag(lsfLoanImpaired);
+                bool const isImpaired = after->isFlag(lsfLoanImpaired);
+                bool const wasDefaulted = before->isFlag(lsfLoanDefault);
+                bool const isDefaulted = after->isFlag(lsfLoanDefault);
+
+                if (wasImpaired != isImpaired && txType != ttLOAN_MANAGE && txType != ttLOAN_PAY)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: lsfLoanImpaired changed "
+                                       "outside LoanManage or LoanPay";
+                    return false;
+                }
+                if (wasDefaulted != isDefaulted && txType != ttLOAN_MANAGE)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault changed "
+                                       "outside LoanManage";
+                    return false;
+                }
+            }
+
+            // Interest due (the total value owed less principal and management fee)
+            // must never be negative.
+            if (after->at(sfTotalValueOutstanding) - after->at(sfPrincipalOutstanding) -
+                    after->at(sfManagementFeeOutstanding) <
+                beast::kZero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+                return false;
+            }
+            // A loan must reference a live loan broker, and that broker must
+            // reference a live vault; otherwise the loan is orphaned and its
+            // balances have no counterparty on the ledger.
+            auto const brokerSle = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
+            if (!brokerSle)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan broker does not exist";
+                return false;
+            }
+            if (!view.read(keylet::vault(brokerSle->at(sfVaultID))))
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan broker vault does not exist";
+                return false;
+            }
+        }
+    }
+
+    // Deletion by the wrong transaction is an invalid object transition even
+    // when apply failed, so check it before the success-only post-conditions.
+    if (lpV11Enabled && txType != ttLOAN_DELETE && !deletedLoans_.empty())
+    {
+        JLOG(j.fatal()) << "Invariant failed: Loan deleted by a transaction "
+                           "other than LoanDelete";
+        return false;
     }
     return true;
 }

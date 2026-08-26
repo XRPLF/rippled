@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -22,6 +23,38 @@ namespace xrpl {
 void
 ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
+    // Track LoanBroker deletions so finalize() can enforce:
+    //   (a) only ttLOAN_BROKER_DELETE removes a broker
+    //   (b) at most one broker is removed per transaction
+    //   (c) DebtTotal and OwnerCount were zero before deletion
+    // `before` holds the entry's state prior to erasure.
+    //
+    // Deleted trust lines/MPTokens are recorded (from `before`) so finalize() can find the broker
+    // via its pseudo-account and check CoverAvailable still matches the pseudo-account balance.
+    if (isDelete && before)
+    {
+        switch (before->getType())
+        {
+            case ltLOAN_BROKER:
+                if (deletedBroker_)
+                {
+                    multipleBrokerDeletions_ = true;
+                }
+                else
+                {
+                    deletedBroker_ = before;
+                }
+                break;
+            case ltRIPPLE_STATE:
+                lines_.emplace_back(before);
+                break;
+            case ltMPTOKEN:
+                mpts_.emplace_back(before);
+                break;
+            default:
+                break;
+        }
+    }
     if (after)
     {
         if (after->getType() == ltLOAN_BROKER)
@@ -99,6 +132,44 @@ ValidLoanBroker::finalize(
     // Loan Brokers will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 
+    // Deletion invariants (featureLendingProtocolV1_1). At most one
+    // LoanBroker may be removed per transaction, and only by
+    // ttLOAN_BROKER_DELETE, and only when its pre-state DebtTotal and
+    // OwnerCount are both zero.  The DebtTotal check complements ValidLoan's
+    // LoanBrokerDelete-must-not-touch-any-loan rule: even a broker that has
+    // finished paying off every loan may still hold non-zero exposure until
+    // its LoanBrokerCoverWithdraw settles, and neither state is safe to
+    // delete.
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        if (multipleBrokerDeletions_)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: more than one Loan Broker deleted in a single transaction";
+            return false;
+        }
+        if (deletedBroker_)
+        {
+            if (tx.getTxnType() != ttLOAN_BROKER_DELETE)
+            {
+                JLOG(j.fatal()) << "Invariant failed: " <<  //
+                    "Loan Broker deleted by a transaction other than LoanBrokerDelete";
+                return false;
+            }
+            if (deletedBroker_->at(sfDebtTotal) != beast::kZero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with non-zero debt total";
+                return false;
+            }
+            if (deletedBroker_->at(sfOwnerCount) != 0)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: Loan Broker deleted with non-zero owner count";
+                return false;
+            }
+        }
+    }
+
     for (auto const& line : lines_)
     {
         for (auto const& field : {&sfLowLimit, &sfHighLimit})
@@ -142,7 +213,6 @@ ValidLoanBroker::finalize(
 
         auto const& before = broker.brokerBefore;
 
-        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
         // one node (the root), which will only hold entries for `RippleState`
         // or `MPToken` objects.
