@@ -356,6 +356,15 @@ def _launch_phase_tasks(
     Each generator is given the phase duration plus SUBPROCESS_GRACE_SEC, so a
     wedged one is killed instead of stalling the phase.
 
+    Any report left at a path this phase is about to use is deleted first.
+    report_dir defaults to a fixed location and the filenames are derived from
+    the phase index and name, so consecutive runs of a profile reuse the same
+    paths. Without the delete, a generator that produced no report this run
+    left the previous run's file in place, and _collect_task_result read it as
+    this run's result — which also breaks the assumption evaluate_exit_gate
+    documents, that a crashed generator leaves its totals at 0. Afterwards a
+    present file always belongs to this run and a missing one is unambiguous.
+
     Args:
         phase:      Phase dict from the profile.
         endpoints:  List of WebSocket endpoint URLs.
@@ -374,6 +383,7 @@ def _launch_phase_tasks(
     rpc_cfg = phase.get("rpc")
     if rpc_cfg:
         rpc_out = report_dir / f"{prefix}-rpc.json"
+        rpc_out.unlink(missing_ok=True)
         cmd = _build_rpc_cmd(endpoints, rpc_cfg, duration, rpc_out)
         task = asyncio.create_task(run_subprocess(cmd, f"RPC [{name}]", timeout))
         tasks.append(("rpc", rpc_out, task))
@@ -381,6 +391,7 @@ def _launch_phase_tasks(
     tx_cfg = phase.get("tx")
     if tx_cfg:
         tx_out = report_dir / f"{prefix}-tx.json"
+        tx_out.unlink(missing_ok=True)
         cmd = _build_tx_cmd(endpoints[0], tx_cfg, duration, tx_out)
         task = asyncio.create_task(run_subprocess(cmd, f"TX [{name}]", timeout))
         tasks.append(("tx", tx_out, task))
@@ -583,7 +594,7 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Profiles:
-  full-validation  Full 18-dashboard coverage (~5 min load + 1 min propagation)
+  full-validation  Full 15-dashboard coverage (~5 min load + 1 min propagation)
   quick-smoke      Fast CI smoke test (~30s load + 30s propagation)
   stress           Heavy sustained load for benchmarking (~3.5 min + 1 min)
 
