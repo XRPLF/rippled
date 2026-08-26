@@ -13,7 +13,9 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -224,15 +226,27 @@ protected:
         // Loan 2: sibling loan of principal 11.
         f.loan2Keylet = setLoan(Number{11});
 
-        // Impair loan 1 → drives sfLossUnrealized to loan 1's value.
-        env(jtx::loan::manage(f.lender, f.loan1Keylet.key, tfLoanImpair), bigFee);
-        env.close();
-
         // Pay off loan 2 in full so its total value flows into the vault
         // and pushes T-A upward, meeting the residual loss.  Generous
         // upper bound; the transactor takes only what is due.
+        //
+        // This happens before the impair below because impair under
+        // fixCleanup3_4_0 requires loan 1 to already be late, and the two
+        // loans are originated close enough together that advancing past
+        // loan 1's due date also makes loan 2 late — which would reject
+        // this full payment with tecEXPIRED.
         auto const payoff = asset(Number{50}).value();
         env(pay(f.borrower, f.loan2Keylet.key, payoff, tfLoanFullPayment), bigFee);
+        env.close();
+
+        // Impair loan 1 → drives sfLossUnrealized to loan 1's value.
+        if (env.current()->rules().enabled(fixCleanup3_4_0))
+        {
+            std::uint32_t const dueDate = env.le(f.loan1Keylet)->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+        }
+
+        env(jtx::loan::manage(f.lender, f.loan1Keylet.key, tfLoanImpair), bigFee);
         env.close();
 
         return f;
