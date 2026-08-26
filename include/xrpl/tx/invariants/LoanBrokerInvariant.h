@@ -21,7 +21,8 @@ namespace xrpl {
  * `MPToken` objects.
  * 2. Under featureLendingProtocolV1_1, an `ltLOAN_BROKER` may only be deleted
  *    by a `ttLOAN_BROKER_DELETE` transaction, and only when its pre-state
- *    `DebtTotal` and `OwnerCount` are both zero.
+ *    `OwnerCount` is zero and its pre-state `DebtTotal` rounds to zero at the
+ *    vault's `AssetsTotal` scale, as `LoanBrokerDelete::preclaim` requires.
  * 3. At most one `ltLOAN_BROKER` may be deleted in a single transaction.
  *
  */
@@ -41,9 +42,11 @@ class ValidLoanBroker
     // LoanBroker object if brokerBefore and brokerAfter are nullptr
     std::map<uint256, BrokerInfo> brokers_;
     // The broker whose ledger entry was deleted by this transaction, if any.
-    // Only ttLOAN_BROKER_DELETE removes a broker, and it removes exactly one;
-    // the final pre-deletion state is captured so the deletion invariants can
-    // inspect DebtTotal and OwnerCount.
+    // Only ttLOAN_BROKER_DELETE removes a broker, and it removes exactly one.
+    // This is the pre-transaction state, which is what
+    // LoanBrokerDelete::preclaim reads when it decides whether the broker may
+    // be deleted, so the deletion invariants inspect the same DebtTotal and
+    // OwnerCount that the transactor did.
     SLE::const_pointer deletedBroker_ = nullptr;
     // Set if visitEntry observes more than one ltLOAN_BROKER deletion in the
     // same transaction. Enforced as its own invariant in finalize.

@@ -1,14 +1,18 @@
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
@@ -27,32 +31,18 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
     //   (a) only ttLOAN_BROKER_DELETE removes a broker
     //   (b) at most one broker is removed per transaction
     //   (c) DebtTotal and OwnerCount were zero before deletion
-    // `before` holds the entry's state prior to erasure.
-    //
-    // Deleted trust lines/MPTokens are recorded (from `before`) so finalize() can find the broker
-    // via its pseudo-account and check CoverAvailable still matches the pseudo-account balance.
-    if (isDelete && before)
+    // `before` is the pre-transaction state, which is what
+    // LoanBrokerDelete::preclaim reads. Erased trust lines and MPTokens need no
+    // special handling here: the `if (after)` branch below already records them.
+    if (isDelete && before && before->getType() == ltLOAN_BROKER)
     {
-        switch (before->getType())
+        if (deletedBroker_)
         {
-            case ltLOAN_BROKER:
-                if (deletedBroker_)
-                {
-                    multipleBrokerDeletions_ = true;
-                }
-                else
-                {
-                    deletedBroker_ = before;
-                }
-                break;
-            case ltRIPPLE_STATE:
-                lines_.emplace_back(before);
-                break;
-            case ltMPTOKEN:
-                mpts_.emplace_back(before);
-                break;
-            default:
-                break;
+            multipleBrokerDeletions_ = true;
+        }
+        else
+        {
+            deletedBroker_ = before;
         }
     }
     if (after)
@@ -134,8 +124,9 @@ ValidLoanBroker::finalize(
 
     // Deletion invariants (featureLendingProtocolV1_1). At most one
     // LoanBroker may be removed per transaction, and only by
-    // ttLOAN_BROKER_DELETE, and only when its pre-state DebtTotal and
-    // OwnerCount are both zero.  The DebtTotal check complements ValidLoan's
+    // ttLOAN_BROKER_DELETE, and only when its pre-state OwnerCount is zero and
+    // its pre-state DebtTotal is zero to the precision of the vault asset. The
+    // DebtTotal check complements ValidLoan's
     // LoanBrokerDelete-must-not-touch-any-loan rule: even a broker that has
     // finished paying off every loan may still hold non-zero exposure until
     // its LoanBrokerCoverWithdraw settles, and neither state is safe to
@@ -156,10 +147,29 @@ ValidLoanBroker::finalize(
                     "Loan Broker deleted by a transaction other than LoanBrokerDelete";
                 return false;
             }
-            if (deletedBroker_->at(sfDebtTotal) != beast::kZero)
+            // Mirror LoanBrokerDelete::preclaim, which accepts a DebtTotal
+            // that rounds to zero at the vault's AssetsTotal scale rather than
+            // requiring an exact zero. Requiring more here would turn a
+            // transaction the transactor deliberately permits into an
+            // invariant failure.
+            if (auto const debtTotal = deletedBroker_->at(sfDebtTotal); debtTotal != beast::kZero)
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan Broker deleted with non-zero debt total";
-                return false;
+                // The erased broker is also collected in brokers_, and that
+                // loop reports a missing vault, so no separate diagnostic is
+                // needed here. Without a vault there is no scale to round at,
+                // so the residue cannot be excused as dust.
+                auto const vault = view.read(keylet::vault(deletedBroker_->at(sfVaultID)));
+                if (!vault ||
+                    roundToAsset(
+                        Asset{vault->at(sfAsset)},
+                        debtTotal,
+                        getAssetsTotalScale(vault),
+                        Number::RoundingMode::TowardsZero) != beast::kZero)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: Loan Broker deleted with non-zero debt total";
+                    return false;
+                }
             }
             if (deletedBroker_->at(sfOwnerCount) != 0)
             {

@@ -25,11 +25,12 @@ namespace xrpl {
 void
 ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
+    // Classify here, but leave the decision about which checks apply to
+    // finalize(), which is the only place that can see the Rules.
     if (isDelete)
     {
-        // `before` holds the loan's state before deletion.
         if (before && before->getType() == ltLOAN)
-            deletedLoans_.emplace_back(before);
+            deletedLoans_.emplace_back(before, after);
     }
     else if (after && after->getType() == ltLOAN)
     {
@@ -50,6 +51,13 @@ ValidLoan::finalize(
 
     auto const txType = tx.getTxnType();
     bool const lpV11Enabled = view.rules().enabled(featureLendingProtocolV1_1);
+
+    // Before featureLendingProtocolV1_1, a deleted Loan's erased entry was run
+    // through the same per-entry checks as any other modified Loan. Preserve
+    // that exactly; only from V1_1 onward are deleted Loans exempt and handled
+    // by the ttLOAN_DELETE check below.
+    if (!lpV11Enabled)
+        loans_.insert(loans_.end(), deletedLoans_.begin(), deletedLoans_.end());
 
     // Ledger entry validation checks.
     for (auto const& [before, after] : loans_)

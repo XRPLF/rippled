@@ -457,7 +457,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
             // A holding (trust line) removed while the broker still reports
             // non-zero CoverAvailable must not bypass the cover invariant. The
             // broker is left untouched, so it is only reachable through the
-            // deleted holding's before-state; erasing the holding drops the
+            // deleted holding; erasing the holding drops the
             // pseudo-account balance to zero while CoverAvailable stays
             // positive.
             //
@@ -612,6 +612,57 @@ class InvariantsPseudoAccount_test : public InvariantsBase
             BEAST_EXPECT(result == tecINVARIANT_FAILED);
             BEAST_EXPECT(
                 sink.messages().str().contains("Loan Broker deleted with non-zero debt total"));
+        }
+
+        // Residual DebtTotal dust that rounds to zero at the vault asset's
+        // scale must not trip the invariant: LoanBrokerDelete::preclaim
+        // deliberately permits it, so the invariant must not be stricter.
+        // Other invariants may still object to a hand-erased broker, so only
+        // the absence of the DebtTotal complaint is asserted.
+        {
+            Env env{*this};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+            if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                return;
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            // A thousandth of a drop: non-zero, but zero once quantized to XRP.
+            {
+                auto const sleBrokerRead = ov.read(brokerKeylet);
+                if (!BEAST_EXPECT(sleBrokerRead))
+                    return;
+                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                sleBroker->at(sfDebtTotal) = Number(1, -3);
+                ov.rawReplace(sleBroker);
+            }
+
+            STTx const tx{ttLOAN_BROKER_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sleBroker = ac.view().peek(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            ac.view().erase(sleBroker);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            [[maybe_unused]] TER const result = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            BEAST_EXPECT(
+                !sink.messages().str().contains("Loan Broker deleted with non-zero debt total"));
         }
 
         // A LoanBrokerDelete must not remove a broker whose pre-transaction
