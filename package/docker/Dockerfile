@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=debian:bookworm
+ARG BASE_IMAGE=debian:trixie
 
 FROM ${BASE_IMAGE}
 
