@@ -216,17 +216,12 @@ isRequiredSigningFor(STObject const& proposedTx, AccountID const& signingFor)
         return false;
 
     auto const outer = proposedTx.getAccountID(sfAccount);
-    for (auto const& inner : proposedTx.getFieldArray(sfRawTransactions))
-    {
+    return std::ranges::any_of(proposedTx.getFieldArray(sfRawTransactions), [&](auto const& inner) {
         auto const tx = innerTxn(inner);
-        if (tx.isFieldPresent(sfAccount) && tx.getAccountID(sfAccount) == signingFor &&
-            signingFor != outer)
-            return true;
-        if (tx.isFieldPresent(sfDelegate) && tx.getAccountID(sfDelegate) == signingFor &&
-            signingFor != outer)
-            return true;
-    }
-    return false;
+        return signingFor != outer &&
+            ((tx.isFieldPresent(sfAccount) && tx.getAccountID(sfAccount) == signingFor) ||
+             (tx.isFieldPresent(sfDelegate) && tx.getAccountID(sfDelegate) == signingFor));
+    });
 }
 
 std::optional<Serializer>
