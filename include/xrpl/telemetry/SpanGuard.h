@@ -180,8 +180,8 @@
 #include <type_traits>
 
 #ifdef XRPL_ENABLE_TELEMETRY
-// Only the telemetry-enabled types hold a unique_ptr; the compiled-out ones
-// hold nothing, so this include would be unused there.
+// The smart-pointer members all belong to the telemetry-enabled declarations;
+// the compiled-out types hold nothing, so this include is unused there.
 #include <memory>
 #endif
 
@@ -858,7 +858,8 @@ public:
      * destructor on an empty class is trivial, and compilers then report every
      * activation that is held only for its scope as an unused variable. Writing
      * the destructor by hand matches the real ScopedActivation and keeps those
-     * call sites warning free. The body is empty, so no code is generated.
+     * call sites warning free. The body is empty, so it costs nothing once
+     * inlined.
      */
     ~ScopedActivation()  // NOLINT(modernize-use-equals-default)
     {
@@ -878,7 +879,8 @@ public:
     /**
      * Written out by hand rather than defaulted, for the same reason as
      * ScopedActivation above: a trivial destructor makes a guard that is held
-     * only for its scope look like an unused variable. Empty body, no code.
+     * only for its scope look like an unused variable. The empty body costs
+     * nothing once inlined.
      */
     ~SpanGuard()  // NOLINT(modernize-use-equals-default)
     {
@@ -1008,7 +1010,8 @@ public:
     /**
      * Written out by hand rather than defaulted, for the same reason as
      * ScopedActivation above: a trivial destructor makes a guard that is held
-     * only for its scope look like an unused variable. Empty body, no code.
+     * only for its scope look like an unused variable. The empty body costs
+     * nothing once inlined.
      */
     ~ScopedSpanGuard()  // NOLINT(modernize-use-equals-default)
     {
@@ -1133,7 +1136,7 @@ activateIfLive(SpanGuardHandle const& guard)
 // destroying it might do something, which means the destructor must not be
 // trivial. Both the real types and the compiled-out ones therefore declare a
 // destructor by hand. Asserting it here fails the build immediately if one is
-// ever changed back to `= default`, instead of producing an unused-variable
+// ever replaced with `= default`, instead of producing an unused-variable
 // error at every call site.
 static_assert(
     !std::is_trivially_destructible_v<SpanGuard>,

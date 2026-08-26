@@ -79,7 +79,6 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <string_view>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
@@ -87,6 +86,9 @@
 #include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/tracer.h>
+
+// std::string_view appears only in the telemetry-enabled declarations below.
+#include <string_view>
 #endif
 
 namespace xrpl::telemetry {
