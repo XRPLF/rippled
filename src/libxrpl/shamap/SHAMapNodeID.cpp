@@ -74,8 +74,8 @@ SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash) : id_(hash),
         // LCOV_EXCL_STOP
     }
 
-    XRPL_ASSERT(
-        depth <= SHAMap::kLeafDepth, "xrpl::SHAMapNodeID::SHAMapNodeID : maximum depth input");
+    // Reads the clamped member rather than the depth argument, so it cannot index depthMask past
+    // its last entry even once the clamp above has reported the bad input and carried on.
     XRPL_ASSERT(
         isPrefixOf(id_), "xrpl::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
 }
