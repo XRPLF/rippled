@@ -1526,13 +1526,27 @@ TxQ::accept(Application& app, OpenView& view)
 
             ScopedSpanGuard txSpan(
                 TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::acceptTx);
-            txSpan.setAttribute(txq_span::attr::txHash, to_string(candidateIter->txID).c_str());
-            txSpan.setAttribute(
-                txq_span::attr::retriesRemaining,
-                static_cast<int64_t>(candidateIter->retriesRemaining));
+            // Guarded on the span being recorded: this runs for every queued
+            // transaction the loop tries to apply to the open ledger, on every
+            // ledger close, and the hash string allocates 64 characters. The
+            // compiled-out guard's operator bool() is a literal false, so the
+            // block disappears in that build.
+            if (txSpan)
+            {
+                txSpan.setAttribute(txq_span::attr::txHash, to_string(candidateIter->txID).c_str());
+                txSpan.setAttribute(
+                    txq_span::attr::retriesRemaining,
+                    static_cast<int64_t>(candidateIter->retriesRemaining));
+            }
 
             auto const [txnResult, didApply, _metadata] = candidateIter->apply(app, view, j_);
-            txSpan.setAttribute(txq_span::attr::terCode, transToken(txnResult).c_str());
+            // The apply above is the transaction itself and always runs; only
+            // the attribute reading its result is telemetry. transToken() is a
+            // lookup that builds a string, so it is guarded too.
+            if (txSpan)
+            {
+                txSpan.setAttribute(txq_span::attr::terCode, transToken(txnResult).c_str());
+            }
 
             if (didApply)
             {
