@@ -72,7 +72,13 @@ class LoanBroker_test : public beast::unit_test::Suite
 {
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
-    FeatureBitset const all_{jtx::testableAmendments()};
+    //
+    // featureLendingProtocolV1_1 is excluded from the default set: it adds
+    // the closed-ended vault gate on LoanBrokerSet::preclaim (see
+    // LoanBrokerSet.cpp), but this suite exercises loan-broker mechanics on
+    // plain open-ended vaults. Tests that specifically exercise the
+    // amendment opt it back in explicitly and use closed-ended vaults.
+    FeatureBitset const all_{jtx::testableAmendments() - featureLendingProtocolV1_1};
 
     void
     testDisabled()
@@ -872,7 +878,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         using namespace loan_broker;
         Account const issuer{"issuer"};
         Account const alice{"alice"};
-        Env env(*this);
+        Env env(*this, all_);
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice);
@@ -1108,7 +1114,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const issuer{"issuer"};
             auto const usd = alice["USD"];
-            Env env(*this);
+            Env env(*this, all_);
             env.fund(XRP(100'000), alice);
             env.close();
 
@@ -1211,7 +1217,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // This test is lifted directly from
         // https://bugs.immunefi.com/dashboard/submission/57808
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, all_);
 
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
@@ -1269,7 +1275,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         Account const issuer{"issuer"};
         Account const alice{"alice"};
-        Env env(*this);
+        Env env(*this, all_);
         Vault vault{env};
 
         env.fund(XRP(100'000), issuer, alice);
@@ -1377,7 +1383,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         using namespace loan_broker;
         Account const issuer{"issuer"};
         Account const alice{"alice"};
-        Env env(*this);
+        Env env(*this, all_);
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice);
@@ -1543,7 +1549,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const& broker = issuer;
 
         auto test = [&](auto&& getToken) {
-            Env env(*this);
+            Env env(*this, all_);
 
             env.fund(XRP(1'000), issuer, holder);
             env.close();
@@ -1616,7 +1622,7 @@ class LoanBroker_test : public beast::unit_test::Suite
     {
         testcase << "RIPD-4466 - LoanBrokerSet disallows frozen vaults";
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"}, lender{"lender"}, borrower{"borrower"};
         env.fund(XRP(20'000), issuer, lender, borrower);
@@ -1855,7 +1861,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // === IOU ===
         {
             testcase("LoanBrokerCoverDeposit IOU freeze checks");
-            Env env(*this);
+            Env env(*this, all_);
             Vault const vault{env};
 
             env.fund(XRP(100'000), issuer, alice);
@@ -1922,7 +1928,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // === MPT ===
         {
             testcase("LoanBrokerCoverDeposit MPT lock checks");
-            Env env(*this);
+            Env env(*this, all_);
             Vault const vault{env};
 
             env.fund(XRP(100'000), issuer, alice);
@@ -2005,7 +2011,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const dest{"dest"};
-        Env env{*this};
+        Env env{*this, all_};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, dest);
@@ -2071,7 +2077,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // === IOU ===
         {
             testcase("LoanBrokerCoverWithdraw IOU freeze checks");
-            Env env(*this);
+            Env env(*this, all_);
             Vault const vault{env};
 
             env.fund(XRP(100'000), issuer, alice);
@@ -2183,7 +2189,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // === MPT ===
         {
             testcase("LoanBrokerCoverWithdraw MPT lock checks");
-            Env env(*this);
+            Env env(*this, all_);
             Vault const vault{env};
 
             env.fund(XRP(100'000), issuer, alice);
@@ -2304,7 +2310,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         };
 
         auto test = [&](TrustState trustState) {
-            Env env(*this);
+            Env env(*this, all_);
 
             testcase << "RIPD-4274 IOU with state: " << static_cast<int>(trustState);
 
@@ -2429,7 +2435,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         };
 
         auto test = [&](MPTState mptState) {
-            Env env(*this);
+            Env env(*this, all_);
 
             testcase << "RIPD-4274 MPT with state: " << static_cast<int>(mptState);
 
