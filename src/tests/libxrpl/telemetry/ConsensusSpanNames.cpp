@@ -56,7 +56,10 @@ using namespace xrpl::telemetry::consensus::span;
 // pull xrpl::telemetry::attr (SpanNames.h:117) into scope alongside
 // consensus::span::attr and make every bare `attr::` in the phase-span tests
 // ambiguous.
+// `seg` is the other name that directive supplied, used once for the segment
+// constant the span name is built from.
 namespace consensus = xrpl::telemetry::consensus;
+namespace seg = xrpl::telemetry::seg;
 
 TEST(ConsensusSpanNames, phase_open_start_attribute_keys)
 {
