@@ -413,7 +413,7 @@ PeerImp::crawl() const
 bool
 PeerImp::cluster() const
 {
-    return static_cast<bool>(app_.getCluster().member(publicKey_));
+    return app_.getCluster().isMember(publicKey_);
 }
 
 std::string

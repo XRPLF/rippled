@@ -97,6 +97,23 @@ public:
         }
 
         {
+            testcase("Membership: isMember agrees with member");
+
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + 16);
+
+            while (cluster.size() != 32)
+                cluster.push_back(randomNode());
+
+            auto c = create(cluster);
+
+            for (auto const& n : cluster)
+                BEAST_EXPECT(c->isMember(n));
+
+            for (auto const& n : network)
+                BEAST_EXPECT(c->isMember(n) == static_cast<bool>(c->member(n)));
+        }
+
+        {
             testcase("Membership: Non-empty cluster and all present");
 
             std::vector<PublicKey> cluster(network.begin(), network.begin() + 32);
