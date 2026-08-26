@@ -294,7 +294,7 @@ VaultClawback::assetsToClawback(
             assetsRecovered = *maybeAssets;
         }
         // Clamp assetsRecovered to sfAssetsAvailable, then re-derive shares and assets so the pair
-        // stays consistent;.
+        // stays consistent.
         if (assetsRecovered > *assetsAvailable)
         {
             assetsRecovered = *assetsAvailable;
