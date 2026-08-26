@@ -180,7 +180,7 @@ Nexus owns the repository metadata; nothing here indexes anything. Worth knowing
 
 ### Publishing from other repositories
 
-`publish_pkg.py` knows nothing about `xrpld`, so the Debian packaging image
+`publish_pkg.py` knows nothing about `xrpld`, so the packaging image
 installs it at `/usr/local/bin/publish_pkg.py` for other XRPLF repositories that
 build their packages elsewhere.
 
