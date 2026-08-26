@@ -2275,6 +2275,7 @@ public:
 
         // Test domain offer (w/o hybrid)
         testOfferCreate(all);
+        testOfferCreate(all - fixCleanup3_2_0);
         testOfferCreate(all - fixCleanup3_4_0);
         testPayment(all);
         testPayment(all - fixCleanup3_2_0);
