@@ -71,7 +71,11 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "extra_cmake_args": "-Dvalidator_keys=ON"
+        "extra_cmake_args": "-Dvalidator_keys=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-45e4b88"
+        }
       }
     ],
 
@@ -81,30 +85,11 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "extra_cmake_args": "-Dvalidator_keys=ON"
-      }
-    ]
-  },
-  "package_configs": {
-    "debian": [
-      {
-        "compiler": ["gcc"],
-        "build_type": ["Release"],
-        "arch": ["amd64"],
-        "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-45e4b88",
-        "package_type": "deb"
-      }
-    ],
-
-    "rhel": [
-      {
-        "compiler": ["gcc"],
-        "build_type": ["Release"],
-        "arch": ["amd64"],
-        "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-45e4b88",
-        "package_type": "rpm"
+        "extra_cmake_args": "-Dvalidator_keys=ON",
+        "package": {
+          "type": "rpm",
+          "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-45e4b88"
+        }
       }
     ]
   }

@@ -1,7 +1,7 @@
 # Build Linux packages from the pre-built xrpld and validator-keys artifacts:
 #
-#   - one job per distro, taken from "package_configs" in linux.json
-#   - each entry names its container image and the format it builds there
+#   - one job per config that carries a "package" map in linux.json
+#   - that map names the container image and the format it builds there
 #   - with 'publish: true' a job also uploads what it built
 #     (see package/publish_pkg.py)
 #
