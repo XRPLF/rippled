@@ -195,7 +195,7 @@ fmtdur(std::chrono::duration<Period, Rep> const& d)
 
 }  // namespace detail
 
-namespace NodeStore {
+namespace node_store {
 
 //------------------------------------------------------------------------------
 
@@ -552,5 +552,5 @@ BEAST_DEFINE_TESTSUITE_MANUAL(import, nodestore, xrpl);
 
 //------------------------------------------------------------------------------
 
-}  // namespace NodeStore
+}  // namespace node_store
 }  // namespace xrpl
