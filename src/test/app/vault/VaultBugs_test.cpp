@@ -17,6 +17,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -30,6 +31,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <chrono>
 #include <cstdint>
@@ -1460,6 +1462,205 @@ private:
         BEAST_EXPECT(ownerCount(env, attacker) == 0);
     }
 
+    struct ImpairedLoanVault
+    {
+        test::jtx::Account issuer;
+        test::jtx::Account holder;
+        PrettyAsset usd;
+        test::jtx::Vault vault;
+        Keylet vaultKeylet;
+        MPTID shareId;
+    };
+
+    // Impairing a 1,000 loan in a 10,000 vault leaves AssetsAvailable=9,000
+    // and AssetsTotal=10,000. otherDeposit > 0 splits the shares, 0 leaves
+    // holder as the sole shareholder.
+    std::optional<ImpairedLoanVault>
+    makeImpairedLoanVault(test::jtx::Env& env, int otherDeposit)
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const other{"other"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, owner, holder, other, borrower);
+        env.close();
+
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        env.trust(usd(100'000), owner);
+        env.trust(usd(100'000), holder);
+        env.trust(usd(100'000), other);
+        env.trust(usd(100'000), borrower);
+        env.close();
+
+        int const holderDeposit = 10'000 - otherDeposit;
+        env(pay(issuer, holder, usd(holderDeposit)));
+        if (otherDeposit != 0)
+        {
+            env(pay(issuer, other, usd(otherDeposit)));
+        }
+        env.close();
+
+        Vault const vault{env};
+        auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner, .asset = usd, .subscriptionOffset = std::chrono::seconds{60}});
+        env(createTx);
+        env.close();
+
+        auto const vaultSle = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return std::nullopt;
+        MPTID const shareId = vaultSle->at(sfShareMPTID);
+
+        env(vault.deposit(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = usd(holderDeposit)}));
+        if (otherDeposit != 0)
+        {
+            env(vault.deposit(
+                {.depositor = other, .id = vaultKeylet.key, .amount = usd(otherDeposit)}));
+        }
+        env.close();
+
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(set(owner, vaultKeylet.key));
+        env.close();
+
+        auto const sleBroker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(sleBroker))
+            return std::nullopt;
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+        env(set(borrower, brokerKeylet.key, usd(1'000).value()),
+            loan::kInterestRate(percentageToTenthBips(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return std::nullopt;
+        BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == usd(9'000).value());
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == usd(1'000).value());
+
+        return ImpairedLoanVault{
+            .issuer = issuer,
+            .holder = holder,
+            .usd = usd,
+            .vault = vault,
+            .vaultKeylet = vaultKeylet,
+            .shareId = shareId};
+    }
+
+    // Legacy clawback pricing burns every share; fixCleanup3_4_0 leaves 10%
+    // outstanding, backed by the impaired receivable.
+    void
+    testBugClawbackAfterLoanImpair()
+    {
+        using namespace test::jtx;
+
+        auto clawbackHolder = [](ImpairedLoanVault const& setup, STAmount const& amount) {
+            return setup.vault.clawback(
+                {.issuer = setup.issuer,
+                 .id = setup.vaultKeylet.key,
+                 .holder = setup.holder,
+                 .amount = amount});
+        };
+
+        auto runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
+            testcase(
+                features[fixCleanup3_4_0]
+                    ? "VaultClawback after impaired loan (post-fixCleanup3_4_0)"
+                    : "VaultClawback after impaired loan (pre-fixCleanup3_4_0)");
+
+            Env env(*this, features);
+            auto const maybeSetup = makeImpairedLoanVault(env, 0);
+            if (!maybeSetup)
+            {
+                BEAST_EXPECT(false);
+                return;
+            }
+            ImpairedLoanVault const& setup = *maybeSetup;
+
+            auto const tokenBefore = env.le(keylet::mptoken(setup.shareId, setup.holder.id()));
+            auto const vaultBefore = env.le(setup.vaultKeylet);
+            auto const issuanceBefore = env.le(keylet::mptokenIssuance(setup.shareId));
+            if (!BEAST_EXPECT(tokenBefore) || !BEAST_EXPECT(vaultBefore) ||
+                !BEAST_EXPECT(issuanceBefore))
+                return;
+            std::uint64_t const sharesBefore = tokenBefore->getFieldU64(sfMPTAmount);
+
+            // The clawback of 19,000 exceeds AssetsAvailable (9,000), so
+            // VaultClawback clamps sharesDestroyed to whatever redeems
+            // exactly AssetsAvailable; compute that expected value using the
+            // same conversion helper VaultClawback itself uses, rather than
+            // assuming an exact 90/10 split holds under truncation.
+            auto const maybeSharesDestroyed = assetsToSharesWithdraw(
+                vaultBefore,
+                issuanceBefore,
+                setup.usd(9'000).value(),
+                TruncateShares::Yes,
+                WaiveUnrealizedLoss::Yes);
+            if (!BEAST_EXPECT(maybeSharesDestroyed))
+                return;
+            std::uint64_t const expectedSharesAfter =
+                sharesBefore - maybeSharesDestroyed->mpt().value();
+
+            env(clawbackHolder(setup, setup.usd(19'000).value()), Ter(expected));
+            env.close();
+            if (expected != tesSUCCESS)
+                return;
+
+            auto const vaultAfter = env.le(setup.vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == setup.usd(0).value());
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == setup.usd(1'000).value());
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == setup.usd(1'000).value());
+            auto const tokenAfter = env.le(keylet::mptoken(setup.shareId, setup.holder.id()));
+            if (!BEAST_EXPECT(tokenAfter))
+                return;
+            BEAST_EXPECT(tokenAfter->getFieldU64(sfMPTAmount) == expectedSharesAfter);
+        };
+
+        runSole(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runSole(all_, tesSUCCESS);
+
+        testcase("VaultClawback after impaired loan, non-sole holder");
+        {
+            Env env(*this, all_);
+            auto const maybeSetup = makeImpairedLoanVault(env, 1'000);
+            if (!maybeSetup)
+            {
+                BEAST_EXPECT(false);
+                return;
+            }
+            ImpairedLoanVault const& setup = *maybeSetup;
+            // The waiver does not apply, so the holder's 9,000 shares are
+            // still priced at the discounted rate and cannot cover 9,000.
+            env(clawbackHolder(setup, setup.usd(9'000).value()), Ter(tecINSUFFICIENT_FUNDS));
+        }
+    }
+
 public:
     void
     run() override
@@ -1480,6 +1681,7 @@ public:
         testBug6LimitBypassWithShares();
         testBugClawbackRoundTripOvershoot();
         testBugWithdrawRoundTripOvershoot();
+        testBugClawbackAfterLoanImpair();
     }
 };
 
