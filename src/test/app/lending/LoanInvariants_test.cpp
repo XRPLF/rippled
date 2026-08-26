@@ -442,11 +442,10 @@ private:
 
         auto const payFee = Fee(env.current()->fees().base * 2);
 
-        // not cover a scheduled payment, so makeRegularPayment makes zero
-        // scheduled payments and returns tecINSUFFICIENT_PAYMENT before the
-        // Extra branch runs. The invariant is therefore never reached. Were the
-        // payment to succeed while touching only principal, the invariant would
-        // fire instead.
+        // The amount does not cover a scheduled payment, so makeRegularPayment makes zero scheduled
+        // payments and returns tecINSUFFICIENT_PAYMENT before the Extra branch runs. The invariant
+        // is therefore never reached. Were the payment to succeed while touching only principal,
+        // the invariant would fire instead.
         env(pay(borrower, loanKeylet.key, belowOnePayment, tfLoanOverpayment),
             payFee,
             Ter(tecINSUFFICIENT_PAYMENT));
@@ -457,11 +456,9 @@ private:
         BEAST_EXPECT(afterReject.principalOutstanding == before.principalOutstanding);
         BEAST_EXPECT(afterReject.nextPaymentDate == before.nextPaymentDate);
 
-        // Scenario B - a valid overpayment that also covers one scheduled
-        // payment. This reaches the 3.11.5 invariant with tesSUCCESS:
-        // PaymentRemaining drops by one, NextPaymentDueDate advances by one
-        // interval, and PrincipalOutstanding strictly decreases (by more than a
-        // plain payment thanks to the extra). The invariant must accept it.
+        // This reaches the 3.11.5 invariant with tesSUCCESS: PaymentRemaining drops by one,
+        // NextPaymentDueDate advances by one interval, and PrincipalOutstanding strictly decreases
+        // (by more than a plain payment thanks to the extra). The invariant must accept it.
         STAmount const onePaymentPlusExtra = asset(5'000).value();
         env(pay(borrower, loanKeylet.key, onePaymentPlusExtra, tfLoanOverpayment), payFee);
         env.close();
