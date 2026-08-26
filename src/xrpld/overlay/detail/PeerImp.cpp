@@ -1320,14 +1320,22 @@ PeerImp::handleTransaction(
         using namespace telemetry;
         // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
         // a job-queue worker and end on that thread — no detach step is needed.
-        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+        // Left null when telemetry is compiled out: there is no span to own, so
+        // nothing is allocated for one. Every use below tests it, the job
+        // capture and activateIfLive() accept a null handle, and the transaction
+        // pipeline already takes a null span by default. Without this the
+        // make_shared allocated once per inbound transaction, duplicates
+        // included, to hold an empty object.
+        std::shared_ptr<SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+#endif
         // Guarded on the span being live because these values are not free and
         // this runs for every inbound transaction, including duplicates: the
         // hash string allocates, and the open-ledger index takes the ledger
-        // master's lock. The compiled-out guard's operator bool() is a literal
-        // false, so the block disappears entirely in that build; with telemetry
-        // compiled in it is skipped whenever this span is not being recorded.
-        if (*span)
+        // master's lock. With telemetry compiled out the span is null; with it
+        // compiled in the block is skipped for any span not being recorded.
+        if (span && *span)
         {
             span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
             span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
@@ -1365,7 +1373,8 @@ PeerImp::handleTransaction(
         */
         if (stx->isFlag(tfInnerBatchTxn))
         {
-            span->setAttribute(tx_span::attr::txStatus, tx_span::val::rejectedInnerBatch);
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::rejectedInnerBatch);
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
                                       "tfInnerBatchTxn (handleTransaction).";
             fee_.update(resource::kFeeModerateBurdenPeer, "inner batch txn");
@@ -1378,11 +1387,13 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, kTxInterval))
         {
-            span->setAttribute(tx_span::attr::suppressed, true);
+            if (span)
+                span->setAttribute(tx_span::attr::suppressed, true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
-                span->setAttribute(tx_span::attr::txStatus, tx_span::val::knownBad);
+                if (span)
+                    span->setAttribute(tx_span::attr::txStatus, tx_span::val::knownBad);
                 fee_.update(resource::kFeeUselessData, "known bad");
                 JLOG(pJournal_.debug()) << "Ignoring known bad tx " << txID;
             }
@@ -1391,7 +1402,8 @@ PeerImp::handleTransaction(
                 // Recently-seen but not flagged bad — this is the plain
                 // duplicate-suppression path. Mark it explicitly so the
                 // span never exits as "new".
-                span->setAttribute(tx_span::attr::txStatus, tx_span::val::suppressed);
+                if (span)
+                    span->setAttribute(tx_span::attr::txStatus, tx_span::val::suppressed);
 
                 // Erase only if the server has seen this tx. If the server
                 // has not seen this tx then the tx could not have been
@@ -1408,7 +1420,8 @@ PeerImp::handleTransaction(
             return;
         }
 
-        span->setAttribute(tx_span::attr::suppressed, false);
+        if (span)
+            span->setAttribute(tx_span::attr::suppressed, false);
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
         bool checkSignature = true;
@@ -1433,12 +1446,14 @@ PeerImp::handleTransaction(
 
         if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
         {
-            span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedNoSync);
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedNoSync);
             JLOG(pJournal_.trace()) << "No new transactions until synchronized";
         }
         else if (app_.getJobQueue().getJobCount(JtTransaction) > app_.config().maxTransactions)
         {
-            span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedQueueFull);
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedQueueFull);
             overlay_.incJqTransOverflow();
             JLOG(pJournal_.info()) << "Transaction queue is full";
         }

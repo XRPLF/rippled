@@ -1510,14 +1510,21 @@ NetworkOPsImp::processTransaction(
     // SpanGuard is thread-free (holds no Scope), so it is safe to store here
     // and end on the batch worker thread that later applies this transaction —
     // no detach step is needed.
-    auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
+    // Left null when telemetry is compiled out: there is no span to own, so
+    // nothing is allocated for one. The transaction pipeline already accepts a
+    // null span -- both doTransaction* overloads default it to nullptr -- and
+    // every use tests it. Without this the make_shared allocated once per
+    // submitted and relayed transaction to hold an empty object.
+    std::shared_ptr<SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+    span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
+#endif
     // Guarded on the span being live because these values are not free and this
     // runs for every submitted and relayed transaction: the hash string
-    // allocates, and the open-ledger index takes the ledger master's lock. The
-    // compiled-out guard's operator bool() is a literal false, so the block
-    // disappears entirely in that build; with telemetry compiled in it is
-    // skipped whenever this span is not being recorded.
-    if (*span)
+    // allocates, and the open-ledger index takes the ledger master's lock. With
+    // telemetry compiled out the span is null; with it compiled in the block is
+    // skipped for any span not being recorded.
+    if (span && *span)
     {
         span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
         span->setAttribute(tx_span::attr::local, bLocal);
@@ -1546,12 +1553,14 @@ NetworkOPsImp::processTransaction(
 
     if (bLocal)
     {
-        span->setAttribute(tx_span::attr::path, tx_span::val::sync);
+        if (span)
+            span->setAttribute(tx_span::attr::path, tx_span::val::sync);
         doTransactionSync(transaction, bUnlimited, failType, std::move(span));
     }
     else
     {
-        span->setAttribute(tx_span::attr::path, tx_span::val::async);
+        if (span)
+            span->setAttribute(tx_span::attr::path, tx_span::val::async);
         doTransactionAsync(transaction, bUnlimited, failType, std::move(span));
     }
 }
