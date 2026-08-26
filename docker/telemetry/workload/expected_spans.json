@@ -446,7 +446,9 @@
     {
       "parent": "txq.accept",
       "child": "txq.accept_tx",
-      "description": "The queue's accept pass contains the per-transaction accept span."
+      "description": "The queue's accept pass contains the per-transaction accept span.",
+      "skip": true,
+      "skip_reason": "Real relationship, but not assertable by this check as written -- a conditional child plus newest-N sampling. Asserted in c531ac569b and it failed on run 32990348089 with 'txq.accept_tx not found in txq.accept traces'; skipped rather than left red. Both ends DO emit, 5 traces each on that run, so this is not a missing span. The parent is created once per accept pass, every ledger close (TxQ.cpp:1499). The child is created inside the loop over queued transactions and behind `if (feeLevelPaid >= requiredFeeLevel)` (TxQ.cpp:1530), so it exists only for a close where the queue actually held a fee-clearing transaction. _validate_parent_child searches the parent with limit=3 (validate_telemetry.py:803), and queue pressure comes from workload phase 5 of 7, txq-burst, after which mixed-peak (60s) and cooldown (30s) run -- so the three newest txq.accept traces are from quiet closes with an empty queue and no child. Same shape as the rpc.command.* skips: the check samples the newest traces of the parent, which is wrong whenever the child is conditional on load that has since stopped. Two ways to un-skip, in preference order: make the search prefer parent traces that contain the child (a TraceQL child filter rather than newest-N), or move txq-burst to the final workload phase so the newest closes are the loaded ones. Raising the limit alone only shifts the odds and would make this flaky rather than fixed."
     },
     {
       "parent": "consensus.round",
