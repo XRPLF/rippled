@@ -33,14 +33,9 @@ namespace xrpl::test {
 
 // Shared fixture for VaultInvariantPrecision_test and
 // VaultTransactorPrecision_test.
-//
-// Layout:
-//   - A-1 (impairAndPaySibling=false): 1000 USD vault + one ordinary loan.
-//     assetsTotal ~= 1000.353..., assetsAvailable == 993, lossUnrealized == 0.
-//   - A-3 (impairAndPaySibling=true):  add a second loan of principal 11,
-//     impair the first loan, and pay off the second in full.  This drives
-//     the vault to the lossUnrealized == (assetsTotal - assetsAvailable)
-//     boundary where the loss invariant used to spuriously fire.
+// impairAndPaySibling=false: 1000 USD vault and one ordinary loan.
+// impairAndPaySibling=true: a second loan is impaired then a sibling is paid
+// off, leaving lossUnrealized at assetsTotal - assetsAvailable.
 class VaultPrecisionFixture : public LoanTestBase
 {
 protected:
@@ -82,11 +77,16 @@ protected:
     {
         Asset asset;
         MPTIssue share;
+        // The {} initializers are not redundant: Number's default constructor is explicit, so
+        // fields omitted from the designated initializer in read() below would otherwise fail
+        // copy-list-initialization.
+        // NOLINTBEGIN(readability-redundant-member-init)
         Number assetsTotal{};      // sfAssetsTotal
         Number assetsAvailable{};  // sfAssetsAvailable
         Number lossUnrealized{};   // sfLossUnrealized
         Number pseudo{};           // vault pseudo-account balance in the asset
         Number sharesTotal{};      // sfOutstandingAmount on the share MPT
+        // NOLINTEND(readability-redundant-member-init)
     };
 
     static Numbers
