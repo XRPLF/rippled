@@ -274,10 +274,18 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     app_.getHashRouter().addSuppression(suppression);
 
+#ifdef XRPL_ENABLE_TELEMETRY
     // Inject the current thread's active span context (e.g. the consensus
     // round span) so receiving peers can link their proposal.receive span
     // as a child of this trace.
+    //
+    // Guarded rather than relying on the injector being a no-op: mutable_ on an
+    // optional submessage allocates it and sets its has-bit, so calling this
+    // unconditionally would put an empty TraceContext on the wire in every
+    // proposal a node without telemetry broadcasts, and make its peers take
+    // their has_trace_context() branch for nothing.
     telemetry::SpanGuard::injectCurrentContextToProtobuf(*prop.mutable_trace_context());
+#endif
 
     app_.getOverlay().broadcast(prop);
 }
@@ -1055,7 +1063,13 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     // `serialized`, so it is not covered by validation authenticity.
     // Downstream consumers treat it as advisory only. A signature-covered
     // trace context is a possible future enhancement.
+    //
+    // Guarded for the same reason as the proposal path: mutable_ allocates the
+    // optional submessage and sets its has-bit, so an unguarded call would put
+    // an empty TraceContext in every validation a node without telemetry sends.
+#ifdef XRPL_ENABLE_TELEMETRY
     telemetry::SpanGuard::injectCurrentContextToProtobuf(*val.mutable_trace_context());
+#endif
     app_.getOverlay().broadcast(val);
 
     // Publish to all our subscribers:
