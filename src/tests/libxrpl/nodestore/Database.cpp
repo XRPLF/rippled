@@ -225,8 +225,15 @@ TEST_P(NodeStoreDatabaseTest, write_stats_forwarded_from_backend)
 
     // Before any write, only a measuring backend answers at all.
     auto const initial = db->getWriteStats();
-    ASSERT_EQ(initial.has_value(), GetParam() == "nudb")
-        << "only nudb measures its write path; backend=" << GetParam();
+    // NuDB records the write path only when telemetry is compiled in; without
+    // it nothing measures, so the negative path below covers every backend.
+#ifdef XRPL_ENABLE_TELEMETRY
+    bool const measures = GetParam() == "nudb";
+#else
+    bool const measures = false;
+#endif
+    ASSERT_EQ(initial.has_value(), measures)
+        << "only nudb measures its write path, and only with telemetry; backend=" << GetParam();
 
     if (!initial)
     {

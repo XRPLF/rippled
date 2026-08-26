@@ -66,6 +66,7 @@ public:
     std::atomic<bool> deletePath;
     Scheduler& scheduler;
 
+#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Writers currently inside doInsert. Instantaneous depth.
      */
@@ -101,6 +102,7 @@ public:
      * load, which is when the mean matters.
      */
     std::atomic<std::uint64_t> depthSamples{0};
+#endif  // XRPL_ENABLE_TELEMETRY
 
     NuDBBackend(
         size_t keyBytes,
@@ -279,6 +281,7 @@ public:
         nudb::detail::buffer bf;
         auto const result = nodeobjectCompress(e.getData(), e.getSize(), bf);
 
+#ifdef XRPL_ENABLE_TELEMETRY
         // NuDB takes one global mutex for the whole insert, so the wait is
         // invisible from here. Record the depth we joined at and the wall
         // time we spent; the split follows from Little's Law.
@@ -289,6 +292,10 @@ public:
         // slow, deep ones -- biasing the mean down exactly when queueing is
         // worst. With all writers inside their first insert the exit-counted
         // version reports no depth at all.
+        //
+        // Every node write reaches here, so none of it happens without
+        // telemetry: this whole block is what the write-stats gauges need and
+        // nothing else reads it.
         auto const depth = concurrentWriters.fetch_add(1, std::memory_order_relaxed) + 1;
         depthSum.fetch_add(depth, std::memory_order_relaxed);
         depthSamples.fetch_add(1, std::memory_order_relaxed);
@@ -297,7 +304,8 @@ public:
         // A scope guard rather than straight-line code, because the insert
         // can allocate and so can throw. Leaking the depth would strand the
         // gauge above zero for the life of the process.
-        ScopeExit const account([this, depth, begin] { recordInsert(depth, begin); });
+        ScopeExit const account([this, begin] { recordInsert(begin); });
+#endif
 
         db.insert(e.getKey(), result.first, result.second, ec);
 
@@ -375,15 +383,29 @@ public:
     int
     getWriteLoad() override
     {
+#ifdef XRPL_ENABLE_TELEMETRY
         // Writers in flight. Bounded by the number of writing threads, so
         // it stays far below LedgerMaster's kMaxWriteLoadAcquire of 8192
         // and cannot suppress history acquisition.
         return static_cast<int>(concurrentWriters.load(std::memory_order_relaxed));
+#else
+        // Nothing counts writers without telemetry, so report no load rather
+        // than a stale zero-valued counter. LedgerMaster gates history
+        // acquisition on this, so it must not start reporting a real depth as
+        // a side effect of instrumentation.
+        return 0;
+#endif
     }
 
     [[nodiscard]] std::optional<WriteStats>
     getWriteStats() const override
     {
+#ifndef XRPL_ENABLE_TELEMETRY
+        // Not measured in this build, which is a different answer from
+        // measured-and-idle. The base class reports absence the same way for
+        // backends that never queue.
+        return std::nullopt;
+#else
         WriteStats stats;
         stats.concurrentWriters = concurrentWriters.load(std::memory_order_relaxed);
         stats.insertCount = insertCount.load(std::memory_order_relaxed);
@@ -392,6 +414,7 @@ public:
         stats.depthSum = depthSum.load(std::memory_order_relaxed);
         stats.depthSamples = depthSamples.load(std::memory_order_relaxed);
         return stats;
+#endif
     }
 
     void
@@ -432,11 +455,10 @@ private:
      * Always runs, including on the throwing path, so the depth gauge
      * returns to its true value even when the insert fails.
      *
-     * @param depth Writer depth this insert joined at, at least 1.
      * @param begin When the insert started.
      */
     void
-    recordInsert(std::uint64_t depth, std::chrono::steady_clock::time_point begin) noexcept
+    recordInsert(std::chrono::steady_clock::time_point begin) noexcept
     {
         auto const elapsedUs =
             static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
