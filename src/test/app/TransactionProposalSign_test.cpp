@@ -206,7 +206,7 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
-        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(env.balance(dest) == XRP(10000) + XRP(1));
     }
 
@@ -337,7 +337,7 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
-        BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(ownerCount(env, target) == ownersBefore);
     }
 

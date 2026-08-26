@@ -251,7 +251,7 @@ signingData(
             serializeBatch(
                 msg,
                 stx.getAccountID(sfAccount),
-                stx.getSeqValue(),
+                stx.getSeqProxy().value(),
                 stx.getFlags(),
                 stx.getBatchTransactionIDs());
             if (singleSign)
