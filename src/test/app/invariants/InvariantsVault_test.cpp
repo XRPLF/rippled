@@ -260,8 +260,8 @@ class InvariantsVault_test : public InvariantsBase
             return true;
         };
 
-        auto const createClosedXrpBroker = [&](Account const& owner, Env& env)
-            -> std::optional<std::pair<Keylet, Keylet>> {
+        auto const createClosedXrpBroker =
+            [&](Account const& owner, Env& env) -> std::optional<std::pair<Keylet, Keylet>> {
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
             auto const brokerKeylet = createLoanBroker(owner, env, xrpAsset);
             auto const sleBroker = env.le(brokerKeylet);
@@ -1213,8 +1213,7 @@ class InvariantsVault_test : public InvariantsBase
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 ov.rawReplace(sleVault);
 
-                auto const sharesKeylet =
-                    keylet::mptokenIssuance(sleVaultRead->at(sfShareMPTID));
+                auto const sharesKeylet = keylet::mptokenIssuance(sleVaultRead->at(sfShareMPTID));
                 auto const sleSharesRead = ov.read(sharesKeylet);
                 if (!BEAST_EXPECT(sleSharesRead))
                     return;
@@ -1553,7 +1552,8 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
-        // fixCleanup3_4_0 moves the vault immutability checks from VaultInvariant to InvariantCheck.
+        // fixCleanup3_4_0 moves the vault immutability checks from VaultInvariant to
+        // InvariantCheck.
         doInvariantCheck(
             makeEnv(all_ - fixCleanup3_4_0),
             {"changed an unchangeable field"},
