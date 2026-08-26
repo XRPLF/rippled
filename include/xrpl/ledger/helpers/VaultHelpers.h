@@ -46,22 +46,27 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
 
 /**
- * Returns a non-negative magnitude to apply to sfAssetsTotal and the related
- * rails, snapped to the scale of the post-transaction sfAssetsTotal — the same
- * scale ValidVault uses. Credits take the Downward-rounded posterior total
- * minus the current total so the vault cannot be credited more than `|delta|`
- * even when the anterior total sits off that grid. Debits round `|delta|`
- * Downward on the posterior scale. A zero result is `tecPRECISION_LOSS`.
+ * Adjusts a requested asset change (`delta`) to match the decimal scale of the
+ * updated total vault assets. This ensures `sfAssetsTotal`, `sfAssetsAvailable`,
+ * and the actual asset transfer change by the exact same representable amount.
  *
- * The caller adds the returned magnitude for credits or subtracts it for
- * debits, and applies it to every related field so all rails stay in sync.
- * A zero result is returned as `tecPRECISION_LOSS` so callers reject rather
- * than moving shares without assets.
+ * Rounding strategy:
+ * - Debits (withdrawals): Rounds down `|delta|` on the new scale to prevent
+ *   paying out more than requested.
+ * - Credits (deposits): Floors the resulting total asset balance and returns the
+ *   difference from the current total. This prevents crediting the vault with
+ *   more assets than the user deposited.
  *
- * @param vault The vault SLE.
+ * Key rules:
+ * - The returned magnitude never exceeds `|delta|`.
+ * - Returns `tecPRECISION_LOSS` if the change is smaller than 1 ULP of the target scale
+ *   (prevents share operations when totals cannot change).
+ * - For integer assets (XRP, MPT), rounding is a no-op.
+ *
+ * @param vault The vault ledger entry.
  * @param delta The requested signed change to sfAssetsTotal.
- * @return The rounded magnitude, always non-negative, or `tecPRECISION_LOSS`
- *         if the change is smaller than one ULP.
+ * @return The rounded, positive magnitude, or `tecPRECISION_LOSS` if the
+ *         change is below representable precision.
  */
 [[nodiscard]] std::expected<STAmount, TER>
 clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta);

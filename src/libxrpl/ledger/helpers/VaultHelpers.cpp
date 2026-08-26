@@ -79,8 +79,16 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
         "xrpl::clampToAssetsTotalScale : delta and vault asset match");
 
     Asset const asset = vault->at(sfAsset);
-    STAmount const magnitude = delta.negative() ? -delta : delta;
+
+    STAmount magnitude = delta.negative() ? -delta : delta;
+    if (asset.integral())
+    {
+        return magnitude;
+    }
     Number const assetsTotal = vault->at(sfAssetsTotal);
+
+    // Calculate the scale after applying the delta using ToNearest rounding.
+    // This aligns the delta with scale checks used by vault invariants.
     int const postScale = [&] {
         NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
         return scale(assetsTotal + delta, asset);
@@ -89,17 +97,24 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
     STAmount actualDelta;
     if (delta.negative())
     {
-        // A debit that is a multiple of the posterior ULP lands exactly, so rounding the
-        // magnitude is sufficient and cannot pay out more than requested.
+        // For withdrawals (debits), floor the magnitude to the target scale
+        // to ensure exact grid alignment without paying out extra assets.
         actualDelta = roundToScale(magnitude, postScale, Number::RoundingMode::Downward);
     }
     else
     {
-        // A credit must be derived from the posterior total. Rounding only the magnitude
-        // leaves the anterior total's off-grid residue in the stored sum, which can credit
-        // the vault by more than the depositor paid.
+        // For deposits (credits), derive actualDelta from the floored posterior total.
+        // This prevents grid alignment issues from crediting the vault more than deposited.
+        //
+        // Sum using Downward rounding so intermediate precision doesn't round up
+        // and exceed the original requested amount.
+        Number const posterior = [&] {
+            NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+            return assetsTotal + magnitude;
+        }();
+
         Number const roundedPosterior =
-            roundToAsset(asset, assetsTotal + magnitude, postScale, Number::RoundingMode::Downward);
+            roundToAsset(asset, posterior, postScale, Number::RoundingMode::Downward);
         actualDelta = STAmount{asset, roundedPosterior - assetsTotal};
     }
 
@@ -107,6 +122,8 @@ clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta)
         abs(actualDelta) <= abs(delta),
         "xrpl::clampToAssetsTotalScale : actual delta smaller or equal to calculated delta");
 
+    // Reject changes below scale precision (1 ULP) to prevent share balance changes
+    // without corresponding asset movements.
     if (actualDelta <= beast::kZero)
         return std::unexpected(tecPRECISION_LOSS);
 
