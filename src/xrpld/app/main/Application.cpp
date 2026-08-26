@@ -40,7 +40,11 @@
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
 #include <xrpld/telemetry/MetricNames.h>
+#endif
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/ByteUtilities.h>
@@ -1225,8 +1229,11 @@ public:
      *       faults taken later, as the caches refill and touch the pages the
      *       trim handed back -- see the runbook branch for how to read it.
      */
+    // Not const: with telemetry enabled the metric macros below call
+    // getMetricsRegistry() on *this, which is non-const (ServiceRegistry.h).
+    // Only the compiled-out build makes this look like a const method.
     void
-    trimHeapAndRecord()
+    trimHeapAndRecord()  // NOLINT(readability-make-member-function-const)
     {
         MallocTrimReport const report = mallocTrim("doSweep", journal_);
 

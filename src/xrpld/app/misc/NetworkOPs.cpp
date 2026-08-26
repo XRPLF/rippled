@@ -32,7 +32,11 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
 #include <xrpld/telemetry/MetricNames.h>
+#endif
 #include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxSpanNames.h>
@@ -2886,15 +2890,6 @@ NetworkOPsImp::setMode(OperatingMode om)
     if (mode_ == om)
         return;
 
-    // Capture the mode we are leaving before overwriting it: the transition
-    // edge, not just the destination, is what tells flapping apart from a
-    // clean climb to FULL.
-    auto const prevMode = mode_.load();
-
-    mode_ = om;
-
-    accounting_.mode(om);
-
     // Record the mode transition labelled with source and destination, so the
     // dashboard can chart which edges of the sync state machine are traversed
     // (e.g. repeated full->connected flapping vs. a one-way
@@ -2902,12 +2897,22 @@ NetworkOPsImp::setMode(OperatingMode om)
     // never in a hot loop, and there are only five modes so the label
     // cardinality is bounded. strOperatingMode(mode, admin=false) supplies the
     // names, which keeps them identical to the ones server_info reports.
+    //
+    // This must stay above the assignment below, where mode_ is still the mode
+    // being left: the transition edge, not just the destination, is what tells
+    // flapping apart from a clean climb to FULL. Reading it inline also means
+    // nothing is computed when telemetry is compiled out, since the macro then
+    // drops its arguments.
     XRPL_METRIC_COUNTER_INC_LABELED(
         registry_.get(),
         telemetry::metric::stateChangesTotal,
         "Total operating mode changes",
-        {{telemetry::label::from, strOperatingMode(prevMode, false)},
+        {{telemetry::label::from, strOperatingMode(mode_.load(), false)},
          {telemetry::label::to, strOperatingMode(om, false)}});
+
+    mode_ = om;
+
+    accounting_.mode(om);
 
     JLOG(journal_.info()) << "STATE->" << strOperatingMode();
     pubServer();

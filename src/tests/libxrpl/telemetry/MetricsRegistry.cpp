@@ -468,8 +468,6 @@ TEST(MetricsRegistryScaledMean, default_scale_is_one)
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <type_traits>
-#include <utility>
 
 using namespace xrpl;
 

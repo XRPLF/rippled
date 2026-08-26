@@ -663,6 +663,10 @@ PeerImp::close()
     JLOG((inbound_ ? journal_.debug() : journal_.info())) << "close: Closed";
 }
 
+// Not static: the metric macros below read the app_ member. With telemetry
+// compiled out they expand to nothing, so the body touches no member and
+// clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
 PeerImp::reportServeRefusal(char const* request, char const* reason)
 {
@@ -673,6 +677,7 @@ PeerImp::reportServeRefusal(char const* request, char const* reason)
         {{telemetry::label::request, std::string(request)},
          {telemetry::label::reason, std::string(reason)}});
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 PeerImp::fail(std::string const& reason)
