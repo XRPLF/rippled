@@ -268,10 +268,13 @@ VaultClawback::assetsToClawback(
     STAmount sharesDestroyed;
     STAmount assetsRecovered;
 
+    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
         if (clawbackAmount == beast::kZero)
         {
+            // Zero amount means clawback all shares the holder has; derive the corresponding asset
+            // amount from the share balance.
             sharesDestroyed = accountHolds(
                 view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
             auto const maybeAssets =
@@ -302,13 +305,11 @@ VaultClawback::assetsToClawback(
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
         }
-        // Clamp to maximum.
+        // Clamp assetsRecovered to sfAssetsAvailable, then re-derive shares and assets so the pair
+        // stays consistent.
         if (assetsRecovered > *assetsAvailable)
         {
             assetsRecovered = *assetsAvailable;
-            // Note, it is important to truncate the number of shares,
-            // otherwise the corresponding assets might breach the
-            // AssetsAvailable
             {
                 auto const maybeShares = assetsToSharesWithdraw(
                     vault, sleShareIssuance, assetsRecovered, TruncateShares::Yes);
@@ -322,6 +323,8 @@ VaultClawback::assetsToClawback(
             if (!maybeAssets)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
+            // Truncation should guarantee the invariant holds. If it does not, a conversion
+            // helper is broken; refuse rather than over-recover.
             if (assetsRecovered > *assetsAvailable)
             {
                 // LCOV_EXCL_START
@@ -329,6 +332,18 @@ VaultClawback::assetsToClawback(
                 return std::unexpected(tecINTERNAL);
                 // LCOV_EXCL_STOP
             }
+        }
+
+        // Post-fixCleanup3_4_0: round the recovery down at the posterior sfAssetsTotal scale so all
+        // rails change by the same representable delta. sharesDestroyed is intentionally NOT
+        // re-derived here: the holder's shares are burned for their pre-clamp value, so any
+        // sub-ULP trimmed off stays in the vault for the remaining shareholders.
+        if (ctx_.view().rules().enabled(fixCleanup3_4_0) && assetsRecovered > beast::kZero)
+        {
+            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsRecovered);
+            if (!maybeClamped)
+                return std::unexpected(maybeClamped.error());
+            assetsRecovered = *maybeClamped;
         }
     }
     catch (std::overflow_error const&)
@@ -341,6 +356,8 @@ VaultClawback::assetsToClawback(
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
             << ", sharesTotal=" << sleShareIssuance->at(sfOutstandingAmount)
             << ", amount=" << clawbackAmount.value();
+        // Overflow means this transaction cannot apply, but ledger state is still consistent.
+        // Return tecPATH_DRY rather than a hard internal error.
         return std::unexpected(tecPATH_DRY);
     }
 
@@ -394,21 +411,44 @@ VaultClawback::doApply()
         sharesDestroyed = clawbackParts->second;
     }
 
+    // The holder has no shares (or the recovery clamped to zero). Nothing to burn; refuse rather
+    // than modifying vault state.
     if (sharesDestroyed == beast::kZero)
         return tecPRECISION_LOSS;
 
-    // A recovered amount can be genuinely non-zero yet still be dust relative to a
-    // sfAssetsTotal/sfAssetsAvailable large enough to exceed STAmount's significant-digit
-    // precision: subtracting it below rounds the stored total right back to where it started.
-    // The shares still move, so ValidVault would fail after the fact with "clawback must
-    // decrease vault balance" instead of a clean upfront rejection.
-    if (view().rules().enabled(fixCleanup3_4_0) &&
-        (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered) ||
-         debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsRecovered)))
+    // Number arithmetic can throw overflow_error when Scale and totals are large.
+    if (view().rules().enabled(fixCleanup3_4_0))
     {
-        JLOG(j_.debug()) << "VaultClawback: clawback amount too small to change stored vault"
-                            " balance";
-        return tecPRECISION_LOSS;
+        try
+        {
+            // A non-zero recovery can be too small to change the stored sfAssetsTotal at
+            // STAmount's precision. Shares would still be burned, reject it instead.
+            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsRecovered))
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.debug())
+                    << "VaultClawback: clawback amount too small to change stored vault"
+                       " balance";
+                return tecPRECISION_LOSS;
+                // LCOV_EXCL_STOP
+            }
+        }
+        // LCOV_EXCL_START
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultClawback: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            // Overflow means this transaction cannot apply, but ledger state is still
+            // consistent. Return tecPATH_DRY rather than a hard internal error.
+            return tecPATH_DRY;
+        }
+        // LCOV_EXCL_STOP
     }
 
     assetsTotal -= assetsRecovered;

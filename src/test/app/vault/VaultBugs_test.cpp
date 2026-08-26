@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -425,6 +426,9 @@ private:
             testcase(
                 "bug: VaultDeposit below Vault precision canonicalized to zero "
                 "(pre-fixCleanup3_2_0)");
+            // Also remove fixCleanup3_4_0 so the VaultDeposit clamp
+            // introduced by that amendment does not short-circuit this
+            // pre-fixCleanup3_2_0 scenario with tecPRECISION_LOSS.
             runScenario(
                 testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
         }
@@ -804,6 +808,128 @@ private:
             testcase("bug: VaultWithdraw dust debit rejected cleanly (post-fixCleanup3_4_0)");
             runScenario(all_, tecPRECISION_LOSS);
         }
+    }
+
+    // Scale 15 seed + deposit 5: pre-fix credited > paid; post-fix credited <= paid.
+    // fixCleanup3_2_0 is off so roundToVaultScale does not shrink the deposit first.
+    void
+    testBugVaultDepositOvercreditsAcrossScaleBoundary()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool expectOvercredit) {
+            Env env(*this, features);
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(1'000'000), owner, issuer, depositor);
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Number const seed{9'999'999'999'999'999LL, -15};
+            Number const deposit{5};
+
+            env(trust(depositor, usd(1'000'000'000)));
+            env.close();
+            env(pay(issuer, depositor, usd(deposit)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            tx[sfScale] = 15;
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = issuer, .id = keylet.key, .amount = usd(seed)}));
+            env.close();
+
+            Number const totalBefore = env.le(keylet)->at(sfAssetsTotal);
+            Number const depositorBefore = env.balance(depositor, usd.raw()).number();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = usd(deposit)}));
+            env.close();
+
+            Number const totalAfter = env.le(keylet)->at(sfAssetsTotal);
+            Number const depositorAfter = env.balance(depositor, usd.raw()).number();
+            Number const paid = depositorBefore - depositorAfter;
+            Number const credited = totalAfter - totalBefore;
+
+            if (expectOvercredit)
+            {
+                BEAST_EXPECTS(
+                    credited > paid,
+                    "AssetsTotal credited " + to_string(credited) + " for a payment of " +
+                        to_string(paid) + ", expected an overcredit");
+            }
+            else
+            {
+                BEAST_EXPECTS(
+                    credited <= paid,
+                    "AssetsTotal credited " + to_string(credited) + " for a payment of " +
+                        to_string(paid));
+            }
+        };
+
+        testcase(
+            "bug: VaultDeposit overcredits across an IOU scale boundary "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_2_0 - fixCleanup3_4_0, true);
+
+        testcase(
+            "bug: VaultDeposit no longer overcredits across an IOU scale boundary "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, false);
+    }
+
+    // 1e17 IOU at scale 0. Withdraw all-but-one, then the last share:
+    // pre-fix tecINVARIANT_FAILED, post-fix tesSUCCESS.
+    void
+    testBugVaultLockedByPartialWithdraw()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            env.fund(XRP(1'000'000), owner, issuer, holder);
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(holder, usd(Number{1, 18})));
+            env.close();
+            env(pay(issuer, holder, usd(Number{1, 17})));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            tx[sfScale] = 0;
+            env(tx);
+            env.close();
+            env(vault.deposit(
+                {.depositor = holder, .id = keylet.key, .amount = usd(Number{1, 17})}));
+            env.close();
+
+            MPTIssue const share{env.le(keylet)->at(sfShareMPTID)};
+            std::int64_t const allButOne = 100'000'000'000'000'000LL - 1;
+            env(vault.withdraw(
+                {.depositor = holder, .id = keylet.key, .amount = STAmount{share, allButOne}}));
+            env.close();
+
+            env(vault.withdraw(
+                    {.depositor = holder, .id = keylet.key, .amount = STAmount{share, 1}}),
+                Ter(expected));
+            env.close();
+        };
+
+        testcase(
+            "bug: VaultWithdraw permanently locks a large IOU vault "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        testcase(
+            "bug: VaultWithdraw no longer locks a large IOU vault "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS);
     }
 
     // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
@@ -1346,6 +1472,8 @@ public:
         testBugDepositShareTruncationSubUlp();
         testVaultWithdrawCanonicalizeToZero();
         testBugVaultDustDebitCanonicalizesToNoOp();
+        testBugVaultDepositOvercreditsAcrossScaleBoundary();
+        testBugVaultLockedByPartialWithdraw();
         testVaultDepositNegativeBalanceFromOppositeLimit();
         testCredentialPinsPseudoAccount();
         testCredentialPinOverflow();
