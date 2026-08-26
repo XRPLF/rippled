@@ -1287,6 +1287,138 @@ private:
         BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
     }
 
+    // calculateBaseFee must use isPaymentLate(), not a raw inclusive
+    // hasExpired(): once fixCleanup3_4_0 is enabled, a plain catch-up at
+    // exactly NextPaymentDueDate succeeds and can process many payments, so
+    // the fee has to scale with that work. Charging a single base fee here
+    // would disagree with apply (and with the fixCleanup3_1_3 cap).
+    void
+    testLoanPayCatchUpFeeAtExactDueDatePostAmendment()
+    {
+        testcase("LoanPay catch-up fee at exact due date with fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace lending;
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, asset(10'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(50),
+            kPaymentInterval(600),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 50);
+        BEAST_EXPECT(stateBefore.paymentRemaining > kLoanPaymentsPerFeeIncrement);
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        Number const regularPayment =
+            roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale) +
+            loanSle->at(sfLoanServiceFee);
+        int const payCount = kLoanPaymentsPerFeeIncrement * 4;
+        STAmount const catchUp{asset, regularPayment * payCount};
+        XRPAmount const baseFee = env.current()->fees().base;
+        XRPAmount const escalatedFee{baseFee * (payCount / kLoanPaymentsPerFeeIncrement)};
+
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        // Under-fee: apply would process `payCount` payments, so a single
+        // base fee is not enough.
+        env(pay(borrower, loanKeylet.key, catchUp), Fee(baseFee), Ter(telINSUF_FEE_P));
+
+        // Same catch-up with the scaled fee must succeed at this instant.
+        // Do not env.close() after the SLE override (see
+        // testLoanPayAtExactDueDateSucceedsPostAmendment).
+        env(pay(borrower, loanKeylet.key, catchUp), Fee(escalatedFee), Ter(tesSUCCESS));
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining - payCount);
+    }
+
+    // Without the amendment, inclusive hasExpired still treats the exact
+    // due-date instant as late, so calculateBaseFee correctly charges a
+    // single base fee and apply rejects a plain LoanPay with tecEXPIRED.
+    void
+    testLoanPayCatchUpFeeAtExactDueDatePreAmendment()
+    {
+        testcase("LoanPay catch-up fee at exact due date without fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace lending;
+
+        Env env(*this, all_ - fixCleanup3_4_0);
+        BEAST_EXPECT(!env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, asset(10'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(50),
+            kPaymentInterval(600),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 50);
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        Number const regularPayment =
+            roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale) +
+            loanSle->at(sfLoanServiceFee);
+        int const payCount = kLoanPaymentsPerFeeIncrement * 4;
+        STAmount const catchUp{asset, regularPayment * payCount};
+        XRPAmount const baseFee = env.current()->fees().base;
+
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        env(pay(borrower, loanKeylet.key, catchUp), Fee(baseFee), Ter(tecEXPIRED));
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining);
+        BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
+    }
+
     void
     runAmendmentIndependent()
     {
@@ -1294,6 +1426,8 @@ private:
         testLoanPayAtExactDueDateSucceedsPostAmendment();
         testLoanPayAtExactDueDateFailsPreAmendment();
         testLoanLatePaymentAtExactDueDateRejectedPostAmendment();
+        testLoanPayCatchUpFeeAtExactDueDatePostAmendment();
+        testLoanPayCatchUpFeeAtExactDueDatePreAmendment();
         testRepayIntoUnauthorizedVault();
     }
 

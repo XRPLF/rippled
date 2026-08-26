@@ -956,6 +956,132 @@ private:
         }
     }
 
+    // Default uses NextPaymentDueDate + GracePeriod. Once fixCleanup3_4_0
+    // is enabled, that gate is Exclusive, matching impair/isPaymentLate:
+    // default is allowed only after grace has passed, not at the instant
+    // it expires.
+    void
+    testLoanDefaultAtExactGraceExpiryRejectedPostAmendment()
+    {
+        testcase("LoanManage default at exact grace expiry rejected with fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrpAsset, lender);
+
+        auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, broker.asset(Number{1, 3}).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            kGracePeriod(60),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        // Advance far enough that parentCloseTime > GracePeriod, so
+        // (now - grace) cannot underflow when pinning the exact expiry.
+        env.close(env.now() + 1000s);
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        auto const grace = loanSle->at(sfGracePeriod);
+        std::uint32_t const now = env.current()->parentCloseTime().time_since_epoch().count();
+        BEAST_EXPECT(now > grace + 1);
+
+        // parentCloseTime == NextPaymentDueDate + GracePeriod: grace expires
+        // this instant, so default must still be too soon.
+        setLoanNextPaymentDueDate(env, loanKeylet, now - grace);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecTOO_SOON));
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(!loan->isFlag(lsfLoanDefault));
+        }
+
+        // One second after grace expires, default succeeds.
+        setLoanNextPaymentDueDate(env, loanKeylet, now - grace - 1);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(loan->isFlag(lsfLoanDefault));
+        }
+    }
+
+    void
+    testLoanDefaultAtExactGraceExpirySucceedsPreAmendment()
+    {
+        testcase("LoanManage default at exact grace expiry succeeds without fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        Env env(*this, all_ - fixCleanup3_4_0);
+        BEAST_EXPECT(!env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrpAsset, lender);
+
+        auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, broker.asset(Number{1, 3}).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            kGracePeriod(60),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        env.close(env.now() + 1000s);
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        auto const grace = loanSle->at(sfGracePeriod);
+        std::uint32_t const now = env.current()->parentCloseTime().time_since_epoch().count();
+        BEAST_EXPECT(now > grace);
+
+        setLoanNextPaymentDueDate(env, loanKeylet, now - grace);
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(loan->isFlag(lsfLoanDefault));
+        }
+    }
+
     void
     runAmendmentIndependent()
     {
@@ -964,6 +1090,8 @@ private:
         testImpairmentPaymentDatePreAmendment();
         testImpairedOverdueLoanPayRequiresLateFlag();
         testImpairedOverdueLoanPayBypassPreAmendment();
+        testLoanDefaultAtExactGraceExpiryRejectedPostAmendment();
+        testLoanDefaultAtExactGraceExpirySucceedsPreAmendment();
     }
 
     // Tests run under each entry in amendmentCombinations().

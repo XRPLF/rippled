@@ -104,7 +104,11 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
     if (tx.isFlag(tfLoanDefault) &&
-        !hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod)))
+        !hasExpired(
+            ctx.view,
+            loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod),
+            ctx.view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
+                                                      : ExpiryComparison::Inclusive))
     {
         JLOG(ctx.j.warn()) << "A loan can not be defaulted before the next payment due date.";
         return tecTOO_SOON;
