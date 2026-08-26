@@ -268,8 +268,18 @@ VaultClawback::assetsToClawback(
 
         if (clawbackAmount == beast::kZero)
         {
-            sharesDestroyed = accountHolds(
-                view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
+            // A waiver implies the holder owns the entire outstanding share
+            // supply, which sleShareIssuance already tells us; avoid a
+            // redundant MPToken read via accountHolds in that case.
+            sharesDestroyed = waiveUnrealizedLoss == WaiveUnrealizedLoss::Yes
+                ? STAmount{share, sleShareIssuance->at(sfOutstandingAmount)}
+                : accountHolds(
+                      view(),
+                      holder,
+                      share,
+                      FreezeHandling::IgnoreFreeze,
+                      AuthHandling::IgnoreAuth,
+                      j_);
             auto const maybeAssets = sharesToAssetsWithdraw(
                 vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
             if (!maybeAssets)

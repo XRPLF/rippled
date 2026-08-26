@@ -1455,6 +1455,11 @@ private:
         };
 
         auto runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
+            testcase(
+                features[fixCleanup3_4_0]
+                    ? "VaultClawback after impaired loan (post-fixCleanup3_4_0)"
+                    : "VaultClawback after impaired loan (pre-fixCleanup3_4_0)");
+
             Env env(*this, features);
             auto const maybeSetup = makeImpairedLoanVault(env, 0);
             if (!maybeSetup)
@@ -1486,10 +1491,7 @@ private:
             BEAST_EXPECT(tokenAfter->getFieldU64(sfMPTAmount) == sharesBefore / 10);
         };
 
-        testcase("VaultClawback after impaired loan (pre-fixCleanup3_4_0)");
         runSole(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
-
-        testcase("VaultClawback after impaired loan (post-fixCleanup3_4_0)");
         runSole(all_, tesSUCCESS);
 
         testcase("VaultClawback after impaired loan, non-sole holder");
