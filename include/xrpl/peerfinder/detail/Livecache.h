@@ -29,7 +29,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 template <class>
 class Livecache;
@@ -188,10 +188,10 @@ class Livecache : protected detail::LivecacheBase
 {
 private:
     using cache_type = beast::aged_map<
-        beast::IP::Endpoint,
+        beast::ip::Endpoint,
         Element,
         std::chrono::steady_clock,
-        std::less<beast::IP::Endpoint>,
+        std::less<beast::ip::Endpoint>,
         Allocator>;
 
     beast::Journal journal_;
@@ -220,8 +220,8 @@ public:
         // but not given out (since they would exceed maxHops). They
         // are used for automatic connection attempts.
         //
-        using Histogram = std::array<int, 1 + Tuning::kMaxHops + 1>;
-        using lists_type = std::array<list_type, 1 + Tuning::kMaxHops + 1>;
+        using Histogram = std::array<int, 1 + tuning::kMaxHops + 1>;
+        using lists_type = std::array<list_type, 1 + tuning::kMaxHops + 1>;
 
         template <bool IsConst>
         struct Transform
@@ -400,7 +400,7 @@ Livecache<Allocator>::expire()
 {
     std::size_t n(0);
     typename cache_type::time_point const expired(
-        cache_.clock().now() - Tuning::kLiveCacheSecondsToLive);
+        cache_.clock().now() - tuning::kLiveCacheSecondsToLive);
     for (auto iter(cache_.chronological.begin());
          iter != cache_.chronological.end() && iter.when() <= expired;)
     {
@@ -427,8 +427,8 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     // when redirecting.
     //
     XRPL_ASSERT(
-        ep.hops <= (Tuning::kMaxHops + 1),
-        "xrpl::PeerFinder::Livecache::insert : maximum input hops");
+        ep.hops <= (tuning::kMaxHops + 1),
+        "xrpl::peer_finder::Livecache::insert : maximum input hops");
     auto result = cache_.emplace(ep.address, ep);
     Element& e(result.first->second);
     if (result.second)
@@ -468,7 +468,7 @@ void
 Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
 {
     typename cache_type::time_point const expired(
-        cache_.clock().now() - Tuning::kLiveCacheSecondsToLive);
+        cache_.clock().now() - tuning::kLiveCacheSecondsToLive);
     map["size"] = size();
     map["hist"] = hops.histogram();
     beast::PropertyStream::Set set("entries", map);
@@ -527,8 +527,8 @@ void
 Livecache<Allocator>::HopsT::insert(Element& e)
 {
     XRPL_ASSERT(
-        e.endpoint.hops <= Tuning::kMaxHops + 1,
-        "xrpl::PeerFinder::Livecache::HopsT::insert : maximum input hops");
+        e.endpoint.hops <= tuning::kMaxHops + 1,
+        "xrpl::peer_finder::Livecache::HopsT::insert : maximum input hops");
     // This has security implications without a shuffle
     lists_[e.endpoint.hops].push_front(e);
     ++hist_[e.endpoint.hops];
@@ -539,8 +539,8 @@ void
 Livecache<Allocator>::HopsT::reinsert(Element& e, std::uint32_t numHops)
 {
     XRPL_ASSERT(
-        numHops <= Tuning::kMaxHops + 1,
-        "xrpl::PeerFinder::Livecache::HopsT::reinsert : maximum hops input");
+        numHops <= tuning::kMaxHops + 1,
+        "xrpl::peer_finder::Livecache::HopsT::reinsert : maximum hops input");
 
     auto& list = lists_[e.endpoint.hops];
     list.erase(list.iterator_to(e));
@@ -561,4 +561,4 @@ Livecache<Allocator>::HopsT::remove(Element& e)
     list.erase(list.iterator_to(e));
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

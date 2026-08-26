@@ -1,17 +1,37 @@
-# Build Linux packages (DEB and RPM) from pre-built binary artifacts.
-# Discovers which configurations to package from linux.json (configs in
-# "package_configs") and fans out one job per distro. Only linux/amd64 is
-# supported; the runner is hardcoded in the job below.
+# Build Linux packages from the pre-built xrpld and validator-keys artifacts:
+#
+#   - one job per config that carries a "package" map in linux.json
+#   - that map names the container image and the format it builds there
+#   - with 'publish: true' a job also uploads what it built
+#     (see package/docker/publish_pkg.py)
+#
+# Only linux/amd64 is supported; the runner is hardcoded in the job below.
 name: Package
 
 on:
   workflow_call:
     inputs:
-      pkg_release:
-        description: "Package release number. Increment when repackaging the same executable."
+      publish:
+        description: "Whether to publish the packages after building them."
+        required: false
+        type: boolean
+        default: false
+      nexus_url:
+        description: "The base URL of the Nexus instance hosting the deb and rpm repositories."
         required: false
         type: string
-        default: "1"
+        default: https://packages.xrplf.org
+
+    secrets:
+      remote_username:
+        description: "The username of a Nexus account with write access to the repositories."
+        required: false
+      remote_password:
+        description: "The password or token for that Nexus account."
+        required: false
+      signing_key:
+        description: "Armoured PGP private key used to sign the RPMs. Required when publishing."
+        required: false
 
 defaults:
   run:
@@ -41,11 +61,11 @@ jobs:
 
   package:
     needs: [generate-matrix]
-    if: ${{ github.event.repository.visibility == 'public' }}
+    if: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    name: "${{ matrix.artifact_name }}"
+    name: "${{ matrix.xrpld_artifact_name }}"
     permissions:
       contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
@@ -56,26 +76,64 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Download pre-built binary
+      - name: Download pre-built xrpld binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ matrix.artifact_name }}
+          name: ${{ matrix.xrpld_artifact_name }}
           path: ${{ env.BUILD_DIR }}
 
-      - name: Make binary executable
-        run: chmod +x "${BUILD_DIR}/xrpld"
+      - name: Download pre-built validator-keys binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.validator_keys_artifact_name }}
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Make binaries executable
+        run: chmod +x "${BUILD_DIR}/xrpld" "${BUILD_DIR}/validator-keys"
+
+      - name: Determine release info
+        id: release_info
+        uses: ./.github/actions/release-info
 
       - name: Build package
         env:
-          PKG_RELEASE: ${{ inputs.pkg_release }}
-        run: ./package/build_pkg.sh
+          PACKAGE_TYPE: ${{ matrix.package_type }}
+          PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
+          CHANNEL: ${{ steps.release_info.outputs.channel }}
+        run: |
+          ./package/build_pkg.py \
+              --package-type "${PACKAGE_TYPE}" \
+              --build-dir "${BUILD_DIR}" \
+              --pkg-release "${PKG_RELEASE}" \
+              --channel "${CHANNEL}"
+
+      # Before the upload, so the artifact and the published package are the
+      # same bytes. DEBs are not signed, so the key is never set on that job.
+      - name: Sign RPM
+        if: ${{ inputs.publish && matrix.package_type == 'rpm' }}
+        env:
+          PKG_SIGNING_KEY: ${{ secrets.signing_key }}
+        run: ./package/sign_rpm.py --package-dir "${BUILD_DIR}"
 
       - name: Upload package artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ matrix.artifact_name }}-pkg
+          name: ${{ matrix.xrpld_artifact_name }}-pkg
           path: |
             ${{ env.BUILD_DIR }}/debbuild/*.deb
             ${{ env.BUILD_DIR }}/debbuild/*.ddeb
             ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/*.rpm
           if-no-files-found: error
+
+      - name: Publish package
+        if: ${{ inputs.publish }}
+        env:
+          CHANNEL: ${{ steps.release_info.outputs.channel }}
+          NEXUS_URL: ${{ inputs.nexus_url }}
+          NEXUS_USERNAME: ${{ secrets.remote_username }}
+          NEXUS_PASSWORD: ${{ secrets.remote_password }}
+        run: |
+          ./package/docker/publish_pkg.py \
+              --channel "${CHANNEL}" \
+              --package-dir "${BUILD_DIR}" \
+              --nexus-url "${NEXUS_URL}"

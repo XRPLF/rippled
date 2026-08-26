@@ -9,6 +9,7 @@
 #include <mpt_protocol.h>
 #include <secp256k1_mpt.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 
@@ -139,7 +140,7 @@ tenthBipsOfValue(T value, TenthBips<TBips> bips)
     return value * bips.value() / kTenthBipsPerUnity.value();
 }
 
-namespace Lending {
+namespace lending {
 /**
  * The maximum management fee rate allowed by a loan broker in 1/10 bips.
  *
@@ -236,7 +237,7 @@ static constexpr int kLoanPaymentsPerFeeIncrement = 5;
  * without an amendment
  */
 static constexpr int kLoanMaximumPaymentsPerTransaction = 100;
-}  // namespace Lending
+}  // namespace lending
 
 /**
  * The maximum length of a URI inside an NFT
@@ -317,6 +318,47 @@ constexpr std::uint8_t kVaultDefaultIouScale = 6;
 constexpr std::uint8_t kVaultMaximumIouScale = 18;
 
 /**
+ * Vault ledger-entry schema versions. Assigned to newly created
+ * Vaults once featureLendingProtocolV1_1 is enabled. Vaults created before
+ * activation are left without LEVersion (implicit legacy version 0,
+ * accrual-basis accounting).
+ */
+enum class VaultVersion : uint8_t {
+    Legacy = 0,
+    CashBasis,
+};
+
+/**
+ * Vault kind. Distinguishes closed-ended vaults from the default open-ended
+ * kind. Persisted as sfVaultKind (UINT8); absent means OpenEnded.
+ */
+enum class VaultKind : std::uint8_t {
+    OpenEnded = 0,
+    ClosedEnded = 1,
+};
+
+/**
+ * Lifecycle phase of a vault. Open-ended vaults are always NoPhase; the other
+ * three values are the phases of a closed-ended vault.
+ */
+enum class VaultPhase : std::uint8_t {
+    NoPhase = 0,
+    Subscription,
+    Investment,
+    Redemption,
+};
+
+/**
+ * Bounds on the length of a closed-ended vault's Investment phase
+ * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
+ * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod.
+ */
+constexpr std::uint32_t kMinInvestmentPeriod =
+    std::chrono::seconds{std::chrono::minutes{1}}.count();
+// This is 946708560 seconds which 30 x 365.2425 days (the average length of a Gregorian year).
+constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono::years{30}}.count();
+
+/**
  * Maximum recursion depth for vault shares being put as an asset inside
  * another vault; counted from 0
  */
@@ -353,6 +395,16 @@ using TxID = uint256;
  * deletion cleanup.
  */
 constexpr std::uint16_t kMaxDeletableAmmTrustLines = 512;
+
+/**
+ * The maximum number of owner-directory entries to walk when clearing
+ * credentials pinned to a pseudo-account, in a single transaction.
+ *
+ * The walk stops after this many entries whether or not each one turns out to
+ * be a credential, so a directory that also holds other objects yields fewer
+ * deletions per transaction.
+ */
+constexpr std::uint16_t kMaxDeletablePseudoAccountCredentials = 512;
 
 /**
  * The maximum length of a URI inside an Oracle
