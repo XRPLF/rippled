@@ -52,7 +52,7 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
                 mpts_.emplace_back(before);
                 break;
             default:
-                return;
+                break;
         }
     }
     if (after)

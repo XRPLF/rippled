@@ -6,7 +6,6 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
-#include <test/jtx/tags.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
@@ -705,14 +704,14 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
-        // Pre-featureLendingProtocolV1_1 the immutability of sfAsset, sfAccount
+        // Pre-fixCleanup3_4_0 the immutability of sfAsset, sfAccount
         // and sfShareMPTID is enforced by ValidVault directly, which reports
         // "violation of vault immutable data" on the first pass. ValidVault
         // returns early on the second pass (result already tec), so the check
-        // does not escalate to tef. Once V1_1 activates, the same fields are
+        // does not escalate to tef. Once fixCleanup3_4_0 activates, the same fields are
         // covered by NoModifiedUnmodifiableFields (see the three cases above);
         // the two paths are mutually exclusive so both need coverage.
-        auto const preLendingV11Amendments = all_ - featureLendingProtocolV1_1;
+        auto const preLendingV11Amendments = all_ - fixCleanup3_4_0;
         doInvariantCheck(
             makeEnv(preLendingV11Amendments),
             {"violation of vault immutable data"},
@@ -1554,12 +1553,9 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
-        // The pre-V1_1 vault fields must be enforced without waiting for
-        // featureLendingProtocolV1_1. Run the withdrawal-policy mutation with
-        // V1_1 removed but fixCleanup3_4_0 (part of testableAmendments) still enabled: the
-        // invariant must still fire.
+        // fixCleanup3_4_0 moves the vault immutability checks from VaultInvariant to InvariantCheck.
         doInvariantCheck(
-            makeEnv(all_ - featureLendingProtocolV1_1),
+            makeEnv(all_ - fixCleanup3_4_0),
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));

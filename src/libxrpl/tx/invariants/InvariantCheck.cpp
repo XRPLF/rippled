@@ -1217,23 +1217,29 @@ NoModifiedUnmodifiableFields::finalize(
                 }
                 break;
             case ltVAULT:
-                if (view.rules().enabled(fixCleanup3_4_0))
+                /*
+                 * Immutability of sfAccount, sfAsset and sfShareMPTID used to be enforced by
+                 * VaultInvariant, but is now checked here since InvariantCheck.cpp is where
+                 * immutability checks live. The additional fields below are introduced by
+                 * featureLendingProtocolV1_1 and only exist on V1_1 vaults.
+                 */
+                if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
-                    bad = bad || kFieldChanged(before, after, sfSequence) ||
+                    bad = bad || kFieldChanged(before, after, sfVaultKind) ||
+                        kFieldChanged(before, after, sfSubscriptionDate) ||
+                        kFieldChanged(before, after, sfRedemptionDate) ||
+                        kFieldChanged(before, after, sfSequence) ||
                         kFieldChanged(before, after, sfOwnerNode) ||
                         kFieldChanged(before, after, sfOwner) ||
                         kFieldChanged(before, after, sfWithdrawalPolicy) ||
-                        kFieldChanged(before, after, sfScale);
+                        kFieldChanged(before, after, sfScale) ||
+                        kFieldChanged(before, after, sfLEVersion);
                 }
-                if (view.rules().enabled(featureLendingProtocolV1_1))
+                if (view.rules().enabled(fixCleanup3_4_0))
                 {
                     bad = bad || kFieldChanged(before, after, sfAsset) ||
                         kFieldChanged(before, after, sfAccount) ||
-                        kFieldChanged(before, after, sfShareMPTID) ||
-                        kFieldChanged(before, after, sfVaultKind) ||
-                        kFieldChanged(before, after, sfSubscriptionDate) ||
-                        kFieldChanged(before, after, sfRedemptionDate) ||
-                        kFieldChanged(before, after, sfLEVersion);
+                        kFieldChanged(before, after, sfShareMPTID);
                 }
                 break;
             default:

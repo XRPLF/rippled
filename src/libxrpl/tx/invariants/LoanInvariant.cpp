@@ -14,7 +14,6 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -54,15 +53,6 @@ ValidLoan::finalize(
     // Ledger entry validation checks.
     for (auto const& [before, after] : loans_)
     {
-        // Only LoanSet may create a loan. This is an object-existence rule, not
-        // a transaction post-condition, so it applies even when apply failed.
-        if (!before && txType != ttLOAN_SET)
-        {
-            JLOG(j.fatal()) << "Invariant failed: Loan created by a transaction "
-                               "other than LoanSet";
-            return false;
-        }
-
         // A closed-ended vault must not accept a loan whose final scheduled payment falls on or
         // after the vault's RedemptionDate. This mirrors the LoanSet::preclaim gate and only fires
         // on loan creation; once the loan exists, its StartDate / PaymentInterval are immutable and
@@ -150,6 +140,15 @@ ValidLoan::finalize(
         }
         if (v1Enabled)
         {
+            // Only LoanSet may create a loan. This is an object-existence rule, not
+            // a transaction post-condition, so it applies even when apply failed.
+            if (!before && txType != ttLOAN_SET)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan created by a transaction "
+                                   "other than LoanSet";
+                return false;
+            }
+
             if (after->at(sfPaymentRemaining) == 0 &&
                 after->at(~sfNextPaymentDueDate).value_or(0) != 0)
             {

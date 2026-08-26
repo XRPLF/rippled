@@ -516,7 +516,7 @@ ValidVault::finalize(
 
     // Universal transaction checks
     // From LendingProtocolV1_1 onwards, vault immutability check is moved to InvariantCheck.cpp
-    if (!beforeVault_.empty() && !view.rules().enabled(featureLendingProtocolV1_1))
+    if (!beforeVault_.empty() && !view.rules().enabled(fixCleanup3_4_0))
     {
         auto const& beforeVault = beforeVault_[0];
         if (afterVault.asset != beforeVault.asset || afterVault.pseudoId != beforeVault.pseudoId ||

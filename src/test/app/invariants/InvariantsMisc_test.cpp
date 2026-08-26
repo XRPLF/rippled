@@ -884,6 +884,105 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
+        // ValidLoan::finalize enforces (under featureLendingProtocolV1_1) that
+        // interest due - TotalValueOutstanding minus PrincipalOutstanding minus
+        // ManagementFeeOutstanding - is never negative. Any rounding path in
+        // LoanPay / LoanManage that rounds Principal or ManagementFee up while
+        // rounding TotalValue down (or vice-versa) by a single ULP flips this
+        // negative and would halt the ledger. Exercise each of the three
+        // components at a one-ULP overshoot to cover the boundary explicitly,
+        // plus the exact-zero case to confirm the boundary itself is
+        // accepted.
+        {
+            struct Case
+            {
+                Number totalValue;
+                Number principal;
+                Number managementFee;
+                bool expectFire;
+            };
+            // Baseline: Principal=100, TotalValue=100, MgmtFee=0
+            // (interest due = 0, exactly at the boundary). Each firing case
+            // perturbs one component by -1 or +1 so interest_due = -1.
+            auto const cases = std::to_array<Case>({
+                {.totalValue = Number(100),
+                 .principal = Number(100),
+                 .managementFee = Number(0),
+                 .expectFire = false},
+                {.totalValue = Number(99),
+                 .principal = Number(100),
+                 .managementFee = Number(0),
+                 .expectFire = true},
+                {.totalValue = Number(100),
+                 .principal = Number(101),
+                 .managementFee = Number(0),
+                 .expectFire = true},
+                {.totalValue = Number(100),
+                 .principal = Number(100),
+                 .managementFee = Number(1),
+                 .expectFire = true},
+            });
+
+            for (auto const& c : cases)
+            {
+                Env env{*this, all_};
+                Account const a1{"A1"};
+                env.fund(XRP(1000), a1);
+                env.close();
+
+                OpenView ov{*env.current()};
+
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                // Seed a loan whose interest due sits at the boundary
+                // (100 - 100 - 0 = 0). The apply-view update below moves it.
+                {
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(100);
+                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    ov.rawInsert(sleLoan);
+                }
+
+                STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    continue;
+                sleLoan->at(sfTotalValueOutstanding) = c.totalValue;
+                sleLoan->at(sfPrincipalOutstanding) = c.principal;
+                sleLoan->at(sfManagementFeeOutstanding) = c.managementFee;
+                ac.view().update(sleLoan);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    continue;
+                TER const result = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                auto const messages = sink.messages().str();
+                if (c.expectFire)
+                {
+                    BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                    BEAST_EXPECT(messages.contains("Loan interest due is negative"));
+                }
+                else
+                {
+                    // The boundary case (interest due == 0) must not trip the
+                    // interest-due check. Other invariants may still fire
+                    // (e.g. the broker-existence check on this raw-inserted
+                    // loan), so only assert the specific message is absent.
+                    BEAST_EXPECT(!messages.contains("Loan interest due is negative"));
+                }
+            }
+        }
+
         // VaultKind, SubscriptionDate and RedemptionDate are immutable once set at creation.
         // Enforced by NoModifiedUnmodifiableFields on ltVAULT via kFieldChanged.
         Keylet closedEndedVaultKeylet = keylet::amendments();
