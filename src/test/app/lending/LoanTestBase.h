@@ -67,6 +67,16 @@
 
 namespace xrpl::test {
 
+/**
+ * Shared base for the Loan*_test family under src/test/app/lending/.
+ *
+ * Run all suites in this family with
+ *   xrpld -u Loan,LendingHelpers
+ * The "Loan" prefix is matched against every suite name via
+ * beast::unit_test::Selector::ModeT::Automatch; LendingHelpers is listed
+ * explicitly because it does not share the "Loan" prefix (and lives in a
+ * different module: app vs tx).
+ */
 class LoanTestBase : public beast::unit_test::Suite
 {
 protected:
@@ -95,6 +105,23 @@ protected:
         // tests that need finer loanScale to exercise rounding edge cases.
         std::optional<std::uint8_t> vaultScale =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        // Vault kind axis. When ClosedEnded, createVaultAndBroker sets sfSubscriptionDate /
+        // sfRedemptionDate from env.now() using the offsets below and advances the ledger clock
+        // past SubscriptionDate so the vault is in the Investment phase by the time the broker is
+        // set up. Requires featureLendingProtocolV1_1.
+        VaultKind vaultKind = VaultKind::OpenEnded;
+        // Seconds past env.now() at which SubscriptionDate lands. Must be strictly positive
+        // (VaultCreate::preclaim rejects SubscriptionDate <= parentCloseTime).
+        std::uint32_t subscriptionOffset = 60;
+        // Seconds between SubscriptionDate and RedemptionDate. Must be >= kMinInvestmentPeriod, <
+        // kMaxInvestmentPeriod, and generous enough to fit any loan schedule the test runs
+        // (finalPayment must be strictly before RedemptionDate). Default sized to comfortably
+        // exceed any schedule realistic tests are likely to configure.
+        std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
+        // When true, createVaultAndBroker skips its automatic clock advance past SubscriptionDate.
+        // Useful for tests that need to observe the vault while it is still in the Subscription
+        // phase. Ignored for open-ended vaults.
+        bool skipPhaseAdvance = false;
 
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
@@ -122,15 +149,23 @@ protected:
         uint256 brokerID;
         uint256 vaultID;
         BrokerParameters params;
+        // Absolute dates resolved by createVaultAndBroker when params.vaultKind
+        // is ClosedEnded; std::nullopt for open-ended vaults.
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
         BrokerInfo(
             jtx::PrettyAsset const& asset,
             Keylet const& brokerKeylet,
             Keylet const& vaultKeylet,
-            BrokerParameters p)
+            BrokerParameters p,
+            std::optional<std::uint32_t> subscriptionDate = std::nullopt,
+            std::optional<std::uint32_t> redemptionDate = std::nullopt)
             : asset(asset)
             , brokerID(brokerKeylet.key)
             , vaultID(vaultKeylet.key)
             , params(std::move(p))
+            , subscriptionDate(subscriptionDate)
+            , redemptionDate(redemptionDate)
         {
         }
 
@@ -461,7 +496,41 @@ protected:
 
         auto const coverRateMinValue = params.coverRateMin;
 
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
+        // brokers attached to open-ended vaults. Many callers of this
+        // helper leave vaultKind at the OpenEnded default and don't care
+        // about the vault kind per se — they just need a broker on a
+        // vault. When LP V1.1 is enabled, transparently promote to
+        // ClosedEnded so those tests keep working without threading
+        // vaultKind through every call site. Callers that explicitly
+        // asked for ClosedEnded are left untouched. Tests that want to
+        // exercise the open-ended rejection under LP V1.1 build their own
+        // vault directly instead of going through this helper, since it
+        // always promotes OpenEnded once the amendment is enabled.
+        auto effectiveVaultKind = params.vaultKind;
+        if (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
+            effectiveVaultKind == VaultKind::OpenEnded)
+        {
+            effectiveVaultKind = VaultKind::ClosedEnded;
+        }
+
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
+        if (effectiveVaultKind == VaultKind::ClosedEnded)
+        {
+            auto const nowSec = env.now().time_since_epoch().count();
+            subscriptionDate = nowSec + params.subscriptionOffset;
+            redemptionDate = *subscriptionDate + params.redemptionOffset;
+        }
+
+        auto [tx, vaultKeylet] = vault.create(
+            {.owner = lender,
+             .asset = asset,
+             .vaultKind = effectiveVaultKind == VaultKind::OpenEnded
+                 ? std::optional<std::uint8_t>{}
+                 : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},
+             .subscriptionDate = subscriptionDate,
+             .redemptionDate = redemptionDate});
         if (params.vaultScale)
             tx[sfScale] = *params.vaultScale;
         env(tx);
@@ -473,6 +542,15 @@ protected:
         if (auto const vault = env.le(keylet::vault(vaultKeylet.key)); BEAST_EXPECT(vault))
         {
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
+        }
+
+        // For closed-ended vaults, advance past SubscriptionDate so subsequent LoanSet operations
+        // run in the Investment phase (unless the caller explicitly asked to stay in Subscription).
+        if (subscriptionDate && !params.skipPhaseAdvance)
+        {
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
+            env.close(tp{d{*subscriptionDate + 1}});
         }
 
         auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
@@ -490,7 +568,7 @@ protected:
 
         env.close();
 
-        return {asset, keylet, vaultKeylet, params};
+        return {asset, keylet, vaultKeylet, params, subscriptionDate, redemptionDate};
     }
 
     /**

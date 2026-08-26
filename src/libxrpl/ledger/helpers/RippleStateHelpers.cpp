@@ -584,9 +584,15 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     {
         if (trustLine)
         {
-            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
-                ? tesSUCCESS
-                : TER{tecNO_AUTH};
+            if (trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                return tesSUCCESS;
+
+            // A pseudo-account cannot submit transactions and only stores assets for the object
+            // that owns it, so it is implicitly authorized.
+            if (view.rules().enabled(fixCleanup3_4_0) && isPseudoAccount(view, account))
+                return tesSUCCESS;
+
+            return TER{tecNO_AUTH};
         }
         return TER{tecNO_LINE};
     }
