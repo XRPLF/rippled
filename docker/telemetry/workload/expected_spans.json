@@ -490,16 +490,12 @@
     {
       "parent": "rpc.ws_message",
       "child": "rpc.command.*",
-      "description": "WebSocket message contains the per-command span — the real relationship on the harness WS path (rpc::doCommand at RPCHandler.cpp:271 creates an ambient child of the rpc.ws_message scope inside the same coroutine)",
-      "skip": true,
-      "skip_reason": "Code-verified real, but not assertable by the current validator. _validate_parent_child() collapses the wildcard to the single literal name via child_name.replace(\"*\", \"server_info\") and samples only the 3 most recent parent traces. Each rpc.ws_message trace carries exactly one command, and server_info is 25/100 of rpc_load_generator.py's DEFAULT_WEIGHTS, so roughly 42% of healthy runs would sample three non-server_info traces and fail. Asserting this needs the validator to accept a wildcard child as a prefix match (or to raise the trace sample size); until then the relationship is documented, not enforced."
+      "description": "WebSocket message contains the per-command span — the real relationship on the harness WS path (rpc::doCommand at RPCHandler.cpp:271 creates an ambient child of the rpc.ws_message scope inside the same coroutine). Un-skipped 2026-08-26. The skip existed because _validate_parent_child() used to collapse the wildcard to one literal name via child_name.replace(\"*\", \"server_info\"), which made the check depend on which command the sampled traces happened to carry -- server_info is 25/100 of rpc_load_generator.py's DEFAULT_WEIGHTS, so a healthy run could sample three non-server_info traces and fail. That code no longer exists: d059f21bf3 replaced it with _span_name_matches(), which globs via fnmatch.fnmatchcase, and the check's own comment now reads \"globs for wildcard contracts\". Any rpc.command.<anything> under the parent therefore satisfies the contract and the command mix no longer matters. The reason had simply gone stale for two weeks."
     },
     {
       "parent": "rpc.process",
       "child": "rpc.command.*",
-      "description": "Processing span contains per-command span (HTTP/JSON-RPC path only)",
-      "skip": true,
-      "skip_reason": "Real relationship, skipped for a VALIDATOR limitation, not for absence: _validate_parent_child() resolves the wildcard child to one literal probe name, so it cannot assert a family whose members vary per request. Corrected 2026-08-26 -- the earlier reason claimed there are no rpc.process traces to check because that span exists only on the HTTP/JSON-RPC path while the load generator is WebSocket-only. The premise is right and the conclusion is wrong: rpc.process DOES appear, 5 traces on a normal run, because run-full-validation.sh polls each node's HTTP port with curl for readiness and validated-ledger progress (:449, :502). Those curl calls are what produce rpc.http_request and its rpc.process child, entirely independently of the load generator. Anyone acting on the old reason would have gone looking for a way to make the harness speak HTTP, which it already does. That same reason also said the WS-path equivalent is 'asserted above instead'; it is not, rpc.ws_message -> rpc.command.* is skipped for this identical wildcard limitation. To assert either, teach _validate_parent_child to accept a wildcard child by matching any span whose name has the declared prefix."
+      "description": "Processing span contains the per-command span, on the HTTP/JSON-RPC path. Un-skipped 2026-08-26 for the same reason as the WebSocket pair above: the validator globs a wildcard child via _span_name_matches() and has done since d059f21bf3, so the 'resolves the wildcard to one literal probe' claim this entry carried was describing code deleted two weeks earlier. That claim was not inherited here by accident -- it was copied from the stale WS entry while correcting a DIFFERENT error in this same reason, without checking it. Both ends emit: rpc.process reports 5 traces on a normal run, not from the WebSocket-only load generator but because run-full-validation.sh polls each node's HTTP port with curl for readiness and validated-ledger progress (:449, :502), and every such request runs a command."
     },
     {
       "parent": "ledger.build",
@@ -539,6 +535,22 @@
       "description": "Ledger acquire contains the transaction-tree fetch phase. Added 2026-08-26 for the same reason as the header phase above. Worth asserting separately from astree despite the identical mechanism: these two are what distinguish an account-state-bound sync from a transaction-bound one, which is the question the phase spans exist to answer, so losing either one's nesting quietly removes that distinction."
     },
     {
+      "parent": "rpc.command.*",
+      "child": "pathfind.request",
+      "description": "The RPC command span contains the path-finding request span.",
+      "skip": true,
+      "skip_reason": "Real relationship, and the one skip here caused by a WILDCARD PARENT rather than by a missing span. _validate_parent_child builds its Tempo query as name=\"<parent>\" with the contract string inserted literally (validate_telemetry.py:801), so a parent of rpc.command.* searches for a span literally named that and finds nothing. Note the asymmetry: the CHILD side does handle globs, through _span_name_matches (:826-828), which is why rpc.ws_message -> rpc.command.* is asserted. Only the parent side is literal. Asserting this needs the parent query to accept a glob -- a TraceQL name=~ regex, or resolving the glob to the concrete names Tempo reports first. Independently of that, both ends are absent today anyway: the harness issues no path-finding RPC, see the pathfind.compute entry above.",
+      "added": "2026-08-26 to close the declared-but-unlisted gap"
+    },
+    {
+      "parent": "pathfind.compute",
+      "child": "pathfind.discover",
+      "description": "The path computation contains the discovery pass.",
+      "skip": true,
+      "skip_reason": "Real relationship with BOTH ends absent, for the reason given in full on the pathfind.compute entry above: pathfinding is disabled on every harness node because Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] section is present, run-full-validation.sh writes one for all five nodes (:308) with no [path_search_max] override, so doRipplePathFind returns rpcNOT_SUPPORTED before any PathRequest is constructed -- and since 2026-08-25 the harness sends no path-finding RPC at all either. Asserting this needs both blockers lifted, which is a workload and node-config change rather than a harness one. Listed here so that the pathfinding family is fully accounted for rather than partly silent.",
+      "added": "2026-08-26 to close the declared-but-unlisted gap"
+    },
+    {
       "parent": "rpc.http_request",
       "child": "rpc.process",
       "description": "The HTTP request span contains the request-processing span. ServerHandler::processRequest() opens rpc.process as a scoped child and its own comment names rpc.http_request as the parent; processRequest has exactly one caller. Both ends emit on every run: the harness polls each node's HTTP port with curl, so this is the one rpc hierarchy that is assertable without a wildcard."
@@ -554,9 +566,18 @@
       "description": "Queue admission contains the direct-apply path taken when the transaction is applied straight to the open ledger instead of being queued."
     },
     {
+      "parent": "txq.enqueue",
+      "child": "txq.batch_clear",
+      "description": "Queue admission contains the batch-clear pass that drops an account's superseded queued transactions.",
+      "skip": true,
+      "skip_reason": "Real relationship, declared on the txq.batch_clear span entry but never listed here until 2026-08-26, so it was neither asserted nor accounted for -- the gap this entry closes. Skipped rather than asserted for two independent reasons. First the child is conditional and narrowly so: it is created in TxQ::tryClearAccountQueueUpThruTx (TxQ.cpp:550), which needs ONE account to be holding several queued transactions AND an arriving transaction that supersedes the whole batch. The txq-burst workload phase produces queueing, but nothing in it arranges that particular shape, and it has never been observed on a run. Second, even if it did occur it would meet the same sampling limit that forced the txq.accept -> txq.accept_tx skip: _validate_parent_child samples the 3 newest parent traces (validate_telemetry.py:803), txq.enqueue fires on every queued transaction, and the newest ones come from the quiet phases that follow the burst. Fixing the sampling -- preferring parent traces that contain the child over newest-N -- would address both entries at once and is the better investment than shaping the workload for this one path."
+    },
+    {
       "parent": "txq.accept",
       "child": "txq.accept_tx",
-      "description": "The queue's accept pass contains the per-transaction accept span."
+      "description": "The queue's accept pass contains the per-transaction accept span.",
+      "skip": true,
+      "skip_reason": "Real relationship, but not assertable by this check as written -- a conditional child plus newest-N sampling. Asserted in c531ac569b and it failed on run 32990348089 with 'txq.accept_tx not found in txq.accept traces'; skipped rather than left red. Both ends DO emit, 5 traces each on that run, so this is not a missing span. The parent is created once per accept pass, every ledger close (TxQ.cpp:1499). The child is created inside the loop over queued transactions and behind `if (feeLevelPaid >= requiredFeeLevel)` (TxQ.cpp:1530), so it exists only for a close where the queue actually held a fee-clearing transaction. _validate_parent_child searches the parent with limit=3 (validate_telemetry.py:803), and queue pressure comes from workload phase 5 of 7, txq-burst, after which mixed-peak (60s) and cooldown (30s) run -- so the three newest txq.accept traces are from quiet closes with an empty queue and no child. Same shape as the rpc.command.* skips: the check samples the newest traces of the parent, which is wrong whenever the child is conditional on load that has since stopped. Two ways to un-skip, in preference order: make the search prefer parent traces that contain the child (a TraceQL child filter rather than newest-N), or move txq-burst to the final workload phase so the newest closes are the loaded ones. Raising the limit alone only shifts the odds and would make this flaky rather than fixed."
     },
     {
       "parent": "consensus.round",
