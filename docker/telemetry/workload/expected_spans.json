@@ -423,6 +423,22 @@
       "skip": true,
       "skip_reason": "Real relationship (pathfind.compute is created inside PathRequest::doUpdate at PathRequest.cpp:749-750, under the pathfind.request scope), but the child never exists on the harness because pathfinding is disabled on every node: Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for all five nodes (:308) with no [path_search*] override, and doRipplePathFind returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 before constructing a PathRequest. The parent used to appear anyway, because its ScopedSpanGuard is created at RipplePathFind.cpp:35, above that guard; since 2026-08-25 not even the parent appears, the ripple_path_find load having been removed from rpc_load_generator.py, so both ends of this relationship are now absent. Liquidity has nothing to do with it — the earlier 'no liquidity, returns before computing' reason was wrong, because no path search is attempted at all. Asserting this relationship needs the load restored AND a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
     },
+    {
+      "parent": "rpc.command.*",
+      "child": "pathfind.request",
+      "description": "The RPC command span contains the path-finding request span.",
+      "skip": true,
+      "skip_reason": "Real relationship, and the one skip here caused by a WILDCARD PARENT rather than by a missing span. _validate_parent_child builds its Tempo query as name=\"<parent>\" with the contract string inserted literally (validate_telemetry.py:801), so a parent of rpc.command.* searches for a span literally named that and finds nothing. Note the asymmetry: the CHILD side does handle globs, through _span_name_matches (:826-828), which is why rpc.ws_message -> rpc.command.* is asserted. Only the parent side is literal. Asserting this needs the parent query to accept a glob -- a TraceQL name=~ regex, or resolving the glob to the concrete names Tempo reports first. Independently of that, both ends are absent today anyway: the harness issues no path-finding RPC, see the pathfind.compute entry above.",
+      "added": "2026-08-26 to close the declared-but-unlisted gap"
+    },
+    {
+      "parent": "pathfind.compute",
+      "child": "pathfind.discover",
+      "description": "The path computation contains the discovery pass.",
+      "skip": true,
+      "skip_reason": "Real relationship with BOTH ends absent, for the reason given in full on the pathfind.compute entry above: pathfinding is disabled on every harness node because Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] section is present, run-full-validation.sh writes one for all five nodes (:308) with no [path_search_max] override, so doRipplePathFind returns rpcNOT_SUPPORTED before any PathRequest is constructed -- and since 2026-08-25 the harness sends no path-finding RPC at all either. Asserting this needs both blockers lifted, which is a workload and node-config change rather than a harness one. Listed here so that the pathfinding family is fully accounted for rather than partly silent.",
+      "added": "2026-08-26 to close the declared-but-unlisted gap"
+    },
 
     {
       "parent": "rpc.http_request",
@@ -438,6 +454,13 @@
       "parent": "txq.enqueue",
       "child": "txq.apply_direct",
       "description": "Queue admission contains the direct-apply path taken when the transaction is applied straight to the open ledger instead of being queued."
+    },
+    {
+      "parent": "txq.enqueue",
+      "child": "txq.batch_clear",
+      "description": "Queue admission contains the batch-clear pass that drops an account's superseded queued transactions.",
+      "skip": true,
+      "skip_reason": "Real relationship, declared on the txq.batch_clear span entry but never listed here until 2026-08-26, so it was neither asserted nor accounted for -- the gap this entry closes. Skipped rather than asserted for two independent reasons. First the child is conditional and narrowly so: it is created in TxQ::tryClearAccountQueueUpThruTx (TxQ.cpp:550), which needs ONE account to be holding several queued transactions AND an arriving transaction that supersedes the whole batch. The txq-burst workload phase produces queueing, but nothing in it arranges that particular shape, and it has never been observed on a run. Second, even if it did occur it would meet the same sampling limit that forced the txq.accept -> txq.accept_tx skip: _validate_parent_child samples the 3 newest parent traces (validate_telemetry.py:803), txq.enqueue fires on every queued transaction, and the newest ones come from the quiet phases that follow the burst. Fixing the sampling -- preferring parent traces that contain the child over newest-N -- would address both entries at once and is the better investment than shaping the workload for this one path."
     },
     {
       "parent": "txq.accept",
