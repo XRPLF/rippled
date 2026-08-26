@@ -195,11 +195,32 @@ ValidLoan::finalize(
             {
                 auto const interestDue = after->at(sfTotalValueOutstanding) -
                     after->at(sfPrincipalOutstanding) - after->at(sfManagementFeeOutstanding);
-                Number const tolerance{1, after->at(sfLoanScale)};
-                if (interestDue < -tolerance)
+
+                // Only IOU amounts can accumulate STAmount quantization noise. For integral-domain
+                // assets (XRP/MPT) enforce the boundary strictly.
+                bool integral = false;
+                if (auto const brokerSle = view.read(keylet::loanBroker(after->at(sfLoanBrokerID))))
                 {
-                    JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
-                    return false;
+                    if (auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID))))
+                        integral = Asset{vaultSle->at(sfAsset)}.integral();
+                }
+
+                if (integral)
+                {
+                    if (interestDue < beast::kZero)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+                        return false;
+                    }
+                }
+                else
+                {
+                    Number const tolerance{1, after->at(sfLoanScale)};
+                    if (interestDue < -tolerance)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+                        return false;
+                    }
                 }
             }
             // A loan must reference a live loan broker, and that broker must
