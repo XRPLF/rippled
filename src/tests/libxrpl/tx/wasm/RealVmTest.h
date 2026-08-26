@@ -10,7 +10,6 @@
 #include <tx/wasm/RealHostFixture.h>
 #include <tx/wasm/WasmRun.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <functional>

@@ -67,7 +67,7 @@ design.
 new split verifies agreement **transitively**: the SDK repo tests the SDK against the ABI spec, and
 this repo tests the host against the same spec (`host_calls`, the `generated_abi.rs` spec table,
 `host_errors.rs`). That is sound as long as both conform to the spec; it would not catch a drift
-where the SDK and host diverge on an ambiguous point. Closing that gap is **not** a xrpld unit
+where the SDK and host diverge on an ambiguous point. Closing that gap is **not** an xrpld unit
 test — it is a **cross-repo integration test** (compiled `xrpl-wasm-stdlib` guests run against a
 real xrpld host) belonging in CI where the Rust→wasm toolchain exists.
 
