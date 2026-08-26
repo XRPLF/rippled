@@ -761,14 +761,14 @@ parseTransactionProposal(
         return parseObjectID(params, fieldName, "hex string");
 
     auto const targetID =
-        LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!targetID)
         return std::unexpected(targetID.error());
 
     // The proposed transaction's TicketSequence (a proposed transaction is
     // ticket-only), mirroring how parseTicket looks up a Ticket object.
     auto const ticketSequence =
-        LedgerEntryHelpers::requiredUInt32(params, jss::ticket_seq, "malformedRequest");
+        ledger_entry_helpers::requiredUInt32(params, jss::ticket_seq, "malformedRequest");
     if (!ticketSequence)
         return std::unexpected(ticketSequence.error());
 

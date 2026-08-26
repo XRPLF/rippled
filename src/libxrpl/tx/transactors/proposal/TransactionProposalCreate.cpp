@@ -16,6 +16,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/SignerEntries.h>
@@ -232,7 +233,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     // The proposal reserves the ticket for as long as it exists (On-Chain
     // Cosigner spec §4.2.1, §5.3.2): a ticket that doesn't exist yet can't be
     // reserved.
-    if (!ctx.view.exists(keylet::ticket(target, ticketSequence)))
+    if (!ctx.view.exists(keylet::ticket(target, SeqProxy::rawTicket(ticketSequence))))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: target ticket "
                                "does not exist.";
