@@ -18,7 +18,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <algorithm>
 #include <cstdint>
 
 namespace xrpl {
@@ -64,17 +63,45 @@ ValidLoan::finalize(
             return false;
         }
 
-        // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
-        if (after->at(sfPaymentRemaining) == 0)
+        // A closed-ended vault must not accept a loan whose final scheduled payment falls on or
+        // after the vault's RedemptionDate. This mirrors the LoanSet::preclaim gate and only fires
+        // on loan creation; once the loan exists, its StartDate / PaymentInterval are immutable and
+        // PaymentRemaining only decreases, so the bound is preserved.
+        if (!before && isTesSuccess(result))
         {
-            if ((after->at(sfTotalValueOutstanding) != beast::kZero ||
-                 after->at(sfPrincipalOutstanding) != beast::kZero ||
-                 after->at(sfManagementFeeOutstanding) != beast::kZero))
+            auto const broker = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
+            if (broker)
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
-                                   "remaining has not been paid off";
-                return false;
+                auto const vault = view.read(keylet::vault(broker->at(sfVaultID)));
+                // We don't check for LendingProtocolV1_1 amendment because a ClosedEnded Vault will
+                // not exist without the amendment enabled
+                if (vault && getVaultKind(vault) == VaultKind::ClosedEnded)
+                {
+                    std::uint32_t const startDate = after->at(sfStartDate);
+                    std::uint32_t const interval = after->at(sfPaymentInterval);
+                    std::uint32_t const remaining = after->at(sfPaymentRemaining);
+                    std::uint32_t const redemption = vault->at(sfRedemptionDate);
+                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) >=
+                        redemption)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: closed-ended loan final payment "
+                                           "must precede RedemptionDate";
+                        return false;
+                    }
+                }
             }
+        }
+
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
+        // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
+        if (after->at(sfPaymentRemaining) == 0 &&
+            (after->at(sfTotalValueOutstanding) != beast::kZero ||
+             after->at(sfPrincipalOutstanding) != beast::kZero ||
+             after->at(sfManagementFeeOutstanding) != beast::kZero))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
+                               "remaining has not been paid off";
+            return false;
         }
         // If `Loan.PaymentRemaining != 0` then the loan MUST NOT be fully paid
         // off
@@ -84,6 +111,14 @@ ValidLoan::finalize(
             after->at(sfManagementFeeOutstanding) == beast::kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: Fully paid off Loan still has payments remaining";
+            return false;
+        }
+
+        // The flag immutability check has been moved to InvariantChecks.cpp
+        if (!v1Enabled && before &&
+            (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment)))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
             return false;
         }
         // Must not be negative - STNumber
@@ -113,16 +148,7 @@ ValidLoan::finalize(
                 return false;
             }
         }
-
-        if (!v1Enabled)
-        {
-            if (before && before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment))
-            {
-                JLOG(j.fatal()) << "Invariant failed: Loan Overpayment flag changed";
-                return false;
-            }
-        }
-        else
+        if (v1Enabled)
         {
             if (after->at(sfPaymentRemaining) == 0 &&
                 after->at(~sfNextPaymentDueDate).value_or(0) != 0)
@@ -187,141 +213,6 @@ ValidLoan::finalize(
                            "other than LoanDelete";
         return false;
     }
-
-    // Transaction success post-conditions.
-    if (!isTesSuccess(result))
-        return true;
-
-    if (!v1Enabled)
-        return true;
-
-    if (txType == ttLOAN_SET)
-    {
-        if (loans_.size() != 1 || !deletedLoans_.empty())
-        {
-            JLOG(j.fatal()) <<  //
-                "Invariant failed: lending transaction must touch exactly one loan";
-            return false;
-        }
-
-        auto const& [before, after] = loans_.front();
-        if (before)
-        {
-            JLOG(j.fatal()) << "Invariant failed: lending transaction must not modify an "
-                               "existing loan";
-            return false;
-        }
-
-        if (after->at(sfPrincipalOutstanding) != tx[sfPrincipalRequested])
-        {
-            JLOG(j.fatal()) << "Invariant failed: loan set principal outstanding must equal "
-                               "principal requested";
-            return false;
-        }
-
-        // A closed-ended vault must not accept a loan whose final scheduled
-        // payment falls on or after its RedemptionDate.
-        auto const broker = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
-        auto const vault = broker ? view.read(keylet::vault(broker->at(sfVaultID))) : nullptr;
-        if (vault && getVaultKind(vault) == VaultKind::ClosedEnded)
-        {
-            std::uint32_t const startDate = after->at(sfStartDate);
-            std::uint32_t const interval = after->at(sfPaymentInterval);
-            std::uint32_t const remaining = after->at(sfPaymentRemaining);
-            std::uint32_t const redemption = vault->at(sfRedemptionDate);
-            if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) >= redemption)
-            {
-                JLOG(j.fatal()) << "Invariant failed: closed-ended loan final payment "
-                                   "must precede RedemptionDate";
-                return false;
-            }
-        }
-    }
-    else if (txType == ttLOAN_MANAGE || txType == ttLOAN_PAY)
-    {
-        if (loans_.size() != 1 || !deletedLoans_.empty())
-        {
-            JLOG(j.fatal()) <<  //
-                "Invariant failed: lending transaction must touch exactly one loan";
-            return false;
-        }
-
-        auto const& [before, after] = loans_.front();
-        if (txType == ttLOAN_MANAGE)
-        {
-            bool const wasImpaired = before->isFlag(lsfLoanImpaired);
-            bool const isImpaired = after->isFlag(lsfLoanImpaired);
-            bool const wasDefaulted = before->isFlag(lsfLoanDefault);
-            bool const isDefaulted = after->isFlag(lsfLoanDefault);
-
-            if (tx.isFlag(tfLoanImpair) && (wasImpaired || !isImpaired))
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanManage(tfLoanImpair) "
-                                   "must set lsfLoanImpaired on a non-impaired loan";
-                return false;
-            }
-            if (tx.isFlag(tfLoanUnimpair) && (!wasImpaired || isImpaired))
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanManage(tfLoanUnimpair) "
-                                   "must clear lsfLoanImpaired on an impaired loan";
-                return false;
-            }
-            if (tx.isFlag(tfLoanDefault) && (wasDefaulted || !isDefaulted))
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanManage(tfLoanDefault) "
-                                   "must newly set lsfLoanDefault";
-                return false;
-            }
-        }
-        else if (after->at(sfPaymentRemaining) != 0)
-        {
-            if (!(after->at(sfPrincipalOutstanding) < before->at(sfPrincipalOutstanding)))
-            {
-                JLOG(j.fatal()) << "Invariant failed: loan pay must strictly decrease "
-                                   "PrincipalOutstanding on a non-full-repayment";
-                return false;
-            }
-            if (!(after->at(sfPaymentRemaining) < before->at(sfPaymentRemaining)))
-            {
-                JLOG(j.fatal()) << "Invariant failed: loan pay must decrease "
-                                   "PaymentRemaining on a non-full-repayment";
-                return false;
-            }
-
-            std::uint32_t const beforeDue = before->at(~sfNextPaymentDueDate).value_or(0);
-            std::uint32_t const afterDue = after->at(~sfNextPaymentDueDate).value_or(0);
-            std::uint32_t const interval = after->at(sfPaymentInterval);
-            if (afterDue <= beforeDue || interval == 0 || (afterDue - beforeDue) % interval != 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: loan pay must advance "
-                                   "NextPaymentDueDate by a positive multiple of "
-                                   "PaymentInterval on a non-full-repayment";
-                return false;
-            }
-        }
-    }
-    else if (txType == ttLOAN_DELETE)
-    {
-        // A loan may only be deleted once it is fully paid off.
-        return std::ranges::all_of(deletedLoans_, [&](auto const& loan) {
-            if (loan->at(sfPaymentRemaining) != 0 ||
-                loan->at(sfTotalValueOutstanding) != beast::kZero ||
-                loan->at(sfPrincipalOutstanding) != beast::kZero ||
-                loan->at(sfManagementFeeOutstanding) != beast::kZero)
-            {
-                JLOG(j.fatal()) << "Invariant failed: Loan deleted while not fully "
-                                   "paid off";
-                return false;
-            }
-            return true;
-        });
-    }
-    else if (txType == ttLOAN_BROKER_DELETE && !loans_.empty())
-    {
-        JLOG(j.fatal()) << "Invariant failed: LoanBrokerDelete must not touch any loan";
-        return false;
-    }
-
     return true;
 }
 

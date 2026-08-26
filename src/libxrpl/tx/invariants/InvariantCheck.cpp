@@ -1191,19 +1191,19 @@ NoModifiedUnmodifiableFields::finalize(
                 // only from unset to set through tfLoanDefault. Under V1_1, reject attempts to
                 // clear it, matching LoanInvariant's previous gate.
                 {
-                    std::uint32_t const beforeFlags = before->getFlags();
-                    std::uint32_t const afterFlags = after->getFlags();
-                    bool const overpaymentChanged =
-                        (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
-                    if (overpaymentChanged)
-                    {
-                        JLOG(j.fatal()) << "Invariant failed: lsfLoanOverpayment flag "
-                                           "toggled on immutable ledger entry in "
-                                        << tx.getTransactionID();
-                    }
-                    bad = bad || overpaymentChanged;
                     if (view.rules().enabled(featureLendingProtocolV1_1))
                     {
+                        std::uint32_t const beforeFlags = before->getFlags();
+                        std::uint32_t const afterFlags = after->getFlags();
+                        bool const overpaymentChanged =
+                            (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
+                        if (overpaymentChanged)
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: lsfLoanOverpayment flag "
+                                               "toggled on immutable ledger entry in "
+                                            << tx.getTransactionID();
+                        }
+                        bad = bad || overpaymentChanged;
                         bool const defaultCleared = (beforeFlags & lsfLoanDefault) != 0 &&
                             (afterFlags & lsfLoanDefault) == 0;
                         if (defaultCleared)
@@ -1288,30 +1288,28 @@ ValidAmounts::finalize(
 void
 ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    if (isDelete)
-    {
-        // Before should never be null when isDelete = true
-        if (!before)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::ObjectHasPseudoAccount::visitEntry : deleted ledger entry missing before "
-                "state");
-            return;
-            // LCOV_EXCL_STOP
-        }
-
-        switch (before->getType())
-        {
-            case ltAMM:
-            case ltVAULT:
-            case ltLOAN_BROKER:
-                deletedObjSles_.push_back(before);
-                break;
-            default:
-                return;
-        }
+    if (!isDelete)
         return;
+
+    // Before should never be null when isDelete = true
+    if (!before)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ObjectHasPseudoAccount::visitEntry : deleted ledger entry missing before state");
+        return;
+        // LCOV_EXCL_STOP
+    }
+
+    switch (before->getType())
+    {
+        case ltAMM:
+        case ltVAULT:
+        case ltLOAN_BROKER:
+            deletedObjSles_.push_back(before);
+            break;
+        default:
+            return;
     }
 }
 
@@ -1323,27 +1321,29 @@ ObjectHasPseudoAccount::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
+    if (!view.rules().enabled(fixCleanup3_3_0))
+        return true;
+
+    if (deletedObjSles_.empty())
+        return true;
+
     bool failed = false;
-
-    if (view.rules().enabled(fixCleanup3_3_0))
+    for (auto const& sle : deletedObjSles_)
     {
-        for (auto const& sle : deletedObjSles_)
+        if (!sle->isFieldPresent(sfAccount))
         {
-            if (!sle->isFieldPresent(sfAccount))
-            {
-                JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
-                                << " is missing pseudo-account field";
-                failed = true;
-                continue;
-            }
+            JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
+                            << " is missing pseudo-account field";
+            failed = true;
+            continue;
+        }
 
-            // The pseudo-account must NOT exist on the ledger after the object is deleted.
-            if (view.exists(keylet::account(sle->getAccountID(sfAccount))))
-            {
-                JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
-                                << " without deleting its pseudo-account";
-                failed = true;
-            }
+        // The pseudo-account must NOT exist on the ledger after the object is deleted.
+        if (view.exists(keylet::account(sle->getAccountID(sfAccount))))
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
+                            << " without deleting its pseudo-account";
+            failed = true;
         }
     }
 

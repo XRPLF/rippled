@@ -416,13 +416,6 @@ public:
  *
  * The reverse (pseudo-account deleted → object deleted) is enforced by
  * AccountRootsDeletedClean via getPseudoAccountFields().
- *
- * Under featureLendingProtocolV1_1, additionally verify that every touched
- * pseudo-account's owner reference (sfVaultID / sfLoanBrokerID) resolves to a
- * live object whose sfAccount points back at the pseudo-account. Catches
- * orphan pseudo-accounts and broken back-pointers -- cases the
- * deletion-driven check above cannot see when the pseudo-account itself is
- * the only touched entry.
  */
 class ObjectHasPseudoAccount
 {
