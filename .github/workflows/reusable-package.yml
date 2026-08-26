@@ -3,7 +3,7 @@
 #   - one job per config that carries a "package" map in linux.json
 #   - that map names the container image and the format it builds there
 #   - with 'publish: true' a job also uploads what it built
-#     (see package/publish_pkg.py)
+#     (see package/docker/publish_pkg.py)
 #
 # Only linux/amd64 is supported; the runner is hardcoded in the job below.
 name: Package
@@ -133,7 +133,7 @@ jobs:
           NEXUS_USERNAME: ${{ secrets.remote_username }}
           NEXUS_PASSWORD: ${{ secrets.remote_password }}
         run: |
-          ./package/publish_pkg.py \
+          ./package/docker/publish_pkg.py \
               --channel "${CHANNEL}" \
               --package-dir "${BUILD_DIR}" \
               --nexus-url "${NEXUS_URL}"
