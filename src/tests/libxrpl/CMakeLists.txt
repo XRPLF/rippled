@@ -27,17 +27,24 @@ target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 # supported on Windows.
 set(test_modules
     basics
+    beast
     consensus
     crypto
     json
+    nodestore
     peerfinder
+    protocol
     resource
     shamap
     tx
     protocol_autogen
+    server
 )
 if(NOT WIN32)
     list(APPEND test_modules net)
+endif()
+if(rust)
+    target_link_libraries(xrpl_tests PRIVATE rs_hello_world_cxxbridge)
 endif()
 
 foreach(module IN LISTS test_modules)
@@ -48,6 +55,12 @@ foreach(module IN LISTS test_modules)
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
     )
+    if(NOT rust)
+        # Tests of the Rust interop include generated cxxbridge headers, which
+        # do not exist without the crates, so keep them out of the build tree
+        # entirely. They are named `Rust<something>.cpp`.
+        list(FILTER sources EXCLUDE REGEX "/Rust[^/]*\\.cpp$")
+    endif()
     target_sources(xrpl_tests PRIVATE ${sources})
 
     # Expose the module's private headers under their canonical include path.

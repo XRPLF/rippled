@@ -1,13 +1,23 @@
 {
-  "image_tag": "sha-40cdf49",
+  "image_tag": "sha-a0074f8",
   "configs": {
     "ubuntu": [
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Debug"],
+        "arch": ["amd64"],
+        "minimal": true,
+        "suffix": "coverage",
+        "extra_cmake_args": "-DUNIT_TEST_REFERENCE_FEE=500 -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0"
+      },
       {
         "compiler": ["clang"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": true
+        "minimal": true,
+        "benchmark": true
       },
+
       {
         "compiler": ["gcc"],
         "build_type": ["Release"],
@@ -29,14 +39,6 @@
         "sanitizers": ["address", "undefinedbehavior"]
       },
 
-      {
-        "compiler": ["gcc"],
-        "build_type": ["Debug"],
-        "arch": ["amd64"],
-        "minimal": true,
-        "suffix": "coverage",
-        "extra_cmake_args": "-DUNIT_TEST_REFERENCE_FEE=500 -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0"
-      },
       {
         "compiler": ["clang"],
         "build_type": ["Debug"],
@@ -68,7 +70,8 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false
+        "minimal": false,
+        "extra_cmake_args": "-Dvalidator_keys=ON"
       }
     ],
 
@@ -77,7 +80,8 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false
+        "minimal": false,
+        "extra_cmake_args": "-Dvalidator_keys=ON"
       }
     ]
   },
@@ -88,7 +92,8 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-577d745"
+        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-45e4b88",
+        "package_type": "deb"
       }
     ],
 
@@ -98,7 +103,8 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-577d745"
+        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-45e4b88",
+        "package_type": "rpm"
       }
     ]
   }
