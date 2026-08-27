@@ -2078,26 +2078,26 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // out, so nothing is allocated on a path every inbound proposal takes.
     // The job body only carries the handle to hold the span alive, so an
     // empty handle is safe there.
-    std::shared_ptr<telemetry::SpanGuard> span;
+    std::shared_ptr<telemetry::SpanGuard> proposalSpan;
 #ifdef XRPL_ENABLE_TELEMETRY
-    span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+    proposalSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
 #endif
-    // Every attribute below exists only for the span, so the block is guarded
-    // on the span being live. Unguarded, each inbound proposal — trusted or
+    // Every attribute below exists only for the proposalSpan, so the block is guarded
+    // on the proposalSpan being live. Unguarded, each inbound proposal — trusted or
     // not — builds two full hex strings and a substring of each, four string
     // allocations no one reads.
-    if (span && *span)
+    if (proposalSpan && *proposalSpan)
     {
-        span->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
-        span->setAttribute(
+        proposalSpan->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
+        proposalSpan->setAttribute(
             telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
         // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
         // peer positions and prior ledgers without exporting full 32-byte
         // hashes on every receive event.
-        span->setAttribute(
+        proposalSpan->setAttribute(
             telemetry::consensus::span::attr::prevLedgerPrefix,
             to_string(prevLedger).substr(0, 16).c_str());
-        span->setAttribute(
+        proposalSpan->setAttribute(
             telemetry::consensus::span::attr::positionHashPrefix,
             to_string(proposeHash).substr(0, 16).c_str());
     }
@@ -2106,7 +2106,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     app_.getJobQueue().addJob(
         isTrusted ? JtProposalT : JtProposalUt,
         "checkPropose",
-        [weak, isTrusted, m, proposal, sp = std::move(span)]() {
+        [weak, isTrusted, m, proposal, sp = std::move(proposalSpan)]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
         });
