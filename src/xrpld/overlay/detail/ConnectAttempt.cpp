@@ -17,7 +17,12 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// Supplies to_string() for an endpoint, used only to print the remote address
+// into the dial span attribute. That attribute is built with telemetry, so
+// nothing here is named otherwise.
 #include <xrpl/beast/net/IPEndpoint.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
