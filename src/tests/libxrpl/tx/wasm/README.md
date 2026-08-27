@@ -152,9 +152,22 @@ equal the declared gas plus the fuel the guest itself burns — the loop body (1
 `GuestInstruction` reports on its own) plus the `i32.const`s pushing the call's arguments. So
 `escrow_id` reports `charged_gas ≈ 367` against a declared 350: 13 for the loop, 4 for its six
 argument constants. When that arithmetic does not line up, the case is measuring something other
-than the call it names. `GuestInstruction` in
-`Crossing.bench.cpp` is the same check applied to step 1: its `implied_gas` and `charged_gas` are
-two independent measurements of the same quantity and should agree closely.
+than the call it names.
+
+**`guestInstruction` is the harness's self-test, and it has a number.** It runs the same loop body
+`Calibration::secondsPerGas()` calibrates against, so its `implied_gas` (from wall time) and
+`charged_gas` (from the engine's fuel meter) are two measurements of one quantity and must agree.
+On a quiet machine, Release, that is currently **`implied_gas` ≈ 13.6 against `charged_gas` 13.007
+— about 4% high, with roughly 4% run-to-run spread.** Treat a persistent gap much beyond that as a
+harness bug rather than a property of the machine, and do not trust any other number in the run
+until it is closed.
+
+That check is worth running because it has already caught a real defect. Calibration originally
+took a _best-of-N_ while the cases report a _mean_, and since `implied_gas =
+secondsPerCall / secondsPerGas`, a minimum in the divisor against a mean in the dividend biased
+every reported number one way — `guestInstruction` read 18.2 against 13.007, +40%, and every
+`suggested_gas` in the report was inflated by that factor. Both estimators are now means. **If you
+change how either side is estimated, change both.**
 
 **Two limitations, both real.**
 
@@ -163,6 +176,9 @@ two independent measurements of the same quantity and should agree closely.
   (`Sha512Half`, `UpdateData`) measure that per-byte term where it matters.
 - A Debug build inflates the crossing far more than the impls, so absolute values are not usable
   there. **Ratios between `Impl` cases survive Debug; `suggested_gas` does not.**
+- Run-to-run spread is a few percent, which is immaterial next to the pricing errors this suite finds
+  (6x-20x). If you need it tighter, `--benchmark_repetitions=N` averages the noise down; it will
+  not touch a systematic bias, which is what the `guestInstruction` check above is for.
 
 ### The two case kinds, and why the subtraction is the point
 

@@ -13,7 +13,6 @@
 #include <chrono>
 #include <cstdint>
 #include <format>
-#include <limits>
 #include <span>
 #include <string>
 #include <string_view>
@@ -83,6 +82,17 @@ namespace {
 
 // Seconds of wall time one unit of gas buys on this machine. See `Calibration` for why this is
 // a difference rather than a single measurement.
+//
+// The estimator has to be the *same* one the cases use — a mean over `kBenchIterations` pairs,
+// with the same clamp at zero as `benchmarkThroughVm`. This is not a stylistic point. Since
+// `implied_gas = secondsPerCall / secondsPerGas`, any systematic difference between how the
+// divisor and the dividend are estimated lands directly in every reported number. A minimum
+// sits below a mean, so calibrating with a best-of while measuring cases with a mean biases
+// `secondsPerGas` low and every `implied_gas` and `suggested_gas` correspondingly high.
+//
+// `guestInstruction` in Crossing.bench.cpp is the check that this holds: it runs this exact loop
+// body, so its `implied_gas` and `charged_gas` are two measurements of one quantity and must
+// agree within a few percent.
 double
 measureSecondsPerGas()
 {
@@ -102,29 +112,30 @@ measureSecondsPerGas()
         timeRun(*fixture.makeHost(), idle);
     }
 
-    // Best-of over several pairs: the minimum is the run least disturbed by the scheduler, which
-    // is the honest floor for what this machine can do.
-    auto best = std::numeric_limits<double>::max();
+    auto total = 0.0;
+    // Fuel is exact and deterministic, so any pair gives the same delta.
     auto gasDelta = std::int64_t{1};
-    for (auto i = 0U; i < 32; ++i)
+    for (auto i = 0; i < kCalibrationPairs; ++i)
     {
         auto hotHost = fixture.makeHost();
         auto const hot = timeRun(*hotHost, busy);
         auto coldHost = fixture.makeHost();
         auto const cold = timeRun(*coldHost, idle);
-        auto const delta = hot.seconds - cold.seconds;
-        if (delta > 0.0 && delta < best)
-        {
-            best = delta;
-            gasDelta = std::max(std::int64_t{1}, hot.gas - cold.gas);
-        }
+
+        total += std::max(0.0, hot.seconds - cold.seconds);
+        gasDelta = std::max(std::int64_t{1}, hot.gas - cold.gas);
     }
-    return best == std::numeric_limits<double>::max() ? 0.0 : best / static_cast<double>(gasDelta);
+
+    return (total / kCalibrationPairs) / static_cast<double>(gasDelta);
 }
 
 // The crossing, in gas: `ldgr_index` through the VM minus `ldgr_index` called directly.
 // `secondsPerGas` has to be the value from the same snapshot, so it is passed in rather than
 // re-measured.
+//
+// Both halves are means for the same reason `measureSecondsPerGas` is: the VM half has to match
+// `benchmarkThroughVm`'s estimator and the impl half `benchmarkImpl`'s, or the crossing is the
+// difference of two numbers computed differently.
 double
 measureCrossingFloorGas(double secondsPerGas)
 {
@@ -138,29 +149,22 @@ measureCrossingFloorGas(double secondsPerGas)
 
     auto fixture = BenchFixture{};
 
-    auto best = std::numeric_limits<double>::max();
-    for (auto i = 0U; i < 16; ++i)
+    auto vmTotal = 0.0;
+    for (auto i = 0; i < kBenchIterations; ++i)
     {
         auto hotHost = fixture.makeHost();
         auto const hot = timeRun(*hotHost, loaded);
         auto coldHost = fixture.makeHost();
         auto const cold = timeRun(*coldHost, baseline);
 
-        auto const perCall = (hot.seconds - cold.seconds) / kCallsPerRun;
-        if (perCall > 0.0 && perCall < best)
-        {
-            best = perCall;
-        }
+        vmTotal += std::max(0.0, hot.seconds - cold.seconds) / kCallsPerRun;
     }
-    if (best == std::numeric_limits<double>::max())
-    {
-        return 0.0;
-    }
+    auto const vmSeconds = vmTotal / kBenchIterations;
 
     // The impl side is the same call without the VM. Subtracting it leaves the crossing.
-    auto implSeconds = std::numeric_limits<double>::max();
+    auto implTotal = 0.0;
     auto host = fixture.makeHost();
-    for (auto i = 0U; i < 16; ++i)
+    for (auto i = 0; i < kBenchIterations; ++i)
     {
         auto const start = std::chrono::steady_clock::now();
         for (auto c = 0U; c < kCallsPerRun; ++c)
@@ -169,11 +173,11 @@ measureCrossingFloorGas(double secondsPerGas)
             benchmark::DoNotOptimize(result);
         }
         auto const elapsed = std::chrono::steady_clock::now() - start;
-        implSeconds =
-            std::min(implSeconds, std::chrono::duration<double>(elapsed).count() / kCallsPerRun);
+        implTotal += std::chrono::duration<double>(elapsed).count() / kCallsPerRun;
     }
+    auto const implSeconds = implTotal / kBenchIterations;
 
-    return secondsPerGas > 0.0 ? std::max(0.0, best - implSeconds) / secondsPerGas : 0.0;
+    return secondsPerGas > 0.0 ? std::max(0.0, vmSeconds - implSeconds) / secondsPerGas : 0.0;
 }
 
 }  // namespace

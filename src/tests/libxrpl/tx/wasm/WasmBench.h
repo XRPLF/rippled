@@ -40,6 +40,14 @@ inline constexpr std::int32_t kCallsPerRun = 1000;
 // `->UseManualTime()->Iterations(kBenchIterations)`.
 inline constexpr std::int32_t kBenchIterations = 50;
 
+// How many pairs the one-off calibration averages. Higher than `kBenchIterations` because
+// `secondsPerGas` is the divisor for *every* reported number, so its noise is common-mode across
+// the whole report, and because calibration runs a bare wasm loop with no ledger and no host
+// calls — a few hundred extra pairs cost milliseconds. More samples of a mean is only more
+// precision, not a different estimator, so this does not reintroduce the bias that mixing a
+// best-of with a mean did.
+inline constexpr std::int32_t kCalibrationPairs = 400;
+
 // Every run gets this much guest<->host copying before `charge_transfer` starts refusing
 // calls. It is a per-run budget, so it resets between the runs a benchmark makes —
 // but a single run of `kCallsPerRun` calls moving a kilobyte each would exhaust it partway
