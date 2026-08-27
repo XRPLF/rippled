@@ -588,12 +588,14 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
         auto lockedMaps = ledgerMaps_.lock();
         cacheSize = lockedMaps->byHash->size();
 
-        indexesCleared =
-            std::erase_if(lockedMaps->byIndex, [seq](auto const& kv) { return kv.first < seq; });
-        indexSize = lockedMaps->byIndex.size();
+        auto& byIndex = lockedMaps->byIndex;
+        std::size_t const sizeBefore = byIndex.size();
+        byIndex.erase(byIndex.begin(), byIndex.lower_bound(seq));
+        indexSize = byIndex.size();
+        indexesCleared = sizeBefore - indexSize;
 
         ALWAYS(
-            lockedMaps->byIndex.empty() || lockedMaps->byIndex.begin()->first >= seq,
+            byIndex.empty() || byIndex.begin()->first >= seq,
             "xrpl::LedgerHistory::clearLedgerCachePrior : byIndex pruned to seq");
     }
 
