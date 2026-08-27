@@ -7,8 +7,11 @@
  *  empty type with no-op methods when it is not. The member is declared in
  *  both configurations, so a class's member set and public API never differ
  *  between builds -- a difference that has previously made a test mock
- *  abstract. Declare members `[[no_unique_address]]` so the compiled-out
- *  form costs no storage.
+ *  abstract. The compiled-out forms are empty types, so such a member costs a
+ *  byte of padding rather than nothing. `[[no_unique_address]]` would remove
+ *  even that, but MSVC ignores the standard spelling for ABI compatibility, so
+ *  it is deliberately not used. What these types buy is work not being done,
+ *  not a smaller struct.
  *
  *      kEnabled ---- if constexpr ---- telemetry-only blocks
  *          |
@@ -43,7 +46,7 @@
  *      // A counter that disappears, along with its storage, when off.
  *      class Acquirer
  *      {
- *          [[no_unique_address]] telemetry::Counter<> timeouts_;
+ *          telemetry::Counter<> timeouts_;
  *      public:
  *          void onTimeout() { timeouts_.add(); }
  *      };

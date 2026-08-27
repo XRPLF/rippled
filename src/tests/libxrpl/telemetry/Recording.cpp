@@ -39,8 +39,9 @@ static_assert(!std::is_move_assignable_v<telemetry::Counter<>>);
 // builds; only Counter needed the explicit deletions above.
 static_assert(std::is_copy_constructible_v<telemetry::Stopwatch>);
 
-// The whole point of the compiled-out form is that it costs no storage. An
-// empty type contributes nothing as a [[no_unique_address]] member.
+// The compiled-out forms must be empty types. That is what lets an owning class
+// declare the member unconditionally: the storage collapses to padding, and the
+// work disappears entirely.
 TEST(Recording, compiled_out_types_are_empty)
 {
     if constexpr (telemetry::kEnabled)
