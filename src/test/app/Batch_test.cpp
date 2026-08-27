@@ -2973,6 +2973,107 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testAccountTxnID(FeatureBitset features)
+    {
+        testcase("account txn id");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // With fixCleanup3_4_0 the Batch wrapper does not stamp
+        // sfAccountTxnID, so an inner can reference the last pre-batch
+        // transaction. Without the fix the wrapper stamps its own ID, which
+        // no inner can carry: the outer's ID hashes over sfRawTransactions.
+        for (bool const withFix : {true, false})
+        {
+            auto const amend = withFix ? features : features - fixCleanup3_4_0;
+            Env env{*this, amend};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            env(fset(alice, asfAccountTxnID));
+            env.close();
+
+            // Arm the tracking field: fset leaves it zero, and the first
+            // transaction after it stamps the first usable prior-txn ID.
+            env(noop(alice));
+            env.close();
+            uint256 const priorID = env.tx()->getTransactionID();
+
+            auto const preBob = env.balance(bob);
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = batch::Inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx1[sfAccountTxnID.jsonName] = strHex(priorID);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx1,
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+            env.close();
+
+            auto const sle = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle && sle->isFieldPresent(sfAccountTxnID));
+            if (withFix)
+            {
+                std::vector<TestLedgerData> const testCases = {
+                    {.index = 0,
+                     .txType = "Batch",
+                     .result = "tesSUCCESS",
+                     .txHash = batchID,
+                     .batchID = std::nullopt},
+                    {.index = 1,
+                     .txType = "Payment",
+                     .result = "tesSUCCESS",
+                     .txHash = txIDs[0],
+                     .batchID = batchID},
+                    {.index = 2,
+                     .txType = "Payment",
+                     .result = "tesSUCCESS",
+                     .txHash = txIDs[1],
+                     .batchID = batchID},
+                };
+                validateClosedLedger(env, testCases);
+
+                BEAST_EXPECT(env.seq(alice) == seq + 3);
+                BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+
+                // The chain ends at the last applied inner, not the wrapper.
+                BEAST_EXPECT(strHex(sle->getFieldH256(sfAccountTxnID)) == txIDs[1]);
+
+                // A post-batch transaction chains off the last inner.
+                auto jv = pay(alice, bob, XRP(1));
+                jv[sfAccountTxnID.jsonName] = txIDs[1];
+                env(jv);
+                env.close();
+            }
+            else
+            {
+                // tefWRONG_PRIOR on the inner: the wrapper already stamped
+                // its own ID, and tfAllOrNothing reverts every inner.
+                std::vector<TestLedgerData> const testCases = {
+                    {.index = 0,
+                     .txType = "Batch",
+                     .result = "tesSUCCESS",
+                     .txHash = batchID,
+                     .batchID = std::nullopt},
+                };
+                validateClosedLedger(env, testCases);
+
+                BEAST_EXPECT(env.seq(alice) == seq + 1);
+                BEAST_EXPECT(env.balance(bob) == preBob);
+
+                // The wrapper stamped its own ID.
+                BEAST_EXPECT(strHex(sle->getFieldH256(sfAccountTxnID)) == batchID);
+            }
+        }
+    }
+
+    void
     testAccountDelete(FeatureBitset features)
     {
         testcase("account delete");
@@ -5914,6 +6015,7 @@ class Batch_test : public beast::unit_test::Suite
         testAccountActivation(features);
         testCheckAllSignatures(features);
         testAccountSet(features);
+        testAccountTxnID(features);
         testAccountDelete(features);
         testLoan(features);
         testObjectCreateSequence(features);

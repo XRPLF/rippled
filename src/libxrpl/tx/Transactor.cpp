@@ -34,6 +34,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
@@ -905,7 +906,11 @@ Transactor::apply()
         if (!isTesSuccess(result))
             return result;
 
-        if (sle->isFieldPresent(sfAccountTxnID))
+        // A Batch wrapper does not update sfAccountTxnID: its ID hashes over
+        // sfRawTransactions, so a same-account inner could never carry a
+        // matching prior-txn ID. The inners update the field as they apply.
+        if (sle->isFieldPresent(sfAccountTxnID) &&
+            (ctx_.tx.getTxnType() != ttBATCH || !view().rules().enabled(fixCleanup3_4_0)))
             sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
 
         view().update(sle);
