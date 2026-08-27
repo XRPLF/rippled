@@ -1,18 +1,14 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 
-#include <xrpld/app/main/Application.h>
-
-#ifdef XRPL_ENABLE_TELEMETRY
-// The two guarded recording calls below are the only things here that name
-// AcquireStats, so without telemetry the include has no user.
 #include <xrpld/app/ledger/AcquireStats.h>
-#endif
+#include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/telemetry/Recording.h>
 
 #include <boost/asio/error.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -69,16 +65,15 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
         app_.getJobQueue().getJobCountTotal(queueJobParameter_.jobType) >=
             queueJobParameter_.jobLimit)
     {
-#ifdef XRPL_ENABLE_TELEMETRY
         // Counted separately from timeouts: this path re-arms the timer
         // without running invokeOnTimer, so timeouts_ does not advance and the
         // give-up test that reads it cannot fire while the lane stays full.
         //
-        // Guarded because it runs on every deferred tick of every in-flight
-        // task, and the argument compares the job name against a string
-        // literal each time. The acquire metrics are its only reader.
-        app_.getAcquireStats().recordDeferral(isLedgerAcquisition());
-#endif
+        // Compiled out when telemetry is off: the argument compares the job
+        // name against a string literal on every deferred tick of every
+        // in-flight task, and a no-op count would still evaluate it.
+        if constexpr (telemetry::kEnabled)
+            app_.getAcquireStats().recordDeferral(isLedgerAcquisition());
         JLOG(journal_.debug()) << "Deferring " << queueJobParameter_.jobName
                                << " timer due to load";
         setTimer(sl);
@@ -103,12 +98,12 @@ TimeoutCounter::invokeOnTimer()
     if (!progress_)
     {
         ++timeouts_;
-#ifdef XRPL_ENABLE_TELEMETRY
-        // Same cost as the deferral above: one call per no-progress tick, with
-        // a job-name string comparison to build the argument. timeouts_ stays
-        // outside the guard because the give-up test reads it.
-        app_.getAcquireStats().recordTimeout(isLedgerAcquisition());
-#endif
+        // Same argument cost as the deferral above -- one job-name string
+        // comparison per no-progress tick -- so it is compiled out the same
+        // way. timeouts_ stays outside the block because the give-up test
+        // reads it.
+        if constexpr (telemetry::kEnabled)
+            app_.getAcquireStats().recordTimeout(isLedgerAcquisition());
         JLOG(journal_.debug()) << "Timeout(" << timeouts_ << ") "
                                << " acquiring " << hash_;
         onTimer(false, sl);
