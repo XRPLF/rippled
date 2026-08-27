@@ -191,12 +191,13 @@ ValidLoan::finalize(
             // reference a live vault; otherwise the loan is orphaned and its
             // balances have no counterparty on the ledger.
             auto const brokerSle = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
+            auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
             if (!brokerSle)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan broker does not exist";
                 return false;
             }
-            if (!view.read(keylet::vault(brokerSle->at(sfVaultID))))
+            if (!vaultSle)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan broker vault does not exist";
                 return false;
@@ -213,31 +214,13 @@ ValidLoan::finalize(
 
             // Only IOU amounts can accumulate STAmount quantization noise. For integral-domain
             // assets (XRP/MPT) enforce the boundary strictly.
-            bool integral = false;
-            if (auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID))))
-                integral = Asset{vaultSle->at(sfAsset)}.integral();
+            bool integral = Asset{vaultSle->at(sfAsset)}.integral();
 
-           Number const tolerance = integral ? beast::kZero : Number{-1, after->at(sfLoanScale)};
-           if (interestDue < tolerance)
-           {
-                    JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
-                    return false;
-           }
+            Number const tolerance = integral ? Number{} : Number{-1, after->at(sfLoanScale)};
+            if (interestDue < tolerance)
             {
-                if (interestDue < beast::kZero)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
-                    return false;
-                }
-            }
-            else
-            {
-                Number const tolerance{1, after->at(sfLoanScale)};
-                if (interestDue < -tolerance)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
-                    return false;
-                }
+                JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+                return false;
             }
 
             // Transaction success post-conditions. A successful loan pay makes at least
