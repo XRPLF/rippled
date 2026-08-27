@@ -1,27 +1,34 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
-#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/Types.h>
-#include <xrpl/nodestore/WriteStats.h>
 
 #include <gtest/gtest.h>
 #include <helpers/CaptureSink.h>
 #include <helpers/TestSink.h>
 #include <nodestore/TestBase.h>
 
+// Needed only by the write-stats tests below, which are themselves compiled in
+// with telemetry. Left unguarded they are unused headers in a build without
+// telemetry, which misc-include-cleaner rejects.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/basics/scope.h>
+#include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/WriteStats.h>
+
+#include <cstdint>
+#include <latch>
+#include <optional>
+#include <thread>
+#endif  // XRPL_ENABLE_TELEMETRY
+
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <exception>
-#include <latch>
 #include <memory>
-#include <optional>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 

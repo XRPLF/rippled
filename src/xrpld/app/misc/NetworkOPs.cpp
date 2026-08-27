@@ -34,7 +34,6 @@
 #include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxSpanNames.h>
-#include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
@@ -160,6 +159,13 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+// Needed only by the tx.process span in processTransaction(), which is compiled
+// out when telemetry is off. Without the same guard here it would be an unused
+// include in that build, which clang-tidy's misc-include-cleaner rejects.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpld/telemetry/TxTracing.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 namespace xrpl {
 
