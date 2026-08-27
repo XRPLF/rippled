@@ -10,9 +10,9 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/Recording.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -117,7 +117,7 @@ public:
      * Add a `round.request` event for a LATER round that still needs this set;
      * init() records the round that started the fetch. Called by
      * InboundTransactions when the asking round differs from the one that last
-     * asked -- see `InboundTransactionSet::lastRoundParentHash`. Takes `mtx_`,
+     * asked -- see `InboundTransactionSet::lastRound`. Takes `mtx_`,
      * called under `InboundTransactions::lock_`.
      */
     void
@@ -162,10 +162,11 @@ private:
     std::uint32_t roundLedgerSeq_{0};
 
     /**
-     * When this acquisition started, set in init() before the first peer is
-     * asked. Base for the span's `duration_ms` attribute.
+     * How long this acquisition has been running, restarted in init() before
+     * the first peer is asked. Source of the span's `duration_ms` attribute,
+     * and reads no clock in a build that never reports one.
      */
-    std::chrono::steady_clock::time_point acquireStart_;
+    telemetry::Stopwatch acquireTimer_;
 
     /**
      * True once the timeout budget has been exhausted, so the span's outcome
