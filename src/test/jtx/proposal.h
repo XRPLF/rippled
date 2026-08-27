@@ -51,7 +51,7 @@ create(Account const& proposer, json::Value const& proposedTx, std::uint32_t exp
 json::Value
 cancel(Account const& account, uint256 const& proposalID);
 
-/*
+/**
  * @brief Conditions that check what a proposal transaction did to the ledger.
  *
  * Each is named for the generator it verifies, so a submission and its check

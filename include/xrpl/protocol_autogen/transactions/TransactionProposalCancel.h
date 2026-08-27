@@ -21,7 +21,7 @@ class TransactionProposalCancelBuilder;
  * Type: ttTRANSACTION_PROPOSAL_CANCEL (94)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureCosign
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use TransactionProposalCancelBuilder to construct new transactions.

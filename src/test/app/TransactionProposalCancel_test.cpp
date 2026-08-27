@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -133,7 +134,9 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         // The ID of a live ledger entry of a different type (the ticket the
         // proposal below will consume) does not name a proposal.
         std::uint32_t const ticketSeq = proposal::createTicket(env, target);
-        env(proposal::cancel(alice, keylet::ticket(target.id(), ticketSeq).key), Ter(tecNO_ENTRY));
+        env(proposal::cancel(
+                alice, keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq)).key),
+            Ter(tecNO_ENTRY));
         env.close();
 
         // A proposal that was already cancelled is gone: a second cancel —
@@ -182,7 +185,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
 
         // The ticket the proposed transaction would have consumed still
         // belongs to the target.
-        BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(ownerCount(env, target) == 1);
 
         // The (target, ticket) slot is free again: a new proposal for the
@@ -203,7 +206,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         env.close();
         env(noop(target), ticket::Use(ticketSeq));
         env.close();
-        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
     }
 
     // The target account may refuse any proposal made for it, at any point in
@@ -364,7 +367,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         // The target's unspent ticket survives its proposal.
-        BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
     }
 
     // A proposal whose proposed transaction has run out of ledgers — the
@@ -826,7 +829,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             env.close();
 
             BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
-            BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
             BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
             BEAST_EXPECT(ownerCount(env, target) == 1);
         }
@@ -846,7 +849,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             env.close();
 
             BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
-            BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
             BEAST_EXPECT(env.balance(bob) == bobBefore);
             BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
             BEAST_EXPECT(ownerCount(env, target) == 2);

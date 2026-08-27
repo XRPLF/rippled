@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -89,7 +90,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
-        BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         BEAST_EXPECT(ownerCount(env, target) == 2);
 
@@ -138,7 +139,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1));
             BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
-            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, target) == 0);
         }
@@ -200,7 +201,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
             env(noop(target), ticket::Use(ticketSeq));
             env.close();
-            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         }
 
         // A blocked transaction is held for retry, and consumes the ticket
@@ -219,7 +220,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             env.close();
 
             BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
-            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         }
     }
 
@@ -254,7 +255,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
-        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, target) == 0);
     }
@@ -294,7 +295,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
-        BEAST_EXPECT(env.le(keylet::ticket(target.id(), targetTicketSeq)));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(targetTicketSeq))));
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
     }
 
@@ -388,7 +389,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(2));
         BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
-        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(ownerCount(env, alice) == 0);
     }
 
@@ -431,7 +432,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(env.balance(bob) == bobBefore);
         BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
-        BEAST_EXPECT(env.le(keylet::ticket(target.id(), ticketSeq)));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
 
         // The standalone matching payment still goes through.

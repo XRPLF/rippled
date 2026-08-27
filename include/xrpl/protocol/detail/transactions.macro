@@ -1152,9 +1152,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 92, TransactionProposalCreate,
 #   include <xrpl/tx/transactors/proposal/TransactionProposalCancel.h>
 #endif
 TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
-    Delegation::NotDelegable,
-    featureCosign,
-    NoPriv,
+    ({.amendment = featureCosign}),
     ({
     {sfProposalID, SoeRequired},
 }))
