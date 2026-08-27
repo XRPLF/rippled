@@ -1234,6 +1234,196 @@ class RuleFAndH(unittest.TestCase):
         self.assertEqual(w, [])
 
 
+class RuleMUnreferencedConstants(unittest.TestCase):
+    """Rule M: an L1 constant defined in a `*SpanNames.h` that nothing in
+    `src/**` or `include/**` references."""
+
+    # The two notes Rule M distinguishes; they must not be folded together.
+    DEAD = "no reference in src/ or include/"
+    TEST_ONLY = "referenced only by test code"
+
+    def _run(self, files):
+        """Build a synthetic tree, run Rule M, return (sorted (token, note)
+        pairs, the Report)."""
+        d = Path(tempfile.mkdtemp())
+        try:
+            for rel, text in files.items():
+                _write(d / rel, text)
+            report = chk.Report()
+            chk.run_rule_m_unreferenced(d, chk.find_spanname_headers(d), report)
+            return sorted((w[2], w[3]) for w in report.warnings), report
+        finally:
+            shutil.rmtree(d)
+
+    HEADER = "include/xrpl/telemetry/DemoSpanNames.h"
+
+    def _two_attrs(self):
+        return _header(
+            'inline constexpr auto used = makeStr("used_key");\n'
+            'inline constexpr auto unused = makeStr("unused_key");\n'
+        )
+
+    # ----- positive: a defined-but-unreferenced constant is warned -----
+    def test_unreferenced_constant_warned(self):
+        warnings, _ = self._run(
+            {
+                self.HEADER: self._two_attrs(),
+                "src/xrpld/app/Foo.cpp": "g.setAttribute(demo::attr::used, v);\n",
+            }
+        )
+        self.assertEqual(warnings, [("attr::unused", self.DEAD)])
+
+    def test_warning_location_is_the_defining_header(self):
+        _, report = self._run(
+            {
+                self.HEADER: self._two_attrs(),
+                "src/xrpld/app/Foo.cpp": "g.setAttribute(demo::attr::used, v);\n",
+            }
+        )
+        self.assertEqual(len(report.warnings), 1)
+        self.assertEqual(report.warnings[0][0], "M")
+        self.assertEqual(report.warnings[0][1], self.HEADER)
+
+    def test_lone_header_flags_every_constant(self):
+        # Proves the definition itself is not counted as a reference: with no
+        # other file in the tree, BOTH constants are dead.
+        warnings, _ = self._run({self.HEADER: self._two_attrs()})
+        self.assertEqual(
+            warnings, [("attr::unused", self.DEAD), ("attr::used", self.DEAD)]
+        )
+
+    def test_comment_mention_is_not_a_reference(self):
+        warnings, _ = self._run(
+            {
+                self.HEADER: self._two_attrs(),
+                "src/xrpld/app/Foo.cpp": (
+                    "g.setAttribute(demo::attr::used, v);\n"
+                    "// see demo::attr::unused for the aborted case\n"
+                    "/* demo::attr::unused */\n"
+                ),
+            }
+        )
+        self.assertEqual(warnings, [("attr::unused", self.DEAD)])
+
+    def test_using_reexport_is_not_a_reference(self):
+        # An unused `using` re-export must not vouch for the constant it
+        # renames. Fails if referenced_constants stops stripping USING_DECL.
+        warnings, _ = self._run(
+            {
+                self.HEADER: self._two_attrs(),
+                "include/xrpl/telemetry/PeerSpanNames.h": _header(
+                    "using ::xrpl::telemetry::demo::span::attr::unused;\n"
+                ),
+                "src/xrpld/app/Foo.cpp": "g.setAttribute(demo::attr::used, v);\n",
+            }
+        )
+        self.assertEqual(warnings, [("attr::unused", self.DEAD)])
+
+    # ----- negative: a referenced constant must NOT be warned -----
+    def test_referenced_constant_not_warned(self):
+        warnings, report = self._run(
+            {
+                self.HEADER: _header('inline constexpr auto used = makeStr("k");\n'),
+                "src/xrpld/app/Foo.cpp": "g.setAttribute(demo::attr::used, v);\n",
+            }
+        )
+        self.assertEqual(warnings, [])
+        self.assertTrue(any("M:" in c for c in report.checked))
+
+    def test_reference_as_an_attribute_value_counts(self):
+        # Value constants are referenced in the VALUE position, which a scan of
+        # key positions only would never see.
+        warnings, _ = self._run(
+            {
+                self.HEADER: _header(
+                    'inline constexpr auto outcome = makeStr("outcome");\n'
+                    'inline constexpr auto complete = makeStr("complete");\n'
+                ),
+                "src/xrpld/app/Foo.cpp": (
+                    "g.setAttribute(demo::attr::outcome, demo::attr::complete);\n"
+                ),
+            }
+        )
+        self.assertEqual(warnings, [])
+
+    def test_reference_through_a_local_counts(self):
+        # Constants are passed to helpers and stored in locals, not only used
+        # inline at a telemetry call.
+        warnings, _ = self._run(
+            {
+                self.HEADER: _header('inline constexpr auto used = makeStr("k");\n'),
+                "src/xrpld/app/Foo.cpp": (
+                    "auto key = demo::attr::used;\nrecord(key, v);\n"
+                ),
+            }
+        )
+        self.assertEqual(warnings, [])
+
+    def test_reference_from_a_join_in_its_own_header_counts(self):
+        # `op::leaf` is consumed only by a `join(...)` in the same header; the
+        # composed constant is what the call site names. Neither is dead.
+        warnings, _ = self._run(
+            {
+                self.HEADER: (
+                    "#pragma once\n"
+                    "namespace demo {\n"
+                    "namespace seg {\n"
+                    'inline constexpr auto demo = makeStr("demo");\n'
+                    "}\n"
+                    "namespace op {\n"
+                    'inline constexpr auto leaf = makeStr("leaf");\n'
+                    "}\n"
+                    "namespace span {\n"
+                    "inline constexpr auto full = join(seg::demo, op::leaf);\n"
+                    "}\n"
+                    "}\n"
+                ),
+                "src/xrpld/app/Foo.cpp": "auto s = g.childSpan(demo::span::full);\n",
+            }
+        )
+        self.assertEqual(warnings, [])
+
+    # ----- test-only references are a separate, named class -----
+    def test_test_only_reference_reported_separately(self):
+        warnings, _ = self._run(
+            {
+                self.HEADER: self._two_attrs(),
+                "src/xrpld/app/Foo.cpp": "g.setAttribute(demo::attr::used, v);\n",
+                "src/tests/libxrpl/telemetry/SpanNames.cpp": (
+                    'EXPECT_EQ(demo::attr::unused, "unused_key");\n'
+                ),
+            }
+        )
+        self.assertEqual(warnings, [("attr::unused", self.TEST_ONLY)])
+
+    def test_production_reference_wins_over_test_reference(self):
+        warnings, _ = self._run(
+            {
+                self.HEADER: _header('inline constexpr auto used = makeStr("k");\n'),
+                "src/xrpld/app/Foo.cpp": "g.setAttribute(demo::attr::used, v);\n",
+                "src/tests/libxrpl/telemetry/SpanNames.cpp": (
+                    'EXPECT_EQ(demo::attr::used, "k");\n'
+                ),
+            }
+        )
+        self.assertEqual(warnings, [])
+
+    # ----- boundary -----
+    def test_skips_when_no_headers(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            report = chk.Report()
+            chk.run_rule_m_unreferenced(d, [], report)
+            self.assertEqual(report.warnings, [])
+            self.assertTrue(any("SKIP: M" in s for s in report.skips))
+        finally:
+            shutil.rmtree(d)
+
+    def test_never_fails_the_build(self):
+        _, report = self._run({self.HEADER: self._two_attrs()})
+        self.assertEqual(report.violations, [])
+
+
 class RuleBCollector(unittest.TestCase):
     def _run(self, yaml_text, l1):
         d = Path(tempfile.mkdtemp())
