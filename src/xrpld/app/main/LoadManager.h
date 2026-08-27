@@ -209,6 +209,10 @@ private:
      *
      * @param stalled          Stall duration measured on this tick.
      * @param reportThreshold  Duration at which a stall becomes reportable.
+     *
+     * @note Compiled out with telemetry, since the metrics registry is the only
+     * reader of the two members it publishes. Both then stay at 0 for the life
+     * of the process, and the monitor tick does no stall bookkeeping at all.
      */
     void
     updateStallState(std::chrono::seconds stalled, std::chrono::seconds reportThreshold);
