@@ -15,6 +15,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <vector>
 

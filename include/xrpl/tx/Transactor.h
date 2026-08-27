@@ -20,6 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 #include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <cstddef>

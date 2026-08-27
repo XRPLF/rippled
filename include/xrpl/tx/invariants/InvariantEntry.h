@@ -4,6 +4,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -17,8 +18,8 @@ class InvariantEntry
     SLE::const_pointer after_;
 
 public:
-    InvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
-        : isDelete_(isDelete), before_(before), after_(after)
+    InvariantEntry(bool isDelete, SLE::const_pointer before, SLE::const_pointer after)
+        : isDelete_(isDelete), before_(std::move(before)), after_(std::move(after))
     {
         if (after_ == nullptr)
             Throw<std::logic_error>("InvariantEntry: after is never null");

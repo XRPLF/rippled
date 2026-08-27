@@ -10,6 +10,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
 #include <array>

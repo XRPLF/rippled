@@ -12,9 +12,9 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
-#include <memory>
 
 namespace xrpl {
 

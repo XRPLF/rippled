@@ -18,6 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <cstddef>
 #include <optional>

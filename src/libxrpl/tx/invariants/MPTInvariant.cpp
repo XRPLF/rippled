@@ -24,6 +24,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
 #include <array>

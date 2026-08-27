@@ -40,6 +40,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 #include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <array>
@@ -49,6 +50,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
