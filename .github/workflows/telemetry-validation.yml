@@ -155,14 +155,17 @@ jobs:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: Release
           log_verbosity: verbose
+          # Without this the recipe leaves telemetry at its default, which is
+          # off, so opentelemetry-cpp is never fetched and the -Dtelemetry=ON
+          # below fails at find_package instead of building anything.
+          options: "&:telemetry=True"
 
-      # telemetry is passed explicitly even though the CMake option and the
-      # Conan recipe both default it on. The whole point of this workflow is to
-      # exercise telemetry, so it should not silently depend on a default it
-      # does not control: if that default ever flips, every span and metric
-      # assertion would fail for a reason no log names. Stated here, a build
-      # without the dependency fails loudly instead, because CMakeLists.txt
-      # does find_package(opentelemetry-cpp CONFIG REQUIRED) under this option.
+      # telemetry is stated explicitly on both sides -- as a Conan option above
+      # and as a CMake option below -- because both default to off. The whole
+      # point of this workflow is to exercise telemetry, so it must not depend
+      # on a default it does not control. The two must agree: the Conan option
+      # is what fetches opentelemetry-cpp, and the CMake option is what makes
+      # CMakeLists.txt require it via find_package.
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
         run: |

@@ -146,16 +146,18 @@ endif()
 # When OFF, all tracing code compiles to no-ops with zero overhead and
 # opentelemetry-cpp is not needed at all.
 #
-# The value below is temporarily ON so that CI compiles the telemetry code
-# paths while this feature is in review. OFF is the intended shipped default;
-# flipping it back is tracked as a separate change. Do not rely on the current
-# value - select it explicitly with cmake -Dtelemetry=ON|OFF or
-# conan install -o telemetry=True|False.
+# Off by default, matching conanfile.py. Select it explicitly with
+# cmake -Dtelemetry=ON|OFF or conan install -o telemetry=True|False.
+#
+# The two defaults must agree. A CMake default of ON with the Conan default OFF
+# means a bare `cmake ..` enables telemetry while the dependency was never
+# fetched, and configuration then fails at the find_package below rather than
+# reporting anything useful.
 #
 # -DXRPL_ENABLE_TELEMETRY=OFF does not turn anything off: that name is only a
 # compile definition added below, not a CMake option, so CMake just lists it as
 # an unused variable at the end of configuration.
-option(telemetry "Enable OpenTelemetry tracing" ON)
+option(telemetry "Enable OpenTelemetry tracing" OFF)
 if(telemetry)
     find_package(opentelemetry-cpp CONFIG REQUIRED)
     add_compile_definitions(XRPL_ENABLE_TELEMETRY)
