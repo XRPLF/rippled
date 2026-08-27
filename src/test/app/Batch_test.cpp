@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/SignerUtils.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/WSClient.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
@@ -3074,6 +3075,78 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testSubscriptions(FeatureBitset features)
+    {
+        testcase("subscriptions");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto wsc = makeWSClient(env.app().config());
+        json::Value stream;
+        stream[jss::streams] = json::ValueType::Array;
+        stream[jss::streams].append("transactions");
+        stream[jss::streams].append("transactions_proposed");
+        BEAST_EXPECT(wsc->invoke("subscribe", stream)[jss::status] == "success");
+
+        auto const seq = env.seq(alice);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        auto const [txIDs, batchID] = submitBatch(
+            env,
+            tesSUCCESS,
+            batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+            batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+        env.close();
+
+        // The hash sits under jss::transaction (API v1), jss::tx_json
+        // (API v2), or at the top level, depending on message shape.
+        auto const txHash = [](json::Value const& msg) -> std::string {
+            if (msg.isMember(jss::hash))
+                return msg[jss::hash].asString();
+            for (auto const& field : {jss::transaction, jss::tx_json})
+                if (msg.isMember(field) && msg[field].isMember(jss::hash))
+                    return msg[field][jss::hash].asString();
+            return {};
+        };
+        auto const isValidated = [](json::Value const& msg) {
+            return msg.isMember(jss::validated) && msg[jss::validated].asBool();
+        };
+
+        std::vector<json::Value> msgs;
+        while (auto msg = wsc->getMsg(2s))
+            msgs.push_back(*msg);
+
+        // Proposed stream: the outer Batch only. pubProposedTransaction
+        // drops tfInnerBatchTxn, so an inner must never appear unvalidated.
+        std::size_t proposed = 0;
+        for (auto const& msg : msgs)
+            if (!isValidated(msg))
+            {
+                ++proposed;
+                BEAST_EXPECT(txHash(msg) == batchID);
+            }
+        BEAST_EXPECT(proposed == 1);
+
+        // Validated stream: the outer and both inners publish, each with
+        // metadata.
+        for (std::string const& hash : {batchID, txIDs[0], txIDs[1]})
+        {
+            BEAST_EXPECT(std::ranges::any_of(msgs, [&](json::Value const& msg) {
+                return isValidated(msg) && txHash(msg) == hash && msg.isMember(jss::meta);
+            }));
+        }
+
+        BEAST_EXPECT(wsc->invoke("unsubscribe", stream)[jss::status] == "success");
+    }
+
+    void
     testAccountDelete(FeatureBitset features)
     {
         testcase("account delete");
@@ -6016,6 +6089,7 @@ class Batch_test : public beast::unit_test::Suite
         testCheckAllSignatures(features);
         testAccountSet(features);
         testAccountTxnID(features);
+        testSubscriptions(features);
         testAccountDelete(features);
         testLoan(features);
         testObjectCreateSequence(features);
