@@ -16,6 +16,12 @@
 
 #include <xrpl/telemetry/Telemetry.h>
 
+#ifndef XRPL_ENABLE_TELEMETRY
+// beast::Journal is named only by the compiled-out makeTelemetry() below, so
+// this include belongs to that configuration and would be unused in the other.
+#include <xrpl/beast/utility/Journal.h>
+#endif
+
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/metrics/meter.h>
