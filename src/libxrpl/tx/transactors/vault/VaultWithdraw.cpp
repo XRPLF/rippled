@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/vault/VaultWithdraw.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -267,6 +268,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 TER
 VaultWithdraw::doApply()
 {
+    bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -300,6 +302,7 @@ VaultWithdraw::doApply()
     // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
     // shares but keeping future value in the vault.
     auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, sleIssuance);
+    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
         if (amount.asset() == vaultAsset)
@@ -324,8 +327,12 @@ VaultWithdraw::doApply()
                 sharesRedeemed = *maybeShares;
             }
 
+            // Shares are MPT (integer). Small requested amounts truncate to zero; refuse rather
+            // than burn nothing while paying out assets.
             if (sharesRedeemed == beast::kZero)
                 return tecPRECISION_LOSS;
+            // Convert shares back to assets so the payout matches the shares actually burned, not
+            // the requested amount. The extra would otherwise be paid from the vault for free.
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
             if (!maybeAssets)
@@ -334,7 +341,8 @@ VaultWithdraw::doApply()
         }
         else if (amount.asset() == share)
         {
-            // Fixed shares, variable assets.
+            // Fixed shares, variable assets. No round-trip: the share count is exactly what the
+            // caller specified; only the payout amount is derived.
             sharesRedeemed = amount;
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
@@ -357,6 +365,8 @@ VaultWithdraw::doApply()
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
             << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
             << ", amount=" << amount.value();
+        // Overflow means this transaction cannot apply, but ledger state is still consistent.
+        // Return tecPATH_DRY rather than a hard internal error.
         return tecPATH_DRY;
     }
 
@@ -369,12 +379,11 @@ VaultWithdraw::doApply()
     auto assetsTotal = vault->at(sfAssetsTotal);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
 
-    if (view().rules().enabled(fixCleanup3_4_0) && !isFinalWithdrawal)
+    if (fix340Enabled && !isFinalWithdrawal)
     {
-        // A withdrawal for a fixed share amount (variable assets) has no requested-asset
-        // amount to check for rounding, unlike the fixed-assets branch above: a small enough
-        // share amount can round down to an exact zero even though the vault still holds
-        // positive effective value backing outstanding shares.
+        // Fixed-shares path: a small share count can round to zero assets even though the vault has
+        // backing value. Reject rather than burn shares for a zero payout. The fixed-assets branch
+        // above has already rejected zero via the sharesRedeemed check.
         if (amount.asset() == share && assetsWithdrawn == beast::kZero &&
             assetsTotalForWithdrawal(vault, waiveUnrealizedLoss) != beast::kZero)
         {
@@ -382,17 +391,34 @@ VaultWithdraw::doApply()
             return tecPRECISION_LOSS;
         }
 
-        // assetsWithdrawn can also be genuinely non-zero and still too small to move
-        // sfAssetsTotal or sfAssetsAvailable once canonicalized to STAmount's precision. Either
-        // way the shares still move, so ValidVault would otherwise fail after the fact instead
-        // of a clean upfront rejection.
-        if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn) ||
-            debitIsNonZeroDust(vaultAsset, assetsAvailable, assetsWithdrawn))
+        // Number arithmetic can throw overflow_error when Scale and totals are large.
+        try
         {
-            JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
-                                " vault balance";
-            return tecPRECISION_LOSS;
+            // A non-zero payout can be too small to change the stored sfAssetsTotal at
+            // STAmount's precision. Shares would still be burned, reject it instead.
+            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn))
+            {
+                JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
+                                    " vault balance";
+                return tecPRECISION_LOSS;
+            }
         }
+        // LCOV_EXCL_START
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultWithdraw: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            // Overflow means this transaction cannot apply, but ledger state is still consistent.
+            // Return tecPATH_DRY rather than a hard internal error.
+            return tecPATH_DRY;
+        }
+        // LCOV_EXCL_STOP
     }
 
     // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
@@ -409,6 +435,54 @@ VaultWithdraw::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
+    // Post-fixCleanup3_4_0: round the payout to the sfAssetsTotal scale so all three rails
+    // (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same representable delta.
+    // Skip when assetsWithdrawn is already zero: the earlier fix340 guard above deliberately
+    // permits fixed-share zero-asset withdrawals in a fully-impaired vault (where
+    // assetsTotalForWithdrawal == 0), and clamping-then-rejecting would undo that. Also skip on
+    // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
+    if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
+    {
+        // Check availability against the unclamped amount first, so a withdrawal that is both
+        // over the vault's available balance and sub-ULP at the posterior sfAssetsTotal scale
+        // reports tecINSUFFICIENT_FUNDS rather than tecPRECISION_LOSS. The clamp below only ever
+        // shrinks assetsWithdrawn, so this check stays valid; the post-clamp check further down
+        // remains in place to catch the (now smaller) clamped value too.
+        if (*assetsAvailable < assetsWithdrawn)
+        {
+            JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
+            return tecINSUFFICIENT_FUNDS;
+        }
+
+        // Number arithmetic can throw overflow_error when Scale and totals are large.
+        try
+        {
+            // Round down at the posterior sfAssetsTotal scale so the payout never exceeds the
+            // value represented by the redeemed shares. sharesRedeemed is intentionally not
+            // re-derived: any trimmed residue stays with remaining shareholders.
+            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsWithdrawn);
+            if (!maybeClamped)
+                return maybeClamped.error();  // LCOV_EXCL_LINE
+            assetsWithdrawn = *maybeClamped;
+        }
+        // LCOV_EXCL_START
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultWithdraw: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            // Overflow means this transaction cannot apply, but ledger state is still consistent.
+            // Return tecPATH_DRY rather than a hard internal error.
+            return tecPATH_DRY;
+        }
+        // LCOV_EXCL_STOP
+    }
+
     // The vault must have enough assets on hand.
     if (*assetsAvailable < assetsWithdrawn)
     {
@@ -416,14 +490,12 @@ VaultWithdraw::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // Post-fixCleanup3_2_0 "final withdrawal" rule:
-    // a transaction that would burn every outstanding share is only permitted when the vault is in
-    // a clean state — no outstanding receivables and no unrealized loss. Otherwise the resulting
-    // (shares == 0, assetsTotal > 0) state would violate the zero-sized-vault invariant.
+    // Post-fixCleanup3_2_0: burning every outstanding share is only allowed when the vault has no
+    // unrealized loss. Otherwise the resulting (shares == 0, assetsTotal > 0) state would violate
+    // the zero-sized-vault invariant.
     //
-    // When the rule applies, the payout is the remaining sfAssetsAvailable; in a clean vault
-    // the helper result should already equal that value, and any mismatch is a rounding artifact
-    // worth logging.
+    // The payout is set to the remaining sfAssetsAvailable. The helper result should already
+    // equal that value in a clean vault; any mismatch is a rounding artifact and is logged.
     if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
     {
         // Unreachable: a final withdrawal with lossUnrealized > 0 has
@@ -457,6 +529,8 @@ VaultWithdraw::doApply()
     }
     else
     {
+        // Debit both rails by the same delta so sfAssetsTotal and sfAssetsAvailable stay in step,
+        // as required by the ValidVault invariant.
         assetsTotal -= assetsWithdrawn;
         assetsAvailable -= assetsWithdrawn;
     }

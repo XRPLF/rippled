@@ -14,8 +14,8 @@ To build from source instead, see [BUILD.md](../BUILD.md).
 Packages are published to four channels:
 
 - `stable` - the latest production release
-- `unstable` - release candidates
-- `experimental` - beta builds
+- `rc` - release candidates
+- `beta` - beta builds
 - `develop` - every push to the [`develop` branch](https://github.com/XRPLF/rippled/tree/develop)
 
 See [Publishing packages](../package/README.md#publishing-packages) for how channels are produced.

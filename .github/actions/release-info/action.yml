@@ -7,10 +7,10 @@ outputs:
     value: ${{ steps.version.outputs.version }}
   channel:
     description: "The release channel this build belongs to."
-    value: ${{ steps.channel.outputs.channel }}
+    value: ${{ steps.release_info.outputs.channel }}
   pkg_release:
     description: "The package release number: 1 for a tag, the run number otherwise."
-    value: ${{ steps.pkg_release.outputs.pkg_release }}
+    value: ${{ steps.release_info.outputs.pkg_release }}
 
 runs:
   using: composite
@@ -39,52 +39,6 @@ runs:
 
         echo "version=${version}" | tee -a "${GITHUB_OUTPUT}"
 
-    # Only a tag says how mature a build is: a push is a develop build whatever
-    # its version, and a non-public codebase keeps its packages to itself.
-    - name: Determine release channel
-      id: channel
-      shell: bash
-      env:
-        IS_TAG: ${{ startsWith(github.ref, 'refs/tags/') }}
-        REF_NAME: ${{ github.ref_name }}
-        VISIBILITY: ${{ github.event.repository.visibility }}
-      run: |
-        pre_release=""
-        if [[ "${REF_NAME}" == *-* ]]; then
-            pre_release="${REF_NAME#*-}"
-        fi
-
-        if [[ "${VISIBILITY}" != "public" ]]; then
-            channel=private
-        elif [[ "${IS_TAG}" != "true" ]]; then
-            channel=develop
-        elif [[ -z "${pre_release}" ]]; then
-            channel=stable
-        elif [[ "${pre_release}" =~ ^rc[0-9]+(\+.*)?$ ]]; then
-            channel=unstable
-        elif [[ "${pre_release}" =~ ^b(0|[1-9][0-9]*)(\+.*)?$ ]]; then
-            channel=experimental
-        else
-            echo "Unsupported pre-release in tag '${REF_NAME}'. Use bN or rcN." >&2
-            exit 1
-        fi
-
-        echo "channel=${channel}" | tee -a "${GITHUB_OUTPUT}"
-
-    # A tag is packaged once, so its release number is fixed at 1. Develop builds
-    # repeat the same version, so the run number is what makes each push an
-    # upgrade rather than a reinstall.
-    - name: Determine package release
-      id: pkg_release
-      shell: bash
-      env:
-        IS_TAG: ${{ startsWith(github.ref, 'refs/tags/') }}
-        RUN_NUMBER: ${{ github.run_number }}
-      run: |
-        if [[ "${IS_TAG}" == "true" ]]; then
-            pkg_release=1
-        else
-            pkg_release="${RUN_NUMBER}"
-        fi
-
-        echo "pkg_release=${pkg_release}" | tee -a "${GITHUB_OUTPUT}"
+    - name: Determine release channel and package release
+      id: release_info
+      uses: XRPLF/actions/release-info@7f956517847fb9e0b56070f72e1280f4e7404a09

@@ -238,6 +238,9 @@ private:
             Ter(tesSUCCESS));
         env.close();
 
+        // Under fixCleanup3_4_0 impair requires the payment to be late.
+        advancePastDueDate(env, loanKeylet);
+
         // Impair the loan to create unrealized loss
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
@@ -461,6 +464,7 @@ private:
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
         // Realize a loss via impairment before locking.
+        advancePastDueDate(env, loanKeylet);
         env(manage(lender, loanKeylet.key, tfLoanImpair));
         env.close();
 
