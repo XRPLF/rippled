@@ -57,23 +57,13 @@ on:
         default: false
 
   push:
-    # No branches filter, deliberately. Branch names are not something this
-    # repository controls, so gating on one decides whether telemetry gets
-    # validated by what a branch is CALLED rather than by what it CHANGED. The
-    # previous list ("pratik/otel-phase*", "feature/otel-*",
-    # "feature/telemetry-*") silently excluded every other name, and because
-    # GitHub ANDs the branch and path filters the effect was total: pushes to
-    # pratik/otel-sync-diagnostics matched the paths below but not the branch
-    # glob, so this workflow was never dispatched there at all -- not queued,
-    # not skipped, no run to look at. Two rounds of harness fixes on that branch
-    # produced no signal before anyone noticed. The paths below already express
-    # the real question, which is whether a change can affect telemetry.
+    # No branches filter, deliberately: GitHub ANDs branches with paths, so a
+    # branch glob decides validation by what a branch is CALLED rather than by
+    # what it CHANGED, and a non-matching name gets no run at all. The paths
+    # below already ask the real question.
     #
-    # Keep these globs pointing at paths that actually exist. Two earlier
-    # entries (include/xrpl/basics/Telemetry*.h, src/xrpld/app/misc/Telemetry*)
-    # matched zero tracked files, so a pure C++ telemetry change never
-    # triggered this workflow on push — only edits under docker/telemetry/**
-    # or to this file did.
+    # Keep these globs pointing at paths that exist -- two earlier entries
+    # matched zero tracked files, so C++ telemetry changes never triggered.
     paths:
       # This workflow, and the harness it runs.
       - ".github/workflows/telemetry-validation.yml"

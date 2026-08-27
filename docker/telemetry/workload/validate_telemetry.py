@@ -427,19 +427,13 @@ def _otlp_span_attr_keys(span: dict[str, Any]) -> set[str]:
 def _traceql_name_predicate(expected_name: str) -> str:
     """Build the TraceQL `name` predicate that selects a contract span name.
 
-    A literal contract name becomes an equality test. A glob becomes a regex
-    test, because TraceQL has no glob operator: `rpc.command.*` is sent as
+    A literal name becomes an equality test. A glob becomes a regex, since
+    TraceQL has no glob operator: `rpc.command.*` is sent as
     `name=~"rpc[.]command[.].*"`.
 
-    A literal dot is written as the character class `[.]` rather than as `\\.`,
-    and that is not a style choice. TraceQL's string lexer rejects a backslash
-    escape it does not recognise, so the re.escape spelling this replaced --
-    `name=~"rpc\\.command\\..*"` -- came back as HTTP 400, "invalid TraceQL
-    query: parse error at line 1, col 68: invalid char escape". `[.]` carries no
-    backslash, so nothing reaches the lexer that it can refuse, while still
-    meaning a literal dot to the regex engine behind it. Leaving the dots bare
-    would parse but match any character in those positions, which is the
-    looseness _span_name_matches exists to avoid.
+    Dots use the `[.]` character class, not `\\.`: TraceQL's string lexer
+    rejects an escape it does not recognise, so `\\.` returns HTTP 400. Bare
+    dots would parse but match any character there.
 
     Args:
         expected_name: Span name or glob from expected_spans.json.
@@ -890,33 +884,17 @@ async def _validate_parent_child(
             )
             return
 
-        # Then ask Tempo for traces containing BOTH, and inspect those instead of
-        # the newest parent traces from the query above.
-        #
-        # Sampling the newest N parent traces is wrong whenever the child is
-        # conditional on a state the workload only sometimes reaches: the parent
-        # fires constantly, so the newest traces are the ones LEAST likely to
-        # carry a rare child. Three relationships were skipped as unassertable
-        # for exactly this and none of them was a missing span --
-        # txq.accept -> txq.accept_tx (child needs a queue holding a fee-clearing
-        # transaction), txq.enqueue -> txq.batch_clear (needs a supersedable
-        # batch) and ledger.acquire -> ledger.acquire.txtree (opens only when the
-        # node lacks the tx set, which in a cluster building identical sets is the
-        # minority case). Each child emitted on its own; it simply was not in the
-        # three newest parent traces. `{A} && {B}` is a trace-level conjunction,
-        # so Tempo searches its whole retention for co-occurrence rather than
-        # leaving it to which traces happen to be newest.
+        # Ask for traces holding BOTH rather than the newest parent traces. A
+        # parent that fires on every close has newest traces least likely to
+        # carry a conditional child. `{A} && {B}` matches at trace level, so
+        # co-occurrence is found wherever it happened.
         both_query = query + " && {" + _traceql_name_predicate(child_name) + "}"
         traces = await _tempo_search(session, tempo_url, both_query, limit=3)
 
-        # Verify against the returned traces rather than trusting the query.
-        # Tempo has already guaranteed co-occurrence, but re-checking the span
-        # names keeps the glob semantics in one place (_span_name_matches) and
-        # means a query built wrongly cannot silently pass. Names are matched
-        # exactly (globs for wildcard contracts) — a substring test let a
-        # longer emitted name satisfy a shorter contract, so
-        # consensus.round -> consensus.accept passed on a
-        # consensus.accept.apply span alone.
+        # Re-check the names even though Tempo already guaranteed co-occurrence:
+        # it keeps the glob handling in one place, and a wrongly built query
+        # cannot then pass silently. Matched exactly (globs for wildcard
+        # contracts) so a longer emitted name cannot satisfy a shorter contract.
         found_child = False
         for trace_summary in traces:
             trace_id = trace_summary.get("traceID", "")
