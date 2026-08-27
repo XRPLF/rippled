@@ -72,9 +72,13 @@ TEST(Recording, counter_accumulates_only_when_compiled_in)
     counter.add(4);
 
     if constexpr (telemetry::kEnabled)
+    {
         EXPECT_EQ(counter.load(), 5U);
+    }
     else
+    {
         EXPECT_EQ(counter.load(), 0U);
+    }
 }
 
 // The default template argument is std::uint64_t; an explicit type is honoured.
@@ -98,9 +102,13 @@ TEST(Recording, stopwatch_measures_only_when_compiled_in)
     auto const elapsed = timer.elapsedUs();
 
     if constexpr (telemetry::kEnabled)
+    {
         EXPECT_GE(elapsed, std::chrono::microseconds{1000});
+    }
     else
+    {
         EXPECT_EQ(elapsed, std::chrono::microseconds{0});
+    }
 }
 
 // restart() moves the origin forward, so the interval measured after it is
