@@ -5,17 +5,21 @@
 #include <test/jtx/noop.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/ToString.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 namespace xrpl::test {
@@ -111,6 +115,71 @@ class LedgerMaster_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testCompleteLedgerRange(FeatureBitset features)
+    {
+        // Note that this test is intentionally very similar to
+        // SHAMapStore_test::testLedgerGaps, but has a different
+        // focus.
+
+        testcase("Complete Ledger operations");
+
+        using namespace test::jtx;
+
+        auto const deleteInterval = 8;
+
+        Env env{*this, envconfig(onlineDelete, deleteInterval)};
+
+        auto const alice = Account("alice");
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        auto& lm = env.app().getLedgerMaster();
+        LedgerIndex minSeq = 2;
+        LedgerIndex maxSeq = env.closed()->header().seq;
+        auto& store = env.app().getSHAMapStore();
+        BEAST_EXPECT(store.rendezvous());
+        LedgerIndex lastRotated = store.getLastRotated();
+        BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
+        BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
+        BEAST_EXPECTS(lastRotated == 3, to_string(lastRotated));
+        BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
+        BEAST_EXPECT(minSeq + 1 > maxSeq - 1);
+        BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
+        BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 2, maxSeq - 2) == 2);
+        BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
+
+        // Close enough ledgers to rotate a few times
+        for (int i = 0; i < 24; ++i)
+        {
+            for (int t = 0; t < 3; ++t)
+            {
+                env(noop(alice));
+            }
+            env.close();
+            BEAST_EXPECT(store.rendezvous());
+
+            ++maxSeq;
+
+            if (maxSeq == lastRotated + deleteInterval)
+            {
+                minSeq = lastRotated;
+                lastRotated = maxSeq;
+            }
+            BEAST_EXPECTS(
+                env.closed()->header().seq == maxSeq, to_string(env.closed()->header().seq));
+            BEAST_EXPECTS(store.getLastRotated() == lastRotated, to_string(store.getLastRotated()));
+            std::stringstream expectedRange;
+            expectedRange << minSeq << "-" << maxSeq;
+            BEAST_EXPECTS(lm.getCompleteLedgers() == expectedRange.str(), lm.getCompleteLedgers());
+            BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
+            BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
+            BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
+            BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 2, maxSeq - 2) == 2);
+            BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
+        }
+    }
+
 public:
     void
     run() override
@@ -124,6 +193,7 @@ public:
     testWithFeats(FeatureBitset features)
     {
         testTxnIdFromIndex(features);
+        testCompleteLedgerRange(features);
     }
 };
 
