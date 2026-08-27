@@ -413,3 +413,42 @@ TEST_F(ValidationTrackerTest, PendingStaysBoundedWithoutReconcile)
     // cost us the lifetime totals the gauges report.
     EXPECT_EQ(tracker_.totalValidationsSent(), kSecondBatch);
 }
+
+// ---------------------------------------------------------------
+// Bounding the map must not lose a ledger from the verdict totals.
+//
+//     totalAgreements() and totalMissed() move only when an event is
+//     classified, which normally happens in reconcile() after the grace
+//     period. An event dropped to hold the bound therefore has to be
+//     classified on the way out, or the ledger is counted as neither an
+//     agreement nor a miss and both totals silently under-report.
+//
+//     Recorded with both validations present and no reconcile() call, so
+//     every classification here comes from the eviction path alone.
+// ---------------------------------------------------------------
+TEST_F(ValidationTrackerTest, EvictionUnderPressureStillCountsEveryLedger)
+{
+    // Comfortably past the cap, so eviction runs many times.
+    constexpr std::uint64_t kCount = 3000;
+
+    for (std::uint64_t i = 0; i < kCount; ++i)
+    {
+        auto const hash = makeHash(i + 1);
+        auto const seq = static_cast<LedgerIndex>(i + 1);
+        tracker_.recordOurValidation(hash, seq);
+        tracker_.recordNetworkValidation(hash, seq);
+    }
+
+    // Held at the cap, so evictions definitely happened.
+    auto const stillPending = tracker_.pendingCount();
+    EXPECT_LT(stillPending, kCount);
+
+    // Every evicted ledger reached a verdict, and each had both validations, so
+    // every one of them is an agreement rather than a miss.
+    auto const evicted = kCount - stillPending;
+    EXPECT_EQ(tracker_.totalAgreements(), evicted);
+    EXPECT_EQ(tracker_.totalMissed(), 0u);
+
+    // Nothing is counted twice: the ledgers still pending have no verdict yet.
+    EXPECT_EQ(tracker_.totalAgreements() + tracker_.totalMissed(), evicted);
+}
