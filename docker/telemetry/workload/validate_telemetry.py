@@ -379,8 +379,9 @@ async def _tempo_get_trace(
     TempoQueryError.
 
     Returns:
-        Flat list of span dicts with 'name' and 'attributes' keys. Empty when
-        Tempo has no trace with this id.
+        Flat list of span dicts as Tempo returned them, carrying at least
+        'name', 'attributes', 'spanId' and, for non-root spans, 'parentSpanId'.
+        Empty when Tempo has no trace with this id.
 
     Raises:
         TempoQueryError: Tempo answered with a status other than 200 or 404.
@@ -848,6 +849,151 @@ async def _validate_span_attributes_otlp(
     )
 
 
+# Verdicts _span_ancestry can return, most conclusive first. A single trace
+# proving "under" settles the relationship, so it wins outright. A definite
+# negative outranks an indefinite one: "not_under" means a chain was walked to a
+# root and the parent was not on it, while "broken_chain" only means ancestry
+# could not be established, which is a different thing to go and look at.
+# "no_child" ranks last because it is the starting value: a relationship with no
+# candidate trace at all reports it, and every other verdict must be able to
+# replace it.
+_ANCESTRY_PRIORITY = ("under", "not_under", "broken_chain", "no_parent", "no_child")
+
+
+def _span_ancestry(
+    spans: list[dict[str, Any]],
+    parent_name: str,
+    child_name: str,
+) -> tuple[str, str]:
+    """Decide whether a matching child hangs under a matching parent in one trace.
+
+    Walks each candidate child's parentSpanId chain upwards. Ancestry rather
+    than a direct edge, because every relationship in expected_spans.json is
+    worded as the parent "containing" the child: a scope appearing in between is
+    a refactor, not a broken relationship.
+
+    Span ids are compared as opaque strings and never decoded. Both fields come
+    from the same Tempo response and so share whatever encoding it uses, which
+    keeps this independent of whether that is hex or base64.
+
+    Args:
+        spans:       Every OTLP span dict in one fetched trace.
+        parent_name: Parent name from the contract; may be a glob.
+        child_name:  Child name from the contract; may be a glob.
+
+    Returns:
+        ``(verdict, detail)``. Verdict is one of ``_ANCESTRY_PRIORITY``. For
+        ``broken_chain`` the detail is the span id the chain ran into.
+    """
+    by_id = {s["spanId"]: s for s in spans if s.get("spanId")}
+    parent_ids = {
+        s["spanId"]
+        for s in spans
+        if s.get("spanId") and _span_name_matches(s.get("name", ""), parent_name)
+    }
+    children = [s for s in spans if _span_name_matches(s.get("name", ""), child_name)]
+    if not children:
+        return "no_child", ""
+    if not parent_ids:
+        return "no_parent", ""
+
+    broken = ""
+    walked_to_a_root = False
+    for child in children:
+        current = child.get("parentSpanId", "")
+        # Guards against a cycle in malformed data, which would otherwise spin
+        # here forever rather than failing the check.
+        seen: set[str] = set()
+        while current and current not in seen:
+            if current in parent_ids:
+                return "under", ""
+            seen.add(current)
+            if (next_span := by_id.get(current)) is None:
+                # This child proves nothing either way. Keep the first gap seen,
+                # in case no other child yields a definite answer.
+                broken = broken or current
+                break
+            current = next_span.get("parentSpanId", "")
+        else:
+            # Ran out of chain rather than hitting a gap, so this child really is
+            # not under the parent. One such child is a definite negative and
+            # outranks any other child's gap.
+            walked_to_a_root = True
+    if walked_to_a_root or not broken:
+        return "not_under", ""
+    return "broken_chain", broken
+
+
+def _hierarchy_message(
+    parent_name: str, child_name: str, verdict: str, detail: str
+) -> str:
+    """Phrase one ancestry verdict for the report.
+
+    Each verdict gets its own wording because they send the reader somewhere
+    different: a missing child is a workload or instrumentation gap, a child
+    that is present but not under the parent is a hierarchy bug, and a broken
+    chain is a span that never reached Tempo.
+    """
+    if verdict == "under":
+        return f"Found {child_name} under {parent_name}"
+    if verdict == "not_under":
+        return (
+            f"{child_name} shares a trace with {parent_name} but is not under "
+            f"it -- co-occurrence is not a hierarchy"
+        )
+    if verdict == "broken_chain":
+        return (
+            f"{child_name}'s parent chain runs into span {detail}, which the "
+            f"trace does not contain, so ancestry under {parent_name} cannot "
+            f"be verified"
+        )
+    if verdict == "no_parent":
+        return f"{parent_name} absent from traces selected for containing it"
+    return f"{child_name} not found in {parent_name} traces"
+
+
+async def _best_ancestry_verdict(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    traces: list[dict[str, Any]],
+    parent_name: str,
+    child_name: str,
+) -> tuple[str, str]:
+    """Fetch each candidate trace and keep the most conclusive verdict.
+
+    Every candidate is examined rather than stopping at the first negative,
+    because a conditional child may hang correctly in one trace while another
+    carries the parent alone. Stops early once one trace proves "under", which
+    nothing later can improve on.
+
+    Names are re-checked per trace rather than trusted from the query that
+    selected it: it keeps the glob handling in one place, so a wrongly built
+    query cannot pass silently.
+
+    Args:
+        session:     aiohttp client session.
+        tempo_url:   Base URL for the Tempo API.
+        traces:      Trace summaries that matched parent and child.
+        parent_name: Parent name from the contract; may be a glob.
+        child_name:  Child name from the contract; may be a glob.
+
+    Returns:
+        The winning ``(verdict, detail)`` from _span_ancestry.
+    """
+    verdict, detail = "no_child", ""
+    for trace_summary in traces:
+        trace_id = trace_summary.get("traceID", "")
+        if not trace_id:
+            continue
+        spans = await _tempo_get_trace(session, tempo_url, trace_id)
+        candidate, candidate_detail = _span_ancestry(spans, parent_name, child_name)
+        if _ANCESTRY_PRIORITY.index(candidate) < _ANCESTRY_PRIORITY.index(verdict):
+            verdict, detail = candidate, candidate_detail
+        if verdict == "under":
+            break
+    return verdict, detail
+
+
 async def _validate_parent_child(
     session: aiohttp.ClientSession,
     tempo_url: str,
@@ -855,6 +1001,10 @@ async def _validate_parent_child(
     report: ValidationReport,
 ) -> None:
     """Validate a parent-child span relationship in Tempo traces.
+
+    Co-occurrence in a trace is the search filter, not the assertion: the check
+    then walks the child's parentSpanId chain to confirm it really hangs under
+    the parent. See _span_ancestry.
 
     Args:
         session:      aiohttp client session.
@@ -891,32 +1041,15 @@ async def _validate_parent_child(
         both_query = query + " && {" + _traceql_name_predicate(child_name) + "}"
         traces = await _tempo_search(session, tempo_url, both_query, limit=3)
 
-        # Re-check the names even though Tempo already guaranteed co-occurrence:
-        # it keeps the glob handling in one place, and a wrongly built query
-        # cannot then pass silently. Matched exactly (globs for wildcard
-        # contracts) so a longer emitted name cannot satisfy a shorter contract.
-        found_child = False
-        for trace_summary in traces:
-            trace_id = trace_summary.get("traceID", "")
-            if not trace_id:
-                continue
-            spans = await _tempo_get_trace(session, tempo_url, trace_id)
-            if any(
-                _span_name_matches(span.get("name", ""), child_name) for span in spans
-            ):
-                found_child = True
-                break
-
+        verdict, detail = await _best_ancestry_verdict(
+            session, tempo_url, traces, parent_name, child_name
+        )
         report.add(
             CheckResult(
                 name=f"span.hierarchy.{parent_name}->{child_name}",
                 category="span",
-                passed=found_child,
-                message=(
-                    f"Found {child_name} as child of {parent_name}"
-                    if found_child
-                    else f"{child_name} not found in {parent_name} traces"
-                ),
+                passed=verdict == "under",
+                message=_hierarchy_message(parent_name, child_name, verdict, detail),
             )
         )
     except Exception as exc:
