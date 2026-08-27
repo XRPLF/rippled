@@ -39,6 +39,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -66,6 +67,16 @@
 
 namespace xrpl::test {
 
+/**
+ * Shared base for the Loan*_test family under src/test/app/lending/.
+ *
+ * Run all suites in this family with
+ *   xrpld -u Loan,LendingHelpers
+ * The "Loan" prefix is matched against every suite name via
+ * beast::unit_test::Selector::ModeT::Automatch; LendingHelpers is listed
+ * explicitly because it does not share the "Loan" prefix (and lives in a
+ * different module: app vs tx).
+ */
 class LoanTestBase : public beast::unit_test::Suite
 {
 protected:
@@ -94,6 +105,23 @@ protected:
         // tests that need finer loanScale to exercise rounding edge cases.
         std::optional<std::uint8_t> vaultScale =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        // Vault kind axis. When ClosedEnded, createVaultAndBroker sets sfSubscriptionDate /
+        // sfRedemptionDate from env.now() using the offsets below and advances the ledger clock
+        // past SubscriptionDate so the vault is in the Investment phase by the time the broker is
+        // set up. Requires featureLendingProtocolV1_1.
+        VaultKind vaultKind = VaultKind::OpenEnded;
+        // Seconds past env.now() at which SubscriptionDate lands. Must be strictly positive
+        // (VaultCreate::preclaim rejects SubscriptionDate <= parentCloseTime).
+        std::uint32_t subscriptionOffset = 60;
+        // Seconds between SubscriptionDate and RedemptionDate. Must be >= kMinInvestmentPeriod, <
+        // kMaxInvestmentPeriod, and generous enough to fit any loan schedule the test runs
+        // (finalPayment must be strictly before RedemptionDate). Default sized to comfortably
+        // exceed any schedule realistic tests are likely to configure.
+        std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
+        // When true, createVaultAndBroker skips its automatic clock advance past SubscriptionDate.
+        // Useful for tests that need to observe the vault while it is still in the Subscription
+        // phase. Ignored for open-ended vaults.
+        bool skipPhaseAdvance = false;
 
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
@@ -121,15 +149,23 @@ protected:
         uint256 brokerID;
         uint256 vaultID;
         BrokerParameters params;
+        // Absolute dates resolved by createVaultAndBroker when params.vaultKind
+        // is ClosedEnded; std::nullopt for open-ended vaults.
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
         BrokerInfo(
             jtx::PrettyAsset const& asset,
             Keylet const& brokerKeylet,
             Keylet const& vaultKeylet,
-            BrokerParameters p)
+            BrokerParameters p,
+            std::optional<std::uint32_t> subscriptionDate = std::nullopt,
+            std::optional<std::uint32_t> redemptionDate = std::nullopt)
             : asset(asset)
             , brokerID(brokerKeylet.key)
             , vaultID(vaultKeylet.key)
             , params(std::move(p))
+            , subscriptionDate(subscriptionDate)
+            , redemptionDate(redemptionDate)
         {
         }
 
@@ -460,7 +496,41 @@ protected:
 
         auto const coverRateMinValue = params.coverRateMin;
 
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
+        // brokers attached to open-ended vaults. Many callers of this
+        // helper leave vaultKind at the OpenEnded default and don't care
+        // about the vault kind per se — they just need a broker on a
+        // vault. When LP V1.1 is enabled, transparently promote to
+        // ClosedEnded so those tests keep working without threading
+        // vaultKind through every call site. Callers that explicitly
+        // asked for ClosedEnded are left untouched. Tests that want to
+        // exercise the open-ended rejection under LP V1.1 build their own
+        // vault directly instead of going through this helper, since it
+        // always promotes OpenEnded once the amendment is enabled.
+        auto effectiveVaultKind = params.vaultKind;
+        if (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
+            effectiveVaultKind == VaultKind::OpenEnded)
+        {
+            effectiveVaultKind = VaultKind::ClosedEnded;
+        }
+
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
+        if (effectiveVaultKind == VaultKind::ClosedEnded)
+        {
+            auto const nowSec = env.now().time_since_epoch().count();
+            subscriptionDate = nowSec + params.subscriptionOffset;
+            redemptionDate = *subscriptionDate + params.redemptionOffset;
+        }
+
+        auto [tx, vaultKeylet] = vault.create(
+            {.owner = lender,
+             .asset = asset,
+             .vaultKind = effectiveVaultKind == VaultKind::OpenEnded
+                 ? std::optional<std::uint8_t>{}
+                 : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},
+             .subscriptionDate = subscriptionDate,
+             .redemptionDate = redemptionDate});
         if (params.vaultScale)
             tx[sfScale] = *params.vaultScale;
         env(tx);
@@ -474,7 +544,16 @@ protected:
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
         }
 
-        auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        // For closed-ended vaults, advance past SubscriptionDate so subsequent LoanSet operations
+        // run in the Investment phase (unless the caller explicitly asked to stay in Subscription).
+        if (subscriptionDate && !params.skipPhaseAdvance)
+        {
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
+            env.close(tp{d{*subscriptionDate + 1}});
+        }
+
+        auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         using namespace loan_broker;
         env(set(lender, vaultKeylet.key, params.flags),
@@ -489,7 +568,7 @@ protected:
 
         env.close();
 
-        return {asset, keylet, vaultKeylet, params};
+        return {asset, keylet, vaultKeylet, params, subscriptionDate, redemptionDate};
     }
 
     /**
@@ -595,6 +674,23 @@ protected:
         return true;
     }
 
+    // Under fixCleanup3_4_0, LoanManage rejects tfLoanImpair with tecTOO_SOON
+    // unless the loan payment is already late. Advance the ledger past the
+    // loan's sfNextPaymentDueDate so shared lifecycle flows still exercise
+    // the tesSUCCESS branch when the amendment is active. No-op when the
+    // amendment is disabled.
+    void
+    advancePastDueDate(jtx::Env& env, Keylet const& loanKeylet)
+    {
+        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+            return;
+        auto const loan = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loan))
+            return;
+        std::uint32_t const dueDate = loan->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+    }
+
     enum class AssetType { XRP = 0, IOU = 1, MPT = 2 };
 
     // Specify the accounts as params to allow other accounts to be used
@@ -665,9 +761,9 @@ protected:
     {
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(brokerStateBefore))
-            return keylet::loan(broker.brokerID, 0);
+            return keylet::loan(broker.brokerID, SeqProxy::rawSequence(0));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        return keylet::loan(broker.brokerID, loanSequence);
+        return keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
     }
 
     // Funds issuer/lender/borrower with XRP, creates an IOU asset issued by
@@ -852,7 +948,7 @@ protected:
             // The loan keylet is based on the LoanSequence of the
             // _LOAN_BROKER_ object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return keylet::loan(broker.brokerID, loanSequence);
+            return keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
         }();
         if (!loanKeyletOpt)
             return std::nullopt;
@@ -1329,7 +1425,8 @@ protected:
             // The loan keylet is based on the LoanSequence of the _LOAN_BROKER_
             // object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return std::make_pair(keylet::loan(broker.brokerID, loanSequence), loanSequence);
+            return std::make_pair(
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence)), loanSequence);
         }();
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, keylet);
@@ -1512,12 +1609,30 @@ protected:
 
         // Check the vault
         bool const canImpair = canImpairLoan(env, broker, state);
-        // Impair the loan, if possible
-        env(manage(lender, keylet.key, tfLoanImpair),
-            canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
-        // Unimpair the loan
-        env(manage(lender, keylet.key, tfLoanUnimpair),
-            canImpair ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION));
+        // Under fixCleanup3_4_0, impair rejects a not-yet-late loan with
+        // tecTOO_SOON. Advancing time to satisfy the gate here would push
+        // the loan into a "late" state and break the toEndOfLife flows
+        // (singlePayment/fullPayment) that expect a fresh loan without the
+        // tfLoanLatePayment flag. The tesSUCCESS/tecLIMIT_EXCEEDED impair
+        // path is already covered under fixCleanup3_4_0 by dedicated tests
+        // in LoanSecurity_test.cpp and LoanCashBasis_test.cpp.
+        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+        {
+            // Impair the loan, if possible
+            env(manage(lender, keylet.key, tfLoanImpair),
+                canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
+            // Unimpair the loan
+            env(manage(lender, keylet.key, tfLoanUnimpair),
+                canImpair ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION));
+        }
+        else
+        {
+            // With the fix on, a not-yet-late loan can never be impaired
+            // (tecTOO_SOON) and the follow-up unimpair on an unimpaired
+            // loan is still tecNO_PERMISSION.
+            env(manage(lender, keylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+            env(manage(lender, keylet.key, tfLoanUnimpair), Ter(tecNO_PERMISSION));
+        }
 
         auto const nextDueDate = startDate + *loanParams.payInterval;
 
@@ -1666,7 +1781,7 @@ protected:
 
         auto const baseFee = env.current()->fees().base;
 
-        auto badKeylet = keylet::vault(lender.id(), env.seq(lender));
+        auto badKeylet = keylet::vault(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
         // Try some failure cases
         // flags are checked first
         env(set(evan, broker.brokerID, principalRequest, tfLoanSetMask),
@@ -2108,6 +2223,11 @@ protected:
                 {
                     // Check the vault
                     bool const canImpair = canImpairLoan(env, broker, state);
+                    // Under fixCleanup3_4_0 impair requires the payment to
+                    // already be late. Advance past the loan's next due
+                    // date so this exercises the tesSUCCESS branch. No-op
+                    // when the fix is disabled.
+                    advancePastDueDate(env, loanKeylet);
                     // Impair the loan, if possible
                     env(manage(lender, loanKeylet.key, tfLoanImpair),
                         canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
@@ -2115,7 +2235,11 @@ protected:
                     if (canImpair)
                     {
                         state.flags |= tfLoanImpair;
-                        state.nextPaymentDate = env.now().time_since_epoch().count();
+                        // Prior to fixCleanup3_4_0 impair rewrote
+                        // sfNextPaymentDueDate to parentCloseTime. Under the
+                        // fix, the due date is preserved.
+                        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+                            state.nextPaymentDate = env.now().time_since_epoch().count();
 
                         // Once the loan is impaired, it can't be impaired again
                         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
@@ -2735,7 +2859,17 @@ protected:
 
                     auto const borrowerBalanceBeforePayment = env.balance(borrower, broker.asset);
 
-                    if (canImpairLoan(env, broker, state))
+                    // Under fixCleanup3_4_0 impair requires the payment to
+                    // already be late. This periodic-payment loop stays
+                    // within each payment interval, so the loan is never
+                    // late here; skip the impair rather than perturb the
+                    // payment schedule.
+                    auto const loanSle = env.le(loanKeylet);
+                    bool const impairAllowed = BEAST_EXPECT(loanSle) &&
+                        canImpairLoan(env, broker, state) &&
+                        (!env.current()->rules().enabled(fixCleanup3_4_0) ||
+                         isPaymentLate(*env.current(), loanSle));
+                    if (impairAllowed)
                     {
                         // Making a payment will unimpair the loan
                         env(manage(lender, loanKeylet.key, tfLoanImpair));

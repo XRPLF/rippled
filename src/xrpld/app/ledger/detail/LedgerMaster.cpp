@@ -57,6 +57,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <boost/icl/concept/interval_associator.hpp>
 #include <boost/icl/concept/interval_set.hpp>
 
 #include <xrpl.pb.h>
@@ -494,7 +495,7 @@ LedgerMaster::setBuildingLedger(LedgerIndex i)
 }
 
 bool
-LedgerMaster::haveLedger(std::uint32_t seq)
+LedgerMaster::haveLedger(std::uint32_t seq) const
 {
     std::scoped_lock const sl(completeLock_);
     return boost::icl::contains(completeLedgers_, seq);
@@ -1578,10 +1579,34 @@ LedgerMaster::getPublishedLedger()
 }
 
 std::string
-LedgerMaster::getCompleteLedgers()
+LedgerMaster::getCompleteLedgers() const
 {
     std::scoped_lock const sl(completeLock_);
     return to_string(completeLedgers_);
+}
+
+std::size_t
+LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last) const
+{
+    if (first > last)
+    {
+        // In expected usage, this will never happen because "first" is generally initialized to
+        // "last", "last" is guaranteed to grow monotonically, and "first" either doesn't change
+        // or grows more slowly.
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::LedgerMaster::missingFromCompleteLedgerRange : invalid parameters");
+        return 0;
+        // LCOV_EXCL_STOP
+    }
+
+    RangeSet<LedgerIndex> const target{range(first, last)};
+
+    auto const missing = [&target, this] {
+        std::scoped_lock const sl(completeLock_);
+        return target - completeLedgers_;
+    }();
+
+    return boost::icl::size(missing);
 }
 
 std::optional<NetClock::time_point>

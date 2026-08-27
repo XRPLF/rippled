@@ -3,16 +3,13 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/format.hpp>  // IWYU pragma: keep
-#include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <array>
@@ -20,6 +17,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
+#include <format>
 #include <fstream>
 #include <optional>
 #include <ostream>
@@ -36,7 +35,7 @@ namespace detail {
 std::string
 configContents(std::string const& dbPath, std::string const& validatorsFile)
 {
-    static boost::format kConfigContentsTemplate(R"xrpldConfig(
+    static constexpr char const* kConfigContentsTemplate = R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -83,9 +82,9 @@ cache_mb=256
 file_size_mb=8
 file_size_mult=2
 
-%1%
+{}
 
-%2%
+{}
 
 # This needs to be an absolute directory reference, not a relative one.
 # Modify this value as required.
@@ -106,7 +105,7 @@ r.ripple.com 51235
 # Turn down default logging to save disk space in the long run.
 # Valid values here are trace, debug, info, warning, error, and fatal
 [rpc_startup]
-{ "command": "log_level", "severity": "warning" }
+{{ "command": "log_level", "severity": "warning" }}
 
 # Defaults to 1 ("yes") so that certificates will be validated. To allow the use
 # of self-signed certificates for development or internal use, set to 0 ("no").
@@ -115,12 +114,12 @@ r.ripple.com 51235
 
 [sqdb]
 backend=sqlite
-)xrpldConfig");
+)xrpldConfig";
 
     std::string dbPathSection = dbPath.empty() ? "" : "[database_path]\n" + dbPath;
     std::string valFileSection =
         validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
-    return boost::str(kConfigContentsTemplate % dbPathSection % valFileSection);
+    return std::format(kConfigContentsTemplate, dbPathSection, valFileSection);
 }
 
 /**
@@ -179,7 +178,7 @@ public:
     [[nodiscard]] bool
     dataDirExists() const
     {
-        return boost::filesystem::is_directory(dataDir_);
+        return std::filesystem::is_directory(dataDir_);
     }
 
     [[nodiscard]] bool
@@ -192,7 +191,7 @@ public:
     {
         try
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
             if (rmDataDir_)
                 rmDir(dataDir_);
         }
@@ -273,7 +272,7 @@ public:
 class Config_test final : public TestSuite
 {
 private:
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
 
 public:
     void
@@ -309,7 +308,7 @@ port_wss_admin
     {
         testcase("config_file");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         auto const cwd = current_path();
 
         // Test both config file names.
@@ -319,7 +318,7 @@ port_wss_admin
         for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
-            beast::TempDir const td;
+            TempDir const td;
             current_path(td.path());
             path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
@@ -341,13 +340,13 @@ port_wss_admin
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
-            beast::TempDir const td;
+            TempDir const td;
             current_path(td.path());
 
             // The XDG config directory is set: the config file must be in a
             // subdirectory named after the system.
             {
-                beast::TempDir const tc;
+                TempDir const tc;
 
                 // Set the HOME and XDG_CONFIG_HOME environment variables. The
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
@@ -381,7 +380,7 @@ port_wss_admin
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
-                beast::TempDir const tc;
+                TempDir const tc;
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");
@@ -425,9 +424,9 @@ port_wss_admin
     {
         testcase("database_path");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         {
-            boost::format cc("[database_path]\n%1%\n");
+            constexpr char const* cc = "[database_path]\n{}\n";
 
             auto const cwd = current_path();
             path const dataDirRel("test_data_dir");
@@ -435,13 +434,13 @@ port_wss_admin
             {
                 // Dummy test - do we get back what we put in
                 Config c;
-                c.loadFromString(boost::str(cc % dataDirAbs.string()));
+                c.loadFromString(std::format(cc, dataDirAbs.string()));
                 BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
             }
             {
                 // Rel paths should convert to abs paths
                 Config c;
-                c.loadFromString(boost::str(cc % dataDirRel.string()));
+                c.loadFromString(std::format(cc, dataDirRel.string()));
                 BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDirAbs.string());
             }
             {
@@ -508,20 +507,20 @@ port_wss_admin
 
         {
             Config c;
-            static boost::format kConfigTemplate(R"xrpldConfig(
+            static constexpr char const* kConfigTemplate = R"xrpldConfig(
 [validation_seed]
-%1%
+{}
 
 [validator_token]
-%2%
-)xrpldConfig");
+{}
+)xrpldConfig";
             std::string error;
             auto const expectedError =
                 "Cannot have both [validation_seed] "
                 "and [validator_token] config sections";
             try
             {
-                c.loadFromString(boost::str(kConfigTemplate % validationSeed % token));
+                c.loadFromString(std::format(kConfigTemplate, validationSeed, token));
             }
             catch (std::runtime_error const& e)
             {
@@ -682,10 +681,10 @@ main
     {
         testcase("validators_file");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         {
             // load should throw for missing specified validators file
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             std::string const missingPath = "/no/way/this/path/exists";
             auto const expectedError =
@@ -693,7 +692,7 @@ main
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % missingPath));
+                c.loadFromString(std::format(cc, missingPath));
             }
             catch (std::runtime_error const& e)
             {
@@ -705,14 +704,14 @@ main
             // load should throw for invalid [validators_file]
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             path const invalidFile = current_path() / vtg.subdir();
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             auto const expectedError =
                 "Invalid file specified in [validators_file]: " + invalidFile.string();
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % invalidFile.string()));
+                c.loadFromString(std::format(cc, invalidFile.string()));
             }
             catch (std::runtime_error const& e)
             {
@@ -910,8 +909,8 @@ trust-these-validators.gov
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
             Config c;
-            boost::format cc("[validators_file]\n%1%\n");
-            c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+            constexpr char const* cc = "[validators_file]\n{}\n";
+            c.loadFromString(std::format(cc, vtg.validatorsFile()));
             BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
             BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 8);
             BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 2);
@@ -990,9 +989,9 @@ trust-these-validators.gov
 
         {
             // load validators from both config and validators file
-            boost::format cc(R"xrpldConfig(
+            constexpr char const* cc = R"xrpldConfig(
 [validators_file]
-%1%
+{}
 
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
@@ -1011,11 +1010,11 @@ trust-these-validators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
-)xrpldConfig");
+)xrpldConfig";
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
             Config c;
-            c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+            c.loadFromString(std::format(cc, vtg.validatorsFile()));
             BEAST_EXPECT(c.legacy(Sections::kValidatorsFile) == vtg.validatorsFile());
             BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 15);
             BEAST_EXPECT(c.section(Sections::kValidatorListSites).values().size() == 4);
@@ -1026,13 +1025,13 @@ trust-these-validators.gov
         {
             // load should throw if [validator_list_threshold] is present both
             // in xrpld.cfg and validators file
-            boost::format cc(R"xrpldConfig(
+            constexpr char const* cc = R"xrpldConfig(
 [validators_file]
-%1%
+{}
 
 [validator_list_threshold]
 1
-)xrpldConfig");
+)xrpldConfig";
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
@@ -1042,7 +1041,7 @@ trust-these-validators.gov
             try
             {
                 Config c;
-                c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                c.loadFromString(std::format(cc, vtg.validatorsFile()));
                 fail();
             }
             catch (std::runtime_error const& e)
@@ -1056,7 +1055,7 @@ trust-these-validators.gov
             // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
             Config const c;
-            boost::format cc("[validators_file]\n%1%\n");
+            constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
@@ -1069,7 +1068,7 @@ trust-these-validators.gov
             try
             {
                 Config c2;
-                c2.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                c2.loadFromString(std::format(cc, vtg.validatorsFile()));
             }
             catch (std::runtime_error const& e)
             {
@@ -1656,6 +1655,87 @@ r.ripple.com:51235
 
         // Above upper bound
         BEAST_EXPECT(!testDiverged("901"));
+
+        testcase("overlay: manifest counts");
+
+        // Both keys share one range and one parse path, so exercise each
+        // through the same helper.
+        auto testCount = [](std::string const& key,
+                            std::string const& value) -> std::optional<std::size_t> {
+            try
+            {
+                Config c;
+                c.loadFromString("[overlay]\n" + key + "=" + value);
+                return key == "max_trusted_count" ? c.maxTrustedCount : c.maxUntrustedCount;
+            }
+            catch (std::runtime_error const&)
+            {
+                return {};
+            }
+        };
+
+        for (auto const* key : {"max_untrusted_count", "max_trusted_count"})
+        {
+            // Failures. A bad value must surface as std::runtime_error, not
+            // the std::bad_cast that the underlying parse throws.
+            BEAST_EXPECT(!testCount(key, "none"));
+            BEAST_EXPECT(!testCount(key, "0.5"));
+            BEAST_EXPECT(!testCount(key, "400 manifests"));
+            BEAST_EXPECT(!testCount(key, "-1"));
+
+            // Below lower bound
+            BEAST_EXPECT(!testCount(key, "0"));
+            BEAST_EXPECT(!testCount(key, "49"));
+
+            // In bounds
+            BEAST_EXPECT(testCount(key, "50") == 50);
+            BEAST_EXPECT(testCount(key, "51") == 51);
+            BEAST_EXPECT(testCount(key, "300") == 300);
+            BEAST_EXPECT(testCount(key, "400") == 400);
+            BEAST_EXPECT(testCount(key, "999") == 999);
+            BEAST_EXPECT(testCount(key, "1000") == 1000);
+
+            // Above upper bound
+            BEAST_EXPECT(!testCount(key, "1001"));
+        }
+
+        // Each key is independent: setting one leaves the other unset.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_untrusted_count=500");
+            BEAST_EXPECT(c.maxUntrustedCount == 500);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_trusted_count=500");
+            BEAST_EXPECT(c.maxTrustedCount == 500);
+            BEAST_EXPECT(!c.maxUntrustedCount);
+        }
+
+        // Both can be set together.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nmax_untrusted_count=250\nmax_trusted_count=750");
+            BEAST_EXPECT(c.maxUntrustedCount == 250);
+            BEAST_EXPECT(c.maxTrustedCount == 750);
+        }
+
+        // Unset leaves no override, so the use sites fall back to the defaults.
+        {
+            Config c;
+            c.loadFromString("[overlay]\nip_limit=64");
+            BEAST_EXPECT(!c.maxUntrustedCount);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
+
+        // No [overlay] section at all leaves both unset too.
+        {
+            Config c;
+            c.loadFromString("");
+            BEAST_EXPECT(!c.maxUntrustedCount);
+            BEAST_EXPECT(!c.maxTrustedCount);
+        }
     }
 
     void
