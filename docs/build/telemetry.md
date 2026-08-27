@@ -15,6 +15,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
     - [Conan lockfile error](#conan-lockfile-error)
     - [CMake target not found](#cmake-target-not-found)
   - [Conditional compilation](#conditional-compilation)
+  - [Recording utilities](#recording-utilities)
   - [Span lifetime and cross-thread handling](#span-lifetime-and-cross-thread-handling)
     - [`SpanGuard` versus `ScopedSpanGuard`](#spanguard-versus-scopedspanguard)
     - [Coroutine-aware context storage](#coroutine-aware-context-storage)
@@ -163,6 +164,34 @@ if (span)
 A span that exists but was sampled out still pays: there is no `isRecording()` to test.
 
 The `XRPL_METRIC_*` macros are the opposite case. They expand to `do { } while (false)` and discard their arguments, so anything named only inside a macro argument list disappears on its own and needs no guard.
+
+## Recording utilities
+
+Some state exists only to be reported: a timestamp read to measure something, a counter nothing outside telemetry reads, a value kept so that a change in it can be logged. Writing that with preprocessor branches puts `#ifdef` through business logic and leaves the class with a different member set in each build — a difference that has previously made a test mock abstract.
+
+`xrpl/telemetry/Recording.h` holds that state in types that carry a real member when telemetry is compiled in and are empty types with no-op methods when it is not. Declare the member unconditionally: its storage collapses to padding, and its work disappears.
+
+| Utility      | Use it for                                                                                  | With telemetry compiled out                      |
+| ------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `kEnabled`   | `if constexpr (telemetry::kEnabled)` around a telemetry-only block that has no span to test | `false`, so the block is discarded               |
+| `Stopwatch`  | an elapsed time measured only in order to report it                                         | holds nothing; `elapsedUs()` returns exactly `0` |
+| `Counter<T>` | a count with no reader outside telemetry                                                    | holds nothing; `load()` returns `T{}`            |
+
+```cpp
+// Times a loop with no preprocessor branch anywhere. The clock is not read at
+// all in a build with telemetry compiled out.
+telemetry::Stopwatch const timer;
+for (auto const& obj : objects)
+    lookUp(obj);
+recordLookupMetrics(timer.elapsedUs());
+```
+
+Two constraints decide whether these are usable at a given site:
+
+- **A no-op method does not skip its arguments.** `counter.add(expensiveCount())` still calls `expensiveCount()`. Pass values that are cheap to produce, and put anything expensive inside `if constexpr (telemetry::kEnabled)`.
+- **`if constexpr` still type-checks the branch it discards** in non-template code, so use it only where the block names no `opentelemetry::` type. `SpanGuard` exists to keep those types out of call sites, so that is the usual case; a block that does name them stays behind `#ifdef`.
+
+`Counter` declares copy and move deleted, matching the `std::atomic` it holds when telemetry is compiled in, so a class that owns one has the same copy semantics in both builds.
 
 ## Span lifetime and cross-thread handling
 
