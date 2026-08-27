@@ -9,11 +9,15 @@
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/proposal.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -447,6 +451,290 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
     }
 
+    // A proposed multi-account Batch is stored with no BatchSigners: the
+    // participants' signatures are collected afterwards, and the submission
+    // that completes it carries them. BatchSigners is one of the containers
+    // payloadMatches excludes, which is exactly what lets the completed Batch
+    // still match what was stored.
+    void
+    testMultiAccountBatchCompletes(FeatureBitset features)
+    {
+        testcase("proposed multi-account Batch completes with BatchSigners");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, target, bob, carol);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+        // One inner from each of two accounts, so the Batch is unsubmittable
+        // without bob's BatchSigners entry. The second inner moves funds bob
+        // holds to a third account, so each inner is separately observable.
+        json::Value const payload = proposal::unsignedBatch(
+            env,
+            target,
+            ticketSeq,
+            tfAllOrNothing,
+            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+             proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob))});
+        makeProposal(env, alice, payload);
+
+        auto const sle = proposal::entry(env, target, ticketSeq);
+        BEAST_EXPECT(
+            sle && !sle->getFieldObject(sfProposedTransaction).isFieldPresent(sfBatchSigners));
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
+
+        // Submitted exactly as stored, the Batch cannot even preflight: a
+        // multi-account Batch demands an entry per participant. So excluding
+        // BatchSigners from the match is load-bearing rather than incidental —
+        // without it this proposal could never be completed at all.
+        env(payload, Ter(temBAD_SIGNER));
+        env.close();
+        BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+
+        auto const bobBefore = env.balance(bob);
+        auto const carolBefore = env.balance(carol);
+        env(payload, batch::Sig(bob));
+        env.close();
+
+        // Both inners applied: bob took XRP(1) from the target and paid
+        // XRP(2) out, and inner transactions carry no fee of their own.
+        BEAST_EXPECT(env.balance(carol) == carolBefore + XRP(2));
+        BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1) - XRP(2));
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // A proposed LoanSet stores no CounterpartySignature — that is collected
+    // afterwards too — and the completed submission carrying one still
+    // matches. The payload's Fee is fixed at creation, so it has to budget for
+    // that signature up front: LoanSet charges an extra base fee per
+    // counterparty signature, and nothing can raise the fee later.
+    void
+    testCounterpartySignatureMatches(FeatureBitset features)
+    {
+        testcase("proposed LoanSet completes with a CounterpartySignature");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};  // the borrower
+        Account const lender{"lender"};  // the LoanSet's Counterparty
+        env.fund(XRP(10000), alice, target, lender);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+        json::Value tx = loan::set(target, uint256{1}, 1'000);
+        tx[sfCounterparty.getJsonName()] = lender.human();
+        tx[jss::Fee] = std::to_string((env.current()->fees().base * 2).drops());
+        json::Value const payload = proposal::unsignedPayload(env, tx, ticketSeq);
+        makeProposal(env, alice, payload);
+
+        // The named LoanBroker does not exist, so this fails at preclaim —
+        // which is the point: getting as far as preclaim proves the added
+        // CounterpartySignature did not break the payload match, and a tec
+        // consumes the ticket and cleans the proposal up all the same.
+        env(payload, Sig(sfCounterpartySignature, lender), Ter(tecNO_ENTRY));
+        env.close();
+
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // The last of the co-signature containers: a payload may name a fee
+    // sponsor at creation and collect that sponsor's signature later. Sponsor
+    // and SponsorFlags are ordinary payload fields, fixed from the start;
+    // only the SponsorSignature itself arrives at submission.
+    void
+    testSponsorSignatureMatches(FeatureBitset features)
+    {
+        testcase("proposed payload completes with a SponsorSignature");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const backer{"backer"};  // pays the payload's fee
+        env.fund(XRP(10000), alice, target, bob, backer);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+        json::Value tx = pay(target, bob, XRP(1));
+        tx[sfSponsor.getJsonName()] = backer.human();
+        tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
+        json::Value const payload = proposal::unsignedPayload(env, tx, ticketSeq);
+        makeProposal(env, alice, payload);
+
+        auto const sle = proposal::entry(env, target, ticketSeq);
+        BEAST_EXPECT(
+            sle && !sle->getFieldObject(sfProposedTransaction).isFieldPresent(sfSponsorSignature));
+
+        auto const fee = env.current()->fees().base;
+        auto const bobBefore = env.balance(bob);
+        auto const targetBefore = env.balance(target);
+        auto const backerBefore = env.balance(backer);
+
+        env(payload, Sig(sfSponsorSignature, backer));
+        env.close();
+
+        // The sponsor covered the fee, so the target parted with the payment
+        // amount and nothing beyond it.
+        BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1));
+        BEAST_EXPECT(env.balance(target) == targetBefore - XRP(1));
+        BEAST_EXPECT(env.balance(backer) == backerBefore - fee);
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // A terminal proposal — expired, or past its payload's LastLedgerSequence
+    // — still reserves its ticket. canConsumeTicket never consults
+    // isTerminal: going terminal widens who may cancel a proposal, but it
+    // releases nothing, because the ticket is reserved for as long as the
+    // proposal exists (On-Chain Cosigner spec §4.2.1). Freeing the ticket
+    // takes a Cancel, which anyone may now send.
+    void
+    testTerminalStillReservesTicket(FeatureBitset features)
+    {
+        testcase("a terminal proposal still reserves its ticket");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        // An unrelated spend stays blocked after the proposal expires.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, target, bob);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            // A far-future LastLedgerSequence keeps that arm of the terminal
+            // rule inert, so the expiry alone makes the proposal terminal.
+            json::Value payload =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+            payload[sfLastLedgerSequence.getJsonName()] = env.current()->seq() + 1000;
+
+            env(proposal::create(alice, payload, proposal::expiration(env, 100s)));
+            env.close();
+
+            env.close(env.now() + 200s);
+
+            env(noop(target), ticket::Use(ticketSeq), Ter(terTICKET_RESERVED));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        }
+
+        // The same indifference to isTerminal in the other direction: the
+        // proposal's own payload still consumes the ticket after the proposal
+        // expires. An expired proposal is closed to new signatures, not to
+        // the transaction it already holds. A separate environment keeps the
+        // held retry from the block above out of this one.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, target, bob);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            json::Value const payload =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+
+            env(proposal::create(alice, payload, proposal::expiration(env, 100s)));
+            env.close();
+
+            env.close(env.now() + 200s);
+
+            auto const bobBefore = env.balance(bob);
+            env(payload);
+            env.close();
+
+            BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1));
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+    }
+
+    // A reserve-sponsored proposal cleaned up by its own payload consuming the
+    // ticket releases the reserve against the sponsor. deleteProposal follows
+    // the Sponsor recorded on the entry, so this path and the Cancel path land
+    // in the same place.
+    void
+    testSponsoredReserveAutoDelete(FeatureBitset features)
+    {
+        testcase("auto-deleting a sponsored proposal releases its sponsor");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const backer{"backer"};  // sponsors alice's proposal reserve
+        env.fund(XRP(10000), alice, target, bob, backer);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        json::Value const payload =
+            proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+
+        env(proposal::create(alice, payload, proposal::expiration(env, 1000s)),
+            sponsor::As(backer, spfSponsorReserve),
+            Sig(sfSponsorSignature, backer),
+            proposal::verify::create());
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(sponsoringOwnerCount(env, backer) == proposal::kProposalOwnerCount);
+
+        env(payload);
+        env.close();
+
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, backer) == 0);
+        BEAST_EXPECT(ownerCount(env, backer) == 0);
+    }
+
     // Deleting the target account sweeps its Tickets without consuming them
     // as a sequence proxy, so the reservation does not block it. A proposal
     // keyed to a swept ticket can never execute and is cleaned up with it,
@@ -514,6 +802,18 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.le(keylet::account(alice.id())));
         BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+
+        // An account holding a blocker needs to be able to find out why its
+        // deletion failed, so account_objects has to agree with the transactor
+        // about what counts as one.
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::deletion_blockers_only] = true;
+        auto const jrr = env.rpc("json", "account_objects", to_string(params))[jss::result];
+        BEAST_EXPECT(jrr[jss::account_objects].size() == 1);
+        BEAST_EXPECT(
+            jrr[jss::account_objects][0u][sfLedgerEntryType.getJsonName()] ==
+            jss::TransactionProposal);
     }
 
     void
@@ -527,7 +827,12 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         testOtherAccountsSameNumberedTicket(testableAmendments());
         testProposerIsTarget(testableAmendments());
         testBatchProposal(testableAmendments());
+        testMultiAccountBatchCompletes(testableAmendments());
+        testCounterpartySignatureMatches(testableAmendments());
+        testSponsorSignatureMatches(testableAmendments());
         testInnerBatchSpendBlocked(testableAmendments());
+        testTerminalStillReservesTicket(testableAmendments());
+        testSponsoredReserveAutoDelete(testableAmendments());
         testTargetAccountDeleted(testableAmendments());
         testProposalBlocksOwnerAccountDelete(testableAmendments());
     }

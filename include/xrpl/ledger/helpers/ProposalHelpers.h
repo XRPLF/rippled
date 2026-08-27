@@ -112,11 +112,9 @@ isTerminal(
  * TransactionProposalCancel / TransactionProposalSign cleanup paths once
  * those transactions exist.
  *
- * A TransactionProposal cannot carry a reserve sponsor today (its type is
- * not sponsorship-supported), so the release always lands on the Owner; it
- * goes through decreaseOwnerCountForObject regardless, matching ticketDelete,
- * so it would follow an sfSponsor recorded on the entry if the type ever
- * becomes sponsorable.
+ * The release goes through decreaseOwnerCountForObject, so it follows the
+ * sfSponsor an entry created with reserve sponsorship carries: the reserve is
+ * returned to whoever was holding it, the Owner or that sponsor.
  *
  * @param view The apply view for making changes
  * @param sleProposal The TransactionProposal ledger entry to delete

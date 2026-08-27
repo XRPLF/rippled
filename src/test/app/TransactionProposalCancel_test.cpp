@@ -22,6 +22,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
@@ -270,6 +271,12 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             payload[sfDelegate.getJsonName()] = carol.human();
             return payload;
         };
+
+        // Naming carol in the payload is the whole of her claim: preclaim
+        // reads the Delegate as-is and never asks whether the delegation
+        // exists. Granting one here would make the cases below pass for a
+        // second reason and stop covering that, so pin its absence.
+        BEAST_EXPECT(!env.le(keylet::delegate(target.id(), carol.id())));
 
         // The Delegate named in the payload may cancel.
         {
@@ -608,6 +615,22 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
         }
+
+        // Multi-signing for the target is not the same as acting for oneself.
+        // Carol is on the target's SignerList, which is enough to create a
+        // proposal against the target, yet §7.2 grants cancellation only to
+        // the Owner and to the target itself. So an account may propose but
+        // not un-propose — cancelling still has to come from the target, by
+        // the quorum route the block above takes.
+        {
+            uint256 const proposalID = makeProposal(env, alice, target, bob);
+
+            env(proposal::cancel(carol, proposalID), Ter(tecNO_PERMISSION));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        }
     }
 
     // A Cancel works as an inner Batch transaction, where each inner runs its
@@ -741,6 +764,229 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(env.balance(alice) == before);
         BEAST_EXPECT(env.balance(payer) == payerBefore - XRP(1));
+    }
+
+    // A proposal's reserve may be sponsored, in which case deleteProposal has
+    // to release it against the account recorded in the entry's Sponsor rather
+    // than against the Owner. Creation and sponsorship transfer are covered by
+    // the Create suite; this is the release side of the same bookkeeping.
+    void
+    testSponsoredReserveCancel(FeatureBitset features)
+    {
+        testcase("cancel releases a sponsored reserve to its sponsor");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};  // the proposer, and the proposal's Owner
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const backer{"backer"};  // sponsors alice's proposal reserve
+        env.fund(XRP(10000), alice, target, bob, backer);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        // An ordinary proposal, cancelled by its Owner.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            env(proposal::create(
+                    alice,
+                    proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq),
+                    proposal::expiration(env, 1000s)),
+                sponsor::As(backer, spfSponsorReserve),
+                Sig(sfSponsorSignature, backer),
+                proposal::verify::create());
+            env.close();
+
+            uint256 const proposalID = keylet::txProposal(target.id(), ticketSeq).key;
+            BEAST_EXPECT(sponsoringOwnerCount(env, backer) == proposal::kProposalOwnerCount);
+
+            env(proposal::cancel(alice, proposalID));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
+            // The sponsorship unwinds from both ends: alice stops owning the
+            // increments and backer stops covering them. Neither is left
+            // holding a reserve for an object that no longer exists.
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, backer) == 0);
+            BEAST_EXPECT(ownerCount(env, backer) == 0);
+        }
+
+        // A proposed Batch holds the larger reserve, and here the target
+        // cancels rather than the Owner — so the release is shown to follow
+        // the Sponsor recorded on the entry, not anything about who submitted
+        // the Cancel.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            auto const seq = env.seq(target);
+            json::Value const payload = proposal::unsignedBatch(
+                env,
+                target,
+                ticketSeq,
+                tfAllOrNothing,
+                {proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                 proposal::innerTx(pay(target, bob, XRP(1)), seq + 1)});
+
+            env(proposal::create(alice, payload, proposal::expiration(env, 1000s)),
+                sponsor::As(backer, spfSponsorReserve),
+                Sig(sfSponsorSignature, backer),
+                proposal::verify::create());
+            env.close();
+
+            uint256 const proposalID = keylet::txProposal(target.id(), ticketSeq).key;
+            BEAST_EXPECT(sponsoringOwnerCount(env, backer) == proposal::kBatchProposalOwnerCount);
+
+            env(proposal::cancel(target, proposalID));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, backer) == 0);
+        }
+    }
+
+    // deleteProposal removes the entry from its Owner's directory using the
+    // page hint stored in the entry's OwnerNode, so a proposal that is not on
+    // the first page has to be just as removable.
+    void
+    testCancelFromLaterDirectoryPage(FeatureBitset features)
+    {
+        testcase("cancel a proposal listed on a later directory page");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(100000), alice, target, bob);
+        env.close();
+
+        // Fill alice's first directory page exactly, so the proposal she
+        // creates next is listed on the second one. Tickets are the cheapest
+        // filler: one directory entry and one owner-count increment each,
+        // whereas a proposal costs one entry but five increments.
+        auto const pageEntries = static_cast<std::uint32_t>(kDirNodeMaxEntries);
+        env(ticket::create(alice, pageEntries));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, alice) == pageEntries);
+
+        uint256 const proposalID = makeProposal(env, alice, target, bob);
+
+        // Without this the setup could stop spanning pages — if the page size
+        // changed, say — and the test would quietly become testOwnerCancel.
+        auto const sle = env.le(keylet::txProposal(proposalID));
+        if (!BEAST_EXPECT(sle && sle->getFieldU64(sfOwnerNode) != 0))
+            return;
+
+        env(proposal::cancel(alice, proposalID));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
+        // Only the proposal left; the tickets that filled the page are still
+        // alice's, so the release was scoped to the one entry.
+        BEAST_EXPECT(ownerCount(env, alice) == pageEntries);
+    }
+
+    // What the ledger holds has to be visible to clients, and reported gone
+    // once cancelled: ledger_entry resolves the proposal by the (target,
+    // ticket) pair it is keyed on and by raw index, and account_objects lists
+    // it for the Owner — never for the target, whose directory it was never in.
+    void
+    testRpcVisibility(FeatureBitset features)
+    {
+        testcase("RPC visibility of a proposal");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        uint256 const proposalID = makeProposal(env, alice, target, bob);
+
+        auto ledgerEntry = [&env](json::Value const& proposalParams) {
+            json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::transaction_proposal] = proposalParams;
+            return env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+        };
+
+        json::Value byPair;
+        byPair[jss::account] = target.human();
+        byPair[jss::ticket_seq] = ticketSeq;
+
+        auto accountObjects = [&env](Account const& account) {
+            json::Value params;
+            params[jss::account] = account.human();
+            params[jss::type] = jss::transaction_proposal;
+            return env.rpc(
+                "json", "account_objects", to_string(params))[jss::result][jss::account_objects];
+        };
+
+        // Found by the pair the key is derived from, and by that key directly.
+        {
+            auto const jrr = ledgerEntry(byPair);
+            BEAST_EXPECT(jrr[jss::index] == to_string(proposalID));
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.getJsonName()] == jss::TransactionProposal);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.getJsonName()] == alice.human());
+
+            json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::index] = to_string(proposalID);
+            auto const byIndex = env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+            BEAST_EXPECT(byIndex[jss::node] == jrr[jss::node]);
+        }
+
+        // Each required field, in turn, left out — an absent field is a
+        // malformed request whichever one it is. Only a field that is present
+        // and unusable gets the more specific complaint.
+        {
+            json::Value noTicket;
+            noTicket[jss::account] = target.human();
+            BEAST_EXPECT(ledgerEntry(noTicket)[jss::error] == "malformedRequest");
+
+            json::Value noAccount;
+            noAccount[jss::ticket_seq] = ticketSeq;
+            BEAST_EXPECT(ledgerEntry(noAccount)[jss::error] == "malformedRequest");
+
+            json::Value badAccount = byPair;
+            badAccount[jss::account] = "not an account";
+            BEAST_EXPECT(ledgerEntry(badAccount)[jss::error] == "malformedAddress");
+        }
+
+        // Listed for the proposer, who owns it, and not for the target.
+        BEAST_EXPECT(accountObjects(alice).size() == 1);
+        BEAST_EXPECT(
+            accountObjects(alice)[0u][sfLedgerEntryType.getJsonName()] == jss::TransactionProposal);
+        BEAST_EXPECT(accountObjects(target).size() == 0);
+
+        env(proposal::cancel(alice, proposalID));
+        env.close();
+
+        // Gone. The handler reports the index it computed either way, so a
+        // client can tell "nothing at this key" from "malformed request".
+        {
+            auto const jrr = ledgerEntry(byPair);
+            BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+            BEAST_EXPECT(!jrr.isMember(jss::node));
+            BEAST_EXPECT(jrr[jss::index] == to_string(proposalID));
+        }
+        BEAST_EXPECT(accountObjects(alice).size() == 0);
     }
 
     // The Cancel transaction is not delegable: a Cancel carrying sfDelegate is
@@ -983,6 +1229,11 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         testCancelSubmissionForms(all);
         testCancelInsideBatch(all);
         testSponsoredCancel(all);
+        testSponsoredReserveCancel(all);
+        testCancelFromLaterDirectoryPage(all);
+
+        // RPC
+        testRpcVisibility(all);
     }
 };
 
