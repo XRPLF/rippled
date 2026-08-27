@@ -191,12 +191,12 @@ ValidLoan::finalize(
             // reference a live vault; otherwise the loan is orphaned and its
             // balances have no counterparty on the ledger.
             auto const brokerSle = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
-            auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
             if (!brokerSle)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan broker does not exist";
                 return false;
             }
+            auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
             if (!vaultSle)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan broker vault does not exist";
@@ -214,7 +214,7 @@ ValidLoan::finalize(
 
             // Only IOU amounts can accumulate STAmount quantization noise. For integral-domain
             // assets (XRP/MPT) enforce the boundary strictly.
-            bool integral = Asset{vaultSle->at(sfAsset)}.integral();
+            bool const integral = Asset{vaultSle->at(sfAsset)}.integral();
 
             Number const tolerance = integral ? Number{} : Number{-1, after->at(sfLoanScale)};
             if (interestDue < tolerance)
