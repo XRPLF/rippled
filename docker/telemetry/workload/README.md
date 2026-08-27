@@ -240,12 +240,15 @@ How it runs inside the validation pipeline:
 1. `run-full-validation.sh` executes the normal workload and validation suite.
 2. After validation, `capture_timings.py` queries Prometheus for every
    metric `regression-metrics.json` declares and does not list in
-   `excluded_keys`, then writes `reports/timings.json`.
+   `excluded_keys`, then writes `reports/timings.json`. That file records
+   how much of the declared surface actually came back, in a `capture`
+   block alongside `metrics` — see [Capture completeness](#capture-completeness).
 3. `compare_to_baseline.py` reads `timings.json`,
    `baselines/baseline-timings.json`, and `regression-thresholds.json`,
    then either:
    - Prints the paste-me JSON block (when the baseline is a placeholder
-     or empty) and exits 0.
+     or empty and the capture is complete) and exits 0. An incomplete
+     capture is refused instead, with exit 2 and nothing on stdout.
    - Prints a delta table, writes `reports/regression-report.json`, and
      exits non-zero if any metric breached both the percentage AND
      absolute bound.
@@ -258,6 +261,27 @@ Bootstrapping a baseline:
 2. Open a PR copying that JSON block verbatim into
    `baselines/baseline-timings.json`. Reviewer approval is the audit gate.
 3. Subsequent runs compare against it; the gate fails on regression.
+
+#### Capture completeness
+
+`capture_timings.py` writes `timings.json` and only then enforces
+`--min-capture-ratio`, so a run that reached too little of Prometheus still
+leaves a file behind — one that exists, parses, and carries every declared key,
+some of them `null`. Nothing about it looks degraded.
+
+Every capture therefore states its own verdict:
+
+```json
+"capture": { "declared": 20, "captured": 20, "min_ratio": 0.5, "complete": true }
+```
+
+`complete` is exactly the condition `capture_timings.py` exits 0 on. Both
+paste-me paths — the workflow's Step Summary block and `compare_to_baseline.py`
+— read that flag and withhold the JSON unless it is `true`, because the
+placeholder path is the only route to a committed baseline and a thin capture
+pasted into one narrows the gate silently. An absent `capture` block (an
+artifact from before this existed) counts as not complete: completeness has to
+be proven, not assumed.
 
 Per-run tuning:
 
