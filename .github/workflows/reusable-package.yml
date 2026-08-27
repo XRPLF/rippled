@@ -135,8 +135,8 @@ jobs:
           CHANNEL: ${{ steps.release_info.outputs.channel }}
           DRY_RUN_OPTION: ${{ !inputs.publish && '--dry-run' || '' }}
           NEXUS_URL: ${{ inputs.nexus_url }}
-          NEXUS_USERNAME: ${{ secrets.remote_username }}
-          NEXUS_PASSWORD: ${{ secrets.remote_password }}
+          NEXUS_USERNAME: ${{ inputs.publish && secrets.remote_username || '' }}
+          NEXUS_PASSWORD: ${{ inputs.publish && secrets.remote_password || '' }}
         run: |
           publish_pkg.py \
               --channel "${CHANNEL}" \

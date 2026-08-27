@@ -150,20 +150,20 @@ Versions sort in row order, so moving to a more mature channel never downgrades.
 The action decides the package release number on the same split: a tag's version
 is unique, so its packages are release 1, while develop repeats the same version
 and takes `<run number>.<commit date>git<commit hash>`, e.g.
-`857.20260827gitb6a8995` — the leading run number keeps each push superseding
+`857.20260826gitb6a8995` — the leading run number keeps each push superseding
 the last, and the date and hash say which commit a package on
 `packages.xrplf.org` came from. Both reach the packaging scripts as arguments,
 so neither script derives anything itself.
 
 Publishing is the last step of each packaging job, uploading from the container
 that built the packages with the `publish_pkg.py` shipped in the image — the
-same copy other repositories run. The step itself always runs: without
-`publish: true` it is a `--dry-run` that lists the uploads without needing
-credentials, so every PR checks the repository routing. Uploads happen when the
-caller passes `publish: true`: `on-trigger.yml` for develop pushes in
-`XRPLF/rippled`, `on-tag.yml` for tags in any `XRPLF` repository, `on-pr.yml`
-never. Both authenticate with the `NEXUS_REMOTE_USERNAME` /
-`NEXUS_REMOTE_PASSWORD` secrets already used for the Conan remote.
+same copy other repositories run. Without `publish: true` the step is a
+`--dry-run`, listing the uploads it would make without needing credentials, so
+any run that builds packages also exercises the upload routing. `on-trigger.yml`
+passes `publish: true` for develop pushes in `XRPLF/rippled` and `on-tag.yml`
+for tags in any `XRPLF` repository, both authenticating with the
+`NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD` secrets already used for the
+Conan remote; `on-pr.yml` never publishes.
 
 Nexus owns the repository metadata; nothing here indexes anything. Worth knowing:
 
