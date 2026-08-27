@@ -478,7 +478,15 @@ ServerHandler::processSession(
     // else collapses to "unknown". Emitting the raw string would let request
     // input drive unbounded label cardinality. Mirrors the HTTP path's
     // resolveCommandSpanName().
-    span.setAttribute(rpc_span::attr::command, resolveWsCommandSpanName(jv, app_.config()));
+    //
+    // The guard is required because the resolver is a call argument: it runs
+    // even when setAttribute itself is an empty no-op. Without it, every
+    // WebSocket message pays for the JSON member lookups, a string copy and a
+    // handler-registry lookup that nothing reads.
+    if (span)
+    {
+        span.setAttribute(rpc_span::attr::command, resolveWsCommandSpanName(jv, app_.config()));
+    }
 
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))

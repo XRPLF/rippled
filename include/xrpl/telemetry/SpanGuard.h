@@ -179,9 +179,15 @@
 #include <cstdint>
 #include <exception>
 #include <initializer_list>
-#include <memory>
 #include <string_view>
+#include <type_traits>
 #include <utility>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The smart-pointer members all belong to the telemetry-enabled declarations;
+// the compiled-out types hold nothing, so this include is unused there.
+#include <memory>
+#endif
 
 namespace protocol {
 class TraceContext;
@@ -962,7 +968,17 @@ class ScopedActivation
 {
 public:
     ScopedActivation() = default;
-    ~ScopedActivation() = default;
+    /**
+     * Written out by hand rather than defaulted, on purpose. A defaulted
+     * destructor on an empty class is trivial, and compilers then report every
+     * activation that is held only for its scope as an unused variable. Writing
+     * the destructor by hand matches the real ScopedActivation and keeps those
+     * call sites warning free. The body is empty, so it costs nothing once
+     * inlined.
+     */
+    ~ScopedActivation()  // NOLINT(modernize-use-equals-default)
+    {
+    }
     ScopedActivation(ScopedActivation&&) = delete;
     ScopedActivation&
     operator=(ScopedActivation&&) = delete;
@@ -975,7 +991,15 @@ class SpanGuard
 {
 public:
     SpanGuard() = default;
-    ~SpanGuard() = default;
+    /**
+     * Written out by hand rather than defaulted, for the same reason as
+     * ScopedActivation above: a trivial destructor makes a guard that is held
+     * only for its scope look like an unused variable. The empty body costs
+     * nothing once inlined.
+     */
+    ~SpanGuard()  // NOLINT(modernize-use-equals-default)
+    {
+    }
     SpanGuard(SpanGuard&&) noexcept = default;
     SpanGuard&
     operator=(SpanGuard&&) noexcept = default;
@@ -1135,7 +1159,15 @@ public:
     ScopedSpanGuard(TraceCategory, std::string_view, std::string_view) noexcept
     {
     }
-    ~ScopedSpanGuard() = default;
+    /**
+     * Written out by hand rather than defaulted, for the same reason as
+     * ScopedActivation above: a trivial destructor makes a guard that is held
+     * only for its scope look like an unused variable. The empty body costs
+     * nothing once inlined.
+     */
+    ~ScopedSpanGuard()  // NOLINT(modernize-use-equals-default)
+    {
+    }
 
     ScopedSpanGuard(ScopedSpanGuard&&) = delete;
     ScopedSpanGuard&
@@ -1250,5 +1282,22 @@ activateIfLive(SpanGuardHandle const& guard)
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY
+
+// These three types are held purely for their scope: callers create one and
+// never read it again. A compiler only stays quiet about such a variable if
+// destroying it might do something, which means the destructor must not be
+// trivial. Both the real types and the compiled-out ones therefore declare a
+// destructor by hand. Asserting it here fails the build immediately if one is
+// ever replaced with `= default`, instead of producing an unused-variable
+// error at every call site.
+static_assert(
+    !std::is_trivially_destructible_v<SpanGuard>,
+    "SpanGuard must keep a hand-written destructor; see the note above");
+static_assert(
+    !std::is_trivially_destructible_v<ScopedSpanGuard>,
+    "ScopedSpanGuard must keep a hand-written destructor; see the note above");
+static_assert(
+    !std::is_trivially_destructible_v<ScopedActivation>,
+    "ScopedActivation must keep a hand-written destructor; see the note above");
 
 }  // namespace xrpl::telemetry
