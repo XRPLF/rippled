@@ -20,7 +20,6 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/telemetry/TxSpanNames.h>
-#include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -106,6 +105,13 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+// Needed only by the tx.receive span in handleTransaction(), which is compiled
+// out when telemetry is off. Without the same guard here it would be an unused
+// include in that build, which clang-tidy's misc-include-cleaner rejects.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpld/telemetry/TxTracing.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 using namespace std::chrono_literals;
 
