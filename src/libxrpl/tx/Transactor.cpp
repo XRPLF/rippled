@@ -906,9 +906,10 @@ Transactor::apply()
         if (!isTesSuccess(result))
             return result;
 
-        // A Batch wrapper does not update sfAccountTxnID: its ID hashes over
-        // sfRawTransactions, so a same-account inner could never carry a
-        // matching prior-txn ID. The inners update the field as they apply.
+        // With fixCleanup3_4_0, a Batch wrapper does not update
+        // sfAccountTxnID: its ID hashes over sfRawTransactions, so a
+        // same-account inner could never carry a matching prior-txn ID. The
+        // inners update the field as they apply.
         if (sle->isFieldPresent(sfAccountTxnID) &&
             (ctx_.tx.getTxnType() != ttBATCH || !view().rules().enabled(fixCleanup3_4_0)))
             sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
