@@ -241,8 +241,12 @@ public:
     /**
      * Process-wide ledger-acquisition counters, shared by every acquisition.
      * Declared before the ledger services below so it outlives them.
+     *
+     * Value-initialized here rather than in the constructor's list, because
+     * without telemetry its counters hold no state, which leaves the whole
+     * type trivially default constructible and its members indeterminate.
      */
-    AcquireStats acquireStats_;
+    AcquireStats acquireStats_{};
     std::optional<OpenLedger> openLedger_;
 
     NodeCache tempNodeCache_;
