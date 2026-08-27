@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -306,7 +307,7 @@ private:
         // Issuer "borrowed" 200, OutstandingAmount decreased by 200
         BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance + 200));
         // Pay Loan
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
         env(pay(borrower, loanKeylet.key, asset(200)));
         env.close();
         // Issuer "re-payed" 200, OutstandingAmount increased by 200
@@ -346,7 +347,11 @@ private:
             auto const& asset = debtMaximumRequest.asset();
             auto const initialVault = asset(debtMaximumRequest * 100);
 
-            auto [tx, vaultKeylet] = vault.create({.owner = broker, .asset = asset});
+            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim
+            // only accepts closed-ended vaults, so build one and advance
+            // past SubscriptionDate before creating broker/loan.
+            auto [tx, vaultKeylet, subscriptionDate] =
+                vault.createClosedEnded({.owner = broker, .asset = asset});
             env(tx, txFee);
             env.close();
 
@@ -355,7 +360,10 @@ private:
                 txFee);
             env.close();
 
-            auto const brokerKeylet = keylet::loanBroker(broker.id(), env.seq(broker));
+            vault.closePastSubscription(subscriptionDate);
+
+            auto const brokerKeylet =
+                keylet::loanBroker(broker.id(), SeqProxy::rawSequence(env.seq(broker)));
 
             env(loan_broker::set(broker, vaultKeylet.key), txFee);
             env.close();
@@ -371,7 +379,8 @@ private:
             env.close();
 
             std::uint32_t const loanSequence = 1;
-            auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(loanSequence));
 
             auto const brokerBalanceBefore = env.balance(broker, asset);
 

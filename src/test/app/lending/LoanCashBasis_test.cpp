@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -86,7 +87,8 @@ private:
             Number const debtTotalBefore = brokerBefore->at(sfDebtTotal);
 
             auto const loanSequence = brokerBefore->at(sfLoanSequence);
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(set(borrower, broker.brokerID, xrpAsset(principalRequest).value()),
                 kCounterparty(lender),
@@ -309,7 +311,8 @@ private:
             auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerBeforeLoan);
             auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(loanParams(env, broker));
             env.close();
@@ -530,7 +533,8 @@ private:
             auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerBeforeLoan);
             auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
             env(loanParams(env, broker));
             env.close();
@@ -558,6 +562,7 @@ private:
             BEAST_EXPECT(vaultBeforeImpair);
             Number const lossBefore = vaultBeforeImpair->at(sfLossUnrealized);
 
+            advancePastDueDate(env, loanKeylet);
             env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
 
@@ -608,6 +613,7 @@ private:
                 ? principalOutstanding
                 : totalValueOutstanding - managementFeeOutstanding;
 
+            advancePastDueDate(env, loanKeylet);
             env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
 
@@ -735,7 +741,7 @@ private:
         auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
         BEAST_EXPECT(brokerBeforeLoan);
         auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         // ---- LoanSet origination: whole-life formulas expected ----
         auto const vaultBeforeSet = env.le(broker.vaultKeylet());
@@ -818,12 +824,17 @@ private:
         Number const managementFeeBeforeImpair = loanBeforeImpair->at(sfManagementFeeOutstanding);
         Number const expectedExposure = totalValueBeforeImpair - managementFeeBeforeImpair;
 
+        // With fixCleanup3_4_0, impairment is only allowed once the
+        // payment is late. After the earlier LoanPay the due date advanced by
+        // one interval, so use the current due date rather than startDate.
+        std::uint32_t const dueDateBeforeImpair = loanBeforeImpair->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDateBeforeImpair}} + 1s);
+
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
 
-        LoanState const stateAtImpair = getCurrentState(env, broker, loanKeylet);
         env.close(
-            stateAtImpair.startDate + std::chrono::seconds(paymentInterval) +
+            NetClock::time_point{NetClock::duration{dueDateBeforeImpair}} +
             std::chrono::seconds(gracePeriod) + 60s);
 
         auto const vaultBeforeDefault = env.le(broker.vaultKeylet());
@@ -943,7 +954,7 @@ private:
         auto const brokerBeforeLoan = env.le(brokerKeylet);
         BEAST_EXPECT(brokerBeforeLoan);
         auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
 
         LoanParameters const loanParams{
             .account = borrower,
