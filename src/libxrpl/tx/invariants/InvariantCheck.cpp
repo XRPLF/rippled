@@ -1218,8 +1218,7 @@ NoModifiedUnmodifiableFields::finalize(
                 /*
                  * Immutability of sfAccount, sfAsset and sfShareMPTID used to be enforced by
                  * VaultInvariant, but is now checked here since InvariantCheck.cpp is where
-                 * immutability checks live. The additional fields below are introduced by
-                 * featureLendingProtocolV1_1 and only exist on V1_1 vaults.
+                 * immutability checks live.
                  */
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {

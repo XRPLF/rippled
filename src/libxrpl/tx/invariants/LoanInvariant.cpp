@@ -187,43 +187,6 @@ ValidLoan::finalize(
                 }
             }
 
-            // Interest due (the total value owed less principal and management fee)
-            // must never be negative. TotalValueOutstanding, PrincipalOutstanding and
-            // ManagementFeeOutstanding are each independently rounded to sfLoanScale
-            // by the accounting code, so their difference can carry one unit of
-            // quantization noise even when the underlying flow is correct. Absorb
-            // one unit at that scale, matching the pattern used in ValidVault.
-            {
-                auto const interestDue = after->at(sfTotalValueOutstanding) -
-                    after->at(sfPrincipalOutstanding) - after->at(sfManagementFeeOutstanding);
-
-                // Only IOU amounts can accumulate STAmount quantization noise. For integral-domain
-                // assets (XRP/MPT) enforce the boundary strictly.
-                bool integral = false;
-                if (auto const brokerSle = view.read(keylet::loanBroker(after->at(sfLoanBrokerID))))
-                {
-                    if (auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID))))
-                        integral = Asset{vaultSle->at(sfAsset)}.integral();
-                }
-
-                if (integral)
-                {
-                    if (interestDue < beast::kZero)
-                    {
-                        JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
-                        return false;
-                    }
-                }
-                else
-                {
-                    Number const tolerance{1, after->at(sfLoanScale)};
-                    if (interestDue < -tolerance)
-                    {
-                        JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
-                        return false;
-                    }
-                }
-            }
             // A loan must reference a live loan broker, and that broker must
             // reference a live vault; otherwise the loan is orphaned and its
             // balances have no counterparty on the ledger.
@@ -237,6 +200,75 @@ ValidLoan::finalize(
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan broker vault does not exist";
                 return false;
+            }
+
+            // Interest due (the total value owed less principal and management fee)
+            // must never be negative. TotalValueOutstanding, PrincipalOutstanding and
+            // ManagementFeeOutstanding are each independently rounded to sfLoanScale
+            // by the accounting code, so their difference can carry one unit of
+            // quantization noise even when the underlying flow is correct. Absorb
+            // one unit at that scale, matching the pattern used in ValidVault.
+            auto const interestDue = after->at(sfTotalValueOutstanding) -
+                after->at(sfPrincipalOutstanding) - after->at(sfManagementFeeOutstanding);
+
+            // Only IOU amounts can accumulate STAmount quantization noise. For integral-domain
+            // assets (XRP/MPT) enforce the boundary strictly.
+            bool integral = false;
+            if (auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID))))
+                integral = Asset{vaultSle->at(sfAsset)}.integral();
+
+            if (integral)
+            {
+                if (interestDue < beast::kZero)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+                    return false;
+                }
+            }
+            else
+            {
+                Number const tolerance{1, after->at(sfLoanScale)};
+                if (interestDue < -tolerance)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+                    return false;
+                }
+            }
+
+            // Transaction success post-conditions. A successful loan pay makes at least
+            // one scheduled payment, so a loan left with payments still outstanding
+            // must show that payment in its balance and schedule. A payment that clears
+            // the loan outright instead drives PaymentRemaining to zero, which the
+            // fully-paid-off and zero due-date checks above pin.
+            if (isTesSuccess(result) && txType == ttLOAN_PAY)
+            {
+                if (before && after->at(sfPaymentRemaining) != 0)
+                {
+                    if (!(after->at(sfPrincipalOutstanding) < before->at(sfPrincipalOutstanding)))
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: loan pay must strictly decrease "
+                                           "PrincipalOutstanding on a non-full-repayment";
+                        return false;
+                    }
+                    if (!(after->at(sfPaymentRemaining) < before->at(sfPaymentRemaining)))
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: loan pay must decrease "
+                                           "PaymentRemaining on a non-full-repayment";
+                        return false;
+                    }
+
+                    std::uint32_t const beforeDue = before->at(~sfNextPaymentDueDate).value_or(0);
+                    std::uint32_t const afterDue = after->at(~sfNextPaymentDueDate).value_or(0);
+                    std::uint32_t const interval = after->at(sfPaymentInterval);
+                    if (afterDue <= beforeDue || interval == 0 ||
+                        (afterDue - beforeDue) % interval != 0)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: loan pay must advance "
+                                           "NextPaymentDueDate by a positive multiple of "
+                                           "PaymentInterval on a non-full-repayment";
+                        return false;
+                    }
+                }
             }
         }
     }

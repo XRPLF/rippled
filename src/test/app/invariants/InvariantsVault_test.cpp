@@ -249,7 +249,7 @@ class InvariantsVault_test : public InvariantsBase
 
         Account const a3{"A3"};
         Account const a4{"A4"};
-        auto const precloseXrp = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+        auto const precloseXrp = [&](Account const& a1, Account const& a2, Env& env, VaultVersion version = VaultVersion::CashBasis) -> bool {
             env.fund(XRP(1000), a3, a4);
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -703,6 +703,24 @@ class InvariantsVault_test : public InvariantsBase
             STTx{ttVAULT_SET, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
+
+        doInvariantCheck(
+            {"changed an unchangeable field"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfLEVersion] = std::to_underlying(VaultVersion::Legacy);
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&precloseXrp](Account const& a1, Account const& a2, Env& env) {
+                return precloseXrp(a1, a2, env, VaultVersion::CashBasis);
+            });
 
         // Pre-featureLendingProtocolV1_1 the immutability of sfAsset, sfAccount
         // and sfShareMPTID is enforced by ValidVault directly, which reports
@@ -1168,6 +1186,91 @@ class InvariantsVault_test : public InvariantsBase
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
+
+        // ttLOAN_PAY success post-conditions. A loan left with payments still
+        // remaining after a successful payment must show that payment in its
+        // balance and schedule: PrincipalOutstanding and PaymentRemaining both
+        // strictly decrease, and NextPaymentDueDate advances by a positive
+        // multiple of PaymentInterval. Each case seeds a loan with principal
+        // 100, two payments remaining, a due date of 100 and an interval of 10,
+        // then applies an after-image that breaks exactly one of those
+        // conditions.
+        {
+            struct Case
+            {
+                Number principal;
+                std::uint32_t remaining;
+                std::uint32_t dueDate;
+                std::string expected;
+            };
+            auto const cases = std::to_array<Case>({
+                {.principal = Number(100),
+                 .remaining = 1,
+                 .dueDate = 110,
+                 .expected = "loan pay must strictly decrease PrincipalOutstanding"},
+                {.principal = Number(50),
+                 .remaining = 2,
+                 .dueDate = 110,
+                 .expected = "loan pay must decrease PaymentRemaining"},
+                {.principal = Number(50),
+                 .remaining = 1,
+                 .dueDate = 100,
+                 .expected = "loan pay must advance NextPaymentDueDate"},
+                // Advanced, but not by a whole number of payment intervals.
+                {.principal = Number(50),
+                 .remaining = 1,
+                 .dueDate = 105,
+                 .expected = "loan pay must advance NextPaymentDueDate"},
+            });
+
+            for (auto const& c : cases)
+            {
+                Env env{*this, all_};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), a1, a2);
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!keys)
+                    continue;
+                auto const& brokerKeylet = keys->second;
+
+                OpenView ov{*env.current()};
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                {
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                    sleLoan->at(sfPaymentInterval) = 10u;
+                    sleLoan->setFieldU32(sfPaymentRemaining, 2);
+                    sleLoan->setFieldU32(sfNextPaymentDueDate, 100);
+                    ov.rawInsert(sleLoan);
+                }
+
+                STTx const tx{
+                    ttLOAN_PAY, [](STObject& t) { t.setFieldAmount(sfAmount, XRPAmount(50)); }};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    continue;
+                sleLoan->at(sfPrincipalOutstanding) = c.principal;
+                sleLoan->setFieldU32(sfPaymentRemaining, c.remaining);
+                sleLoan->setFieldU32(sfNextPaymentDueDate, c.dueDate);
+                ac.view().update(sleLoan);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    continue;
+                TER const result = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                BEAST_EXPECT(sink.messages().str().contains(c.expected));
+            }
+        }
 
         // ttLOAN_MANAGE (default): the write-off is rounded downward at the
         // pre-default AssetsTotal scale. A near-total IOU default can leave
