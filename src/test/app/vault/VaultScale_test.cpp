@@ -22,6 +22,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -71,7 +72,12 @@ private:
 
         auto testCase = [&, this](
                             std::uint8_t scale, std::function<void(Env & env, Data data)> test) {
-            Env env{*this, testableAmendments()};
+            // These scale-focused tests build an open-ended vault and
+            // exercise deposit/withdraw/clawback (with one test also
+            // attaching a loan broker). featureLendingProtocolV1_1 adds a
+            // closed-ended vault gate on LoanBrokerSet::preclaim and is
+            // orthogonal to what this suite asserts, so strip it here.
+            Env env{*this, testableAmendments() - featureLendingProtocolV1_1};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};
@@ -546,13 +552,13 @@ private:
             }
 
             {
-                testcase("Scale withdraw with rounding shares up");
-                // assetsToSharesWithdraw:
-                //  shares = sharesTotal * (assets / assetsTotal)
-                //  shares = 875 * 3.75 / 87.5 = 875 * 0.042857... = 37.5
-                // sharesToAssetsWithdraw:
-                //  assets = assetsTotal * (shares / sharesTotal)
-                //  assets = 87.5 * 38 / 875 = 87.5 * 0.043428... = 3.8
+                testcase("Scale withdraw with rounding shares up (truncated post-fixCleanup3_4_0)");
+                // Pre-fixCleanup3_4_0:
+                //   shares = round(875 * 3.75 / 87.5) = 38
+                //   assets = 87.5 * 38 / 875 = 3.8 > 3.75 requested.
+                // Post-fixCleanup3_4_0:
+                //   shares = floor(37.5) = 37
+                //   assets = 87.5 * 37 / 875 = 3.7 <= 3.75 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.withdraw(
@@ -561,26 +567,23 @@ private:
                      .amount = STAmount(d.asset, Number(375, -2))});
                 env(tx);
                 env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - 38));
+                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - 37));
                 BEAST_EXPECT(
                     env.balance(d.depositor, d.assets) ==
-                    STAmount(d.asset, start + Number(38, -1)));
+                    STAmount(d.asset, start + Number(37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(875 - 38, -1)));
+                    STAmount(d.asset, Number(875 - 37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(875 - 38, 0)));
+                    STAmount(d.share, -Number(875 - 37, 0)));
             }
 
             {
                 testcase("Scale withdraw with rounding shares down");
-                // assetsToSharesWithdraw:
-                //  shares = sharesTotal * (assets / assetsTotal)
-                //  shares = 837 * 3.72 / 83.7 = 837 * 0.04444... = 37.2
-                // sharesToAssetsWithdraw:
-                //  assets = assetsTotal * (shares / sharesTotal)
-                //  assets = 83.7 * 37 / 837 = 83.7 * 0.044205... = 3.7
+                // Chained state: 838 shares outstanding, 83.8 assets.
+                //   shares = floor(838 * 3.72 / 83.8) = floor(37.199...) = 37
+                //   assets = 83.8 * 37 / 838 = 3.7 <= 3.72 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.withdraw(
@@ -589,37 +592,37 @@ private:
                      .amount = STAmount(d.asset, Number(372, -2))});
                 env(tx);
                 env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(837 - 37));
+                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(838 - 37));
                 BEAST_EXPECT(
                     env.balance(d.depositor, d.assets) ==
                     STAmount(d.asset, start + Number(37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(837 - 37, -1)));
+                    STAmount(d.asset, Number(838 - 37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(837 - 37, 0)));
+                    STAmount(d.share, -Number(838 - 37, 0)));
             }
 
             {
-                testcase("Scale withdraw tiny amount");
+                testcase("Scale withdraw tiny amount rejected post-fixCleanup3_4_0");
+                // Chained state: 801 shares outstanding, 80.1 assets.
+                //   shares = floor(801 * 0.09 / 80.1) = floor(0.9) = 0
+                // Zero shares => tecPRECISION_LOSS. State is unchanged.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.withdraw(
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
                      .amount = STAmount(d.asset, Number(9, -2))});
-                env(tx);
+                env(tx, Ter{tecPRECISION_LOSS});
                 env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(800 - 1));
+                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(801));
+                BEAST_EXPECT(env.balance(d.depositor, d.assets) == STAmount(d.asset, start));
                 BEAST_EXPECT(
-                    env.balance(d.depositor, d.assets) == STAmount(d.asset, start + Number(1, -1)));
+                    env.balance(d.vaultAccount, d.assets) == STAmount(d.asset, Number(801, -1)));
                 BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(800 - 1, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(800 - 1, 0)));
+                    env.balance(d.vaultAccount, d.shares) == STAmount(d.share, -Number(801, 0)));
             }
 
             {
@@ -738,13 +741,13 @@ private:
             }
 
             {
-                testcase("Scale clawback with rounding shares up");
-                // assetsToSharesWithdraw:
-                //  shares = sharesTotal * (assets / assetsTotal)
-                //  shares = 875 * 3.75 / 87.5 = 875 * 0.042857... = 37.5
-                // sharesToAssetsWithdraw:
-                //  assets = assetsTotal * (shares / sharesTotal)
-                //  assets = 87.5 * 38 / 875 = 87.5 * 0.043428... = 3.8
+                testcase("Scale clawback with rounding shares up (truncated post-fixCleanup3_4_0)");
+                // Pre-fixCleanup3_4_0:
+                //   shares = round(875 * 3.75 / 87.5) = 38
+                //   assets = 87.5 * 38 / 875 = 3.8 > 3.75 requested.
+                // Post-fixCleanup3_4_0:
+                //   shares = floor(37.5) = 37
+                //   assets = 87.5 * 37 / 875 = 3.7 <= 3.75 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.clawback(
@@ -754,24 +757,21 @@ private:
                      .amount = STAmount(d.asset, Number(375, -2))});
                 env(tx);
                 env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - 38));
+                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - 37));
                 BEAST_EXPECT(env.balance(d.depositor, d.assets) == STAmount(d.asset, start));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(875 - 38, -1)));
+                    STAmount(d.asset, Number(875 - 37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(875 - 38, 0)));
+                    STAmount(d.share, -Number(875 - 37, 0)));
             }
 
             {
                 testcase("Scale clawback with rounding shares down");
-                // assetsToSharesWithdraw:
-                //  shares = sharesTotal * (assets / assetsTotal)
-                //  shares = 837 * 3.72 / 83.7 = 837 * 0.04444... = 37.2
-                // sharesToAssetsWithdraw:
-                //  assets = assetsTotal * (shares / sharesTotal)
-                //  assets = 83.7 * 37 / 837 = 83.7 * 0.044205... = 3.7
+                // Chained state: 838 shares outstanding, 83.8 assets.
+                //   shares = floor(838 * 3.72 / 83.8) = floor(37.199...) = 37
+                //   assets = 83.8 * 37 / 838 = 3.7 <= 3.72 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.clawback(
@@ -781,18 +781,21 @@ private:
                      .amount = STAmount(d.asset, Number(372, -2))});
                 env(tx);
                 env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(837 - 37));
+                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(838 - 37));
                 BEAST_EXPECT(env.balance(d.depositor, d.assets) == STAmount(d.asset, start));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(837 - 37, -1)));
+                    STAmount(d.asset, Number(838 - 37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(837 - 37, 0)));
+                    STAmount(d.share, -Number(838 - 37, 0)));
             }
 
             {
-                testcase("Scale clawback tiny amount");
+                testcase("Scale clawback tiny amount rejected post-fixCleanup3_4_0");
+                // Chained state: 801 shares outstanding, 80.1 assets.
+                //   shares = floor(801 * 0.09 / 80.1) = floor(0.9) = 0
+                // Zero shares => tecPRECISION_LOSS. State is unchanged.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
                 auto tx = d.vault.clawback(
@@ -800,16 +803,14 @@ private:
                      .id = d.keylet.key,
                      .holder = d.depositor,
                      .amount = STAmount(d.asset, Number(9, -2))});
-                env(tx);
+                env(tx, Ter{tecPRECISION_LOSS});
                 env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(800 - 1));
+                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(801));
                 BEAST_EXPECT(env.balance(d.depositor, d.assets) == STAmount(d.asset, start));
                 BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(800 - 1, -1)));
+                    env.balance(d.vaultAccount, d.assets) == STAmount(d.asset, Number(801, -1)));
                 BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(800 - 1, 0)));
+                    env.balance(d.vaultAccount, d.shares) == STAmount(d.share, -Number(801, 0)));
             }
 
             {
@@ -896,6 +897,117 @@ private:
                 // 600 of 1000 shares destroyed, 400 remain
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(400));
             }
+        });
+
+        // peek() writes the open ledger only; do not close() before le().
+        auto seedLargeTotal = [](Env& env,
+                                 Data& d,
+                                 Number const& total,
+                                 Number const& available,
+                                 std::uint64_t outstanding) {
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+            d.peek([&](SLE& vault, SLE& shares) -> bool {
+                vault[sfAssetsTotal] = total;
+                vault[sfAssetsAvailable] = available;
+                shares[sfOutstandingAmount] = outstanding;
+                return true;
+            });
+        };
+
+        auto expectVault = [this](
+                               Env& env,
+                               Data const& d,
+                               Number const& total,
+                               Number const& available,
+                               STAmount const& shareBalance) {
+            auto const sle = env.le(d.keylet);
+            BEAST_EXPECT(sle != nullptr);
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == total);
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == available);
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == shareBalance);
+        };
+
+        // T-6 is exact after the decade; recover 6.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback uses posterior scale across decade boundary");
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{6};
+            seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
+
+            auto tx =
+                d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tesSUCCESS));
+            expectVault(env, d, midGridTotal - available, Number(0), d.share(94));
+        });
+
+        // T stays on the 10-asset grid; 6 is unrepresentable.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback rejects amount below posterior scale");
+
+            Number const midGridTotal{12345678901234567ll};
+            Number const available{6};
+            seedLargeTotal(env, d, midGridTotal, available, 12345678901234567ull);
+
+            auto tx =
+                d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tecPRECISION_LOSS));
+            expectVault(env, d, midGridTotal, available, d.share(100));
+        });
+
+        // A recovery larger than the anterior ULP also lands exactly on the finer posterior grid.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback preserves exact posterior amount");
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{15};
+            seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
+
+            auto tx =
+                d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tesSUCCESS));
+            expectVault(env, d, midGridTotal - available, Number(0), d.share(85));
+        });
+
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale deposit rejects amount below posterior scale");
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{100};
+            seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
+
+            auto const assetsBefore = env.balance(d.depositor, d.assets);
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(6))});
+            env(tx, Ter(tecPRECISION_LOSS));
+            expectVault(env, d, midGridTotal, available, d.share(100));
+            BEAST_EXPECT(env.balance(d.depositor, d.assets) == assetsBefore);
+        });
+
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale withdraw uses posterior scale across decade boundary");
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{100};
+            seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
+
+            auto const assetsBefore = env.balance(d.depositor, d.assets);
+            auto tx = d.vault.withdraw(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.share, Number(15))});
+            env(tx, Ter(tesSUCCESS));
+            expectVault(env, d, midGridTotal - Number(15), Number(85), d.share(85));
+            BEAST_EXPECT(
+                env.balance(d.depositor, d.assets) ==
+                STAmount(d.asset, assetsBefore.number() + Number(15)));
         });
     }
 

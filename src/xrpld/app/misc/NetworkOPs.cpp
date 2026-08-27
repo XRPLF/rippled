@@ -78,10 +78,11 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -89,8 +90,11 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/Protocol.h>
@@ -4918,8 +4922,7 @@ NetworkOPsImp::getBookPage(
 
     ReadView const& view = *lpLedger;
 
-    bool const bGlobalFreeze =
-        isGlobalFrozen(view, book.out.getIssuer()) || isGlobalFrozen(view, book.in.getIssuer());
+    bool const bGlobalFreeze = isGlobalFrozen(view, book.out) || isGlobalFrozen(view, book.in);
 
     bool bDone = false;
     bool bDirectAdvance = true;
@@ -4929,7 +4932,7 @@ NetworkOPsImp::getBookPage(
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
-    auto const rate = transferRate(view, book.out.getIssuer());
+    auto const rate = transferRate(view, book.out);
     auto viewJ = registry_.get().getJournal("View");
 
     while (!bDone && iLimit-- > 0)
@@ -4978,12 +4981,37 @@ NetworkOPsImp::getBookPage(
                 auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
+                auto foundBalance = [&]() {
+                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
+                    if (umBalanceEntry == umBalance.end())
+                        return false;
+
+                    // Found in running balance table.
+                    saOwnerFunds = umBalanceEntry->second;
+                    firstOwnerOffer = false;
+                    return true;
+                };
 
                 if (book.out.getIssuer() == uOfferOwnerID)
                 {
-                    // If an offer is selling issuer's own IOUs, it is fully
-                    // funded.
-                    saOwnerFunds = saTakerGets;
+                    book.out.visit(
+                        [&](Issue const&) {
+                            // If an offer is selling issuer's own IOUs, it is
+                            // fully funded.
+                            saOwnerFunds = saTakerGets;
+                        },
+                        [&](MPTIssue const& issue) {
+                            // MPT issuers have bounded self-issuance. Use the
+                            // running balance table so multiple issuer-owned
+                            // offers share the same remaining issuance
+                            // headroom.
+                            if (!foundBalance())
+                            {
+                                // Did not find balance in table.
+
+                                saOwnerFunds = issuerFundsToSelfIssue(view, issue);
+                            }
+                        });
                 }
                 else if (bGlobalFreeze)
                 {
@@ -4993,15 +5021,7 @@ NetworkOPsImp::getBookPage(
                 }
                 else
                 {
-                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
-                    if (umBalanceEntry != umBalance.end())
-                    {
-                        // Found in running balance table.
-
-                        saOwnerFunds = umBalanceEntry->second;
-                        firstOwnerOffer = false;
-                    }
-                    else
+                    if (!foundBalance())
                     {
                         // Did not find balance in table.
 
@@ -5037,7 +5057,28 @@ NetworkOPsImp::getBookPage(
                 {
                     // Need to charge a transfer fee to offer owner.
                     offerRate = rate;
-                    saOwnerFundsLimit = divide(saOwnerFunds, offerRate);
+                    // Why MPT does not use divide(): divide() is built for an
+                    // IOU mantissa, which is always normalized into
+                    // [1e15, 1e16]. An MPT mantissa is the raw int64 balance,
+                    // and divide() scales the numerator by 1e17, so a balance
+                    // over ~1.8e17 leaves uint64 range and throws -- failing
+                    // the whole RPC rather than this one offer.
+                    //
+                    // Why mulRatio is safe: it evaluates in 128 bits, and here
+                    // it cannot overflow either. offerRate is
+                    // 1e9 + 10'000 * TransferFee, so this branch runs only with
+                    // offerRate > kParityRate, making the quotient smaller than
+                    // saOwnerFunds. Rounded down, so reported liquidity is
+                    // never overstated.
+                    saOwnerFundsLimit = saOwnerFunds.holds<MPTIssue>()
+                        ? toSTAmount(
+                              mulRatio(
+                                  saOwnerFunds.mpt(),
+                                  kParityRate.value,
+                                  offerRate.value,
+                                  /*roundUp*/ false),
+                              saOwnerFunds.asset())
+                        : divide(saOwnerFunds, offerRate);
                 }
 
                 if (saOwnerFundsLimit >= saTakerGets)
@@ -5094,6 +5135,8 @@ NetworkOPsImp::getBookPage(
 
 // This is the new code that uses the book iterators
 // It has temporarily been disabled
+// If this path is re-enabled, add MPT support mirroring the functional
+// getBookPage() implementation above.
 
 void
 NetworkOPsImp::getBookPage(
