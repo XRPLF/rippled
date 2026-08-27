@@ -303,7 +303,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     // Only when enabled: recording takes the tracker's lock and inserts an
     // entry, and nothing reconciles or drains those entries unless the
     // observable gauges are running.
-    if (auto* mr = app_.getMetricsRegistry(); mr && mr->isEnabled())
+    if (auto* mr = app_.getMetricsRegistry(); mr != nullptr && mr->isEnabled())
         mr->getValidationTracker().recordNetworkValidation(l->header().hash, l->header().seq);
 #endif
 

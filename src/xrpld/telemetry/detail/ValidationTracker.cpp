@@ -51,6 +51,29 @@ ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerInde
 }
 
 void
+ValidationTracker::classifyPending(LedgerEvent& evt, TimePoint now)
+{
+    evt.reconciled = true;
+    evt.agreed = evt.weValidated && evt.networkValidated;
+
+    if (evt.agreed)
+    {
+        totalAgreements_.fetch_add(1, std::memory_order_relaxed);
+        totalAgreementsGross_.fetch_add(1, std::memory_order_relaxed);
+    }
+    else
+    {
+        totalMissed_.fetch_add(1, std::memory_order_relaxed);
+        totalMissedGross_.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    WindowEvent const we{.time = now, .ledgerHash = evt.ledgerHash, .agreed = evt.agreed};
+    window1h_.push_back(we);
+    window24h_.push_back(we);
+    window7d_.push_back(we);
+}
+
+void
 ValidationTracker::boundPending(uint256 const& justRecorded)
 {
     if (pending_.size() <= kMaxPendingEvents)
@@ -65,8 +88,24 @@ ValidationTracker::boundPending(uint256 const& justRecorded)
             oldest = it;
     }
 
-    if (oldest != pending_.end())
-        pending_.erase(oldest);
+    if (oldest == pending_.end())
+        return;
+
+    // Classify before erasing. An event contributes to the agreement and miss
+    // totals only when it is classified, so dropping an unclassified one would
+    // lose it outright -- the ledger would be counted neither as an agreement
+    // nor as a miss, and the lifetime totals would silently under-report.
+    //
+    // This forces the classification earlier than the grace period, using
+    // whichever flags have arrived. That is the cost of being over the bound at
+    // all: a validation that would have arrived during the remaining grace
+    // window now lands after its event is gone, so it can neither complete the
+    // agreement nor repair it later. Being over the bound means reconcile() is
+    // not running, so the alternative is unbounded growth.
+    if (!oldest->second.reconciled)
+        classifyPending(oldest->second, Clock::now());
+
+    pending_.erase(oldest);
 }
 
 std::size_t
@@ -86,29 +125,10 @@ ValidationTracker::reconcile()
     {
         if (!evt.reconciled && (now - evt.recordTime) >= kGracePeriod)
         {
-            // Initial reconciliation after grace period.
-            evt.reconciled = true;
-            evt.agreed = evt.weValidated && evt.networkValidated;
-
-            if (evt.agreed)
-            {
-                totalAgreements_.fetch_add(1, std::memory_order_relaxed);
-                // Gross tally: count the initial agreement once. See the
-                // counting-decision note below (repair branch).
-                totalAgreementsGross_.fetch_add(1, std::memory_order_relaxed);
-            }
-            else
-            {
-                totalMissed_.fetch_add(1, std::memory_order_relaxed);
-                // Gross tally: count the initial miss once. See the
-                // counting-decision note below (repair branch).
-                totalMissedGross_.fetch_add(1, std::memory_order_relaxed);
-            }
-
-            WindowEvent const we{.time = now, .ledgerHash = evt.ledgerHash, .agreed = evt.agreed};
-            window1h_.push_back(we);
-            window24h_.push_back(we);
-            window7d_.push_back(we);
+            // Initial reconciliation after grace period. The gross tallies are
+            // moved once, here, at first classification -- see the
+            // counting-decision note in the repair branch below.
+            classifyPending(evt, now);
         }
         else if (
             evt.reconciled && !evt.agreed && evt.weValidated && evt.networkValidated &&
