@@ -995,7 +995,7 @@ git push --delete upstream-push master-next
 Once the release is tagged, published on GitHub, and merged:
 
 1. Coordinate with the docs team to open PRs in [xrpl-dev-portal](https://github.com/XRPLF/xrpl-dev-portal) to update the [XRPL documentation](https://xrpl.org) and publish release notes on the [XRPL Blog](https://xrpl.org/blog).
-2. Send an announcement message to [ripple-server](https://groups.google.com/g/ripple-server).
+2. Coordinate with the XRPLF Director of Communications to send an announcement message to notifications@xrpl.foundation.
 3. Update Altnet (Testnet) and Devnet servers (and deploy to Mainnet servers for stable releases).
 
 #### Special cases: point releases, hotfixes, etc.
