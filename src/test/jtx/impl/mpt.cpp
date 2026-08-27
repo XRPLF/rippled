@@ -155,21 +155,6 @@ setGeneratedProof(json::Value& jv, std::optional<Buffer> const& proof, std::size
     jv[sfZKProof.jsonName] = strHex(proof ? *proof : gMakeZeroBuffer(dummyLen));
 }
 
-void
-addRecipientIfKey(
-    std::vector<ConfidentialRecipient>& recipients,
-    std::optional<Buffer> const& pubKey,
-    Buffer const& encryptedAmount)
-{
-    if (pubKey)
-    {
-        recipients.push_back({
-            .publicKey = Slice(*pubKey),
-            .encryptedAmount = encryptedAmount,
-        });
-    }
-}
-
 }  // namespace
 
 void
@@ -1541,21 +1526,41 @@ MPTTester::sendJV(
         auto const destPubKey = getPubKey(*arg.dest);
         auto const issuerPubKey = getPubKey(issuer_);
 
-        addRecipientIfKey(recipients, senderPubKey, senderAmt);
-        addRecipientIfKey(recipients, destPubKey, destAmt);
-        addRecipientIfKey(recipients, issuerPubKey, issuerAmt);
+        if (senderPubKey)
+        {
+            recipients.push_back({
+                .publicKey = Slice(*senderPubKey),
+                .encryptedAmount = senderAmt,
+            });
+        }
+        if (destPubKey)
+        {
+            recipients.push_back({
+                .publicKey = Slice(*destPubKey),
+                .encryptedAmount = destAmt,
+            });
+        }
+        if (issuerPubKey)
+        {
+            recipients.push_back({
+                .publicKey = Slice(*issuerPubKey),
+                .encryptedAmount = issuerAmt,
+            });
+        }
 
-        // Keep the key in a local that outlives this block: ConfidentialRecipient
-        // stores a Slice into it, and that Slice is read later by
-        // getConfidentialSendProof, so the Buffer must not be destroyed when the
-        // `if` block below exits.
         std::optional<Buffer> auditorPubKey;
         if (auditorAmt)
         {
             if (!auditor_)
                 Throw<std::runtime_error>("Auditor not registered");
             auditorPubKey = getPubKey(*auditor_);
-            addRecipientIfKey(recipients, auditorPubKey, *auditorAmt);
+            if (auditorPubKey)
+            {
+                recipients.push_back({
+                    .publicKey = Slice(*auditorPubKey),
+                    .encryptedAmount = *auditorAmt,
+                });
+            }
         }
 
         std::optional<Buffer> proof;
