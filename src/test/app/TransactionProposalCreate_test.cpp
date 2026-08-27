@@ -21,12 +21,15 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -36,6 +39,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -698,6 +702,91 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // An on-ledger ltSIGNER_LIST that cannot be read as signer entries is
+    // unexpected ledger state, not a malformed transaction. preclaim must
+    // surface tefINTERNAL (not temMALFORMED, and not the tefEXCEPTION that
+    // applySteps would wrap an uncaught throw with).
+    //
+    // ltSIGNER_LIST's SOTemplate makes sfSignerEntries required and each
+    // element an sfSignerEntry, so the corruptions below throw from the
+    // field accessors rather than taking deserialize's temMALFORMED path.
+    // Do not close() after the synthetic corruption: a closed ledger would
+    // drop the overlay and restore a well-formed list.
+    void
+    testCorruptSignerList(FeatureBitset features)
+    {
+        testcase("unparseable on-ledger SignerList is tefINTERNAL");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        auto setup = [&](Env& env, Account const& target, Account const& signer) {
+            env.fund(XRP(10000), target, signer);
+            env.close();
+            env(signers(target, 1, {{signer, 1}}));
+            env.close();
+            // Ticket first: createTicket closes, which would drop a later
+            // open-ledger overlay and restore a well-formed SignerList.
+            return proposal::createTicket(env, target);
+        };
+
+        auto proposeAsSigner =
+            [&](Env& env, Account const& target, Account const& signer, std::uint32_t ticketSeq) {
+                env(proposal::create(
+                        signer,
+                        proposal::unsignedPayload(env, pay(target, signer, XRP(1)), ticketSeq),
+                        proposal::expiration(env, 100s)),
+                    Ter(tefINTERNAL),
+                    proposal::verify::create());
+                BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            };
+
+        {
+            Env env{*this, features};
+            Account const target{"targetMissing"};
+            Account const signer{"signerMissing"};
+            std::uint32_t const ticketSeq = setup(env, target, signer);
+
+            auto const signerListKeylet = keylet::signerList(target.id());
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = view.read(signerListKeylet);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle);
+                if (!replacement->delField(sfSignerEntries))
+                    return false;
+                view.rawReplace(replacement);
+                return true;
+            }));
+            BEAST_EXPECT(env.le(signerListKeylet));
+
+            proposeAsSigner(env, target, signer, ticketSeq);
+        }
+
+        {
+            Env env{*this, features};
+            Account const target{"targetBadEntry"};
+            Account const signer{"signerBadEntry"};
+            std::uint32_t const ticketSeq = setup(env, target, signer);
+
+            auto const signerListKeylet = keylet::signerList(target.id());
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = view.read(signerListKeylet);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle);
+                STArray badEntries;
+                badEntries.pushBack(STObject{sfSigner});
+                replacement->setFieldArray(sfSignerEntries, badEntries);
+                view.rawReplace(replacement);
+                return true;
+            }));
+            BEAST_EXPECT(env.le(signerListKeylet));
+
+            proposeAsSigner(env, target, signer, ticketSeq);
+        }
+    }
+
     // The target account may delegate authority over the proposed
     // transaction's own type to another account (Permission Delegation,
     // XLS-75); if it does, that delegate — or an account on the delegate's
@@ -1299,6 +1388,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Preclaim
         testPreclaim(all);
         testProposerAuthorization(all);
+        testCorruptSignerList(all);
         testDelegatedProposedTx(all);
         testPseudoTarget(all);
 

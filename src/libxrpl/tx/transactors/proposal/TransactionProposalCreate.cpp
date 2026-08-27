@@ -188,12 +188,33 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             if (!sleSigners)
                 return false;
 
-            auto const accountSigners = SignerEntries::deserialize(*sleSigners, ctx.j, "ledger");
-            if (!accountSigners)
-                return std::unexpected(TER{accountSigners.error()});
+            // deserialize reports temMALFORMED for a missing or wrongly-named
+            // sfSignerEntries array, which is the right code for a transaction.
+            // Here the object is an on-ledger ltSIGNER_LIST (sfSignerEntries
+            // is SoeRequired; each element is an sfSignerEntry). A corrupt SLE
+            // therefore typically throws from the field accessors rather than
+            // returning temMALFORMED. Either way this is unexpected ledger
+            // state, not a malformed TransactionProposalCreate.
+            try
+            {
+                auto const accountSigners =
+                    SignerEntries::deserialize(*sleSigners, ctx.j, "ledger");
+                if (!accountSigners)
+                {
+                    JLOG(ctx.j.fatal()) << "TransactionProposalCreate: unparseable SignerList: "
+                                        << transToken(accountSigners.error());
+                    return std::unexpected(tefINTERNAL);
+                }
 
-            return std::ranges::any_of(
-                *accountSigners, [&](auto const& entry) { return entry.account == proposer; });
+                return std::ranges::any_of(
+                    *accountSigners, [&](auto const& entry) { return entry.account == proposer; });
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(ctx.j.fatal())
+                    << "TransactionProposalCreate: unparseable SignerList: " << e.what();
+                return std::unexpected(tefINTERNAL);
+            }
         };
 
         auto isSigner = isAuthorizedFor(target);
