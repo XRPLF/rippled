@@ -1146,7 +1146,7 @@ MPTTester::fillConversionCiphertexts(
 void
 MPTTester::convert(MPTConvert const& arg)
 {
-    json::Value jv = convertJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
+    json::Value const jv = convertJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
 
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
@@ -1298,7 +1298,7 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
 void
 MPTTester::send(MPTConfidentialSend const& arg)
 {
-    json::Value jv = sendJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
+    json::Value const jv = sendJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
 
     // Version counters before send
     auto const prevSenderVersion = getMPTokenVersion(*arg.account);
@@ -1847,7 +1847,7 @@ MPTTester::mergeInboxJV(MPTMergeInbox const& arg) const
 void
 MPTTester::mergeInbox(MPTMergeInbox const& arg)
 {
-    json::Value jv = mergeInboxJV(arg);
+    json::Value const jv = mergeInboxJV(arg);
     auto const holderPubAmt = getBalance(*arg.account);
     auto const prevCOA = getIssuanceConfidentialBalance();
     auto const prevOA = getIssuanceOutstandingBalance();
@@ -1949,7 +1949,7 @@ MPTTester::getMPTokenVersion(Account const account) const
 void
 MPTTester::convertBack(MPTConvertBack const& arg)
 {
-    json::Value jv = convertBackJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
+    json::Value const jv = convertBackJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
 
     auto const prevInboxBalance = getDecryptedBalance(*arg.account, holderEncryptedInbox);
     auto const prevSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
