@@ -25,7 +25,7 @@ ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::cons
 {
     if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
-    if (after && after->getType() != ltPERMISSIONED_DOMAIN)
+    if (after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
     auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::const_ref sle) {
@@ -54,8 +54,7 @@ ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::cons
         sleStatus.emplace_back(ss);
     };
 
-    if (after)
-        check(sleStatus_, after);
+    check(sleStatus_, after);
 }
 
 bool

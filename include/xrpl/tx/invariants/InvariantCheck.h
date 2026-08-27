@@ -79,10 +79,9 @@ public:
      *  individual invariant check.
      *
      * @note `after` IS NEVER NULL. `isDelete` is the only correct way to check for deletions.
-     *  Do not make logic or branching decisions on whether on `after` is set, because it will
-     *  always be set. Treat a null `after` as a programming error (with XRPL_ASSERT). An
-     *  invariant MAY check for null defensively, if it makes more sense, but an assertion is
-     *  preferred for new invariants.
+     *  Do not make logic or branching decisions on whether `after` is set, because it will
+     *  always be set. A null `after`, or a null `before` when `isDelete` is true, is a
+     *  programming error: `checkInvariants` throws `std::logic_error` before dispatch.
      */
     void
     visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);

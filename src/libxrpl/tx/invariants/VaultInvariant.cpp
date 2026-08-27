@@ -85,13 +85,6 @@ ValidVault::Shares::make(SLE const& from)
 void
 ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // If `before` is empty, this means an object is being created, in which
-    // case `isDelete` must be false. Otherwise `before` and `after` are set and
-    // `isDelete` indicates whether an object is being deleted or modified.
-    XRPL_ASSERT(
-        after != nullptr && (before != nullptr || !isDelete),
-        "xrpl::ValidVault::visitEntry : some object is available");
-
     // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), and
     // preserves value scale (exponent) to round values to the same scale during
@@ -144,7 +137,7 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
         }
     }
 
-    if (!isDelete && after)
+    if (!isDelete)
     {
         switch (after->getType())
         {

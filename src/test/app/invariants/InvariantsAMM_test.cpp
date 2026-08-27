@@ -71,7 +71,10 @@ class InvariantsAMM_test : public InvariantsBase
             ValidAMM invariant;
 
             if (deletedLPBalance)
-                invariant.visitEntry(true, makeAMM(*deletedLPBalance), nullptr);
+            {
+                auto const sleAMM = makeAMM(*deletedLPBalance);
+                invariant.visitEntry(true, sleAMM, sleAMM);
+            }
 
             bool const actual = invariant.finalize(
                 STTx{txType, [](STObject&) {}}, result, XRPAmount{}, *env.current(), jlog);

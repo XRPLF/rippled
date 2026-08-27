@@ -36,23 +36,20 @@ ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
         return;
     }
 
-    if (after)
+    auto const type = after->getType();
+    // AMM object changed
+    if (type == ltAMM)
     {
-        auto const type = after->getType();
-        // AMM object changed
-        if (type == ltAMM)
-        {
-            ammAccount_ = after->getAccountID(sfAccount);
-            lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
-        }
-        // AMM pool changed
-        else if (
-            (type == ltRIPPLE_STATE && after->isFlag(lsfAMMNode)) ||
-            (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)) ||
-            (type == ltMPTOKEN && after->isFlag(lsfMPTAMM)))
-        {
-            ammPoolChanged_ = true;
-        }
+        ammAccount_ = after->getAccountID(sfAccount);
+        lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
+    }
+    // AMM pool changed
+    else if (
+        (type == ltRIPPLE_STATE && after->isFlag(lsfAMMNode)) ||
+        (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)) ||
+        (type == ltMPTOKEN && after->isFlag(lsfMPTAMM)))
+    {
+        ammPoolChanged_ = true;
     }
 
     if (before)

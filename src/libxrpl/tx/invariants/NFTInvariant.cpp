@@ -30,8 +30,7 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
     static constexpr uint256 const& kPageBits = nft::kPageMask;
     static constexpr uint256 kAccountBits = ~kPageBits;
 
-    if ((before && before->getType() != ltNFTOKEN_PAGE) ||
-        (after && after->getType() != ltNFTOKEN_PAGE))
+    if ((before && before->getType() != ltNFTOKEN_PAGE) || after->getType() != ltNFTOKEN_PAGE)
         return;
 
     auto check = [this, isDelete](SLE::const_ref sle) {
@@ -107,10 +106,9 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         }
     }
 
-    if (after)
-        check(after);
+    check(after);
 
-    if (!isDelete && before && after)
+    if (!isDelete && before)
     {
         // If the NFTokenPage
         //  1. Has a NextMinPage field in before, but loses it in after, and
@@ -191,7 +189,7 @@ NFTokenCountTracking::visitEntry(bool, SLE::const_ref before, SLE::const_ref aft
         beforeBurnedTotal_ += (*before)[~sfBurnedNFTokens].value_or(0);
     }
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after->getType() == ltACCOUNT_ROOT)
     {
         afterMintedTotal_ += (*after)[~sfMintedNFTokens].value_or(0);
         afterBurnedTotal_ += (*after)[~sfBurnedNFTokens].value_or(0);

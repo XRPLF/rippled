@@ -168,13 +168,6 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
         }
     }
 
-    if (!after)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::XRPNotCreated::visitEntry : after can't be null");
-        return;
-        // LCOV_EXCL_STOP
-    }
     switch (after->getType())
     {
         case ltACCOUNT_ROOT:
@@ -255,7 +248,7 @@ XRPBalanceChecks::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
     if (before && before->getType() == ltACCOUNT_ROOT)
         bad_ |= isBad((*before)[sfBalance]);
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after->getType() == ltACCOUNT_ROOT)
         bad_ |= isBad((*after)[sfBalance]);
 }
 
@@ -296,7 +289,7 @@ NoBadOffers::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref aft
     if (before && before->getType() == ltOFFER)
         bad_ |= isBad((*before)[sfTakerPays], (*before)[sfTakerGets]);
 
-    if (after && after->getType() == ltOFFER)
+    if (after->getType() == ltOFFER)
         bad_ |= isBad((*after)[sfTakerPays], (*after)[sfTakerGets]);
 }
 
@@ -364,7 +357,7 @@ NoZeroEscrow::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref af
     if (before && before->getType() == ltESCROW)
         bad_ |= isBad((*before)[sfAmount]);
 
-    if (after && after->getType() == ltESCROW)
+    if (after->getType() == ltESCROW)
         bad_ |= isBad((*after)[sfAmount]);
 
     auto checkAmount = [this](std::int64_t amount) {
@@ -374,7 +367,7 @@ NoZeroEscrow::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref af
 
     bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
-    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    if (after->getType() == ltMPTOKEN_ISSUANCE)
     {
         auto const outstanding = (*after)[sfOutstandingAmount];
         checkAmount(outstanding);
@@ -393,7 +386,7 @@ NoZeroEscrow::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref af
         }
     }
 
-    if (after && after->getType() == ltMPTOKEN)
+    if (after->getType() == ltMPTOKEN)
     {
         auto const mptAmount = (*after)[sfMPTAmount];
         checkAmount(mptAmount);
@@ -601,29 +594,26 @@ AccountRootsDeletedClean::finalize(
 void
 LedgerEntryTypesMatch::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
-    if (before && after && before->getType() != after->getType())
+    if (before && before->getType() != after->getType())
         typeMismatch_ = true;
 
-    if (after)
-    {
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
 #define LEDGER_ENTRY(tag, ...) case tag:
 
-        switch (after->getType())
-        {
+    switch (after->getType())
+    {
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
+        break;
+        default:
+            invalidTypeAdded_ = true;
             break;
-            default:
-                invalidTypeAdded_ = true;
-                break;
-        }
+    }
 
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")
-    }
 }
 
 bool
@@ -657,7 +647,7 @@ NoXRPTrustLines::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
 {
     bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
-    if (after && after->getType() == ltRIPPLE_STATE)
+    if (after->getType() == ltRIPPLE_STATE)
     {
         // checking the issue directly here instead of
         // relying on .native() just in case native somehow
@@ -695,7 +685,7 @@ NoXRPTrustLines::finalize(
 void
 NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
 {
-    if (after && after->getType() == ltRIPPLE_STATE)
+    if (after->getType() == ltRIPPLE_STATE)
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
@@ -842,7 +832,7 @@ ValidClawback::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
         iou_.before = before;
     }
 
-    if (!isDelete && after && after->getType() == ltRIPPLE_STATE)
+    if (!isDelete && after->getType() == ltRIPPLE_STATE)
         iou_.after = after;
 
     if (before && before->getType() == ltMPTOKEN)
@@ -851,7 +841,7 @@ ValidClawback::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
         mpt_.before = before;
     }
 
-    if (!isDelete && after && after->getType() == ltMPTOKEN)
+    if (!isDelete && after->getType() == ltMPTOKEN)
         mpt_.after = after;
 }
 
@@ -1017,7 +1007,7 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
         return;
     }
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after->getType() == ltACCOUNT_ROOT)
     {
         bool const isPseudo = [&]() {
             // isPseudoAccount checks that any of the pseudo-account fields are
@@ -1217,7 +1207,7 @@ ValidAmounts::visitEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const& after)
 {
-    if (!isDelete && after)
+    if (!isDelete)
         afterEntries_.push_back(after);
 }
 
@@ -1247,16 +1237,6 @@ ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::co
 {
     if (!isDelete)
         return;
-
-    // Before should never be null when isDelete = true
-    if (!before)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE(
-            "xrpl::ObjectHasPseudoAccount::visitEntry : deleted ledger entry missing before state");
-        return;
-        // LCOV_EXCL_STOP
-    }
 
     switch (before->getType())
     {

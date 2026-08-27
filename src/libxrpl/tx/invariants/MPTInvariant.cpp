@@ -75,7 +75,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
     // on the hot path.
     bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
 
-    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    if (after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
         {
@@ -102,7 +102,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         }
     }
 
-    if (after && after->getType() == ltMPTOKEN)
+    if (after->getType() == ltMPTOKEN)
     {
         if (isDelete)
         {
@@ -121,7 +121,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
 
     // Capture deleted RippleState SLEs so finalize() can verify none of
     // them were owned by a vault pseudo-account outside VaultDelete.
-    if (fix320Enabled && isDelete && after && after->getType() == ltRIPPLE_STATE)
+    if (fix320Enabled && isDelete && after->getType() == ltRIPPLE_STATE)
         deletedHoldings_.push_back(after);
 }
 
@@ -466,15 +466,12 @@ ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref a
     if (before && !update(*before, Order::Before))
         return;
 
-    if (after)
+    if (after->getType() == ltMPTOKEN_ISSUANCE)
     {
-        if (after->getType() == ltMPTOKEN_ISSUANCE)
-        {
-            overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
-        }
-        if (!update(*after, Order::After))
-            return;
+        overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
     }
+    if (!update(*after, Order::After))
+        return;
 }
 
 bool
@@ -581,7 +578,7 @@ ValidConfidentialMPToken::visitEntry(
         }
     }
 
-    if (after && after->getType() == ltMPTOKEN)
+    if (after->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(after);
         auto& change = changes_[id];
@@ -633,7 +630,7 @@ ValidConfidentialMPToken::visitEntry(
             change.outstandingDelta, before->getFieldU64(sfOutstandingAmount));
     }
 
-    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    if (after->getType() == ltMPTOKEN_ISSUANCE)
     {
         uint192 const id = getMptID(after);
         auto& change = changes_[id];
@@ -653,7 +650,7 @@ ValidConfidentialMPToken::visitEntry(
             change.badCOA = true;
     }
 
-    if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
+    if (before && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(after);
 
@@ -830,8 +827,7 @@ ValidMPTTransfer::visitEntry(
     if (before)
         update(*before, true);
 
-    if (after)
-        update(*after, false);
+    update(*after, false);
 }
 
 bool

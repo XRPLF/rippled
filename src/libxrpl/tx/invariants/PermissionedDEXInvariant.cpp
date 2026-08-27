@@ -21,24 +21,19 @@ namespace xrpl {
 void
 ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref, SLE::const_ref after)
 {
-    // Post-fixCleanup3_4_0: skip when after is null (defensive).
-    // Pre-amendment: original after-only path via the `if (after && ...)` checks below.
-    if (isFeatureEnabled(fixCleanup3_4_0) && !after)
-        return;
-
     auto trackDomain = [this, isDelete](uint256 const& domain) {
         domainsOld_.insert(domain);
         if (!isDelete)
             domains_.insert(domain);
     };
 
-    if (after && after->getType() == ltDIR_NODE)
+    if (after->getType() == ltDIR_NODE)
     {
         if (after->isFieldPresent(sfDomainID))
             trackDomain(after->getFieldH256(sfDomainID));
     }
 
-    if (after && after->getType() == ltOFFER)
+    if (after->getType() == ltOFFER)
     {
         if (after->isFieldPresent(sfDomainID))
         {

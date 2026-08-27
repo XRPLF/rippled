@@ -640,83 +640,66 @@ class InvariantsPermissioned_test : public InvariantsBase
     {
         using namespace test::jtx;
 
-        testcase << "PermissionedDEX null after";
+        testcase << "PermissionedDEX deleted offer after";
 
         // Tx is OfferCreate on pd2. Tracking pd1 fails the invariant iff that
-        // domain lands in the set finalize consults. after == null is never
-        // tracked (pre-340: after-only; post-340: early return) — same result,
-        // both sides are coverage/regression that we do not fall back to before.
-        auto const check = [this](
-                               FeatureBitset features,
-                               bool const afterIsNull,
-                               bool const isDelete,
-                               bool const expectInvariantFailure) {
-            Env env(*this, features);
+        // domain lands in the set finalize consults.
+        auto const check =
+            [this](FeatureBitset features, bool const isDelete, bool const expectInvariantFailure) {
+                Env env(*this, features);
 
-            Account const a1{"A1"};
-            Account const a2{"A2"};
-            env.fund(XRP(1000), a1, a2);
-            env.close();
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), a1, a2);
+                env.close();
 
-            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env, a1, a2);
-            [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env, a1, a2);
-            env.close();
+                [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env, a1, a2);
+                [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env, a1, a2);
+                env.close();
 
-            auto sleOffer =
-                std::make_shared<SLE>(keylet::offer(a2.id(), SeqProxy::rawSequence(10)));
-            sleOffer->setAccountID(sfAccount, a2);
-            sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-            sleOffer->setFieldAmount(sfTakerGets, XRP(1));
-            sleOffer->setFieldH256(sfDomainID, pd1);
+                auto sleOffer =
+                    std::make_shared<SLE>(keylet::offer(a2.id(), SeqProxy::rawSequence(10)));
+                sleOffer->setAccountID(sfAccount, a2);
+                sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
+                sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                sleOffer->setFieldH256(sfDomainID, pd1);
 
-            CurrentTransactionRulesGuard const rulesGuard(env.current()->rules());
+                CurrentTransactionRulesGuard const rulesGuard(env.current()->rules());
 
-            ValidPermissionedDEX invariant;
-            if (afterIsNull)
-            {
-                // Defensive path: after is null. Must not fall back to before.
-                invariant.visitEntry(isDelete, sleOffer, nullptr);
-            }
-            else
-            {
-                // Normal / real-erase path: after is the offer on pd1.
+                ValidPermissionedDEX invariant;
                 invariant.visitEntry(isDelete, nullptr, sleOffer);
-            }
 
-            STTx const tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
-                              tx.setFieldH256(sfDomainID, pd2);
-                              tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                              tx.setFieldAmount(sfTakerGets, XRP(1));
-                          }};
+                STTx const tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
+                                  tx.setFieldH256(sfDomainID, pd2);
+                                  tx.setFieldAmount(sfTakerPays, a1["USD"](10));
+                                  tx.setFieldAmount(sfTakerGets, XRP(1));
+                              }};
 
-            test::StreamSink sink{beast::Severity::Warning};
-            beast::Journal const jlog{sink};
-            bool const passed =
-                invariant.finalize(tx, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
-            BEAST_EXPECT(passed != expectInvariantFailure);
-            if (expectInvariantFailure)
-            {
-                BEAST_EXPECT(sink.messages().str().contains("transaction consumed wrong domains"));
-            }
-            else
-            {
-                BEAST_EXPECT(sink.messages().str().empty());
-            }
-        };
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                bool const passed =
+                    invariant.finalize(tx, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
+                BEAST_EXPECT(passed != expectInvariantFailure);
+                if (expectInvariantFailure)
+                {
+                    BEAST_EXPECT(
+                        sink.messages().str().contains("transaction consumed wrong domains"));
+                }
+                else
+                {
+                    BEAST_EXPECT(sink.messages().str().empty());
+                }
+            };
 
         auto const pre = all_ - fixCleanup3_4_0;
         auto const post = all_;
 
-        // after == null: not tracked
-        check(pre, true, true, false);
-        check(post, true, true, false);
-
         // after == offer on pd1
         // pre-340: domainsOld_ (delete still inserted) → fail
-        check(pre, false, true, true);
+        check(pre, true, true);
         // post-340: isDelete → only domainsOld_ → pass; !isDelete → domains_ → fail
-        check(post, false, true, false);
-        check(post, false, false, true);
+        check(post, true, false);
+        check(post, false, true);
     }
 
     void

@@ -116,13 +116,6 @@ TransfersNotFrozen::finalize(
 bool
 TransfersNotFrozen::isValidEntry(SLE::const_ref before, SLE::const_ref after)
 {
-    // `after` can never be null, even if the trust line is deleted.
-    XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
-    if (!after)
-    {
-        return false;
-    }
-
     if (after->getType() == ltACCOUNT_ROOT)
     {
         possibleIssuers_.emplace(after->at(sfAccount), after);
