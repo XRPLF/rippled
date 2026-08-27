@@ -6,7 +6,6 @@
 
 #include <cstdint>
 #include <format>
-#include <string>
 #include <string_view>
 
 namespace xrpl::test::bench {

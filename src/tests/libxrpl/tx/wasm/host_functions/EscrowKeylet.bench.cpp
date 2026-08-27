@@ -6,7 +6,6 @@
 #include <tx/wasm/WasmBench.h>
 
 #include <cstdint>
-#include <string>
 #include <string_view>
 
 namespace xrpl::test::bench {
