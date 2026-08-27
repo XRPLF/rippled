@@ -1769,8 +1769,6 @@ def run_rule_i_metric_literals(root: Path, report: Report) -> None:
         report.ok("I: no string-literal names/label keys in converted metric families")
 
 
-
-
 def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, Set[str]]:
     """Map each declared instrument's WIRE name to the set of OTel instrument
     kinds its emit sites actually create it with.
