@@ -674,6 +674,23 @@ protected:
         return true;
     }
 
+    // Under fixCleanup3_4_0, LoanManage rejects tfLoanImpair with tecTOO_SOON
+    // unless the loan payment is already late. Advance the ledger past the
+    // loan's sfNextPaymentDueDate so shared lifecycle flows still exercise
+    // the tesSUCCESS branch when the amendment is active. No-op when the
+    // amendment is disabled.
+    void
+    advancePastDueDate(jtx::Env& env, Keylet const& loanKeylet)
+    {
+        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+            return;
+        auto const loan = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loan))
+            return;
+        std::uint32_t const dueDate = loan->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+    }
+
     enum class AssetType { XRP = 0, IOU = 1, MPT = 2 };
 
     // Specify the accounts as params to allow other accounts to be used
@@ -1592,12 +1609,30 @@ protected:
 
         // Check the vault
         bool const canImpair = canImpairLoan(env, broker, state);
-        // Impair the loan, if possible
-        env(manage(lender, keylet.key, tfLoanImpair),
-            canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
-        // Unimpair the loan
-        env(manage(lender, keylet.key, tfLoanUnimpair),
-            canImpair ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION));
+        // Under fixCleanup3_4_0, impair rejects a not-yet-late loan with
+        // tecTOO_SOON. Advancing time to satisfy the gate here would push
+        // the loan into a "late" state and break the toEndOfLife flows
+        // (singlePayment/fullPayment) that expect a fresh loan without the
+        // tfLoanLatePayment flag. The tesSUCCESS/tecLIMIT_EXCEEDED impair
+        // path is already covered under fixCleanup3_4_0 by dedicated tests
+        // in LoanSecurity_test.cpp and LoanCashBasis_test.cpp.
+        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+        {
+            // Impair the loan, if possible
+            env(manage(lender, keylet.key, tfLoanImpair),
+                canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
+            // Unimpair the loan
+            env(manage(lender, keylet.key, tfLoanUnimpair),
+                canImpair ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION));
+        }
+        else
+        {
+            // With the fix on, a not-yet-late loan can never be impaired
+            // (tecTOO_SOON) and the follow-up unimpair on an unimpaired
+            // loan is still tecNO_PERMISSION.
+            env(manage(lender, keylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+            env(manage(lender, keylet.key, tfLoanUnimpair), Ter(tecNO_PERMISSION));
+        }
 
         auto const nextDueDate = startDate + *loanParams.payInterval;
 
@@ -2188,6 +2223,11 @@ protected:
                 {
                     // Check the vault
                     bool const canImpair = canImpairLoan(env, broker, state);
+                    // Under fixCleanup3_4_0 impair requires the payment to
+                    // already be late. Advance past the loan's next due
+                    // date so this exercises the tesSUCCESS branch. No-op
+                    // when the fix is disabled.
+                    advancePastDueDate(env, loanKeylet);
                     // Impair the loan, if possible
                     env(manage(lender, loanKeylet.key, tfLoanImpair),
                         canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
@@ -2195,7 +2235,11 @@ protected:
                     if (canImpair)
                     {
                         state.flags |= tfLoanImpair;
-                        state.nextPaymentDate = env.now().time_since_epoch().count();
+                        // Prior to fixCleanup3_4_0 impair rewrote
+                        // sfNextPaymentDueDate to parentCloseTime. Under the
+                        // fix, the due date is preserved.
+                        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+                            state.nextPaymentDate = env.now().time_since_epoch().count();
 
                         // Once the loan is impaired, it can't be impaired again
                         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
@@ -2815,7 +2859,17 @@ protected:
 
                     auto const borrowerBalanceBeforePayment = env.balance(borrower, broker.asset);
 
-                    if (canImpairLoan(env, broker, state))
+                    // Under fixCleanup3_4_0 impair requires the payment to
+                    // already be late. This periodic-payment loop stays
+                    // within each payment interval, so the loan is never
+                    // late here; skip the impair rather than perturb the
+                    // payment schedule.
+                    auto const loanSle = env.le(loanKeylet);
+                    bool const impairAllowed = BEAST_EXPECT(loanSle) &&
+                        canImpairLoan(env, broker, state) &&
+                        (!env.current()->rules().enabled(fixCleanup3_4_0) ||
+                         isPaymentLate(*env.current(), loanSle));
+                    if (impairAllowed)
                     {
                         // Making a payment will unimpair the loan
                         env(manage(lender, loanKeylet.key, tfLoanImpair));

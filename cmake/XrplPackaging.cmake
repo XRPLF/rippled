@@ -47,8 +47,9 @@ endif()
 add_custom_target(
     package
     COMMAND
-        ${CMAKE_SOURCE_DIR}/package/build_pkg.py --package-type ${pkg_type}
-        --build-dir ${CMAKE_BINARY_DIR} --pkg-release ${pkg_release}
+        ${CMAKE_SOURCE_DIR}/package/build_pkg.py --package-type=${pkg_type}
+        --build-dir=${CMAKE_BINARY_DIR} --pkg-release=${pkg_release}
+        --channel=UNRELEASED
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DEPENDS xrpld validator-keys
     COMMENT "Building Linux ${pkg_type} package"

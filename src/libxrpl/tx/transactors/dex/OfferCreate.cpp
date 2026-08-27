@@ -672,6 +672,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     bool crossed = false;
+    bool const mptV2 = ctx_.view().rules().enabled(featureMPTokensV2);
 
     if (isTesSuccess(result))
     {
@@ -694,7 +695,12 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (sle && sle->isFieldPresent(sfTickSize))
                 uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
         }
-        if (uTickSize < Quality::kMaxTickSize)
+        // Quality's ctor is the same getRate() call that produced uRate, and
+        // round() maps zero to zero, so an unrepresentable quality would make
+        // divide() below throw (tefEXCEPTION). Skip the rounding instead: the
+        // offer still crosses, and any residual is stopped before placement.
+        bool const unrepresentableRate = mptV2 && uRate == 0;
+        if (uTickSize < Quality::kMaxTickSize && !unrepresentableRate)
         {
             auto const rate = Quality{saTakerGets, saTakerPays}.round(uTickSize).rate();
 
@@ -838,6 +844,20 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             // change is here: https://github.com/XRPLF/rippled/issues/4115
             return {tecKILLED, false};
         }
+        return {tesSUCCESS, true};
+    }
+
+    // The remainder rests at uRate, the original pre-crossing rate. A zero
+    // rate (quality not representable) puts it in the directory whose index
+    // equals getBookBase(book), and BookTip scans keys strictly greater, so it
+    // could never be crossed while holding the owner's reserve. Don't place
+    // it; anything that crossed is kept, and a fully crossed offer has already
+    // returned above. Gated to preserve pre-amendment behavior.
+    if (mptV2 && uRate == 0)
+    {
+        JLOG(j_.debug()) << "Unrepresentable quality: remainder not placed";
+        if (!crossed)
+            return {tecKILLED, false};
         return {tesSUCCESS, true};
     }
 
