@@ -125,7 +125,10 @@ public:
     failedSave(std::uint32_t seq, uint256 const& hash);
 
     std::string
-    getCompleteLedgers();
+    getCompleteLedgers() const;
+
+    std::size_t
+    missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last) const;
 
     /**
      * Apply held transactions to the open ledger
@@ -192,7 +195,7 @@ public:
     fixMismatch(ReadView const& ledger);
 
     bool
-    haveLedger(std::uint32_t seq);
+    haveLedger(std::uint32_t seq) const;
     void
     clearLedger(std::uint32_t seq);
     bool
@@ -506,7 +509,7 @@ private:
     // A set of transactions to replay during the next close
     std::unique_ptr<LedgerReplay> replayData_;
 
-    std::recursive_mutex completeLock_;
+    std::recursive_mutex mutable completeLock_;
     RangeSet<std::uint32_t> completeLedgers_;
 
     // Publish thread is running.
