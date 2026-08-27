@@ -249,7 +249,10 @@ class InvariantsVault_test : public InvariantsBase
 
         Account const a3{"A3"};
         Account const a4{"A4"};
-        auto const precloseXrp = [&](Account const& a1, Account const& a2, Env& env, VaultVersion version = VaultVersion::CashBasis) -> bool {
+        auto const precloseXrp = [&](Account const& a1,
+                                     Account const& a2,
+                                     Env& env,
+                                     VaultVersion version = VaultVersion::CashBasis) -> bool {
             env.fund(XRP(1000), a3, a4);
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
