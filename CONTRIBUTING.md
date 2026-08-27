@@ -225,8 +225,9 @@ environment, so you don't need to install most of the individual tools
 yourself. The version of each hook sourced from an external repository
 (`clang-format`, `gersemi`, etc.) is pinned in that file, so running the hooks
 locally uses exactly the same versions as CI. A few `local` hooks — most notably
-`clang-tidy` — run tools from your own environment; see
-[Installing clang-tidy](#installing-clang-tidy) for how to get those.
+`clang-tidy` and `cargo fmt` — run tools from your own environment; see
+[Installing clang-tidy](#installing-clang-tidy) and
+[Rust](./docs/build/environment.md#rust) for how to get those.
 
 To get started, install `pre-commit` and enable the git hook scripts:
 
@@ -255,6 +256,7 @@ The hooks configured in this repository include, among others:
 - `clang-tidy` — C++ static analysis (see [Clang-tidy](#clang-tidy)); opt in with `TIDY=1`
 - `fix-include-style`, `fix-pragma-once`, `check-doxygen-style` — C++ hygiene
 - `gersemi` — CMake formatting
+- `cargo fmt` — Rust formatting for the crates in `crates/`
 - `prettier`, `black`, `shfmt` — formatting for JavaScript/JSON/Markdown, Python, and shell
 - `cspell` — spell checking
 
@@ -319,7 +321,11 @@ See the [environment setup guide](./docs/build/environment.md#clang-tidy) for ho
 
 ### Running clang-tidy locally
 
-Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
+Before running clang-tidy, you must generate the files it depends on (protobuf headers, and, when the project is configured with `-Drust=ON`, the cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `tidy_prerequisites` target, which generates all of them:
+
+```bash
+cmake --build build --target tidy_prerequisites
+```
 
 #### Via pre-commit (recommended)
 
@@ -412,6 +418,29 @@ land in one pull request or several. Run it locally with:
 ```
 python .github/scripts/otel-naming/check_otel_naming.py
 ```
+
+### Naming a wrong form in prose (`otel-naming:allow-dotted`)
+
+The doc rule (E) flags any dotted `` `xrpl.<domain>.<field>` `` key in the
+telemetry docs, because a reader copies those keys straight into a TraceQL or
+PromQL query. A doc that _teaches_ the convention, or records a rename, has to be
+able to name the wrong form as a counter-example. That mention is opted out with
+a marker naming exactly the keys the line is allowed to mention:
+
+```markdown
+Use `tx_hash`, not `xrpl.tx.hash`.
+<!-- otel-naming:allow-dotted: xrpl.tx.hash -->
+```
+
+- The marker applies to **its own line only**, and exempts **only the keys it
+  lists** (comma- and/or space-separated, backticks optional). A dotted key on a
+  marked line that the marker does not name still fails, so an exemption cannot
+  quietly widen when someone edits the line later.
+- A marker with no key list exempts nothing and reports a warning; so does a
+  marker naming a key the line no longer mentions (a stale exemption).
+- Never use it to keep a real attribute table dotted. If the doc publishes a key
+  an operator is meant to query, fix the key — the marker is for mentions, not
+  for published attributes.
 
 See [.github/scripts/otel-naming/README.md](.github/scripts/otel-naming/README.md)
 for the full rule list.

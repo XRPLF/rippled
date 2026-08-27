@@ -1,10 +1,10 @@
 syntax = "proto2";
 package protocol;
 
-// Unused numbers in the list below may have been used previously. Please don't
-// reassign them for reuse unless you are 100% certain that there won't be a
-// conflict. Even if you're sure, it's probably best to assign a new type.
 enum MessageType {
+  // Previously used - don't reuse.
+  reserved 0 to 1, 4, 6 to 14, 16 to 29, 36 to 40, 43 to 54, 61 to 62;
+
   mtMANIFESTS = 2;
   mtPING = 3;
   mtCLUSTER = 5;
@@ -17,7 +17,6 @@ enum MessageType {
   mtHAVE_SET = 35;
   mtVALIDATION = 41;
   mtGET_OBJECTS = 42;
-  mtVALIDATOR_LIST = 54;
   mtSQUELCH = 55;
   mtVALIDATOR_LIST_COLLECTION = 56;
   mtPROOF_PATH_REQ = 57;
@@ -95,9 +94,16 @@ message TMPublicKey {
 // Older peers that do not understand field 1001 will simply ignore it
 // per protobuf wire-format rules, preserving backwards compatibility.
 //
-// trace_state is reserved for future use (secure tracing pipeline,
-// OpenTelemetryPlan/secure-OTel.md). It is currently neither populated
-// on inject nor read on extract; consumers must not rely on it.
+// trace_state (field 4) is reserved and inert: it is neither populated on
+// inject nor read on extract, so consumers must not rely on it. Beyond the
+// W3C tracestate use noted on the field below, it is the intended home for
+// an authenticated token a receiver could verify before adopting a peer's
+// trace context as its parent. Today this message is unauthenticated peer
+// input: the receiver only checks that the ids are well formed (16-byte
+// trace_id, 8-byte span_id, neither all-zero) and otherwise starts a fresh
+// trace, so the ids are a hint, not trusted provenance. An authenticated
+// scheme would need a shared verification key, a canonical form to sign,
+// and a defined policy for peers that send no token.
 message TraceContext {
   optional bytes trace_id = 1;      // 16-byte trace identifier
   optional bytes span_id = 2;       // 8-byte parent span identifier
@@ -190,14 +196,6 @@ enum TxSetStatus {
 message TMHaveTransactionSet {
   required TxSetStatus status = 1;
   required bytes hash = 2;
-}
-
-// Validator list (UNL)
-message TMValidatorList {
-  required bytes manifest = 1;
-  required bytes blob = 2;
-  required bytes signature = 3;
-  required uint32 version = 4;
 }
 
 // Validator List v2
@@ -334,14 +332,15 @@ message TMLedgerData {
 }
 
 message TMPing {
+  // Previously used - don't reuse.
+  reserved 3, 4;
+
   enum pingType {
     ptPING = 0;  // we want a reply
     ptPONG = 1;  // this is a reply
   }
   required pingType type = 1;
-  optional uint32 seq = 2;       // detect stale replies, ensure other side is reading
-  optional uint64 pingTime = 3;  // know when we think we sent the ping
-  optional uint64 netTime = 4;
+  optional uint32 seq = 2;  // detect stale replies, ensure other side is reading
 }
 
 message TMSquelch {

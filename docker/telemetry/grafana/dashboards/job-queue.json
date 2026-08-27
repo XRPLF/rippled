@@ -1,6 +1,53 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Perf Runs (JMeter)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "jmeter"],
+          "type": "tags"
+        },
+        "type": "tags"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(15, 122, 102)",
+        "name": "Perf Runs (Locust)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "locust"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "description": "What this shows: Per-job-type throughput, queue wait times, and execution times for the node's internal worker job queue.\nUse it to: Find job types that are backing up or running slowly and causing internal processing delays.",
   "editable": true,
@@ -10,14 +57,27 @@
   "links": [],
   "panels": [
     {
-      "title": "Current Job Latency (p99 Gauge)",
+      "title": "Current State",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
+      "title": "Current Job Latency (p99 Gauge) [$xrpl_network_type]",
       "description": "###### What this is:\n*At-a-glance p99 of how long jobs wait in the queue and how long they run once started.*\n\n###### How it's computed:\n*99th percentile derived from the job wait-time and run-time histograms over the last 5 minutes.*\n\n###### Reading it:\n*Lower is better; green under 100ms, yellow to 1s, red beyond 1s.*\n\n###### Healthy range:\n*Wait and exec p99 under 100ms.*\n\n###### Watch for:\n*p99 wait climbing into the red, meaning worker threads are saturated and jobs are backing up.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted / recordJobFinished`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "gauge",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "reduceOptions": {
@@ -34,13 +94,13 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, xrpl_branch, xrpl_node_role) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Wait\", \"\", \"\")"
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Wait\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, xrpl_branch, xrpl_node_role) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Exec\", \"\", \"\")"
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", job_type=~\"$job_type\", handler=~\"$handler\"}[5m]))), \"series\", \"p99 Exec\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
@@ -68,17 +128,33 @@
         },
         "overrides": []
       },
-      "id": 1
+      "id": 2,
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2
+    },
+    {
+      "title": "Throughput",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 3
     },
     {
       "title": "Job Throughput Rate (Per Second)",
       "description": "###### What this is:\n*Rate of jobs queued, started, and finished across all job types.*\n\n###### How it's computed:\n*Per-second rate of each cumulative job counter over a 5-minute window.*\n\n###### Reading it:\n*Queued, started, and finished tracking together means the queue keeps up.*\n\n###### Healthy range:\n*Workload-dependent; the three rates should stay roughly equal.*\n\n###### Watch for:\n*Queued rate persistently above finished rate, which indicates a growing backlog.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobQueued / recordJobStarted / recordJobFinished`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 10,
+        "w": 12,
         "x": 0,
-        "y": 8
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -113,13 +189,14 @@
           "unit": "suffix: jobs/s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Jobs / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -127,17 +204,17 @@
         },
         "overrides": []
       },
-      "id": 2
+      "id": 4
     },
     {
       "title": "Per-Job-Type Queued Rate",
       "description": "###### What this is:\n*Rate of jobs entering the queue, broken down by job type (top 10).*\n\n###### How it's computed:\n*Per-second rate of the queued-job counter per job_type over a 5-minute window.*\n\n###### Reading it:\n*Identifies which job types generate the most queue activity.*\n\n###### Healthy range:\n*Workload-dependent.*\n\n###### Watch for:\n*A single job type surging unexpectedly, which can point to a flood of a particular request or peer message.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobQueued`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -166,12 +243,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Jobs / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -179,17 +257,17 @@
         },
         "overrides": []
       },
-      "id": 3
+      "id": 5
     },
     {
       "title": "Per-Job-Type Finish Rate",
       "description": "###### What this is:\n*Rate of jobs completing, broken down by job type (top 10).*\n\n###### How it's computed:\n*Per-second rate of the finished-job counter per job_type over a 5-minute window.*\n\n###### Reading it:\n*Compare against the queued rate per type to spot which types are falling behind.*\n\n###### Healthy range:\n*Workload-dependent; should match the per-type queued rate.*\n\n###### Watch for:\n*A type whose finish rate lags its queued rate, revealing where the backlog concentrates.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 32
       },
       "options": {
         "tooltip": {
@@ -218,12 +296,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Jobs / Sec",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -231,17 +310,30 @@
         },
         "overrides": []
       },
-      "id": 4
+      "id": 6
+    },
+    {
+      "title": "Latency",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 7
     },
     {
       "title": "Job Queue Wait Time",
       "description": "###### What this is:\n*How long jobs sit in the queue before a worker picks them up, split by job type (p75 typical, p99 tail).*\n\n###### How it's computed:\n*Percentiles derived from the job wait-time histogram over a 5-minute window, kept per job type. Limited to the ten types with the highest wait so the legend stays readable.*\n\n###### Reading it:\n*Lower is better. The legend names the job type, so a single slow queue is identifiable rather than hidden in an all-types average. A widening p75-to-p99 gap on one type signals occasional stalls there.*\n\n###### Healthy range:\n*Sub-millisecond to low-millisecond waits on an unloaded node.*\n\n###### Watch for:\n*Rising p99 wait on a capped type -- ledgerRequest, ledgerData and makeFetchPack have small concurrency limits, so they queue first. Cross-check the deferred gauge for that type.*\n\n###### Keywords:\n- **Job queue** *(per node)* \u2014 the worker pool that runs xrpld's background work; each unit of work is a job with a type.\n- **Dequeue wait** *(per node)* \u2014 time a job sits enqueued before a worker starts it, as distinct from how long it then runs.\n- **Concurrency limit** *(per node)* \u2014 the maximum number of jobs of one type allowed to run at once; work beyond it is deferred, not rejected.\n\n###### Computation boundary:\n*Result: Per node and job type \u2014 each series is one server's own value for one job type.*\n*Recorded in code as an OTel SDK histogram, then aggregated to percentiles by the Grafana query.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted`\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type) \u00b7 [Concurrency limit](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#concurrency-limit)\n",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 43
       },
       "options": {
         "tooltip": {
@@ -270,13 +362,14 @@
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Duration (\u00b5s)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -284,17 +377,17 @@
         },
         "overrides": []
       },
-      "id": 5
+      "id": 8
     },
     {
       "title": "Job Execution Time",
       "description": "###### What this is:\n*How long jobs run once started, split by job type (p75 typical, p99 tail).*\n\n###### How it's computed:\n*Percentiles derived from the job run-time histogram over a 5-minute window, kept per job type. Limited to the ten slowest types so the legend stays readable.*\n\n###### Reading it:\n*Lower is better. The legend names the job type, so an expensive job type is identifiable rather than averaged away. Stable p75 with a controlled p99 is healthy.*\n\n###### Healthy range:\n*Workload-dependent, but stable over time.*\n\n###### Watch for:\n*Growing execution times, which point to CPU pressure or expensive individual jobs.*\n\n###### Keywords:\n- **Job queue** *(per node)* \u2014 the worker pool that runs xrpld's background work; each unit of work is a job with a type.\n- **Execution time** *(per node)* \u2014 time a job spends running after a worker picks it up, excluding its queue wait.\n\n###### Computation boundary:\n*Result: Per node and job type \u2014 each series is one server's own value for one job type.*\n*Recorded in code as an OTel SDK histogram, then aggregated to percentiles by the Grafana query.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`\n\n###### References:\n[Job queue](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)\n",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 43
       },
       "options": {
         "tooltip": {
@@ -323,13 +416,14 @@
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "axisLabel": "Duration (\u00b5s)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -337,17 +431,17 @@
         },
         "overrides": []
       },
-      "id": 6
+      "id": 9
     },
     {
       "title": "Per-Job-Type Execution Time (p99)",
       "description": "###### What this is:\n*The 10 slowest job types ranked by p99 execution time.*\n\n###### How it's computed:\n*p99 derived from the run-time histogram per job_type over a 5-minute window, top 10 selected.*\n\n###### Reading it:\n*Highlights which job types cost the most CPU time at the tail.*\n\n###### Healthy range:\n*Workload-dependent.*\n\n###### Watch for:\n*A job type whose p99 grows over time, indicating a slow or degrading operation.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 53
       },
       "options": {
         "tooltip": {
@@ -376,12 +470,13 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 5,
+            "fillOpacity": 0,
             "axisLabel": "Duration (\u00b5s)",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -389,17 +484,30 @@
         },
         "overrides": []
       },
-      "id": 7
+      "id": 10
+    },
+    {
+      "title": "Overflow",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 63
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 11
     },
     {
       "title": "Transaction Overflow Rate",
       "description": "###### What this is:\n*Rate at which transaction jobs are shed when the queue's transaction limit is exceeded.*\n\n###### How it's computed:\n*Per-second rate of the overflow counter over the dashboard's rate interval, scaled to per minute. The counter is observed from the overlay's cumulative overflow tally.*\n\n###### Reading it:\n*Near zero is healthy; a rising rate means the job queue is shedding transaction work under load.*\n\n###### Healthy range:\n*0 overflows per minute.*\n\n###### Watch for:\n*Any sustained non-zero rate \u2014 the node is dropping transaction jobs because the queue is saturated.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Transaction queue (TxQ)** *(per node)* \u2014 holds transactions that cannot enter the open ledger yet, ordered by fee level.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerParityCounters (observed from Overlay::getJqTransOverflow)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 10,
+        "w": 12,
         "x": 0,
-        "y": 48
+        "y": 64
       },
       "options": {
         "tooltip": {
@@ -439,12 +547,13 @@
           "custom": {
             "axisLabel": "Overflows / Min",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -452,7 +561,7 @@
         },
         "overrides": []
       },
-      "id": 8
+      "id": 12
     }
   ],
   "schemaVersion": 39,

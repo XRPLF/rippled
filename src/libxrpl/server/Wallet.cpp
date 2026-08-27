@@ -16,7 +16,6 @@
 #include <xrpl/rdb/SociDB.h>
 #include <xrpl/server/Manifest.h>
 
-#include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/blob-exchange.h>  // IWYU pragma: keep
@@ -29,8 +28,11 @@
 #include <soci/use.h>
 
 #include <array>
+#include <cstddef>
+#include <format>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -77,7 +79,9 @@ getManifests(
                 continue;
             }
 
-            cache.applyManifest(std::move(*mo));
+            // Only trusted manifests are persisted (see saveManifests), so
+            // anything loaded from the DB bypasses the untrusted cap.
+            cache.applyManifest(std::move(*mo), ManifestRateLimitCapPolicy::Uncapped);
         }
         else
         {
@@ -107,19 +111,27 @@ saveManifests(
 {
     soci::transaction tr(session);
     session << "DELETE FROM " << dbTable;
+    // Count skipped untrusted manifests and log one summary afterwards, since
+    // the cache can hold many and per-entry logging would flood at shutdown.
+    std::size_t skipped = 0;
     for (auto const& v : map)
     {
-        // Save all revocation manifests,
-        // but only save trusted non-revocation manifests.
-        if (!v.second.revoked() && !isTrusted(v.second.masterKey))
+        // Persist only trusted keys. Untrusted gossip is left out so a flood
+        // cannot survive a restart on disk.
+        if (!isTrusted(v.second.masterKey))
         {
-            JLOG(j.info()) << "Untrusted manifest in cache not saved to db";
+            ++skipped;
             continue;
         }
 
         saveManifest(session, dbTable, v.second.serialized);
     }
     tr.commit();
+
+    if (skipped != 0)
+    {
+        JLOG(j.info()) << skipped << " untrusted manifest(s) in cache not saved to db";
+    }
 }
 
 void
@@ -136,36 +148,42 @@ clearNodeIdentity(soci::session& session)
     session << "DELETE FROM NodeIdentity;";
 }
 
+std::optional<std::pair<PublicKey, SecretKey>>
+readNodeIdentity(soci::session& session)
+{
+    // SOCI requires boost::optional (not std::optional) as the parameter.
+    boost::optional<std::string> pubKO, priKO;
+    soci::statement st =
+        (session.prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
+         soci::into(pubKO),
+         soci::into(priKO));
+    st.execute();
+    while (st.fetch())
+    {
+        auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
+        auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
+
+        // Only use if the public and secret keys are a pair
+        if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
+            return std::pair{*pk, *sk};
+    }
+
+    return std::nullopt;
+}
+
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session)
 {
-    {
-        // SOCI requires boost::optional (not std::optional) as the parameter.
-        boost::optional<std::string> pubKO, priKO;
-        soci::statement st =
-            (session.prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
-             soci::into(pubKO),
-             soci::into(priKO));
-        st.execute();
-        while (st.fetch())
-        {
-            auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
-            auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
-
-            // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
-                return {*pk, *sk};
-        }
-    }
+    if (auto const stored = readNodeIdentity(session))
+        return *stored;
 
     // If a valid identity wasn't found, we randomly generate a new one:
     auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
 
-    session << str(
-        boost::format(
-            "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-            "VALUES ('%s','%s');") %
-        toBase58(TokenType::NodePublic, newpublicKey) %
+    session << std::format(
+        "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+        "VALUES ('{}','{}');",
+        toBase58(TokenType::NodePublic, newpublicKey),
         toBase58(TokenType::NodePrivate, newsecretKey));
 
     return {newpublicKey, newsecretKey};

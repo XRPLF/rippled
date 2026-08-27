@@ -1,8 +1,8 @@
 #include <xrpl/nodestore/Backend.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -84,7 +84,7 @@ protected:
     }
 
     DummyScheduler scheduler_;
-    beast::TempDir const tempDir_;
+    TempDir const tempDir_;
     beast::Journal const journal_{TestSink::instance()};
     Section params_;
     Batch batch_;
@@ -182,7 +182,15 @@ TEST_P(BackendTypeTest, write_stats_reported_only_when_measured)
     auto backend = makeOpenBackend();
     auto const stats = backend->getWriteStats();
 
-    if (GetParam() == "nudb")
+    // NuDB records the write path only when telemetry is compiled in; without
+    // it there is no consumer, so it reports absence like every other backend.
+#ifdef XRPL_ENABLE_TELEMETRY
+    bool const measures = GetParam() == "nudb";
+#else
+    bool const measures = false;
+#endif
+
+    if (measures)
     {
         if (!stats.has_value())
             FAIL() << "nudb must report write stats";
@@ -223,7 +231,7 @@ TEST(BackendWriteStats, non_measuring_backends_report_absence_not_zeros)
 
         DummyScheduler scheduler;
         beast::Journal const journal{TestSink::instance()};
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
 
         Section params;
         params.set("type", type);

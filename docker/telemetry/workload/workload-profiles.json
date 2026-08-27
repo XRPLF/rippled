@@ -1,7 +1,7 @@
 {
   "profiles": {
     "full-validation": {
-      "description": "Full 18-dashboard coverage with burst/idle/plateau patterns",
+      "description": "Full coverage of all 15 provisioned dashboards (14 assert metric data; log-derived-insights is Loki-backed and only checked for provisioning) with burst/idle/plateau patterns across 7 phases",
       "phases": [
         {
           "name": "warmup",

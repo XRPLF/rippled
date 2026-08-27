@@ -31,9 +31,10 @@ TEST(SpanGuardFactory, category_span_returns_null_when_disabled)
     EXPECT_FALSE(span);
 
     // Attribute keys use the underscore convention for span attributes (the
-    // dotted xrpl.<domain>. form is reserved for resource attributes). The
-    // canonical constants live in the xrpld-level *SpanNames.h headers, which a
-    // libxrpl test cannot include, so the keys are written as literals here.
+    // dotted xrpl.<domain>. form is reserved for resource attributes). These
+    // rpc_* constants live in an xrpld-level header, so they are literals here;
+    // libxrpl-level headers such as ConsensusSpanNames.h can be included
+    // directly, as ConsensusSpanNames.cpp does.
     span.setAttribute("command", "test");
     span.setAttribute("rpc_status", "success");
 }

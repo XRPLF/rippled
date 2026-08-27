@@ -29,10 +29,7 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, st
     // would blur the write latency signal.
     auto const begin = std::chrono::steady_clock::now();
     backend_->store(obj);
-    storeDurationStats(
-        static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
-                                       std::chrono::steady_clock::now() - begin)
-                                       .count()));
+    storeDurationStats(std::chrono::steady_clock::now() - begin);
 
     if (cache_)
     {

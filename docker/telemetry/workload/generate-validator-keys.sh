@@ -123,8 +123,14 @@ for i in $(seq 1 "$NUM_NODES"); do
     seed=$(echo "$result" | jq -r '.result.validation_seed')
     pubkey=$(echo "$result" | jq -r '.result.validation_public_key')
 
+    # Both fields must be present. jq -r prints the literal string "null" for
+    # a missing field, so an unvalidated pubkey would be written verbatim into
+    # validators.txt and xrpld would reject the file at startup.
     if [ -z "$seed" ] || [ "$seed" = "null" ]; then
-        die "Failed to generate key pair for node $i"
+        die "Failed to generate key pair for node $i: no validation_seed in response"
+    fi
+    if [ -z "$pubkey" ] || [ "$pubkey" = "null" ]; then
+        die "Failed to generate key pair for node $i: no validation_public_key in response"
     fi
 
     log "  Node $i: ${pubkey:0:20}..."

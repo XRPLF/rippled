@@ -21,8 +21,57 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Test the OTel naming checker
+        # The checker's own unit tests, run before the check itself so a broken
+        # rule is reported as a broken rule rather than as a naming violation
+        # (or, worse, as a rule that silently stops flagging anything).
+        # stdlib `unittest` only: the repo installs no third-party test runner
+        # for CI, and the checker itself is deliberately dependency-free.
+        run: python -m unittest discover -s .github/scripts/otel-naming -p 'test_*.py' --verbose
       - name: Check OTel naming
         # The script is stdlib-only and reads only files already in the tree;
         # it enforces each rule only when the layer it needs is present, so it
         # works whether telemetry changes land in one PR or several.
         run: python .github/scripts/otel-naming/check_otel_naming.py
+      - name: Check histogram bucket parity
+        # The C++ millisecond ladder and the collector's spanmetrics ladder are
+        # specified to agree over their shared range. They were identical when
+        # first shipped, then the collector side alone was extended and nothing
+        # noticed for eleven phases: native histograms stayed capped at 5s while
+        # spans reached 30s, so every quantile above 5s reported a flat 5000.
+        # Nothing but a check keeps two lists in step.
+        run: python .github/scripts/telemetry/check_bucket_parity.py
+      - name: Test the workload regression-bounds checker
+        # Its own tests, run before the check itself so a broken rule is
+        # reported as a broken rule rather than as a threshold violation. They
+        # also pin the input-handling contract: a placeholder baseline passes
+        # (that is the documented bootstrap state) while a missing, unreadable
+        # or malformed input fails, so deleting an input cannot silence the
+        # check. stdlib unittest only, as with the naming checker.
+        run: python -m unittest discover -s .github/scripts/telemetry -p 'test_*.py' --verbose
+      - name: Check workload regression bounds
+        # The workload gate's absolute bounds are derived from the committed
+        # baseline plus the two ladders, and nothing tied the three together.
+        # That let the gate break three times the same way -- the microsecond
+        # floor moved, the span floor moved, then the bounds stayed calibrated
+        # for a band the spans had left, so a 100x regression reported zero
+        # regressions and exit 0. Every failure looked like a green build.
+        # This asserts each bound is still the one its own baseline implies.
+        run: python .github/scripts/telemetry/check_regression_bounds.py
+      - name: Install the workload harness dependencies
+        # Its own step so a PyPI outage is reported as an install failure rather
+        # than as a failing harness. Last in the job, because every check above
+        # is stdlib-only and stays reachable if this fails.
+        run: pip3 install -r docker/telemetry/workload/requirements.txt
+      - name: Test the telemetry workload harness
+        # Run here rather than in telemetry-validation.yml so a broken harness is
+        # reported in seconds instead of after a full xrpld build, and on every
+        # PR rather than only when that workflow's paths match.
+        #
+        # Plain scripts, not `unittest discover`: these files hold bare test
+        # functions, not TestCase subclasses, so discover would collect nothing
+        # and exit 0. Each file fails when it collects no tests, which is what
+        # makes running them this way safe.
+        run: |
+          python3 docker/telemetry/workload/test_validate_telemetry.py
+          python3 docker/telemetry/workload/test_capture_timings.py

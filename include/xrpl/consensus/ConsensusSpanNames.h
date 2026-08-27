@@ -21,6 +21,12 @@
  *    +-- consensus.phase.open                    [main thread, child]
  *    |     Created: Consensus::startRoundInternal()
  *    |     Ended:   Consensus::closeLedger()
+ *    |     Attrs:   start_reason, previous_close_agree, peer_positions_at_open,
+ *    |              early_close_triggered (at start); open_duration_ms,
+ *    |              peer_positions_at_close, tx_sets_acquired, close_reason,
+ *    |              proposers_validated (at close; absent if the round is
+ *    |              recovered or simulated, neither of which reaches
+ *    |              closeLedger())
  *    |
  *    +-- consensus.proposal.send                 [main thread]
  *    |     Created: Adaptor::propose()
@@ -33,7 +39,9 @@
  *    +-- consensus.establish                     [main thread, child]
  *    |     Created: Consensus::startEstablishTracing()
  *    |     Ended:   Consensus::phaseEstablish() on accept
- *    |     Attrs:   converge_percent, establish_count, proposers
+ *    |     Attrs:   converge_percent, establish_count, proposers,
+ *    |              disputes_count (overwritten each iteration);
+ *    |              close_time_avalanche_state (terminal, at end)
  *    |
  *    +-- consensus.update_positions              [main thread]
  *    |     Created: Consensus::updateOurPositions()
@@ -170,10 +178,26 @@ inline constexpr auto previousRoundTimeMs = makeStr("previous_round_time_ms");
 inline constexpr auto previousLedgerSeq = makeStr("previous_ledger_seq");
 inline constexpr auto closeTimeResolutionMs = makeStr("close_time_resolution_ms");
 /**
+ * Open-phase start metadata (set on consensus.phase.open at creation).
+ *
+ * A handleWrongLedger recovery emits a SECOND phase.open span under the same
+ * round, so `start_reason` is what tells the two apart.
+ */
+inline constexpr auto startReason = makeStr("start_reason");
+inline constexpr auto previousCloseAgree = makeStr("previous_close_agree");
+inline constexpr auto peerPositionsAtOpen = makeStr("peer_positions_at_open");
+inline constexpr auto earlyCloseTriggered = makeStr("early_close_triggered");
+/**
  * Open-phase end metadata (set on consensus.phase.open before reset).
+ *
+ * `proposers_validated` counts validators of the previous ledger, unlike
+ * `proposers_finished` below, which counts those already past it.
  */
 inline constexpr auto openDurationMs = makeStr("open_duration_ms");
 inline constexpr auto peerPositionsAtClose = makeStr("peer_positions_at_close");
+inline constexpr auto txSetsAcquired = makeStr("tx_sets_acquired");
+inline constexpr auto closeReason = makeStr("close_reason");
+inline constexpr auto proposersValidated = makeStr("proposers_validated");
 /**
  * Ledger-close inputs.
  */
@@ -182,6 +206,14 @@ inline constexpr auto txCountOpen = makeStr("tx_count_open");
  * Establish/check additional state.
  */
 inline constexpr auto proposersFinished = makeStr("proposers_finished");
+/**
+ * Establish-phase end metadata.
+ *
+ * The terminal close-time regime, set once. Qualified because DisputedTx
+ * tracks a SECOND, per-transaction avalanche; this is not that one. The
+ * derived `avalanche_threshold` cannot be inverted back to it.
+ */
+inline constexpr auto closeTimeAvalancheState = makeStr("close_time_avalanche_state");
 /**
  * Accept/apply enrichment.
  */
@@ -291,6 +323,23 @@ inline constexpr auto unchanged = makeStr("unchanged");
 inline constexpr auto phaseOpen = makeStr("open");
 inline constexpr auto phaseEstablish = makeStr("establish");
 inline constexpr auto phaseAccepted = makeStr("accepted");
+// start_reason values (how startRoundInternal was entered).
+inline constexpr auto startInitial = makeStr("initial");
+inline constexpr auto startRecovered = makeStr("recovered");
+// close_time_avalanche_state values, one per AvalancheState enumerator.
+inline constexpr auto avalancheInit = makeStr("init");
+inline constexpr auto avalancheMid = makeStr("mid");
+inline constexpr auto avalancheLate = makeStr("late");
+inline constexpr auto avalancheStuck = makeStr("stuck");
+// Sentinel for an unmapped enumerator, matching to_string(ConsensusPhase).
+inline constexpr auto unknown = makeStr("unknown");
+// close_reason values, one per LedgerCloseReason enumerator. keep_open is
+// never emitted: the attribute is only set on the path that closes.
+inline constexpr auto closeKeepOpen = makeStr("keep_open");
+inline constexpr auto closeAnomaly = makeStr("anomaly");
+inline constexpr auto closeOthersClosed = makeStr("others_closed");
+inline constexpr auto closeIdle = makeStr("idle");
+inline constexpr auto closeNormal = makeStr("normal");
 }  // namespace val
 
 }  // namespace xrpl::telemetry::consensus::span

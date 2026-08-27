@@ -62,7 +62,10 @@ die() {
 check_span() {
     local op="$1"
     local count
-    count=$(curl -sf "$TEMPO/api/search" \
+    # -G is required: it moves the urlencoded params into the query string.
+    # Without it curl POSTs them as a request body, and Tempo answers 200
+    # while ignoring the query — so every span name would look present.
+    count=$(curl -sfG "$TEMPO/api/search" \
         --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
         --data-urlencode "limit=5" |
         jq '.traces | length' 2>/dev/null || echo 0)
@@ -184,6 +187,23 @@ mkdir -p "$WORKDIR"
 # ---------------------------------------------------------------------------
 # Step 2: Start observability stack
 # ---------------------------------------------------------------------------
+
+# From here on the script owns the docker stack and the xrpld nodes, so an
+# abort must tear them down instead of leaving them behind. A run that
+# reaches the summary deliberately leaves everything up for inspection
+# (see the header comment), so the trap only fires before that point.
+RUN_COMPLETED=0
+on_exit() {
+    local status=$?
+    if [ "$RUN_COMPLETED" -eq 0 ]; then
+        log "Aborted with exit status $status — tearing down."
+        cleanup
+    fi
+}
+trap on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 log "Starting observability stack..."
 # Point the collector's log mount at this test's workdir so it tails the
 # per-node debug.log files this script generates. The compose default
@@ -377,18 +397,26 @@ trace_ledger=1
 metrics_endpoint=http://localhost:4318/v1/metrics
 
 [insight]
+# server=otel is the only load-bearing key here -- it selects OTelCollector so
+# beast::insight metrics leave over OTLP. No prefix is set on purpose: on this
+# path it is inert, because OTelCollector's formatName() only lowercases the raw
+# instrument name and the one place the class reads prefix_ is its startup log
+# line. The service is identified by the OTel resource service.name.
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=rippled
 service_instance_id=Node-${i}
 
-[insight]
-server=statsd
-address=127.0.0.1:8125
-prefix=rippled
-
 [rpc_startup]
-{ "command": "log_level", "severity": "warning" }
+# info, not warning: check_log_correlation() below greps these nodes' debug.log
+# for "trace_id=<hex> span_id=<hex>" and fails if it finds none. A line only
+# carries trace context when it is emitted while a span is current, and the one
+# line guaranteed to be is the consensus accept pair in RCLConsensus.cpp, which
+# logs at info inside the activation doAccept makes over its whole body. At
+# warning that pair is suppressed, leaving only whatever warn-or-worse line
+# happens to fire inside some active span -- so the check passed incidentally
+# rather than by construction. debug is deliberately not used here either, to
+# stay consistent with the workload harness.
+{ "command": "log_level", "severity": "info" }
 
 [ssl_verify]
 0
@@ -419,12 +447,14 @@ log "Waiting for nodes to reach 'proposing' state (timeout: ${CONSENSUS_TIMEOUT}
 
 start_time=$(date +%s)
 nodes_ready=0
+consensus_timed_out=0
 
 while [ "$nodes_ready" -lt "$NUM_NODES" ]; do
     elapsed=$(($(date +%s) - start_time))
     if [ "$elapsed" -ge "$CONSENSUS_TIMEOUT" ]; then
         fail "Consensus timeout after ${CONSENSUS_TIMEOUT}s ($nodes_ready/$NUM_NODES nodes ready)"
         log "Continuing with partial consensus..."
+        consensus_timed_out=1
         break
     fi
 
@@ -447,7 +477,10 @@ echo ""
 
 if [ "$nodes_ready" -eq "$NUM_NODES" ]; then
     ok "All $NUM_NODES nodes reached 'proposing' state"
-else
+elif [ "$consensus_timed_out" -eq 0 ]; then
+    # The timeout branch above already called fail(), so reporting again here
+    # would count one timeout twice. Only reachable if the loop ever gains
+    # another early exit.
     fail "Only $nodes_ready/$NUM_NODES nodes reached 'proposing' state"
 fi
 
@@ -470,7 +503,7 @@ for attempt in $(seq 1 60); do
 done
 
 # ---------------------------------------------------------------------------
-# Step 7: Exercise RPC spans (Phase 2)
+# Step 7: Exercise RPC spans
 # ---------------------------------------------------------------------------
 log "Exercising RPC spans..."
 
@@ -485,15 +518,17 @@ log "RPC commands sent. Waiting 5s for batch export..."
 sleep 5
 
 # ---------------------------------------------------------------------------
-# Step 8: Submit transaction (Phase 3)
+# Step 8: Submit transaction
 # ---------------------------------------------------------------------------
 log "Submitting Payment transaction..."
 
 # Generate a destination wallet
 log "  Generating destination wallet..."
+# Guarded: under set -e an unguarded curl failure would abort the whole
+# script, so the fallback below could never run.
 wallet_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d '{"method":"wallet_propose"}')
-DEST_ACCOUNT=$(echo "$wallet_result" | jq -r '.result.account_id' 2>/dev/null)
+    -d '{"method":"wallet_propose"}') || wallet_result=""
+DEST_ACCOUNT=$(echo "$wallet_result" | jq -r '.result.account_id' 2>/dev/null || echo "")
 if [ -z "$DEST_ACCOUNT" ] || [ "$DEST_ACCOUNT" = "null" ]; then
     fail "Could not generate destination wallet"
     DEST_ACCOUNT="rrrrrrrrrrrrrrrrrrrrrhoLvTp" # ACCOUNT_ZERO fallback
@@ -502,13 +537,13 @@ log "  Destination: $DEST_ACCOUNT"
 
 # Get genesis account info
 acct_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d "{\"method\":\"account_info\",\"params\":[{\"account\":\"$GENESIS_ACCOUNT\"}]}")
+    -d "{\"method\":\"account_info\",\"params\":[{\"account\":\"$GENESIS_ACCOUNT\"}]}") || acct_result=""
 seq_num=$(echo "$acct_result" | jq -r '.result.account_data.Sequence' 2>/dev/null || echo "unknown")
 log "  Genesis account sequence: $seq_num"
 
 # Submit payment
 submit_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d "{\"method\":\"submit\",\"params\":[{\"secret\":\"$GENESIS_SEED\",\"tx_json\":{\"TransactionType\":\"Payment\",\"Account\":\"$GENESIS_ACCOUNT\",\"Destination\":\"$DEST_ACCOUNT\",\"Amount\":\"10000000\"}}]}")
+    -d "{\"method\":\"submit\",\"params\":[{\"secret\":\"$GENESIS_SEED\",\"tx_json\":{\"TransactionType\":\"Payment\",\"Account\":\"$GENESIS_ACCOUNT\",\"Destination\":\"$DEST_ACCOUNT\",\"Amount\":\"10000000\"}}]}") || submit_result=""
 
 engine_result=$(echo "$submit_result" | jq -r '.result.engine_result' 2>/dev/null || echo "unknown")
 tx_hash=$(echo "$submit_result" | jq -r '.result.tx_json.hash' 2>/dev/null || echo "unknown")
@@ -538,39 +573,39 @@ else
 fi
 
 log ""
-log "--- Phase 2: RPC Spans ---"
-check_span "rpc.request"
+log "--- RPC Spans ---"
+check_span "rpc.http_request"
 check_span "rpc.process"
 check_span "rpc.command.server_info"
 check_span "rpc.command.server_state"
 check_span "rpc.command.ledger"
 
 log ""
-log "--- Phase 3: Transaction Spans ---"
+log "--- Transaction Spans ---"
 check_span "tx.process"
 check_span "tx.receive"
 check_span "tx.apply"
 
 log ""
-log "--- Phase 4: Consensus Spans ---"
+log "--- Consensus Spans ---"
 check_span "consensus.proposal.send"
 check_span "consensus.ledger_close"
 check_span "consensus.accept"
 check_span "consensus.validation.send"
 
 log ""
-log "--- Phase 5: Ledger Spans ---"
+log "--- Ledger Spans ---"
 check_span "ledger.build"
 check_span "ledger.validate"
 check_span "ledger.store"
 
 log ""
-log "--- Phase 5: Peer Spans (trace_peer=1) ---"
+log "--- Peer Spans (trace_peer=1) ---"
 check_span "peer.proposal.receive"
 check_span "peer.validation.receive"
 
 # ---------------------------------------------------------------------------
-# Step 9b: Verify log-trace correlation (Phase 8)
+# Step 9b: Verify log-trace correlation
 # ---------------------------------------------------------------------------
 log ""
 log "--- Log-Trace Correlation ---"
@@ -580,7 +615,7 @@ check_log_correlation
 # Step 10: Verify Prometheus spanmetrics
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 5: Spanmetrics ---"
+log "--- Spanmetrics ---"
 log "Waiting 20s for Prometheus scrape cycle..."
 sleep 20
 
@@ -611,7 +646,7 @@ fi
 # Step 10b: Verify native OTel metrics in Prometheus (beast::insight)
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 7: Native OTel Metrics (beast::insight via OTLP) ---"
+log "--- Native OTel Metrics (beast::insight via OTLP) ---"
 log "Waiting 20s for OTLP metric export + Prometheus scrape..."
 sleep 20
 
@@ -630,7 +665,7 @@ check_otel_metric() {
 # Node health gauges (ObservableGauge — no _total suffix)
 check_otel_metric "ledgermaster_validated_ledger_age"
 check_otel_metric "ledgermaster_published_ledger_age"
-check_otel_metric "job_count"
+check_otel_metric "jobq_job_count"
 
 # State accounting
 check_otel_metric "state_accounting_full_duration"
@@ -660,10 +695,10 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 10c: Verify Phase 9 OTel SDK Metrics
+# Step 10c: Verify OTel SDK Metrics
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 9: OTel SDK Metrics (MetricsRegistry) ---"
+log "--- OTel SDK Metrics (MetricsRegistry) ---"
 log "Waiting 15s for OTel metric export + Prometheus scrape..."
 sleep 15
 
@@ -679,34 +714,34 @@ check_otel_metric() {
     fi
 }
 
-# Task 9.1: NodeStore I/O
+# NodeStore I/O
 check_otel_metric 'nodestore_state{metric="node_reads_total"}'
 check_otel_metric 'nodestore_state{metric="write_load"}'
 
-# Task 9.2: Cache hit rates
+# Cache hit rates
 check_otel_metric 'cache_metrics{metric="SLE_hit_rate"}'
 check_otel_metric 'cache_metrics{metric="treenode_cache_size"}'
 
-# Task 9.3: TxQ metrics
+# TxQ metrics
 check_otel_metric 'txq_metrics{metric="txq_count"}'
 check_otel_metric 'txq_metrics{metric="txq_reference_fee_level"}'
 
-# Task 9.4: Per-RPC metrics
+# Per-RPC metrics
 check_otel_metric "rpc_method_started_total"
 check_otel_metric "rpc_method_finished_total"
 
-# Task 9.5: Per-job metrics
+# Per-job metrics
 check_otel_metric "job_queued_total"
 check_otel_metric "job_finished_total"
 
-# Task 9.6: Counted object instances
+# Counted object instances
 check_otel_metric "object_count"
 
-# Task 9.7: Load factor breakdown
+# Load factor breakdown
 check_otel_metric 'load_factor_metrics{metric="load_factor"}'
 check_otel_metric 'load_factor_metrics{metric="load_factor_server"}'
 
-# Task 7.15 / Phase 9: ValidationTracker rolling-window agreement gauge.
+# ValidationTracker rolling-window agreement gauge.
 # MetricsRegistry::registerValidationAgreementGauge() publishes
 # validation_agreement with a `metric` label for each window
 # (1h / 24h / 7d) plus the matching agreement/miss counts. The 7-day
@@ -724,6 +759,11 @@ check_otel_metric 'validation_agreement{metric="missed_7d"}'
 # ---------------------------------------------------------------------------
 # Step 11: Summary
 # ---------------------------------------------------------------------------
+
+# All checks are done, so the run counts as complete: keep the stack and the
+# nodes up for inspection even when some checks failed.
+RUN_COMPLETED=1
+
 echo ""
 echo "==========================================================="
 echo "  INTEGRATION TEST RESULTS"

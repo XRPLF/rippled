@@ -138,16 +138,17 @@
  * instrumentation site.
  */
 
+#ifdef XRPL_ENABLE_TELEMETRY
+// The tracker is held and exposed only in this configuration, where the gauge
+// callbacks that drain it exist.
 #include <xrpld/telemetry/ValidationTracker.h>
+#endif
 
 #include <xrpl/beast/utility/Journal.h>
 
 #include <algorithm>
-#include <atomic>
 #include <cstdint>
-#include <functional>
 #include <limits>
-#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -158,6 +159,13 @@
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
+
+// These three serve only the telemetry-only members below, so they are guarded
+// like their uses: std::atomic by callbacksDetached_, std::function by the
+// ObserveFn sink, std::shared_ptr by provider_.
+#include <atomic>
+#include <functional>
+#include <memory>
 #endif
 
 namespace xrpl {
@@ -231,8 +239,8 @@ namespace telemetry {
  * edit needed. Fall back to a dedicated member + init line + record
  * method (the pattern below) only when the metric needs to be read
  * back by other code (e.g. ValidationTracker-style accumulation) or
- * needs a custom histogram bucket View (see MetricMacros.h Limitation
- * 2 in tasks/metric-macro-plan.md).
+ * needs a custom histogram bucket View (see the histogram note in
+ * MetricMacros.h).
  * - Adding a new OBSERVABLE gauge still requires eager central
  * registration -- pull-model instruments cannot be lazily created.
  */
@@ -285,9 +293,15 @@ public:
      * attribute. When non-empty, Prometheus metrics
      * carry a service_instance_id label for per-node
      * filtering.
+     * @param nodeId      Value for the xrpl.node.id resource attribute (the
+     * node's base58 public key). When non-empty, metrics
+     * carry the same per-node key that traces do.
      */
     void
-    start(std::string const& endpoint, std::string const& instanceId = {});
+    start(
+        std::string const& endpoint,
+        std::string const& instanceId = {},
+        std::string const& nodeId = {});
 
     /**
      * Register the pull-model observable instruments — the second startup
@@ -575,7 +589,7 @@ public:
         std::int64_t runningDurUs);
 
     // -----------------------------------------------------------------
-    // External dashboard parity counters (Tasks 7.9-7.14)
+    // External dashboard parity counters
     // -----------------------------------------------------------------
 
     /**
@@ -645,10 +659,15 @@ public:
     void
     incrementTxqDropped(std::string_view reason);
 
+#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Access the validation agreement tracker.
      * Used by consensus and ledger hooks to record our validations and
      * network validations so the tracker can compute agreement percentages.
+     *
+     * Guarded, along with the tracker itself, because only the observable-gauge
+     * callbacks read it and those exist only in this configuration. Recording
+     * into it is not free: each call takes its lock and inserts an entry.
      * @return Reference to the internal ValidationTracker instance.
      */
     ValidationTracker&
@@ -657,7 +676,6 @@ public:
         return validationTracker_;
     }
 
-#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Access the shared OTel Meter for call-site instrument creation.
      * Used by the XRPL_METRIC_* macros (MetricMacros.h) so new synchronous
@@ -732,15 +750,17 @@ private:
      */
     bool const enabled_;
 
+#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Tracks validation agreement between this node and the network.
-     * Lives outside the XRPL_ENABLE_TELEMETRY guard because it is
-     * always safe to record events; the gauge callback simply won't
-     * fire when telemetry is disabled.
+     *
+     * Guarded because reconcile() -- which resolves and then prunes recorded
+     * events -- runs only from the observable-gauge callbacks. Recording
+     * without it accumulates one entry per validated ledger, so the tracker
+     * exists only where something drains it.
      */
     ValidationTracker validationTracker_;
 
-#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Reference to Application services for gauge callbacks.
      * Only needed when OTel is compiled in, since observable gauge
@@ -786,7 +806,7 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> rpcErroredCounter_;
     /**
-     * Histogram: rpc_method_duration_us{method="<name>"}
+     * Histogram: rpc_method_us{method="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         rpcDurationHistogram_;
@@ -807,12 +827,12 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
-     * Histogram: job_queued_duration_us{job_type="<name>",handler="<name>"}
+     * Histogram: job_queued_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobQueuedDurationHistogram_;
     /**
-     * Histogram: job_running_duration_us{job_type="<name>",handler="<name>"}
+     * Histogram: job_running_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobRunningDurationHistogram_;
@@ -862,7 +882,7 @@ private:
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> dbMetricsGauge_;
 
-    // --- External dashboard parity gauges (Tasks 7.9-7.13) ---
+    // --- External dashboard parity gauges ---
     /**
      * Observable gauge for validator health indicators (amendment blocked,
      * UNL blocked, quorum, UNL expiry).
@@ -905,7 +925,7 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         validationAgreementGauge_;
 
-    // --- External dashboard parity counters (Task 7.14) ---
+    // --- External dashboard parity counters ---
     /**
      * Counter: ledgers_closed_total — incremented each consensus round.
      */
@@ -971,9 +991,13 @@ private:
      *
      * @param endpoint OTLP/HTTP metrics endpoint URL.
      * @param instanceId service.instance.id resource attribute (may be empty).
+     * @param nodeId xrpl.node.id resource attribute (may be empty).
      */
     void
-    initExporterAndProvider(std::string const& endpoint, std::string const& instanceId);
+    initExporterAndProvider(
+        std::string const& endpoint,
+        std::string const& instanceId,
+        std::string const& nodeId);
 
     /**
      * Create the synchronous instruments (RPC and job-queue counters and
@@ -1003,15 +1027,15 @@ private:
     void
     registerJqTransOverflowCounter();  // gap-fill: overlay overflow total
     void
-    registerCacheHitRateGauge();  // Task 9.2
+    registerCacheHitRateGauge();
     void
-    registerTxqGauge();  // Task 9.3
+    registerTxqGauge();
     void
-    registerObjectCountGauge();  // Task 9.6
+    registerObjectCountGauge();
     void
-    registerLoadFactorGauge();  // Task 9.7
+    registerLoadFactorGauge();
     void
-    registerNodeStoreGauge();  // Task 9.1
+    registerNodeStoreGauge();
 
     // The four nodestore_state helpers and their ObserveFn sink are public
     // (above), so a test can drive each one with a recording sink and assert
@@ -1019,27 +1043,27 @@ private:
     // arguments, so exposing them widens no state.
 
     void
-    registerServerInfoGauge();  // Task 9.7a
+    registerServerInfoGauge();
     void
-    registerBuildInfoGauge();  // Task 9.7b
+    registerBuildInfoGauge();
     void
-    registerCompleteLedgersGauge();  // Task 9.7c
+    registerCompleteLedgersGauge();
     void
-    registerDbMetricsGauge();  // Task 9.7d
+    registerDbMetricsGauge();
     void
-    registerValidatorHealthGauge();  // Task 7.9
+    registerValidatorHealthGauge();
     void
-    registerPeerQualityGauge();  // Task 7.10
+    registerPeerQualityGauge();
     void
     registerReduceRelayGauge();  // Reduce-relay efficiency
     void
-    registerLedgerEconomyGauge();  // Task 7.11
+    registerLedgerEconomyGauge();
     void
-    registerStateTrackingGauge();  // Task 7.12
+    registerStateTrackingGauge();
     void
-    registerStorageDetailGauge();  // Task 7.13
+    registerStorageDetailGauge();
     void
-    registerValidationAgreementGauge();  // Task 7.15
+    registerValidationAgreementGauge();
     void
     registerValidationTotalsCounters();  // gap-fill: lifetime agree/miss _total
 #endif                                   // XRPL_ENABLE_TELEMETRY

@@ -1,7 +1,7 @@
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
@@ -149,7 +149,7 @@ runOverlappingInsertRound(Backend& backend, int round)
 
 TEST(NuDBFactory, default_block_size)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 4096));
 }
@@ -160,14 +160,14 @@ TEST(NuDBFactory, valid_block_sizes)
     for (auto const size : kValidSizes)
     {
         SCOPED_TRACE("size=" + std::to_string(size));
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), std::to_string(size));
         ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, size));
     }
 
     // empty value is ignored by config parser; default (4096) is used
     {
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), "");
         ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 4096));
     }
@@ -192,7 +192,7 @@ TEST(NuDBFactory, invalid_block_sizes)
     for (auto const& size : kInvalidSizes)
     {
         SCOPED_TRACE("size='" + size + "'");
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), size);
         EXPECT_THROW(runRoundTrip(params, 4096), std::exception);
     }
@@ -202,7 +202,7 @@ TEST(NuDBFactory, invalid_block_sizes)
     for (auto const& size : kWhitespaceSizes)
     {
         SCOPED_TRACE("size='" + size + "'");
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), size);
         EXPECT_THROW(runRoundTrip(params, 4096), std::exception);
     }
@@ -212,7 +212,7 @@ TEST(NuDBFactory, log_messages)
 {
     // valid custom block size emits info log
     {
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), "8192");
         test::CaptureSink sink(beast::Severity::Info);
         beast::Journal const journal(sink);
@@ -226,7 +226,7 @@ TEST(NuDBFactory, log_messages)
 
     // invalid block size throws with informative message
     {
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), "5000");
         test::CaptureSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
@@ -247,7 +247,7 @@ TEST(NuDBFactory, log_messages)
 
     // non-numeric value throws
     {
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), "invalid");
         test::CaptureSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
@@ -282,7 +282,7 @@ TEST(NuDBFactory, power_of_two_validation)
     for (auto const& [size, shouldWork] : kCASES)
     {
         SCOPED_TRACE("size=" + size + " shouldWork=" + (shouldWork ? "true" : "false"));
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), size);
         test::CaptureSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
@@ -307,7 +307,7 @@ TEST(NuDBFactory, power_of_two_validation)
 
 TEST(NuDBFactory, both_constructor_variants)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path(), "16384");
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
@@ -326,7 +326,7 @@ TEST(NuDBFactory, configuration_parsing)
 {
     // basic valid format emits success log
     {
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), "8192");
         test::CaptureSink sink(beast::Severity::Info);
         beast::Journal const journal(sink);
@@ -341,7 +341,7 @@ TEST(NuDBFactory, configuration_parsing)
     for (auto const& format : kWhitespaceFormats)
     {
         SCOPED_TRACE("format='" + format + "'");
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), format);
         test::CaptureSink sink(beast::Severity::Debug);
         beast::Journal const journal(sink);
@@ -354,9 +354,14 @@ TEST(NuDBFactory, configuration_parsing)
 // so these counters plus Little's Law are the only way to separate queuing
 // from service time from outside the library.
 
+#ifdef XRPL_ENABLE_TELEMETRY
+// The three tests below pin the cumulative write-path counters, which are
+// recorded only when telemetry is compiled in. Without it the write-load gauge
+// is their only consumer and it reads the depth atomic directly, so the depth
+// samples and the two clock reads per insert are skipped on that hot path.
 TEST(NuDBFactory, write_stats_accumulate_per_insert)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
@@ -457,7 +462,7 @@ TEST(NuDBFactory, write_stats_accumulate_per_insert)
 // ScopeExit runs its function during unwinding.
 TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
@@ -522,7 +527,7 @@ TEST(NuDBFactory, write_stats_count_duplicate_key_inserts)
 // while the real one satisfies it as soon as any two inserts overlap.
 TEST(NuDBFactory, write_stats_measure_depth_under_real_overlap)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
@@ -597,7 +602,7 @@ TEST(NuDBFactory, write_stats_measure_depth_under_real_overlap)
 
 TEST(NuDBFactory, write_load_reports_writer_depth)
 {
-    beast::TempDir const tempDir;
+    TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
@@ -637,6 +642,7 @@ TEST(NuDBFactory, write_load_reports_writer_depth)
 
     backend->close();
 }
+#endif  // XRPL_ENABLE_TELEMETRY
 
 TEST(NuDBFactory, data_persistence)
 {
@@ -644,7 +650,7 @@ TEST(NuDBFactory, data_persistence)
     for (auto const& size : kBlockSizes)
     {
         SCOPED_TRACE("size=" + size);
-        beast::TempDir const tempDir;
+        TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), size);
         DummyScheduler scheduler;
         beast::Journal const journal(TestSink::instance());

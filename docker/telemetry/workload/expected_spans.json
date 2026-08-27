@@ -1,5 +1,5 @@
 {
-  "description": "Expected span inventory for xrpld telemetry validation. Attribute keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form; dotted xrpl.* reserved for resource attributes). Sourced from the *SpanNames.h headers. Spans marked \"optional\": true are conditional — they only fire under traffic the harness may not produce (e.g. gRPC client, missing-ledger fetch, mode transitions) and are not failed when absent.",
+  "description": "Expected span inventory for xrpld telemetry validation. Attribute keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form; dotted xrpl.* reserved for resource attributes). Sourced from the *SpanNames.h headers and verified against the emitting call sites. Spans marked \"optional\": true are conditional — they only fire under traffic the harness may not produce (e.g. gRPC client, path-finding RPC, missing-ledger fetch, mode transitions) and are not failed when absent. \"parent\" is documentation only (validate_telemetry.py asserts hierarchy from parent_child_relationships, not from this field) and records the parent as the code actually produces it: null means the span is a root or an explicit freshRoot. required_attributes lists only attributes set on EVERY code path that creates the span — attributes set after an early return are described in the span's note instead, because _validate_span_attributes_otlp samples a single trace and would fail on a legitimate short-circuit path. total_unique_attributes is the size of the union of all required_attributes; total_span_types is len(spans). Span EVENTS (consensus.round phase.*/outcome.*, consensus.update_positions dispute.resolve, consensus.accept.apply tx.included) are NOT represented: validate_telemetry.py reads only span name, attributes and timestamps from Tempo, so an \"events\" key would be silently ignored. They are documented in the relevant span notes until the validator gains event support.",
   "spans": [
     {
       "name": "rpc.ws_message",
@@ -10,19 +10,30 @@
       "note": "WebSocket RPC root span. The load generator uses WS, so this is the RPC entry span (not rpc.http_request, which needs an HTTP/JSON-RPC client)."
     },
     {
+      "name": "rpc.ws_upgrade",
+      "category": "rpc",
+      "parent": null,
+      "required_attributes": [],
+      "config_flag": "trace_rpc",
+      "optional": true,
+      "note": "WebSocket handshake span (ServerHandler::onHandoff, ServerHandler.cpp:272-273). A freshRoot with no attributes — only setOk() on success or recordException() on an upgrade failure. Fires once per WS connection, so the load generator produces only a handful of these at connect time; by the time validation runs after the propagation wait they may fall outside the Tempo search window. Optional for that reason, not because the code path is conditional."
+    },
+    {
       "name": "rpc.process",
       "category": "rpc",
-      "parent": "rpc.ws_message",
+      "parent": "rpc.http_request",
       "required_attributes": [],
-      "config_flag": "trace_rpc"
+      "config_flag": "trace_rpc",
+      "optional": true,
+      "note": "HTTP-only. Created solely in ServerHandler::processRequest() (ServerHandler.cpp:705), which is reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path that roots rpc.http_request at ServerHandler.cpp:640-641. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so this span never appears under a WebSocket request. It does still appear under this harness, 5 traces on a normal run, because run-full-validation.sh polls each node over HTTP with curl (:449, :502) and those requests take the HTTP path. Corrected 2026-08-26; this note previously concluded the span cannot appear at all, which sent a reader looking for a way to make the harness speak HTTP that it already speaks."
     },
     {
       "name": "rpc.command.*",
       "category": "rpc",
-      "parent": "rpc.process",
+      "parent": "rpc.ws_message",
       "required_attributes": ["command", "version", "rpc_role", "rpc_status"],
       "config_flag": "trace_rpc",
-      "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc."
+      "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc. Created as an ambient (scoped) child in rpc::doCommand / rpc::callMethod (RPCHandler.cpp:168, :271), so its parent is whichever transport span is active on the thread: rpc.ws_message on the WebSocket path (the harness workload) and rpc.process on the HTTP/JSON-RPC path."
     },
     {
       "name": "rpc.http_request",
@@ -31,7 +42,7 @@
       "required_attributes": ["request_payload_size"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "HTTP/JSON-RPC root span. The harness load generator is WebSocket-only, so this does not fire."
+      "note": "HTTP/JSON-RPC root span. It DOES fire under this harness, 5 traces on a normal run -- one per node -- even though the load generator is WebSocket-only, because run-full-validation.sh polls each node's HTTP port with curl for readiness and validated-ledger progress (:449, :502). Corrected 2026-08-26; this note previously said it does not fire. Kept optional rather than promoted to required because those polls are harness scaffolding rather than workload: a future change to how the script waits for a node could remove them without anything being wrong with the node."
     },
     {
       "name": "tx.process",
@@ -113,7 +124,7 @@
       "required_attributes": ["queue_size", "ledger_changed"],
       "config_flag": "trace_transactions",
       "optional": true,
-      "note": "Ledger-close accept loop. Fires on the consensus thread; only meaningful when the queue is non-empty."
+      "note": "Ledger-close accept loop (TxQ::accept, TxQ.cpp:1499). Only meaningful when the queue is non-empty. Root on BOTH call paths, verified: the consensus path (RCLConsensus.cpp:823, inside doAccept) and the switchLastClosedLedger jump path (NetworkOPs.cpp:2150). The span is a ScopedSpanGuard, so it adopts whatever OTel context is ambient — but consensus.accept and consensus.accept.apply are unscoped thread-free SpanGuards and activate() is never called outside unit tests, so no consensus span is ever the ambient parent on the JtAccept worker. ledger.build's ScopedSpanGuard has already been destroyed by the time OpenLedger::accept runs."
     },
     {
       "name": "txq.accept_tx",
@@ -134,7 +145,8 @@
       "parent": null,
       "required_attributes": ["ledger_seq", "expired_count"],
       "config_flag": "trace_transactions",
-      "optional": true
+      "optional": true,
+      "note": "TxQ::processClosedLedger (TxQ.cpp:1403). Root on BOTH call paths for the same reason as txq.accept: the consensus path (RCLConsensus.cpp:950) and the switchLastClosedLedger jump path (NetworkOPs.cpp:2121) both run with no consensus span activated as ambient context."
     },
     {
       "name": "consensus.round",
@@ -148,7 +160,7 @@
         "consensus_phase"
       ],
       "config_flag": "trace_consensus",
-      "note": "Root consensus span created per round. Also carries trace_strategy, previous_ledger_seq, previous_proposers, previous_round_time_ms."
+      "note": "Root consensus span created per round. Also carries trace_strategy, previous_ledger_seq, previous_proposers, previous_round_time_ms. Emits seven span EVENTS that this manifest cannot assert: phase.open, phase.recovery, phase.establish, phase.accepted, outcome.yes, outcome.moved_on, outcome.expired (declared ConsensusSpanNames.h:265-277; emitted RCLConsensus.cpp:1344 and via onPhaseEvent/onOutcomeEvent from Consensus.h:764, 793, 1047, 1517-1525, 1530, 1566). validate_telemetry.py reads only span name, attributes and start/end timestamps from the Tempo OTLP payload — it has no event assertion support — so adding an \"events\" key here would be silently ignored. Recorded as a note instead; asserting events needs validator support first."
     },
     {
       "name": "consensus.phase.open",
@@ -188,25 +200,27 @@
     {
       "name": "consensus.update_positions",
       "category": "consensus",
-      "parent": "consensus.round",
+      "parent": "consensus.establish",
       "required_attributes": [
         "converge_percent",
         "proposers",
         "disputes_count"
       ],
-      "config_flag": "trace_consensus"
+      "config_flag": "trace_consensus",
+      "note": "childSpan of establishSpanContext_ (Consensus.h:1628), so the parent is consensus.establish — not consensus.round. Also emits a dispute.resolve span EVENT per resolved dispute (Consensus.h:1697-1698), which validate_telemetry.py cannot assert (no event support)."
     },
     {
       "name": "consensus.check",
       "category": "consensus",
-      "parent": "consensus.round",
+      "parent": "consensus.establish",
       "required_attributes": [
         "agree_count",
         "disagree_count",
         "threshold_percent",
         "consensus_result"
       ],
-      "config_flag": "trace_consensus"
+      "config_flag": "trace_consensus",
+      "note": "childSpan of establishSpanContext_ (Consensus.h:1837), so the parent is consensus.establish — not consensus.round."
     },
     {
       "name": "consensus.accept",
@@ -228,7 +242,7 @@
         "resolution_direction"
       ],
       "config_flag": "trace_consensus",
-      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count."
+      "note": "Also carries close_time_correct, close_resolution_ms, consensus_state, proposing, round_time_ms, tx_count. Emits a tx.included span EVENT per transaction in the accepted set (RCLConsensus.cpp:666, with a tx_id attribute), which validate_telemetry.py cannot assert (no event support)."
     },
     {
       "name": "consensus.validation.send",
@@ -262,11 +276,11 @@
     {
       "name": "consensus.mode_change",
       "category": "consensus",
-      "parent": null,
+      "parent": "consensus.round",
       "required_attributes": ["mode_old", "mode_new"],
       "config_flag": "trace_consensus",
       "optional": true,
-      "note": "Only fires on an operating-mode transition; a steady cluster rarely changes mode after warmup."
+      "note": "childSpan of roundSpanContext_ (RCLConsensus.cpp:1101), so the parent is consensus.round. Only fires on an operating-mode transition; a steady cluster rarely changes mode after warmup. A mode change outside a round leaves roundSpanContext_ invalid, which yields a null (no-op) guard rather than a root span."
     },
     {
       "name": "ledger.build",
@@ -299,47 +313,38 @@
       "name": "ledger.acquire",
       "category": "ledger",
       "parent": null,
-      "required_attributes": [
-        "ledger_seq",
-        "acquire_reason",
-        "timeouts",
-        "peer_count",
-        "outcome"
-      ],
+      "required_attributes": ["ledger_seq", "acquire_reason"],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history."
+      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history. ledger_seq and acquire_reason are set unconditionally in init() (InboundLedger.cpp:116, :131) and are therefore required. outcome, timeouts and peer_count are set only on the done() path (InboundLedger.cpp:508-515); init() can satisfy the acquisition from the local store or bail on failed_/!complete_ and return without reaching done(), so those three cannot be required."
     },
     {
       "name": "peer.proposal.receive",
       "category": "peer",
       "parent": null,
-      "required_attributes": ["peer_id", "proposal_trusted"],
-      "config_flag": "trace_peer"
+      "required_attributes": ["peer_id"],
+      "config_flag": "trace_peer",
+      "note": "peer_id is set immediately after the freshRoot (PeerImp.cpp:1925) and is the only unconditional attribute. proposal_trusted is set at PeerImp.cpp:1953, after several early returns (stale/duplicate/self-originated proposal checks), so a single rejected proposal in the sampled trace would fail the check — it is therefore not required."
     },
     {
       "name": "peer.validation.receive",
       "category": "peer",
       "parent": null,
-      "required_attributes": [
-        "peer_id",
-        "validation_trusted",
-        "ledger_hash",
-        "full_validation"
-      ],
+      "required_attributes": ["peer_id", "ledger_hash", "full_validation"],
       "config_flag": "trace_peer",
-      "note": "ledger_hash and full_validation are shared with consensus.validation.send (same keys, told apart by span name)."
+      "note": "ledger_hash and full_validation are shared with consensus.validation.send (same keys, told apart by span name). Both are set at PeerImp.cpp:2573-2574, BEFORE the isCurrent() gate, so only a too-small or unparseable validation skips them — they stay required (and validate_telemetry.py's PARITY_SPAN_ATTRS already asserts them independently). validation_trusted is set at PeerImp.cpp:2591, after the isCurrent() early return at :2576-2584, so a single not-current validation in the sampled trace would fail the check — it is therefore not required."
     },
     {
       "name": "pathfind.request",
       "category": "pathfind",
-      "parent": null,
+      "parent": "rpc.command.*",
       "required_attributes": [
         "pathfind_source_account",
         "pathfind_dest_account"
       ],
       "config_flag": "trace_rpc",
-      "note": "Fires on ripple_path_find / path_find RPC. Driven by the ripple_path_find load in rpc_load_generator.py."
+      "optional": true,
+      "note": "Fires on ripple_path_find / path_find RPC. Optional because the harness issues neither: the ripple_path_find weight was removed from rpc_load_generator.py's DEFAULT_WEIGHTS on 2026-08-25, and no workload-profiles.json phase names a path-finding command in a weights override, so no such RPC reaches a node at all. Created as an ambient (scoped) child inside the RPC command handler (RipplePathFind.cpp:35-36, PathFind.cpp:26-27), so its parent is the enclosing rpc.command.* span — RipplePathFind.cpp:30 states this explicitly. Note the span does NOT need pathfinding to be ENABLED, only the RPC to be issued: the ScopedSpanGuard is constructed at RipplePathFind.cpp:35, above the 'if (pathSearchMax == 0) return rpcError(RpcNotSupported)' guard at :48-49, so even a refused call opens and closes it. That positional accident is why the load alone used to satisfy this entry while pathfind.compute and pathfind.discover below stayed unasserted — and why those refusals were also manufacturing a steady ~3% STATUS_CODE_ERROR floor in span_calls_total, which removing the load has now cleared. Restoring the load alone would make this span required again and bring that error floor back; covering the whole family needs pathfinding actually enabled (a [path_search_max] override in run-full-validation.sh — see the pathfind.compute entry below). The workload README section 'Pathfinding is not exercised' carries the full restore recipe."
     },
     {
       "name": "pathfind.compute",
@@ -348,7 +353,7 @@
       "required_attributes": ["pathfind_fast"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Only fires when PathRequest::doUpdate runs a computation; the self-to-self XRP probe from the load generator returns early without computing paths in a fresh cluster with no liquidity."
+      "note": "Created by PathRequest::doUpdate (PathRequest.cpp:749-750), which the harness never reaches: pathfinding is disabled on every harness node, so no PathRequest is ever constructed. Config.cpp:725-726 sets pathSearchMax to 0 when a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for every node (:308) and has no [path_search*] override, and doRipplePathFind then returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 — above the request-construction branches and below the pathfind.request span guard at :35. Liquidity is not the reason and never was: the call is refused before any path search is attempted, so the outcome does not depend on what the ledger holds. Since 2026-08-25 there is a second, independent reason: the harness sends no path-finding RPC at all, the ripple_path_find weight having been removed from rpc_load_generator.py. Enabling this span therefore needs BOTH a [path_search_max] override (or a non-validator node) in run-full-validation.sh AND the load restored — see the workload README section 'Pathfinding is not exercised'."
     },
     {
       "name": "pathfind.discover",
@@ -357,7 +362,7 @@
       "required_attributes": ["pathfind_search_level", "pathfind_num_paths"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Graph exploration; only fires under pathfind.compute, which needs real path liquidity not present in the fresh test cluster."
+      "note": "Graph exploration; only fires under pathfind.compute, which the harness never reaches because pathfinding is disabled on every node (see the pathfind.compute entry above for the config chain). Liquidity is not the reason: the RPC is refused before any search runs."
     },
     {
       "name": "pathfind.update_all",
@@ -366,7 +371,7 @@
       "required_attributes": ["pathfind_ledger_index", "pathfind_num_requests"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Async recomputation at ledger close; only fires when there are active path_find subscriptions (the one-shot ripple_path_find load does not register one)."
+      "note": "Async recomputation at ledger close. PathRequestManager::updateAll emits the span only when requests_ is non-empty (PathRequestManager.cpp:88-95), so it needs a live path_find subscription. On the harness requests_ can never become non-empty at all: the only two insertPathRequest call sites are makePathRequest (:268) and makeLegacyPathRequest (:296), and both handlers return rpcNOT_SUPPORTED first because pathfinding is disabled on every node (PathFind.cpp:39, RipplePathFind.cpp:48; see the pathfind.compute entry above for the config chain)."
     },
     {
       "name": "grpc.*",
@@ -384,12 +389,17 @@
       "child": "rpc.process",
       "description": "WebSocket message contains processing span",
       "skip": true,
-      "skip_reason": "rpc.ws_message and rpc.process run on different threads (the WS handler posts a coroutine to JobQueue for processing). Span context is not propagated across the thread boundary. Requires a C++ fix to capture and forward the span context through the coroutine lambda."
+      "skip_reason": "This relationship does not exist in the code: rpc.process is created only in ServerHandler::processRequest() (ServerHandler.cpp:705), reached only from processSession(Session, coro) (ServerHandler.cpp:646) — the HTTP/JSON-RPC path. The WebSocket path (processSession(WSSession, coro, jv), ServerHandler.cpp:467) never calls processRequest, so rpc.process is never emitted at all under the WebSocket-only harness. The earlier diagnosis (cross-thread context loss needing a C++ fix) was wrong: rpc.ws_message is a deliberate freshRoot (ServerHandler.cpp:473-474) so each WS message is its own trace rather than nesting under a span leaked on a reused coroutine worker. Nothing to fix."
+    },
+    {
+      "parent": "rpc.ws_message",
+      "child": "rpc.command.*",
+      "description": "WebSocket message contains the per-command span — the real relationship on the harness WS path (rpc::doCommand at RPCHandler.cpp:271 creates an ambient child of the rpc.ws_message scope inside the same coroutine). Un-skipped 2026-08-26. The skip existed because _validate_parent_child() used to collapse the wildcard to one literal name via child_name.replace(\"*\", \"server_info\"), which made the check depend on which command the sampled traces happened to carry -- server_info is 25/100 of rpc_load_generator.py's DEFAULT_WEIGHTS, so a healthy run could sample three non-server_info traces and fail. That code no longer exists: d059f21bf3 replaced it with _span_name_matches(), which globs via fnmatch.fnmatchcase, and the check's own comment now reads \"globs for wildcard contracts\". Any rpc.command.<anything> under the parent therefore satisfies the contract and the command mix no longer matters. The reason had simply gone stale for two weeks."
     },
     {
       "parent": "rpc.process",
       "child": "rpc.command.*",
-      "description": "Processing span contains per-command span"
+      "description": "Processing span contains the per-command span, on the HTTP/JSON-RPC path. Un-skipped 2026-08-26 for the same reason as the WebSocket pair above: the validator globs a wildcard child via _span_name_matches() and has done since d059f21bf3, so the 'resolves the wildcard to one literal probe' claim this entry carried was describing code deleted two weeks earlier. That claim was not inherited here by accident -- it was copied from the stale WS entry while correcting a DIFFERENT error in this same reason, without checking it. Both ends emit: rpc.process reports 5 traces on a normal run, not from the WebSocket-only load generator but because run-full-validation.sh polls each node's HTTP port with curl for readiness and validated-ledger progress (:449, :502), and every such request runs a command."
     },
     {
       "parent": "ledger.build",
@@ -411,9 +421,88 @@
       "child": "pathfind.compute",
       "description": "Pathfind request contains the compute sub-span",
       "skip": true,
-      "skip_reason": "pathfind.compute only fires when a path computation actually runs; the self-to-self XRP probe in a fresh cluster with no liquidity returns before computing, so the child is not emitted under the harness workload."
+      "skip_reason": "Real relationship (pathfind.compute is created inside PathRequest::doUpdate at PathRequest.cpp:749-750, under the pathfind.request scope), but the child never exists on the harness because pathfinding is disabled on every node: Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for all five nodes (:308) with no [path_search*] override, and doRipplePathFind returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 before constructing a PathRequest. The parent used to appear anyway, because its ScopedSpanGuard is created at RipplePathFind.cpp:35, above that guard; since 2026-08-25 not even the parent appears, the ripple_path_find load having been removed from rpc_load_generator.py, so both ends of this relationship are now absent. Liquidity has nothing to do with it — the earlier 'no liquidity, returns before computing' reason was wrong, because no path search is attempted at all. Asserting this relationship needs the load restored AND a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
+    },
+    {
+      "parent": "rpc.command.*",
+      "child": "pathfind.request",
+      "description": "The RPC command span contains the path-finding request span.",
+      "skip": true,
+      "skip_reason": "Real relationship, and the one skip here caused by a WILDCARD PARENT rather than by a missing span. _validate_parent_child builds its Tempo query as name=\"<parent>\" with the contract string inserted literally (validate_telemetry.py:801), so a parent of rpc.command.* searches for a span literally named that and finds nothing. Note the asymmetry: the ancestry check globs both sides through _span_name_matches, which is why rpc.ws_message -> rpc.command.* is asserted, but the Tempo query that selects the candidate traces is literal on the parent, so no trace is ever fetched to run it on. Asserting this needs the parent query to accept a glob -- a TraceQL name=~ regex, or resolving the glob to the concrete names Tempo reports first. Independently of that, both ends are absent today anyway: the harness issues no path-finding RPC, see the pathfind.compute entry above.",
+      "added": "2026-08-26 to close the declared-but-unlisted gap"
+    },
+    {
+      "parent": "pathfind.compute",
+      "child": "pathfind.discover",
+      "description": "The path computation contains the discovery pass.",
+      "skip": true,
+      "skip_reason": "Real relationship with BOTH ends absent, for the reason given in full on the pathfind.compute entry above: pathfinding is disabled on every harness node because Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] section is present, run-full-validation.sh writes one for all five nodes (:308) with no [path_search_max] override, so doRipplePathFind returns rpcNOT_SUPPORTED before any PathRequest is constructed -- and since 2026-08-25 the harness sends no path-finding RPC at all either. Asserting this needs both blockers lifted, which is a workload and node-config change rather than a harness one. Listed here so that the pathfinding family is fully accounted for rather than partly silent.",
+      "added": "2026-08-26 to close the declared-but-unlisted gap"
+    },
+
+    {
+      "parent": "rpc.http_request",
+      "child": "rpc.process",
+      "description": "The HTTP request span contains the request-processing span. ServerHandler::processRequest() opens rpc.process as a scoped child and its own comment names rpc.http_request as the parent; processRequest has exactly one caller. Both ends emit on every run: the harness polls each node's HTTP port with curl, so this is the one rpc hierarchy that is assertable without a wildcard."
+    },
+    {
+      "parent": "tx.process",
+      "child": "txq.enqueue",
+      "description": "Transaction processing contains the queue-admission span."
+    },
+    {
+      "parent": "txq.enqueue",
+      "child": "txq.apply_direct",
+      "description": "Queue admission contains the direct-apply path taken when the transaction is applied straight to the open ledger instead of being queued."
+    },
+    {
+      "parent": "txq.enqueue",
+      "child": "txq.batch_clear",
+      "description": "Queue admission contains the batch-clear pass that drops an account's superseded queued transactions.",
+      "skip": true,
+      "skip_reason": "Real relationship, still skipped but for ONE reason now rather than two. The child never fires at all under this workload -- the run reports \"span.txq.batch_clear: optional span not emitted under this workload\" -- because it is created in TxQ::tryClearAccountQueueUpThruTx (TxQ.cpp:550), which needs one account holding several queued transactions AND an arriving transaction that supersedes the whole batch. Nothing in txq-burst arranges that shape. The second reason this entry used to carry, that newest-N parent sampling would miss it anyway, no longer applies: the hierarchy check now queries Tempo for traces containing both parent and child. So this is now purely a workload gap, and un-skipping it needs the workload to produce a supersedable batch -- nothing further from the validator."
+    },
+    {
+      "parent": "txq.accept",
+      "child": "txq.accept_tx",
+      "description": "The queue's accept pass contains the per-transaction accept span. Un-skipped once the hierarchy check stopped sampling only the newest parent traces. The child is created inside the loop over queued transactions and behind `if (feeLevelPaid >= requiredFeeLevel)` (TxQ.cpp:1530), so it exists only for a close whose queue held a fee-clearing transaction, while the parent fires on every close (:1499) -- which is precisely the shape newest-N sampling gets wrong. The check now asks Tempo for traces containing both, so co-occurrence is found wherever it happened rather than only in the three most recent closes."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.phase.open",
+      "description": "A consensus round contains its open phase."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.establish",
+      "description": "A consensus round contains its establish phase."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.proposal.send",
+      "description": "A consensus round contains the proposals this node sends during it."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.ledger_close",
+      "description": "A consensus round contains the ledger close it performs."
+    },
+    {
+      "parent": "consensus.round",
+      "child": "consensus.mode_change",
+      "description": "A consensus round contains any mode transition that happens inside it."
+    },
+    {
+      "parent": "consensus.establish",
+      "child": "consensus.update_positions",
+      "description": "The establish phase contains each position-update pass."
+    },
+    {
+      "parent": "consensus.establish",
+      "child": "consensus.check",
+      "description": "The establish phase contains each consensus-reached check."
     }
   ],
-  "total_span_types": 40,
-  "total_unique_attributes": 58
+  "total_span_types": 41,
+  "total_unique_attributes": 62
 }

@@ -19,7 +19,7 @@
 
 ## Task 8.1: Inject trace_id into Logs::format()
 
-**Objective**: Add OTel trace context to every log line that is emitted within an active span.
+**Objective**: Add OTel trace context to every log line that is emitted within an active, sampled span. The sampled flag matters because a span dropped by the `ParentBasedSampler` still carries its parent's ids, so emitting them would advertise a trace that was never exported.
 
 **What to do**:
 
@@ -36,7 +36,7 @@
             auto span = opentelemetry::nostd::get<
                 opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>>(spanValue);
             auto spanCtx = span->GetContext();
-            if (spanCtx.IsValid())
+            if (spanCtx.IsValid() && spanCtx.IsSampled())
             {
                 char traceId[32], spanId[16];
                 spanCtx.trace_id().ToLowerBase16(
@@ -62,7 +62,7 @@
 
 - `src/libxrpl/basics/Log.cpp`
 
-**Performance note**: The implementation checks the thread-local context value directly (avoiding the heap allocation that `GetSpan()` performs on the no-span path). On threads without an active span (~99% of log lines), the cost is a thread-local read + variant type check (~15-20ns). On the active-span path, an additional shared_ptr copy + `GetContext()` + `IsValid()` adds ~50ns total. Overhead is negligible at typical logging rates.
+**Performance note**: The implementation checks the thread-local context value directly (avoiding the heap allocation that `GetSpan()` performs on the no-span path). On threads without an active span (~99% of log lines), the cost is a thread-local read + variant type check (~15-20ns). On the active-span path, an additional shared_ptr copy + `GetContext()` + `IsValid()`/`IsSampled()` adds ~50ns total. Overhead is negligible at typical logging rates.
 
 ---
 
@@ -76,7 +76,7 @@
   - Add Loki service:
     ```yaml
     loki:
-      image: grafana/loki:3.4.2
+      image: grafana/loki:3.7.6
       ports:
         - "3100:3100"
       command: -config.file=/etc/loki/local-config.yaml
@@ -230,7 +230,7 @@
 
 **Exit Criteria** (from [06-implementation-phases.md §6.8.1](./06-implementation-phases.md)):
 
-- [ ] Log lines within active spans contain `trace_id=<hex> span_id=<hex>`
+- [ ] Log lines within active, sampled spans contain `trace_id=<hex> span_id=<hex>`
 - [ ] Log lines outside spans have no trace context (no empty fields)
 - [ ] Loki ingests xrpld logs via OTel Collector filelog receiver
 - [ ] Grafana Tempo -> Loki one-click correlation works

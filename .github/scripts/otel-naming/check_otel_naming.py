@@ -45,8 +45,11 @@ Layers
                  include/**
   L2 collector : docker/telemetry/otel-collector-config.yaml   (spanmetrics dims)
   L3 tempo     : docker/telemetry/tempo.yaml                    (span filter tags)
-  L4 dashboards: docker/telemetry/grafana/dashboards/*.json     (PromQL labels)
-  L5 runbook   : docs/telemetry-runbook.md                      (attr tables)
+  L4 dashboards: docker/telemetry/grafana/dashboards/*.json     (PromQL labels;
+                 Loki/LogQL queries exempt -- see LOG_QUERY_DATASOURCES)
+  L5 docs      : every *.md under docs/ and docker/telemetry/   (attr tables;
+                 the set is DISCOVERED, never enumerated -- see
+                 RULE_E_DOC_ROOTS)
   L6 metrics   : MetricsRegistry.cpp instrument labels          (native-metric
                  label keys, a valid dashboard-label source besides L1)
 
@@ -65,12 +68,22 @@ Rules (each FAILS the build, when its inputs are present)
   C  Every tempo span-filter tag exists in the L1 key set.
   D  Every dashboard label resolves to an L1 span attribute, an L6
      native-metric label, or a builtin. TraceQL `span.`/`resource.` scope
-     prefixes are stripped before the L1 lookup.
-  E  No dotted `xrpl.<domain>.<field>` attribute key in the runbook (only the
-     L1 resource attrs xrpl.network.* and the EXTERNAL_INFRA_LABELS dotted
-     form -- xrpl.work.item/.branch/.node.role -- may be dotted). Span names,
-     filenames,
-     OTel-standard keys, and metric labels are not flagged.
+     prefixes are stripped before the L1 lookup. Log-datasource (Loki/LogQL)
+     queries are exempt: their labels are minted by collector `regex_parser`
+     captures or an in-query `| regexp` stage, so they have no L1/L6 source to
+     resolve against (see LOG_QUERY_DATASOURCES). The exemption is per QUERY,
+     not per file, so a mixed dashboard still has its PromQL panels checked.
+  E  No dotted `xrpl.<domain>.<field>` attribute key in any L5 doc. The doc set
+     is DISCOVERED, not listed: every `*.md` under RULE_E_DOC_ROOTS, so a doc
+     added or renamed inside a root is covered without editing this script.
+     Only the L1 resource
+     attrs xrpl.network.* and the EXTERNAL_INFRA_LABELS dotted form --
+     xrpl.work.item/.branch/.node.role -- may be dotted. Span names, filenames,
+     OTel-standard keys, and metric labels are not flagged. A doc that names the
+     wrong form as a deliberate counter-example opts that mention out with a
+     key-scoped marker (RULE_E_MARKER_SYNTAX), which exempts ONLY the keys it
+     lists on the line it appears on -- any other dotted token on that same line
+     still fails.
 
 Warnings (printed, but do NOT fail the build)
 ----------------------------------------------
@@ -79,16 +92,28 @@ Warnings (printed, but do NOT fail the build)
      *SpanNames.h (single source of truth); defining one in-place bypasses the
      naming rules. A warning (not a failure) because the argument may instead
      be a legitimately dynamic local (e.g. a computed span-name leaf).
+  E  A RULE_E_REQUIRED_DOCS anchor is not present in the tree (renamed, moved,
+     or deleted -- so doc discovery can no longer be trusted to have found the
+     docs that matter), an allow-dotted marker names no key (so it exempts
+     nothing), or it names a key the line no longer mentions (a stale
+     exemption). Warnings, not failures, because presence-gating must keep
+     working on partial branches -- but the skip is now visible instead of
+     silent.
+  M  A constant DEFINED in a *SpanNames.h that no code references — the reverse
+     of every rule above, which all start from a consumer. Constants referenced
+     only by test code are reported separately. A warning because a constant may
+     legitimately land a commit before its call site in a stacked chain.
 
 Exit code is non-zero if any present-and-enforced rule finds a violation.
 Warnings never change the exit code.
 """
 
+import json
 import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 
 # ---------------------------------------------------------------------------
 # Repo location
@@ -467,6 +492,9 @@ def main() -> None:
     header_symbols = spanname_symbol_names(headers)
     run_rule_f(root, report, header_symbols)
 
+    # --- Rule M (warning): L1 constants nothing references ------------------
+    run_rule_m_unreferenced(root, headers, report)
+
     # --- Cross-layer rules B/C/D/E (each presence-gated) -------------------
     # L6 native-metric labels: span attributes are not the only valid dashboard
     # labels — the MetricsRegistry emits OTel metrics whose label keys are an
@@ -476,7 +504,7 @@ def main() -> None:
     run_rule_b_collector(root, l1_keys, report)
     run_rule_c_tempo(root, l1_keys, report)
     run_rule_d_dashboards(root, l1_keys, metric_labels, report)
-    run_rule_e_runbook(root, l1_keys, report)
+    run_rule_e_docs(root, l1_keys, report)
 
     report.render_and_exit()
 
@@ -727,6 +755,173 @@ def iter_calls(text: str):
         yield name, arglist, lineno
 
 
+# ---------------------------------------------------------------------------
+# Rule M: L1 constants nothing references (the reverse direction)
+# ---------------------------------------------------------------------------
+
+# A scope event: `namespace <name> {`, a bare `{`, or a `}`. Reuses NS_OPEN's
+# pattern, keeping its capture as group 1.
+NS_EVENT = re.compile(NS_OPEN.pattern + r"|\{|\}")
+IDENTIFIER_TOKEN = re.compile(r"[A-Za-z_]\w*")
+# A qualified name such as `ledger_span::attr::ledgerHash`, possibly wrapped
+# across lines. Bare names are useless here: `JSS(aborted)` in jss.h would
+# vouch for `val::aborted`.
+QUALIFIED_CHAIN = re.compile(r"[A-Za-z_]\w*(?:\s*::\s*[A-Za-z_]\w*)+")
+# Wider than the .h/.cpp the other rules parse: a file missed here would make a
+# live constant look dead.
+REFERENCE_EXTENSIONS = ("*.h", "*.cpp", "*.ipp", "*.hpp")
+RULE_M_DEAD = "no reference in src/ or include/"
+RULE_M_TEST_ONLY = "referenced only by test code"
+
+
+def iter_sources(
+    root: Path, extensions: Tuple[str, ...] = ("*.h", "*.cpp")
+) -> List[Path]:
+    """Every C++ source/header under src/ and include/. Rule M passes a wider
+    `extensions` set; see REFERENCE_EXTENSIONS."""
+    return [
+        p
+        for base in ("src", "include")
+        for ext in extensions
+        for p in (root / base).rglob(ext)
+        if p.is_file()
+    ]
+
+
+def constant_definitions(text: str) -> List[Tuple[str, str]]:
+    """Every `inline constexpr auto NAME = ...;`, as `(name, qualified)` where
+    `qualified` is `<innermost namespace>::NAME` — the form to grep for.
+
+    String literals are blanked to same-length spacing before the brace scan, so
+    a `{` inside a literal is not read as a scope and offsets stay valid."""
+    masked = STRING_LITERAL.sub(lambda m: " " * len(m.group(0)), text)
+    events: List[Tuple[int, bool, Optional[str]]] = []
+    for m in NS_EVENT.finditer(masked):
+        if m.group(1) is not None:
+            # `namespace a::b {` opens one brace; the innermost name is the
+            # qualifier a call site writes.
+            events.append((m.start(), True, m.group(1).split("::")[-1]))
+        elif m.group(0) == "{":
+            events.append((m.start(), True, None))
+        else:
+            events.append((m.start(), False, None))
+    out: List[Tuple[str, str]] = []
+    stack: List[Optional[str]] = []
+    event_idx = 0
+    for m in CONST_DEF.finditer(text):
+        while event_idx < len(events) and events[event_idx][0] < m.start():
+            _, is_open, ns = events[event_idx]
+            if is_open:
+                stack.append(ns)
+            elif stack:
+                stack.pop()
+            event_idx += 1
+        inner = next((ns for ns in reversed(stack) if ns), None)
+        name = m.group(1)
+        out.append((name, f"{inner}::{name}" if inner else name))
+    return out
+
+
+class References(NamedTuple):
+    """Reference forms found in one body of code: `<outer>::<inner>` pairs, plus
+    bare identifiers (needed only for a constant outside any namespace)."""
+
+    pairs: Set[str]
+    bare: Set[str]
+
+
+def qualified_references(text: str) -> Set[str]:
+    """Every adjacent `<outer>::<inner>` pair, so a constant is found however
+    deeply its call site qualifies it.
+
+    Whole chains are split rather than matched two segments at a time: a
+    non-overlapping regex over `a::b::c` eats `a::b` and never sees `b::c`."""
+    pairs: Set[str] = set()
+    for chain in QUALIFIED_CHAIN.finditer(text):
+        segments = [s.strip() for s in chain.group(0).split("::")]
+        for outer, inner in zip(segments, segments[1:]):
+            pairs.add(f"{outer}::{inner}")
+    return pairs
+
+
+def referenced_constants(root: Path) -> Tuple[References, References]:
+    """References made by production code and by test code, across `src/**` and
+    `include/**`.
+
+    Comments are stripped: a constant a doc comment only mentions is still dead.
+    In a `*SpanNames.h`, `using` re-exports are dropped too — an unused alias
+    must not vouch for the constant it renames."""
+    prod = References(set(), set())
+    tests = References(set(), set())
+    for path in iter_sources(root, REFERENCE_EXTENSIONS):
+        text = strip_comments(read_source(path))
+        if path.name.endswith("SpanNames.h"):
+            text = USING_DECL.sub("", text)
+        target = tests if is_test_path(path) else prod
+        target.pairs.update(qualified_references(text))
+        target.bare.update(IDENTIFIER_TOKEN.findall(text))
+    return prod, tests
+
+
+def sibling_bare_tokens(text: str) -> Set[str]:
+    """Bare identifiers on the right-hand side of one header's definitions, so a
+    sibling composed unqualified (`join(prefix, op::x)`) counts as used.
+
+    String literals are removed first, so `makeStr("header")` cannot vouch for a
+    constant named `header`."""
+    tokens: Set[str] = set()
+    for m in CONST_DEF.finditer(text):
+        tokens.update(IDENTIFIER_TOKEN.findall(STRING_LITERAL.sub("", m.group(2))))
+    return tokens
+
+
+def constant_is_referenced(name: str, qualified: str, refs: References) -> bool:
+    """True if `refs` names the constant by its qualified form, or by its bare
+    name when it sits outside any namespace and so has no qualified form."""
+    if qualified in refs.pairs:
+        return True
+    return qualified == name and name in refs.bare
+
+
+def run_rule_m_unreferenced(root: Path, headers: List[Path], report: Report) -> None:
+    """Rule M (WARN): a `*SpanNames.h` constant that no code references.
+
+    The reverse of the other rules, which start from a consumer and look for its
+    L1 source. Warns rather than fails: in a stacked chain a constant can
+    legitimately land a commit before its call site. A constant only test code
+    names is reported separately, since the fix differs.
+
+    Whole files are searched, not just telemetry call sites, because a constant
+    is also passed to helpers and used as an attribute VALUE. Matching is by
+    `<innermost namespace>::<name>`, so two headers declaring the same qualified
+    form share one key — under-reporting, the safe direction.
+
+    Presence-gated on `*SpanNames.h` existing."""
+    if not headers:
+        report.skip("M", "no *SpanNames.h present")
+        return
+    prod, tests = referenced_constants(root)
+    total = dead = test_only = 0
+    for h in sorted(headers):
+        rel = str(h.relative_to(root))
+        text = strip_comments(read_source(h))
+        siblings = sibling_bare_tokens(text)
+        for name, qualified in constant_definitions(text):
+            total += 1
+            if constant_is_referenced(name, qualified, prod) or name in siblings:
+                continue
+            if constant_is_referenced(name, qualified, tests):
+                test_only += 1
+                report.warning("M", rel, qualified, RULE_M_TEST_ONLY)
+            else:
+                dead += 1
+                report.warning("M", rel, qualified, RULE_M_DEAD)
+    note = f"M: {total} *SpanNames.h constant(s) checked for references"
+    if dead or test_only:
+        note += f" ({dead} unreferenced, {test_only} test-only — see warnings)"
+    report.ok(note)
+
+
 def run_rule_b_collector(root: Path, l1_keys: Set[str], report: Report) -> None:
     path = root / "docker" / "telemetry" / "otel-collector-config.yaml"
     if not path.is_file():
@@ -863,6 +1058,201 @@ EXTERNAL_INFRA_LABELS = {
 }
 
 
+# L5 doc layer (Rule E): the doc trees whose markdown publishes span-attribute
+# keys a reader is expected to copy into a TraceQL/PromQL query. A dotted
+# `xrpl.*` key left in any of them hands out a query that silently matches
+# nothing, so the whole tree is checked, not just the operator runbook:
+#   * docs/                  operator runbook, telemetry glossary, and the
+#                            build/telemetry guides (recursively)
+#   * docker/telemetry/       stack bring-up guide; its TraceQL/PromQL examples
+#                            are meant to be pasted verbatim
+#
+# The set is DISCOVERED (every `*.md` under these roots), never enumerated. Two
+# reasons this beats a hardcoded path list:
+#   * it cannot go stale -- a telemetry doc added, renamed, or moved within a
+#     root is picked up with no edit here, which is the same "derive it, do not
+#     hardcode it" principle the rest of this script follows (design
+#     principle 1), and coverage therefore grows with the docs; and
+#   * it names only doc ROOTS that ship on the default branch, so the rule can
+#     never be wired to a path that does not exist there.
+# Each root is presence-gated (design principle 2): a branch that carries only
+# one of them still gets that one checked. Both roots are also CI path-triggers
+# for this check -- see `.github/workflows/on-pr.yml`.
+RULE_E_DOC_ROOTS = (
+    Path("docs"),
+    Path("docker") / "telemetry",
+)
+
+# The anchor doc(s) discovery is REQUIRED to find. Discovery on its own can pass
+# vacuously: if a root were renamed away, or emptied of markdown, Rule E would
+# report a clean zero/near-zero-file run and nobody would notice the layer had
+# stopped being checked. Demanding the one doc that is the whole reason Rule E
+# exists turns that silent green into a visible warning (plus a count on the OK
+# line). Deliberately tiny: this is a tripwire, not a second doc list. Every
+# entry must live under RULE_E_DOC_ROOTS, or discovery could never find it.
+RULE_E_REQUIRED_DOCS = (Path("docs") / "telemetry-runbook.md",)
+
+
+def rule_e_docs(root: Path) -> List[Path]:
+    """Discover the Rule E doc set: every `*.md` under RULE_E_DOC_ROOTS.
+
+    Returns repo-relative paths, sorted for stable reporting and de-duplicated
+    so overlapping roots (say `docs` and `docs/build`) cannot check one file
+    twice. A root absent from the tree is skipped rather than treated as an
+    error, so presence gating applies to the roots as it does to every other
+    layer."""
+    found: Set[Path] = set()
+    for rel_root in RULE_E_DOC_ROOTS:
+        base = root / rel_root
+        if not base.is_dir():
+            continue
+        found.update(p.relative_to(root) for p in base.rglob("*.md") if p.is_file())
+    return sorted(found)
+
+
+# Line-scoped AND key-scoped opt-out for Rule E. Put it on a line that names a
+# dotted key as a deliberate counter-example ("`tx_hash`, not `xrpl.tx.hash`") —
+# a mention, not a published attribute key — and list exactly the keys that line
+# is allowed to mention:
+#
+#   ... use `tx_hash`, not `xrpl.tx.hash`.
+#   <!-- otel-naming:allow-dotted: xrpl.tx.hash -->
+#
+# The keys are part of the marker so an exemption cannot widen silently: a dotted
+# token added to an already-marked line later, and not named in the marker, still
+# fails. A marker with an empty key list therefore exempts NOTHING (and warns) —
+# it is not a blanket line opt-out. NEVER use the marker to keep a real attribute
+# table dotted; fix the table instead.
+RULE_E_MARKER_SYNTAX = "<!-- otel-naming:allow-dotted: <key>[, <key>...] -->"
+# The marker itself; group(1) is the raw key list (empty for the bare form).
+# `[^>]` keeps the match inside one comment, so a marker cannot swallow the rest
+# of the line, and the whole thing is matched per line (never across lines).
+RULE_E_MARKER = re.compile(r"<!--\s*otel-naming:allow-dotted\s*:?\s*([^>]*?)\s*-->")
+# Keys inside the marker are separated by commas and/or whitespace.
+RULE_E_MARKER_KEY_SEP = re.compile(r"[,\s]+")
+# The only doc form Rule E flags: a backticked dotted `xrpl.<domain>.<field>`.
+RULE_E_DOTTED_TOKEN = re.compile(r"`(xrpl\.[a-z][a-z0-9_.]*)`")
+
+
+def rule_e_allowed_keys(line: str) -> Tuple[Set[str], int]:
+    """Parse every Rule-E allow-dotted marker on one line.
+
+    Returns `(keys named by the markers, number of markers seen)`. The count is
+    returned separately so the caller can tell "no marker" (enforce everything,
+    silently) from "a marker that names no key" (enforce everything, and warn
+    that the marker does nothing).
+
+    Keys may be written bare or backticked and separated by commas and/or
+    spaces, so both of these parse to the same two keys::
+
+        <!-- otel-naming:allow-dotted: xrpl.tx.hash, xrpl.peer.id -->
+        <!-- otel-naming:allow-dotted: `xrpl.tx.hash` `xrpl.peer.id` -->
+    """
+    keys: Set[str] = set()
+    count = 0
+    for m in RULE_E_MARKER.finditer(line):
+        count += 1
+        for raw in RULE_E_MARKER_KEY_SEP.split(m.group(1)):
+            token = raw.strip().strip("`")
+            if token:
+                keys.add(token)
+    return keys, count
+
+
+# Datasource types whose query language draws its label names from the log
+# stream at query time rather than from anything this repo's OTel code emits.
+#
+# A LogQL label has a third provenance Rule D cannot model: it is minted either
+# by the collector's `regex_parser` named capture groups (partition, severity —
+# see otel-collector-config.yaml) or by a `| regexp` stage inside the query
+# itself (action, pk, state, mode, phase, jobname, ip, pubkey). Both create the
+# label at ingest/query time, so no L1 (*SpanNames.h) or L6 (MetricsRegistry)
+# lookup can ever resolve them — checking them against those layers reports a
+# violation for a label that is correct by construction.
+#
+# This skips the QUERY, not the file: a dashboard mixing Prometheus and Loki
+# panels still has its Prometheus panels validated.
+LOG_QUERY_DATASOURCES = {"loki"}
+
+# JSON keys that hold a query string (`expr` on panel targets, `query` on
+# template variables).
+QUERY_KEYS = ("expr", "query")
+
+
+def datasource_type(node: object) -> Optional[str]:
+    """Return the lowercased `datasource.type` of a dashboard node, if any.
+
+    Grafana writes the datasource either as an object (`{"type": "loki",
+    "uid": "..."}`) or, on template variables, as a bare uid string. Only the
+    object form carries the type, which is what identifies the query language.
+    """
+    if isinstance(node, dict):
+        ds = node.get("datasource")
+        if isinstance(ds, dict):
+            ds_type = ds.get("type")
+            if isinstance(ds_type, str):
+                return ds_type.lower()
+    return None
+
+
+def iter_dashboard_queries(node: object, inherited: Optional[str] = None):
+    """Yield `(query_string, datasource_type)` for every query in a dashboard.
+
+    `datasource_type` is the query's own datasource when it declares one, else
+    the nearest enclosing one (a panel's datasource covers its targets), else
+    None. Walks the whole tree so panels nested inside collapsed rows are not
+    missed.
+    """
+    if isinstance(node, dict):
+        current = datasource_type(node) or inherited
+        for key in QUERY_KEYS:
+            value = node.get(key)
+            if isinstance(value, str) and value:
+                yield value, current
+        for value in node.values():
+            yield from iter_dashboard_queries(value, current)
+    elif isinstance(node, list):
+        for value in node:
+            yield from iter_dashboard_queries(value, inherited)
+
+
+def promoted_resource_labels(root: Path) -> Set[str]:
+    """Return resource attributes the collector promotes to metric labels.
+
+    The spanmetrics connector's `resource_metrics_key_attributes` lists the
+    resource attributes copied onto every derived metric datapoint, where the
+    prometheus exporter rewrites dots to underscores. So `deployment.environment`
+    in the collector config becomes the `deployment_environment` label a
+    dashboard filters on. Both forms are returned: the underscore form for
+    PromQL, the dotted form for TraceQL `resource.<key>` references.
+
+    Derived from the config rather than hardcoded, so adding a key there is
+    picked up automatically -- the same no-allowlist principle as Rules B and C.
+    """
+    path = root / "docker" / "telemetry" / "otel-collector-config.yaml"
+    if not path.is_file():
+        return set()
+    try:
+        text = read_source(path)
+    except OSError:
+        return set()
+    labels: Set[str] = set()
+    in_block = False
+    for line in text.splitlines():
+        if re.search(r"\bresource_metrics_key_attributes\s*:", line):
+            in_block = True
+            continue
+        if in_block:
+            m = re.match(r"\s*-\s*([A-Za-z0-9_.]+)\s*$", line)
+            if m:
+                key = m.group(1)
+                labels.add(key.replace(".", "_"))
+                labels.add(key)
+            elif line.strip() and not line.lstrip().startswith("-"):
+                in_block = False
+    return labels
+
+
 def run_rule_d_dashboards(
     root: Path, l1_keys: Set[str], metric_labels: Set[str], report: Report
 ) -> None:
@@ -886,23 +1276,59 @@ def run_rule_d_dashboards(
         "job",
         "job_type",  # standard Prometheus label for job-queue metrics
         "instance",
+        # TraceQL intrinsics: fields of the span itself rather than attributes,
+        # so they have no *SpanNames.h entry. `name` is the span name, matched
+        # as `{name="consensus.accept"}`.
+        "name",
+        "duration",
+        "kind",
+        # Dotted form of the service identity, as TraceQL writes it
+        # (`resource.service.instance.id` -> stripped to `service.instance.id`).
+        "service.instance.id",
+        "service.name",
+        "service.version",
     }
     # A dashboard label is valid if it is a span attribute (L1), a native-metric
-    # label (L6), a Prometheus/Grafana builtin, or an external-infra identity
-    # label (EXTERNAL_INFRA_LABELS).
-    valid = l1_keys | metric_labels | builtins | EXTERNAL_INFRA_LABELS
+    # label (L6), a resource attribute the collector promotes onto metrics (L2),
+    # a Prometheus/Grafana/TraceQL builtin, or an external-infra identity label
+    # (EXTERNAL_INFRA_LABELS).
+    valid = (
+        l1_keys
+        | metric_labels
+        | promoted_resource_labels(root)
+        | builtins
+        | EXTERNAL_INFRA_LABELS
+    )
     found = False
+    checked = 0
+    skipped_log_queries = 0
     for f in files:
         try:
             text = read_source(f)
         except OSError:
             continue
-        # PromQL `sum by (a, b)` and `{label="..."}` references.
+        # Parse so each query can be attributed to its datasource. Anything that
+        # is not a well-formed dashboard object falls back to scanning the raw
+        # text, which cannot attribute a datasource and so checks every query.
+        # JSON validity itself is already enforced by the prettier pre-commit
+        # hook, so this is a fallback and not a silent pass.
+        try:
+            queries = list(iter_dashboard_queries(json.loads(text)))
+        except ValueError:
+            queries = [(text, None)]
         labels: Set[str] = set()
-        for m in re.finditer(r"by\s*\(([^)]*)\)", text):
-            labels |= {x.strip() for x in m.group(1).split(",") if x.strip()}
-        for m in re.finditer(r"\b([a-z_][a-z0-9_.]*)\s*[=!]~?\s*\"", text):
-            labels.add(m.group(1))
+        for query, ds_type in queries:
+            if ds_type in LOG_QUERY_DATASOURCES:
+                skipped_log_queries += 1
+                continue
+            checked += 1
+            # PromQL `sum by (a, b)` and `{label="..."}` references. The
+            # raw-text fallback still carries JSON's backslash-escaped quotes,
+            # so accept an optional backslash before the quote.
+            for m in re.finditer(r"by\s*\(([^)]*)\)", query):
+                labels |= {x.strip() for x in m.group(1).split(",") if x.strip()}
+            for m in re.finditer(r"\b([a-z_][a-z0-9_.]*)\s*[=!]~?\s*\\?\"", query):
+                labels.add(m.group(1))
         for lbl in sorted(labels):
             # Strip a TraceQL scope prefix (span./resource./...) — the bare
             # attribute is what must resolve against L1.
@@ -917,23 +1343,39 @@ def run_rule_d_dashboards(
                 "must exist in L1, a metric label, or be a builtin",
             )
     if not found:
-        report.ok(f"D: dashboard PromQL labels all resolve ({len(files)} file(s))")
+        note = f"D: dashboard PromQL labels all resolve ({len(files)} file(s), {checked} query(s)"
+        if skipped_log_queries:
+            note += f", {skipped_log_queries} log query(s) skipped"
+        report.ok(note + ")")
 
 
-def run_rule_e_runbook(root: Path, l1_keys: Set[str], report: Report) -> None:
-    path = root / "docs" / "telemetry-runbook.md"
-    if not path.is_file():
-        report.skip("E", "runbook not present")
+def run_rule_e_docs(root: Path, l1_keys: Set[str], report: Report) -> None:
+    discovered = rule_e_docs(root)
+    if not discovered:
+        roots = ", ".join(str(rel) for rel in RULE_E_DOC_ROOTS)
+        report.skip("E", f"no doc-layer file present (no *.md under {roots})")
         return
+    # Presence-gating (design principle 2) must stay VISIBLE. Discovery cannot go
+    # stale, but it can go QUIET: a root renamed away, or stripped of its
+    # telemetry docs, still yields a clean run over whatever markdown is left, so
+    # the layer would stop being checked while the rule reported green. Warn per
+    # missing anchor — non-fatal, so a partial branch still passes — and name the
+    # count on the OK line, so the doc set cannot quietly shrink.
+    missing_required = [
+        rel for rel in RULE_E_REQUIRED_DOCS if not (root / rel).is_file()
+    ]
+    for rel in missing_required:
+        report.warning(
+            "E", str(rel), "absent", "required Rule E doc not in tree (renamed?)"
+        )
     if not l1_keys:
         report.skip("E", "no L1 key set to validate against")
         return
-    text = read_source(path)
     found = False
     # Only the dotted `xrpl.<domain>.<field>` attribute form is a violation. The
     # `xrpl.`-with-trailing-dot anchor is the discriminator: it matches the old
     # dotted attribute convention being migrated away from, while everything
-    # else legitimately dotted in the runbook does NOT match it —
+    # else legitimately dotted in these docs does NOT match it —
     #   * span names      (`consensus.round`, `tx.process`)   no `xrpl.` prefix
     #   * filenames       (`xrpld.cfg`, `RCLConsensus.cpp`)   `xrpld.`/`.cpp`, not `xrpl.`
     #   * OTel-standard   (`service.name`, `http.method`)     no `xrpl.` prefix
@@ -946,19 +1388,57 @@ def run_rule_e_runbook(root: Path, l1_keys: Set[str], report: Report) -> None:
     # identities dotted (xrpl.work.item/.branch/.node.role -- see the alloy
     # pipeline that owns them), so also skip a token whose dotted-to-underscore
     # form is in that set.
+    # A doc that TEACHES the convention has to be able to name the wrong form as
+    # a counter-example ("`tx_hash`, not `xrpl.tx.hash`"). The allow-dotted
+    # marker is the opt-out for exactly that: the token is a mention, not a
+    # published attribute key. It follows the repo's existing inline-marker
+    # precedent (`<!-- cspell:ignore ... -->`), and is scoped BOTH to the line
+    # and to the keys it names, so it can neither exempt a whole table nor grow
+    # to cover a violation appended to an already-marked line.
     external_infra_dotted = {lbl.replace("_", ".") for lbl in EXTERNAL_INFRA_LABELS}
-    for m in re.finditer(r"`(xrpl\.[a-z][a-z0-9_.]*)`", text):
-        token = m.group(1)
-        if token in l1_keys:  # legitimate dotted resource attr (xrpl.network.*)
-            continue
-        if token in external_infra_dotted:  # perf-iac resource-attribute layer
-            continue
-        found = True
-        report.violation(
-            "E", str(path.relative_to(root)), token, "underscore, not dotted"
-        )
+    for rel in discovered:
+        for lineno, line in enumerate(read_source(root / rel).splitlines(), start=1):
+            allowed, markers = rule_e_allowed_keys(line)
+            if markers and not allowed:
+                report.warning(
+                    "E",
+                    f"{rel}:{lineno}",
+                    "allow-dotted",
+                    f"marker names no key: exempts nothing. Use {RULE_E_MARKER_SYNTAX}",
+                )
+            tokens = [m.group(1) for m in RULE_E_DOTTED_TOKEN.finditer(line)]
+            for token in tokens:
+                if token in l1_keys:  # legitimate dotted resource attr (xrpl.network.*)
+                    continue
+                if token in external_infra_dotted:  # perf-iac resource-attr layer
+                    continue
+                if token in allowed:  # named counter-example on this line
+                    continue
+                found = True
+                report.violation(
+                    "E",
+                    f"{rel}:{lineno}",
+                    token,
+                    "underscore, not dotted",
+                )
+            # A key the marker names but the line no longer mentions is a stale
+            # exemption: harmless today, but it is how a marker silently starts
+            # covering more than the author reviewed. Flagged, never fatal.
+            for stale in sorted(allowed.difference(tokens)):
+                report.warning(
+                    "E", f"{rel}:{lineno}", stale, "allow-dotted key not on this line"
+                )
     if not found:
-        report.ok("E: runbook attribute references consistent with L1")
+        note = (
+            "E: doc attribute references consistent with L1 "
+            f"({len(discovered)} file(s) checked"
+        )
+        if missing_required:
+            note += (
+                f", {len(missing_required)} of {len(RULE_E_REQUIRED_DOCS)} "
+                "required doc(s) absent"
+            )
+        report.ok(note + ")")
 
 
 if __name__ == "__main__":

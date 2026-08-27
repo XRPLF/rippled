@@ -34,16 +34,22 @@
  *
  * @note Span names come from the canonical constants in
  *  ConsensusSpanNames.h (consensus::span::proposalReceive /
- *  validationReceive) so they stay in sync with the rest of Phase 4.
+ *  validationReceive) so they stay in sync with the rest of the
+ *  consensus tracing surface.
  */
 
 #include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The trace-context validator and std::uint8_t are named only by the
+// telemetry-enabled branches below.
 #include <xrpl/telemetry/TraceContextValidation.h>
 
 #include <cstdint>
+#endif
 
 namespace xrpl::telemetry {
 

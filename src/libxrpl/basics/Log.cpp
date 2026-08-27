@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/path.hpp>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/runtime_context.h>
@@ -17,8 +16,8 @@
 #endif  // XRPL_ENABLE_TELEMETRY
 
 #include <chrono>
-#include <cstddef>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -28,6 +27,11 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// std::size_t names the hex widths used when formatting a trace context.
+#include <cstddef>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 namespace xrpl {
 
@@ -64,7 +68,7 @@ Logs::File::isOpen() const noexcept
 }
 
 bool
-Logs::File::open(boost::filesystem::path const& path)
+Logs::File::open(std::filesystem::path const& path)
 {
     close();
 
@@ -124,7 +128,7 @@ Logs::Logs(beast::Severity thresh) : thresh_(thresh)  // default severity
 }
 
 bool
-Logs::open(boost::filesystem::path const& pathToLogFile)
+Logs::open(std::filesystem::path const& pathToLogFile)
 {
     return file_.open(pathToLogFile);
 }
@@ -302,9 +306,9 @@ Logs::format(
     }
 
 #ifdef XRPL_ENABLE_TELEMETRY
-    // Inject OTel trace context when an active span exists on this thread.
-    // Checks the thread-local context value directly to avoid the heap
-    // allocation that GetSpan() performs on the no-span path.
+    // Inject OTel trace context when an active, sampled span exists on this
+    // thread. Checks the thread-local context value directly to avoid the
+    // heap allocation that GetSpan() performs on the no-span path.
     {
         auto context = opentelemetry::context::RuntimeContext::GetCurrent();
         auto spanValue = context.GetValue(opentelemetry::trace::kSpanKey);
@@ -314,7 +318,18 @@ Logs::format(
             auto span = opentelemetry::nostd::get<
                 opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>>(spanValue);
             auto spanCtx = span->GetContext();
-            if (spanCtx.IsValid())
+            // Require the sampled flag as well as a valid context. A dropped
+            // span still carries its parent's ids, so a valid context does
+            // not imply the span reaches the backend. An unsampled remote
+            // parent arrives either because an upstream node propagated
+            // sampled=0, or because a peer omitted trace_flags entirely and
+            // it defaults to 0 (TraceContextPropagator, TxTracing,
+            // ConsensusReceiveTracing). Either way the ParentBasedSampler
+            // drops the local span, while the tracer still returns a no-op
+            // span with a valid context.
+            // Logging those ids would advertise a trace that was never
+            // exported, leaving the log-to-trace link resolving to nothing.
+            if (spanCtx.IsValid() && spanCtx.IsSampled())
             {
                 // Hex widths of a W3C trace context: 16-byte trace_id and
                 // 8-byte span_id render to 32 and 16 lowercase hex chars.

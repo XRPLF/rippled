@@ -6,6 +6,7 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
+#include <xrpl/beast/insight/Unit.h>
 
 #include <memory>
 #include <string>
@@ -29,6 +30,29 @@ public:
     using ptr = std::shared_ptr<Collector>;
 
     virtual ~Collector() = 0;
+
+    /**
+     * Called once the services that hook handlers read are constructed.
+     *
+     * Implementations that poll their producers must not do so before this:
+     * hook handlers read live application state. Default is a no-op, for
+     * collectors that only push.
+     */
+    virtual void
+    onCollectionReady()
+    {
+    }
+
+    /**
+     * Called before those services are shut down.
+     *
+     * Polling must have stopped by the time this returns. Paired with
+     * onCollectionReady().
+     */
+    virtual void
+    onCollectionStopping()
+    {
+    }
 
     /**
      * Create a hook.
@@ -80,12 +104,38 @@ public:
     virtual Event
     makeEvent(std::string const& name) = 0;
 
+    /**
+     * Create an event whose samples measure `unit` rather than milliseconds.
+     *
+     * The default delegates to the millisecond overload, so a collector that
+     * cannot act on a unit keeps working unchanged -- the StatsD collector
+     * relies on this. Collectors that map a unit onto an export format, such
+     * as the OTel collector, override it.
+     *
+     * @param name Metric name, already prefixed if it came through a Group.
+     * @param unit What the samples measure.
+     */
+    virtual Event
+    makeEvent(std::string const& name, Unit unit)
+    {
+        (void)unit;
+        return makeEvent(name);
+    }
+
     Event
     makeEvent(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
             return makeEvent(name);
         return makeEvent(prefix + "." + name);
+    }
+
+    Event
+    makeEvent(std::string const& prefix, std::string const& name, Unit unit)
+    {
+        if (prefix.empty())
+            return makeEvent(name, unit);
+        return makeEvent(prefix + "." + name, unit);
     }
     /** @} */
 

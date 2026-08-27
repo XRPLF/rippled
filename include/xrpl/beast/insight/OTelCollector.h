@@ -58,7 +58,7 @@ namespace beast::insight {
  * @code
  *   auto collector = beast::insight::OTelCollector::New(
  *       "http://localhost:4318/v1/metrics",  // OTLP/HTTP endpoint
- *       "xrpld",                              // metric name prefix
+ *       "xrpld",                              // logging label only
  *       "node-1",                             // service.instance.id
  *       "xrpld",                              // service.name
  *       "mainnet",                            // xrpl.network.type
@@ -105,8 +105,12 @@ public:
      *
      * @param endpoint    OTLP/HTTP metrics endpoint URL
      *                    (e.g. "http://localhost:4318/v1/metrics").
-     * @param prefix      Prefix prepended to all metric names
-     *                    (e.g. "xrpld").
+     * @param prefix      Label for the collector's startup log line
+     *                    (e.g. "xrpld"). Exported metric names are produced
+     *                    by formatName(), which lowercases the raw name and
+     *                    maps dots and spaces to underscores. The service is
+     *                    identified by the `service.name` OTel resource
+     *                    attribute.
      * @param instanceId  Unique identifier for this node instance,
      *                    emitted as the `service.instance.id` OTel
      *                    resource attribute. Defaults to empty string

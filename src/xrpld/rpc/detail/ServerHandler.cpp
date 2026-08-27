@@ -12,9 +12,11 @@
 #include <xrpld/rpc/json_body.h>  // IWYU pragma: keep
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
@@ -49,7 +51,6 @@
 #include <xrpl/server/detail/JSONRPCUtil.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -156,7 +157,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
     if ((it == h.end()) || (!it->second.starts_with("Basic ")))
         return false;
     std::string strUserPass64 = it->second.substr(6);
-    boost::trim(strUserPass64);
+    strUserPass64 = trimWhitespace(strUserPass64);
     std::string const strUserPass = base64Decode(strUserPass64);
     std::string::size_type const nColon = strUserPass.find(':');
     if (nColon == std::string::npos)
@@ -183,7 +184,11 @@ ServerHandler::ServerHandler(
 {
     auto const& group(cm.group("rpc"));
     rpcRequests_ = group->makeCounter("requests");
-    rpcSize_ = group->makeEvent("size");
+    // "size" measures the serialized response in bytes, not a duration. It
+    // has to say so: the unit picks both the exported name suffix and the
+    // histogram bucket ladder, and borrowing the millisecond ladder censored
+    // a quarter of these samples.
+    rpcSize_ = group->makeEvent("size", beast::insight::Unit::Bytes);
     rpcTime_ = group->makeEvent("time");
 }
 
@@ -313,7 +318,7 @@ ServerHandler::onHandoff(
 static inline json::Output
 makeOutput(Session& session)
 {
-    return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
+    return [&](std::string_view b) { session.write(b.data(), b.size()); };
 }
 
 static std::map<std::string, std::string>
@@ -478,7 +483,15 @@ ServerHandler::processSession(
     // else collapses to "unknown". Emitting the raw string would let request
     // input drive unbounded label cardinality. Mirrors the HTTP path's
     // resolveCommandSpanName().
-    span.setAttribute(rpc_span::attr::command, resolveWsCommandSpanName(jv, app_.config()));
+    //
+    // The guard is required because the resolver is a call argument: it runs
+    // even when setAttribute itself is an empty no-op. Without it, every
+    // WebSocket message pays for the JSON member lookups, a string copy and a
+    // handler-registry lookup that nothing reads.
+    if (span)
+    {
+        span.setAttribute(rpc_span::attr::command, resolveWsCommandSpanName(jv, app_.config()));
+    }
 
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
@@ -650,11 +663,11 @@ ServerHandler::processSession(
         makeOutput(*session),
         coro,
         forwardedFor(session->request()),
-        [&] {
+        [&] -> std::string_view {
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
                 return iter->value();
-            return boost::beast::string_view{};
+            return {};
         }());
 
     if (beast::rfc2616::isKeepAlive(session->request()))
@@ -1125,7 +1138,7 @@ ServerHandler::processRequest(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::high_resolution_clock::now() - start));
     ++rpcRequests_;
-    rpcSize_.notify(beast::insight::Event::value_type{response.size()});
+    rpcSize_.notify(static_cast<std::uint64_t>(response.size()));
 
     response += '\n';
 

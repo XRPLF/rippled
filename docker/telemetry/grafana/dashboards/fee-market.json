@@ -21,11 +21,28 @@
         "enable": true,
         "hide": false,
         "iconColor": "rgb(70, 70, 70)",
-        "name": "Annotate perf-iac runs",
+        "name": "Perf Runs (JMeter)",
         "target": {
           "limit": 100,
           "matchAny": false,
-          "tags": ["perf-iac"],
+          "tags": ["perf-iac", "jmeter"],
+          "type": "tags"
+        },
+        "type": "tags"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(15, 122, 102)",
+        "name": "Perf Runs (Locust)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "locust"],
           "type": "tags"
         },
         "type": "tags"
@@ -40,14 +57,27 @@
   "links": [],
   "panels": [
     {
+      "title": "Queue Depth & Throughput",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 1
+    },
+    {
       "title": "Transaction Queue Depth",
       "description": "###### What this is:\n*Transactions currently waiting in the transaction queue versus the queue's maximum capacity.*\n\n###### How it's computed:\n*Instantaneous gauge readings of current queue count and configured max size.*\n\n###### Reading it:\n*Queue depth well below capacity is normal; depth approaching capacity means the node is saturating.*\n\n###### Healthy range:\n*Depth near 0 in quiet periods; workload-dependent under load.*\n\n###### Watch for:\n*Depth pinned at capacity for sustained periods, which signals demand exceeding throughput or a fee-spam burst.*\n\n###### Keywords:\n- **Transaction queue (TxQ)** *(per node)* \u2014 holds transactions that meet local cost but not the open-ledger cost, to include in a later ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`\n\n###### References:\n[Transaction queue (TxQ)](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-queue-txq)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -79,26 +109,30 @@
           "custom": {
             "axisLabel": "Transactions",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": 1800000
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "Transactions Per Ledger",
       "description": "###### What this is:\n*Transactions already placed in the current open ledger versus the expected per-ledger target.*\n\n###### How it's computed:\n*Instantaneous gauge readings of in-ledger count and the target count that governs fee escalation.*\n\n###### Reading it:\n*Staying at or below the expected target is normal; exceeding it triggers open-ledger fee escalation.*\n\n###### Healthy range:\n*At or under the expected per-ledger target.*\n\n###### Watch for:\n*In-ledger count persistently above target, indicating sustained congestion pushing fees up.*\n\n###### Keywords:\n- **Open ledger** *(per node)* \u2014 the temporary workspace ledger where incoming transactions are provisionally applied before a close.\n- **In-ledger vs target count** *(per node)* \u2014 transactions already in the open ledger versus the soft target that triggers fee escalation.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`\n\n###### References:\n[Open ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [In-ledger vs target count](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#open-ledger)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -130,26 +164,42 @@
           "custom": {
             "axisLabel": "Transactions",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": 1800000
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
+    },
+    {
+      "title": "Fee Escalation",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 4
     },
     {
       "title": "Fee Escalation Levels",
       "description": "###### What this is:\n*The fee levels that govern queue admission: reference (baseline), minimum processing, median, and open-ledger levels.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each fee level, shown on a log scale.*\n\n###### Reading it:\n*Open-ledger level near the reference level means cheap entry; a large gap above reference means escalation is active.*\n\n###### Healthy range:\n*Open-ledger level at or near reference during normal traffic.*\n\n###### Watch for:\n*Open-ledger level spiking far above reference, the hallmark of congestion or a fee-bidding war.*\n\n###### Keywords:\n- **Queue admission rejection** *(per node)* \u2014 a transaction refused entry to the queue, e.g. queue_full when the queue is at capacity.\n- **Fee levels** *(per node)* \u2014 cost thresholds governing queue admission: reference (baseline), minimum, median, and open-ledger.\n- **Open ledger** *(per node)* \u2014 the temporary workspace ledger where incoming transactions are provisionally applied before a close.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`\n\n###### References:\n[Queue admission rejection](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Fee levels](https://xrpl.org/docs/concepts/transactions/transaction-cost#fee-levels) \u00b7 [Open ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Fee escalation](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#queue-admission-rejection)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 10,
+        "w": 12,
         "x": 0,
-        "y": 8
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -195,30 +245,33 @@
           "custom": {
             "axisLabel": "Fee Level",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "scaleDistribution": {
               "type": "log",
               "log": 2
             },
-            "spanNulls": 1800000
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "Load Factor Breakdown",
       "description": "###### What this is:\n*The combined load factor and its server, fee-escalation, and fee-queue contributors as unitless fee multipliers (1.0 = no load).*\n\n###### How it's computed:\n*Instantaneous gauge readings of each load-factor component.*\n\n###### Reading it:\n*Values at 1.0 mean base fees; higher values raise the fee to transact.*\n\n###### Healthy range:\n*Around 1.0 under normal conditions.*\n\n###### Watch for:\n*Combined factor climbing well above 1.0, showing the node is charging premium fees due to congestion or overload.*\n\n###### Keywords:\n- **Load factor** *(per node)* \u2014 a unitless multiplier (1.0 = no load) that scales the base transaction cost as the node comes under load.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n- **Transaction cost** *(network-wide)* \u2014 the XRP a transaction destroys to be processed; scales up with load to deter spam.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`\n\n###### References:\n[Load factor](https://xrpl.org/docs/concepts/transactions/transaction-cost#local-load-cost) \u00b7 [Fee escalation](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Transaction cost](https://xrpl.org/docs/concepts/transactions/transaction-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#load-factor)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 0,
-        "y": 16
+        "x": 12,
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -264,9 +317,11 @@
           "custom": {
             "axisLabel": "Multiplier",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": 1800000
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
@@ -289,17 +344,18 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 6
     },
     {
       "title": "Load Factor Components",
       "description": "###### What this is:\n*The individual load-factor inputs, local server load, network load, and cluster load, as unitless multipliers.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each component.*\n\n###### Reading it:\n*All at 1.0 means no load pressure from any source; a raised component identifies where load originates.*\n\n###### Healthy range:\n*Around 1.0 for each component.*\n\n###### Watch for:\n*A single component rising sharply, which pinpoints whether the pressure is local, network-wide, or cluster-driven.*\n\n###### Keywords:\n- **Load factor** *(per node)* \u2014 a unitless multiplier (1.0 = no load) that scales the base transaction cost as the node comes under load.\n- **Cluster** *(cluster-wide)* \u2014 a group of trusted co-operated nodes that share load information and skip some verification.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`\n\n###### References:\n[Load factor](https://xrpl.org/docs/concepts/transactions/transaction-cost#local-load-cost) \u00b7 [Cluster](https://xrpl.org/docs/concepts/networks-and-servers/clustering) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#load-factor)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 16
+        "x": 0,
+        "y": 22
       },
       "options": {
         "tooltip": {
@@ -338,26 +394,42 @@
           "custom": {
             "axisLabel": "Multiplier",
             "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "spanNulls": 1800000
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "pointSize": 5,
+            "gradientMode": "none"
           },
           "color": {
             "mode": "palette-classic"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 7
+    },
+    {
+      "title": "Queue Rejections",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 8
     },
     {
       "title": "Queue Abandonment Rate (Expired)",
       "description": "###### What this is:\n*Transactions dropped from the queue because their last-ledger deadline passed before they could be included.*\n\n###### How it's computed:\n*Per-second rate of the cumulative expired-transaction counter over the dashboard's rate interval.*\n\n###### Reading it:\n*Near zero is healthy; a rising rate means submitters under-bid the escalating fee and their transactions timed out.*\n\n###### Healthy range:\n*Near 0 expirations per second.*\n\n###### Watch for:\n*Sustained expiry rate, a demand-frustration signal often coinciding with fee spikes or spam that crowds out honest traffic.*\n\n###### Keywords:\n- **Queue admission rejection** *(per node)* \u2014 a transaction refused entry to the queue, e.g. queue_full when the queue is at capacity.\n- **Queue expiry / abandonment** *(per node)* \u2014 removing a queued transaction whose LastLedgerSequence deadline passed before inclusion.\n- **Fee escalation** *(per node)* \u2014 the exponential rise in the open-ledger cost once the ledger exceeds its soft transaction target.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqExpired (caller TxQ.cpp)`\n\n###### References:\n[Queue admission rejection](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Queue expiry / abandonment](https://xrpl.org/docs/concepts/transactions/reliable-transaction-submission) \u00b7 [Fee escalation](https://xrpl.org/docs/concepts/transactions/transaction-cost#open-ledger-cost) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#queue-admission-rejection)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 33
       },
       "options": {
         "tooltip": {
@@ -372,7 +444,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(txq_expired_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Expired / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(txq_expired_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Expired / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
@@ -384,21 +456,25 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 9
     },
     {
       "title": "Queue Admission Rejections (Dropped)",
       "description": "###### What this is:\n*Transactions refused entry to the queue, broken down by reason such as queue_full.*\n\n###### How it's computed:\n*Per-second rate of the cumulative dropped-transaction counter over the dashboard's rate interval, split by reason.*\n\n###### Reading it:\n*Near zero is healthy; queue_full rejections mean the queue is at capacity and applying backpressure.*\n\n###### Healthy range:\n*Near 0 rejections per second.*\n\n###### Watch for:\n*A burst of queue_full drops, distinct from expiry, indicating the node is being flooded faster than it can drain.*\n\n###### Keywords:\n- **Queue admission rejection** *(per node)* \u2014 a transaction refused entry to the queue, e.g. queue_full when the queue is at capacity.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqDropped (caller TxQ.cpp)`\n\n###### References:\n[Queue admission rejection](https://xrpl.org/docs/concepts/transactions/transaction-queue) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#queue-admission-rejection)",
       "type": "timeseries",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 33
       },
       "options": {
         "tooltip": {
@@ -413,7 +489,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(sum by (reason, service_instance_id, xrpl_branch, xrpl_node_role) (rate(txq_dropped_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"reason\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(label_replace(sum by (reason, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(txq_dropped_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"reason\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
@@ -425,11 +501,15 @@
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
     }
   ],
   "schemaVersion": 39,

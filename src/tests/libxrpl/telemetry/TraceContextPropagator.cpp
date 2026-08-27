@@ -17,8 +17,6 @@
 #include <opentelemetry/trace/trace_flags.h>
 #include <opentelemetry/trace/trace_id.h>
 
-#include <xrpl.pb.h>
-
 #include <cstdint>
 #include <cstring>
 

@@ -14,12 +14,12 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/rngfill.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
@@ -33,17 +33,22 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// std::ranges::sort / std::ranges::find_if and std::optional / std::nullopt are
+// used only by the gauge-helper suite below, so they are guarded like its uses.
+#include <algorithm>
+#include <optional>
+#endif
 
 namespace xrpl::node_store {
 
@@ -161,20 +166,17 @@ private:
     };
 
     /**
-     * Assert the read accumulator holds exactly what the fetch reports carried.
+     * Assert the read accumulator agrees with what the fetch reports carried.
      *
-     * Deliberately not `getFetchDurationUs() > 0`: an individual read served
-     * from NuDB's in-memory buckets can genuinely measure under one
-     * microsecond and truncate to zero, so on a fast enough host every read
-     * truncates and the total stays at zero with nothing wrong. That makes
-     * `> 0` an assertion about the machine rather than about the code, and it
-     * is what failed on the macOS runner.
+     * The accumulator keeps nanoseconds and each report carries its own fetch
+     * truncated to whole microseconds, so the reported sum is the accumulated
+     * total minus one sub-microsecond remainder per fetch. That gives a bound
+     * rather than an equality, and the bound is machine-independent: an
+     * accumulator that dropped a fetch, double-counted one, or reported the
+     * write member instead would break it however fast the host is.
      *
-     * The equality below is machine-independent and strictly stronger: each
-     * fetch is measured once and that one value feeds both the accumulator
-     * and the report, so an accumulator that dropped a fetch, double-counted
-     * one, or reported the write member instead would break the equality
-     * however fast the host is.
+     * Deliberately not `getFetchDurationUs() > 0` on its own: that is an
+     * assertion about how fast the host reads, not about the code.
      *
      * @param db Database whose read accumulator is checked.
      * @param scheduler Scheduler that received the reports for @p db.
@@ -187,7 +189,10 @@ private:
         std::uint64_t expectedReports)
     {
         BEAST_EXPECT(scheduler.fetchReports.load() == expectedReports);
-        BEAST_EXPECT(db.getFetchDurationUs() == scheduler.reportedFetchUs.load());
+        auto const accumulatedUs = db.getFetchDurationUs();
+        auto const reportedUs = scheduler.reportedFetchUs.load();
+        BEAST_EXPECT(reportedUs <= accumulatedUs);
+        BEAST_EXPECT(accumulatedUs - reportedUs <= expectedReports);
     }
 
 public:
@@ -705,7 +710,7 @@ public:
 
         DummyScheduler scheduler;
 
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set(Keys::kType, "memory");
         nodeParams.set(Keys::kPath, nodeDb.path());
@@ -774,7 +779,7 @@ public:
 
         CountingScheduler scheduler;
 
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set(Keys::kType, "nudb");
         nodeParams.set(Keys::kPath, nodeDb.path());
@@ -863,8 +868,8 @@ public:
     std::unique_ptr<DatabaseRotatingImp>
     makeRotatingDatabase(
         Scheduler& scheduler,
-        beast::TempDir const& writableDir,
-        beast::TempDir const& archiveDir)
+        TempDir const& writableDir,
+        TempDir const& archiveDir)
     {
         Section writableParams;
         writableParams.set(Keys::kType, "nudb");
@@ -907,8 +912,8 @@ public:
 
         CountingScheduler scheduler;
 
-        beast::TempDir const writableDir;
-        beast::TempDir const archiveDir;
+        TempDir const writableDir;
+        TempDir const archiveDir;
 
         auto rotating = makeRotatingDatabase(scheduler, writableDir, archiveDir);
         if (!BEAST_EXPECT(rotating))
@@ -1037,7 +1042,7 @@ public:
      * @return The database, or nullptr on failure.
      */
     std::unique_ptr<Database>
-    makeMeasuredDatabase(beast::TempDir const& dir, Scheduler& scheduler, int readThreads)
+    makeMeasuredDatabase(TempDir const& dir, Scheduler& scheduler, int readThreads)
     {
         Section params;
         params.set(Keys::kType, "nudb");
@@ -1064,7 +1069,7 @@ public:
         testcase("nodestore_state totals labels");
 
         DummyScheduler scheduler;
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set(Keys::kType, "nudb");
         nodeParams.set(Keys::kPath, nodeDb.path());
@@ -1182,7 +1187,7 @@ public:
         // publish NOTHING. Zeros here would read as a perfectly idle write
         // path on a node whose write path is simply not instrumented.
         {
-            beast::TempDir const memDb;
+            TempDir const memDb;
             Section memParams;
             memParams.set(Keys::kType, "memory");
             memParams.set(Keys::kPath, memDb.path());
@@ -1203,7 +1208,7 @@ public:
             BEAST_EXPECT(mem->getStoreCount() == 8);
         }
 
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set(Keys::kType, "nudb");
         nodeParams.set(Keys::kPath, nodeDb.path());
@@ -1336,7 +1341,7 @@ public:
         testcase("nodestore_state read-queue labels");
 
         DummyScheduler scheduler;
-        beast::TempDir const nodeDb;
+        TempDir const nodeDb;
         // Three read threads and a bundle of 7, neither of which is the
         // default (the bundle default is 4), so a helper reading the wrong
         // JSON member cannot agree by coincidence.

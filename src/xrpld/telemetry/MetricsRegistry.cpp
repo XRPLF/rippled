@@ -22,8 +22,29 @@
 
 #include <xrpld/telemetry/MetricsRegistry.h>
 
+// Unguarded because the constructor's `beast::Journal journal` parameter is
+// declared in both configurations; only the member it initialises is guarded.
+#include <xrpl/beast/utility/Journal.h>
+
 #ifdef XRPL_ENABLE_TELEMETRY
 
+// The app and overlay includes below are why
+// .github/scripts/levelization/results/loops.txt records
+// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry`, where
+// ordering.txt previously had telemetry strictly below both. The observable
+// gauges are pull-model: their callbacks sample live state when the reader
+// thread fires, so they need the concrete types to call getJqTransOverflow(),
+// size(), getPeerDisconnectCharges(), foreach() and txMetrics().
+//
+// The cycle is confined to this translation unit. No telemetry header includes
+// app or overlay (MetricsRegistry.h forward-declares what it needs and takes a
+// ServiceRegistry&), and all of src/xrpld builds into a single CMake target, so
+// there is no header cycle and no link cycle to break.
+//
+// Inverting it properly means declaring a metrics-source interface below overlay
+// and implementing it there, which is deliberately left as follow-up rather than
+// widening this change. Note loops.txt is generated: it can only change as a
+// consequence of changing these includes, never by editing the baseline.
 #include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
@@ -36,7 +57,6 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UptimeClock.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
@@ -46,6 +66,8 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/GetObjectMetricNames.h>
+#include <xrpl/telemetry/HistogramBuckets.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -66,7 +88,6 @@
 #include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -80,7 +101,10 @@
 
 namespace metric_sdk = opentelemetry::sdk::metrics;
 namespace otlp_http = opentelemetry::exporter::otlp;
-namespace resource = opentelemetry::sdk::resource;
+// Not `resource`: that would collide with xrpl::resource (the resource-accounting
+// namespace), which encloses every use site below. Inner-scope lookup would find
+// that namespace instead of this file-scope alias.
+namespace otel_resource = opentelemetry::sdk::resource;
 
 namespace {
 
@@ -99,65 +123,15 @@ constexpr char kJobTypeLabel[] = "job_type";
 constexpr char kHandlerLabel[] = "handler";
 
 /**
- * Bucket boundaries for microsecond-valued duration instruments.
- *
- * 100 µs, 500 µs, 1 ms, 5 ms, 10 ms, 25 ms, 50 ms, 100 ms, 250 ms, 500 ms,
- * 1 s, 2.5 s, 5 s, 10 s, 30 s, 60 s. Covers sub-millisecond jobs through
- * multi-second stalls without saturating.
- */
-constexpr std::array kMicrosecondBoundaries{
-    100.0,
-    500.0,
-    1'000.0,
-    5'000.0,
-    10'000.0,
-    25'000.0,
-    50'000.0,
-    100'000.0,
-    250'000.0,
-    500'000.0,
-    1'000'000.0,
-    2'500'000.0,
-    5'000'000.0,
-    10'000'000.0,
-    30'000'000.0,
-    60'000'000.0};
-
-/**
- * Bucket boundaries for latencies that are normally sub-millisecond.
- *
- * 1 µs, 2 µs, 5 µs, 10 µs, 25 µs, 50 µs, 100 µs, 250 µs, 500 µs, 1 ms, 5 ms,
- * 25 ms.
- *
- * kMicrosecondBoundaries starts at 100 µs, which is above the entire range a
- * healthy nodestore read occupies, so every warm read falls in its first
- * bucket and the distribution reads as flat. These edges resolve the warm
- * range instead, while still reaching far enough to show a cold tail against
- * it.
- *
- * Currently unused: no sub-millisecond histogram instrument exists yet. The
- * edges live here so the instrument that records nodestore read latency gets
- * a ladder that fits it, rather than silently inheriting the wrong one.
- */
-[[maybe_unused]] constexpr std::array kSubMillisecondBoundaries{
-    1.0,
-    2.0,
-    5.0,
-    10.0,
-    25.0,
-    50.0,
-    100.0,
-    250.0,
-    500.0,
-    1'000.0,
-    5'000.0,
-    25'000.0};
-
-/**
  * Register an explicit-bucket histogram view.
  *
  * The SDK's default boundaries top out at 10,000, so any instrument whose
- * values exceed that saturates and every quantile reads as the ceiling.
+ * values exceed that saturates and every quantile reads as the ceiling. The
+ * floor matters just as much and is easier to miss: a ladder whose first edge
+ * sits above the mass of the distribution makes every low quantile an
+ * interpolation inside bucket 0 -- a number derived from the bucket edge
+ * rather than from any sample. Both ends are chosen from measured
+ * distributions in HistogramBuckets.h.
  *
  * @param views      The registry to add the view to.
  * @param name       Instrument name to match (e.g. "job_running_us").
@@ -185,7 +159,7 @@ addHistogramView(
  * Register the microsecond-ladder view for a duration instrument.
  *
  * Job wait/run times and RPC latencies routinely exceed the SDK default
- * ceiling, so they all share `kMicrosecondBoundaries`.
+ * ceiling, so they all share `buckets::kMicrosecondBuckets`.
  *
  * @param views   The registry to add the view to.
  * @param name    Instrument name to match.
@@ -193,7 +167,10 @@ addHistogramView(
 void
 addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
 {
-    addHistogramView(views, name, {kMicrosecondBoundaries.begin(), kMicrosecondBoundaries.end()});
+    addHistogramView(
+        views,
+        name,
+        xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kMicrosecondBuckets));
 }
 
 }  // namespace
@@ -220,14 +197,17 @@ MetricsRegistry::~MetricsRegistry()
 }
 
 void
-MetricsRegistry::start(std::string const& endpoint, std::string const& instanceId)
+MetricsRegistry::start(
+    std::string const& endpoint,
+    std::string const& instanceId,
+    std::string const& nodeId)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_)
         return;
 
     JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << endpoint
-                          << ", instanceId=" << instanceId;
+                          << ", instanceId=" << instanceId << ", nodeId=" << nodeId;
 
     // Rule for anything added below: this phase may create only instruments
     // whose recording is PUSHED from app code -- counters and histograms. An
@@ -237,13 +217,14 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     // belongs in startAsyncGauges(), not here. That includes observable
     // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
     // its callback read getOverlay(), which asserts overlay_ is non-null.
-    initExporterAndProvider(endpoint, instanceId);
+    initExporterAndProvider(endpoint, instanceId, nodeId);
     initSyncInstruments();
 
     JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
 #else
     (void)endpoint;
     (void)instanceId;
+    (void)nodeId;
     (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
@@ -274,7 +255,10 @@ MetricsRegistry::startAsyncGauges()
 
 #ifdef XRPL_ENABLE_TELEMETRY
 void
-MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::string const& instanceId)
+MetricsRegistry::initExporterAndProvider(
+    std::string const& endpoint,
+    std::string const& instanceId,
+    std::string const& nodeId)
 {
     // Configure OTLP/HTTP metric exporter.
     otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
@@ -290,7 +274,7 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
 
     // Configure resource attributes so Prometheus service_instance_id labels
     // distinguish metrics from different nodes (matches OTelCollector setup).
-    resource::ResourceAttributes attrs;
+    otel_resource::ResourceAttributes attrs;
     // Use std::string, not a string literal: ResourceAttributes stores an
     // OTel AttributeValue variant whose char-const* overload binds to bool,
     // so "xrpld" would be recorded as the boolean true. std::string selects
@@ -298,7 +282,12 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     attrs[opentelemetry::semconv::service::kServiceName] = std::string("xrpld");
     if (!instanceId.empty())
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
-    auto resourceAttrs = resource::Resource::Create(attrs);
+    // xrpl.node.id: the same per-node key the trace resource carries, so
+    // metrics and traces resolve to one node. std::string for the same
+    // variant reason as service.name above.
+    if (!nodeId.empty())
+        attrs[std::string(attr::nodeId)] = nodeId;
+    auto resourceAttrs = otel_resource::Resource::Create(attrs);
 
     // Build a view registry with explicit microsecond buckets for the
     // duration histograms. Without this they use the SDK default buckets
@@ -319,18 +308,13 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     // asks for at most 8, so the low buckets are fine-grained and the upper
     // ones follow the charge size bands (64, 1024) up to the hard cap.
     addHistogramView(
-        *views,
-        kGetObjectRequestObjects,
-        {1.0, 2.0, 4.0, 8.0, 16.0, 64.0, 256.0, 1'024.0, 4'096.0, 12'288.0});
+        *views, kGetObjectRequestObjects, buckets::toVector(buckets::kObjectCountBuckets));
 
     // Charge values span 0 (free tier) to ~99k for a full-size all-miss
     // request. Boundaries bracket the resource thresholds that decide a
     // peer's fate -- kWarningThreshold (5000) and kDropThreshold (25000) --
     // so a dashboard can show how close charges run to each.
-    addHistogramView(
-        *views,
-        kGetObjectCharge,
-        {0.0, 100.0, 500.0, 1'000.0, 5'000.0, 10'000.0, 25'000.0, 50'000.0, 100'000.0});
+    addHistogramView(*views, kGetObjectCharge, buckets::toVector(buckets::kChargeBuckets));
 
     // Create MeterProvider with resource, then attach the metric reader.
     provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);
@@ -362,7 +346,7 @@ MetricsRegistry::initSyncInstruments()
     jobRunningDurationHistogram_ =
         meter_->CreateDoubleHistogram(kJobRunningDurationUs, "Job execution time in microseconds");
 
-    // --- External dashboard parity counters (Task 7.14) ---
+    // --- External dashboard parity counters ---
     ledgersClosedCounter_ =
         meter_->CreateUInt64Counter("ledgers_closed_total", "Total ledgers closed by consensus");
     validationsSentCounter_ = meter_->CreateUInt64Counter(
@@ -421,7 +405,7 @@ MetricsRegistry::stop()
 }
 
 // -----------------------------------------------------------------
-// Synchronous instrument recording — RPC metrics (Task 9.4)
+// Synchronous instrument recording — RPC metrics
 // -----------------------------------------------------------------
 
 void
@@ -480,7 +464,7 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
 }
 
 // -----------------------------------------------------------------
-// Synchronous instrument recording — Job Queue metrics (Task 9.5)
+// Synchronous instrument recording — Job Queue metrics
 // -----------------------------------------------------------------
 
 void
@@ -559,7 +543,7 @@ MetricsRegistry::recordJobFinished(
 }
 
 // -----------------------------------------------------------------
-// Observable gauge callbacks (Tasks 9.1, 9.2, 9.3, 9.6, 9.7)
+// Observable gauge callbacks
 // -----------------------------------------------------------------
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -627,7 +611,7 @@ MetricsRegistry::registerJqTransOverflowCounter()
 void
 MetricsRegistry::registerCacheHitRateGauge()
 {
-    // --- Task 9.2: Cache hit rate and size gauges ---
+    // --- Cache hit rate and size gauges ---
     cacheHitRateGauge_ =
         meter_->CreateDoubleObservableGauge("cache_metrics", "Cache hit rates and sizes");
     cacheHitRateGauge_->AddCallback(
@@ -698,7 +682,7 @@ MetricsRegistry::registerCacheHitRateGauge()
 void
 MetricsRegistry::registerTxqGauge()
 {
-    // --- Task 9.3: TxQ metrics gauges ---
+    // --- TxQ metrics gauges ---
     txqGauge_ = meter_->CreateDoubleObservableGauge("txq_metrics", "Transaction queue metrics");
     txqGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
@@ -745,7 +729,7 @@ MetricsRegistry::registerTxqGauge()
 void
 MetricsRegistry::registerObjectCountGauge()
 {
-    // --- Task 9.6: Counted object instance gauges ---
+    // --- Counted object instance gauges ---
     objectCountGauge_ = meter_->CreateInt64ObservableGauge(
         "object_count", "Live instance counts for key internal object types");
     objectCountGauge_->AddCallback(
@@ -777,7 +761,7 @@ MetricsRegistry::registerObjectCountGauge()
 void
 MetricsRegistry::registerLoadFactorGauge()
 {
-    // --- Task 9.7: Load factor breakdown gauges ---
+    // --- Load factor breakdown gauges ---
     loadFactorGauge_ =
         meter_->CreateDoubleObservableGauge("load_factor_metrics", "Fee load factor breakdown");
     loadFactorGauge_->AddCallback(
@@ -941,7 +925,7 @@ MetricsRegistry::observeReadQueue(node_store::Database& db, ObserveFn const& obs
 void
 MetricsRegistry::registerNodeStoreGauge()
 {
-    // --- Task 9.1: NodeStore I/O gauges ---
+    // --- NodeStore I/O gauges ---
     // The cumulative counters (reads, writes, bytes) are also exposed here
     // as observable gauges.  This avoids adding an xrpld dependency into the
     // libxrpl nodestore code — the MetricsRegistry reads the existing atomic
@@ -989,7 +973,7 @@ MetricsRegistry::registerNodeStoreGauge()
 void
 MetricsRegistry::registerServerInfoGauge()
 {
-    // --- Task 9.7a: Server info gauges ---
+    // --- Server info gauges ---
     serverInfoGauge_ =
         meter_->CreateInt64ObservableGauge("server_info", "Server-level health metrics");
     serverInfoGauge_->AddCallback(
@@ -1074,7 +1058,7 @@ MetricsRegistry::registerServerInfoGauge()
 void
 MetricsRegistry::registerBuildInfoGauge()
 {
-    // --- Task 9.7b: Build info gauge ---
+    // --- Build info gauge ---
     buildInfoGauge_ = meter_->CreateInt64ObservableGauge("build_info", "Build version information");
     buildInfoGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* /* state */) {
@@ -1094,7 +1078,7 @@ MetricsRegistry::registerBuildInfoGauge()
 void
 MetricsRegistry::registerCompleteLedgersGauge()
 {
-    // --- Task 9.7c: Complete ledgers range gauge ---
+    // --- Complete ledgers range gauge ---
     completeLedgersGauge_ = meter_->CreateInt64ObservableGauge(
         "complete_ledgers", "Complete ledger range start/end pairs");
     completeLedgersGauge_->AddCallback(
@@ -1153,7 +1137,7 @@ MetricsRegistry::registerCompleteLedgersGauge()
 void
 MetricsRegistry::registerDbMetricsGauge()
 {
-    // --- Task 9.7d: Database size and fetch rate gauges ---
+    // --- Database size and fetch rate gauges ---
     dbMetricsGauge_ =
         meter_->CreateInt64ObservableGauge("db_metrics", "Database storage sizes and fetch rates");
     dbMetricsGauge_->AddCallback(
@@ -1192,7 +1176,7 @@ MetricsRegistry::registerDbMetricsGauge()
 void
 MetricsRegistry::registerValidatorHealthGauge()
 {
-    // --- Task 7.9: Validator health gauges ---
+    // --- Validator health gauges ---
     validatorHealthGauge_ =
         meter_->CreateDoubleObservableGauge("validator_health", "Validator health indicators");
     validatorHealthGauge_->AddCallback(
@@ -1239,7 +1223,7 @@ MetricsRegistry::registerValidatorHealthGauge()
 void
 MetricsRegistry::registerPeerQualityGauge()
 {
-    // --- Task 7.10: Peer quality gauges ---
+    // --- Peer quality gauges ---
     // Uses Peer::json() to read latency and version since those accessors
     // are not on the abstract Peer interface (they live on PeerImp).
     peerQualityGauge_ =
@@ -1393,7 +1377,7 @@ MetricsRegistry::registerReduceRelayGauge()
 void
 MetricsRegistry::registerLedgerEconomyGauge()
 {
-    // --- Task 7.11: Ledger economy gauges ---
+    // --- Ledger economy gauges ---
     ledgerEconomyGauge_ =
         meter_->CreateDoubleObservableGauge("ledger_economy", "Ledger fee and economy metrics");
     ledgerEconomyGauge_->AddCallback(
@@ -1458,7 +1442,7 @@ MetricsRegistry::registerLedgerEconomyGauge()
 void
 MetricsRegistry::registerStateTrackingGauge()
 {
-    // --- Task 7.12: State tracking gauges ---
+    // --- State tracking gauges ---
     stateTrackingGauge_ =
         meter_->CreateDoubleObservableGauge("state_tracking", "Node state and mode tracking");
     stateTrackingGauge_->AddCallback(
@@ -1512,7 +1496,7 @@ MetricsRegistry::registerStateTrackingGauge()
 void
 MetricsRegistry::registerStorageDetailGauge()
 {
-    // --- Task 7.13: Storage detail gauges ---
+    // --- Storage detail gauges ---
     // Reports the cumulative payload bytes handed to the NodeStore. See the
     // note at the observe() call below: this is logical bytes stored, not
     // on-disk file size, because no accessor for the latter exists. The label
@@ -1564,7 +1548,7 @@ MetricsRegistry::registerStorageDetailGauge()
 void
 MetricsRegistry::registerValidationAgreementGauge()
 {
-    // --- Task 7.15: Validation agreement gauges ---
+    // --- Validation agreement gauges ---
     // Reports rolling-window agreement percentages and counts from
     // ValidationTracker.  reconcile() is called at the start of the
     // callback so that pending ledger events are resolved before the
@@ -1676,7 +1660,7 @@ MetricsRegistry::registerValidationTotalsCounters()
 #endif  // XRPL_ENABLE_TELEMETRY
 
 // -----------------------------------------------------------------
-// External dashboard parity counter increments (Task 7.14)
+// External dashboard parity counter increments
 // -----------------------------------------------------------------
 
 void

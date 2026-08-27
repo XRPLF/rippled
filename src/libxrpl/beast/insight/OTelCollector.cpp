@@ -5,7 +5,7 @@
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
  * telemetry=ON). Maps beast::insight instruments to OTel SDK instruments
  * created on the GLOBAL Meter published by the telemetry module. This class
- * is a legacy shim: it no longer owns an export pipeline. The MeterProvider,
+ * is an adapter only: it owns no export pipeline. The MeterProvider,
  * PeriodicExportingMetricReader, OTLP exporter and histogram view all live in
  * xrpl::telemetry::Telemetry.
  *
@@ -41,6 +41,7 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/MeterImpl.h>
+#include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <opentelemetry/metrics/async_instruments.h>
@@ -57,7 +58,9 @@
 #include <atomic>
 #include <cctype>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -134,8 +137,8 @@ class OTelCounterImpl : public CounterImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelCounterImpl(
@@ -166,10 +169,17 @@ private:
 /**
  * @brief OTel-backed implementation of beast::insight::EventImpl.
  *
- * Wraps an OTel Histogram<double> instrument. Each notify() call
- * records the duration in milliseconds. Uses explicit bucket boundaries
- * matching the SpanMetrics connector configuration:
- *   [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000] ms
+ * Wraps an OTel Histogram<double> instrument. Each notify() call records one
+ * sample, interpreted per the Event's unit().
+ *
+ * The instrument's declared unit is what selects its bucket ladder: the
+ * histogram views registered in Telemetry.cpp match on unit, so a `ms`
+ * instrument gets the millisecond ladder and a `By` instrument the byte
+ * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h --
+ * do not restate them here. An earlier version of this comment listed
+ * `[1, 5, ..., 1000, 5000] ms` as "matching the SpanMetrics connector"; that
+ * was true when written and silently became false when the connector's
+ * ladder was extended, which is why the edges now have one owner.
  *
  * Thread safety: OTel Histogram::Record() is thread-safe by specification.
  */
@@ -178,13 +188,17 @@ class OTelEventImpl : public EventImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the histogram instrument.
+     * @param unit   What the samples measure. Selects the instrument's
+     *               declared unit, its description, and through the unit the
+     *               bucket ladder a histogram view applies.
      */
     OTelEventImpl(
         std::string const& name,
-        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter);
+        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
+        Unit unit);
 
     ~OTelEventImpl() override = default;
 
@@ -227,15 +241,11 @@ class OTelGaugeImpl : public GaugeImpl
 public:
     /**
      * @param name       Export-ready metric name, already run through
-     *                   formatName() by the collector: prefix prepended
-     *                   and dots replaced with underscores.
-     * @param meter      OTel Meter used to create the observable gauge.
+     *                   formatName() by the collector: lowercase, with `.`
+     *                   and ` ` mapped to `_`.
      * @param collector  Owning collector, used to invoke hooks before reads.
      */
-    OTelGaugeImpl(
-        std::string const& name,
-        opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
-        std::shared_ptr<OTelCollectorImp> const& collector);
+    OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector);
 
     ~OTelGaugeImpl() override;
 
@@ -273,6 +283,25 @@ public:
     static void
     gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state);
 
+    /**
+     * Create the observable instrument and register the callback, once.
+     *
+     * Called when the collector is told collection is ready, because the
+     * callback reads live application state.
+     */
+    void
+    arm();
+
+    /**
+     * Remove the callback, so the reader thread stops observing this gauge.
+     *
+     * RemoveCallback is synchronous: the SDK guards its callback list and the
+     * observe pass with the same mutex, so no callback is running once this
+     * returns. Idempotent.
+     */
+    void
+    disarm();
+
 private:
     /**
      * Current gauge value, updated atomically by set()/increment().
@@ -280,9 +309,19 @@ private:
     std::atomic<int64_t> value_{0};
 
     /**
-     * OTel observable gauge handle (prevents deregistration).
+     * Export-ready metric name, held until arm() creates the instrument.
+     */
+    std::string const name_;
+
+    /**
+     * OTel observable gauge handle, null until arm() runs.
      */
     opentelemetry::nostd::shared_ptr<metrics_api::ObservableInstrument> gauge_;
+
+    /**
+     * Guards gauge_ against concurrent arm()/disarm().
+     */
+    std::mutex armMutex_;
 
     /**
      * Owning collector, used to invoke hooks before reading gauge values.
@@ -310,8 +349,8 @@ class OTelMeterImpl : public MeterImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelMeterImpl(
@@ -340,7 +379,7 @@ private:
 //------------------------------------------------------------------------------
 
 /**
- * @brief Main OTel Collector implementation (legacy shim).
+ * @brief Main OTel Collector implementation (adapter over the global Meter).
  *
  * Obtains its Meter from the GLOBAL MeterProvider owned and published by the
  * telemetry module (xrpl::telemetry::Telemetry), rather than building its own
@@ -380,8 +419,11 @@ private:
  * Caveats:
  *   - Observable gauge callbacks run on the SDK's internal thread. Hook
  *     handlers must be thread-safe.
- *   - Metric names are formed as "prefix_name" with dots replaced by
- *     underscores to match StatsD->Prometheus naming conventions.
+ *   - Metric names carry NO prefix. formatName() only lowercases the raw
+ *     name and turns dots and spaces into underscores, to match
+ *     StatsD->Prometheus naming conventions. The service is identified by
+ *     the OTel resource (service.name), so prefix_ is kept for logging
+ *     only and never affects an exported name.
  *   - The OTel Prometheus exporter appends "_total" to counters. The
  *     metric names we register do NOT include this suffix — Prometheus
  *     adds it automatically.
@@ -402,11 +444,14 @@ public:
     /**
      * @brief Construct the OTel collector over the global MeterProvider.
      *
-     * @param endpoint    OTLP/HTTP metrics endpoint URL. Informational only:
-     *                    the global telemetry pipeline is authoritative for
-     *                    the actual export endpoint. Retained for logging and
-     *                    back-compat with the New() signature.
-     * @param prefix      Prefix for all metric names.
+     * @param endpoint    OTLP/HTTP metrics endpoint URL, recorded in the
+     *                    collector's startup log line. Export uses the
+     *                    endpoint configured on the global telemetry
+     *                    pipeline.
+     * @param prefix      Label for the collector's startup log line
+     *                    (e.g. "xrpld"). Exported metric names come from
+     *                    formatName(); the service is identified by the
+     *                    service.name resource attribute.
      * @param instanceId  Value for the service.instance.id resource attribute.
      *                    When empty, the attribute is omitted.
      * @param serviceName Value for the service.name resource attribute.
@@ -441,8 +486,17 @@ public:
     Event
     makeEvent(std::string const& name) override;
 
+    Event
+    makeEvent(std::string const& name, Unit unit) override;
+
     Gauge
     makeGauge(std::string const& name) override;
+
+    void
+    onCollectionReady() override;
+
+    void
+    onCollectionStopping() override;
 
     Meter
     makeMeter(std::string const& name) override;
@@ -498,10 +552,19 @@ public:
     /** @} */
 
     /**
-     * @brief Format a metric name with the configured prefix.
+     * @brief The shared Meter, for gauges creating their instrument in arm().
+     * @return The Meter this collector resolved at construction.
+     */
+    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
+    otelMeter() const;
+
+    /**
+     * @brief Format a raw metric name for export.
      *
-     * Replaces dots with underscores to match StatsD->Prometheus naming.
-     * Example: prefix="xrpld", name="LedgerMaster.Validated_Ledger_Age"
+     * Lowercases the name and replaces dots and spaces with underscores to
+     * match StatsD->Prometheus naming. Adds NO prefix: the service is
+     * identified by the OTel resource (service.name).
+     * Example: name="LedgerMaster.Validated_Ledger_Age"
      *   -> "ledgermaster_validated_ledger_age"
      *
      * @param name  Raw metric name from beast::insight callers.
@@ -517,7 +580,8 @@ private:
     Journal journal_;
 
     /**
-     * Prefix for all metric names (e.g., "xrpld").
+     * Configured metric-name prefix (e.g., "xrpld"). Log-only: it is
+     * echoed in the startup log line and never applied to a metric name.
      */
     std::string prefix_;
 
@@ -603,8 +667,10 @@ OTelCounterImpl::increment(value_type amount)
 
 OTelEventImpl::OTelEventImpl(
     std::string const& name,
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter)
-    : histogram_(meter->CreateDoubleHistogram(name, "Duration in ms", "ms"))
+    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
+    Unit unit)
+    : EventImpl(unit)
+    , histogram_(meter->CreateDoubleHistogram(name, otelUnitDescription(unit), otelUnitCode(unit)))
 {
 }
 
@@ -618,14 +684,35 @@ OTelEventImpl::notify(value_type const& value)
 // OTelGaugeImpl
 //------------------------------------------------------------------------------
 
-OTelGaugeImpl::OTelGaugeImpl(
-    std::string const& name,
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
-    std::shared_ptr<OTelCollectorImp> const& collector)
-    : gauge_(meter->CreateInt64ObservableGauge(name)), collector_(collector)
+OTelGaugeImpl::OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector)
+    : name_(std::move(name)), collector_(collector)
 {
     collector_->addGauge(this);
+}
+
+void
+OTelGaugeImpl::arm()
+{
+    // AddCallback arms the SDK reader thread against this gauge, and the
+    // callback runs hook handlers that read application services. The registry
+    // does not de-duplicate callbacks, so arm at most once.
+    std::scoped_lock const lock(armMutex_);
+    if (gauge_)
+        return;
+
+    gauge_ = collector_->otelMeter()->CreateInt64ObservableGauge(name_);
     gauge_->AddCallback(gaugeCallback, this);
+}
+
+void
+OTelGaugeImpl::disarm()
+{
+    std::scoped_lock const lock(armMutex_);
+    if (!gauge_)
+        return;
+
+    gauge_->RemoveCallback(gaugeCallback, this);
+    gauge_ = nullptr;
 }
 
 void
@@ -648,7 +735,8 @@ OTelGaugeImpl::~OTelGaugeImpl()
     // The SDK's ObservableRegistry guards its callback list and the Observe()
     // pass with the same mutex, so RemoveCallback cannot return while a
     // callback for this instrument is in flight — removal is synchronous.
-    gauge_->RemoveCallback(gaugeCallback, this);
+    // A no-op when never armed, or already disarmed at shutdown.
+    disarm();
     collector_->removeGauge(this);
 }
 
@@ -708,17 +796,17 @@ OTelCollectorImp::OTelCollectorImp(
     Journal journal)
     : journal_(journal), prefix_(std::move(prefix))
 {
-    // instanceId/serviceName/networkType are retained on the New() signature
-    // for back-compat but no longer used here: the telemetry module owns the
-    // resource attributes for the shared metrics pipeline.
+    // instanceId/serviceName/networkType are accepted but unused here: the
+    // telemetry module owns the resource attributes for the shared metrics
+    // pipeline, so setting them from this collector would have no effect.
     (void)instanceId;
     (void)serviceName;
     (void)networkType;
 
     if (journal_.info())
     {
-        // endpoint is informational: the global telemetry pipeline owns the
-        // real exporter. It is logged here for back-compat and diagnostics.
+        // endpoint is logged for diagnostics only: the global telemetry
+        // pipeline owns the exporter that actually sends the metrics.
         journal_.info() << "OTelCollector starting: endpoint=" << endpoint << " prefix=" << prefix_;
     }
 
@@ -771,13 +859,19 @@ OTelCollectorImp::makeCounter(std::string const& name)
 Event
 OTelCollectorImp::makeEvent(std::string const& name)
 {
-    return Event(std::make_shared<OTelEventImpl>(formatName(name), otelMeter_));
+    return makeEvent(name, Unit::Millis);
+}
+
+Event
+OTelCollectorImp::makeEvent(std::string const& name, Unit unit)
+{
+    return Event(std::make_shared<OTelEventImpl>(formatName(name), otelMeter_, unit));
 }
 
 Gauge
 OTelCollectorImp::makeGauge(std::string const& name)
 {
-    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), otelMeter_, shared_from_this()));
+    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), shared_from_this()));
 }
 
 Meter
@@ -843,12 +937,77 @@ OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
     std::erase(gauges_, gauge);
 }
 
+void
+OTelCollectorImp::onCollectionReady()
+{
+    // Snapshot under the lock, arm outside it. arm() enters the SDK's
+    // observable registry lock, and the reader thread takes that lock before
+    // calling callHooks(), which wants mutex_. callHooks() copies its hook list
+    // for the same reason.
+    std::vector<OTelGaugeImpl*> gauges;
+    {
+        std::scoped_lock const lock(mutex_);
+        gauges = gauges_;
+    }
+
+    std::size_t armed = 0;
+    for (auto* gauge : gauges)
+    {
+        // Telemetry must never stop the node, so one bad instrument costs only
+        // its own metric.
+        try
+        {
+            gauge->arm();
+            ++armed;
+        }
+        catch (std::exception const& e)
+        {
+            if (auto stream = journal_.error())
+            {
+                stream << "OTelCollector: could not register an observable gauge, so that "
+                          "metric will not be exported: "
+                       << e.what();
+            }
+        }
+    }
+
+    if (auto stream = journal_.info())
+    {
+        stream << "OTelCollector: registered " << armed << " of " << gauges.size()
+               << " observable gauges";
+    }
+}
+
+void
+OTelCollectorImp::onCollectionStopping()
+{
+    // Same lock discipline as onCollectionReady(): snapshot, then act outside
+    // the lock, because disarm() enters the SDK's observable registry lock.
+    std::vector<OTelGaugeImpl*> gauges;
+    {
+        std::scoped_lock const lock(mutex_);
+        gauges = gauges_;
+    }
+
+    for (auto* gauge : gauges)
+        gauge->disarm();
+
+    if (auto stream = journal_.info())
+        stream << "OTelCollector: stopped observing " << gauges.size() << " gauges";
+}
+
+opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
+OTelCollectorImp::otelMeter() const
+{
+    return otelMeter_;
+}
+
 std::string
 OTelCollectorImp::formatName(std::string const& name)
 {
-    // Produce a clean, lowercase, Prometheus-compatible metric name.
-    // No prefix — the OTel resource (service.name) identifies the service.
-    // Dots and spaces become underscores; everything lowercased.
+    // Produce a lowercase, Prometheus-compatible metric name: dots and
+    // spaces become underscores. Service identity travels in the
+    // service.name resource attribute, not in the metric name.
     std::string result;
     result.reserve(name.size());
     for (char const c : name)

@@ -2,6 +2,7 @@
 """Dashboard lint: cumulative metrics rate()-wrapped; tier filters; sane panel grid."""
 
 import json, re, sys
+from pathlib import Path
 
 GRID_COLUMNS = 24
 
@@ -39,6 +40,7 @@ NODESTORE_CUMULATIVE = (
     "node_read_bytes",
     "node_written_bytes",
     "node_reads_duration_us",
+    "node_writes_duration_us",
 )
 # state_accounting_*_duration are cumulative µs.
 STATE_DURATION = re.compile(r"state_accounting_\w+_duration")
@@ -163,8 +165,23 @@ def check(path, forbid_5m):
 
 
 def main():
+    """Validate the dashboards named on the command line, or all of them.
+
+    Exit status: 0 every dashboard passed, 1 violations were found, 2 there was
+    nothing to validate. The last is an error rather than a pass: reporting
+    success without having read a single dashboard is indistinguishable from a
+    clean run, so a caller that mis-spells a path gets a green light for work
+    that never happened.
+    """
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     forbid_5m = "--no-5m" in sys.argv
+    if not args:
+        # Default to every dashboard beside this script, so a bare run checks
+        # the whole set instead of iterating an empty list.
+        args = sorted(str(p) for p in Path(__file__).resolve().parent.glob("*.json"))
+    if not args:
+        print("ERROR: no dashboard JSON files to validate", file=sys.stderr)
+        sys.exit(2)
     all_errs = []
     for path in args:
         all_errs += check(path, forbid_5m)

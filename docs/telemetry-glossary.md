@@ -9,7 +9,12 @@ documentation.
 > **Related docs**:
 > [docs/telemetry-runbook.md](./telemetry-runbook.md) (operator runbook).
 
-<!-- This file is generated from tasks/telemetry_terms.py. Edit the terms there. -->
+<!-- This file was originally machine-generated. The generator is not part of
+     the repository and no copy survives, so this file is now maintained by
+     hand. Follow the existing entry shape: an `<a id="...">` anchor, a `###`
+     term heading, one plain-language paragraph, then `**Scope:**` and
+     optionally `**What is observable:**` and `**See also:**`. Terms are
+     alphabetical within each category. -->
 
 ## Contents
 
@@ -548,7 +553,7 @@ The rate at which the node fetches older ledgers to extend or repair its stored 
 
 ### Ledger acquire (inbound fetch)
 
-Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split into complete and failed; a rising failed rate means the node cannot fetch needed ledgers from its peers.
+Acquiring a ledger means requesting it and its contents from peers when the node lacks it. Acquire outcomes split three ways: complete, failed (the acquisition ended on its own without the ledger, having run out of retries or hit unusable data), and aborted (it was abandoned before finishing, either swept away as stale or discarded wholesale at shutdown). A rising failed rate means the node cannot fetch needed ledgers from its peers.
 
 **Scope:** per node — measured on and specific to this individual server.
 
@@ -573,6 +578,8 @@ The server state describes how fully the node is participating, in ascending ord
 A cluster is a set of servers run by the same operator that trust each other, exchanging load and status directly and skipping some redundant checks. Cluster overhead is routine; sustained high cluster overhead suggests frequent cluster-state churn.
 
 **Scope:** cluster-wide — shared across a co-operated cluster of nodes run by one operator.
+
+**What is observable:** cluster overhead is **not** measurable today, and this is a gap in the instrumentation rather than a display problem. The cluster message type is not in the overlay's message-to-category lookup table and none of the fallback branches match it, so every cluster message falls through to the `unknown` category (`src/xrpld/overlay/detail/TrafficCount.cpp`); no code path ever reports the cluster category, even though the `overhead_cluster` name is defined. Consequences: the `overhead_cluster_*` series read zero on a clustered node — treat them as "no data", not "no cluster traffic" — the churn guidance above cannot yet be acted on, and `unknown_*` is a weaker anomaly signal on a clustered node because it mixes genuinely unrecognized wire types with routine cluster traffic. If this is ever instrumented, volume moves out of `unknown_bytes_in`, so any alert threshold set against that series will need re-baselining.
 
 **See also:** [Cluster on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/clustering)
 
@@ -634,6 +641,16 @@ The overlay is xrpld's peer-to-peer messaging layer connecting nodes. All inter-
 
 **See also:** [Overlay on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
 
+<a id="ping-pong-keepalive"></a>
+
+### Ping / pong keepalive
+
+Each peer connection is probed on a timer: the node sends a ping carrying a random cookie and expects a pong echoing it back. The round-trip is smoothed into a per-peer latency estimate that feeds peer scoring, and a peer that leaves a ping unanswered before the next probe is dropped as a ping timeout. A pong bearing the wrong cookie is ignored, so a peer answering incorrectly eventually times out too. Ping timeouts are distinct from connect timeouts, which happen while an outbound connection is still being established and so involve no established peer.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**What is observable:** only the p90 of the smoothed per-peer latency (`peer_quality{metric="peer_latency_p90_ms"}`), and three things are not instrumented. First, the per-peer round-trip is an 8-sample moving average and is exported as that single p90 gauge, with no histogram — a bimodal peer set (a few very slow peers behind many fast ones) reads as one middling number. Second, neither failure mode is counted: a ping timeout only logs before dropping the peer, and a pong bearing the wrong cookie is discarded silently (`src/xrpld/overlay/detail/PeerImp.cpp`), so keepalive-driven drops cannot be separated from any other disconnect cause. Third, ping bytes are not separable from status-change bytes, because both message types share the `overhead` traffic category — so `overhead_*` cannot be read as keepalive volume. Peer discovery traffic is separable (it lands in `overhead_overlay_*`) but has no counters of its own for endpoints received, handed out or malformed.
+
 <a id="proof-path"></a>
 
 ### Proof path
@@ -689,6 +706,8 @@ Set-get (fetch) and set-share messages exchange transaction-set data between pee
 Squelching is a relay-control mechanism: a node tells peers to stop sending it a particular validator's messages when it already has a good source, reducing redundant forwarding. High suppressed counts mean squelch is saving bandwidth; ignored directives (peers not honoring squelch) should stay low.
 
 **Scope:** per node — measured on and specific to this individual server.
+
+**What is observable:** read ignored directives on `squelch_ignored_messages_in` only. The size is not instrumented: both call sites that report an ignored squelch pass a hardcoded byte count of zero (`src/xrpld/overlay/detail/OverlayImpl.cpp`), so `squelch_ignored_bytes_in` is always zero and the bandwidth wasted by peers ignoring squelch cannot be quantified, nor can a bytes-per-message ratio be built from this category. `squelch_suppressed` does record the real wire size, so the two squelch categories are not comparable on bytes — only on message counts. The outbound side of this category is never reported at all, so `squelch_ignored_bytes_out` and `squelch_ignored_messages_out` are also permanently zero; that is expected, since "ignoring a squelch" is something a remote peer does to us and is therefore only ever observed inbound.
 
 <a id="trusted-untrusted-duplicate"></a>
 

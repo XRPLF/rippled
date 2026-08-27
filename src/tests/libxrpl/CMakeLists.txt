@@ -44,10 +44,14 @@ set(test_modules
     shamap
     tx
     protocol_autogen
+    server
     telemetry
 )
 if(NOT WIN32)
     list(APPEND test_modules net)
+endif()
+if(rust)
+    target_link_libraries(xrpl_tests PRIVATE rs_hello_world_cxxbridge)
 endif()
 
 foreach(module IN LISTS test_modules)
@@ -58,6 +62,12 @@ foreach(module IN LISTS test_modules)
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
     )
+    if(NOT rust)
+        # Tests of the Rust interop include generated cxxbridge headers, which
+        # do not exist without the crates, so keep them out of the build tree
+        # entirely. They are named `Rust<something>.cpp`.
+        list(FILTER sources EXCLUDE REGEX "/Rust[^/]*\\.cpp$")
+    endif()
     target_sources(xrpl_tests PRIVATE ${sources})
 
     # Expose the module's private headers under their canonical include path.
@@ -106,14 +116,6 @@ if(telemetry)
             "${OTEL_IN_MEMORY_EXPORTER_LIB}"
             opentelemetry-cpp::opentelemetry-cpp
     )
-    # ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
-    # implementation directly into the test binary. The src/ include path its
-    # tests need is added unconditionally above.
-    target_sources(
-        xrpl_tests
-        PRIVATE
-            ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
-    )
 else()
     # MetricsRegistry lives in xrpld; compile its .cpp directly into the test
     # target so the no-op path can be tested without linking all of xrpld.
@@ -124,5 +126,19 @@ else()
         PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/MetricsRegistry.cpp
     )
 endif()
+
+# ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
+# implementation directly into the test binary and put src/ on the include path
+# so its tests can reach <xrpld/telemetry/...> headers.
+#
+# Both are unconditional: the class carries no telemetry guards, so its tests
+# compile and run in every build. Gating them would leave the test file (which
+# is likewise unguarded) without the header it includes and without the
+# definitions it calls.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_sources(
+    xrpl_tests
+    PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
+)
 
 gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

@@ -8,13 +8,13 @@ consensus.*, and all associated attributes.
 Pre-funds test accounts from the genesis account, then submits a
 configurable mix of transaction types at a target TPS.
 
-Supported transaction types:
-  - Payment (XRP and issued currencies)
+Supported transaction types (the 10 in TX_BUILDERS):
+  - Payment (XRP transfers)
   - OfferCreate / OfferCancel (DEX activity)
   - TrustSet (trust line creation)
-  - NFTokenMint / NFTokenCreateOffer / NFTokenAcceptOffer
-  - EscrowCreate / EscrowFinish
-  - AMMCreate / AMMDeposit / AMMWithdraw (if amendment enabled)
+  - NFTokenMint / NFTokenCreateOffer (NFT activity)
+  - EscrowCreate / EscrowFinish (escrow lifecycle)
+  - AMMCreate / AMMDeposit (AMM pool operations, if amendment enabled)
 
 Usage:
     python3 tx_submitter.py --endpoint ws://localhost:6006 --tps 5 --duration 120
@@ -26,6 +26,7 @@ Usage:
 
 import argparse
 import asyncio
+import itertools
 import json
 import logging
 import random
@@ -90,6 +91,65 @@ DEFAULT_TX_WEIGHTS: dict[str, int] = {
 # Number of test accounts to create.
 NUM_TEST_ACCOUNTS = 8
 
+# Minimum number of funded accounts the transaction builders need: TX_BUILDERS
+# indexes positions 0..5 of the account list.
+MIN_FUNDED_ACCOUNTS = 6
+
+# Engine results that tie up the submitted sequence number, other than the
+# tec* family which is matched by prefix. See consumes_sequence().
+SEQ_CONSUMING_RESULTS = frozenset({"tesSUCCESS", "terQUEUED"})
+
+# Consecutive non-consuming submit results from one account before its
+# sequence is re-read from the ledger. The periodic refresh only ever raises
+# the counter, so a counter that leads the ledger -- a queued transaction that
+# was later dropped, say -- would otherwise make every further submit from
+# that account fail forever. Five is above the two or three rejections a
+# single bad transaction type can produce in a row, and at the default 5 TPS
+# it triggers within a few seconds, well before the periodic refresh below.
+SEQ_REFETCH_AFTER_FAILURES = 5
+
+# How often the submission loop re-reads every account's sequence from the
+# ledger, to stay close to sequences other submitters have advanced.
+SEQ_REFRESH_INTERVAL_S = 10.0
+
+# How long one request waits for the reply that belongs to it.
+RECV_TIMEOUT_S = 30.0
+
+# Source of the ``id`` sent with every request. xrpld echoes a request's id at
+# the top level of the reply, which is what lets ws_request tell its own reply
+# from one that an earlier, timed-out request left in the receive buffer.
+_request_ids = itertools.count(1)
+
+
+def consumes_sequence(engine_result: str | None) -> bool:
+    """Report whether an engine result tied up the submitted sequence number.
+
+    Two outcomes do. ``tesSUCCESS`` is applied (TER.h:243) and every ``tec*``
+    claims the fee "to use the sequence number" (TER.h:265-266), so both
+    advance the account root. ``terQUEUED`` is the one ``ter*`` code rippled
+    forwards (TER.h:205); the transaction waits in the queue still holding
+    that sequence, so the next submit needs the following one.
+
+    Everything else leaves the sequence free. ``tem*``, ``tef*`` and ``tel*``
+    are neither applied nor forwarded, and neither are the remaining ``ter*``
+    codes (TER.h:202-206) -- including ``terPRE_SEQ``, which reports that the
+    submitted sequence is already past the account root (TER.h:217).
+    Advancing the local counter on those widens the gap TER.h:209 calls a
+    "hole in sequence which jams transactions", and it is what
+    SEQ_REFETCH_AFTER_FAILURES exists to recover from.
+
+    Args:
+        engine_result: The ``engine_result`` field of a submit response. A
+                       missing or JSON-null field reads as non-consuming
+                       rather than raising, so the caller records the
+                       transaction exactly once.
+
+    Returns:
+        True if the submitted sequence number is spoken for.
+    """
+    result = str(engine_result or "")
+    return result in SEQ_CONSUMING_RESULTS or result.startswith("tec")
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -98,19 +158,28 @@ NUM_TEST_ACCOUNTS = 8
 
 @dataclass
 class Account:
-    """Represents a funded XRPL test account.
+    """Represents an XRPL test account, funded or not.
 
     Attributes:
         name:      Human-readable name (e.g., "alice").
         account:   Classic address (rXXX...).
         seed:      Secret seed for signing.
         sequence:  Next available sequence number.
+        funded:    True once the account root exists on the ledger. False
+                   accounts cannot submit, so they are excluded from the
+                   submission loop rather than silently counted.
+        stalled:   Consecutive submit results from this account that consumed
+                   no sequence. Reset by any consuming result; at
+                   SEQ_REFETCH_AFTER_FAILURES the sequence is re-read from
+                   the ledger.
     """
 
     name: str
     account: str
     seed: str
     sequence: int = 0
+    funded: bool = False
+    stalled: int = 0
 
 
 @dataclass
@@ -163,7 +232,7 @@ class TxStats:
 
 
 async def ws_request(
-    ws: websockets.WebSocketClientProtocol,
+    ws: websockets.ClientConnection,
     command: str,
     params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -183,14 +252,49 @@ async def ws_request(
         The inner ``result`` dict from the response.
 
     Raises:
-        RuntimeError: If the request fails or times out.
+        TimeoutError: If no reply carrying this request's ``id`` arrived within
+                      RECV_TIMEOUT_S.
     """
+    request_id = next(_request_ids)
     request: dict[str, Any] = {"command": command}
     if params:
         request.update(params)
+    # Set after the merge so a caller's parameter can never shadow the id.
+    request["id"] = request_id
     await ws.send(json.dumps(request))
-    raw = await asyncio.wait_for(ws.recv(), timeout=30.0)
-    resp = json.loads(raw)
+
+    # Read until the reply carrying this request's id turns up. Cancelling a
+    # recv() does not discard the reply it was waiting for: the library queues
+    # incoming messages independently of any reader, so a request that timed
+    # out leaves its reply in the buffer and the NEXT request used to read it
+    # instead of its own. That mis-attribution is permanent, because every
+    # later request on the connection stays one reply behind: a submit would
+    # read an account_info reply, see no engine result, and stop advancing the
+    # account's sequence, failing every remaining transaction for a reason
+    # nothing logged. Discarding by id puts the stream back in step.
+    #
+    # The deadline is for the whole exchange rather than per message, so a run
+    # of buffered replies cannot extend the wait without bound. A reply with no
+    # id is accepted as this request's: a few xrpld error paths answer before
+    # the id is parsed, and treating those as stale would hide a real error.
+    deadline = time.monotonic() + RECV_TIMEOUT_S
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(f"{command} (id {request_id}) got no reply")
+        raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
+        resp = json.loads(raw)
+        reply_id = resp.get("id")
+        if reply_id is None or reply_id == request_id:
+            break
+        _log_first_failure(
+            "stale-reply",
+            "Discarded a reply for id %s while awaiting id %s (%s); an earlier "
+            "request timed out and left it buffered",
+            reply_id,
+            request_id,
+            command,
+        )
 
     # WS command format: {"status": "success", "result": {...}, "type": "response"}
     # On error: {"status": "error", "error": "...", "error_message": "..."}
@@ -204,7 +308,7 @@ async def ws_request(
     return resp.get("result", resp)
 
 
-async def create_account(ws: websockets.WebSocketClientProtocol, name: str) -> Account:
+async def create_account(ws: websockets.ClientConnection, name: str) -> Account:
     """Create a new account via wallet_propose RPC.
 
     Args:
@@ -227,7 +331,7 @@ async def create_account(ws: websockets.WebSocketClientProtocol, name: str) -> A
 
 
 async def fund_account(
-    ws: websockets.WebSocketClientProtocol,
+    ws: websockets.ClientConnection,
     dest: Account,
     genesis_seq: int,
 ) -> tuple[bool, int]:
@@ -239,7 +343,8 @@ async def fund_account(
         genesis_seq: Current genesis account sequence number.
 
     Returns:
-        Tuple of (success: bool, next_sequence: int).
+        Tuple of (funded: bool, next_genesis_sequence: int). The sequence is
+        unchanged when the ledger did not consume it.
     """
     resp = await ws_request(
         ws,
@@ -265,12 +370,16 @@ async def fund_account(
             engine_result,
             json.dumps(resp, indent=None)[:500],
         )
-    return success, genesis_seq + 1
+    # Advance the genesis sequence only when the ledger consumed it. The
+    # caller reads it once and threads it through every funding submit, so
+    # advancing past a tem*/tef*/tel* rejection would put every remaining
+    # submit on a future sequence and fund nothing.
+    if consumes_sequence(engine_result):
+        genesis_seq += 1
+    return success, genesis_seq
 
 
-async def get_account_sequence(
-    ws: websockets.WebSocketClientProtocol, account: str
-) -> int:
+async def get_account_sequence(ws: websockets.ClientConnection, account: str) -> int:
     """Get the current sequence number for an account.
 
     Args:
@@ -564,7 +673,7 @@ TX_BUILDERS: dict[str, Any] = {
 
 
 async def setup_accounts(
-    ws: websockets.WebSocketClientProtocol,
+    ws: websockets.ClientConnection,
 ) -> list[Account]:
     """Create and fund test accounts from genesis.
 
@@ -575,7 +684,8 @@ async def setup_accounts(
         ws: Open WebSocket connection to a rippled node.
 
     Returns:
-        List of funded Account instances.
+        Every created Account. ``funded`` marks the ones the ledger accepted,
+        so the caller must filter on it rather than on the list length.
     """
     account_names = ["alice", "bob", "carol", "dave", "eve", "frank", "grace", "heidi"]
 
@@ -593,8 +703,8 @@ async def setup_accounts(
     # Fund all accounts.
     logger.info("Funding test accounts...")
     for acct in accounts:
-        success, genesis_seq = await fund_account(ws, acct, genesis_seq)
-        if success:
+        acct.funded, genesis_seq = await fund_account(ws, acct, genesis_seq)
+        if acct.funded:
             logger.info("  Funded %s", acct.name)
         else:
             logger.warning("  Failed to fund %s", acct.name)
@@ -603,19 +713,34 @@ async def setup_accounts(
     logger.info("Waiting 10s for funding transactions to validate...")
     await asyncio.sleep(10)
 
-    # Refresh sequence numbers for all accounts.
+    # Refresh sequence numbers, and confirm funding against the ledger rather
+    # than trusting the submit result. get_account_sequence returns 0 when
+    # account_info reports no account_data, which means the account root was
+    # never created; a sequence we cannot read also makes the account
+    # unusable, so either way it must not be submitted from.
     for acct in accounts:
         try:
             acct.sequence = await get_account_sequence(ws, acct.account)
-            logger.info("  %s sequence: %d", acct.name, acct.sequence)
         except Exception as exc:
             logger.warning("  Failed to get sequence for %s: %s", acct.name, exc)
+        if acct.sequence > 0:
+            logger.info("  %s sequence: %d", acct.name, acct.sequence)
+        else:
+            acct.funded = False
+            logger.warning(
+                "  %s has no ledger sequence — treating as unfunded", acct.name
+            )
 
+    logger.info(
+        "Funded %d of %d created accounts",
+        sum(1 for a in accounts if a.funded),
+        len(accounts),
+    )
     return accounts
 
 
 async def submit_transaction(
-    ws: websockets.WebSocketClientProtocol,
+    ws: websockets.ClientConnection,
     tx_type: str,
     accounts: list[Account],
     stats: TxStats,
@@ -652,8 +777,13 @@ async def submit_transaction(
         )
         stats.record(tx_type, success)
 
+        # The sequence gate is deliberately not `success`: that tuple is
+        # narrower (every tec* consumes a sequence, only two are listed) and
+        # wider (a tem*/tef*/tel*/ter* rejection consumes none) than the set
+        # of results that actually consume one. _track_sequence also owns the
+        # recovery path for a counter that has drifted ahead of the ledger.
         if sender:
-            sender.sequence += 1
+            await _track_sequence(ws, sender, engine_result)
 
         if not success:
             # First occurrence of each distinct result at WARNING, the rest at
@@ -675,15 +805,77 @@ async def submit_transaction(
         _log_first_failure("exc:%s" % type(exc).__name__, "%s error: %s", tx_type, exc)
 
 
+async def _track_sequence(
+    ws: websockets.ClientConnection,
+    sender: Account,
+    engine_result: str | None,
+) -> None:
+    """Advance, or re-read from the ledger, one sender's sequence number.
+
+    A consuming result moves the counter on by one and clears the stall
+    streak. A non-consuming one leaves the counter where it is, so the same
+    sequence is offered again -- correct when the rejection was about the
+    transaction, but a livelock when the counter itself is the problem, since
+    _refresh_sequences never lowers it. After SEQ_REFETCH_AFTER_FAILURES
+    consecutive non-consuming results the ledger's own value is taken
+    instead, in either direction.
+
+    A zero from get_account_sequence means account_info returned no
+    account_data, so it is ignored rather than written over a usable counter.
+
+    Args:
+        ws:            Open WebSocket connection.
+        sender:        The account the transaction was submitted from.
+        engine_result: The ``engine_result`` of that submit.
+    """
+    if consumes_sequence(engine_result):
+        sender.sequence += 1
+        sender.stalled = 0
+        return
+
+    sender.stalled += 1
+    if sender.stalled < SEQ_REFETCH_AFTER_FAILURES:
+        return
+
+    sender.stalled = 0
+    try:
+        seq = await get_account_sequence(ws, sender.account)
+    except Exception as exc:
+        logger.warning("Sequence re-fetch for %s failed: %s", sender.name, exc)
+        return
+    if seq > 0 and seq != sender.sequence:
+        logger.warning(
+            "Re-syncing %s sequence %d -> %d after %d non-consuming results",
+            sender.name,
+            sender.sequence,
+            seq,
+            SEQ_REFETCH_AFTER_FAILURES,
+        )
+        sender.sequence = seq
+
+
 async def _refresh_sequences(
-    ws: websockets.WebSocketClientProtocol,
+    ws: websockets.ClientConnection,
     accounts: list[Account],
 ) -> None:
     """Re-sync account sequences from the validated ledger.
 
     In a consensus network, other nodes' transactions advance sequences
-    beyond the submitter's local tracking.  Refreshing every ~10 s keeps
-    the local counter close to the ledger and prevents tefPAST_SEQ storms.
+    beyond the submitter's local tracking. Refreshing every
+    SEQ_REFRESH_INTERVAL_S keeps the local counter close to the ledger and
+    prevents tefPAST_SEQ storms.
+
+    The counter is only ever raised here, never lowered, because it may
+    legitimately lead the ledger: a queued transaction holds its sequence
+    without having applied yet, and lowering the counter would reuse it.
+    Raising it fixes the opposite case, where the ledger has moved on -- a
+    submit response that was lost while the transaction applied, or another
+    submitter using the same account.
+
+    That leaves one case this cannot fix: a counter that leads the ledger and
+    never catches up, because the transaction it was advanced for was dropped
+    rather than applied. _track_sequence handles that one by re-reading the
+    ledger value in either direction.
     """
     for acct in accounts:
         try:
@@ -692,6 +884,59 @@ async def _refresh_sequences(
                 acct.sequence = seq
         except Exception:
             pass
+
+
+async def _submission_loop(
+    ws: websockets.ClientConnection,
+    accounts: list[Account],
+    weights: dict[str, int],
+    duration: float,
+    interval: float,
+    stats: TxStats,
+) -> float:
+    """Submit a weighted transaction mix until ``duration`` elapses.
+
+    Args:
+        ws:       Open WebSocket connection.
+        accounts: Funded accounts to submit from.
+        weights:  Transaction type distribution weights.
+        duration: Run time in seconds.
+        interval: Delay between submissions, i.e. 1 / target TPS.
+        stats:    TxStats instance to record results in.
+
+    Returns:
+        Seconds actually spent in the loop.
+    """
+    tx_types = list(weights.keys())
+    tx_weights = [weights[t] for t in tx_types]
+
+    start = time.monotonic()
+    last_seq_refresh = start
+    while (time.monotonic() - start) < duration:
+        # Periodically re-sync account sequences from the ledger so
+        # locally-tracked sequences don't drift behind consensus.
+        if (time.monotonic() - last_seq_refresh) >= SEQ_REFRESH_INTERVAL_S:
+            await _refresh_sequences(ws, accounts)
+            last_seq_refresh = time.monotonic()
+
+        tx_type = random.choices(tx_types, weights=tx_weights, k=1)[0]
+        await submit_transaction(ws, tx_type, accounts, stats)
+        await asyncio.sleep(interval)
+
+        # Progress logging every 50 transactions.
+        if stats.total_submitted % 50 == 0 and stats.total_submitted > 0:
+            elapsed = time.monotonic() - start
+            logger.info(
+                "Progress: %d submitted, %d success, %d errors, "
+                "%.1f TPS (%.0fs elapsed)",
+                stats.total_submitted,
+                stats.total_success,
+                stats.total_errors,
+                stats.total_submitted / elapsed if elapsed > 0 else 0,
+                elapsed,
+            )
+
+    return time.monotonic() - start
 
 
 async def run_submitter(
@@ -713,60 +958,40 @@ async def run_submitter(
     """
     stats = TxStats()
     interval = 1.0 / tps if tps > 0 else 0.5
+    elapsed = 0.0
 
     ws = await websockets.connect(endpoint, ping_interval=20, ping_timeout=10)
     logger.info("Connected to %s", endpoint)
 
     try:
-        # Setup test accounts.
-        accounts = await setup_accounts(ws)
-        if len(accounts) < 6:
-            logger.error("Need at least 6 funded accounts, got %d", len(accounts))
+        # Setup test accounts. Every created account is returned whether or
+        # not funding worked, so submit only from the funded ones — the
+        # builders address accounts by position and an unfunded account there
+        # would fail every transaction it is picked for.
+        created = await setup_accounts(ws)
+        accounts = [acct for acct in created if acct.funded]
+        if len(accounts) < MIN_FUNDED_ACCOUNTS:
+            logger.error(
+                "Need at least %d funded accounts, only %d of %d created "
+                "accounts were funded",
+                MIN_FUNDED_ACCOUNTS,
+                len(accounts),
+                len(created),
+            )
             return stats
-
-        # Build weighted command list.
-        tx_types = list(weights.keys())
-        tx_weights = [weights[t] for t in tx_types]
 
         logger.info(
             "Starting TX submission: tps=%s, duration=%ss, types=%d",
             tps,
             duration,
-            len(tx_types),
+            len(weights),
         )
-
-        start = time.monotonic()
-        last_seq_refresh = start
-        seq_refresh_interval = 10.0
-        while (time.monotonic() - start) < duration:
-            # Periodically re-sync account sequences from the ledger so
-            # locally-tracked sequences don't drift behind consensus.
-            if (time.monotonic() - last_seq_refresh) >= seq_refresh_interval:
-                await _refresh_sequences(ws, accounts)
-                last_seq_refresh = time.monotonic()
-
-            tx_type = random.choices(tx_types, weights=tx_weights, k=1)[0]
-            await submit_transaction(ws, tx_type, accounts, stats)
-            await asyncio.sleep(interval)
-
-            # Progress logging every 50 transactions.
-            if stats.total_submitted % 50 == 0 and stats.total_submitted > 0:
-                elapsed = time.monotonic() - start
-                actual_tps = stats.total_submitted / elapsed if elapsed > 0 else 0
-                logger.info(
-                    "Progress: %d submitted, %d success, %d errors, "
-                    "%.1f TPS (%.0fs elapsed)",
-                    stats.total_submitted,
-                    stats.total_success,
-                    stats.total_errors,
-                    actual_tps,
-                    elapsed,
-                )
-
+        elapsed = await _submission_loop(
+            ws, accounts, weights, duration, interval, stats
+        )
     finally:
         await ws.close()
 
-    elapsed = time.monotonic() - start
     logger.info(
         "Submission complete: %d submitted, %d success, %d errors "
         "in %.1fs (%.1f TPS)",

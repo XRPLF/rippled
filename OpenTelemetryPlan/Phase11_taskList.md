@@ -1,6 +1,17 @@
 # Phase 11: Third-Party Data Collection Pipelines — Task List
 
-> **Status**: Future Enhancement
+> **Status**: Not started — 0 of 13 tasks complete (`grep -c '^## Task 11\.'` = 13:
+> Tasks 11.1 through 11.13). Verified against the tree:
+> no `.go` files exist anywhere, `docker/telemetry/otel-rippled-receiver/` does
+> not exist, `docker/telemetry/prometheus/` does not exist (so no
+> `prometheus/rippled-alerts.yml`), and no `network-topology` / `dex-amm`
+> dashboards are present under `docker/telemetry/grafana/dashboards/`. **No Phase 11 work has
+> been done, so no task box below may be ticked.**
+>
+> One **prerequisite** box is ticked, and only one: Task 11.12's
+> "`state_tracking` gauge implemented (Task 7.12)". That is an upstream
+> dependency satisfied by Phase 7/9 code, not Phase 11 work — see the citation
+> there.
 >
 > **Goal**: Build a custom OTel Collector receiver that periodically polls xrpld's admin RPCs and exports structured metrics for external consumers — making all XRPL health, validator, peer, fee, and DEX data available as Prometheus/OTLP metrics without xrpld code changes.
 >
@@ -287,7 +298,35 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 
 ## Task 11.8: Prometheus Alerting Rules
 
-**Objective**: Create production-ready alerting rules for the metrics exported by this receiver.
+**Objective**: Create production-ready alerting rules for the `xrpl_*` metrics
+exported by this receiver.
+
+> **Scope note — do not duplicate Phase 9.** Phase 9 already ships provisioned
+> **Grafana** alerting at
+> `docker/telemetry/grafana/provisioning/alerting/{rules,contactpoints,policies}.yaml`
+> — 13 rules in 5 groups, 2 contact points (`xrpld-default` Slack,
+> `xrpld-critical` Slack + email), and a nested notification policy keyed on
+> `severity = critical`. Four of the rules below overlap it:
+>
+> | Rule here           | Addressed by (Phase 9)                            | Coverage                                                                                                         |
+> | ------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+> | `XRPLServerNotFull` | `NodeNotFull` (group `xrpld-node-state`)          | Full                                                                                                             |
+> | `XRPLLedgerStale`   | `ValidatedLedgerStale` (group `xrpld-consensus`)  | **Partial** — Phase 9: `ledgermaster_validated_ledger_age > 60` for 5m; the external shape is `> 30` for 1m      |
+> | `XRPLHighIOLatency` | `NodeStoreIOLatencyHigh` (group `xrpld-jobqueue`) | **Partial** — Phase 9: p95 of `ios_latency_milliseconds_bucket` **> 1000 ms for 10m**; external: **> 50 for 1m** |
+> | `XRPLStateFlapping` | `NodeStateFlapping` (group `xrpld-node-state`)    | Full                                                                                                             |
+>
+> The remaining 8 (`XRPLAmendmentBlocked`, `XRPLNoPeers`,
+> `XRPLUnsupportedAmendmentMajority`, `XRPLLowPeerCount`, `XRPLHighLoadFactor`,
+> `XRPLSlowConsensus`, `XRPLValidatorListExpiring`, `XRPLClockDrift`) are
+> genuinely new. Note the two sets watch different metric surfaces — the Phase 9
+> rules fire on xrpld's own OTLP metrics, these on the receiver's `xrpl_*`
+> metrics — so if both are kept, dedupe the notification policy to avoid
+> double-paging on the same underlying condition.
+>
+> `docker/telemetry/prometheus/` does not exist today. Prefer extending the
+> Phase 9 Grafana provisioning tree over introducing a second, Prometheus-native
+> alerting mechanism; if a `prometheus/` tree is added anyway, say explicitly in
+> its header which alerts it owns.
 
 **What to do**:
 
@@ -360,9 +399,22 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 
 **Objective**: Create 4 new dashboards for the data exported by the receiver.
 
+> **UID COLLISION — pick a different uid.** Phase 9 already ships
+> `docker/telemetry/grafana/dashboards/validator-health.json` with
+> **uid `validator-health`** (17 panels, backed by xrpld's own
+> `validation_agreement` / `validator_health` / `state_tracking` OTLP metrics).
+> Provisioning a second dashboard with the same uid makes Grafana overwrite one
+> with the other — whichever the provisioner loads last wins, silently. Use a
+> distinct uid such as `validator-health-external` (and a distinct filename), the
+> same way this task already disambiguates Fee Market as
+> `xrpld-fee-market-external` against Phase 9's `fee-market`. Also check
+> `peer-quality`, `fee-market`, `job-queue` and `node-health` before adding any
+> further uid.
+
 **What to do**:
 
-- **Validator Health** (`validator-health`):
+- **Validator Health** (`validator-health-external` — **not** `validator-health`,
+  see the collision note above):
   - Server state timeline, state duration breakdown
   - Proposer count trend, converge time trend, validation quorum
   - Validator list expiration countdown
@@ -386,10 +438,16 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 
 **Key files**:
 
-- New: `docker/telemetry/grafana/dashboards/rippled-validator-health.json`
-- New: `docker/telemetry/grafana/dashboards/rippled-network-topology.json`
-- New: `docker/telemetry/grafana/dashboards/rippled-fee-market-external.json`
-- New: `docker/telemetry/grafana/dashboards/rippled-dex-amm.json`
+- New: `docker/telemetry/grafana/dashboards/validator-health-external.json`
+  (**must not** reuse Phase 9's `validator-health.json` / uid `validator-health`)
+- New: `docker/telemetry/grafana/dashboards/network-topology.json`
+- New: `docker/telemetry/grafana/dashboards/fee-market-external.json`
+  (Phase 9 owns `fee-market.json` / uid `fee-market`)
+- New: `docker/telemetry/grafana/dashboards/dex-amm.json`
+
+> Filenames drop the legacy `dashboards/rippled-*` prefix: `145b1469d6` and
+> `25868f2740` renamed every dashboard to bare names with bare uids, so no
+> `dashboards/rippled-*.json` path exists in the tree.
 
 ---
 
@@ -446,20 +504,55 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 > **Upstream**: Phase 7 Tasks 7.9-7.16 (metrics), Phase 9 Tasks 9.11-9.13 (dashboards).
 > **Downstream**: None — terminal task in the parity chain.
 
-**Objective**: Add Grafana alerting rules for the Phase 7+ parity metrics (validation agreement, validator health, peer quality, state tracking, ledger economy). These complement Task 11.8's `xrpl_*` alerts by covering the `xrpld_*` internal metrics.
+**Objective**: Add Grafana alerting rules for the Phase 7+ parity metrics (validation agreement, validator health, peer quality, state tracking, ledger economy). These complement Task 11.8's `xrpl_*` alerts by covering the internal metrics.
+
+> **4 of the 18 are addressed by Phase 9** — 2 fully, 2 only partially. Extend,
+> do not blindly re-create:
+>
+> | Rule here          | Addressed by (Phase 9)                                                                      | Coverage                                                                                                                                                                    |
+> | ------------------ | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | Unhealthy State    | `NodeNotFull` (group `xrpld-node-state`)                                                    | Full                                                                                                                                                                        |
+> | High IO Latency    | `NodeStoreIOLatencyHigh` (group `xrpld-jobqueue`, p95 of `ios_latency_milliseconds_bucket`) | **Partial** — Phase 9 fires at p95 **> 1000 ms for 10m**; the rule below wants **> 50 for 1m** (20× tighter)                                                                |
+> | Job Queue Overflow | `JobQueueTxOverflow` (group `xrpld-jobqueue`, `jq_trans_overflow_total`)                    | Full                                                                                                                                                                        |
+> | Stale Ledger       | `ValidatedLedgerStale` (group `xrpld-consensus`, `ledgermaster_validated_ledger_age`)       | **Partial** — different metric: Phase 9 uses `ledgermaster_validated_ledger_age > 60` for 5m; the rule below uses `ledger_economy{metric="ledger_age_seconds"} > 30` for 1m |
+>
+> The two **Partial** rows are not closed. Either re-baseline the Phase 9
+> thresholds or ship the tighter variants here — do not skip them as duplicates.
+>
+> Remaining open work is **14 rules**, of which **3** (CPU High, Memory Critical,
+> Disk Warning) need `node_exporter`, which is not in the stack. Nothing else is
+> blocked: "Not Proposing" used to be listed as blocked on an unimplemented
+> `state_tracking` gauge, but that gauge **ships** — see the Exit Criteria note
+> below.
+>
+> **Metric-name translation.** Names carry **no** `xrpld_` prefix
+> (`77f35c03db`), so as a rule of thumb read every `xrpld_<name>` below as plain
+> `<name>`. **Two shapes do not follow that rule:**
+>
+> - **Multiplexed observable gauges.** Many readings are a `metric` **label
+>   value** on a shared instrument, not a metric name. `xrpld_txq_count` is
+>   `txq_metrics{metric="txq_count"}`; likewise `load_factor_metrics{…}`,
+>   `nodestore_state{…}`, `cache_metrics{…}`. The rows below that already use the
+>   `<instrument>{metric="…"}` form (`state_tracking`, `validator_health`,
+>   `validation_agreement`, `server_info`, `peer_quality`, `load_factor_metrics`,
+>   `ledger_economy`) are correct; only drop the prefix on those.
+> - **Unit-suffixed histograms** from `beast::insight`. `OTelCollectorImp` appends
+>   the unit, so `xrpld_ios_latency_bucket` is really
+>   `ios_latency_milliseconds_bucket` — the spelling used by
+>   `node-health.json:577` and `ledger-data-sync.json:1353`.
 
 **Critical Group** (8 rules, eval interval 10s):
 
-| Rule                | Condition                                                     | For |
-| ------------------- | ------------------------------------------------------------- | --- |
-| Agreement Below 90% | `xrpld_validation_agreement{metric="agreement_pct_24h"} < 90` | 30s |
-| Not Proposing       | `xrpld_state_tracking{metric="state_value"} < 6`              | 10s |
-| Unhealthy State     | `xrpld_state_tracking{metric="state_value"} < 4`              | 10s |
-| Amendment Blocked   | `xrpld_validator_health{metric="amendment_blocked"} == 1`     | 1m  |
-| UNL Expiring        | `xrpld_validator_health{metric="unl_expiry_days"} < 14`       | 1h  |
-| High IO Latency     | `histogram_quantile(0.95, xrpld_ios_latency_bucket) > 50`     | 1m  |
-| High Load Factor    | `xrpld_load_factor_metrics{metric="load_factor"} > 1000`      | 1m  |
-| Peer Count Critical | `xrpld_server_info{metric="peers"} < 5`                       | 1m  |
+| Rule                | Condition                                                        | For |
+| ------------------- | ---------------------------------------------------------------- | --- |
+| Agreement Below 90% | `xrpld_validation_agreement{metric="agreement_pct_24h"} < 90`    | 30s |
+| Not Proposing       | `xrpld_state_tracking{metric="state_value"} < 6`                 | 10s |
+| Unhealthy State     | `xrpld_state_tracking{metric="state_value"} < 4`                 | 10s |
+| Amendment Blocked   | `xrpld_validator_health{metric="amendment_blocked"} == 1`        | 1m  |
+| UNL Expiring        | `xrpld_validator_health{metric="unl_expiry_days"} < 14`          | 1h  |
+| High IO Latency     | `histogram_quantile(0.95, ios_latency_milliseconds_bucket) > 50` | 1m  |
+| High Load Factor    | `xrpld_load_factor_metrics{metric="load_factor"} > 1000`         | 1m  |
+| Peer Count Critical | `xrpld_server_info{metric="peers"} < 5`                          | 1m  |
 
 **Network Group** (3 rules, eval interval 10s):
 
@@ -481,19 +574,44 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 | TX Rate Drop        | Transaction rate dropped > 50% in 5m window                  | 5m  |
 | Stale Ledger        | `xrpld_ledger_economy{metric="ledger_age_seconds"} > 30`     | 1m  |
 
-**Notification channel templates**: Email/SMTP, Discord, Slack, PagerDuty.
+**Notification channel templates**: Slack and Email/SMTP already ship in Phase
+9's `contactpoints.yaml` (`xrpld-default`, `xrpld-critical`). Discord and
+PagerDuty templates remain open.
 
-**Key files**:
+**Key files** — extend the **Phase 9** provisioning tree. The
+`docker/telemetry/grafana/alerting/` directory named in the original spec has
+never existed in any commit; the real location is
+`docker/telemetry/grafana/provisioning/alerting/`:
 
-- New/extend: `docker/telemetry/grafana/alerting/alert-rules-parity.yaml`
-- New: `docker/telemetry/grafana/alerting/contact-points.yaml` (template configs)
-- New: `docker/telemetry/grafana/alerting/notification-policies.yaml`
+- Extend: `docker/telemetry/grafana/provisioning/alerting/rules.yaml` (add groups
+  alongside the existing `xrpld-consensus`, `xrpld-validator`, `xrpld-jobqueue`,
+  `xrpld-node-state`, `xrpld-overlay`)
+- Extend: `docker/telemetry/grafana/provisioning/alerting/contactpoints.yaml`
+  (add Discord / PagerDuty receivers)
+- Extend: `docker/telemetry/grafana/provisioning/alerting/policies.yaml`
+  (add routes; the root route and the `severity = critical` child already exist)
 
 **Exit Criteria**:
 
-- [ ] All 18 rules evaluate without errors in Grafana alerting UI
+- [ ] The 14 not-yet-shipped rules evaluate without errors in Grafana alerting UI
+- [ ] The 2 rules **fully** covered by Phase 9 (Unhealthy State, Job Queue
+      Overflow) are not duplicated; the 2 **partially** covered ones (High IO
+      Latency, Stale Ledger) are either re-baselined on the Phase 9 rule or shipped
+      as tighter variants — decision recorded either way
 - [ ] Critical rules fire within expected timeframe when conditions are met
 - [ ] Notification channel templates are documented (not hard-coded to any service)
+- [ ] `node_exporter` decision recorded for the 3 host-level rules (CPU, memory, disk)
+- [x] `state_tracking` gauge implemented (Task 7.12) before adding "Not Proposing"
+      — **prerequisite met upstream**, not Phase 11 work.
+      `MetricsRegistry::registerStateTrackingGauge()`
+      (`src/xrpld/telemetry/MetricsRegistry.cpp:1461-1510`) creates
+      `CreateDoubleObservableGauge("state_tracking", "Node state and mode tracking")`
+      at `:1466` and observes `state_value` (`:1497`) and
+      `time_in_current_state_seconds` (`:1502`). Already queried by
+      `validator-health.json:765,971` and `ledger-data-sync.json:869`, and
+      documented in
+      [09-data-collection-reference.md](./09-data-collection-reference.md)
+      § State Tracking. "Not Proposing" can be written now.
 
 ---
 
@@ -533,12 +651,14 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 - [ ] Custom OTel Collector receiver builds and starts without errors
 - [ ] All `xrpl_*` metrics from server_info, get_counts, peers, validators, fee appear in Prometheus
 - [ ] Metrics update at configured poll interval (default 30s)
-- [ ] 4 new Grafana dashboards operational with data
+- [ ] 4 new Grafana dashboards operational with data, none reusing a Phase 9 uid
+      (`validator-health`, `peer-quality`, `fee-market`, `job-queue`, `node-health`)
 - [ ] Prometheus alerting rules fire correctly for simulated failure conditions
 - [ ] DEX/AMM collector works when configured (optional — not required for base exit criteria)
 - [ ] Phase 10 validation suite passes with receiver metrics included
 - [ ] Receiver handles xrpld restart/unavailability gracefully (no crash, logs warning, retries)
 - [ ] Documentation complete: receiver README, metric reference, alerting playbook
 - [ ] Go receiver has unit tests with >80% coverage
-- [ ] 18 Grafana alert rules for Phase 7+ parity metrics evaluate correctly (Task 11.12)
+- [ ] The 14 not-yet-shipped Grafana alert rules for Phase 7+ parity metrics
+      evaluate correctly (Task 11.12); the other 4 of the 18 already ship in Phase 9
 - [ ] Dual-datasource architecture documented with trade-offs (Task 11.13)
