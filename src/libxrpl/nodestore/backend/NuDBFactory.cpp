@@ -1,7 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/scope.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -17,6 +16,13 @@
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
+
+// Supplies the ScopeExit that returns the writer-depth gauge to its true value
+// after an insert. Only the telemetry path uses it, so left unguarded it is an
+// unused header in a build without telemetry.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpl/basics/scope.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 #include <boost/system/detail/errc.hpp>
 

@@ -42,7 +42,10 @@ namespace telemetry = xrpl::telemetry;
  */
 TEST(AcquireStatsTest, StartsAtZero)
 {
-    AcquireStats const stats;
+    // Braces matter: without telemetry the counters hold no state, so the type
+    // is trivially default constructible and MSVC rejects a const instance left
+    // to the compiler-generated constructor.
+    AcquireStats const stats{};
 
     EXPECT_EQ(stats.getDeferrals(), 0u);
     EXPECT_EQ(stats.getTimeouts(), 0u);
