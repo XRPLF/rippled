@@ -1758,16 +1758,23 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
                     mutableSet->erase(txId);
                 }
 
-                auto const yaysStr = std::to_string(dispute.getYays());
-                auto const naysStr = std::to_string(dispute.getNays());
-                span.addEvent(
-                    consensus::span::event::disputeResolve,
-                    {{consensus::span::attr::txId, to_string(txId)},
-                     {consensus::span::attr::disputeOurVote,
-                      dispute.getOurVote() ? std::string_view{consensus::span::val::yes}
-                                           : std::string_view{consensus::span::val::no}},
-                     {consensus::span::attr::disputeYays, yaysStr},
-                     {consensus::span::attr::disputeNays, naysStr}});
+                // The event exists only for the span, so it is guarded on the
+                // span being active. Unguarded, every dispute that flips
+                // position builds a 64-character tx hash plus two number
+                // strings, on every establish tick.
+                if (span)
+                {
+                    auto const yaysStr = std::to_string(dispute.getYays());
+                    auto const naysStr = std::to_string(dispute.getNays());
+                    span.addEvent(
+                        consensus::span::event::disputeResolve,
+                        {{consensus::span::attr::txId, to_string(txId)},
+                         {consensus::span::attr::disputeOurVote,
+                          dispute.getOurVote() ? std::string_view{consensus::span::val::yes}
+                                               : std::string_view{consensus::span::val::no}},
+                         {consensus::span::attr::disputeYays, yaysStr},
+                         {consensus::span::attr::disputeNays, naysStr}});
+                }
             }
         }
 

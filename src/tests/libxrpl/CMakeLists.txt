@@ -110,15 +110,20 @@ if(telemetry)
             "${OTEL_IN_MEMORY_EXPORTER_LIB}"
             opentelemetry-cpp::opentelemetry-cpp
     )
-    # ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
-    # implementation directly into the test binary and put src/ on the include
-    # path so its tests can reach <xrpld/telemetry/...> headers.
-    target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-    target_sources(
-        xrpl_tests
-        PRIVATE
-            ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
-    )
 endif()
+
+# ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
+# implementation directly into the test binary and put src/ on the include path
+# so its tests can reach <xrpld/telemetry/...> headers.
+#
+# Both are unconditional: the class carries no telemetry guards, so its tests
+# compile and run in every build. Gating them would leave the test file (which
+# is likewise unguarded) without the header it includes and without the
+# definitions it calls.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_sources(
+    xrpl_tests
+    PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
+)
 
 gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

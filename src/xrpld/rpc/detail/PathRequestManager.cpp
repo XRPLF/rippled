@@ -3,7 +3,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
-#include <xrpld/rpc/detail/PathFindSpanNames.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 
 #include <xrpl/basics/Log.h>
@@ -16,16 +15,25 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
-#include <xrpl/telemetry/SpanGuard.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
-#include <optional>
 #include <utility>
 #include <vector>
+
+// Needed only by the update_all span in updateAll(), which is compiled out when
+// telemetry is off. Without the same guard here they would be unused includes in
+// that build, which clang-tidy's misc-include-cleaner rejects.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpld/rpc/detail/PathFindSpanNames.h>
+
+#include <xrpl/telemetry/SpanGuard.h>
+
+#include <optional>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 namespace xrpl {
 
@@ -75,12 +83,16 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         cache = getAssetCache(inLedger, true);
     }
 
+#ifdef XRPL_ENABLE_TELEMETRY
     using namespace telemetry;
-    // updateAll runs on every ledger close. Skip span emission when there are
-    // no active path subscriptions, to avoid a steady stream of empty spans at
-    // mainnet close cadence. All other work still runs unchanged (notably the
-    // isNewPathRequest() flag reset below), so behaviour matches the pre-span
-    // code path.
+    // Nothing outside telemetry reads this block, and updateAll runs on every
+    // ledger close, so it is compiled out entirely when telemetry is off rather
+    // than left to construct a stub guard and discard two attributes per close.
+    // No span object exists to test here, so the guard has to be an #ifdef.
+    //
+    // Skip span emission when there are no active path subscriptions, to avoid
+    // a steady stream of empty spans at mainnet close cadence. All other work
+    // still runs unchanged (notably the isNewPathRequest() flag reset below).
     //
     // Scoped, so the pathfind.compute spans that doUpdate() creates below on
     // this thread nest under it. std::optional because ScopedSpanGuard is
@@ -93,6 +105,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         span->setAttribute(pathfind_span::attr::ledgerIndex, static_cast<int64_t>(inLedger->seq()));
         span->setAttribute(pathfind_span::attr::numRequests, static_cast<int64_t>(requests.size()));
     }
+#endif  // XRPL_ENABLE_TELEMETRY
 
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
