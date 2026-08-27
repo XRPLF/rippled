@@ -20,6 +20,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
     - [Coroutine-aware context storage](#coroutine-aware-context-storage)
     - [Handing a span to a job](#handing-a-span-to-a-job)
     - [Why are unrelated spans in my trace?](#why-are-unrelated-spans-in-my-trace)
+    - [Injecting trace context into a protobuf message](#injecting-trace-context-into-a-protobuf-message)
 
 ## Overview
 
@@ -126,12 +127,26 @@ The Conan package provides a single umbrella target
 
 ## Conditional compilation
 
-All OpenTelemetry SDK types are hidden behind the pimpl idiom in `SpanGuard.cpp`.
-When `XRPL_ENABLE_TELEMETRY` is not defined, `SpanGuard.h` provides an all-inline
-no-op stub class with zero overhead and zero OTel dependencies.
-At runtime, if `enabled=0` is set in config (or the section is omitted), a
-`NullTelemetry` implementation is used that returns no-op spans.
-This two-layer approach ensures zero overhead when telemetry is not wanted.
+All OpenTelemetry SDK types are hidden behind the pimpl idiom in `SpanGuard.cpp`. When `XRPL_ENABLE_TELEMETRY` is not defined, `SpanGuard.h` provides an all-inline no-op stub class with no OTel dependencies. At runtime, if `enabled=0` is set in config (or the section is omitted), a `NullTelemetry` implementation is used that returns no-op spans.
+
+Those two layers remove the span, but they do **not** remove the work that computes what you pass to it. The compiled-out guards are ordinary inline functions with ordinary parameters, so every argument is evaluated before the empty body is entered:
+
+```cpp
+// to_string() allocates a 64-character string even in a build with telemetry
+// compiled out. The call then does nothing with it.
+span.setAttribute(attr::txHash, to_string(txID).c_str());
+```
+
+Guard the work, not just the call. Testing the guard is enough: its `operator bool()` is a literal `false` when telemetry is compiled out, so the whole block is eliminated, and when telemetry is compiled in it also skips the work if tracing is switched off in config or the span's category is disabled.
+
+```cpp
+if (span)
+    span.setAttribute(attr::txHash, to_string(txID).c_str());
+```
+
+A span that exists but was sampled out still pays: there is no `isRecording()` to test.
+
+The `XRPL_METRIC_*` macros are the opposite case. They expand to `do { } while (false)` and discard their arguments, so anything named only inside a macro argument list disappears on its own and needs no guard.
 
 ## Span lifetime and cross-thread handling
 
@@ -228,3 +243,28 @@ root and never adopts whatever span happened to be active. To move a span
 across a store boundary, keep it in a thread-free `SpanGuard` (or convert via
 `operator SpanGuard() &&`) rather than holding a `ScopedSpanGuard` across the
 boundary.
+
+### Injecting trace context into a protobuf message
+
+Pass the **whole message** to the injection helpers, never `*msg.mutable_trace_context()`.
+
+On a protobuf `optional` submessage, `mutable_` allocates the submessage and sets its has-bit, and that happens at the call site before the helper runs. A caller that dereferences it therefore puts an empty `TraceContext` on the wire whenever nothing is recorded, and every receiving peer takes its `has_trace_context()` branch to extract nothing from it. `trace_context` is field 1001, so the wasted bytes are a 2-byte tag plus a zero length.
+
+```cpp
+// Right: the helper decides whether the submessage is created at all.
+telemetry::injectSpanContext(span, msg);
+
+// Wrong: the submessage exists before the helper can decide anything.
+telemetry::injectSpanContext(span, *msg.mutable_trace_context());
+```
+
+`injectCurrentContext(msg)` does the same for whichever span is active on the calling thread, deciding via `SpanGuard::hasCurrentContext()`. Four states have to come out right:
+
+| Build        | Runtime          | Result                                                               |
+| ------------ | ---------------- | -------------------------------------------------------------------- |
+| compiled out | n/a              | no submessage; the bytes on the wire match a build without telemetry |
+| compiled in  | a span is active | `trace_id`, `span_id` and the trace flags are written                |
+| compiled in  | no active span   | no submessage, rather than an empty one                              |
+| compiled in  | `enabled=0`      | no submessage                                                        |
+
+`hasCurrentContext()` reads the span straight out of the runtime context. `opentelemetry::trace::GetSpan()` would be shorter, but it returns a heap-allocated `DefaultSpan` when the context holds no span — an allocation in exactly the case the predicate exists to keep free.
