@@ -602,7 +602,14 @@ PathRequest::findPaths(
     span.setAttribute(
         pathfind_span::attr::numSourceAssets, static_cast<int64_t>(sourceAssets.size()));
 
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Only the numPaths attribute at the end of this function reads this, so it
+    // is not maintained at all when telemetry is compiled out. An #ifdef rather
+    // than `if (span)`, because the attribute cannot read a variable that does
+    // not exist, and a counter kept up to date but never read is an unused
+    // variable, which fails the build.
     std::int64_t totalPaths = 0;
+#endif
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())
@@ -622,7 +629,9 @@ PathRequest::findPaths(
         auto ps = pathfinder->getBestPaths(
             kMaxPaths, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
         context_[asset] = ps;
+#ifdef XRPL_ENABLE_TELEMETRY
         totalPaths += static_cast<std::int64_t>(ps.size());
+#endif
 
         auto const& sourceAccount = [&] {
             if (!isXRP(asset.getIssuer()))
@@ -725,7 +734,9 @@ PathRequest::findPaths(
         }
     }
 
+#ifdef XRPL_ENABLE_TELEMETRY
     span.setAttribute(pathfind_span::attr::numPaths, totalPaths);
+#endif
 
     /*  The resource fee is based on the number of source currencies used.
         The minimum cost is 50 and the maximum is 400. The cost increases
@@ -748,21 +759,34 @@ PathRequest::doUpdate(
     // nests under it. doUpdate does not yield, so scoping is safe.
     auto span = ScopedSpanGuard(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::compute);
-    span.setAttribute(pathfind_span::attr::fast, fast);
-    // to_string(Issue) renders a non-XRP asset as "<issuer>/<currency>" with the
-    // issuer as a plaintext Base58 address, so it cannot be emitted as-is: every
-    // account reaching a span is hashed first. Redact just the issuer and keep
-    // the currency, which is what this attribute is for. An MPT asset renders as
-    // its issuance ID and carries no address, so it needs no redaction.
-    span.setAttribute(
-        pathfind_span::attr::destCurrency,
-        saDstAmount_.asset().visit(
-            [](Issue const& issue) {
-                return isXRP(issue.account)
-                    ? to_string(issue.currency)
-                    : redactAccount(toBase58(issue.account)) + "/" + to_string(issue.currency);
-            },
-            [](MPTIssue const& mpt) { return to_string(mpt.getMptID()); }));
+    // Guarded on the span being live because setAttribute's arguments are
+    // evaluated whatever the build, and doUpdate is hot: PathRequestManager
+    // calls it once per active path_find subscription on every ledger close, so
+    // a node with N subscriptions pays this N times a close. The destCurrency
+    // value costs a base58check encode of the issuer (two SHA-256 rounds), a
+    // SHA-512Half over the result and three string allocations. The compiled-out
+    // guard's operator bool() is a literal false, so the block disappears
+    // entirely in that build; with telemetry compiled in it is skipped when
+    // telemetry is disabled at runtime or the pathfind category is off.
+    if (span)
+    {
+        span.setAttribute(pathfind_span::attr::fast, fast);
+        // to_string(Issue) renders a non-XRP asset as "<issuer>/<currency>" with
+        // the issuer as a plaintext Base58 address, so it cannot be emitted
+        // as-is: every account reaching a span is hashed first. Redact just the
+        // issuer and keep the currency, which is what this attribute is for. An
+        // MPT asset renders as its issuance ID and carries no address, so it
+        // needs no redaction.
+        span.setAttribute(
+            pathfind_span::attr::destCurrency,
+            saDstAmount_.asset().visit(
+                [](Issue const& issue) {
+                    return isXRP(issue.account)
+                        ? to_string(issue.currency)
+                        : redactAccount(toBase58(issue.account)) + "/" + to_string(issue.currency);
+                },
+                [](MPTIssue const& mpt) { return to_string(mpt.getMptID()); }));
+    }
 
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
 

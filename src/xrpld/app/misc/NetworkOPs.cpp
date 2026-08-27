@@ -1510,23 +1510,40 @@ NetworkOPsImp::processTransaction(
     // SpanGuard is thread-free (holds no Scope), so it is safe to store here
     // and end on the batch worker thread that later applies this transaction —
     // no detach step is needed.
-    auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
-    span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
-    span->setAttribute(tx_span::attr::local, bLocal);
-    // The current (open) ledger index at submission/relay time — the ledger
-    // being worked on. Correlates this tx.process to the ledger trace; the tx
-    // has not yet been applied to a specific ledger here, so there is no hash.
-    span->setAttribute(
-        tx_span::attr::currentLedgerSeq,
-        static_cast<std::int64_t>(ledgerMaster_.getCurrentLedgerIndex()));
-    if (auto const& stx = transaction->getSTransaction())
+    // Left null when telemetry is compiled out: there is no span to own, so
+    // nothing is allocated for one. The transaction pipeline already accepts a
+    // null span -- both doTransaction* overloads default it to nullptr -- and
+    // every use tests it. Without this the make_shared allocated once per
+    // submitted and relayed transaction to hold an empty object.
+    std::shared_ptr<SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+    span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
+#endif
+    // Guarded on the span being live because these values are not free and this
+    // runs for every submitted and relayed transaction: the hash string
+    // allocates, and the open-ledger index takes the ledger master's lock. With
+    // telemetry compiled out the span is null; with it compiled in the block is
+    // skipped when telemetry is disabled at runtime or the transaction category
+    // is off.
+    if (span && *span)
     {
-        if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
-            span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+        span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
+        span->setAttribute(tx_span::attr::local, bLocal);
+        // The current (open) ledger index at submission/relay time — the ledger
+        // being worked on. Correlates this tx.process to the ledger trace; the
+        // tx has not yet been applied to a specific ledger, so there is no hash.
         span->setAttribute(
-            tx_span::attr::fee, static_cast<int64_t>(stx->getFieldAmount(sfFee).xrp().drops()));
-        span->setAttribute(
-            tx_span::attr::sequence, static_cast<int64_t>(stx->getSeqProxy().value()));
+            tx_span::attr::currentLedgerSeq,
+            static_cast<std::int64_t>(ledgerMaster_.getCurrentLedgerIndex()));
+        if (auto const& stx = transaction->getSTransaction())
+        {
+            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            span->setAttribute(
+                tx_span::attr::fee, static_cast<int64_t>(stx->getFieldAmount(sfFee).xrp().drops()));
+            span->setAttribute(
+                tx_span::attr::sequence, static_cast<int64_t>(stx->getSeqProxy().value()));
+        }
     }
 
     auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
@@ -1537,12 +1554,14 @@ NetworkOPsImp::processTransaction(
 
     if (bLocal)
     {
-        span->setAttribute(tx_span::attr::path, tx_span::val::sync);
+        if (span)
+            span->setAttribute(tx_span::attr::path, tx_span::val::sync);
         doTransactionSync(transaction, bUnlimited, failType, std::move(span));
     }
     else
     {
-        span->setAttribute(tx_span::attr::path, tx_span::val::async);
+        if (span)
+            span->setAttribute(tx_span::attr::path, tx_span::val::async);
         doTransactionAsync(transaction, bUnlimited, failType, std::move(span));
     }
 }
@@ -1935,7 +1954,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     // Inject the tx.process span's trace context so the
                     // receiving node can link its tx.receive span as a child.
                     if (e.span && *e.span)
-                        telemetry::injectSpanContext(*e.span, *tx.mutable_trace_context());
+                        telemetry::injectSpanContext(*e.span, tx);
                     // FIXME: This should be when we received it
                     registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
                     e.transaction->setBroadcast();
