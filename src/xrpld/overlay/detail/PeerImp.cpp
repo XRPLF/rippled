@@ -2559,8 +2559,19 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             }
             val->setSeen(closeTime);
         }
-        valSpan.setAttribute(peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
-        valSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
+        // setAttribute evaluates its arguments even when telemetry is compiled
+        // out, and to_string() heap-allocates a 64-character hex string. This
+        // runs before the duplicate check below, so without the guard every
+        // peer's copy of every validation pays for that string. The guard is
+        // false when telemetry is compiled out, switched off in the config, or
+        // the Peer trace category is disabled; a span that exists but was
+        // sampled out still pays.
+        if (valSpan)
+        {
+            valSpan.setAttribute(
+                peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
+            valSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
+        }
 
         if (!isCurrent(
                 app_.getValidations().parms(),
