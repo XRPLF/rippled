@@ -435,6 +435,12 @@ MPTokenIssuanceSet::doApply()
         // NOTE: presence must be checked before the key is overwritten below.
         bool const isRotation = sle->isFieldPresent(keyField);
 
+        // Preclaim rejects overwriting an existing key unless the amendment is
+        // enabled, so a key epoch can never be written to a pre-amendment ledger.
+        XRPL_ASSERT(
+            !isRotation || view().rules().enabled(featureConfidentialMPTKeyRotation),
+            "MPTokenIssuanceSet::doApply : rotation requires ConfidentialMPTKeyRotation amendment");
+
         sle->setFieldVL(keyField, *pubKey);
 
         if (isRotation)
