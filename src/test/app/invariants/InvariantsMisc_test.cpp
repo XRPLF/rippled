@@ -763,9 +763,8 @@ class InvariantsMisc_test : public InvariantsBase
         // ltLOAN case: lsfLoanOverpayment must never toggle in either
         // direction, and lsfLoanDefault (gated on featureLendingProtocolV1_1)
         // may only transition from unset to set. Each case needs a loan that
-        // already exists in the base ledger so the apply-view modification is
-        // seen as a before/after change; the shared harness cannot seed one,
-        // hence the bespoke view construction below.
+        // already exists in the base ledger, so that the apply-view modification
+        // is seen as a before/after change rather than an insertion.
         {
             struct Case
             {
@@ -884,26 +883,12 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
-        // ValidLoan::finalize enforces (under featureLendingProtocolV1_1) that
-        // interest due - TotalValueOutstanding minus PrincipalOutstanding minus
-        // ManagementFeeOutstanding - is never negative. Any rounding path in
-        // LoanPay / LoanManage that rounds Principal or ManagementFee up while
-        // rounding TotalValue down (or vice-versa) by a single ULP flips this
-        // negative and would halt the ledger. Exercise each of the three
-        // components at a one-ULP overshoot to cover the boundary explicitly,
-        // plus the exact-zero case to confirm the boundary itself is
-        // accepted.
-        //
-        // The three components are each rounded to sfLoanScale independently,
-        // so for a non-integral (IOU) asset one unit at that scale is absorbed
-        // as quantization noise; for an integral asset (XRP/MPT) the boundary
-        // is enforced strictly. Every case below is therefore run twice: once
-        // against a real XRP-backed broker, so finalize resolves the vault
-        // asset and takes the strict path, and once against a synthetic broker
-        // ID, so the vault cannot be resolved and the tolerant path is taken.
-        // makeLoanSle leaves sfLoanScale at its SoeDefault of 0, making the
-        // tolerance exactly one unit - the same size as the perturbation, which
-        // is what separates the two paths.
+        // Under featureLendingProtocolV1_1, ValidLoan::finalize requires
+        // interest due (total value minus principal and management fee) to be
+        // non-negative after each value is rounded to sfLoanScale. Test zero,
+        // each way to produce a one-unit deficit, and a two-unit deficit. At
+        // scale 0, a real XRP-backed broker rejects any deficit, while an
+        // unresolved synthetic broker permits one unit of rounding tolerance.
         {
             struct Case
             {
@@ -913,10 +898,9 @@ class InvariantsMisc_test : public InvariantsBase
                 bool expectFireIntegral;
                 bool expectFireTolerant;
             };
-            // Baseline: Principal=100, TotalValue=100, MgmtFee=0
-            // (interest due = 0, exactly at the boundary). The middle cases
-            // perturb one component by -1 or +1 so interest due = -1, which is
-            // within the tolerance; the last overshoots it at -2.
+            // The first case sits exactly at the boundary, the middle three
+            // perturb one component so that interest due is -1, which is within
+            // the tolerance, and the last overshoots it at -2.
             auto const cases = std::to_array<Case>({
                 {.totalValue = Number(100),
                  .principal = Number(100),
@@ -970,13 +954,14 @@ class InvariantsMisc_test : public InvariantsBase
                         keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq())));
                     auto const loanKeylet =
                         keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
-                    // Seed a loan whose interest due sits at the boundary
-                    // (100 - 100 - 0 = 0). The apply-view update below moves it.
+                    // Seed a loan whose interest due sits at the boundary. The
+                    // apply-view update below moves it.
                     {
                         auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                         sleLoan->at(sfPrincipalOutstanding) = Number(100);
                         sleLoan->at(sfTotalValueOutstanding) = Number(100);
                         sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                        sleLoan->at(sfLoanScale) = 0;
                         sleLoan->setFieldU32(sfPaymentRemaining, 1);
                         ov.rawInsert(sleLoan);
                     }

@@ -53,10 +53,9 @@ ValidLoan::finalize(
     auto const txType = tx.getTxnType();
     bool const lpV11Enabled = view.rules().enabled(featureLendingProtocolV1_1);
 
-    // Before featureLendingProtocolV1_1, a deleted Loan's erased entry was run
-    // through the same per-entry checks as any other modified Loan. Preserve
-    // that exactly; only from V1_1 onward are deleted Loans exempt and handled
-    // by the ttLOAN_DELETE check below.
+    // Without featureLendingProtocolV1_1 an erased Loan is subject to the same
+    // per-entry checks as any modified Loan. From V1_1 onward it is only subject
+    // to the ttLOAN_DELETE check below.
     if (!lpV11Enabled)
         loans_.insert(loans_.end(), deletedLoans_.begin(), deletedLoans_.end());
 
@@ -114,7 +113,8 @@ ValidLoan::finalize(
             return false;
         }
 
-        // The flag immutability check has been moved to InvariantChecks.cpp
+        // From featureLendingProtocolV1_1 onwards this flag is immutable by way of
+        // NoModifiedUnmodifiableFields.
         if (!lpV11Enabled && before &&
             (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment)))
         {

@@ -224,7 +224,8 @@ InvariantsBase::makeLoanSle(
     sleLoan->at(sfStartDate) = 0u;
     sleLoan->at(sfPaymentInterval) = 1u;
     sleLoan->at(sfPeriodicPayment) = Number(1);
-    // SoeDefault fields read unconditionally by ValidLoan::finalize.
+    // SoeDefault fields, materialized so that an invariant reading them through
+    // at() does not throw on this hand-built entry.
     sleLoan->at(sfLoanServiceFee) = Number(0);
     sleLoan->at(sfLatePaymentFee) = Number(0);
     sleLoan->at(sfClosePaymentFee) = Number(0);

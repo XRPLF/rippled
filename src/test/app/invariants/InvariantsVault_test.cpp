@@ -83,8 +83,8 @@ class InvariantsVault_test : public InvariantsBase
             int totalValueOutstanding = 0;
             int managementFeeOutstanding = 0;
             AccountID borrower = beast::kZero;
-            // Real broker key the created loan should reference. If unset,
-            // the vault key is used as a fallback for legacy callers.
+            // Broker the created loan references. Left unset when the test does
+            // not depend on the broker resolving to a real ledger entry.
             uint256 brokerKey = beast::kZero;
         };
         struct Adjustments
@@ -215,8 +215,8 @@ class InvariantsVault_test : public InvariantsBase
                 auto const& lp = *args.createLoan;
                 bool const anyOutstanding = lp.principalOutstanding != 0 ||
                     lp.totalValueOutstanding != 0 || lp.managementFeeOutstanding != 0;
-                // If the caller supplied a broker key, use it; otherwise fall
-                // back to the vault key so pre-existing callers keep working.
+                // The vault key stands in for an unset broker: it keeps the loan
+                // keylet distinct per vault while resolving to no broker.
                 uint256 const brokerKey = lp.brokerKey != beast::kZero ? lp.brokerKey : keylet.key;
                 for (std::uint32_t seq = 1; seq <= static_cast<std::uint32_t>(args.loanCount);
                      ++seq)
@@ -653,9 +653,8 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
-        // Under featureLendingProtocolV1_1 vault immutability is enforced by
-        // NoModifiedUnmodifiableFields (class-1, both passes), which reports
-        // "changed an unchangeable field" and escalates to tef on pass 2.
+        // Under featureLendingProtocolV1_1 the immutability of sfAsset, sfAccount,
+        // sfShareMPTID and sfLEVersion is enforced by NoModifiedUnmodifiableFields.
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -722,13 +721,10 @@ class InvariantsVault_test : public InvariantsBase
                 return precloseXrp(a1, a2, env, VaultVersion::CashBasis);
             });
 
-        // Pre-featureLendingProtocolV1_1 the immutability of sfAsset, sfAccount
-        // and sfShareMPTID is enforced by ValidVault directly, which reports
-        // "violation of vault immutable data" on the first pass. ValidVault
-        // returns early on the second pass (result already tec), so the check
-        // does not escalate to tef. Once featureLendingProtocolV1_1 activates, the same fields are
-        // covered by NoModifiedUnmodifiableFields (see the three cases above);
-        // the two paths are mutually exclusive so both need coverage.
+        // Pre-featureLendingProtocolV1_1 sfAsset, sfAccount and sfShareMPTID are
+        // guarded by ValidVault instead, so both paths need coverage. ValidVault
+        // returns early once the result is already tec, hence no escalation to
+        // tef on the second pass.
         auto const preLendingV11Amendments = all_ - featureLendingProtocolV1_1;
         doInvariantCheck(
             makeEnv(preLendingV11Amendments),
@@ -1191,10 +1187,8 @@ class InvariantsVault_test : public InvariantsBase
         // remaining after a successful payment must show that payment in its
         // balance and schedule: PrincipalOutstanding and PaymentRemaining both
         // strictly decrease, and NextPaymentDueDate advances by a positive
-        // multiple of PaymentInterval. Each case seeds a loan with principal
-        // 100, two payments remaining, a due date of 100 and an interval of 10,
-        // then applies an after-image that breaks exactly one of those
-        // conditions.
+        // multiple of PaymentInterval. Each case seeds the same loan, then applies
+        // an after-image that breaks exactly one of those conditions.
         {
             struct Case
             {
@@ -1437,11 +1431,9 @@ class InvariantsVault_test : public InvariantsBase
         STTx const loanSetTx{
             ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(0); }};
 
-        // Loan interest due (total value less principal and management fee)
-        // must never be negative. The loan object is created directly with
-        // principal 100, total value 90 and management fee 0, so interest due
-        // = 90 - 100 - 0 = -10 (< 0)
-        // while every individual field stays non-negative.
+        // Loan interest due (total value less principal and management fee) must
+        // never be negative. The loan below carries a total value short of its
+        // principal, while every individual field stays non-negative.
         doInvariantCheck(
             {"Loan interest due is negative"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {

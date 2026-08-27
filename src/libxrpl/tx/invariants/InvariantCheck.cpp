@@ -1098,7 +1098,6 @@ ValidPseudoAccounts::finalize(
         if (enforce)
             return false;
     }
-
     return true;
 }
 
@@ -1124,10 +1123,6 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    // Non-static so it can capture `j` and `tx` and emit the specific field
-    // name on detection. The outer `bad || ...` chain short-circuits after the
-    // first change is seen, so only the first offending field is logged per
-    // entry - enough for diagnosis, and cheaper than accumulating all names.
     auto const kFieldChanged = [&j, &tx](auto const& before, auto const& after, auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
@@ -1185,11 +1180,9 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
 
-                // lsfLoanOverpayment immutability was previously enforced by LoanInvariant and
-                // has been moved here under V1_1. lsfLoanDefault clearing is a new V1_1 rule
-                // (not a move): once set by LoanManage it may not be cleared by any transaction,
-                // making the flag effectively write-once when combined with LoanInvariant's rule
-                // that only LoanManage may change it.
+                // lsfLoanOverpayment must never toggle. lsfLoanDefault may only
+                // transition from unset to set, which combined with ValidLoan's rule that
+                // only LoanManage may change it makes the flag write-once.
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
                     std::uint32_t const beforeFlags = before->getFlags();
@@ -1216,9 +1209,10 @@ NoModifiedUnmodifiableFields::finalize(
                 break;
             case ltVAULT:
                 /*
-                 * Immutability of sfAccount, sfAsset and sfShareMPTID used to be enforced by
-                 * VaultInvariant, but is now checked here since InvariantCheck.cpp is where
-                 * immutability checks live.
+                 * All the fields below are only immutable from
+                 * featureLendingProtocolV1_1 onwards; some of them only exist on
+                 * V1_1 vaults. Before that amendment, sfAsset, sfAccount and
+                 * sfShareMPTID are checked by VaultInvariant instead.
                  */
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {

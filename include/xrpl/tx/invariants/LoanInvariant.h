@@ -20,8 +20,8 @@ namespace xrpl {
  *    `StartDate + PaymentInterval * PaymentRemaining < Vault.RedemptionDate`.
  * 3. An `ltLOAN` may only be created by a `ttLOAN_SET` transaction.
  * 4. Prior to `featureLendingProtocolV1_1`, the `lsfLoanOverpayment` flag on a
- *    Loan must not change. From `featureLendingProtocolV1_1` onward this check
- *    is enforced in `InvariantChecks.cpp`.
+ *    Loan must not change. From `featureLendingProtocolV1_1` onward the same
+ *    rule is enforced by `NoModifiedUnmodifiableFields`.
  * 5. Under `featureLendingProtocolV1_1`:
  *    a. An `ltLOAN` may only be deleted by a `ttLOAN_DELETE` transaction.
  *    b. If `Loan.PaymentRemaining = 0` then `Loan.NextPaymentDueDate = 0`.
@@ -49,10 +49,8 @@ class ValidLoan
     // Pair is <before, after>. After is used for most of the checks, except
     // those that check changed values.
     std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
-    // Loans removed from the ledger, in the same <before, after> form as
-    // loans_. Prior to featureLendingProtocolV1_1 these are validated by the
-    // same per-entry checks as any other modified Loan; from V1_1 onward they
-    // are only used to enforce that a Loan is deleted by ttLOAN_DELETE alone.
+    // Loans removed from the ledger, in the same <before, after> form as loans_.
+    // Note that `after` holds the erased entry, so it is not null.
     std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> deletedLoans_;
 
 public:

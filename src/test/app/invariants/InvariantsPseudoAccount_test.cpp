@@ -454,27 +454,12 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
 
-            // A holding (trust line) removed while the broker still reports
-            // non-zero CoverAvailable must not bypass the cover invariant. The
-            // broker is left untouched, so it is only reachable through the
-            // deleted holding; erasing the holding drops the
-            // pseudo-account balance to zero while CoverAvailable stays
-            // positive.
-            //
-            // Only the IOU (trust line) case is exercised here. XRP cover has
-            // no holding SLE to delete, and an MPToken cannot be erased in
-            // isolation: the ungated ValidMPTIssuance "a MPToken was deleted"
-            // check fires for any transaction lacking MayDeleteMpt, and every
-            // transaction that carries that privilege also carries a Must*
-            // privilege (delete an account / modify a vault) that trips a
-            // different invariant. A trust line has no such generic deletion
-            // invariant, so it isolates the cover check cleanly. The RippleState
-            // and MPToken discovery paths are otherwise symmetric in finalize.
-            //
-            // The cover-greater-than-balance invariant is gated behind
-            // fixCleanup3_1_3, so the same forced deletion is run under both
-            // rule sets: with the amendment the invariant fires, without it the
-            // state is silently accepted.
+            // Deleting the IOU holding while leaving the broker unchanged must
+            // still expose CoverAvailable exceeding the now-zero balance: the
+            // broker is discovered through the deleted trust line. XRP has no
+            // holding SLE, while deleting an MPToken triggers other invariants,
+            // so IOU isolates this check. Verify that fixCleanup3_1_3 gates it
+            // by expecting failure only when the amendment is enabled.
             if (assetType == Asset::IOU)
             {
                 Keylet brokerKeylet = keylet::amendments();

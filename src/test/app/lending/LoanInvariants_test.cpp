@@ -385,18 +385,10 @@ private:
             isRounded(broker.asset, newState.principalOutstanding, originalState.loanScale));
     }
 
-    // doPayment leaves PaymentRemaining and NextPaymentDueDate unchanged for
-    // PaymentSpecialCase::Extra (an overpayment). The concern is that an
-    // "extra-only" overpayment - one that does not also cover a scheduled
-    // payment - could reach that branch and advance neither the payment count
-    // nor the schedule, leaving the loan in a state where the borrower has
-    // paid principal but the schedule pretends nothing happened. This test
-    // pins the current behaviour: makeRegularPayment rejects such amounts
-    // with tecINSUFFICIENT_PAYMENT before the Extra branch runs, and a
-    // payment large enough to cover both a scheduled instalment and an extra
-    // does advance the schedule normally.
-    //
-    // V1_1 is opted in explicitly because LoanTestBase::all_ excludes it.
+    // Verify an overpayment cannot reduce principal without covering and
+    // advancing at least one scheduled instalment: reject an extra-only amount,
+    // but accept an instalment plus extra. Enable V1_1 explicitly because
+    // LoanTestBase::all_ excludes it.
     void
     testLoanPayOverpaymentScheduleInvariant(FeatureBitset features)
     {
