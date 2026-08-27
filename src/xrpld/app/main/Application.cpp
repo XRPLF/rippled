@@ -243,8 +243,10 @@ public:
      * Declared before the ledger services below so it outlives them.
      *
      * Value-initialized here rather than in the constructor's list, because
-     * without telemetry its counters hold no state, which leaves the whole
-     * type trivially default constructible and its members indeterminate.
+     * without telemetry its counters hold no state, which leaves the type
+     * trivially default constructible; clang-tidy then reports the member as
+     * uninitialized. Braces settle it in both builds without touching the
+     * long constructor list.
      */
     AcquireStats acquireStats_{};
     std::optional<OpenLedger> openLedger_;
