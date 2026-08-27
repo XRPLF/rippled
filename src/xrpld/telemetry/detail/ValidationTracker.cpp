@@ -31,6 +31,7 @@ ValidationTracker::recordOurValidation(uint256 const& ledgerHash, LedgerIndex se
     }
     evt.weValidated = true;
     totalValidationsSent_.fetch_add(1, std::memory_order_relaxed);
+    boundPending(ledgerHash);
 }
 
 void
@@ -46,6 +47,33 @@ ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerInde
     }
     evt.networkValidated = true;
     totalValidationsChecked_.fetch_add(1, std::memory_order_relaxed);
+    boundPending(ledgerHash);
+}
+
+void
+ValidationTracker::boundPending(uint256 const& justRecorded)
+{
+    if (pending_.size() <= kMaxPendingEvents)
+        return;
+
+    auto oldest = pending_.end();
+    for (auto it = pending_.begin(); it != pending_.end(); ++it)
+    {
+        if (it->first == justRecorded)
+            continue;
+        if (oldest == pending_.end() || it->second.recordTime < oldest->second.recordTime)
+            oldest = it;
+    }
+
+    if (oldest != pending_.end())
+        pending_.erase(oldest);
+}
+
+std::size_t
+ValidationTracker::pendingCount() const
+{
+    std::scoped_lock const lock(mutex_);
+    return pending_.size();
 }
 
 void

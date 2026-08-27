@@ -21,7 +21,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/telemetry/ConsensusReceiveTracing.h>
 #include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/MetricNames.h>
 #include <xrpld/telemetry/TxSpanNames.h>
@@ -75,7 +74,7 @@
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
-#include <xrpl/telemetry/GetObjectMetricNames.h>
+#include <xrpl/telemetry/Recording.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/tx/apply.h>
@@ -115,6 +114,17 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The consensus receive-span factories are named only by the
+// telemetry-enabled blocks in this file.
+#include <xrpld/telemetry/ConsensusReceiveTracing.h>
+
+// The TMGetObjectByHash metric names and label keys. Every use of them sits in
+// an XRPL_METRIC_* argument list, and those macros expand to nothing when
+// telemetry is off, so the include is guarded like its uses.
+#include <xrpl/telemetry/GetObjectMetricNames.h>
+#endif
 
 using namespace std::chrono_literals;
 
@@ -1398,19 +1408,37 @@ PeerImp::handleTransaction(
         using namespace telemetry;
         // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
         // a job-queue worker and end on that thread — no detach step is needed.
-        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
-        span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
-        span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
-        // The current (open) ledger index when the relayed tx was received —
-        // the ledger being worked on. Correlates this tx.receive to the ledger
-        // trace; not yet applied to a specific ledger here, so no hash.
-        span->setAttribute(
-            tx_span::attr::currentLedgerSeq,
-            static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
-        if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
-            span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
-        if (auto const version = getVersion(); !version.empty())
-            span->setAttribute(tx_span::attr::peerVersion, version.c_str());
+        // Left null when telemetry is compiled out: there is no span to own, so
+        // nothing is allocated for one. Every use below tests it, the job
+        // capture and activateIfLive() accept a null handle, and the transaction
+        // pipeline already takes a null span by default. Without this the
+        // make_shared allocated once per inbound transaction, duplicates
+        // included, to hold an empty object.
+        std::shared_ptr<SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+        span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+#endif
+        // Guarded on the span being live because these values are not free and
+        // this runs for every inbound transaction, including duplicates: the
+        // hash string allocates, and the open-ledger index takes the ledger
+        // master's lock. With telemetry compiled out the span is null; with it
+        // compiled in the block is skipped when telemetry is disabled at runtime
+        // or the transaction category is off.
+        if (span && *span)
+        {
+            span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
+            span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+            // The current (open) ledger index when the relayed tx was received
+            // — the ledger being worked on. Correlates this tx.receive to the
+            // ledger trace; not yet applied to a specific ledger, so no hash.
+            span->setAttribute(
+                tx_span::attr::currentLedgerSeq,
+                static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
+            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            if (auto const version = getVersion(); !version.empty())
+                span->setAttribute(tx_span::attr::peerVersion, version.c_str());
+        }
         // Note: suppressed and txStatus are set once at each exit path
         // (not as defaults here) to avoid OTel SDK attribute duplication.
 
@@ -1434,7 +1462,8 @@ PeerImp::handleTransaction(
         */
         if (stx->isFlag(tfInnerBatchTxn))
         {
-            span->setAttribute(tx_span::attr::txStatus, tx_span::val::rejectedInnerBatch);
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::rejectedInnerBatch);
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
                                       "tfInnerBatchTxn (handleTransaction).";
             fee_.update(resource::kFeeModerateBurdenPeer, "inner batch txn");
@@ -1447,11 +1476,13 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, kTxInterval))
         {
-            span->setAttribute(tx_span::attr::suppressed, true);
+            if (span)
+                span->setAttribute(tx_span::attr::suppressed, true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
-                span->setAttribute(tx_span::attr::txStatus, tx_span::val::knownBad);
+                if (span)
+                    span->setAttribute(tx_span::attr::txStatus, tx_span::val::knownBad);
                 fee_.update(resource::kFeeUselessData, "known bad");
                 JLOG(pJournal_.debug()) << "Ignoring known bad tx " << txID;
             }
@@ -1460,7 +1491,8 @@ PeerImp::handleTransaction(
                 // Recently-seen but not flagged bad — this is the plain
                 // duplicate-suppression path. Mark it explicitly so the
                 // span never exits as "new".
-                span->setAttribute(tx_span::attr::txStatus, tx_span::val::suppressed);
+                if (span)
+                    span->setAttribute(tx_span::attr::txStatus, tx_span::val::suppressed);
 
                 // Erase only if the server has seen this tx. If the server
                 // has not seen this tx then the tx could not have been
@@ -1477,7 +1509,8 @@ PeerImp::handleTransaction(
             return;
         }
 
-        span->setAttribute(tx_span::attr::suppressed, false);
+        if (span)
+            span->setAttribute(tx_span::attr::suppressed, false);
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
         bool checkSignature = true;
@@ -1502,12 +1535,14 @@ PeerImp::handleTransaction(
 
         if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
         {
-            span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedNoSync);
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedNoSync);
             JLOG(pJournal_.trace()) << "No new transactions until synchronized";
         }
         else if (app_.getJobQueue().getJobCount(JtTransaction) > app_.config().maxTransactions)
         {
-            span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedQueueFull);
+            if (span)
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedQueueFull);
             overlay_.incJqTransOverflow();
             JLOG(pJournal_.info()) << "Transaction queue is full";
         }
@@ -2107,26 +2142,39 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // Create a receive span that links to the sender's trace context
     // (if propagated). shared_ptr keeps it alive across the job boundary.
     // The receive span is a thread-free SpanGuard handed to the job worker;
-    // no scope to strip.
-    auto consSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
-    consSpan->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
-    consSpan->setAttribute(
-        telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
-    // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
-    // peer positions and prior ledgers without exporting full 32-byte
-    // hashes on every receive event.
-    consSpan->setAttribute(
-        telemetry::consensus::span::attr::prevLedgerPrefix,
-        to_string(prevLedger).substr(0, 16).c_str());
-    consSpan->setAttribute(
-        telemetry::consensus::span::attr::positionHashPrefix,
-        to_string(proposeHash).substr(0, 16).c_str());
+    // no scope to strip. The handle stays empty when telemetry is compiled
+    // out, so nothing is allocated on a path every inbound proposal takes.
+    // The job body only carries the handle to hold the span alive, so an
+    // empty handle is safe there.
+    std::shared_ptr<telemetry::SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+    span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+#endif
+    // Every attribute below exists only for the span, so the block is guarded
+    // on the span being live. Unguarded, each inbound proposal — trusted or
+    // not — builds two full hex strings and a substring of each, four string
+    // allocations no one reads.
+    if (span && *span)
+    {
+        span->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
+        span->setAttribute(
+            telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
+        // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
+        // peer positions and prior ledgers without exporting full 32-byte
+        // hashes on every receive event.
+        span->setAttribute(
+            telemetry::consensus::span::attr::prevLedgerPrefix,
+            to_string(prevLedger).substr(0, 16).c_str());
+        span->setAttribute(
+            telemetry::consensus::span::attr::positionHashPrefix,
+            to_string(proposeHash).substr(0, 16).c_str());
+    }
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
         isTrusted ? JtProposalT : JtProposalUt,
         "checkPropose",
-        [weak, isTrusted, m, proposal, sp = std::move(consSpan)]() {
+        [weak, isTrusted, m, proposal, sp = std::move(span)]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
         });
@@ -2633,8 +2681,19 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             }
             val->setSeen(closeTime);
         }
-        valSpan.setAttribute(peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
-        valSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
+        // setAttribute evaluates its arguments even when telemetry is compiled
+        // out, and to_string() heap-allocates a 64-character hex string. This
+        // runs before the duplicate check below, so without the guard every
+        // peer's copy of every validation pays for that string. The guard is
+        // false when telemetry is compiled out, switched off in the config, or
+        // the Peer trace category is disabled; a span that exists but was
+        // sampled out still pays.
+        if (valSpan)
+        {
+            valSpan.setAttribute(
+                peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
+            valSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
+        }
 
         if (!isCurrent(
                 app_.getValidations().parms(),
@@ -2692,20 +2751,33 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
         // The receive span is a thread-free SpanGuard handed to the job worker;
-        // no scope to strip.
-        auto consSpan =
-            std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
-        consSpan->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
-        if (val->isFieldPresent(sfLedgerSequence))
+        // no scope to strip. The handle stays empty when telemetry is compiled
+        // out, so nothing is allocated on a path every inbound validation
+        // takes. The job body only carries the handle to hold the span alive,
+        // so an empty handle is safe there.
+        std::shared_ptr<telemetry::SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+        span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
+#endif
+        // Every attribute below exists only for the span, so the block is
+        // guarded on the span being live. Unguarded, each inbound validation
+        // pays the field lookups and time conversions here. The span is built
+        // before the drop decision below on purpose, so a dropped validation
+        // is still traced; the guard removes the cost, not the span.
+        if (span && *span)
         {
-            consSpan->setAttribute(
-                telemetry::consensus::span::attr::ledgerSeq,
-                static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
+            span->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
+            if (val->isFieldPresent(sfLedgerSequence))
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::ledgerSeq,
+                    static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
+            }
+            span->setAttribute(telemetry::consensus::span::attr::fullValidation, val->isFull());
+            span->setAttribute(
+                telemetry::consensus::span::attr::validationSignTime,
+                static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
         }
-        consSpan->setAttribute(telemetry::consensus::span::attr::fullValidation, val->isFull());
-        consSpan->setAttribute(
-            telemetry::consensus::span::attr::validationSignTime,
-            static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
 
         if (!isTrusted && (tracking_.load() == Tracking::Diverged))
         {
@@ -2719,7 +2791,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             app_.getJobQueue().addJob(
                 isTrusted ? JtValidationT : JtValidationUt,
                 name,
-                [weak, val, m, key, sp = std::move(consSpan)]() {
+                [weak, val, m, key, sp = std::move(span)]() {
                     if (auto peer = weak.lock())
                         peer->checkValidation(val, key, m);
                 });
@@ -2929,8 +3001,10 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
 
     // Time the whole loop once, not each iteration: the loop can run up to
     // kHardMaxReplyNodes times, so per-iteration clock reads would cost more
-    // than the lookups they measure.
-    auto const lookupStart = std::chrono::steady_clock::now();
+    // than the lookups they measure. Both clock reads serve only the metric
+    // recorded below, so neither happens when telemetry is compiled out --
+    // Stopwatch holds no state in that build.
+    telemetry::Stopwatch const lookupTimer;
 
     for (int i = 0; i < iterLimit; ++i)
     {
@@ -2956,8 +3030,9 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
             newObj.set_ledgerseq(obj.ledgerseq());
     }
 
-    auto const lookupElapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::steady_clock::now() - lookupStart);
+    // Measured here rather than at the call below, which would fold the fee
+    // computation and charge() into the reported lookup latency.
+    auto const lookupElapsed = lookupTimer.elapsedUs();
 
     // Apply work-proportional charge. `charge()` posts the disconnect
     // step (if any) back to strand_, so it is safe to call from this
@@ -2972,12 +3047,20 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     resource::Charge const fee = computeGetObjectByHashFee(requested, reply.objects_size());
     charge(fee, "processed get object by hash request");
 
+    // Called unconditionally: every statement in the body is an XRPL_METRIC_*
+    // argument, and those macros discard their arguments when telemetry is
+    // compiled out. All four values here are already computed for the request
+    // itself, so passing them costs nothing.
     recordGetObjectMetrics(requested, reply.objects_size(), lookupElapsed, fee);
 
     JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of " << requested;
     send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
 }
 
+// Reads app_ through the metric macros when telemetry is compiled in and
+// touches no member when it is not, so clang-tidy asks for it to be static.
+// Making it static would give the two builds different signatures.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
 PeerImp::recordGetObjectMetrics(
     int const requested,
@@ -3006,9 +3089,9 @@ PeerImp::recordGetObjectMetrics(
     // negative -- the counter takes an unsigned amount, where a wrap would
     // read as ~1.8e19 rather than as an error.
     //
-    // Written as two calls rather than a loop over a {hit, miss} pair: the
-    // macros expand to empty statements in a telemetry-off build, which would
-    // leave a loop's induction variable unused and fail the -Werror build.
+    // Written as two calls rather than a loop over a {hit, miss} pair: the two
+    // amounts come from different expressions, so there is no single value to
+    // iterate over.
     XRPL_METRIC_COUNTER_ADD_LABELED(
         app_,
         kGetObjectLookupsTotal,
@@ -3023,6 +3106,8 @@ PeerImp::recordGetObjectMetrics(
         static_cast<std::uint64_t>(std::max(0, requested - found)),
         {{kLabelResult, std::string(kResultMiss)}});
 }
+
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)

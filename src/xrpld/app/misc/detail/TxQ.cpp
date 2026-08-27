@@ -771,17 +771,25 @@ TxQ::apply(
         return ScopedSpanGuard(
             TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
     }();
-    span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
-    if (auto const* fmt = TxFormats::getInstance().findByType(tx->getTxnType()))
-        span.setAttribute(txq_span::attr::txType, fmt->getName().c_str());
-    // The ledger being worked on (open/tentative apply or in-flight consensus
-    // build) — correlates this enqueue to the ledger trace in every context.
-    span.setAttribute(txq_span::attr::currentLedgerSeq, static_cast<std::int64_t>(view.seq()));
-    span.setAttribute(
-        txq_span::attr::currentLedgerHash, to_string(view.header().parentHash).c_str());
-    // Default outcome; overridden below on the direct-apply and queued paths.
-    // Every other early return leaves the tx rejected from the queue.
-    span.setAttribute(txq_span::attr::txqStatus, txq_span::val::rejected);
+    // Guarded on the span being recorded: this runs for every transaction and
+    // again for each one replayed on an open-ledger rebuild, and the two hash
+    // strings each allocate. The compiled-out guard's operator bool() is a
+    // literal false, so the block disappears in that build.
+    if (span)
+    {
+        span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
+        if (auto const* fmt = TxFormats::getInstance().findByType(tx->getTxnType()))
+            span.setAttribute(txq_span::attr::txType, fmt->getName().c_str());
+        // The ledger being worked on (open/tentative apply or in-flight
+        // consensus build) — correlates this enqueue to the ledger trace in
+        // every context.
+        span.setAttribute(txq_span::attr::currentLedgerSeq, static_cast<std::int64_t>(view.seq()));
+        span.setAttribute(
+            txq_span::attr::currentLedgerHash, to_string(view.header().parentHash).c_str());
+        // Default outcome; overridden below on the direct-apply and queued
+        // paths. Every other early return leaves the tx rejected from the queue.
+        span.setAttribute(txq_span::attr::txqStatus, txq_span::val::rejected);
+    }
 
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
@@ -1528,13 +1536,27 @@ TxQ::accept(Application& app, OpenView& view)
 
             ScopedSpanGuard txSpan(
                 TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::acceptTx);
-            txSpan.setAttribute(txq_span::attr::txHash, to_string(candidateIter->txID).c_str());
-            txSpan.setAttribute(
-                txq_span::attr::retriesRemaining,
-                static_cast<int64_t>(candidateIter->retriesRemaining));
+            // Guarded on the span being recorded: this runs for every queued
+            // transaction the loop tries to apply to the open ledger, on every
+            // ledger close, and the hash string allocates 64 characters. The
+            // compiled-out guard's operator bool() is a literal false, so the
+            // block disappears in that build.
+            if (txSpan)
+            {
+                txSpan.setAttribute(txq_span::attr::txHash, to_string(candidateIter->txID).c_str());
+                txSpan.setAttribute(
+                    txq_span::attr::retriesRemaining,
+                    static_cast<int64_t>(candidateIter->retriesRemaining));
+            }
 
             auto const [txnResult, didApply, _metadata] = candidateIter->apply(app, view, j_);
-            txSpan.setAttribute(txq_span::attr::terCode, transToken(txnResult).c_str());
+            // The apply above is the transaction itself and always runs; only
+            // the attribute reading its result is telemetry. transToken() is a
+            // lookup that builds a string, so it is guarded too.
+            if (txSpan)
+            {
+                txSpan.setAttribute(txq_span::attr::terCode, transToken(txnResult).c_str());
+            }
 
             if (didApply)
             {

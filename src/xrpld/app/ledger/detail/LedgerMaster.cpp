@@ -345,10 +345,16 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     (void)maxLedgerDifference_;
     validLedgerSeq_ = l->header().seq;
 
+#ifdef XRPL_ENABLE_TELEMETRY
     // Record the network-validated ledger for the agreement tracker so it
     // can compare against our own validations.
-    if (auto* mr = app_.getMetricsRegistry())
+    //
+    // Only when enabled: recording takes the tracker's lock and inserts an
+    // entry, and nothing reconciles or drains those entries unless the
+    // observable gauges are running.
+    if (auto* mr = app_.getMetricsRegistry(); mr && mr->isEnabled())
         mr->getValidationTracker().recordNetworkValidation(l->header().hash, l->header().seq);
+#endif
 
     app_.getOPs().updateLocalTx(*l);
     app_.getSHAMapStore().onLedgerClosed(getValidatedLedger());

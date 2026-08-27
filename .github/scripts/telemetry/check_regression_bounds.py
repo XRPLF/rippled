@@ -43,10 +43,12 @@ baseline's own. Six rules are checked:
      declare, carries a reason, and has neither a threshold override nor a
      baseline value left behind.
 
-Rule A subtracts ``excluded_keys`` before comparing, so a quantile removed from
-the gated set does not read as a missing baseline. Rule F is what keeps that
-subtraction honest: an exclusion is the one edit here that makes the gate cover
-LESS, so a stale or misspelt entry must fail rather than silently widen itself.
+Rule A subtracts ``excluded_keys`` from BOTH sides of its comparison, so a
+quantile removed from the gated set neither reads as a missing baseline nor as
+an undeclared one -- an exclusion left in the baseline is one failure, rule F's,
+which names the file to edit. Rule F is what keeps that subtraction honest: an
+exclusion is the one edit here that makes the gate cover LESS, so a stale or
+misspelt entry must fail rather than silently widen itself.
 
 A PLACEHOLDER baseline -- ``"placeholder": true`` or an empty ``metrics``
 object -- exits 0, because that is the documented bootstrap state and CI has to
@@ -56,8 +58,9 @@ without having checked anything is the same green-build-that-is-not failure this
 script exists to prevent, so renaming or deleting one of its inputs must not
 silence it.
 
-A baseline ENTRY that is not a positive finite number is rejected before any
-rule runs, by ``_unusable_baseline``. Every rule does arithmetic on that value,
+A baseline ENTRY that is not an object, or whose value is not a positive finite
+number, is rejected before any rule runs -- see ``check_key`` and
+``_unusable_baseline``. Every rule does arithmetic on that value,
 and a degenerate one made the script crash with a traceback (rule D divides by
 it) or emit advice about the wrong file (a negative value inverts rule D's
 comparison). Reporting malformed input is what this script is for, so it must
@@ -287,7 +290,20 @@ def check_key(key, entry, thresholds, ladders):
     malformed input, and reporting malformed input is this script's whole job,
     so it is rejected up front rather than arithmetic being attempted on it --
     see ``_unusable_baseline``.
+
+    The entry's SHAPE is checked first, for the same reason. A hand edit that
+    writes the bare number instead of the ``{"value": .., "unit": ..}`` object
+    leaves no ``.get`` to call, and the script died with an AttributeError
+    traceback naming a line in itself rather than the key at fault.
     """
+    if not isinstance(entry, dict):
+        return [
+            f"{key}: baseline entry {entry!r} is not an object carrying value and "
+            f"unit, so no bound can be derived from it. Recapture the baseline "
+            f"from a CI run rather than editing it by hand -- see "
+            f"baselines/README.md"
+        ]
+
     value, unit = entry.get("value"), entry.get("unit", "")
     edges = ladders.get(unit)
     if value is None or edges is None:
@@ -381,8 +397,16 @@ def main():
     failures.extend(check_exclusions(metrics_cfg, thresholds, gated, declared))
     # Rule A compares against the GATED surface, so a deliberately excluded
     # quantile is not reported as a baseline that was never captured.
-    declared -= set(metrics_cfg.get("excluded_keys", {}))
-    for key in sorted(set(gated) - declared):
+    #
+    # The same keys come off rule A's over-coverage side too. An excluded key
+    # left in the baseline is rule F's finding, reported with the file to edit;
+    # rule A would add a second failure for the same single mistake, saying the
+    # key is not declared -- which is not even true, it is declared and then
+    # excluded. Only exclusions the surface really declares are subtracted, so a
+    # misspelt exclusion naming a stale baseline key still reaches rule A.
+    excluded_declared = set(metrics_cfg.get("excluded_keys", {})) & declared
+    declared -= excluded_declared
+    for key in sorted(set(gated) - declared - excluded_declared):
         failures.append(
             f"{key}: in the baseline but not declared by {METRICS}, so it is "
             f"reported every run and can never gate -- remove it (rule A)"

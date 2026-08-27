@@ -97,6 +97,21 @@ SYNC_DIAGNOSTICS_GROUP = "sync_diagnostics"
 # not hammer the single-container Prometheus the harness runs.
 METRIC_POLL_CONCURRENCY = 8
 
+# Bound on ONE HTTP request to Tempo, Prometheus, Loki or Grafana. aiohttp's
+# own default is total=300s, which is longer than any poll window here: a
+# single wedged endpoint would blow the shared deadline above and then keep the
+# run alive until the CI job's own budget killed it, losing the report and the
+# artifacts with it. Failing one request fast and reporting it beats being
+# killed with nothing.
+#
+# Derived from the poll window rather than picked: no single request may outlast
+# the phase budget it sits inside, since a request that does can only ever blow
+# that deadline. Connecting is held to one poll interval, because an endpoint
+# that is absent or wedged should be named immediately, not waited on.
+REQUEST_TIMEOUT = aiohttp.ClientTimeout(
+    total=METRIC_POLL_TIMEOUT_SEC, sock_connect=METRIC_POLL_INTERVAL_SEC
+)
+
 # The Prometheus exporter splits one histogram instrument into three series
 # names. Reverse coverage folds them back onto the base family so a contract
 # entry (or an accounted_patterns regex) written for the family accounts for
@@ -421,11 +436,18 @@ def _traceql_name_predicate(expected_name: str) -> str:
     """Build the TraceQL `name` predicate that selects a contract span name.
 
     A literal contract name becomes an equality test. A glob becomes a regex
-    test, because TraceQL has no glob operator: `rpc.command.*` must be sent as
-    `name=~"rpc\\.command\\..*"`, with the dots escaped so they match literal
-    dots rather than any character. Sending the glob unescaped would still match
-    the intended spans, but would also match names differing in those positions,
-    which is the looseness _span_name_matches exists to avoid.
+    test, because TraceQL has no glob operator: `rpc.command.*` is sent as
+    `name=~"rpc[.]command[.].*"`.
+
+    A literal dot is written as the character class `[.]` rather than as `\\.`,
+    and that is not a style choice. TraceQL's string lexer rejects a backslash
+    escape it does not recognise, so the re.escape spelling this replaced --
+    `name=~"rpc\\.command\\..*"` -- came back as HTTP 400, "invalid TraceQL
+    query: parse error at line 1, col 68: invalid char escape". `[.]` carries no
+    backslash, so nothing reaches the lexer that it can refuse, while still
+    meaning a literal dot to the regex engine behind it. Leaving the dots bare
+    would parse but match any character in those positions, which is the
+    looseness _span_name_matches exists to avoid.
 
     Args:
         expected_name: Span name or glob from expected_spans.json.
@@ -435,7 +457,18 @@ def _traceql_name_predicate(expected_name: str) -> str:
     """
     if "*" not in expected_name:
         return f'name="{expected_name}"'
-    pattern = "".join(".*" if ch == "*" else re.escape(ch) for ch in expected_name)
+    # Span names are lower_snake_case segments joined by dots, so `.` and `*` are
+    # the only characters here that mean anything to a regex engine. Anything
+    # else appearing would need its own handling rather than silent passthrough.
+    unexpected = set(expected_name) - set("abcdefghijklmnopqrstuvwxyz0123456789_.*")
+    if unexpected:
+        raise ValueError(
+            f"span name {expected_name!r} contains {sorted(unexpected)}, which "
+            "this predicate builder does not know how to escape for TraceQL"
+        )
+    pattern = "".join(
+        ".*" if ch == "*" else "[.]" if ch == "." else ch for ch in expected_name
+    )
     return f'name=~"{pattern}"'
 
 
@@ -717,6 +750,25 @@ async def _check_attributes_on_first_trace(
     try:
         trace_id = traces[0].get("traceID", "")
         if not trace_id:
+            # Recorded rather than returned on silently. Returning with no
+            # result would drop this span's attribute contract out of the
+            # report and shrink the check total, so the surface would look
+            # smaller with nothing saying why. Reported the same way as a
+            # fetched trace holding no matching span, below: being unable to
+            # verify is itself the finding. The caller only reaches here for a
+            # span that declares required_attributes, so this adds no check
+            # where none was expected.
+            report.add(
+                CheckResult(
+                    name=f"span.attrs.{span_name}",
+                    category="span",
+                    passed=False,
+                    message=(
+                        f"{span_name}: newest trace carried no traceID, cannot "
+                        "verify its attributes"
+                    ),
+                )
+            )
             return
         spans = await _tempo_get_trace(session, tempo_url, trace_id)
         await _validate_span_attributes_otlp(spans, span_def, report)
@@ -2519,7 +2571,7 @@ async def run_validation(
     report = ValidationReport()
     report.start_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT) as session:
         await validate_spans(session, tempo_url, report)
         await validate_span_durations(session, tempo_url, report)
         await assert_trace_join_groups(session, tempo_url, report)

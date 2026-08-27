@@ -10,9 +10,18 @@
  * that a stalled run and a healthy run produce different, exact readings.
  *
  * AcquireStats is header-only, so nothing from xrpld needs to be linked here.
+ *
+ * The counts are held in telemetry::Counter, which carries no storage and
+ * records nothing when telemetry is compiled out. Every expectation on a
+ * non-zero count therefore has a mirror expectation of zero, so this file
+ * pins both configurations rather than leaving one of them unasserted.
+ * Expectations of zero that hold either way -- a deferral not disturbing the
+ * timeout counter, for instance -- are asserted unconditionally.
  */
 
 #include <xrpld/app/ledger/AcquireStats.h>
+
+#include <xrpl/telemetry/Recording.h>
 
 #include <gtest/gtest.h>
 
@@ -23,10 +32,13 @@
 namespace {
 
 using xrpl::AcquireStats;
+namespace telemetry = xrpl::telemetry;
 
 /**
  * A fresh instance reads zero on every counter, so a later test can attribute
- * every increment to its own call rather than to construction.
+ * every increment to its own call rather than to construction. The reading is
+ * the same in both configurations, which is what lets a caller report these
+ * accessors without knowing which build it is in.
  */
 TEST(AcquireStatsTest, StartsAtZero)
 {
@@ -54,27 +66,67 @@ TEST(AcquireStatsTest, CountersAdvanceIndependently)
     stats.recordDeferral();
     stats.recordDeferral();
     stats.recordDeferral();
-    EXPECT_EQ(stats.getDeferrals(), 3u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(stats.getDeferrals(), 3u);
+    }
+    else
+    {
+        EXPECT_EQ(stats.getDeferrals(), 0u);
+    }
+    // Zero either way: a deferral must not reach the other counters.
     EXPECT_EQ(stats.getTimeouts(), 0u);
     EXPECT_EQ(stats.getGiveUps(), 0u);
 
     stats.recordTimeout();
-    EXPECT_EQ(stats.getTimeouts(), 1u);
-    EXPECT_EQ(stats.getDeferrals(), 3u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(stats.getTimeouts(), 1u);
+        EXPECT_EQ(stats.getDeferrals(), 3u);
+    }
+    else
+    {
+        EXPECT_EQ(stats.getTimeouts(), 0u);
+        EXPECT_EQ(stats.getDeferrals(), 0u);
+    }
 
     stats.recordGiveUp();
-    EXPECT_EQ(stats.getGiveUps(), 1u);
-    EXPECT_EQ(stats.getTimeouts(), 1u);
-    EXPECT_EQ(stats.getDeferrals(), 3u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(stats.getGiveUps(), 1u);
+        EXPECT_EQ(stats.getTimeouts(), 1u);
+        EXPECT_EQ(stats.getDeferrals(), 3u);
+    }
+    else
+    {
+        EXPECT_EQ(stats.getGiveUps(), 0u);
+        EXPECT_EQ(stats.getTimeouts(), 0u);
+        EXPECT_EQ(stats.getDeferrals(), 0u);
+    }
 
     stats.recordCompletion();
     stats.recordCompletion();
-    EXPECT_EQ(stats.getCompletions(), 2u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(stats.getCompletions(), 2u);
+    }
+    else
+    {
+        EXPECT_EQ(stats.getCompletions(), 0u);
+    }
     EXPECT_EQ(stats.getSweepEvictions(), 0u);
 
     stats.recordSweepEviction();
-    EXPECT_EQ(stats.getSweepEvictions(), 1u);
-    EXPECT_EQ(stats.getCompletions(), 2u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(stats.getSweepEvictions(), 1u);
+        EXPECT_EQ(stats.getCompletions(), 2u);
+    }
+    else
+    {
+        EXPECT_EQ(stats.getSweepEvictions(), 0u);
+        EXPECT_EQ(stats.getCompletions(), 0u);
+    }
 
     // Nothing above records an abort, so both abort counters stay at zero.
     EXPECT_EQ(stats.getAborts(), 0u);
@@ -92,12 +144,28 @@ TEST(AcquireStatsTest, AbortDistinguishesPartialWork)
     AcquireStats stats;
 
     stats.recordAbort(false);
-    EXPECT_EQ(stats.getAborts(), 1u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(stats.getAborts(), 1u);
+    }
+    else
+    {
+        EXPECT_EQ(stats.getAborts(), 0u);
+    }
+    // Zero either way: a cheap abort must not reach the partial-work counter.
     EXPECT_EQ(stats.getAbortsWithPartialWork(), 0u);
 
     stats.recordAbort(true);
-    EXPECT_EQ(stats.getAborts(), 2u);
-    EXPECT_EQ(stats.getAbortsWithPartialWork(), 1u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(stats.getAborts(), 2u);
+        EXPECT_EQ(stats.getAbortsWithPartialWork(), 1u);
+    }
+    else
+    {
+        EXPECT_EQ(stats.getAborts(), 0u);
+        EXPECT_EQ(stats.getAbortsWithPartialWork(), 0u);
+    }
 
     // An abort never counts as a completion or a give-up.
     EXPECT_EQ(stats.getCompletions(), 0u);
@@ -120,13 +188,29 @@ TEST(AcquireStatsTest, StalledShapeIsDistinguishable)
         stalled.recordAbort(true);
     }
 
-    EXPECT_EQ(stalled.getDeferrals(), 1000u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(stalled.getDeferrals(), 1000u);
+        EXPECT_EQ(stalled.getSweepEvictions(), 5u);
+        EXPECT_EQ(stalled.getAborts(), 5u);
+        EXPECT_EQ(stalled.getAbortsWithPartialWork(), 5u);
+    }
+    else
+    {
+        // With telemetry compiled out every counter reads zero, so the stalled
+        // shape is not readable at all. That is the intended reading, not a
+        // healthy one.
+        EXPECT_EQ(stalled.getDeferrals(), 0u);
+        EXPECT_EQ(stalled.getSweepEvictions(), 0u);
+        EXPECT_EQ(stalled.getAborts(), 0u);
+        EXPECT_EQ(stalled.getAbortsWithPartialWork(), 0u);
+    }
+
+    // Zero either way, and the point of the test: no timeout accrued, so the
+    // give-up path cannot fire.
     EXPECT_EQ(stalled.getTimeouts(), 0u);
     EXPECT_EQ(stalled.getGiveUps(), 0u);
     EXPECT_EQ(stalled.getCompletions(), 0u);
-    EXPECT_EQ(stalled.getSweepEvictions(), 5u);
-    EXPECT_EQ(stalled.getAborts(), 5u);
-    EXPECT_EQ(stalled.getAbortsWithPartialWork(), 5u);
 }
 
 /**
@@ -145,10 +229,22 @@ TEST(AcquireStatsTest, HealthyShapeIsDistinguishable)
     for (int i = 0; i < 27; ++i)
         healthy.recordCompletion();
 
-    EXPECT_EQ(healthy.getDeferrals(), 10u);
-    EXPECT_EQ(healthy.getTimeouts(), 7u);
-    EXPECT_EQ(healthy.getGiveUps(), 1u);
-    EXPECT_EQ(healthy.getCompletions(), 27u);
+    if constexpr (telemetry::kEnabled)
+    {
+        EXPECT_EQ(healthy.getDeferrals(), 10u);
+        EXPECT_EQ(healthy.getTimeouts(), 7u);
+        EXPECT_EQ(healthy.getGiveUps(), 1u);
+        EXPECT_EQ(healthy.getCompletions(), 27u);
+    }
+    else
+    {
+        EXPECT_EQ(healthy.getDeferrals(), 0u);
+        EXPECT_EQ(healthy.getTimeouts(), 0u);
+        EXPECT_EQ(healthy.getGiveUps(), 0u);
+        EXPECT_EQ(healthy.getCompletions(), 0u);
+    }
+
+    // Zero either way: nothing above sweeps or aborts.
     EXPECT_EQ(healthy.getSweepEvictions(), 0u);
     EXPECT_EQ(healthy.getAborts(), 0u);
     EXPECT_EQ(healthy.getAbortsWithPartialWork(), 0u);
@@ -184,9 +280,18 @@ TEST(AcquireStatsTest, ConcurrentRecordingLosesNothing)
     for (auto& th : threads)
         th.join();
 
-    // 4 threads * 1000 iterations, stated independently of the loop bounds.
-    EXPECT_EQ(stats.getDeferrals(), std::uint64_t{4000});
-    EXPECT_EQ(stats.getCompletions(), std::uint64_t{4000});
+    if constexpr (telemetry::kEnabled)
+    {
+        // 4 threads * 1000 iterations, stated independently of the loop bounds.
+        EXPECT_EQ(stats.getDeferrals(), std::uint64_t{4000});
+        EXPECT_EQ(stats.getCompletions(), std::uint64_t{4000});
+    }
+    else
+    {
+        // Nothing was recorded, so concurrent calls also have nothing to lose.
+        EXPECT_EQ(stats.getDeferrals(), std::uint64_t{0});
+        EXPECT_EQ(stats.getCompletions(), std::uint64_t{0});
+    }
 
     // The threads record only those two events, so the rest stay at zero.
     EXPECT_EQ(stats.getTimeouts(), 0u);

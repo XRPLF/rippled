@@ -46,7 +46,12 @@ class CheckerCase(unittest.TestCase):
 
     def setUp(self):
         self.tree = Path(tempfile.mkdtemp())
-        self.addCleanup(self._cleanup)
+        # Bound to THIS tree, not read off self.tree when the cleanup finally
+        # runs. A test that calls setUp again for a fresh tree (see the
+        # degenerate-baseline subTests) rebinds self.tree, and a late read would
+        # make every registered cleanup remove the LAST tree, leaving each
+        # earlier one behind in /tmp.
+        self.addCleanup(self._cleanup, self.tree)
         for rel in INPUTS:
             dest = self.tree / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -55,11 +60,12 @@ class CheckerCase(unittest.TestCase):
         script.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(CHECKER, script)
 
-    def _cleanup(self):
-        for path in self.tree.rglob("*"):
+    def _cleanup(self, tree):
+        """Remove one scratch tree, restoring permissions rmtree needs first."""
+        for path in tree.rglob("*"):
             if path.is_file():
                 path.chmod(stat.S_IRUSR | stat.S_IWUSR)
-        shutil.rmtree(self.tree, ignore_errors=True)
+        shutil.rmtree(tree, ignore_errors=True)
 
     def run_checker(self):
         """Run the checker in the scratch tree, returning (code, stdout+stderr)."""
