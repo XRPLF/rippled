@@ -1,7 +1,6 @@
 #include <xrpld/app/ledger/InboundLedger.h>
 
 #include <xrpld/app/ledger/AccountStateSF.h>
-#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerNodeHelpers.h>
@@ -12,6 +11,12 @@
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The three guarded recording calls below are the only things here that name
+// AcquireStats, so without telemetry the include has no user.
+#include <xrpld/app/ledger/AcquireStats.h>
+#endif
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -223,10 +228,14 @@ InboundLedger::~InboundLedger()
     }
     if (!isDone())
     {
+#ifdef XRPL_ENABLE_TELEMETRY
         // Partial work means a map was partly built and is now discarded, so
         // the whole acquisition has to start over. That is the expensive case,
         // so it is counted apart from a cheap abort that had nothing yet.
+        //
+        // Guarded because the acquire metrics are the only reader.
         app_.getAcquireStats().recordAbort(haveHeader_ || haveState_ || haveTransactions_);
+#endif
 
         // Mark the span so an abandoned acquisition is distinguishable from one
         // that was still in flight when the trace was read. Without this the
@@ -422,7 +431,10 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
     if (timeouts_ > kLedgerTimeoutRetriesMax)
     {
+#ifdef XRPL_ENABLE_TELEMETRY
+        // The acquire metrics are the only reader of this counter.
         app_.getAcquireStats().recordGiveUp();
+#endif
         if (seq_ != 0)
         {
             JLOG(journal_.warn()) << timeouts_ << " timeouts for ledger " << seq_;
@@ -496,7 +508,12 @@ InboundLedger::recordCompletionOnce()
         return;
 
     completionCounted_ = true;
+#ifdef XRPL_ENABLE_TELEMETRY
+    // The acquire metrics are the only reader of this counter. The latch above
+    // is left running: it is two branches once per acquisition, and gating it
+    // would leave an unused member behind.
     app_.getAcquireStats().recordCompletion();
+#endif
 }
 
 void

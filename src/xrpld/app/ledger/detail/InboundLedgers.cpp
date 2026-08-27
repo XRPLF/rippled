@@ -1,11 +1,16 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 
-#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The guarded recording call below is the only thing here that names
+// AcquireStats, so without telemetry the include has no user.
+#include <xrpld/app/ledger/AcquireStats.h>
+#endif
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/DecayingSample.h>
@@ -394,10 +399,13 @@ public:
                 else if ((la + std::chrono::minutes(1)) < start)
                 {
                     stuffToSweep.push_back(it->second);
+#ifdef XRPL_ENABLE_TELEMETRY
                     // An eviction here discards whatever the acquisition had
                     // built, so the work restarts. Counted to tell that apart
-                    // from an acquisition that ended on its own.
+                    // from an acquisition that ended on its own. Guarded
+                    // because the acquire metrics are the only reader.
                     app_.getAcquireStats().recordSweepEviction();
+#endif
                     // shouldn't cause the actual final delete
                     // since we are holding a reference in the vector.
                     it = ledgers_.erase(it);
