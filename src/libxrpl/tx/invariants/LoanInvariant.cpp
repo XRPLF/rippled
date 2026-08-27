@@ -217,7 +217,12 @@ ValidLoan::finalize(
             if (auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID))))
                 integral = Asset{vaultSle->at(sfAsset)}.integral();
 
-            if (integral)
+           Number const tolerance = integral ? beast::kZero : Number{-1, after->at(sfLoanScale)};
+           if (interestDue < tolerance)
+           {
+                    JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+                    return false;
+           }
             {
                 if (interestDue < beast::kZero)
                 {
