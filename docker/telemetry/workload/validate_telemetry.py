@@ -409,6 +409,28 @@ def _otlp_span_attr_keys(span: dict[str, Any]) -> set[str]:
     return {a["key"] for a in span.get("attributes", []) if "key" in a}
 
 
+def _traceql_name_predicate(expected_name: str) -> str:
+    """Build the TraceQL `name` predicate that selects a contract span name.
+
+    A literal contract name becomes an equality test. A glob becomes a regex
+    test, because TraceQL has no glob operator: `rpc.command.*` must be sent as
+    `name=~"rpc\\.command\\..*"`, with the dots escaped so they match literal
+    dots rather than any character. Sending the glob unescaped would still match
+    the intended spans, but would also match names differing in those positions,
+    which is the looseness _span_name_matches exists to avoid.
+
+    Args:
+        expected_name: Span name or glob from expected_spans.json.
+
+    Returns:
+        A TraceQL predicate on the bare `name` intrinsic, without braces.
+    """
+    if "*" not in expected_name:
+        return f'name="{expected_name}"'
+    pattern = "".join(".*" if ch == "*" else re.escape(ch) for ch in expected_name)
+    return f'name=~"{pattern}"'
+
+
 def _span_name_matches(emitted_name: str, expected_name: str) -> bool:
     """Test an emitted span name against a name from expected_spans.json.
 
@@ -798,7 +820,10 @@ async def _validate_parent_child(
     child_name = relationship["child"]
 
     try:
-        # Query traces for the parent span.
+        # Query traces for the parent span. Kept as its own query so that "the
+        # parent stopped being emitted" stays distinguishable from "the parent is
+        # there but the child never co-occurs" — they mean different things to
+        # whoever reads the report.
         query = '{resource.service.name="xrpld" && name="' + parent_name + '"}'
         traces = await _tempo_search(session, tempo_url, query, limit=3)
 
@@ -813,7 +838,29 @@ async def _validate_parent_child(
             )
             return
 
-        # Check if child spans exist within parent traces. Names are matched
+        # Then ask Tempo for traces containing BOTH, and inspect those instead of
+        # the newest parent traces from the query above.
+        #
+        # Sampling the newest N parent traces is wrong whenever the child is
+        # conditional on a state the workload only sometimes reaches: the parent
+        # fires constantly, so the newest traces are the ones LEAST likely to
+        # carry a rare child. Three relationships were skipped as unassertable
+        # for exactly this and none of them was a missing span --
+        # txq.accept -> txq.accept_tx (child needs a queue holding a fee-clearing
+        # transaction), txq.enqueue -> txq.batch_clear (needs a supersedable
+        # batch) and ledger.acquire -> ledger.acquire.txtree (opens only when the
+        # node lacks the tx set, which in a cluster building identical sets is the
+        # minority case). Each child emitted on its own; it simply was not in the
+        # three newest parent traces. `{A} && {B}` is a trace-level conjunction,
+        # so Tempo searches its whole retention for co-occurrence rather than
+        # leaving it to which traces happen to be newest.
+        both_query = query + " && {" + _traceql_name_predicate(child_name) + "}"
+        traces = await _tempo_search(session, tempo_url, both_query, limit=3)
+
+        # Verify against the returned traces rather than trusting the query.
+        # Tempo has already guaranteed co-occurrence, but re-checking the span
+        # names keeps the glob semantics in one place (_span_name_matches) and
+        # means a query built wrongly cannot silently pass. Names are matched
         # exactly (globs for wildcard contracts) — a substring test let a
         # longer emitted name satisfy a shorter contract, so
         # consensus.round -> consensus.accept passed on a
