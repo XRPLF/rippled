@@ -20,6 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 #include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <cstddef>
@@ -578,9 +579,9 @@ private:
      * ordering is enforced.
      */
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) final
+    visitEntry(InvariantEntry const& entry) final
     {
-        visitInvariantEntry(isDelete, before, after);
+        visitInvariantEntry(entry.isDelete(), entry.before(), entry.after());
     }
 
     [[nodiscard]] bool

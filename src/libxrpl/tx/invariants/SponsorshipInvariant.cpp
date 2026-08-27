@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <cstdint>
 
@@ -17,8 +18,12 @@ namespace xrpl {
 
 // Add new sponsorship-related invariants implementations
 void
-SponsorshipOwnerCountsMatch::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+SponsorshipOwnerCountsMatch::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     auto getSponsored = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoredOwnerCount);
@@ -116,8 +121,11 @@ SponsorshipOwnerCountsMatch::finalize(
 }
 
 void
-SponsorshipAccountCountMatchesField::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+SponsorshipAccountCountMatchesField::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     auto getSponsoringAccountCount = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoringAccountCount);

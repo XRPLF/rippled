@@ -40,6 +40,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 #include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <array>
@@ -49,6 +50,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -1184,6 +1186,39 @@ class InvariantsMisc_test : public InvariantsBase
     }
 
     void
+    testInvariantEntry()
+    {
+        testcase << "invariant entry validation";
+
+        SLE::const_pointer const null;
+        SLE::const_pointer const sle = std::make_shared<SLE>(keylet::amendments());
+
+        InvariantEntry const created{false, null, sle};
+        BEAST_EXPECT(!created.isDelete());
+        BEAST_EXPECT(!created.before());
+        BEAST_EXPECT(created.after() == sle);
+
+        auto const expectLogicError = [&](bool isDelete,
+                                          SLE::const_ref before,
+                                          SLE::const_ref after,
+                                          std::string_view message) {
+            try
+            {
+                InvariantEntry const entry{isDelete, before, after};
+                (void)entry;
+                BEAST_EXPECT(false);
+            }
+            catch (std::logic_error const& ex)
+            {
+                BEAST_EXPECT(std::string_view{ex.what()}.contains(message));
+            }
+        };
+
+        expectLogicError(false, null, null, "after is never null");
+        expectLogicError(true, null, sle, "deleted entry missing before state");
+    }
+
+    void
     testTxCheckException()
     {
         testcase << "txCheck exception";
@@ -1205,7 +1240,7 @@ class InvariantsMisc_test : public InvariantsBase
             }
 
             void
-            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            visitEntry(InvariantEntry const&) override
             {
                 if (throwFrom == ThrowFrom::VisitEntry)
                     throw std::runtime_error("test-injected visitEntry exception");
@@ -1269,7 +1304,7 @@ class InvariantsMisc_test : public InvariantsBase
         struct FailingTxInvariantCheck : TxInvariantCheck
         {
             void
-            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            visitEntry(InvariantEntry const&) override
             {
             }
 
@@ -1323,6 +1358,7 @@ class InvariantsMisc_test : public InvariantsBase
         testInvariantOverwrite(all_ - fixCleanup3_1_3);
         testObjectHasPseudoAccount();
         testSponsorship();
+        testInvariantEntry();
         testTxCheckException();
         testTxCheckFinalizeFalse();
     }

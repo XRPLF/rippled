@@ -14,36 +14,37 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
 
 namespace xrpl {
 
 void
-ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidLoanBroker::visitEntry(InvariantEntry const& entry)
 {
-    if (after)
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
+    if (after->getType() == ltLOAN_BROKER)
     {
-        if (after->getType() == ltLOAN_BROKER)
-        {
-            auto& broker = brokers_[after->key()];
-            broker.brokerBefore = before;
-            broker.brokerAfter = after;
-        }
-        else if (after->getType() == ltACCOUNT_ROOT && after->isFieldPresent(sfLoanBrokerID))
-        {
-            auto const& loanBrokerID = after->at(sfLoanBrokerID);
-            // create an entry if one doesn't already exist
-            brokers_.emplace(loanBrokerID, BrokerInfo{});
-        }
-        else if (after->getType() == ltRIPPLE_STATE)
-        {
-            lines_.emplace_back(after);
-        }
-        else if (after->getType() == ltMPTOKEN)
-        {
-            mpts_.emplace_back(after);
-        }
+        auto& broker = brokers_[after->key()];
+        broker.brokerBefore = before;
+        broker.brokerAfter = after;
+    }
+    else if (after->getType() == ltACCOUNT_ROOT && after->isFieldPresent(sfLoanBrokerID))
+    {
+        auto const& loanBrokerID = after->at(sfLoanBrokerID);
+        // create an entry if one doesn't already exist
+        brokers_.emplace(loanBrokerID, BrokerInfo{});
+    }
+    else if (after->getType() == ltRIPPLE_STATE)
+    {
+        lines_.emplace_back(after);
+    }
+    else if (after->getType() == ltMPTOKEN)
+    {
+        mpts_.emplace_back(after);
     }
 }
 

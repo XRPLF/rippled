@@ -9,20 +9,23 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <cstdint>
 
 namespace xrpl {
 
 void
-ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidLoan::visitEntry(InvariantEntry const& entry)
 {
-    if (after && after->getType() == ltLOAN)
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
+    if (after->getType() == ltLOAN)
     {
         loans_.emplace_back(before, after);
     }

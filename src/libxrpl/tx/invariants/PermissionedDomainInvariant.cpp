@@ -15,17 +15,22 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <vector>
 
 namespace xrpl {
 
 void
-ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::const_ref after)
+ValidPermissionedDomain::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDel = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
-    if (after && after->getType() != ltPERMISSIONED_DOMAIN)
+    if (after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
     auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::const_ref sle) {
@@ -54,8 +59,7 @@ ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::cons
         sleStatus.emplace_back(ss);
     };
 
-    if (after)
-        check(sleStatus_, after);
+    check(sleStatus_, after);
 }
 
 bool

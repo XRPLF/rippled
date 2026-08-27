@@ -18,6 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <cstddef>
 #include <optional>
@@ -25,13 +26,16 @@
 namespace xrpl {
 
 void
-ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidNFTokenPage::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     static constexpr uint256 const& kPageBits = nft::kPageMask;
     static constexpr uint256 kAccountBits = ~kPageBits;
 
-    if ((before && before->getType() != ltNFTOKEN_PAGE) ||
-        (after && after->getType() != ltNFTOKEN_PAGE))
+    if ((before && before->getType() != ltNFTOKEN_PAGE) || after->getType() != ltNFTOKEN_PAGE)
         return;
 
     auto check = [this, isDelete](SLE::const_ref sle) {
@@ -107,10 +111,9 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         }
     }
 
-    if (after)
-        check(after);
+    check(after);
 
-    if (!isDelete && before && after)
+    if (!isDelete && before)
     {
         // If the NFTokenPage
         //  1. Has a NextMinPage field in before, but loses it in after, and
@@ -183,15 +186,18 @@ ValidNFTokenPage::finalize(
 
 //------------------------------------------------------------------------------
 void
-NFTokenCountTracking::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+NFTokenCountTracking::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (before && before->getType() == ltACCOUNT_ROOT)
     {
         beforeMintedTotal_ += (*before)[~sfMintedNFTokens].value_or(0);
         beforeBurnedTotal_ += (*before)[~sfBurnedNFTokens].value_or(0);
     }
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after->getType() == ltACCOUNT_ROOT)
     {
         afterMintedTotal_ += (*after)[~sfMintedNFTokens].value_or(0);
         afterBurnedTotal_ += (*after)[~sfBurnedNFTokens].value_or(0);

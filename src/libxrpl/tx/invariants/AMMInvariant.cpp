@@ -18,14 +18,19 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <string>
 
 namespace xrpl {
 
 void
-ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidAMM::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (isDelete)
     {
         if (before && before->getType() == ltAMM)
@@ -36,23 +41,20 @@ ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
         return;
     }
 
-    if (after)
+    auto const type = after->getType();
+    // AMM object changed
+    if (type == ltAMM)
     {
-        auto const type = after->getType();
-        // AMM object changed
-        if (type == ltAMM)
-        {
-            ammAccount_ = after->getAccountID(sfAccount);
-            lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
-        }
-        // AMM pool changed
-        else if (
-            (type == ltRIPPLE_STATE && after->isFlag(lsfAMMNode)) ||
-            (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)) ||
-            (type == ltMPTOKEN && after->isFlag(lsfMPTAMM)))
-        {
-            ammPoolChanged_ = true;
-        }
+        ammAccount_ = after->getAccountID(sfAccount);
+        lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
+    }
+    // AMM pool changed
+    else if (
+        (type == ltRIPPLE_STATE && after->isFlag(lsfAMMNode)) ||
+        (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)) ||
+        (type == ltMPTOKEN && after->isFlag(lsfMPTAMM)))
+    {
+        ammPoolChanged_ = true;
     }
 
     if (before)
