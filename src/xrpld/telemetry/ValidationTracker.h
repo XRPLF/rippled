@@ -253,6 +253,17 @@ public:
     uint64_t
     totalValidationsChecked() const;
 
+    /**
+     * Number of ledgers currently held awaiting reconciliation.
+     *
+     * Never exceeds kMaxPendingEvents: the record methods enforce that bound
+     * as they insert, so the map stays bounded whether or not anything ever
+     * reconciles or reads it.
+     * @return Size of the pending map.
+     */
+    [[nodiscard]] std::size_t
+    pendingCount() const;
+
     /** @} */
 
 private:
@@ -396,6 +407,26 @@ private:
      */
     void
     evictOldPending(TimePoint now);
+
+    /**
+     * Hold pending_ at kMaxPendingEvents by dropping its oldest entry.
+     *
+     * Called on the insert path, because that is the only place the bound can
+     * be guaranteed. reconcile() also prunes, but it runs only while the gauge
+     * callbacks are registered, which needs telemetry both compiled in and
+     * enabled -- so a node with telemetry off, or with [telemetry] enabled=0,
+     * would otherwise grow this map by one entry per validated ledger forever.
+     *
+     * Drops the oldest entry rather than the least useful one: the map is
+     * unordered, so this is a linear scan, but it runs at most once per
+     * recorded validation and only once the map is already full.
+     *
+     * @param justRecorded Hash inserted by the caller, kept even if the scan
+     *        finds it oldest (equal timestamps make that possible).
+     * @note Caller must hold mutex_.
+     */
+    void
+    boundPending(uint256 const& justRecorded);
 
     /**
      * Scan a window deque and flip the first non-agreed entry matching
