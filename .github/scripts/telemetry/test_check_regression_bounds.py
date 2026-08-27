@@ -46,7 +46,12 @@ class CheckerCase(unittest.TestCase):
 
     def setUp(self):
         self.tree = Path(tempfile.mkdtemp())
-        self.addCleanup(self._cleanup)
+        # Bound to THIS tree, not read off self.tree when the cleanup finally
+        # runs. A test that calls setUp again for a fresh tree (see the
+        # degenerate-baseline subTests) rebinds self.tree, and a late read would
+        # make every registered cleanup remove the LAST tree, leaving each
+        # earlier one behind in /tmp.
+        self.addCleanup(self._cleanup, self.tree)
         for rel in INPUTS:
             dest = self.tree / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -55,11 +60,12 @@ class CheckerCase(unittest.TestCase):
         script.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(CHECKER, script)
 
-    def _cleanup(self):
-        for path in self.tree.rglob("*"):
+    def _cleanup(self, tree):
+        """Remove one scratch tree, restoring permissions rmtree needs first."""
+        for path in tree.rglob("*"):
             if path.is_file():
                 path.chmod(stat.S_IRUSR | stat.S_IWUSR)
-        shutil.rmtree(self.tree, ignore_errors=True)
+        shutil.rmtree(tree, ignore_errors=True)
 
     def run_checker(self):
         """Run the checker in the scratch tree, returning (code, stdout+stderr)."""
@@ -77,6 +83,25 @@ class CheckerCase(unittest.TestCase):
         data = json.loads(path.read_text())
         mutate(data)
         path.write_text(json.dumps(data, indent=2))
+
+    def read_json(self, rel):
+        """Read a scratch input without modifying it."""
+        return json.loads((self.tree / rel).read_text())
+
+    def gated(self, key):
+        """Return ``(baseline_value, configured_bound)`` for one gated key.
+
+        Read from the scratch copies of the real inputs rather than written as
+        literals, because a literal here is a copy of one particular baseline:
+        two of these tests previously hard-coded values from the 2026-08-24
+        capture and both broke the moment the baseline was refreshed, which is
+        the very drift check_regression_bounds.py exists to catch. Deriving the
+        figure keeps the assertion pinned to the rule instead of to a snapshot.
+        """
+        group, quantile = key.rsplit(".", 1)
+        rule = self.read_json(THRESHOLDS)["overrides"][group][quantile]
+        bound = rule.get("max_abs_increase_ms", rule.get("max_abs_increase_us"))
+        return self.read_json(BASELINE)["metrics"][key]["value"], bound
 
 
 class TestInputHandling(CheckerCase):
@@ -160,10 +185,14 @@ class TestRules(CheckerCase):
         self.assertIn("(rule B)", out)
 
     def test_rule_c_flags_rounded_bound(self):
+        """A bound rounded for readability is still not the derived bound."""
+        _, exact = self.gated("span.tx.process.p99")
+        rounded = round(exact, 4)
+        self.assertNotEqual(rounded, exact, "pick a key whose bound rounds visibly")
         self.edit_json(
             THRESHOLDS,
             lambda d: d["overrides"]["span.tx.process"]["p99"].update(
-                max_abs_increase_ms=4.0055
+                max_abs_increase_ms=rounded
             ),
         )
         code, out = self.run_checker()
@@ -172,7 +201,7 @@ class TestRules(CheckerCase):
 
     def test_rule_c_accepts_bound_within_relative_tolerance(self):
         """The tolerance is 1e-12 relative, not exact equality."""
-        exact = 4.005485184848892
+        _, exact = self.gated("span.tx.process.p99")
         self.edit_json(
             THRESHOLDS,
             lambda d: d["overrides"]["span.tx.process"]["p99"].update(
@@ -183,15 +212,31 @@ class TestRules(CheckerCase):
         self.assertEqual(code, 0, out)
 
     def test_rule_d_flags_percentage_bound_becoming_operative(self):
+        """Rule D trips at exactly 100 x bound / baseline, its ``>=`` boundary."""
+        baseline, bound = self.gated("span.tx.apply.p99")
+        boundary = 100.0 * bound / baseline
         self.edit_json(
             THRESHOLDS,
             lambda d: d["overrides"]["span.tx.apply"]["p99"].update(
-                max_pct_increase=150.0
+                max_pct_increase=boundary
             ),
         )
         code, out = self.run_checker()
         self.assertEqual(code, 1, out)
         self.assertIn("(rule D)", out)
+
+    def test_rule_d_accepts_percentage_bound_just_below_the_boundary(self):
+        """The other side of rule D's boundary, so the test cannot pass vacuously."""
+        baseline, bound = self.gated("span.tx.apply.p99")
+        boundary = 100.0 * bound / baseline
+        self.edit_json(
+            THRESHOLDS,
+            lambda d: d["overrides"]["span.tx.apply"]["p99"].update(
+                max_pct_increase=boundary * (1 - 1e-9)
+            ),
+        )
+        code, out = self.run_checker()
+        self.assertEqual(code, 0, out)
 
     def test_rule_a_ignores_an_excluded_key(self):
         """An excluded key must not read as a baseline that was never captured.
@@ -252,6 +297,65 @@ class TestRules(CheckerCase):
         self.assertEqual(code, 1, out)
         self.assertIn("(rule F)", out)
         self.assertIn("still has a baseline value", out)
+
+    # A key that is GATED, so seeding it exercises the numeric guard rather than
+    # rule F. It must not be one of the excluded keys: putting a value there
+    # trips "excluded but still has a baseline value" first and the test would
+    # pass for the wrong reason.
+    DEGENERATE_KEY = "span.tx.process.p50"
+
+    def _seed_degenerate_baseline(self, value):
+        """Replace one gated key's baseline value with an unusable one.
+
+        The threshold is deliberately left alone. The numeric guard runs before
+        every rule, so no bound arrangement is needed to reach it -- and on the
+        pre-fix checker this same seeding still reached the crash, because rule C
+        appends its failure and falls through to rule D's division.
+        """
+        key = self.DEGENERATE_KEY
+        self.assertNotIn(
+            key,
+            self.read_json(METRICS).get("excluded_keys", {}),
+            "DEGENERATE_KEY must be gated, not excluded",
+        )
+        self.edit_json(
+            BASELINE,
+            lambda d: d["metrics"].update({key: {"unit": "ms", "value": value}}),
+        )
+
+    def test_degenerate_baseline_is_reported_not_crashed(self):
+        """A zero, negative or non-numeric baseline must NAME the key, not raise.
+
+        Rule D computes ``100 * bound / value``, so a 0.0 baseline used to exit
+        via ZeroDivisionError and a traceback, and a negative one used to emit a
+        rule-D failure blaming ``max_pct_increase`` when the fault was the
+        baseline. Rule E does not cover the zero case: its test reduces to
+        ``quantile <= 1e-9`` there, false for every quantile captured.
+        """
+        # Asserting the guard's OWN wording, not merely "exit 1 with no
+        # traceback": the negative and bool cases already exited 1 without a
+        # traceback before the fix, by emitting a rule-D failure that blamed the
+        # wrong file. A looser assertion passes on that and proves nothing.
+        cases = (
+            (0.0, "strictly positive"),
+            (-1.0, "strictly positive"),
+            (float("nan"), "strictly positive"),
+            (float("inf"), "strictly positive"),
+            ("0.006", "is not a number"),
+            (True, "is not a number"),
+        )
+        for value, expected in cases:
+            with self.subTest(value=value):
+                self.setUp()  # a clean scratch tree per value
+                self._seed_degenerate_baseline(value)
+                code, out = self.run_checker()
+                self.assertEqual(code, 1, out)
+                self.assertNotIn("Traceback", out)
+                self.assertIn(self.DEGENERATE_KEY, out)
+                self.assertIn(expected, out)
+                # The old rule-D message told the maintainer to lower the
+                # percentage bound; the baseline is what is wrong.
+                self.assertNotIn("(rule D)", out)
 
     def test_rule_e_flags_ladder_floor_signature(self):
         """ledger.store's quantiles were the ladder floor times the quantile."""

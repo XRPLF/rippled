@@ -108,6 +108,10 @@ private:
     // counter unusable as a metric: a series that drops to 0 on every swap
     // cannot be rated. This one only ever increases, so rate() over it reads
     // correctly and the two uses do not fight over one variable.
+    //
+    // Incremented only when telemetry is compiled in, since the metrics registry
+    // is its only reader; otherwise it stays 0 and the fetch path does one atomic
+    // increment less per copy-forward.
     std::atomic<std::uint64_t> copyForwardTotal_{0};
 
     std::shared_ptr<NodeObject>

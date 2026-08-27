@@ -8,8 +8,12 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/PeerSpanNames.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The macros and the metric-name constants are named only inside
+// reportOutcome(), whose body is compiled out with the metrics it records.
 #include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/MetricNames.h>
+#endif
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -23,8 +27,13 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Consumer.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// Named only where the dial span is opened and ended, both compiled out below.
+// The span member itself is declared unconditionally, so ConnectAttempt.h keeps
+// its own SpanGuard.h include either way.
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
+#endif
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
@@ -42,7 +51,10 @@
 
 #include <chrono>
 #include <cstddef>
+#ifdef XRPL_ENABLE_TELEMETRY
+// std::int64_t is named only by the span's duration attribute below.
 #include <cstdint>
+#endif
 #include <exception>
 #include <memory>
 #include <optional>
@@ -88,6 +100,7 @@ ConnectAttempt::~ConnectAttempt()
         overlay_.peerFinder().onClosed(slot_);
     JLOG(journal_.trace()) << "~ConnectAttempt";
 
+#ifdef XRPL_ENABLE_TELEMETRY
     // Last resort for an attempt torn down without reaching a terminal path
     // (overlay shutdown, or an operation_aborted early return). The span ends
     // here with no `outcome`, which is the honest record: the dial really did
@@ -96,6 +109,7 @@ ConnectAttempt::~ConnectAttempt()
     // -- ~optional on an empty handle. Nothing here can throw: ~SpanGuard is
     // noexcept and no attribute is written.
     dialSpan_.reset();
+#endif
 }
 
 void
@@ -116,6 +130,11 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
+#ifdef XRPL_ENABLE_TELEMETRY
+    // The clock and the span exist only to measure and trace the dial, so both
+    // are compiled out with what reads them. Unguarded, every outbound dial
+    // would pay for a steady_clock reading and an optional emplace for nothing.
+    //
     // Start the dial clock before any async operation is initiated. The
     // constructor is too early (it only builds the object; the caller decides
     // when to dial), and after setTimer() would be too late: setTimer() already
@@ -141,6 +160,7 @@ ConnectAttempt::run()
                 to_string(beast::IPAddressConversion::fromAsio(remoteEndpoint_)).c_str());
         }
     }
+#endif
 
     setTimer();
 
@@ -150,9 +170,17 @@ ConnectAttempt::run()
             strand_, [self = shared_from_this()](error_code const& ec) { self->onConnect(ec); }));
 }
 
+// Not static: with telemetry compiled out the whole body is gated away, so it
+// touches no member and clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
 ConnectAttempt::reportOutcome(std::string_view outcome)
 {
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Nothing here has an effect outside telemetry: the latch below only stops
+    // the metrics and the span being written twice, and the dial's terminal
+    // handling (close(), fail()) happens at each call site, not here. So the
+    // whole body goes with the signals it reports.
     if (outcomeReported_)
         return;
     outcomeReported_ = true;
@@ -198,7 +226,9 @@ ConnectAttempt::reportOutcome(std::string_view outcome)
         // so the destructor's reset() finds an empty handle.
         dialSpan_.reset();
     }
+#endif
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 //------------------------------------------------------------------------------
 

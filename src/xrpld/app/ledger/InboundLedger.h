@@ -313,11 +313,13 @@ private:
      * calls do nothing. A no-op when telemetry is disabled (the guard is
      * inactive) or when the span was never created.
      *
-     * @param peerCount Peers still reachable for this fetch, or nullopt when
-     *        the caller cannot safely look them up. The destructor passes
-     *        nullopt because it can run while InboundLedgers holds its
-     *        collection lock, and the lookup would take the Overlay lock
-     *        underneath it.
+     * @param mayReadPeerCount Whether this caller can safely look up how many
+     *        peers are still reachable. The destructor passes false because it
+     *        can run while InboundLedgers holds its collection lock, and the
+     *        lookup would take the Overlay lock underneath it. The lookup walks
+     *        the peer set taking that lock per peer, so it is made here, at its
+     *        point of use, rather than by every caller: an inactive span then
+     *        never pays for it.
      *
      * @note noexcept, and every fallible step is wrapped, because the
      *       destructor calls this: an escaping exception there would
@@ -325,7 +327,7 @@ private:
      * @note Called once per acquire exit, never on a per-SHAMap-node path.
      */
     void
-    finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcept;
+    finalizeAcquireSpan(bool mayReadPeerCount) noexcept;
 
     /**
      * Open the span for the fetch phase now in progress and close any phase

@@ -354,6 +354,11 @@ TEST(NuDBFactory, configuration_parsing)
 // so these counters plus Little's Law are the only way to separate queuing
 // from service time from outside the library.
 
+#ifdef XRPL_ENABLE_TELEMETRY
+// The three tests below pin the cumulative write-path counters, which are
+// recorded only when telemetry is compiled in. Without it the write-load gauge
+// is their only consumer and it reads the depth atomic directly, so the depth
+// samples and the two clock reads per insert are skipped on that hot path.
 TEST(NuDBFactory, write_stats_accumulate_per_insert)
 {
     TempDir const tempDir;
@@ -637,6 +642,7 @@ TEST(NuDBFactory, write_load_reports_writer_depth)
 
     backend->close();
 }
+#endif  // XRPL_ENABLE_TELEMETRY
 
 TEST(NuDBFactory, data_persistence)
 {

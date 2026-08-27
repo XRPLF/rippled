@@ -8,6 +8,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/telemetry/Recording.h>
 
 #include <boost/asio/error.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -67,7 +68,12 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
         // Counted separately from timeouts: this path re-arms the timer
         // without running invokeOnTimer, so timeouts_ does not advance and the
         // give-up test that reads it cannot fire while the lane stays full.
-        app_.getAcquireStats().recordDeferral(isLedgerAcquisition());
+        //
+        // Compiled out when telemetry is off: the argument compares the job
+        // name against a string literal on every deferred tick of every
+        // in-flight task, and a no-op count would still evaluate it.
+        if constexpr (telemetry::kEnabled)
+            app_.getAcquireStats().recordDeferral(isLedgerAcquisition());
         JLOG(journal_.debug()) << "Deferring " << queueJobParameter_.jobName
                                << " timer due to load";
         setTimer(sl);
@@ -92,7 +98,12 @@ TimeoutCounter::invokeOnTimer()
     if (!progress_)
     {
         ++timeouts_;
-        app_.getAcquireStats().recordTimeout(isLedgerAcquisition());
+        // Same argument cost as the deferral above -- one job-name string
+        // comparison per no-progress tick -- so it is compiled out the same
+        // way. timeouts_ stays outside the block because the give-up test
+        // reads it.
+        if constexpr (telemetry::kEnabled)
+            app_.getAcquireStats().recordTimeout(isLedgerAcquisition());
         JLOG(journal_.debug()) << "Timeout(" << timeouts_ << ") "
                                << " acquiring " << hash_;
         onTimer(false, sl);

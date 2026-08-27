@@ -1564,17 +1564,25 @@ Transactor::operator()()
         telemetry::tx_apply_span::transactor,
         txID.data(),
         txID.kBytes);
-    // "apply" — the third apply-pipeline stage, after preflight and preclaim.
-    span.setAttribute(telemetry::tx_apply_span::attr::stage, telemetry::tx_apply_span::val::apply);
-    if (auto const* fmt = TxFormats::getInstance().findByType(ctx_.tx.getTxnType()))
-        span.setAttribute(telemetry::tx_apply_span::attr::txType, fmt->getName().c_str());
-    // The ledger being worked on (seq + parent hash) — correlates this apply
-    // stage to the ledger/consensus trace it is building into.
-    span.setAttribute(
-        telemetry::tx_apply_span::attr::currentLedgerSeq, static_cast<std::int64_t>(view().seq()));
-    span.setAttribute(
-        telemetry::tx_apply_span::attr::currentLedgerHash,
-        to_string(view().header().parentHash).c_str());
+    // Guard the attribute work behind the active check, as preflight does in
+    // applySteps.cpp: this runs for every transaction applied, and the type
+    // lookup and the parent-hash string are not free.
+    if (span)
+    {
+        // "apply" — the third apply-pipeline stage, after preflight and preclaim.
+        span.setAttribute(
+            telemetry::tx_apply_span::attr::stage, telemetry::tx_apply_span::val::apply);
+        if (auto const* fmt = TxFormats::getInstance().findByType(ctx_.tx.getTxnType()))
+            span.setAttribute(telemetry::tx_apply_span::attr::txType, fmt->getName().c_str());
+        // The ledger being worked on (seq + parent hash) — correlates this apply
+        // stage to the ledger/consensus trace it is building into.
+        span.setAttribute(
+            telemetry::tx_apply_span::attr::currentLedgerSeq,
+            static_cast<std::int64_t>(view().seq()));
+        span.setAttribute(
+            telemetry::tx_apply_span::attr::currentLedgerHash,
+            to_string(view().header().parentHash).c_str());
+    }
 
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
@@ -1655,13 +1663,19 @@ Transactor::operator()()
                             std::optional<TxMeta>&& metadata = std::nullopt) -> ApplyResult {
         JLOG(j_.trace()) << (canApply ? "applied " : "not applied ") << transToken(result);
 
-        span.setAttribute(telemetry::tx_apply_span::attr::terResult, transToken(result).c_str());
-        span.setAttribute(telemetry::tx_apply_span::attr::applied, canApply);
-        // Mark the span as errored when the transaction was not applied or the
-        // engine result is not a success, so failed applies surface in span-status
-        // error counts alongside preflight and preclaim.
-        if (!canApply || !isTesSuccess(result))
-            span.setError(transToken(result));
+        // Also guarded: transToken() is a lookup returning a string, and this
+        // funnel runs on every exit path.
+        if (span)
+        {
+            span.setAttribute(
+                telemetry::tx_apply_span::attr::terResult, transToken(result).c_str());
+            span.setAttribute(telemetry::tx_apply_span::attr::applied, canApply);
+            // Mark the span as errored when the transaction was not applied or
+            // the engine result is not a success, so failed applies surface in
+            // span-status error counts alongside preflight and preclaim.
+            if (!canApply || !isTesSuccess(result))
+                span.setError(transToken(result));
+        }
 
         return {result, canApply, std::move(metadata)};
     };

@@ -8,13 +8,13 @@ consensus.*, and all associated attributes.
 Pre-funds test accounts from the genesis account, then submits a
 configurable mix of transaction types at a target TPS.
 
-Supported transaction types:
-  - Payment (XRP and issued currencies)
+Supported transaction types (the 10 in TX_BUILDERS):
+  - Payment (XRP transfers)
   - OfferCreate / OfferCancel (DEX activity)
   - TrustSet (trust line creation)
-  - NFTokenMint / NFTokenCreateOffer / NFTokenAcceptOffer
-  - EscrowCreate / EscrowFinish
-  - AMMCreate / AMMDeposit / AMMWithdraw (if amendment enabled)
+  - NFTokenMint / NFTokenCreateOffer (NFT activity)
+  - EscrowCreate / EscrowFinish (escrow lifecycle)
+  - AMMCreate / AMMDeposit (AMM pool operations, if amendment enabled)
 
 Usage:
     python3 tx_submitter.py --endpoint ws://localhost:6006 --tps 5 --duration 120
@@ -26,6 +26,7 @@ Usage:
 
 import argparse
 import asyncio
+import itertools
 import json
 import logging
 import random
@@ -110,6 +111,14 @@ SEQ_REFETCH_AFTER_FAILURES = 5
 # How often the submission loop re-reads every account's sequence from the
 # ledger, to stay close to sequences other submitters have advanced.
 SEQ_REFRESH_INTERVAL_S = 10.0
+
+# How long one request waits for the reply that belongs to it.
+RECV_TIMEOUT_S = 30.0
+
+# Source of the ``id`` sent with every request. xrpld echoes a request's id at
+# the top level of the reply, which is what lets ws_request tell its own reply
+# from one that an earlier, timed-out request left in the receive buffer.
+_request_ids = itertools.count(1)
 
 
 def consumes_sequence(engine_result: str | None) -> bool:
@@ -243,14 +252,49 @@ async def ws_request(
         The inner ``result`` dict from the response.
 
     Raises:
-        RuntimeError: If the request fails or times out.
+        TimeoutError: If no reply carrying this request's ``id`` arrived within
+                      RECV_TIMEOUT_S.
     """
+    request_id = next(_request_ids)
     request: dict[str, Any] = {"command": command}
     if params:
         request.update(params)
+    # Set after the merge so a caller's parameter can never shadow the id.
+    request["id"] = request_id
     await ws.send(json.dumps(request))
-    raw = await asyncio.wait_for(ws.recv(), timeout=30.0)
-    resp = json.loads(raw)
+
+    # Read until the reply carrying this request's id turns up. Cancelling a
+    # recv() does not discard the reply it was waiting for: the library queues
+    # incoming messages independently of any reader, so a request that timed
+    # out leaves its reply in the buffer and the NEXT request used to read it
+    # instead of its own. That mis-attribution is permanent, because every
+    # later request on the connection stays one reply behind: a submit would
+    # read an account_info reply, see no engine result, and stop advancing the
+    # account's sequence, failing every remaining transaction for a reason
+    # nothing logged. Discarding by id puts the stream back in step.
+    #
+    # The deadline is for the whole exchange rather than per message, so a run
+    # of buffered replies cannot extend the wait without bound. A reply with no
+    # id is accepted as this request's: a few xrpld error paths answer before
+    # the id is parsed, and treating those as stale would hide a real error.
+    deadline = time.monotonic() + RECV_TIMEOUT_S
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(f"{command} (id {request_id}) got no reply")
+        raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
+        resp = json.loads(raw)
+        reply_id = resp.get("id")
+        if reply_id is None or reply_id == request_id:
+            break
+        _log_first_failure(
+            "stale-reply",
+            "Discarded a reply for id %s while awaiting id %s (%s); an earlier "
+            "request timed out and left it buffered",
+            reply_id,
+            request_id,
+            command,
+        )
 
     # WS command format: {"status": "success", "result": {...}, "type": "response"}
     # On error: {"status": "error", "error": "...", "error_message": "..."}

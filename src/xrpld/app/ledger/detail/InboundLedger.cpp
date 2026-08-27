@@ -13,7 +13,11 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
 #include <xrpld/telemetry/MetricNames.h>
+#endif
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -153,7 +157,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     {
         // tryDB proved the ledger can never be acquired. This exit never
         // reaches done(), so finalize here or the span would carry no outcome.
-        finalizeAcquireSpan(getPeerCount());
+        finalizeAcquireSpan(/*mayReadPeerCount=*/true);
         return;
     }
 
@@ -188,7 +192,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     // The local store already had everything, so the fetch is over here and
     // never goes through done(). Finalize now: the span's duration then covers
     // only the store read, not the storeLedger/checkAccept work below.
-    finalizeAcquireSpan(getPeerCount());
+    finalizeAcquireSpan(/*mayReadPeerCount=*/true);
 
     XRPL_ASSERT(
         ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
@@ -328,7 +332,7 @@ InboundLedger::~InboundLedger()
     // The peer count is not read here: this destructor can run under the
     // InboundLedgers collection lock, and getPeerCount() would take the Overlay
     // lock underneath it.
-    finalizeAcquireSpan(std::nullopt);
+    finalizeAcquireSpan(/*mayReadPeerCount=*/false);
 }
 
 static std::vector<uint256>
@@ -696,7 +700,7 @@ InboundLedger::syncPhaseSpans() noexcept
 }
 
 void
-InboundLedger::finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcept
+InboundLedger::finalizeAcquireSpan(bool mayReadPeerCount) noexcept
 {
     // Close any phase still open BEFORE the parent ends, so no child span
     // outlives its parent. A phase open at this point is one that never
@@ -733,10 +737,13 @@ InboundLedger::finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcep
                 ledger_span::attr::outcome, ledger_span::acquireOutcome(failed_, complete_));
             acquireSpan_->setAttribute(
                 ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
-            if (peerCount)
+            // Read here rather than by the caller: getPeerCount() walks the
+            // peer set and takes the Overlay lock for each one, so it must not
+            // run for an acquire that is not recording a span.
+            if (mayReadPeerCount)
             {
                 acquireSpan_->setAttribute(
-                    ledger_span::attr::peerCount, static_cast<int64_t>(*peerCount));
+                    ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
             }
             // A by-hash acquire starts with seq_ == 0 and learns the sequence
             // only when the header arrives, so re-stamp it here. OTel
@@ -816,7 +823,7 @@ InboundLedger::done()
                                << stats_.get();
         // acquireActivation pops here, before the span is ended below.
     }
-    finalizeAcquireSpan(getPeerCount());
+    finalizeAcquireSpan(/*mayReadPeerCount=*/true);
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 
@@ -1624,12 +1631,16 @@ InboundLedger::recordBatchOutcome(SHAMapAddNode const& san)
 
     stats_ += san;
 
+#ifdef XRPL_ENABLE_TELEMETRY
     // Emit the tallies the trace log above already printed. receiveNode() walks
     // every node in the packet, so these MUST stay out here: the loop has
     // finished and the tallies are aggregated, giving at most three counter Adds
     // per received packet rather than per node. The split is what separates real
     // progress (good) from wasted bandwidth (duplicate) and a misbehaving peer
     // (invalid) -- traffic-level metrics show all three as healthy throughput.
+    //
+    // The helper and its calls exist only to report these counters, so they are
+    // compiled out along with the counters themselves.
     auto const emit = [this](char const* outcome, int count) {
         if (count <= 0)
             return;
@@ -1643,6 +1654,7 @@ InboundLedger::recordBatchOutcome(SHAMapAddNode const& san)
     emit(telemetry::lval::addnode::good, san.getGood());
     emit(telemetry::lval::addnode::duplicate, san.getDuplicate());
     emit(telemetry::lval::addnode::invalid, san.getBad());
+#endif
 
     return san.getGood();
 }

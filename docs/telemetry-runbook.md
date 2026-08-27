@@ -827,7 +827,7 @@ flowchart TB
     pSend["consensus.proposal.send<br/>(broadcast our position)"]:::span
     PEST["consensus.establish<br/>(phaseEstablish; avalanche round ↻<br/>threshold 50→65→70→95%)"]:::span
     UPOS["consensus.update_positions<br/>(add/drop disputed txs; child of establish)"]:::span
-    acqTx(["acquireTxSet → gotTxSet<br/>(async peer tx set; no span)"]):::plain
+    acqTx["acquireTxSet → gotTxSet<br/>(async peer tx set)<br/>txset.acquire spans the fetch;<br/>gotTxSet delivery has no span"]:::span
     PAUSE(["shouldPause?<br/>(wait on laggards; no span)"]):::plain
     CHECK["consensus.check<br/>(checkConsensus; child of establish)"]:::span
     CTC(["haveCloseTimeConsensus?<br/>(else agree-to-disagree +1s; no span)"]):::plain
@@ -888,6 +888,9 @@ Consensus loops and branches (evidence):
 - **acquireTxSet / gotTxSet loop**: a disagreeing peer position triggers an async
   `acquireTxSet`; the later `gotTxSet` regenerates disputes and can extend the
   establish phase ([Consensus.h:931](../include/xrpl/consensus/Consensus.h#L931)).
+  The fetch is spanned as `txset.acquire` and records one `round.request` event
+  per round that asked for the set; the `gotTxSet` delivery itself has no span,
+  so a set arriving too late to be used leaves no trace of its own.
 - **Bow-out / mode change**: `handleWrongLedger → leaveConsensus` sends a bow-out
   proposal and demotes Proposing → Observing for the rest of the round
   ([Consensus.h:1976](../include/xrpl/consensus/Consensus.h#L1976)); `startRound`
@@ -1628,12 +1631,13 @@ Add to `xrpld.cfg`:
 [insight]
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=xrpld
 ```
 
 The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTel Collector that receives traces. No separate StatsD receiver is needed.
 
-> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path. This requires re-enabling the `statsd` receiver in `otel-collector-config.yaml` and uncommenting port 8125 in `docker-compose.yml`.
+Do not set `prefix` on this path. `formatName()` never applies it, so the setting is silently ignored and the exported names are bare and lowercase — `jobq_job_count`, not `xrpld_jobq_job_count`. Queries written against a prefixed name return no series.
+
+> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path. This requires re-enabling the `statsd` receiver in `otel-collector-config.yaml` and uncommenting port 8125 in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
 
 ### Metric Reference
 
@@ -4631,15 +4635,15 @@ docker/telemetry/workload/run-full-validation.sh --cleanup
 
 Harness options (`run-full-validation.sh`):
 
-| Flag                | Default           | Effect                                                                                                                                    |
-| ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `--xrpld PATH`      | `.build/xrpld`    | Binary to run. Also settable via the `XRPLD` env var.                                                                                     |
-| `--nodes NUM`       | `5`               | Size of the local validator cluster.                                                                                                      |
-| `--profile NAME`    | `full-validation` | Load profile from `workload-profiles.json` (`full-validation`, `quick-smoke`, `stress`). This is the **only** thing that sets load shape. |
-| `--skip-loki`       | off               | Skip the log-trace correlation checks and their per-leg diagnostics. Local exploration only; CI does not pass this.                       |
-| `--skip-regression` | off               | Skip timing capture and the baseline comparison. Local exploration only.                                                                  |
-| `--with-benchmark`  | off               | Also run `benchmark.sh` (telemetry-off vs telemetry-on overhead) after validation.                                                        |
-| `--cleanup`         | —                 | Tear everything down and exit.                                                                                                            |
+| Flag                | Default           | Effect                                                                                                                                                            |
+| ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--xrpld PATH`      | `.build/xrpld`    | Binary to run. Also settable via the `XRPLD` env var.                                                                                                             |
+| `--nodes NUM`       | `5`               | Size of the local validator cluster.                                                                                                                              |
+| `--profile NAME`    | `full-validation` | Load profile from `workload-profiles.json` (`full-validation`, `quick-smoke`, `stress`). This is the **only** thing that sets load shape.                         |
+| `--skip-loki`       | off               | Skip the log-trace correlation checks and their per-leg diagnostics. Local exploration only; CI does not pass this.                                               |
+| `--skip-regression` | off               | Skip the baseline comparison. Timings are still captured, so the run still leaves a `timings.json` artifact to refresh the baseline from. Local exploration only. |
+| `--with-benchmark`  | off               | Also run `benchmark.sh` (telemetry-off vs telemetry-on overhead) after validation.                                                                                |
+| `--cleanup`         | —                 | Tear everything down and exit.                                                                                                                                    |
 
 `--rpc-rate`, `--rpc-duration`, `--tx-tps` and `--tx-duration` are accepted by the
 parser but **never read** — they predate profiles and have no effect. Use
@@ -4647,7 +4651,9 @@ parser but **never read** — they predate profiles and have no effect. Use
 
 Exit codes: `0` all checks and the regression gate passed; `1` a validation check
 failed or the gate detected a regression; `2` infrastructure error (stack or
-cluster did not come up, or timing capture failed).
+cluster did not come up, or timing capture failed while the regression gate was
+active). Every `die` in the script exits 2, including a bad command line, so read
+`die` rather than this summary if the two ever disagree.
 
 ### What Gets Validated
 
@@ -4757,27 +4763,48 @@ Key properties:
   `baseline-timings.json` obliges you to re-derive these bounds** — a value that
   moves into a different bucket gets a different `hi_next` — and
   `.github/scripts/telemetry/check_regression_bounds.py` fails CI if you do not.
-- **A single flat bound cannot work here.** The gated quantiles span 0.078 ms to
-  17 ms, so one figure is inert at the bottom of that range and trigger-happy at
+- **A single flat bound cannot work here.** The gated quantiles span 0.006 ms to
+  21 ms, so one figure is inert at the bottom of that range and trigger-happy at
   the top. The flat 10/15 ms span bound it replaced sat 1.15x to 2000x above the
   metric it guarded, and a 10x regression injected into each key in turn was
   caught on only 5 of 28.
 - **The detection floor is `hi_next / baseline`, so some keys are only weakly
-  guarded.** It ranges 2.02x to 9.42x over the current baseline;
-  `span.ledger.build.p50` is effectively not guarded at 9.4x.
-  `baselines/README.md` lists all nine weak keys and the ladder edges that would
-  fix them.
+  guarded.** It ranges 2.21x to 16.28x over the current baseline;
+  `job.acceptLedger.running.p95` is effectively not guarded at 16.3x, and is the
+  one gated key a 10x regression does not catch (it first fires at 16.28x; at 20x
+  the sweep catches 20 of 20). `baselines/README.md` lists all seven weak keys,
+  the limiting ladder step for each, and the edges that would fix them.
+- **A baseline refresh can silently move sensitivity in either direction.** The
+  trip point is derived from the baseline, so a refresh that lands at the low end
+  of a metric's range tightens the gate and one that lands high loosens it. The
+  2026-08-26 refresh took `job.acceptLedger.running.p95` from a 5.74x floor to
+  16.28x — it does not fire on any observed run, so it stays gated, but the weak
+  floor is recorded rather than left to surprise someone. The same refresh put
+  three `p50` keys below the spread they need, and they are now excluded (below).
+  `baselines/README.md` carries the measurements.
 - **The bound covers quantization noise only, so a key whose run-to-run variance
-  exceeds it cannot be gated.** `span.ledger.validate.p95` and `.p99` are
-  excluded for exactly that reason — measured spreads of 5.9x and 66.8x across
-  four CI runs, both reaching past their trip points on healthy runs, because
-  the span's duration follows peer-validation arrival timing rather than code
-  speed. Widening their bounds would gate nothing, so they are listed in
-  `excluded_keys` in `regression-metrics.json` and `check_regression_bounds.py`
-  rule F keeps that exclusion honest. Before gating any key, check its observed
-  maximum across runs against `baseline + bound`; see `baselines/README.md`.
+  exceeds it cannot be gated. Five keys are excluded for that reason**, leaving
+  20 gated. `span.ledger.validate.p95` and `.p99` came first — spreads of 5.9x
+  and 66.8x across four CI runs, both reaching past their trip points on healthy
+  runs, because the span's duration follows peer-validation arrival timing rather
+  than code speed. The 2026-08-26 refresh added `span.tx.apply.p50`,
+  `span.ledger.build.p50` and `span.consensus.ledger_close.p50`, whose observed
+  maxima sit 46.76x, 4.77x and 2.38x above their new trip points. That is the
+  same rule applied, not a new exception: the decisive evidence is that
+  `span.tx.apply.p50` read 0.7917 ms in the previous baseline and 0.00597 ms in
+  this one — 132x apart on the same workload — so whether the gate worked was
+  decided by where in its own distribution the captured run fell, not by the
+  code. All five share one shape: the observed maximum exceeds
+  `baseline + bound`, four of them because a low-bucket baseline yields a tiny
+  bound. Widening gates nothing and re-baselining until a run lands high is the
+  trap; **a multi-run baseline, or a spread measurement captured alongside it, is
+  what would let them be gated again** — not implemented, and the reason these
+  exclusions stand. They are listed with their measurements in `excluded_keys` in
+  `regression-metrics.json`, and `check_regression_bounds.py` rule F keeps each
+  entry honest. Before gating any key, check its observed maximum across runs
+  against `baseline + bound`; see `baselines/README.md`.
 - **For every currently gated metric the absolute bound decides; the percentage
-  bound does not.** Measured, the bound is 102%-842% of its own baseline, above
+  bound does not.** Measured, the bound is 121%-1528% of its own baseline, above
   both configured percentage bounds. This is _not_ a general property: the span
   ladder's top steps are only 1.25x-1.5x apart, so a baseline between about
   2667-3000 ms or 3334-4000 ms gets an absolute bound worth under 50% of itself
@@ -4866,6 +4893,23 @@ container as the main CI, so Conan and ccache hit the shared caches), and
   log-record counters, and Loki's entry counts for the stream selector with and
   without the line filter. The diagnostics are non-fatal by construction: each
   leg is isolated and a missing container or unreachable endpoint prints a note.
+  Those two Loki entry counts are `sum(count_over_time(...))`, and the `sum()` is
+  load-bearing: the `filelog` receiver leaves `message` and `timestamp` as
+  log-record attributes, Loki's OTLP path stores them as structured metadata, and
+  structured metadata joins a metric query's label set — so an unaggregated
+  `count_over_time` produces one series per log line and Loki answers `HTTP 400
+maximum number of series (500) reached`. Unaggregated, both legs printed
+  `unavailable` on runs `32877465763` and `32964262700` and the block
+  distinguished nothing. A rejected query now logs its HTTP status and Loki's own
+  plain-text explanation rather than a JSON-mimetype error.
+  `log.trace_id_cross_reference` polls Tempo for up to `METRIC_POLL_TIMEOUT_SEC`
+  before failing, so a logged id that Tempo has not yet indexed is retried rather
+  than reported absent. It also separates a failed Tempo query from a genuinely
+  absent trace: a 404 on `/api/traces/<id>` is absence and moves to the next
+  candidate, while any other non-200 raises `TempoQueryError` and is reported as
+  "could not verify" rather than "not exported". Both Tempo helpers previously
+  passed an error body straight to `resp.json()`, so a JSON 5xx read as zero
+  spans or zero traces.
   `docker/telemetry/integration-test.sh` (which has its own
   `check_log_correlation()`) is still run by no workflow.
 - **Inputs**: only `run_benchmark` changes behaviour. `rpc_rate`, `rpc_duration`,

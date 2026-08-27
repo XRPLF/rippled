@@ -5,7 +5,11 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
 #include <xrpld/telemetry/MetricNames.h>
+#endif
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>

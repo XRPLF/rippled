@@ -16,7 +16,6 @@
 #endif  // XRPL_ENABLE_TELEMETRY
 
 #include <chrono>
-#include <cstddef>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -28,6 +27,11 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// std::size_t names the hex widths used when formatting a trace context.
+#include <cstddef>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 namespace xrpl {
 

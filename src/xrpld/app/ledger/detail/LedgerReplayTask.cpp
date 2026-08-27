@@ -227,6 +227,10 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
     }
 }
 
+// Not static: the metric macros below read the app_ member. With telemetry
+// compiled out they expand to nothing, so the body touches no member and
+// clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
 LedgerReplayTask::recordOutcome(char const* outcome) const
 {
@@ -240,6 +244,7 @@ LedgerReplayTask::recordOutcome(char const* outcome) const
         "Ledger replay tasks by terminal outcome",
         {{telemetry::label::outcome, std::string(outcome)}});
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 LedgerReplayTask::updateSkipList(

@@ -821,8 +821,9 @@ private:
      *
      * Records `getobject_request_objects`, `getobject_lookup_us`,
      * `getobject_charge`, and both label values of
-     * `getobject_lookups_total`. Compiles to nothing when telemetry is
-     * disabled, because the `XRPL_METRIC_*` macros do.
+     * `getobject_lookups_total`. Every statement is an `XRPL_METRIC_*` record,
+     * and those macros discard their arguments when telemetry is disabled, so
+     * the body costs nothing in that build and the call site needs no guard.
      *
      * @param requested     Objects the peer asked for (`objects_size()`).
      * @param found         Objects returned, i.e. the reply's object count.

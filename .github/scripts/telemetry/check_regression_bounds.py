@@ -43,10 +43,12 @@ baseline's own. Six rules are checked:
      declare, carries a reason, and has neither a threshold override nor a
      baseline value left behind.
 
-Rule A subtracts ``excluded_keys`` before comparing, so a quantile removed from
-the gated set does not read as a missing baseline. Rule F is what keeps that
-subtraction honest: an exclusion is the one edit here that makes the gate cover
-LESS, so a stale or misspelt entry must fail rather than silently widen itself.
+Rule A subtracts ``excluded_keys`` from BOTH sides of its comparison, so a
+quantile removed from the gated set neither reads as a missing baseline nor as
+an undeclared one -- an exclusion left in the baseline is one failure, rule F's,
+which names the file to edit. Rule F is what keeps that subtraction honest: an
+exclusion is the one edit here that makes the gate cover LESS, so a stale or
+misspelt entry must fail rather than silently widen itself.
 
 A PLACEHOLDER baseline -- ``"placeholder": true`` or an empty ``metrics``
 object -- exits 0, because that is the documented bootstrap state and CI has to
@@ -56,10 +58,19 @@ without having checked anything is the same green-build-that-is-not failure this
 script exists to prevent, so renaming or deleting one of its inputs must not
 silence it.
 
+A baseline ENTRY that is not an object, or whose value is not a positive finite
+number, is rejected before any rule runs -- see ``check_key`` and
+``_unusable_baseline``. Every rule does arithmetic on that value,
+and a degenerate one made the script crash with a traceback (rule D divides by
+it) or emit advice about the wrong file (a negative value inverts rule D's
+comparison). Reporting malformed input is what this script is for, so it must
+name the key rather than die on it.
+
 Exit 0 when every rule holds, 1 with per-key detail otherwise.
 """
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -217,12 +228,90 @@ def check_exclusions(metrics_cfg, thresholds, baseline_metrics, declared):
     return failures
 
 
+def _unusable_baseline(key, value, unit):
+    """Reject a baseline value no rule below could evaluate, or None if it is fine.
+
+    Every rule downstream does arithmetic on this number, and two of them break
+    on a degenerate one rather than reporting it:
+
+      * rule D computes ``100 * bound / value``, which raises
+        ZeroDivisionError on ``0.0``. The script then dies with a traceback
+        instead of naming the key -- a validator that crashes where it should
+        report is the same green-build-that-is-not failure in reverse;
+      * a NEGATIVE value makes that same ratio negative, so ``pct >= ratio`` is
+        true for any configured percentage and rule D fires with a message
+        telling the maintainer to lower ``max_pct_increase``. The advice is
+        wrong: the fault is the baseline, not the threshold;
+      * a non-numeric value raises TypeError inside rule E's subtraction.
+
+    Rule E does not cover the zero case, which is easy to assume it does: its
+    test ``abs(value - quantile * first_edge) <= 1e-9 * first_edge`` reduces to
+    ``quantile <= 1e-9`` when value is ``0.0``, and that is false for every
+    quantile this harness captures (0.5, 0.95, 0.99).
+
+    None of these arise from the normal pipeline -- ``histogram_quantile`` over
+    a first-bucket-only histogram returns ``quantile x first_edge``, never zero,
+    and rule E is the guard for exactly that. They arise from a hand-edited or
+    truncated baseline, which is precisely the input this script exists to
+    reject.
+
+    Args:
+        key:   Flat metric key, for the message.
+        value: The baseline value as read from the file.
+        unit:  The entry's unit, for the message.
+
+    Returns:
+        A failure string, or None when the value is usable.
+    """
+    # bool is a subclass of int; True would otherwise pass as the number 1.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return (
+            f"{key}: baseline value {value!r} is not a number, so no bound can be "
+            f"derived from it. Recapture the baseline from a CI run rather than "
+            f"editing it by hand -- see baselines/README.md"
+        )
+    if not math.isfinite(value) or value <= 0:
+        return (
+            f"{key}: baseline is {value!r}{unit}, but a captured latency quantile "
+            f"is strictly positive and finite. A zero baseline leaves the "
+            f"percentage bound undefined, a negative one inverts it, and neither "
+            f"can bracket to a bucket -- so no rule below can be evaluated. "
+            f"Recapture the baseline from a CI run rather than editing it by hand "
+            f"-- see baselines/README.md"
+        )
+    return None
+
+
 def check_key(key, entry, thresholds, ladders):
-    """Apply rules B, C, D and E to one gated key. Returns a list of failures."""
+    """Apply rules B, C, D and E to one gated key. Returns a list of failures.
+
+    The rules assume the baseline entry holds a strictly positive, finite
+    number, which is what ``histogram_quantile`` yields. Anything else is
+    malformed input, and reporting malformed input is this script's whole job,
+    so it is rejected up front rather than arithmetic being attempted on it --
+    see ``_unusable_baseline``.
+
+    The entry's SHAPE is checked first, for the same reason. A hand edit that
+    writes the bare number instead of the ``{"value": .., "unit": ..}`` object
+    leaves no ``.get`` to call, and the script died with an AttributeError
+    traceback naming a line in itself rather than the key at fault.
+    """
+    if not isinstance(entry, dict):
+        return [
+            f"{key}: baseline entry {entry!r} is not an object carrying value and "
+            f"unit, so no bound can be derived from it. Recapture the baseline "
+            f"from a CI run rather than editing it by hand -- see "
+            f"baselines/README.md"
+        ]
+
     value, unit = entry.get("value"), entry.get("unit", "")
     edges = ladders.get(unit)
     if value is None or edges is None:
         return [f"{key}: baseline has no value, or unknown unit {unit!r}"]
+
+    unusable = _unusable_baseline(key, value, unit)
+    if unusable:
+        return [unusable]
 
     failures = []
     first_edge = edges[0]
@@ -308,8 +397,16 @@ def main():
     failures.extend(check_exclusions(metrics_cfg, thresholds, gated, declared))
     # Rule A compares against the GATED surface, so a deliberately excluded
     # quantile is not reported as a baseline that was never captured.
-    declared -= set(metrics_cfg.get("excluded_keys", {}))
-    for key in sorted(set(gated) - declared):
+    #
+    # The same keys come off rule A's over-coverage side too. An excluded key
+    # left in the baseline is rule F's finding, reported with the file to edit;
+    # rule A would add a second failure for the same single mistake, saying the
+    # key is not declared -- which is not even true, it is declared and then
+    # excluded. Only exclusions the surface really declares are subtracted, so a
+    # misspelt exclusion naming a stale baseline key still reaches rule A.
+    excluded_declared = set(metrics_cfg.get("excluded_keys", {})) & declared
+    declared -= excluded_declared
+    for key in sorted(set(gated) - declared - excluded_declared):
         failures.append(
             f"{key}: in the baseline but not declared by {METRICS}, so it is "
             f"reported every run and can never gate -- remove it (rule A)"

@@ -20,9 +20,15 @@
 #   0 — All validation checks and the regression gate passed
 #   1 — Validation checks failed OR the regression gate detected a regression
 #       OR the benchmark exceeded its overhead thresholds
-#   2 — Infrastructure error (cluster/stack failed to start, workload
-#       orchestration failed, timing capture failed, overhead could not be
-#       measured)
+#   2 — Infrastructure error: the run could not be carried out, so no verdict
+#       was reached. Every `die` below exits 2 and is the single source of this
+#       code; the cases are an unusable command line, a missing prerequisite, a
+#       workdir that could not be prepared, a stack or cluster that did not
+#       start, failed workload orchestration, a timing capture that failed while
+#       the regression gate was active, and an overhead that could not be
+#       measured. Read `die`, not this list, if they ever disagree.
+#
+# `--help` and `--cleanup` also exit 0; they validate nothing.
 #
 # Every step below records its status and folds it into FINAL_EXIT; the first
 # non-zero status in pipeline order is the one returned, so the earliest
@@ -37,6 +43,13 @@ log() { printf "\033[1;34m[VALIDATE]\033[0m %s\n" "$*"; }
 ok() { printf "\033[1;32m[VALIDATE]\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m[VALIDATE]\033[0m %s\n" "$*"; }
 fail() { printf "\033[1;31m[VALIDATE]\033[0m %s\n" "$*"; }
+# die MESSAGE — report an infrastructure error and exit with code 2.
+#
+# Every fallible command that must stop the run routes through here instead of
+# being left to errexit. Errexit exits with the failing tool's own status —
+# docker uses 1 and 125, jq 2 to 5, rm and mkdir 1 — and a caller reading the
+# table above would take those for a validation failure or for a code this
+# script never promises to return.
 die() {
     printf "\033[1;31m[VALIDATE]\033[0m %s\n" "$*" >&2
     exit 2
@@ -116,7 +129,7 @@ usage() {
     echo "  --profile NAME       Workload profile (default: full-validation)"
     echo "  --with-benchmark     Also run performance overhead benchmark (telemetry off vs on)"
     echo "  --skip-loki          Skip Loki log-trace correlation checks"
-    echo "  --skip-regression    Skip the OTel-baseline regression gate"
+    echo "  --skip-regression    Skip the baseline comparison (timings are still captured)"
     echo "  --cleanup            Tear down everything and exit"
     echo "  -h, --help           Show this help"
     echo ""
@@ -132,34 +145,52 @@ usage() {
     exit 0
 }
 
+# require_value "$@" — die when a two-argument option was given no value.
+#
+# Called with the remaining arguments, so $# is what is left to parse. Without
+# it, `set -u` aborts on the unset $2 with status 1, which the table above
+# assigns to a failed check — the same mismapping the guards below remove. An
+# unknown option and a valueless one are both bad command lines and must return
+# the same code.
+require_value() {
+    [ $# -ge 2 ] || die "Option $1 requires a value"
+}
+
 while [ $# -gt 0 ]; do
     case "$1" in
         --xrpld)
+            require_value "$@"
             XRPLD="$2"
             shift 2
             ;;
         --nodes)
+            require_value "$@"
             NUM_NODES="$2"
             shift 2
             ;;
         # The next four are inert — see the RPC_RATE default above.
         --rpc-rate)
+            require_value "$@"
             RPC_RATE="$2"
             shift 2
             ;;
         --rpc-duration)
+            require_value "$@"
             RPC_DURATION="$2"
             shift 2
             ;;
         --tx-tps)
+            require_value "$@"
             TX_TPS="$2"
             shift 2
             ;;
         --tx-duration)
+            require_value "$@"
             TX_DURATION="$2"
             shift 2
             ;;
         --profile)
+            require_value "$@"
             WORKLOAD_PROFILE="$2"
             shift 2
             ;;
@@ -182,7 +213,11 @@ while [ $# -gt 0 ]; do
             # whose command line merely mentions that path.
             pkill -f "$WORKDIR/node[0-9]+/xrpld\.cfg" 2>/dev/null || true
             docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
-            rm -rf "$WORKDIR"
+            # The collector bind-mounts $WORKDIR (see XRPLD_LOG_DIR below), so a
+            # file left behind owned by a container uid makes this fail. Leaving
+            # it in place would hand the next run stale node state, so say so
+            # rather than reporting a clean teardown.
+            rm -rf "$WORKDIR" || die "Could not remove $WORKDIR — remove it manually before the next run"
             ok "Cleanup complete."
             exit 0
             ;;
@@ -218,8 +253,8 @@ log "Cleaning up previous run..."
 # Narrowed for the same reason as the --cleanup branch above.
 pkill -f "$WORKDIR/node[0-9]+/xrpld\.cfg" 2>/dev/null || true
 sleep 2
-rm -rf "$WORKDIR"
-mkdir -p "$WORKDIR" "$REPORT_DIR"
+rm -rf "$WORKDIR" || die "Could not remove the previous run's workdir $WORKDIR"
+mkdir -p "$WORKDIR" "$REPORT_DIR" || die "Could not create $WORKDIR and $REPORT_DIR"
 
 # ---------------------------------------------------------------------------
 # Step 1: Start observability stack
@@ -227,7 +262,8 @@ mkdir -p "$WORKDIR" "$REPORT_DIR"
 log "Step 1: Starting observability stack..."
 # Point the collector's log mount at this run's workdir so the filelog
 # receiver tails the per-node debug.log files generated below.
-XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d
+XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d ||
+    die "docker compose up failed for $COMPOSE_FILE — the observability stack did not start"
 
 log "Waiting for OTel Collector..."
 for attempt in $(seq 1 30); do
@@ -265,16 +301,25 @@ done
 # ---------------------------------------------------------------------------
 log "Step 2: Starting $NUM_NODES-node validator cluster..."
 
-bash "$SCRIPT_DIR/generate-validator-keys.sh" "$XRPLD" "$NUM_NODES" "$WORKDIR"
+bash "$SCRIPT_DIR/generate-validator-keys.sh" "$XRPLD" "$NUM_NODES" "$WORKDIR" ||
+    die "generate-validator-keys.sh failed — no validator keys for the $NUM_NODES-node cluster"
 
 for i in $(seq 1 "$NUM_NODES"); do
     NODE_DIR="$WORKDIR/node$i"
-    mkdir -p "$NODE_DIR/nudb" "$NODE_DIR/db"
+    mkdir -p "$NODE_DIR/nudb" "$NODE_DIR/db" || die "Could not create node$i directories under $NODE_DIR"
 
     RPC_PORT=$((RPC_PORT_BASE + i - 1))
     WS_PORT=$((WS_PORT_BASE + i - 1))
     PEER_PORT=$((PEER_PORT_BASE + i - 1))
-    SEED=$(jq -r ".[$((i - 1))].seed" "$WORKDIR/validator-keys.json")
+    SEED=$(jq -r ".[$((i - 1))].seed" "$WORKDIR/validator-keys.json") ||
+        die "Could not read node$i's seed from $WORKDIR/validator-keys.json"
+    # jq prints the string "null" and exits 0 when the array is shorter than
+    # NUM_NODES, so the exit status alone does not detect a short key file. An
+    # unusable seed here is only visible ~200s later as a cluster that never
+    # proposes, which names the wrong step.
+    case "$SEED" in
+        "" | null) die "node$i has no seed in $WORKDIR/validator-keys.json — the file holds fewer than $NUM_NODES entries, or entry $((i - 1)) carries no seed" ;;
+    esac
 
     # Build ips_fixed.
     IPS_FIXED=""
@@ -285,7 +330,7 @@ for i in $(seq 1 "$NUM_NODES"); do
         fi
     done
 
-    cat >"$NODE_DIR/xrpld.cfg" <<EOCFG
+    cat >"$NODE_DIR/xrpld.cfg" <<EOCFG || die "Could not write node$i's config to $NODE_DIR/xrpld.cfg"
 [server]
 port_rpc
 port_ws
@@ -388,7 +433,10 @@ true
 EOCFG
 
     "$XRPLD" --conf "$NODE_DIR/xrpld.cfg" --start >"$NODE_DIR/stdout.log" 2>&1 &
-    echo $! >"$NODE_DIR/xrpld.pid"
+    # The pid file is the only record of this child: every later liveness check
+    # and crash report reads it back. Losing it silently would make a dead node
+    # indistinguishable from one that was never started.
+    echo $! >"$NODE_DIR/xrpld.pid" || die "Could not write node$i's pid file $NODE_DIR/xrpld.pid"
     log "  Node $i: RPC=$RPC_PORT WS=$WS_PORT Peer=$PEER_PORT PID=$!"
 done
 
@@ -475,7 +523,11 @@ for attempt in $(seq 1 120); do
     done
     if [ "$stopped" -gt 0 ]; then
         echo ""
-        report_stopped_nodes
+        # Tolerated: the reporter only prints. Unguarded, a failure inside it —
+        # a log that became unreadable after the -s test, a full disk — trips
+        # errexit there and the die below never runs, so a dead cluster would
+        # exit 1 and read as a failed check instead of an infrastructure error.
+        report_stopped_nodes || true
         die "$stopped of $NUM_NODES node(s) stopped during startup; only $ready reached proposing. Not proposing:${laggards}. Per-node status is above, then '$0 --cleanup'."
     fi
     if [ "$attempt" -eq 120 ]; then
@@ -488,7 +540,8 @@ for attempt in $(seq 1 120); do
         # Every node is still running but not proposing, so this is a genuine
         # convergence problem rather than a crash. Run the reporter anyway: it
         # is a no-op when nothing stopped, and it costs nothing to be sure.
-        report_stopped_nodes
+        # Tolerated for the same reason as above.
+        report_stopped_nodes || true
         die "Consensus timeout — only $ready/$NUM_NODES nodes proposing after ${attempt}s. Not proposing:${laggards}. Check $WORKDIR/node*/debug.log and $WORKDIR/node*/stdout.log (a node that died before its log sink opened writes only the latter), then '$0 --cleanup'."
     fi
     printf "\r  %d/%d nodes proposing..." "$ready" "$NUM_NODES"
@@ -614,9 +667,22 @@ diag_validator_const() {
 # rather than as zero — "Loki said none" and "Loki did not answer" are
 # different findings.
 diag_loki_count() {
-    local body
-    body=$(diag_run curl -sfG --max-time 10 "$LOKI_URL/loki/api/v1/query" \
+    local raw status body
+    # No -f here on purpose. curl -f discards the response body on a 4xx, and
+    # Loki explains a rejected query only in that body (as text/plain), so -f
+    # turned a self-describing failure into a bare "unavailable". Append the
+    # status code instead and read the body either way.
+    raw=$(diag_run curl -sG --max-time 10 -w $'\n%{http_code}' \
+        "$LOKI_URL/loki/api/v1/query" \
         --data-urlencode "query=$1" --data-urlencode "time=$2" 2>/dev/null) || return 1
+    status=${raw##*$'\n'}
+    body=${raw%$'\n'*}
+    if [ "$status" != "200" ]; then
+        # To stderr: this function's stdout is the count its caller captures.
+        printf '    Loki rejected the diagnostic query (HTTP %s): %.300s\n' \
+            "$status" "$(printf '%s' "$body" | tr -s '[:space:]' ' ')" >&2
+        return 1
+    fi
     printf '%s' "$body" |
         jq -er '[.data.result[].value[1] | tonumber] | add // 0' 2>/dev/null || return 1
 }
@@ -796,8 +862,14 @@ diag_loki_stream() {
         "$DIAG_LOG_SELECTOR $DIAG_LOG_FILTER")
     [ -n "$selector" ] || selector="$DIAG_LOG_SELECTOR"
     [ -n "$correlation" ] || correlation="$DIAG_LOG_SELECTOR $DIAG_LOG_FILTER"
-    query_all="count_over_time($selector[${DIAG_LOG_WINDOW_SECONDS}s])"
-    query_filtered="count_over_time($correlation [${DIAG_LOG_WINDOW_SECONDS}s])"
+    # sum() is required, for the reason recorded at _log_loki_diagnostics in
+    # validate_telemetry.py: the filelog regex_parser leaves message/timestamp
+    # as log-record attributes, Loki's OTLP path turns those into structured
+    # metadata that joins a metric query's label set, so an unaggregated
+    # count_over_time yields one series per log line and Loki rejects the query
+    # with HTTP 400 past 500 series. Both legs then print "unavailable".
+    query_all="sum(count_over_time($selector[${DIAG_LOG_WINDOW_SECONDS}s]))"
+    query_filtered="sum(count_over_time($correlation [${DIAG_LOG_WINDOW_SECONDS}s]))"
     echo "    validator LogQL:  $correlation"
     echo "    diagnostic LogQL: $query_all"
     echo "                      $query_filtered"
@@ -878,32 +950,62 @@ fold_exit "$VALIDATION_EXIT"
 # ---------------------------------------------------------------------------
 # Step 6: Capture OTel timings and run the regression comparison
 # ---------------------------------------------------------------------------
-# This step ALWAYS captures timings (so CI always has an artifact from which
-# to bootstrap/refresh the committed baseline). The comparator then either:
-#   - prints the paste-me JSON when the baseline is a placeholder, or
-#   - enforces thresholds and fails the run on regression.
-# Use --skip-regression to opt out (e.g. for ad-hoc local exploration).
+# Capture ALWAYS runs, so every run leaves a timings.json artifact — it is the
+# only route to a new committed baseline. The workflow's "Print regression
+# summary" step reads that file unconditionally and, when the committed baseline
+# is still a placeholder and the capture is complete, pastes it into the step
+# summary for the author to copy. Suppressing the capture would remove the one
+# way to bootstrap or refresh the baseline.
+#
+# A non-zero capture status does NOT mean the file is absent: capture_timings.py
+# writes its output and only then fails when too few metrics came back (its
+# --min-capture-ratio). So a failed capture usually leaves a thin timings.json,
+# which is worse than none as baseline material — it would commit metrics that
+# were never measured. The messages below say incomplete, never missing.
+#
+# That thin file also says so itself, in the "capture" block capture_timings.py
+# writes into it, so the CAPTURE_EXIT below is no longer the only record of the
+# capture's health: both paste-me paths read the flag and withhold the JSON
+# rather than offering an artifact this run has already called unusable.
+#
+# --skip-regression opts out of the comparison only (e.g. for ad-hoc local
+# exploration), and with it out of the gate's verdict: a capture failure is
+# reported loudly and shown in the step-status table, but does not fail a run
+# whose caller asked not to be gated. With the gate active, a capture failure is
+# an infrastructure error (exit 2) exactly as before.
+#
+# When the comparison does run it either prints the paste-me JSON for a
+# placeholder baseline, or enforces thresholds and fails the run on regression.
 TIMINGS_FILE="$REPORT_DIR/timings.json"
 REGRESSION_REPORT="$REPORT_DIR/regression-report.json"
 REGRESSION_EXIT=0
+CAPTURE_EXIT=0
 
-if [ "$SKIP_REGRESSION" != true ]; then
-    log "Step 6: Capturing OTel timings from Prometheus..."
-    if python3 "$SCRIPT_DIR/capture_timings.py" \
-        --prometheus "http://localhost:9090" \
-        --metrics "$METRICS_FILE" \
-        --output "$TIMINGS_FILE" \
-        --window "$REGRESSION_WINDOW" \
-        --profile "$WORKLOAD_PROFILE"; then
-        ok "Timings captured: $TIMINGS_FILE"
-    else
-        fail "Failed to capture timings — skipping regression comparison."
-        REGRESSION_EXIT=2
-        SKIP_REGRESSION=true
-    fi
+log "Step 6: Capturing OTel timings from Prometheus..."
+if python3 "$SCRIPT_DIR/capture_timings.py" \
+    --prometheus "http://localhost:9090" \
+    --metrics "$METRICS_FILE" \
+    --output "$TIMINGS_FILE" \
+    --window "$REGRESSION_WINDOW" \
+    --profile "$WORKLOAD_PROFILE"; then
+    ok "Timings captured: $TIMINGS_FILE"
+else
+    CAPTURE_EXIT=2
+    fail "Timing capture failed — anything it left in $TIMINGS_FILE is incomplete and must not be pasted into the baseline."
 fi
 
-if [ "$SKIP_REGRESSION" != true ]; then
+if [ "$SKIP_REGRESSION" = true ]; then
+    if [ "$CAPTURE_EXIT" -ne 0 ]; then
+        warn "Regression gate skipped, and timing capture failed — this run cannot refresh the baseline."
+    else
+        warn "Regression gate skipped — timings were still captured at $TIMINGS_FILE."
+    fi
+elif [ "$CAPTURE_EXIT" -ne 0 ]; then
+    # Without a complete capture the gate reaches no verdict, which the
+    # exit-code table calls an infrastructure error rather than a regression.
+    REGRESSION_EXIT="$CAPTURE_EXIT"
+    fail "Skipping regression comparison — the captured timings are incomplete."
+else
     log "Comparing against baseline $BASELINE_FILE..."
     python3 "$SCRIPT_DIR/compare_to_baseline.py" \
         --timings "$TIMINGS_FILE" \
@@ -917,8 +1019,6 @@ if [ "$SKIP_REGRESSION" != true ]; then
     else
         fail "Regression comparator internal error (exit $REGRESSION_EXIT)"
     fi
-else
-    warn "Regression gate skipped."
 fi
 fold_exit "$REGRESSION_EXIT"
 
@@ -980,6 +1080,7 @@ echo ""
 echo "  Step statuses (0 = ok):"
 echo "    Workload orchestration: $ORCHESTRATOR_EXIT"
 echo "    Telemetry validation:   $VALIDATION_EXIT"
+echo "    Timing capture:         $CAPTURE_EXIT"
 echo "    Regression gate:        $REGRESSION_EXIT"
 echo "    Overhead benchmark:     $BENCHMARK_EXIT"
 echo ""

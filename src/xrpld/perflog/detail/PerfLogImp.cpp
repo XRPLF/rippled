@@ -2,7 +2,12 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/telemetry/MetricMacros.h>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// Only the recording calls below and the metric macros' expansion name the
+// registry, and neither survives with telemetry compiled out.
 #include <xrpld/telemetry/MetricsRegistry.h>
+#endif
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
@@ -339,8 +344,10 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     // above are released: the OTel call path allocates and takes locks
     // inside the SDK, so holding methodsMutex across it would widen a
     // process-wide critical section for no reason. Mirrors rpcEnd().
+#ifdef XRPL_ENABLE_TELEMETRY
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordRpcStarted(method);
+#endif
 
     // A value that must be able to decrease (UpDownCounter), added at its
     // call site with no MetricsRegistry member/init-line/method. Paired with
@@ -398,6 +405,7 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
     // Record RPC completion in OTel metrics pipeline. Mirrors the
     // rpcStart() instrumentation so the finished/errored counters and
     // duration histogram advance with every call.
+#ifdef XRPL_ENABLE_TELEMETRY
     if (auto* mr = app_.getMetricsRegistry())
     {
         if (finish)
@@ -409,6 +417,7 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
             mr->recordRpcErrored(method, durationUs.count());
         }
     }
+#endif
 
     // Matching -1 for the +1 recorded in rpcStart(). Placed after the early
     // returns above so it runs only when this request's methods-map entry was
@@ -432,10 +441,17 @@ PerfLogImp::jobQueue(JobType const type, std::string const& name)
         ++counter->second.value.queued;
     }
 
+#ifdef XRPL_ENABLE_TELEMETRY
     // Record job enqueue in OTel metrics pipeline, after the lock above is
     // released so the SDK's work stays outside the critical section.
+    //
+    // Guarded because this runs three times per job, counting jobStart and
+    // jobFinish below. recordJobQueued's body is compiled out, but the call is
+    // not: the virtual getMetricsRegistry() and the JobTypes::name() map lookup
+    // that builds its argument both still happen.
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordJobQueued(JobTypes::name(type), name);
+#endif
 }
 
 void
@@ -470,8 +486,10 @@ PerfLogImp::jobStart(
     // released. jobsMutex is process-wide and taken by every worker thread
     // on every job, so the SDK's allocation and internal locking must not
     // run inside it.
+#ifdef XRPL_ENABLE_TELEMETRY
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordJobStarted(JobTypes::name(type), name, dur.count());
+#endif
 }
 
 void
@@ -499,8 +517,10 @@ PerfLogImp::jobFinish(JobType const type, std::string const& name, microseconds 
 
     // Record job finish in OTel metrics pipeline, after the locks above
     // are released, for the same reason as jobStart().
+#ifdef XRPL_ENABLE_TELEMETRY
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordJobFinished(JobTypes::name(type), name, dur.count());
+#endif
 }
 
 void

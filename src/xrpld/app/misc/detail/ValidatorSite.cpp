@@ -6,7 +6,13 @@
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric macro is named only inside reportFetchOutcome(), whose body is
+// compiled out with the counter it records.
 #include <xrpld/telemetry/MetricMacros.h>
+#endif
+// Not gated: the outcome-label constants are named by the fetch handlers, which
+// pass them whether or not the counter exists.
 #include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/Log.h>
@@ -383,12 +389,20 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
     }
 }
 
+// Not static: with telemetry compiled out the whole body is gated away, so it
+// touches no member and clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
 ValidatorSite::reportFetchOutcome(
     std::size_t siteIdx,
     std::string_view outcome,
     std::scoped_lock<std::mutex> const& sitesLock)
 {
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Every step below exists to label one counter, so it is compiled out with
+    // the counter. Unguarded it would parse the URI parts and build the label
+    // string on every fetch even with nothing to record it to.
+    //
     // loadedResource is set in Site's constructor and never reassigned, so
     // it is always non-null. Unlike activeResource (reset once a fetch
     // completes) it also keeps the URI exactly as configured, which keeps
@@ -437,7 +451,9 @@ ValidatorSite::reportFetchOutcome(
         telemetry::metric::unlFetchTotal,
         "Validator list fetch attempts, by site and outcome",
         {{telemetry::label::site, siteLabel}, {telemetry::label::outcome, std::string(outcome)}});
+#endif
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 ValidatorSite::parseJsonResponse(
@@ -556,8 +572,15 @@ ValidatorSite::parseJsonResponse(
         sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
     }
 
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Gated at the call as well as in the callee: to_string() builds a
+    // std::string for the outcome label, and this is the only reader of it.
+    // The other two call sites pass a compile-time constant, so the callee's
+    // own guard is enough for them.
+    //
     // Last on purpose: if anything above throws, the caller's catch counts it.
     reportFetchOutcome(siteIdx, to_string(applyResult.bestDisposition()), sitesLock);
+#endif
 }
 
 std::shared_ptr<ValidatorSite::Site::Resource>

@@ -57,23 +57,43 @@ on:
         default: false
 
   push:
-    branches:
-      - "pratik/otel-phase*"
-      - "feature/otel-*"
-      - "feature/telemetry-*"
-    # Keep these globs pointing at paths that actually exist. Two earlier
-    # entries (include/xrpl/basics/Telemetry*.h, src/xrpld/app/misc/Telemetry*)
-    # matched zero tracked files, so a pure C++ telemetry change never
-    # triggered this workflow on push — only edits under docker/telemetry/**
-    # or to this file did. The telemetry sources live in the three telemetry
-    # module directories below.
+    # No branches filter, deliberately: GitHub ANDs branches with paths, so a
+    # branch glob decides validation by what a branch is CALLED rather than by
+    # what it CHANGED, and a non-matching name gets no run at all. The paths
+    # below already ask the real question.
+    #
+    # Keep these globs pointing at paths that exist -- two earlier entries
+    # matched zero tracked files, so C++ telemetry changes never triggered.
     paths:
+      # This workflow, and the harness it runs.
       - ".github/workflows/telemetry-validation.yml"
       - "docker/telemetry/**"
+      # The telemetry modules themselves.
       - "include/xrpl/telemetry/**"
       - "src/libxrpl/telemetry/**"
-      - "src/libxrpl/beast/insight/**"
       - "src/xrpld/telemetry/**"
+      # beast::insight, whose gauges and counters this workflow asserts on.
+      # Both halves: the interface headers decide what the OTel collector can
+      # publish, so editing one moves the metric surface as surely as editing
+      # the implementation does.
+      - "include/xrpl/beast/insight/**"
+      - "src/libxrpl/beast/insight/**"
+      # The span-name and metric-name constants. These are the wire contract the
+      # harness asserts against by literal string, so a rename here compiles
+      # cleanly and silently empties the assertions. Matched by filename rather
+      # than directory because the convention colocates each header with the
+      # class it serves: they live under consensus/, overlay/, app/ledger/,
+      # app/main/, app/misc/, rpc/ and tx/, not under a telemetry/ directory.
+      - "**/*SpanNames.h"
+      - "**/*MetricNames.h"
+      # The GTests that pin those same constants.
+      - "src/tests/libxrpl/telemetry/**"
+      # The checkers that gate this surface. otel-naming derives the legal
+      # attribute and metric names from the headers above; the telemetry scripts
+      # enforce the histogram-bucket parity and regression-bound rules the
+      # harness depends on.
+      - ".github/scripts/otel-naming/**"
+      - ".github/scripts/telemetry/**"
 
 concurrency:
   group: telemetry-validation-${{ github.ref }}
@@ -306,8 +326,10 @@ jobs:
           fi
 
       # Publishes captured OTel timings + regression report to the Step Summary.
-      # When the committed baseline is a placeholder, emits a fenced JSON block
-      # that can be copy-pasted directly into baselines/baseline-timings.json.
+      # When the committed baseline is a placeholder AND the capture is
+      # complete, emits a fenced JSON block that can be copy-pasted directly
+      # into baselines/baseline-timings.json. An incomplete capture is named as
+      # such and its JSON withheld — see the comment on that branch below.
       # When the baseline is populated, summarises the top regressions so the
       # PR author sees the failure reason without downloading artifacts.
       - name: Print regression summary
@@ -340,15 +362,62 @@ jobs:
               exit 1
           }
 
+          # Whether the capture is usable as baseline material is the capture's
+          # own verdict, carried in the artifact by capture_timings.py, which
+          # computes it against --min-capture-ratio. It is READ here, never
+          # re-derived: a second copy of the ratio rule in shell would be a
+          # second source of truth and would drift from the producer.
+          #
+          # `// false` covers both an artifact written before the block existed
+          # and a truncated one. Neither can prove it is complete, so neither is
+          # offered — the whole point is that a degraded capture must not look
+          # like a good one. Same `jq -r` reasoning as the baseline parse above.
+          CAPTURE_COMPLETE=$(jq -r '.capture.complete // false' "$TIMINGS") || {
+              echo "::error::Failed to parse timings JSON"
+              exit 1
+          }
+          if [ "$(jq -r 'has("capture")' "$TIMINGS")" = "true" ]; then
+              CAPTURE_COUNTS=$(jq -r '"\(.capture.captured)/\(.capture.declared)"' "$TIMINGS")
+              CAPTURE_SHORTFALL="only **$CAPTURE_COUNTS** declared metrics came back, below the capture's own minimum ratio"
+          else
+              CAPTURE_COUNTS="unknown"
+              CAPTURE_SHORTFALL="the artifact carries no \`capture\` block, so it predates completeness reporting and cannot state what it captured"
+          fi
+
           echo "## OTel Timings Regression Gate" >>"$GITHUB_STEP_SUMMARY"
           echo "" >>"$GITHUB_STEP_SUMMARY"
 
-          if [ "$IS_PLACEHOLDER" = "true" ]; then
+          if [ "$IS_PLACEHOLDER" = "true" ] && [ "$CAPTURE_COMPLETE" != "true" ]; then
+              # The placeholder path is the ONLY route to a committed baseline,
+              # which makes it the one place an incomplete capture does lasting
+              # damage: pasted in, it silently narrows the gate to the keys that
+              # happened to come back. So the JSON is withheld rather than
+              # printed with a caveat — a warning above a copyable block is
+              # still a copyable block. The counts are shown so the reader knows
+              # how thin it was, and the artifact is still uploaded for anyone
+              # who needs to inspect it deliberately.
+              echo "### Baseline NOT refreshable from this run" >>"$GITHUB_STEP_SUMMARY"
+              echo "" >>"$GITHUB_STEP_SUMMARY"
+              echo "The committed baseline is a placeholder, so this run would" \
+                  "normally print a block to paste into" \
+                  "\`baselines/baseline-timings.json\`. It is withheld because" \
+                  "$CAPTURE_SHORTFALL, so the JSON may describe metrics that" \
+                  "were never measured. Pasting it would narrow the gate to" \
+                  "whichever keys were captured, with nothing reporting that" \
+                  "it had narrowed." >>"$GITHUB_STEP_SUMMARY"
+              echo "" >>"$GITHUB_STEP_SUMMARY"
+              echo "Fix the capture first — the usual cause is Prometheus not" \
+                  "being scraped for long enough, or nodes not reaching" \
+                  "consensus — then re-run. See the \`timings.json\` artifact's" \
+                  "\`capture\` block for the exact counts." >>"$GITHUB_STEP_SUMMARY"
+              echo "::error::Timing capture is incomplete ($CAPTURE_COUNTS metrics) — no baseline block printed. Do not refresh the baseline from this run."
+          elif [ "$IS_PLACEHOLDER" = "true" ]; then
               echo "### Paste into \`baselines/baseline-timings.json\`" >>"$GITHUB_STEP_SUMMARY"
               echo "" >>"$GITHUB_STEP_SUMMARY"
               echo "The committed baseline is a placeholder. Open a PR replacing" \
                   "its contents with the JSON block below to activate the" \
-                  "regression gate." >>"$GITHUB_STEP_SUMMARY"
+                  "regression gate. The capture is complete" \
+                  "($CAPTURE_COUNTS declared metrics)." >>"$GITHUB_STEP_SUMMARY"
               echo "" >>"$GITHUB_STEP_SUMMARY"
               echo '```json' >>"$GITHUB_STEP_SUMMARY"
               cat "$TIMINGS" >>"$GITHUB_STEP_SUMMARY"
