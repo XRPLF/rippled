@@ -30,8 +30,8 @@
  *  to keep those types out of call sites.
  *
  * @note Thread safety: `Counter` is safe to update from any thread.
- *  `Stopwatch` and `Mirror` are not synchronized; guard them the same way
- *  you guard the state they sit beside.
+ *  `Stopwatch` and `Mirror` are not synchronized; guard them the same way you
+ *  guard the state they sit beside.
  *
  *  Usage:
  *  @code
