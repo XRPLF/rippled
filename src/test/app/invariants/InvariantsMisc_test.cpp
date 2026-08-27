@@ -4,7 +4,9 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/pay.h>
 #include <test/jtx/token.h>
+#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -887,8 +889,8 @@ class InvariantsMisc_test : public InvariantsBase
         // interest due (total value minus principal and management fee) to be
         // non-negative after each value is rounded to sfLoanScale. Test zero,
         // each way to produce a one-unit deficit, and a two-unit deficit. At
-        // scale 0, a real XRP-backed broker rejects any deficit, while an
-        // unresolved synthetic broker permits one unit of rounding tolerance.
+        // scale 0, an XRP-backed broker rejects any deficit, while an
+        // IOU-backed one permits one unit of rounding tolerance.
         {
             struct Case
             {
@@ -935,23 +937,30 @@ class InvariantsMisc_test : public InvariantsBase
                 {
                     Env env{*this, all_};
                     Account const a1{"A1"};
-                    env.fund(XRP(1000), a1);
+                    Account const issuer{"issuer"};
+                    env.fund(XRP(1000), a1, issuer);
                     env.close();
 
-                    std::optional<Keylet> realBrokerKeylet;
-                    if (integralAsset)
-                    {
-                        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-                        realBrokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
-                        if (!BEAST_EXPECT(env.le(*realBrokerKeylet)))
-                            continue;
+                    // The check reads the broker's vault asset to decide
+                    // whether the rounding tolerance applies, so both
+                    // branches need a real broker over the relevant asset.
+                    auto const asset = [&]() -> PrettyAsset {
+                        if (integralAsset)
+                            return PrettyAsset{xrpIssue(), 1'000'000};
+                        PrettyAsset const iouAsset = issuer["IOU"];
+                        env(trust(a1, iouAsset(1000)));
+                        env(pay(issuer, a1, iouAsset(1000)));
                         env.close();
-                    }
+                        return iouAsset;
+                    }();
+
+                    auto const brokerKeylet = this->createLoanBroker(a1, env, asset);
+                    if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                        continue;
+                    env.close();
 
                     OpenView ov{*env.current()};
 
-                    auto const brokerKeylet = realBrokerKeylet.value_or(
-                        keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq())));
                     auto const loanKeylet =
                         keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                     // Seed a loan whose interest due sits at the boundary. The
@@ -994,9 +1003,8 @@ class InvariantsMisc_test : public InvariantsBase
                     }
                     else
                     {
-                        // Other invariants may still fire (e.g. the
-                        // broker-existence check on this raw-inserted loan), so
-                        // only assert the specific message is absent.
+                        // Other invariants may still fire on this raw-inserted
+                        // loan, so only assert the specific message is absent.
                         BEAST_EXPECT(!messages.contains("Loan interest due is negative"));
                     }
                 }

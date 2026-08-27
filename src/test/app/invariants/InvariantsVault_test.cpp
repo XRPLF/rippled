@@ -1433,20 +1433,35 @@ class InvariantsVault_test : public InvariantsBase
 
         // Loan interest due (total value less principal and management fee) must
         // never be negative. The loan below carries a total value short of its
-        // principal, while every individual field stays non-negative.
-        doInvariantCheck(
-            {"Loan interest due is negative"},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
-                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
-                sleLoan->at(sfPrincipalOutstanding) = Number(100);
-                sleLoan->at(sfTotalValueOutstanding) = Number(90);
-                sleLoan->setFieldU32(sfPaymentRemaining, 1);
-                ac.view().insert(sleLoan);
-                return true;
-            },
-            XRPAmount{},
-            loanSetTx);
+        // principal, while every individual field stays non-negative. A real
+        // broker over an XRP vault is created in the preclose, both so the
+        // earlier broker-existence checks pass and so the deficit is measured
+        // in an integral asset domain, where no rounding tolerance applies.
+        {
+            Keylet brokerKeylet = keylet::amendments();
+            auto const precloseBroker = [&brokerKeylet, this](
+                                            Account const& a1, Account const&, Env& env) -> bool {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                brokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
+                env.close();
+                return BEAST_EXPECT(env.le(brokerKeylet));
+            };
+
+            doInvariantCheck(
+                {"Loan interest due is negative"},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(90);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    ac.view().insert(sleLoan);
+                    return true;
+                },
+                XRPAmount{},
+                loanSetTx,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseBroker);
+        }
 
         // Each of these loan STNumber fields must never be negative. The loan
         // is created directly with a single field set negative while the
