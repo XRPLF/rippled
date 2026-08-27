@@ -256,3 +256,14 @@ telemetry::injectSpanContext(span, msg);
 // Wrong: the submessage exists before the helper can decide anything.
 telemetry::injectSpanContext(span, *msg.mutable_trace_context());
 ```
+
+`injectCurrentContext(msg)` does the same for whichever span is active on the calling thread, deciding via `SpanGuard::hasCurrentContext()`. Four states have to come out right:
+
+| Build        | Runtime          | Result                                                               |
+| ------------ | ---------------- | -------------------------------------------------------------------- |
+| compiled out | n/a              | no submessage; the bytes on the wire match a build without telemetry |
+| compiled in  | a span is active | `trace_id`, `span_id` and the trace flags are written                |
+| compiled in  | no active span   | no submessage, rather than an empty one                              |
+| compiled in  | `enabled=0`      | no submessage                                                        |
+
+`hasCurrentContext()` reads the span straight out of the runtime context. `opentelemetry::trace::GetSpan()` would be shorter, but it returns a heap-allocated `DefaultSpan` when the context holds no span — an allocation in exactly the case the predicate exists to keep free.
