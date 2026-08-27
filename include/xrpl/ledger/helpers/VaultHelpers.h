@@ -7,8 +7,10 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 
 namespace xrpl {
@@ -44,6 +46,32 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
 
 /**
+ * Adjusts a requested asset change (`delta`) to match the decimal scale of the
+ * updated total vault assets. This ensures `sfAssetsTotal`, `sfAssetsAvailable`,
+ * and the actual asset transfer change by the exact same representable amount.
+ *
+ * Rounding strategy:
+ * - Debits (withdrawals): Rounds down `|delta|` on the new scale to prevent
+ *   paying out more than requested.
+ * - Credits (deposits): Floors the resulting total asset balance and returns the
+ *   difference from the current total. This prevents crediting the vault with
+ *   more assets than the user deposited.
+ *
+ * Key rules:
+ * - The returned magnitude never exceeds `|delta|`.
+ * - Returns `tecPRECISION_LOSS` if the change is smaller than 1 ULP of the target scale
+ *   (prevents share operations when totals cannot change).
+ * - For integer assets (XRP, MPT), rounding is a no-op.
+ *
+ * @param vault The vault ledger entry.
+ * @param delta The requested signed change to sfAssetsTotal.
+ * @return The rounded, positive magnitude, or `tecPRECISION_LOSS` if the
+ *         change is below representable precision.
+ */
+[[nodiscard]] std::expected<STAmount, TER>
+clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta);
+
+/**
  * Controls whether to truncate shares instead of rounding.
  */
 enum class TruncateShares : bool { No = false, Yes = true };
@@ -58,33 +86,30 @@ enum class TruncateShares : bool { No = false, Yes = true };
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 
 /**
- * Returns the effective total of assets backing outstanding shares for the
- * purposes of a withdrawal, i.e. sfAssetsTotal, discounted by sfLossUnrealized
- * unless waived. This is the numerator used by both withdraw conversion
- * helpers (assetsToSharesWithdraw and sharesToAssetsWithdraw) to compute the
- * share/asset exchange rate.
+ * Returns the assets backing outstanding shares for a withdrawal:
+ * sfAssetsTotal minus sfLossUnrealized, or sfAssetsTotal alone when the
+ * unrealized loss is waived. Used by assetsToSharesWithdraw and
+ * sharesToAssetsWithdraw as the numerator of the share/asset exchange rate.
  *
  * @param vault The vault SLE.
- * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
- *              loss.
+ * @param waive Whether to skip subtracting the unrealized loss.
  */
 [[nodiscard]] Number
 assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive);
 
 /**
- * Returns whether debiting `amount` from `total` — the current value of a
- * vault's sfAssetsTotal or sfAssetsAvailable field — would canonicalize back
- * to the exact same STAmount value it started at. This happens when a
- * genuinely non-zero debit is dust relative to a `total` large enough to
- * exceed STAmount's significant-digit precision: the shares still move, but
- * the stored total doesn't change, which otherwise trips the ValidVault
- * invariant after the fact instead of failing cleanly upfront.
+ * Returns true if debiting `amount` from `total` (the current value of a
+ * vault's sfAssetsTotal or sfAssetsAvailable) would canonicalize to the
+ * same STAmount value. This happens when `amount` is non-zero but too small
+ * to change the stored total at STAmount's precision. Shares would still
+ * move, so the ValidVault invariant would fail after apply; callers use
+ * this to reject the transaction upfront instead.
  *
- * @param asset The vault's underlying asset, used to canonicalize both sides
- *              the same way the ledger will when the field is stored.
+ * @param asset The vault's underlying asset, used to canonicalize both
+ *              sides the same way the ledger will when the field is stored.
  * @param total The field's current value.
- * @param amount The amount to debit. A value of zero always returns false;
- *               that case is rejected separately and unconditionally.
+ * @param amount The amount to debit. Zero always returns false; that case
+ *               is rejected separately.
  */
 [[nodiscard]] bool
 debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount);
@@ -237,5 +262,41 @@ getVaultPhase(
     std::optional<std::uint8_t> vaultKind,
     std::optional<std::uint32_t> subscriptionDate,
     std::optional<std::uint32_t> redemptionDate);
+
+/**
+ * Controls whether checkVaultDomain reports an expired credential as an
+ * error. A caller that deletes expired credentials later, in doApply, passes
+ * Yes and treats the subject as authorized; a caller with no such cleanup
+ * step must keep the error.
+ */
+enum class SuppressExpired : bool { No = false, Yes = true };
+
+/**
+ * Checks that subject belongs to the permissioned domain governing a vault's
+ * shares.
+ *
+ * The domain is read from the share issuance rather than from the vault. Vault
+ * shares are issued by the vault's pseudo-account, which cannot grant an
+ * authorization explicitly, so domain membership is the only route to being
+ * authorized: a vault with no domain set has no authorized participants at
+ * all, and every subject fails with tecNO_AUTH.
+ *
+ * Which accounts to check, and whether to check at all, is left to the caller.
+ * This says nothing about vault privacy or about the roles of the accounts.
+ *
+ * @param view The ledger view.
+ * @param issuance The MPTokenIssuance SLE for the vault's shares.
+ * @param subject The account whose domain membership is checked.
+ * @param suppressExpired Whether an expired credential counts as authorized.
+ *
+ * @return tesSUCCESS if the subject is a domain member, otherwise the reason
+ * it is not.
+ */
+[[nodiscard]] TER
+checkVaultDomain(
+    ReadView const& view,
+    SLE::const_ref issuance,
+    AccountID const& subject,
+    SuppressExpired suppressExpired);
 
 }  // namespace xrpl

@@ -535,11 +535,17 @@ accountFunds(
 }
 
 Rate
-transferRate(ReadView const& view, STAmount const& amount)
+transferRate(ReadView const& view, Asset const& asset)
 {
-    return amount.asset().visit(
+    return asset.visit(
         [&](Issue const& issue) { return transferRate(view, issue.getIssuer()); },
         [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });
+}
+
+Rate
+transferRate(ReadView const& view, STAmount const& amount)
+{
+    return transferRate(view, amount.asset());
 }
 
 //------------------------------------------------------------------------------
