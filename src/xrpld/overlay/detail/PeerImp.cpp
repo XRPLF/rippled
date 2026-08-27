@@ -19,7 +19,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/telemetry/ConsensusReceiveTracing.h>
 #include <xrpld/telemetry/TxSpanNames.h>
 #include <xrpld/telemetry/TxTracing.h>
 
@@ -108,6 +107,12 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The consensus receive-span factories are named only by the
+// telemetry-enabled blocks in this file.
+#include <xrpld/telemetry/ConsensusReceiveTracing.h>
+#endif
 
 using namespace std::chrono_literals;
 
@@ -2023,20 +2028,33 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // Create a receive span that links to the sender's trace context
     // (if propagated). shared_ptr keeps it alive across the job boundary.
     // The receive span is a thread-free SpanGuard handed to the job worker;
-    // no scope to strip.
-    auto span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
-    span->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
-    span->setAttribute(
-        telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
-    // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
-    // peer positions and prior ledgers without exporting full 32-byte
-    // hashes on every receive event.
-    span->setAttribute(
-        telemetry::consensus::span::attr::prevLedgerPrefix,
-        to_string(prevLedger).substr(0, 16).c_str());
-    span->setAttribute(
-        telemetry::consensus::span::attr::positionHashPrefix,
-        to_string(proposeHash).substr(0, 16).c_str());
+    // no scope to strip. The handle stays empty when telemetry is compiled
+    // out, so nothing is allocated on a path every inbound proposal takes.
+    // The job body only carries the handle to hold the span alive, so an
+    // empty handle is safe there.
+    std::shared_ptr<telemetry::SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+    span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+#endif
+    // Every attribute below exists only for the span, so the block is guarded
+    // on the span being live. Unguarded, each inbound proposal — trusted or
+    // not — builds two full hex strings and a substring of each, four string
+    // allocations no one reads.
+    if (span && *span)
+    {
+        span->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
+        span->setAttribute(
+            telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
+        // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
+        // peer positions and prior ledgers without exporting full 32-byte
+        // hashes on every receive event.
+        span->setAttribute(
+            telemetry::consensus::span::attr::prevLedgerPrefix,
+            to_string(prevLedger).substr(0, 16).c_str());
+        span->setAttribute(
+            telemetry::consensus::span::attr::positionHashPrefix,
+            to_string(proposeHash).substr(0, 16).c_str());
+    }
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
@@ -2598,19 +2616,33 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
         // The receive span is a thread-free SpanGuard handed to the job worker;
-        // no scope to strip.
-        auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
-        span->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
-        if (val->isFieldPresent(sfLedgerSequence))
+        // no scope to strip. The handle stays empty when telemetry is compiled
+        // out, so nothing is allocated on a path every inbound validation
+        // takes. The job body only carries the handle to hold the span alive,
+        // so an empty handle is safe there.
+        std::shared_ptr<telemetry::SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+        span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
+#endif
+        // Every attribute below exists only for the span, so the block is
+        // guarded on the span being live. Unguarded, each inbound validation
+        // pays the field lookups and time conversions here. The span is built
+        // before the drop decision below on purpose, so a dropped validation
+        // is still traced; the guard removes the cost, not the span.
+        if (span && *span)
         {
+            span->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
+            if (val->isFieldPresent(sfLedgerSequence))
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::ledgerSeq,
+                    static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
+            }
+            span->setAttribute(telemetry::consensus::span::attr::fullValidation, val->isFull());
             span->setAttribute(
-                telemetry::consensus::span::attr::ledgerSeq,
-                static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
+                telemetry::consensus::span::attr::validationSignTime,
+                static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
         }
-        span->setAttribute(telemetry::consensus::span::attr::fullValidation, val->isFull());
-        span->setAttribute(
-            telemetry::consensus::span::attr::validationSignTime,
-            static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
 
         if (!isTrusted && (tracking_.load() == Tracking::Diverged))
         {
