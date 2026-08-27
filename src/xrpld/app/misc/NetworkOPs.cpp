@@ -1954,7 +1954,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     // Inject the tx.process span's trace context so the
                     // receiving node can link its tx.receive span as a child.
                     if (e.span && *e.span)
-                        telemetry::injectSpanContext(*e.span, *tx.mutable_trace_context());
+                        telemetry::injectSpanContext(*e.span, tx);
                     // FIXME: This should be when we received it
                     registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
                     e.transaction->setBroadcast();
