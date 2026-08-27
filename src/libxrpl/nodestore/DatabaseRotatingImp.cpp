@@ -227,8 +227,13 @@ DatabaseRotatingImp::fetchNodeObject(
                     // Two counters, one event: the per-rotation tally that
                     // rotate() resets for its log line, and the monotonic total
                     // the metrics gauge reads, which must never go backwards.
+                    // Only the first is needed for the log line, so the second
+                    // costs an extra atomic increment per copy-forward and is
+                    // compiled out with its only reader.
                     copyForwardCount_.fetch_add(1, std::memory_order_relaxed);
+#ifdef XRPL_ENABLE_TELEMETRY
                     copyForwardTotal_.fetch_add(1, std::memory_order_relaxed);
+#endif
                 }
                 writable->store(nodeObject);
             }
