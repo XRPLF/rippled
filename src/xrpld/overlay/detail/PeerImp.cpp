@@ -24,7 +24,6 @@
 #include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/MetricNames.h>
 #include <xrpld/telemetry/TxSpanNames.h>
-#include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -115,16 +114,19 @@
 #include <utility>
 #include <vector>
 
+// The span factories below are named only by the telemetry-enabled blocks in
+// this file: the consensus receive spans, and the tx.receive span in
+// handleTransaction(). Without this guard they would be unused includes in a
+// build without telemetry, which clang-tidy's misc-include-cleaner rejects.
 #ifdef XRPL_ENABLE_TELEMETRY
-// The consensus receive-span factories are named only by the
-// telemetry-enabled blocks in this file.
 #include <xrpld/telemetry/ConsensusReceiveTracing.h>
+#include <xrpld/telemetry/TxTracing.h>
 
 // The TMGetObjectByHash metric names and label keys. Every use of them sits in
 // an XRPL_METRIC_* argument list, and those macros expand to nothing when
 // telemetry is off, so the include is guarded like its uses.
 #include <xrpl/telemetry/GetObjectMetricNames.h>
-#endif
+#endif  // XRPL_ENABLE_TELEMETRY
 
 using namespace std::chrono_literals;
 
