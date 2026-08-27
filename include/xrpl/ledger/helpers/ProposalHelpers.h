@@ -38,24 +38,17 @@ proposalOwnerCount(STObject const& proposedTx)
 }
 
 /**
- * Whether the proposed transaction is itself a proposal transaction, which
- * would nest one proposal inside another.
- *
- * TODO: cover ttTRANSACTION_PROPOSAL_SIGN and ttTRANSACTION_PROPOSAL_CANCEL
- * once those transactions exist.
- */
-bool
-isProposalTx(STObject const& proposedTx);
-
-/**
  * Whether the proposed transaction is independently submittable through the
- * ordinary multi-sign path: not a nested proposal, not a pseudo-transaction,
- * not itself flagged as someone else's inner batch transaction, and — if it
- * is a Batch — none of its own inner transactions is a nested proposal or a
- * pseudo-transaction either. A Batch inner transaction cannot itself be
- * pseudo (preflight0 rejects the pseudo/tfInnerBatchTxn combination
- * generically), but that guard lives outside this feature, so it is checked
+ * ordinary multi-sign path: not a proposal transaction itself, not a
+ * pseudo-transaction, not itself flagged as someone else's inner batch
+ * transaction, and — if it is a Batch — none of its own inner transactions is
+ * a proposal, a pseudo-transaction, or a nested Batch. A Batch inner
+ * transaction cannot itself be pseudo or a nested Batch (preflight0 rejects
+ * the pseudo/tfInnerBatchTxn combination and STTx construction rejects inner
+ * Batches), but those guards live outside this feature, so they are checked
  * again here rather than relied upon.
+ *
+ * TODO: cover ttTRANSACTION_PROPOSAL_SIGN once that transaction exists.
  */
 bool
 isValidProposal(STObject const& proposedTx);
@@ -89,7 +82,7 @@ hasEmptySigningPubKey(STObject const& proposedTx)
 }
 
 /**
- * Whether the proposal is terminal (XLS-0103 §4.5). A terminal proposal can
+ * Whether the proposal is terminal (On-Chain Cosigner spec §4.5). A terminal proposal can
  * never complete: it stops accepting signatures and anyone may delete it.
  *
  * A proposal is terminal when either:
@@ -114,7 +107,7 @@ isTerminal(
  *
  * Removes the entry from its Owner's directory, releases the reserve the
  * proposal holds against the Owner, and erases the entry. Shared by every
- * deletion path the spec defines (XLS-0103 §4.5): automatic cleanup when the
+ * deletion path the spec defines (On-Chain Cosigner spec §4.5): automatic cleanup when the
  * proposed transaction's TicketSequence is consumed, and the
  * TransactionProposalCancel / TransactionProposalSign cleanup paths once
  * those transactions exist.
@@ -136,7 +129,7 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
 
 /**
  * Whether tx carries the same payload as a proposal's stored
- * ProposedTransaction (XLS-0103 §4.2.1).
+ * ProposedTransaction (On-Chain Cosigner spec §4.2.1).
  *
  * The payload is every field fixed at creation — everything except the
  * signature containers the proposal lets evolve (TxnSignature, Signers,
@@ -157,7 +150,7 @@ payloadMatches(STObject const& proposedTx, STObject const& tx);
  *
  * While a proposal keyed to the Ticket exists, the target's Ticket is
  * reserved: only the proposal's own proposed transaction may spend it
- * (XLS-0103 §4.2.1), so that unrelated target-account activity cannot
+ * (On-Chain Cosigner spec §4.2.1), so that unrelated target-account activity cannot
  * invalidate the proposal while signatures are being collected.
  * TransactionProposalCancel is not allowed through: it deletes the
  * reservation without consuming the ticket.

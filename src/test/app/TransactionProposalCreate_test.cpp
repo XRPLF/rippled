@@ -158,7 +158,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Proposals do not nest. This payload also isn't a valid instance of
         // TransactionProposalCreate's own template (it lacks Expiration and
         // ProposedTransaction), so it fails STTx construction before ever
-        // reaching our own isProposalTx check.
+        // reaching our own nesting check.
         {
             json::Value tx = payload();
             tx[jss::TransactionType] = "TransactionProposalCreate";

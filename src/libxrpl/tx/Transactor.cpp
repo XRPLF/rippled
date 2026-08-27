@@ -760,7 +760,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         // While a TransactionProposal keyed to this Ticket exists, the
         // Ticket is reserved: only the proposal's own proposed transaction
         // may consume it, so unrelated activity cannot invalidate the
-        // proposal while signatures are being collected (XLS-0103 §4.2.1).
+        // proposal while signatures are being collected (On-Chain Cosigner spec §4.2.1).
         // Cancelling the proposal frees the Ticket, so this is a retry, not
         // a final failure.
         if (!proposal::canConsumeTicket(view, tx))
@@ -886,7 +886,7 @@ Transactor::ticketDelete(
 
     // Once the Ticket is gone, a TransactionProposal keyed to it can never
     // execute: its proposed transaction would fail with tefNO_TICKET. Clean
-    // up the stale proposal and release its Owner's reserve (XLS-0103 §4.5).
+    // up the stale proposal and release its Owner's reserve (On-Chain Cosigner spec §4.5).
     // The reservation check in checkSeqProxy means this is reached only by
     // the proposal's own proposed transaction executing (or failing with a
     // claimed-fee tec), or by AccountDelete sweeping the target account's

@@ -222,7 +222,7 @@ transResults()
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
         MAKE_ERROR(terLOCKED,                 "Fund is locked."),
         MAKE_ERROR(terNO_PERMISSION,          "No permission to perform requested operation."),
-        MAKE_ERROR(terTICKET_RESERVED,        "Ticket is reserved by a transaction proposal."),
+        MAKE_ERROR(terTICKET_RESERVED,        "Ticket is reserved."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

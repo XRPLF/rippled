@@ -1147,7 +1147,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 92, TransactionProposalCreate,
 
 /** This transaction deletes a TransactionProposal, releasing its owner's
     reserve. While the proposal is live only its Owner or its target account
-    may cancel; once it is terminal anyone may (XLS-0103 §7). */
+    may cancel; once it is terminal anyone may (On-Chain Cosigner spec §7). */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/proposal/TransactionProposalCancel.h>
 #endif

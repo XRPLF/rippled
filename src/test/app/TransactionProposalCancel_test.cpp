@@ -205,7 +205,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         // And once cancelled again, the target may spend the ticket on
         // something else entirely (which is also what positively revokes a
         // proposal: cancellation alone does not invalidate signatures an
-        // observer may have copied, XLS-0103 §13.4).
+        // observer may have copied, On-Chain Cosigner spec §13.4).
         env(proposal::cancel(alice, proposalID));
         env.close();
         env(noop(target), ticket::Use(ticketSeq));
@@ -215,7 +215,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
 
     // The target account may refuse any proposal made for it, at any point in
     // its lifecycle, without owning the object: anyone can create a proposal
-    // against any account and tie up one of its tickets (XLS-0103 §7.2).
+    // against any account and tie up one of its tickets (On-Chain Cosigner spec §7.2).
     void
     testTargetCancel(FeatureBitset features)
     {
@@ -246,7 +246,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
     }
 
     // When the proposed transaction is initiated by a Delegate, that delegate
-    // is a target account too (XLS-0103 §7.2): the proposal seeks its
+    // is a target account too (On-Chain Cosigner spec §7.2): the proposal seeks its
     // authorization, so it may refuse.
     void
     testDelegateCancel(FeatureBitset features)
@@ -813,7 +813,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
     }
 
     // Cancel may not spend the ticket the proposal is keyed to. The
-    // reservation is only for the proposed transaction (XLS-0103 §4.2.1);
+    // reservation is only for the proposed transaction (On-Chain Cosigner spec §4.2.1);
     // a target that wants to revoke both the proposal and the ticket must
     // cancel first, then spend the ticket separately.
     void

@@ -51,7 +51,7 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
     STObject const proposedTx = sleProposal->getFieldObject(sfProposedTransaction);
 
     // A terminal proposal can never complete, so anyone may delete it and
-    // release the Owner's reserve (XLS-0103 §7.2).
+    // release the Owner's reserve (On-Chain Cosigner spec §7.2).
     bool const terminal = proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx);
 
     // A live proposal may only be cancelled by its Owner (the proposer) or
@@ -59,7 +59,7 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
     // would execute against (its Account field) or the Delegate named in it.
     // Targets may always refuse a proposal, because anyone can create one
     // against any account and doing so ties up one of that account's
-    // tickets (XLS-0103 §7.2).
+    // tickets (On-Chain Cosigner spec §7.2).
     //
     // The Delegate is read from the stored payload as-is; whether that
     // delegation exists on-ledger is not checked. The proposal asks that

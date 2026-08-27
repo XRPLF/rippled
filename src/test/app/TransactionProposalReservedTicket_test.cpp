@@ -28,12 +28,12 @@
 namespace xrpl::test {
 
 // While a TransactionProposal exists, the Ticket it is keyed to is reserved
-// (XLS-0103 §4.2.1): a transaction may consume it only if its payload matches
+// (On-Chain Cosigner spec §4.2.1): a transaction may consume it only if its payload matches
 // the stored ProposedTransaction, so unrelated target-account activity cannot
 // invalidate the proposal while signatures are being collected. When the
 // matching transaction does consume the ticket, the ledger deletes the
 // now-stale proposal and releases the reserve it holds against its Owner
-// (XLS-0103 §4.5).
+// (On-Chain Cosigner spec §4.5).
 struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 {
     // Create a live proposal owned by proposer holding the given payload.
@@ -84,7 +84,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         env(noop(target), ticket::Use(ticketSeq), Ter(terTICKET_RESERVED));
         // The proposed transaction with one payload field off: the amount,
         // the destination, or the fee. Signature fields are the only
-        // latitude a submitter has (XLS-0103 §4.2.1).
+        // latitude a submitter has (On-Chain Cosigner spec §4.2.1).
         env(pay(target, bob, XRP(2)), ticket::Use(ticketSeq), Ter(terTICKET_RESERVED));
         env(pay(target, alice, XRP(1)), ticket::Use(ticketSeq), Ter(terTICKET_RESERVED));
         env(pay(target, bob, XRP(1)),
@@ -109,9 +109,9 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
     }
 
     // The proposal's own transaction consumes the reserved ticket through
-    // the ordinary submission path (XLS-0103 §6.5). How it is signed is
+    // the ordinary submission path (On-Chain Cosigner spec §6.5). How it is signed is
     // irrelevant to the match — signature fields are excluded — and applying
-    // it auto-deletes the proposal and refunds the Owner (XLS-0103 §4.5).
+    // it auto-deletes the proposal and refunds the Owner (On-Chain Cosigner spec §4.5).
     void
     testMatchingPayloadExecutes(FeatureBitset features)
     {
@@ -151,7 +151,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         // Multi-signed under the target's SignerList: the Signers array the
         // submission carries is a signature field too. The payload's Fee was
         // fixed at creation, so a proposer expecting multi-signed submission
-        // must budget for the signatures then (XLS-0103 §4.2.1).
+        // must budget for the signatures then (On-Chain Cosigner spec §4.2.1).
         {
             env(signers(target, 2, {{alice, 1}, {bob, 1}, {carol, 1}}));
             env.close();
@@ -344,7 +344,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
     // A proposed Batch: the reservation covers its outer ticket, only the
     // identical Batch consumes it, and its deletion must release the larger
-    // reserve a Batch proposal holds (XLS-0103 §4.4).
+    // reserve a Batch proposal holds (On-Chain Cosigner spec §4.4).
     void
     testBatchProposal(FeatureBitset features)
     {
@@ -401,7 +401,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
     // An inner Batch transaction validates its ticket through the same path
     // as a standalone one, so a reserved ticket blocks it too — an inner
     // transaction carries tfInnerBatchTxn and a zero fee, so it can never
-    // match a stored payload, which may not carry that flag (XLS-0103
+    // match a stored payload, which may not carry that flag (On-Chain Cosigner spec
     // §4.2.1). Under tfAllOrNothing the whole Batch is discarded.
     void
     testInnerBatchSpendBlocked(FeatureBitset features)
@@ -450,7 +450,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
     // Deleting the target account sweeps its Tickets without consuming them
     // as a sequence proxy, so the reservation does not block it. A proposal
     // keyed to a swept ticket can never execute and is cleaned up with it,
-    // refunding the proposer (XLS-0103 §4.5).
+    // refunding the proposer (On-Chain Cosigner spec §4.5).
     void
     testTargetAccountDeleted(FeatureBitset features)
     {
@@ -481,7 +481,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
     }
 
-    // A TransactionProposal blocks its Owner's account deletion (XLS-0103
+    // A TransactionProposal blocks its Owner's account deletion (On-Chain Cosigner spec
     // §4.5). Beyond the spec requirement, this blocker is what guarantees
     // the AccountDelete ticket sweep never deletes a proposal out of the
     // very owner directory it is iterating: any proposal reached through a
