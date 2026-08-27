@@ -522,6 +522,10 @@ RCLConsensus::Adaptor::onAccept(
         });
 }
 
+// Not static: the guarded body reads app_ and roundSpanContext_. With telemetry
+// compiled out it returns an empty handle and touches no member, so clang-tidy
+// sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 std::shared_ptr<telemetry::SpanGuard>
 RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
 {
@@ -578,6 +582,7 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
     return {};
 #endif
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 RCLConsensus::Adaptor::doAccept(
@@ -1302,6 +1307,10 @@ RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
         app_.getOPs().setMode(OperatingMode::CONNECTED);
 }
 
+// Neither is static: both guarded bodies read the span-context members. With
+// telemetry compiled out one body is empty and the other returns std::nullopt,
+// so clang-tidy sees two methods that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
 RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 {
@@ -1416,6 +1425,7 @@ RCLConsensus::Adaptor::createValidationSpan()
     return std::nullopt;
 #endif
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 RCLConsensus::Adaptor::onPhaseEvent(std::string_view eventName, std::string_view phaseLabel)
