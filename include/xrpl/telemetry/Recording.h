@@ -144,6 +144,23 @@ class Counter
 #endif
 
 public:
+    /**
+     * Default-constructed at zero.
+     */
+    Counter() = default;
+
+    // Copying and moving are deleted so that a class holding a Counter has the
+    // same copy semantics in both builds. std::atomic deletes all four
+    // implicitly when telemetry is compiled in; without these declarations the
+    // compiled-out Counter would be an empty, freely copyable type, and its
+    // owner would silently become copyable in that build only.
+    Counter(Counter const&) = delete;
+    Counter&
+    operator=(Counter const&) = delete;
+    Counter(Counter&&) = delete;
+    Counter&
+    operator=(Counter&&) = delete;
+
     // These read value_ when telemetry is compiled in and touch no member
     // when it is not, so clang-tidy asks for them to be static. Making them
     // static would give the two builds different signatures.

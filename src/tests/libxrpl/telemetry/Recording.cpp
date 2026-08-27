@@ -25,6 +25,20 @@ static_assert(telemetry::kEnabled, "kEnabled must be true when the macro is defi
 static_assert(!telemetry::kEnabled, "kEnabled must be false when the macro is absent");
 #endif
 
+// Counter's copy semantics must NOT depend on the configuration. When telemetry
+// is compiled in, the std::atomic member deletes all four implicitly; when it is
+// compiled out, Counter declares them deleted itself. Without that, an owning
+// class would be non-copyable in one build and copyable in the other. Asserted
+// unconditionally, because the whole point is that both builds agree.
+static_assert(!std::is_copy_constructible_v<telemetry::Counter<>>);
+static_assert(!std::is_copy_assignable_v<telemetry::Counter<>>);
+static_assert(!std::is_move_constructible_v<telemetry::Counter<>>);
+static_assert(!std::is_move_assignable_v<telemetry::Counter<>>);
+
+// Stopwatch and Mirror hold ordinary values, so they stay copyable in both
+// builds; only Counter needed the explicit deletions above.
+static_assert(std::is_copy_constructible_v<telemetry::Stopwatch>);
+
 // The whole point of the compiled-out form is that it costs no storage. An
 // empty type contributes nothing as a [[no_unique_address]] member.
 TEST(Recording, compiled_out_types_are_empty)
