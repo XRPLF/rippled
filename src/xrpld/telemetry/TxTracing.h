@@ -16,9 +16,14 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The span-id validator and std::uint8_t are named only by the
+// telemetry-enabled branches below.
 #include <xrpl/telemetry/TraceContextValidation.h>
 
 #include <cstdint>
+#endif
 
 namespace xrpl::telemetry {
 
