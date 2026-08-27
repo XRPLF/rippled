@@ -63,6 +63,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <type_traits>
 
 // Counter names std::atomic only when telemetry is compiled in, so guarding
 // the include keeps misc-include-cleaner from seeing an unused one.
@@ -210,8 +211,8 @@ public:
  *  change. `changedTo()` does all three in one call and answers false when
  *  telemetry is compiled out, so the reporting branch is never taken.
  *
- * @tparam T  The mirrored value's type. Must be equality-comparable and
- *  default-constructible.
+ * @tparam T  The mirrored value's type. Must be equality-comparable,
+ *  default-constructible and copyable.
  *
  * @note Holds a plain T, not an atomic, and is therefore not synchronized.
  *  Guard it exactly the way you guard the state it sits beside. A value that
@@ -221,6 +222,17 @@ public:
 template <class T>
 class Mirror
 {
+    // A non-copyable T would make Mirror itself copyable in one build and not
+    // the other: with telemetry compiled in it inherits T's deleted copy, and
+    // compiled out it is an empty type with all four operations implicit. That
+    // is the per-configuration difference these types exist to avoid, so the
+    // requirement is enforced rather than only documented. store() assigns to
+    // value_, so a copyable T is needed regardless.
+    static_assert(
+        std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T>,
+        "Mirror<T> requires a copyable T, so that its own copy semantics do not "
+        "depend on whether telemetry is compiled in");
+
 #ifdef XRPL_ENABLE_TELEMETRY
     /**
      * The last value stored.
