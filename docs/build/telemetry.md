@@ -20,6 +20,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
     - [Coroutine-aware context storage](#coroutine-aware-context-storage)
     - [Handing a span to a job](#handing-a-span-to-a-job)
     - [Why are unrelated spans in my trace?](#why-are-unrelated-spans-in-my-trace)
+    - [Injecting trace context into a protobuf message](#injecting-trace-context-into-a-protobuf-message)
 
 ## Overview
 
