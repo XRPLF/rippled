@@ -510,7 +510,7 @@ graph LR
 # [insight] section — new "otel" server option
 [insight]
 server=otel              # NEW: uses OTel OTLP metrics exporter
-prefix=xrpld             # metric name prefix (preserved)
+# No prefix: it applies on the StatsD path only, not this one.
 
 # Endpoint and auth inherited from [telemetry] section:
 [telemetry]

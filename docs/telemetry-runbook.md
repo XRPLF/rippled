@@ -525,12 +525,13 @@ Add to `xrpld.cfg`:
 [insight]
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=xrpld
 ```
 
 The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTel Collector that receives traces. No separate StatsD receiver is needed.
 
-> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path. This requires re-enabling the `statsd` receiver in `otel-collector-config.yaml` and uncommenting port 8125 in `docker-compose.yml`.
+Do not set `prefix` on this path. `formatName()` never applies it, so the setting is silently ignored and the exported names are bare and lowercase — `jobq_job_count`, not `xrpld_jobq_job_count`. Queries written against a prefixed name return no series.
+
+> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path. This requires re-enabling the `statsd` receiver in `otel-collector-config.yaml` and uncommenting port 8125 in `docker-compose.yml`. On that path `prefix` **is** applied to the metric name, which is why the StatsD examples elsewhere in this document keep it.
 
 ### Metric Reference
 
