@@ -48,7 +48,10 @@ namespace xrpl {
  *   vault phase is Investment
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
- * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp).
+ * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
+ * featureLendingProtocolV1_1 onwards, immutability of the vault's Asset,
+ * pseudo-account and ShareMPTID is likewise enforced by
+ * NoModifiedUnmodifiableFields; prior to that amendment it is checked here.
  */
 class ValidVault
 {
