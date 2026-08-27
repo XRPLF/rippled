@@ -769,6 +769,63 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
     }
 
+    // The sweep above, with more than one proposal and more than one Owner.
+    // Each reserve has to return to the account that put it up, which means the
+    // sweep cannot stop at the first proposal it reaches and cannot settle the
+    // refunds against a single account. Two Owners also make the directory
+    // separation concrete: the sweep walks the target's owner directory while
+    // each deletion mutates a different one.
+    void
+    testTargetDeletionRefundsEachOwner(FeatureBitset features)
+    {
+        testcase("target deletion refunds each proposal's own owner");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};  // Owner of the proposal on the first ticket
+        Account const bob{"bob"};      // Owner of the one on the second
+        Account const target{"target"};
+        Account const dest{"dest"};
+        env.fund(XRP(10000), alice, bob, target, dest);
+        env.close();
+
+        // Both proposers on one SignerList. makeProposal's own authorization
+        // step adds a list for the first proposer only and then finds one
+        // present, so the second proposer would be unauthorized without this.
+        env(signers(target, 1, {{alice, 1}, {bob, 1}}));
+        env.close();
+
+        std::uint32_t const firstTicket = proposal::createTicket(env, target, 2);
+        std::uint32_t const secondTicket = firstTicket + 1;
+
+        makeProposal(
+            env, alice, proposal::unsignedPayload(env, pay(target, dest, XRP(1)), firstTicket));
+        makeProposal(
+            env, bob, proposal::unsignedPayload(env, pay(target, dest, XRP(2)), secondTicket));
+
+        BEAST_EXPECT(proposal::entry(env, target, firstTicket));
+        BEAST_EXPECT(proposal::entry(env, target, secondTicket));
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        BEAST_EXPECT(ownerCount(env, bob) == proposal::kProposalOwnerCount);
+
+        incLgrSeqForAccDel(env, target);
+        env(acctdelete(target, dest), Fee(env.current()->fees().increment));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::account(target.id())));
+        BEAST_EXPECT(!proposal::entry(env, target, firstTicket));
+        BEAST_EXPECT(!proposal::entry(env, target, secondTicket));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(firstTicket))));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(secondTicket))));
+
+        // Each Owner got its own reserve back, and only its own.
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(ownerCount(env, bob) == 0);
+    }
+
     // A TransactionProposal blocks its Owner's account deletion (On-Chain Cosigner spec
     // §4.5). Beyond the spec requirement, this blocker is what guarantees
     // the AccountDelete ticket sweep never deletes a proposal out of the
@@ -834,6 +891,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         testTerminalStillReservesTicket(testableAmendments());
         testSponsoredReserveAutoDelete(testableAmendments());
         testTargetAccountDeleted(testableAmendments());
+        testTargetDeletionRefundsEachOwner(testableAmendments());
         testProposalBlocksOwnerAccountDelete(testableAmendments());
     }
 };

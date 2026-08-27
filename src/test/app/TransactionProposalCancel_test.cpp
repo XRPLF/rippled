@@ -246,6 +246,54 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, target) == 2);
     }
 
+    // An account may propose against itself, collapsing the Owner and the
+    // target into one account. Two things follow that no other case in this
+    // suite reaches. Create skips its authorization check entirely for a
+    // self-proposal, so no SignerList is involved anywhere; and the account
+    // holding the reserve is also the account being granted permission, so the
+    // release has to happen once rather than once per satisfied arm of that
+    // test — the owner count is the only thing that would show the difference.
+    void
+    testSelfProposalCancel(FeatureBitset features)
+    {
+        testcase("target cancels a proposal it made for itself");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};  // both the proposer and the target
+        Account const bob{"bob"};
+        env.fund(XRP(10000), target, bob);
+        env.close();
+
+        std::uint32_t const ticketSeq = env.seq(target) + 1;
+        uint256 const proposalID = makeProposal(env, target, target, bob);
+
+        // Nothing authorized this proposer but its own identity.
+        BEAST_EXPECT(!env.le(keylet::signerList(target.id())));
+
+        auto const sle = env.le(keylet::txProposal(proposalID));
+        if (!BEAST_EXPECT(sle))
+            return;
+        BEAST_EXPECT(sle->getAccountID(sfOwner) == target.id());
+        BEAST_EXPECT(
+            sle->getFieldObject(sfProposedTransaction).getAccountID(sfAccount) == target.id());
+
+        // The ticket and the proposal's increments are on the same account.
+        BEAST_EXPECT(ownerCount(env, target) == 1 + proposal::kProposalOwnerCount);
+
+        env(proposal::cancel(target, proposalID));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
+        // Released exactly once: the unused ticket is all that is left, and it
+        // is still the target's to spend.
+        BEAST_EXPECT(ownerCount(env, target) == 1);
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+    }
+
     // When the proposed transaction is initiated by a Delegate, that delegate
     // is a target account too (On-Chain Cosigner spec §7.2): the proposal seeks its
     // authorization, so it may refuse.
@@ -1058,6 +1106,64 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
     }
 
+    // Being named in the payload is never itself a claim to cancel: preclaim's
+    // permitted set is a closed comparison against the Owner, the payload's
+    // Account and its Delegate, so a Sponsor is a third party like any other
+    // (§7.2). It is the most interested third party there is — it has agreed to
+    // pay the fee when the payload is submitted — which is what makes it worth
+    // stating. What the sponsorship does not change is either half of the rule:
+    // no permission while the proposal is live, and the same permission as
+    // everyone else once it is terminal.
+    void
+    testSponsorCannotCancel(FeatureBitset features)
+    {
+        testcase("proposed transaction's sponsor cannot cancel");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const backer{"backer"};  // pays the payload's fee
+        env.fund(XRP(10000), alice, target, bob, backer);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+        json::Value tx = pay(target, bob, XRP(1));
+        tx[sfSponsor.getJsonName()] = backer.human();
+        tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
+        json::Value payload = proposal::unsignedPayload(env, tx, ticketSeq);
+
+        // A LastLedgerSequence far beyond this test keeps that arm of the
+        // terminal rule inert: only the Expiration arm may fire below.
+        payload[sfLastLedgerSequence.getJsonName()] = env.current()->seq() + 1000;
+
+        env(proposal::create(alice, payload, proposal::expiration(env, 100s)));
+        env.close();
+        uint256 const proposalID = keylet::txProposal(target.id(), ticketSeq).key;
+
+        // Live: the sponsor is refused, and refusing costs the proposal nothing.
+        env(proposal::cancel(backer, proposalID), Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+
+        // Terminal: the permission question stops being asked, so the account
+        // refused a moment ago may now delete it — and the reserve it releases
+        // is still the Owner's, not the sponsor's.
+        env.close(env.now() + 200s);
+
+        env(proposal::cancel(backer, proposalID));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
     // Cancel may not spend the ticket the proposal is keyed to. The
     // reservation is only for the proposed transaction (On-Chain Cosigner spec §4.2.1);
     // a target that wants to revoke both the proposal and the ticket must
@@ -1218,11 +1324,13 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         testExpirationBoundary(all);
         testLastLedgerSequenceTerminal(all);
         testCounterpartyCannotCancel(all);
+        testSponsorCannotCancel(all);
         testCancelCannotSpendReservedTicket(all);
 
         // Apply
         testOwnerCancel(all);
         testTargetCancel(all);
+        testSelfProposalCancel(all);
         testDelegateCancel(all);
         testOwnerCancelTerminal(all);
         testBatchProposalCancel(all);
