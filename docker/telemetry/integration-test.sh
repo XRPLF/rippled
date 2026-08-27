@@ -395,9 +395,13 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
+# server=otel is the only load-bearing key here -- it selects OTelCollector so
+# beast::insight metrics leave over OTLP. No prefix is set on purpose: on this
+# path it is inert, because OTelCollector's formatName() only lowercases the raw
+# instrument name and the one place the class reads prefix_ is its startup log
+# line. The service is identified by the OTel resource service.name.
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=rippled
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
