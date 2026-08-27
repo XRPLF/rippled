@@ -60,7 +60,7 @@ TEST(Recording, compiled_out_types_are_empty)
 // agree, since callers may report it unconditionally.
 TEST(Recording, counter_starts_at_zero)
 {
-    telemetry::Counter<> counter;
+    telemetry::Counter<> const counter;
     EXPECT_EQ(counter.load(), 0U);
 }
 
