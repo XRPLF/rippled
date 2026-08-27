@@ -42,9 +42,14 @@
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The trace-context validator and std::uint8_t are named only by the
+// telemetry-enabled branches below.
 #include <xrpl/telemetry/TraceContextValidation.h>
 
 #include <cstdint>
+#endif
 
 namespace xrpl::telemetry {
 
