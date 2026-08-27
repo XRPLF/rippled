@@ -5,10 +5,12 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -21,6 +23,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace xrpl::node_store {
@@ -70,9 +73,10 @@ public:
             {
                 // Charge the blob plus per-entry overhead (map node, weak
                 // tracking, control block).
-                byteBudget = Cache::ByteBudget{bytes, [](std::shared_ptr<NodeObject> const& obj) {
-                                                   return (obj ? obj->getData().size() : 0) + 160;
-                                               }};
+                byteBudget = Cache::ByteBudget{
+                    .bytes = bytes, .cost = [](std::shared_ptr<NodeObject> const& obj) {
+                        return (obj ? obj->getData().size() : 0) + 160;
+                    }};
             }
 
             cache_ = std::make_shared<Cache>(

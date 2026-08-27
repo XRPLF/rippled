@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <utility>
@@ -312,7 +313,7 @@ TEST(TaggedCacheTest, byte_budget_enforced_on_insert)
     // Each 100-byte value is charged exactly; the 4 KiB budget holds ~40
     // entries, enforced as the cache grows, with the sweep unable to fire.
     Cache::ByteBudget budget{
-        4096, [](std::shared_ptr<Value> const& v) { return v ? v->size() : 0; }};
+        .bytes = 4096, .cost = [](std::shared_ptr<Value> const& v) { return v ? v->size() : 0; }};
     Cache capped(
         "bytes",
         1'000'000,

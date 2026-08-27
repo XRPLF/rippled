@@ -51,6 +51,7 @@
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/insight/Event.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -1111,7 +1112,7 @@ public:
         if (auto const budget = config_->cacheMemoryBudget(); budget != 0 && trim.rssAfterKB > 0)
         {
             auto const rss = static_cast<std::uint64_t>(trim.rssAfterKB) * 1024;
-            if (rss > budget + budget / 2)
+            if (rss > budget + (budget / 2))
             {
                 if (!memoryPressure_)
                 {
@@ -1121,7 +1122,7 @@ public:
                 }
                 memoryPressure_ = true;
             }
-            else if (rss < budget + budget * 3 / 10)
+            else if (rss < budget + (budget * 3 / 10))
             {
                 memoryPressure_ = false;
             }

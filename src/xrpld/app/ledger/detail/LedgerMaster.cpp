@@ -30,6 +30,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
