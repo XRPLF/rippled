@@ -214,6 +214,52 @@ def test_wildcard_child_matches_any_family_member() -> None:
     assert report.results[0].passed, report.results[0].message
 
 
+def test_wildcard_predicate_carries_no_backslash_escape() -> None:
+    """The TraceQL predicate must not contain a backslash escape.
+
+    Tempo's string lexer rejects `\\.` outright -- run 33062418036 returned
+    HTTP 400, "invalid TraceQL query: parse error at line 1, col 68: invalid char
+    escape", on the predicate re.escape produced. Asserting the absence of a
+    backslash rather than a specific spelling keeps this test about the property
+    the lexer enforces instead of about one way of satisfying it.
+
+    Note the earlier stub could not have caught this: it evaluated the pattern
+    with Python's re, which accepts `\\.` happily, so it modelled the regex engine
+    rather than the query lexer in front of it.
+    """
+    predicate = vt._traceql_name_predicate("rpc.command.*")
+    assert "\\" not in predicate, f"backslash escape reaches Tempo: {predicate}"
+
+
+def test_wildcard_predicate_matches_the_family_but_not_near_misses() -> None:
+    """The pattern must still mean what the glob meant.
+
+    Dropping the escaping must not be done by making the dots match any
+    character: `rpc.command.*` should accept rpc.command.fee and reject a name
+    that differs in the separator positions, which is the looseness
+    _span_name_matches exists to avoid.
+    """
+    import re as _re
+
+    pattern = vt._traceql_name_predicate("rpc.command.*").split('"')[1]
+    assert _re.fullmatch(pattern, "rpc.command.fee")
+    assert _re.fullmatch(pattern, "rpc.command.server_info")
+    # Separators deliberately not dots: if the pattern left its dots bare they
+    # would match these too. Colons rather than a made-up letter so the spell
+    # checker still sees three real words.
+    assert not _re.fullmatch(pattern, "rpc:command:fee")
+    assert not _re.fullmatch(pattern, "other.command.fee")
+
+
+def test_literal_predicate_uses_equality() -> None:
+    """A non-glob child must use `=`, not a regex.
+
+    Equality is what makes a longer emitted name unable to satisfy a shorter
+    contract, the same guarantee _span_name_matches gives on the client side.
+    """
+    assert vt._traceql_name_predicate("txq.accept_tx") == 'name="txq.accept_tx"'
+
+
 def main() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0
