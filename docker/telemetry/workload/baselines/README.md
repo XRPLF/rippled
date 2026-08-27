@@ -12,7 +12,9 @@ declared in [`../regression-metrics.json`](../regression-metrics.json) and write
 
 - **Placeholder baseline** (`"placeholder": true` or empty `metrics`): the comparator
   prints the captured timings JSON in exactly the format expected for this file, then
-  exits 0 without gating. This is how we bootstrap the baseline.
+  exits 0 without gating. This is how we bootstrap the baseline. It prints that block
+  only when the capture was complete — see
+  [An incomplete capture cannot seed a baseline](#an-incomplete-capture-cannot-seed-a-baseline).
 - **Populated baseline**: the comparator diffs per-metric, enforces the thresholds
   (regression = current exceeds baseline on BOTH the percentage AND absolute bound),
   and exits non-zero on any regression. The single exception is a baseline that is
@@ -267,6 +269,31 @@ the design change these five exclusions are waiting on.
 3. The committed baseline PR needs reviewer approval just like any other code change.
    This is the primary audit point for "who moved the performance bar."
 
+### An incomplete capture cannot seed a baseline
+
+`capture_timings.py` writes `timings.json` **before** it enforces
+`--min-capture-ratio`, so a run that reached too little of Prometheus still leaves a
+file behind — one that exists, parses, and carries every declared key, some of them
+`null`. Nothing about it reads as degraded, and the obvious reaction to a red gate is
+to refresh the baseline, so this is exactly the file a person is most likely to paste.
+
+Every capture therefore records its own verdict in a `capture` block (see
+[Schema](#schema)), and `complete` there is exactly the condition
+`capture_timings.py` exits 0 on. Both routes to a baseline read that flag and print
+nothing to paste unless it is `true`:
+
+- the workflow's Step Summary heading becomes "Baseline NOT refreshable from this run",
+  carrying the captured/declared counts and an `::error::` annotation;
+- `compare_to_baseline.py` writes the same explanation to stderr, leaves stdout empty
+  so a `>` redirect cannot produce a plausible-looking file, and exits 2.
+
+An artifact with no `capture` block — one produced before this existed — counts as not
+complete. Completeness has to be proven, not assumed.
+
+This only guards the paste. Against a populated baseline a thin capture still compares
+normally and its uncaptured keys are reported as `not captured in current run`, which
+is the pre-existing behaviour described under [Schema](#schema) below.
+
 ## Refreshing the baseline
 
 Refresh when a legitimate performance change lands on `develop` (for example, a
@@ -319,12 +346,27 @@ debug-level detail, enable it per partition **after** the baseline exists.
   "window": "3m",
   "git_sha": "<SHA of the commit that produced these numbers>",
   "profile": "<workload profile used>",
+  "capture": {
+    "declared": 20,
+    "captured": 20,
+    "min_ratio": 0.5,
+    "complete": true
+  },
   "metrics": {
     "span.tx.process.p99": { "value": 12.4, "unit": "ms" },
     "job.transaction.queued.p95": { "value": 1500.0, "unit": "us" }
   }
 }
 ```
+
+`capture` describes the capture that produced the file, not the metrics in it:
+`declared` is how many keys the surface asked for, `captured` how many came back with a
+value, `min_ratio` the bar they were judged against, and `complete` the verdict. It is a
+sibling of `metrics`, never an entry inside it, so it is neither a metric key nor a
+gated entry — `check_regression_bounds.py` and `compare_to_baseline.py` both iterate
+`metrics` alone and never see it. Because a committed baseline is a verbatim copy of a
+capture, the block lands here too; it is metadata about provenance, exactly like
+`git_sha`. Entries committed before it existed simply do not carry it.
 
 Keys follow `{category}.{name}.p{quantile}`. Only two categories are actually
 produced today — `span.*` and `job.*` — because `build_query_plan()` in

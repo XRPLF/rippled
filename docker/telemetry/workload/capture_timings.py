@@ -16,12 +16,42 @@ Output schema (stable — ``compare_to_baseline.py`` reads it verbatim)::
         "window": "3m",
         "git_sha": "<from $GITHUB_SHA or `git rev-parse HEAD`>",
         "profile": "full-validation",
+        "capture": {
+            "declared": 20,
+            "captured": 20,
+            "min_ratio": 0.5,
+            "complete": true
+        },
         "metrics": {
             "span.tx.process.p99": {"value": 12.4, "unit": "ms"},
             "job.transaction.queued.p95": {"value": 850.0, "unit": "us"},
             ...
         }
     }
+
+The ``capture`` block is what makes this file safe to use as baseline material.
+The output is written BEFORE ``--min-capture-ratio`` is enforced, so a run that
+reached too little of Prometheus still leaves a ``timings.json`` behind. That
+file exists, parses, and carries every declared key — some with ``value: null``
+— so a thin capture is indistinguishable from a good one to a reader who only
+checks that the file is there. Pasted into
+``baselines/baseline-timings.json`` it would narrow the gate to whichever keys
+happened to come back, with nothing reporting that the gate had narrowed.
+
+``complete`` is exactly the condition this script exits 0 on. It is computed
+once, in ``_capture_status``, and drives both the exit code and the block, so
+the two cannot disagree. Consumers read the flag rather than re-deriving the
+ratio rule for themselves: the workflow's "Print regression summary" step, the
+paste-me path in ``compare_to_baseline.py``, and a human reading the artifact
+all get the same answer from one place. ``declared``, ``captured`` and
+``min_ratio`` sit alongside it so a rejected capture can be judged without
+re-running it.
+
+The block is additive — a sibling of ``metrics``, never an entry inside it — so
+it is neither a metric key nor a gated entry, and readers that predate it are
+unaffected. Its ABSENCE means an artifact from before it existed, whose
+completeness cannot be established; the paste-me paths treat that as not
+complete rather than as complete.
 
 Usage::
 
@@ -59,21 +89,51 @@ async def capture(
     metrics_path: Path,
     window: str,
     profile: str,
+    min_capture_ratio: float,
 ) -> dict:
-    """Build and execute the query plan, return the full report dict."""
+    """Build and execute the query plan, return the full report dict.
+
+    ``min_capture_ratio`` is recorded in the report rather than only applied to
+    the exit code, so the artifact states the bar it was judged against.
+    """
     plan = build_query_plan(metrics_path, window=window)
     logger.info("Capturing %d metrics from %s (window=%s)", len(plan), prom_url, window)
 
     async with aiohttp.ClientSession() as session:
         metrics = await run_query_plan(session, prom_url, plan)
 
+    metrics = dict(sorted(metrics.items()))
     return {
         "schema_version": SCHEMA_VERSION,
         "captured_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "window": window,
         "git_sha": _detect_git_sha(),
         "profile": profile,
-        "metrics": dict(sorted(metrics.items())),
+        "capture": _capture_status(metrics, min_capture_ratio),
+        "metrics": metrics,
+    }
+
+
+def _capture_status(metrics: dict, min_ratio: float) -> dict:
+    """Summarise how much of the declared surface this capture actually got.
+
+    ``declared`` is every key the surface asked for; ``captured`` is how many
+    came back with a value. ``complete`` is the single fact every consumer
+    keys on, and it is the same predicate that decides this script's exit
+    code — see the module docstring for why it lives in the artifact.
+
+    An empty surface is vacuously complete: there is nothing for the capture
+    to have fallen short of, and that is the case the exit-code check has
+    always passed. Defining it any other way here would make the flag and the
+    exit code disagree, which is the drift this block exists to remove.
+    """
+    declared = len(metrics)
+    captured = sum(1 for entry in metrics.values() if entry["value"] is not None)
+    return {
+        "declared": declared,
+        "captured": captured,
+        "min_ratio": min_ratio,
+        "complete": declared == 0 or (captured / declared) >= min_ratio,
     }
 
 
@@ -160,6 +220,7 @@ def main() -> int:
             metrics_path=args.metrics,
             window=args.window,
             profile=args.profile,
+            min_capture_ratio=args.min_capture_ratio,
         )
     )
 
@@ -168,14 +229,17 @@ def main() -> int:
         json.dump(report, f, indent=2, sort_keys=True)
         f.write("\n")
 
-    captured = sum(1 for v in report["metrics"].values() if v["value"] is not None)
-    total = len(report["metrics"])
+    # The exit code is read off the same flag the artifact carries, so a file
+    # marked complete is always one this script exited 0 on.
+    status = report["capture"]
+    captured, total = status["captured"], status["declared"]
     logger.info("Wrote %s (%d/%d metrics captured)", args.output, captured, total)
 
-    if total > 0 and (captured / total) < args.min_capture_ratio:
+    if not status["complete"]:
         logger.error(
             "Only %d/%d (%.0f%%) metrics captured — below the %.0f%% minimum. "
-            "Is Prometheus reachable at %s?",
+            "Is Prometheus reachable at %s? The file is marked "
+            "capture.complete=false and must not be pasted into the baseline.",
             captured,
             total,
             captured / total * 100,

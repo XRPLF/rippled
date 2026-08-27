@@ -953,15 +953,20 @@ fold_exit "$VALIDATION_EXIT"
 # Capture ALWAYS runs, so every run leaves a timings.json artifact — it is the
 # only route to a new committed baseline. The workflow's "Print regression
 # summary" step reads that file unconditionally and, when the committed baseline
-# is still a placeholder, pastes it into the step summary for the author to copy.
-# Suppressing the capture would remove the one way to bootstrap or refresh the
-# baseline.
+# is still a placeholder and the capture is complete, pastes it into the step
+# summary for the author to copy. Suppressing the capture would remove the one
+# way to bootstrap or refresh the baseline.
 #
 # A non-zero capture status does NOT mean the file is absent: capture_timings.py
 # writes its output and only then fails when too few metrics came back (its
 # --min-capture-ratio). So a failed capture usually leaves a thin timings.json,
 # which is worse than none as baseline material — it would commit metrics that
 # were never measured. The messages below say incomplete, never missing.
+#
+# That thin file also says so itself, in the "capture" block capture_timings.py
+# writes into it, so the CAPTURE_EXIT below is no longer the only record of the
+# capture's health: both paste-me paths read the flag and withhold the JSON
+# rather than offering an artifact this run has already called unusable.
 #
 # --skip-regression opts out of the comparison only (e.g. for ad-hoc local
 # exploration), and with it out of the gate's verdict: a capture failure is

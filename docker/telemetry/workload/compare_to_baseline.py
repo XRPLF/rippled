@@ -8,6 +8,13 @@ Operating modes (chosen automatically based on the baseline file contents):
    script is in "populate" mode. It prints the captured timings JSON in
    the exact format expected for pasting into
    ``baselines/baseline-timings.json``, then exits 0. No regression check.
+   An INCOMPLETE capture is refused here instead (exit 2): the timings file
+   states its own completeness in its ``capture`` block, and a capture that
+   fell short of ``--min-capture-ratio`` describes metrics that were never
+   measured. Pasted in, it would narrow the gate to whichever keys came back
+   with nothing reporting that it had narrowed. Refusing prints nothing on
+   stdout, so a caller redirecting stdout to the baseline file cannot end up
+   with a truncated one blessed by exit 0.
 
 2. **Populated baseline** — per-metric percentage AND absolute deltas are
    computed against thresholds from ``regression-thresholds.json``. A
@@ -26,7 +33,14 @@ Inputs:
 Exit codes:
     0 — No baseline (paste-me emitted), OR baseline populated and no regression
     1 — Regression detected (at least one metric breached both bounds)
-    2 — Internal error (e.g. bad JSON, baseline/current key mismatch)
+    2 — Internal error (e.g. bad JSON, baseline/current key mismatch), OR the
+        baseline is a placeholder and the capture is too incomplete to seed one
+
+Note that an incomplete capture is refused only on the paste-me path. Against a
+POPULATED baseline the comparison still runs and still reports uncaptured keys
+as ``not captured in current run``, exactly as before: there the thin capture
+cannot corrupt anything, and reporting what is missing is more useful than
+refusing to look.
 """
 
 from __future__ import annotations
@@ -83,6 +97,58 @@ def is_placeholder(baseline: dict) -> bool:
     if baseline.get("placeholder") is True:
         return True
     return not baseline.get("metrics")
+
+
+def capture_is_complete(timings: dict) -> bool:
+    """True only if the timings file states that its capture was complete.
+
+    The flag is written by ``capture_timings.py``, which computes it against
+    ``--min-capture-ratio``; this reads it rather than re-deriving the rule, so
+    the two cannot disagree. Anything other than boolean ``true`` — the block
+    absent because the artifact predates it, a truncated file, a string
+    ``"true"`` from a hand edit — is treated as not complete. Completeness has
+    to be proven, not assumed, because assuming it is how a thin capture
+    reaches a committed baseline.
+    """
+    capture = timings.get("capture")
+    if not isinstance(capture, dict):
+        return False
+    return capture.get("complete") is True
+
+
+def print_incomplete_capture(timings: dict) -> None:
+    """Explain why no paste-me block was printed, naming the shortfall.
+
+    Deliberately writes to stderr only. The paste-me path's stdout is the
+    baseline file's contents, so leaving stdout empty is what stops a
+    ``> baseline-timings.json`` redirect from producing a file that looks
+    captured.
+    """
+    capture = timings.get("capture")
+    if isinstance(capture, dict):
+        detail = (
+            f"only {capture.get('captured')} of {capture.get('declared')} declared "
+            f"metrics came back, below the minimum ratio "
+            f"{capture.get('min_ratio')}"
+        )
+    else:
+        detail = (
+            "the file carries no 'capture' block, so its completeness cannot be "
+            "established — recapture with the current capture_timings.py"
+        )
+
+    banner = "=" * 72
+    print(banner, file=sys.stderr)
+    print("  CAPTURE INCOMPLETE — refusing to print a baseline block", file=sys.stderr)
+    print(f"  {detail}.", file=sys.stderr)
+    print(
+        "  These timings may describe metrics that were never measured. Pasting\n"
+        "  them into baselines/baseline-timings.json would narrow the regression\n"
+        "  gate to whichever keys were captured, with nothing reporting that it\n"
+        "  had narrowed. Fix the capture and re-run.",
+        file=sys.stderr,
+    )
+    print(banner, file=sys.stderr)
 
 
 def print_paste_me(timings: dict) -> None:
@@ -396,6 +462,9 @@ def main() -> int:
         return 2
 
     if is_placeholder(baseline):
+        if not capture_is_complete(timings):
+            print_incomplete_capture(timings)
+            return 2
         print_paste_me(timings)
         return 0
 
