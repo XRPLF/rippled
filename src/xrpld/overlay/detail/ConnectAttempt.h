@@ -55,6 +55,11 @@ private:
     std::shared_ptr<peer_finder::Slot> slot_;
     request_type req_;
 
+    // The three members below are the dial's telemetry state. They are declared
+    // unconditionally, so the class has one shape in every build, but every
+    // write to them is compiled out with telemetry: in that build dialStart_ and
+    // dialSpan_ stay default-constructed and outcomeReported_ stays false.
+
     /**
      * When the dial began, set at the top of run() before any async
      * operation is started. Base for the `overlay_dial_latency_ms`
