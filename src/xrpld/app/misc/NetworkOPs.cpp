@@ -2831,8 +2831,14 @@ bool
 NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::string const& source)
 {
     JLOG(journal_.trace()) << "recvValidation " << val->getLedgerHash() << " from " << source;
+#ifdef XRPL_ENABLE_TELEMETRY
+    // One per validation received. The registry is always constructed, so the
+    // null test never short-circuits: without the guard every validation pays
+    // a virtual lookup and an out-of-line call whose body is empty. Nothing
+    // outside the validations_checked_total metric reads the counter.
     if (auto* mr = registry_.get().getMetricsRegistry())
         mr->incrementValidationsChecked();
+#endif
 
     std::unique_lock lock(validationsMutex_);
     BypassAccept bypassAccept = BypassAccept::No;
