@@ -15,8 +15,10 @@ vaultKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.vaultKeylet(benchAlice().id(), kBenchSeq); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.vaultKeylet(Fixtures::instance().alice().id(), Fixtures::kSeq);
+        });
 }
 BENCHMARK(vaultKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

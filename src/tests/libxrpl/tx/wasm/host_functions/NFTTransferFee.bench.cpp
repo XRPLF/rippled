@@ -15,8 +15,8 @@ nftTransferFeeImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.getNFTTransferFee(benchNftId()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.getNFTTransferFee(Fixtures::instance().nftId()); });
 }
 BENCHMARK(nftTransferFeeImpl)->UseManualTime()->Iterations(kBenchIterations);
 

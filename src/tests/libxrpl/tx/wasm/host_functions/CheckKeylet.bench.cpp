@@ -15,8 +15,10 @@ checkKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.checkKeylet(benchAlice().id(), kBenchSeq); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.checkKeylet(Fixtures::instance().alice().id(), Fixtures::kSeq);
+        });
 }
 BENCHMARK(checkKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

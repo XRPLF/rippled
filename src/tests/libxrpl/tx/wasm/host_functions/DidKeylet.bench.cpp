@@ -15,8 +15,8 @@ didKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.didKeylet(benchAlice().id()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.didKeylet(Fixtures::instance().alice().id()); });
 }
 BENCHMARK(didKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

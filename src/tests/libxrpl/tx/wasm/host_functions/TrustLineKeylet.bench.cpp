@@ -19,9 +19,10 @@ trustLineKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [&currency](auto& host) {
-            return host.trustLineKeylet(benchAlice().id(), benchBob().id(), currency);
+            return host.trustLineKeylet(
+                Fixtures::instance().alice().id(), Fixtures::instance().bob().id(), currency);
         });
 }
 BENCHMARK(trustLineKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);

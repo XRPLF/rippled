@@ -10,6 +10,7 @@
 #include <tx/wasm/RealHostFixture.h>
 #include <tx/wasm/RealVmTest.h>
 
+#include <format>
 #include <string>
 #include <utility>
 
@@ -40,18 +41,19 @@ TEST_F(TxNestedFieldE2e, ContractWalksALocatorToANestedTransactionField)
     auto const owner = fund("owner");
     auto assembler = withMemo(owner);
 
-    auto const wat = std::string{R"wat(
+    auto const wat = std::format(
+        R"wat(
 (module
   (import "host_lib" "tx_inner" (func $tx_inner (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
   (func (export "escrow_finish") (result i32)
-    (i32.store (i32.const 0) (i32.const )wat"} +
-        std::to_string(sfMemos.getCode()) + R"wat())
+    (i32.store (i32.const 0) (i32.const {}))
     (i32.store (i32.const 4) (i32.const 0))
-    (i32.store (i32.const 8) (i32.const )wat" +
-        std::to_string(sfMemoData.getCode()) + R"wat())
+    (i32.store (i32.const 8) (i32.const {}))
     (call $tx_inner (i32.const 0) (i32.const 12) (i32.const 64) (i32.const 32))))
-)wat";
+)wat",
+        sfMemos.getCode(),
+        sfMemoData.getCode());
 
     auto const outcome = run(wat, keylet::account(owner.id()), assembler.type, assembler.build);
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);

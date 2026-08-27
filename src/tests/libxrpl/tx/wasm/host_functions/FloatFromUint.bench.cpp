@@ -15,8 +15,8 @@ floatFromUintImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatFromUint(3141592653589793u, kBenchMode); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.floatFromUint(3141592653589793u, Fixtures::kRoundingMode); });
 }
 BENCHMARK(floatFromUintImpl)->UseManualTime()->Iterations(kBenchIterations);
 

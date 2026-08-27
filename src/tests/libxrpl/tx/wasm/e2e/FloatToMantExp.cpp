@@ -6,6 +6,7 @@
 #include <tx/wasm/WasmRun.h>
 
 #include <cstdint>
+#include <format>
 #include <string>
 
 namespace xrpl::test {
@@ -27,12 +28,12 @@ TEST_F(FloatToMantExpE2e, ContractReadsBothHalvesOfASplitFloat)
     // Pi's canonical encoding in, mantissa to offset 64, exponent to offset 128. The
     // contract returns the low half of the mantissa so the assertion checks that real bytes
     // landed in the guest's buffer, not merely that the call reported success.
-    auto const wat = std::string{R"wat(
+    auto const wat = std::format(
+        R"wat(
 (module
   (import "host_lib" "float_to_mant_exp" (func $split (param i32 i32 i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 0) ")wat"} +
-        watEscaped(FloatTest::kPi) + R"wat(")
+  (data (i32.const 0) "{}")
   (func (export "escrow_finish") (result i32)
     (local $r i32)
     (local.set $r (call $split
@@ -41,7 +42,8 @@ TEST_F(FloatToMantExpE2e, ContractReadsBothHalvesOfASplitFloat)
       (i32.const 128) (i32.const 4)))
     (if (i32.lt_s (local.get $r) (i32.const 0)) (then (return (local.get $r))))
     (i32.load (i32.const 64))))
-)wat";
+)wat",
+        watEscaped(FloatTest::kPi));
 
     auto const outcome = run(wat);
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);

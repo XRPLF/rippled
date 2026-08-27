@@ -15,8 +15,11 @@ floatMultiplyImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatMultiply(benchFloatX(), benchFloatY(), kBenchMode); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.floatMultiply(
+                Fixtures::floatX(), Fixtures::floatY(), Fixtures::kRoundingMode);
+        });
 }
 BENCHMARK(floatMultiplyImpl)->UseManualTime()->Iterations(kBenchIterations);
 

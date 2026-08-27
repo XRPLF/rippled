@@ -18,7 +18,7 @@ traceDisabledImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchLedger().makeHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) { return host.trace(kMessage, kData); });
 }
 BENCHMARK(traceDisabledImpl)->UseManualTime()->Iterations(kBenchIterations);
@@ -31,7 +31,7 @@ traceEnabledImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchLedger().makeTracingHost(); },
+        [] { return Fixtures::instance().tracingHost(); },
         [](auto& host) { return host.trace(kMessage, kData); });
 }
 BENCHMARK(traceEnabledImpl)->UseManualTime()->Iterations(kBenchIterations);

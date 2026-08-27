@@ -35,7 +35,8 @@ txNestedFieldThroughVm(benchmark::State& state)
         return bytes;
     }());
 
-    benchmarkThroughVm(state, kWasmName, kImport, kData, kBody, [] { return benchHost(); });
+    benchmarkThroughVm(
+        state, kWasmName, kImport, kData, kBody, [] { return Fixtures::instance().host(); });
 }
 BENCHMARK(txNestedFieldThroughVm)->UseManualTime()->Iterations(kBenchIterations);
 
@@ -45,8 +46,8 @@ txNestedFieldImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.getTxNestedField(benchMemoLocator()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.getTxNestedField(Fixtures::memoLocator()); });
 }
 BENCHMARK(txNestedFieldImpl)->UseManualTime()->Iterations(kBenchIterations);
 

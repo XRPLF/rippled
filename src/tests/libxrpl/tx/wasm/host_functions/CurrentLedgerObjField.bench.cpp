@@ -4,7 +4,7 @@
 #include <tx/wasm/BenchFixtures.h>
 #include <tx/wasm/WasmBench.h>
 
-#include <string>
+#include <format>
 #include <string_view>
 
 namespace xrpl::test::bench {
@@ -18,10 +18,11 @@ constexpr std::string_view kImport =
 void
 currentLedgerObjFieldThroughVm(benchmark::State& state)
 {
-    static auto const kBody = std::string{"(call $home_le_field (i32.const "} +
-        std::to_string(sfAccount.getCode()) + ") (i32.const 0) (i32.const 32))";
+    static auto const kBody = std::format(
+        "(call $home_le_field (i32.const {}) (i32.const 0) (i32.const 32))", sfAccount.getCode());
 
-    benchmarkThroughVm(state, kWasmName, kImport, "", kBody, [] { return benchEscrowHost(); });
+    benchmarkThroughVm(
+        state, kWasmName, kImport, "", kBody, [] { return Fixtures::instance().escrowHost(); });
 }
 BENCHMARK(currentLedgerObjFieldThroughVm)->UseManualTime()->Iterations(kBenchIterations);
 
@@ -31,7 +32,7 @@ currentLedgerObjFieldImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchEscrowHost(); },
+        [] { return Fixtures::instance().escrowHost(); },
         [](auto& host) { return host.getCurrentLedgerObjField(sfAccount); });
 }
 BENCHMARK(currentLedgerObjFieldImpl)->UseManualTime()->Iterations(kBenchIterations);

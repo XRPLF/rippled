@@ -18,7 +18,7 @@ ledgerSqnThroughVm(benchmark::State& state)
 {
     benchmarkThroughVm(
         state, kWasmName, kImport, "", "(call $ldgr_index (i32.const 0) (i32.const 4))", [] {
-            return benchHost();
+            return Fixtures::instance().host();
         });
 }
 BENCHMARK(ledgerSqnThroughVm)->UseManualTime()->Iterations(kBenchIterations);
@@ -29,7 +29,7 @@ ledgerSqnImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) { return host.getLedgerSqn(); });
 }
 BENCHMARK(ledgerSqnImpl)->UseManualTime()->Iterations(kBenchIterations);

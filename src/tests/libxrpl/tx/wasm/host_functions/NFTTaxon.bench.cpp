@@ -15,8 +15,8 @@ nftTaxonImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.getNFTTaxon(benchNftId()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.getNFTTaxon(Fixtures::instance().nftId()); });
 }
 BENCHMARK(nftTaxonImpl)->UseManualTime()->Iterations(kBenchIterations);
 

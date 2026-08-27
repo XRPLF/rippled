@@ -15,8 +15,10 @@ ticketKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.ticketKeylet(benchAlice().id(), kBenchSeq); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.ticketKeylet(Fixtures::instance().alice().id(), Fixtures::kSeq);
+        });
 }
 BENCHMARK(ticketKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

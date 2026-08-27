@@ -15,9 +15,10 @@ paychannelKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) {
-            return host.paychannelKeylet(benchAlice().id(), benchBob().id(), kBenchSeq);
+            return host.paychannelKeylet(
+                Fixtures::instance().alice().id(), Fixtures::instance().bob().id(), Fixtures::kSeq);
         });
 }
 BENCHMARK(paychannelKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);

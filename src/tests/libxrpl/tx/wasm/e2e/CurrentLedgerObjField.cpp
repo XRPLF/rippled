@@ -11,6 +11,7 @@
 #include <tx/wasm/RealVmTest.h>
 
 #include <cstdint>
+#include <format>
 #include <string>
 
 namespace xrpl::test {
@@ -47,14 +48,15 @@ TEST_F(CurrentLedgerObjFieldE2e, ContractReadsAFieldOfItsRealEscrow)
 
     // Ask the current object for `sfAccount` and return the byte count the host wrote — 20 for
     // an account id — proving the read reached the real ledger and came back through the VM.
-    auto const wat = std::string{R"wat(
+    auto const wat = std::format(
+        R"wat(
 (module
   (import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
   (func (export "escrow_finish") (result i32)
-    (call $home_le_field (i32.const )wat"} +
-        std::to_string(sfAccount.getCode()) + R"wat() (i32.const 0) (i32.const 32))))
-)wat";
+    (call $home_le_field (i32.const {}) (i32.const 0) (i32.const 32))))
+)wat",
+        sfAccount.getCode());
 
     auto const outcome = run(wat, escrow);
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);

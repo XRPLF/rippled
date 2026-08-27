@@ -18,7 +18,7 @@ txNestedArrayLenImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) { return host.getTxNestedArrayLen(FieldLocator{{sfMemos.getCode()}}); });
 }
 BENCHMARK(txNestedArrayLenImpl)->UseManualTime()->Iterations(kBenchIterations);

@@ -16,77 +16,9 @@
 #include <string_view>
 #include <type_traits>
 
-// Gas calibration for the wasm host functions.
-//
-// Every `#[gas = N]` in `crates/xrpl-host-functions/src/lib.rs` is a promise about how
-// much work a host call does relative to a guest instruction: the engine meters both from
-// one pool (`set_fuel(gas)` in `crates/xrpl-wasm-vm/src/vm.rs`), so one unit of gas *is*
-// roughly one wasm instruction. That makes the calibration question answerable and, more
-// importantly, machine-independent: not "how many nanoseconds does `sha512_half` take"
-// (a property of the box) but "how many guest instructions' worth of work is it" (a
-// property of the code). Only the second can be written into a consensus rule.
-//
-// Two costs hide inside one host call, and pricing needs them apart:
-//
-//   * the *impl* — what `WasmHostFunctionsImpl` computes. Measured by calling the host
-//     method directly, with no VM in the picture (`benchmarkImpl`).
-//   * the *crossing* — region decode, bounds checks, memory copies, the cxx bridge hop.
-//     Paid on every call regardless of what the call does (`benchmarkThroughVm`).
-//
-// So the whole design here is a subtraction, and it appears twice:
-//
-//   1. Inside a VM benchmark, between a contract that makes N host calls and an otherwise
-//      byte-identical contract that makes none. That removes module compilation,
-//      instantiation and the guest's own loop from the number. The subtraction happens
-//      per iteration, so Google Benchmark's variance statistics describe the isolated
-//      host call rather than the run that contains it.
-//   2. Between the `ThroughVm` and `Impl` cases for the same function, read off the
-//      report afterwards. That difference is the crossing, which should come out roughly
-//      constant across functions plus a term in the byte count. Functions whose cost
-//      grows with input size are registered over a `Range` so that term is visible.
-//
-// The reported counters are the point; wall time is only the raw material:
-//
-//   `suggested_gas`  **the answer** — what this function should be priced at. For a
-//                    `ThroughVm` case that is what was measured; for an `Impl` case the
-//                    crossing is added back, since a guest cannot call without paying it.
-//   `declared_gas`   what `lib.rs` currently says, read through the `wasm_testkit` bridge so
-//                    it can never drift from the declaration.
-//   `price_ratio`    `declared / suggested`. 1.0 is correct. Above 1 the table overcharges;
-//                    **below 1 it undercharges**, which is the direction that matters — an
-//                    underpriced call is one a contract can buy too cheaply.
-//   `implied_gas`    the raw measurement, before the crossing is added back.
-//   `charged_gas`    what the engine actually charged (from `EscrowResult::cost`), on VM
-//                    cases. Should track the declaration, and is how the harness shows it is
-//                    measuring the call it thinks it is.
-//   `ns_per_call`    the underlying wall time, for debugging a suspicious ratio.
-//
-// Sort a report by `price_ratio` and the mispriced functions come to the top:
-//   ./xrpl.bench.wasm --benchmark_format=csv | sort -t, -k
-
-//
-// One caveat on `suggested_gas` for `Impl`-only cases: the crossing added back is the *floor*,
-// measured on a call with no input. A function that moves bytes pays more than the floor, so
-// its suggestion is a lower bound. The swept cases (`Sha512Half`, `UpdateData`) measure that
-// per-byte term where it matters.
-//
-// Run it:
-//   ./xrpl.bench.wasm --benchmark_filter='Sha512Half'
-//   ./xrpl.bench.wasm --benchmark_format=json > gas.json
-// and on Linux, where Google Benchmark is built against libpfm (see `enable_libpfm` in
-// conanfile.py), hardware counters are available as a cross-check on the timing:
-//   ./xrpl.bench.wasm --benchmark_perf_counters=INSTRUCTIONS,CYCLES
-//
-// Build Release before believing anything. A Debug build inflates the crossing far more
-// than it inflates the impls — the marshalling is templates and `std::expected`, none of it
-// inlined — so Debug numbers overstate what leaving the guest costs and understate every
-// function's own work relative to it. Google Benchmark prints a warning when it detects
-// this; do not read past it.
-//
-// These are *calibration* runs, not tests: nothing here asserts, and a number moving is
-// not a build failure. They live beside the tests for the same functions because the two
-// share a fixture and should move together, but they build into their own executable
-// (`xrpl.bench.wasm`) so they never run under ctest.
+// The gas-calibration harness: how a `*.bench.cpp` measures a host call, and how that
+// measurement becomes a suggested price. What the numbers mean and how to read a report are in
+// ../README.md.
 
 namespace xrpl::test::bench {
 
@@ -97,7 +29,7 @@ inline constexpr std::int64_t kBenchGas = 2'000'000'000;
 // How many host calls a benchmarked contract makes per run. Large enough that the
 // per-call cost dominates the residue left by the baseline subtraction, small enough that
 // one run stays in the microsecond range.
-inline constexpr int kCallsPerRun = 1000;
+inline constexpr std::int32_t kCallsPerRun = 1000;
 
 // How many timed iterations each case runs. Pinned rather than left to Google Benchmark's
 // automatic sizing, which cannot work here: a case reports the subtraction's residue — tens
@@ -106,38 +38,20 @@ inline constexpr int kCallsPerRun = 1000;
 // so it would ask for millions of iterations to accumulate its default `min_time` and the
 // case would never finish. Every registration therefore ends
 // `->UseManualTime()->Iterations(kBenchIterations)`.
-inline constexpr int kBenchIterations = 50;
+inline constexpr std::int32_t kBenchIterations = 50;
 
 // Every run gets this much guest<->host copying before `charge_transfer` starts refusing
-// calls (`TRANSFER_LIMIT_BYTES` in `crates/xrpl-wasm-vm/src/vm.rs`). It is a per-run budget,
-// so it resets between the runs a benchmark makes — but a single run of `kCallsPerRun` calls
-// moving a kilobyte each would exhaust it partway through and spend the rest of the loop
-// measuring the refusal path instead of the host function.
+// calls. It is a per-run budget, so it resets between the runs a benchmark makes —
+// but a single run of `kCallsPerRun` calls moving a kilobyte each would exhaust it partway
+// through and spend the rest of the loop measuring the refusal path instead of the host function.
 inline constexpr std::int64_t kTransferLimitBytes = 1 << 20;
 
 // How many calls a run can afford at `bytesPerCall`, staying clear of the transfer budget.
-//
-// Halved because most functions move bytes in *both* directions — an input region read plus
-// an output region written — and the budget counts both. A size-swept case passes this as
-// its call count so the large end of the range does not silently turn into an error
-// benchmark; per-call numbers stay comparable across counts, which is what the report shows.
+// Halved because most functions move bytes in *both* directions.
 int
 callsWithinTransferBudget(std::int64_t bytesPerCall);
 
-// True when Google Benchmark was built with libpfm and `--benchmark_perf_counters` will
-// work. Reported as a counter so a JSON report records which mode produced it.
-inline constexpr bool kPerfCountersAvailable =
-#ifdef XRPL_BENCH_PERF_COUNTERS
-    true;
-#else
-    false;
-#endif
-
-// The test fixtures these benchmarks measure against derive from `testing::Test`, whose pure
-// virtual `TestBody` makes them abstract. A benchmark wants a fixture's ledger, host and
-// setup helpers, not GTest's lifecycle, so supply the one missing member and nothing else.
-// Nothing here registers or runs a test.
-//
+// A benchmark wants a fixture's ledger, host and setup helpers.
 // Templated so a case can reuse whichever fixture its test uses — `Bench<NFTTest>` for the
 // NFT benchmarks, `Bench<FloatTest>` for the float ones — instead of duplicating that setup.
 template <class Fixture>
@@ -154,8 +68,8 @@ using BenchFixture = Bench<RealHostFixture>;
 // One run of a contract: how long it took, and what the engine charged it.
 struct Timing
 {
-    double seconds;
-    std::int64_t gas;
+    double seconds{};
+    std::int64_t gas{};
 };
 
 // A `(data ...)` segment placing `bytes` at `offset` in the guest's memory, so a case's
@@ -169,71 +83,50 @@ std::string
 dataSegment(int offset, Bytes const& bytes);
 
 // A contract that runs `body` `count` times and returns the last result.
-//
-// `count` is the *only* thing that varies between a loaded module and its baseline: the
-// imports, the data segments, the function bodies and the module's size are identical, so
-// compiling and instantiating them costs the same and cancels out of the subtraction. At
-// `count == 0` the loop is entered and immediately exited, so even the branch is paid by
-// both.
-//
-// `data` holds any `dataSegment` calls the case needs; it goes after the memory
-// declaration that gives those segments something to write into.
 std::string
 makeLoopWat(std::string_view imports, std::string_view data, std::string_view body, int count);
 
 // Run pre-assembled `wasm` once through the real VM, reporting wall time and gas.
-//
-// Assembly (WAT text -> bytes) is deliberately outside the timed region: it is a
-// test-only convenience from the `wasm_testkit` crate, not something a validator ever
-// does. Compilation *is* inside, because a validator does pay it — but it is identical
-// between a module and its baseline, so the subtraction removes it.
 Timing
 timeRun(HostFunctions& host, Bytes const& wasm);
 
-// Seconds of wall time one unit of gas buys on this machine.
-//
-// This is the conversion that makes every other number here machine-independent. It is
-// measured, not assumed: a pure-wasm loop (no host calls, no ledger) run at two different
-// iteration counts, with the difference in time divided by the difference in fuel. Taking
-// a difference rather than a single measurement removes compilation and startup, which
-// would otherwise inflate the apparent cost of a guest instruction and make every host
-// function look cheap by comparison.
-//
-// Computed once per process and cached: it describes the machine, not the case.
-double
-secondsPerGas();
+// What this machine costs, measured once and shared by every case.
+class Calibration
+{
+public:
+    // The machine's calibration, measured on first use. Measuring runs a few hundred short
+    // contracts, so the first case to ask pays for it and every later case reads this answer.
+    static Calibration const&
+    instance();
+
+    Calibration();
+
+    // Seconds of wall time one unit of gas buys here.
+    [[nodiscard]] double
+    secondsPerGas() const
+    {
+        return secondsPerGas_;
+    }
+
+    // The gas a host call costs before it does anything: region decode, bounds checks, the cxx
+    // hop.
+    [[nodiscard]] double
+    crossingFloorGas() const
+    {
+        return crossingFloorGas_;
+    }
+
+private:
+    double secondsPerGas_{};
+    double crossingFloorGas_{};
+};
 
 // What the gas table says a host function costs, by its guest import name.
-//
-// Read from the declaration through the `wasm_testkit` bridge rather than transcribed into
-// C++: 61 copied constants would drift from `crates/xrpl-host-functions/src/lib.rs` the first
-// time a price changed, and drift *silently*, because a benchmark has nothing to fail.
+// Read from the declaration through the `wasm_testkit` bridge.
 double
 declaredGas(std::string_view wasmName);
 
-// The gas a host call costs before it does anything: region decode, bounds checks, the cxx hop.
-//
-// Measured once per process the same way `secondsPerGas` is, and from the same pair the suite
-// uses as its floor — `ldgr_index` through the VM minus `ldgr_index` called directly. It takes
-// no input and answers from a header already in hand, so what remains after the subtraction is
-// the crossing and nothing else.
-//
-// This is what makes a *suggested* price possible for a function that has only an `Impl` case:
-// the impl measures the work, and this measures the toll every call pays on top of it.
-double
-crossingFloorGas();
-
 // Attach the calibration counters to a finished case.
-//
-// `secondsPerCall` is the isolated per-call cost. `chargedGas` is what the engine billed per
-// call, or 0 for a direct-impl case where no VM was involved. `wasmName` names the host
-// function so its declared price can be looked up; empty for the harness's own reference cases,
-// which price nothing.
-//
-// `suggested_gas` is the headline: what the function *should* cost, in the same units as the
-// declaration. For a `ThroughVm` case that is simply what was measured, since the guest already
-// paid the crossing. For an `Impl` case the crossing has to be added back, because a guest
-// cannot make the call without it.
 void
 report(
     benchmark::State& state,
@@ -244,19 +137,6 @@ report(
 
 // Measure a host function *through the whole stack* — guest, VM, marshalling, real impl,
 // real ledger — with everything but the host calls subtracted away.
-//
-// `wasmName` is the guest import name, used to look up the declared price. `imports` declares
-// the host function and `data` seeds any input bytes it reads;
-// `body` is the call expression, which must leave one i32 on the stack. `setUp` prepares
-// the ledger and returns the host to run against, so a case can fund accounts or create
-// the object it reads.
-//
-// `calls` is how many host calls one run makes; a size-swept case should pass
-// `callsWithinTransferBudget(bytesPerCall)` so the large end of its range stays inside the
-// engine's copying budget. The reported numbers are per call either way.
-//
-// Register with `->UseManualTime()`: the reported time is the subtraction's result, not
-// the wall time of the runs that produced it.
 template <class SetUp>
 void
 benchmarkThroughVm(
@@ -280,15 +160,6 @@ benchmarkThroughVm(
 
     // Confirm the contract actually succeeds before measuring it — and note that "the run
     // succeeded" is not enough to establish that.
-    //
-    // A soft host error is an *answer*, not a fault: the engine hands the guest a negative
-    // code and the run completes normally, `EscrowResult` and all. Gas is charged before the
-    // body too (`charged` in crates/xrpl-wasm-vm/src/abi.rs), so `charged_gas` looks correct
-    // for a call that did nothing. A case whose arguments are subtly wrong would therefore
-    // report a plausible, confidently wrong number — measuring the rejection path, which is
-    // much cheaper than the work. The tell is a `ThroughVm` case coming out faster than its
-    // `Impl` pair, which is impossible when one contains the other.
-    //
     // So require both: the run completed, and the contract's last host call returned a
     // non-negative result. Every body here leaves that result in `$r`, which the module
     // returns.
@@ -327,19 +198,14 @@ benchmarkThroughVm(
     }
 
     if (rounds > 0)
+    {
         report(state, totalSeconds / rounds, totalGas / rounds, wasmName, true);
+    }
 }
 
 // Measure a host function's *impl alone* — the computation, with no guest, no VM and no
 // marshalling. Paired with the `ThroughVm` case for the same function, the difference is
 // what crossing the guest/host boundary costs.
-//
-// `wasmName` is the guest import name, used to look up the declared price. `call` invokes the
-// host method and returns its result; `setUp` builds the ledger and
-// host once, outside the timed region, so fixture setup is not measured. The inner loop
-// runs `kCallsPerRun` calls per timed iteration, matching the VM case's shape and
-// amortizing the clock read over enough work that it does not dominate a cheap impl.
-//
 // Register with `->UseManualTime()`.
 template <class SetUp, class Call>
 void
@@ -380,7 +246,9 @@ benchmarkImpl(benchmark::State& state, std::string_view wasmName, SetUp&& setUp,
     // No VM ran, so nothing was charged — and the crossing this case leaves out is added back
     // into `suggested_gas`, because a guest cannot make the call without paying it.
     if (rounds > 0)
+    {
         report(state, totalSeconds / rounds, 0.0, wasmName, false);
+    }
 }
 
 }  // namespace xrpl::test::bench

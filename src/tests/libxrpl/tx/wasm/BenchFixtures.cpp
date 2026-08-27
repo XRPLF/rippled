@@ -18,7 +18,6 @@
 #include <tx/wasm/FloatFixture.h>
 #include <tx/wasm/NFTFixture.h>
 #include <tx/wasm/RealHostFixture.h>
-#include <tx/wasm/WasmBench.h>
 
 #include <stdexcept>
 #include <string>
@@ -26,38 +25,58 @@
 #include <utility>
 
 namespace xrpl::test::bench {
+namespace {
 
 [[noreturn]] void
-benchSetupFailed(std::string_view what)
+setupFailed(std::string_view what)
 {
-    throw std::runtime_error("benchmark fixture setup failed: " + std::string{what});
+    throw std::runtime_error{"benchmark fixture setup failed: " + std::string{what}};
 }
 
-BenchFixture&
-benchLedger()
+}  // namespace
+
+Fixtures::Fixtures()
+    : alice_{ledger_.fund("benchAlice")}
+    , bob_{ledger_.fund("benchBob")}
+    , signerListOwner_{ledger_.fund("benchSigners")}
+    , escrow_{keylet::account(AccountID{})}
+    , signedMessage_{signMessage("the quick brown fox jumps over the lazy dog")}
+    , nftId_{NFTTest::makeNftId(alice_.id())}
 {
-    static BenchFixture value;
-    return value;
+    ledger_.makeSignerList(signerListOwner_, 2, {{alice_, 1}, {bob_, 1}});
+
+    // The escrow has to be submitted after the accounts exist, which is why it is built here
+    // rather than in the initializer list: its keylet depends on the owner's sequence number at
+    // submission time.
+    auto const ownerSeq = ledger_.ledger.getAccountRoot(alice_.id()).getSequence();
+    auto const created = ledger_.ledger.submit(
+        transactions::EscrowCreateBuilder{alice_.id(), bob_.id(), XRP(100)}.setFinishAfter(
+            900'000'000),
+        alice_);
+    if (created.ter != tesSUCCESS)
+    {
+        setupFailed(std::string{"creating the escrow: "} + transToken(created.ter));
+    }
+    ledger_.ledger.close();
+    escrow_ = keylet::escrow(alice_.id(), SeqProxy::rawSequence(ownerSeq));
 }
 
 Account const&
-benchAlice()
+Fixtures::alice() const
 {
-    static auto const kValue = benchLedger().fund("benchAlice");
-    return kValue;
+    return alice_;
 }
 
 Account const&
-benchBob()
+Fixtures::bob() const
 {
-    static auto const kValue = benchLedger().fund("benchBob");
-    return kValue;
+    return bob_;
 }
 
 TxAssembler
-benchMemoTx()
+Fixtures::memoTx()
 {
-    auto assembler = escrowFinishTx(benchLedger().ledger, benchAlice());
+    auto assembler = escrowFinishTx(ledger_.ledger, alice_);
     assembler.build = [inner = std::move(assembler.build)](STObject& obj) {
         inner(obj);
         auto memos = STArray{};
@@ -69,113 +88,97 @@ benchMemoTx()
 }
 
 FieldLocator
-benchMemoLocator()
+Fixtures::memoLocator()
 {
     return FieldLocator{{sfMemos.getCode(), 0, sfMemoData.getCode()}};
 }
 
 WasmHost
-benchHost()
+Fixtures::host()
 {
-    auto assembler = benchMemoTx();
-    return benchLedger().makeHost(
-        keylet::account(benchAlice().id()), assembler.type, std::move(assembler.build));
+    auto assembler = memoTx();
+    return ledger_.makeHost(
+        keylet::account(alice_.id()), assembler.type, std::move(assembler.build));
 }
 
 WasmHost
-benchCachedHost()
+Fixtures::cachedHost()
 {
-    auto host = benchHost();
-    if (!host->cacheLedgerObj(keylet::account(benchAlice().id()).key, 1).has_value())
+    auto wasmHost = host();
+    if (!wasmHost->cacheLedgerObj(keylet::account(alice_.id()).key, 1).has_value())
     {
-        benchSetupFailed("caching the account root into slot 1");
+        setupFailed("caching the account root into slot 1");
     }
-    return host;
-}
-
-Account const&
-benchSignerListOwner()
-{
-    static auto const kValue = [] {
-        auto const acct = benchLedger().fund("benchSigners");
-        benchLedger().makeSignerList(acct, 2, {{benchAlice(), 1}, {benchBob(), 1}});
-        return acct;
-    }();
-    return kValue;
+    return wasmHost;
 }
 
 WasmHost
-benchSignerListHost()
+Fixtures::signerListHost()
 {
     auto assembler = bareTx();
-    return benchLedger().makeHost(
-        keylet::signerList(benchSignerListOwner().id()),
-        assembler.type,
-        std::move(assembler.build));
+    return ledger_.makeHost(
+        keylet::signerList(signerListOwner_.id()), assembler.type, std::move(assembler.build));
 }
 
 WasmHost
-benchCachedSignerListHost()
+Fixtures::cachedSignerListHost()
 {
     auto assembler = bareTx();
-    auto host = benchLedger().makeHost(
-        keylet::account(AccountID{}), assembler.type, std::move(assembler.build));
-    if (!host->cacheLedgerObj(keylet::signerList(benchSignerListOwner().id()).key, 1).has_value())
+    auto wasmHost =
+        ledger_.makeHost(keylet::account(AccountID{}), assembler.type, std::move(assembler.build));
+    if (!wasmHost->cacheLedgerObj(keylet::signerList(signerListOwner_.id()).key, 1).has_value())
     {
-        benchSetupFailed("caching the signer list into slot 1");
+        setupFailed("caching the signer list into slot 1");
     }
-    return host;
+    return wasmHost;
+}
+
+WasmHost
+Fixtures::tracingHost()
+{
+    return ledger_.makeTracingHost();
 }
 
 Keylet const&
-benchEscrow()
+Fixtures::escrow() const
 {
-    static auto const kValue = [] {
-        auto const ownerSeq = benchLedger().ledger.getAccountRoot(benchAlice().id()).getSequence();
-        auto const created = benchLedger().ledger.submit(
-            transactions::EscrowCreateBuilder{benchAlice().id(), benchBob().id(), XRP(100)}
-                .setFinishAfter(900'000'000),
-            benchAlice());
-        if (created.ter != tesSUCCESS)
-        {
-            benchSetupFailed(std::string{"creating the escrow: "} + transToken(created.ter));
-        }
-        benchLedger().ledger.close();
-        return keylet::escrow(benchAlice().id(), SeqProxy::rawSequence(ownerSeq));
-    }();
-    return kValue;
+    return escrow_;
 }
 
 WasmHost
-benchEscrowHost()
+Fixtures::escrowHost()
 {
-    return benchLedger().makeHost(benchEscrow());
+    return ledger_.makeHost(escrow_);
 }
 
 Slice
-benchFloatX()
+Fixtures::floatX()
 {
     return FloatTest::slice(FloatTest::kPi);
 }
 
 Slice
-benchFloatY()
+Fixtures::floatY()
 {
     return FloatTest::slice(FloatTest::kTwo);
 }
 
 SignedMessage const&
-benchSignedMessage()
+Fixtures::signedMessage() const
 {
-    static auto const kValue = signMessage("the quick brown fox jumps over the lazy dog");
-    return kValue;
+    return signedMessage_;
 }
 
 uint256 const&
-benchNftId()
+Fixtures::nftId() const
 {
-    // `makeNftId` is a static member, so no fixture instance is needed to reach it.
-    static auto const kValue = NFTTest::makeNftId(benchAlice().id());
+    return nftId_;
+}
+
+Fixtures&
+Fixtures::instance()
+{
+    static Fixtures kValue;
     return kValue;
 }
 

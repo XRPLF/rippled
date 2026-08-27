@@ -16,13 +16,14 @@ floatFromStAmountImpl(benchmark::State& state)
 {
     static constexpr auto kWasmName = std::string_view{"float_from_stamount"};
 
-    auto const amount = STAmount{Issue{toCurrency("USD"), benchAlice().id()}, 1234567, -3};
+    auto const amount =
+        STAmount{Issue{toCurrency("USD"), Fixtures::instance().alice().id()}, 1234567, -3};
 
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [&amount](auto& host) { return host.floatFromSTAmount(amount, kBenchMode); });
+        [] { return Fixtures::instance().host(); },
+        [&amount](auto& host) { return host.floatFromSTAmount(amount, Fixtures::kRoundingMode); });
 }
 BENCHMARK(floatFromStAmountImpl)->UseManualTime()->Iterations(kBenchIterations);
 

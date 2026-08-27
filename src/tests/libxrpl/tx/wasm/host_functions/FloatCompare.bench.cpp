@@ -15,8 +15,8 @@ floatCompareImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatCompare(benchFloatX(), benchFloatY()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.floatCompare(Fixtures::floatX(), Fixtures::floatY()); });
 }
 BENCHMARK(floatCompareImpl)->UseManualTime()->Iterations(kBenchIterations);
 

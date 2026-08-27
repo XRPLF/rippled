@@ -15,8 +15,8 @@ nftSequenceImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.getNFTSequence(benchNftId()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.getNFTSequence(Fixtures::instance().nftId()); });
 }
 BENCHMARK(nftSequenceImpl)->UseManualTime()->Iterations(kBenchIterations);
 

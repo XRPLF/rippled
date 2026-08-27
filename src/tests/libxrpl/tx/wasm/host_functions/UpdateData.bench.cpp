@@ -7,7 +7,7 @@
 #include <tx/wasm/WasmBench.h>
 
 #include <cstddef>
-#include <string>
+#include <format>
 #include <string_view>
 
 namespace xrpl::test::bench {
@@ -21,8 +21,7 @@ constexpr std::string_view kImport =
 void
 updateDataThroughVm(benchmark::State& state)
 {
-    auto const body = std::string{"(call $set_data (i32.const 0) (i32.const "} +
-        std::to_string(state.range(0)) + "))";
+    auto const body = std::format("(call $set_data (i32.const 0) (i32.const {}))", state.range(0));
 
     benchmarkThroughVm(
         state,
@@ -30,7 +29,7 @@ updateDataThroughVm(benchmark::State& state)
         kImport,
         "",
         body,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         callsWithinTransferBudget(state.range(0)));
     state.SetBytesProcessed(state.iterations() * state.range(0));
 }
@@ -47,7 +46,7 @@ updateDataImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [&data](auto& host) { return host.updateData(Slice{data.data(), data.size()}); });
     state.SetBytesProcessed(state.iterations() * state.range(0));
 }

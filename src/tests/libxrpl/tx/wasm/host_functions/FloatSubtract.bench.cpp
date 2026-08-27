@@ -15,8 +15,11 @@ floatSubtractImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatSubtract(benchFloatX(), benchFloatY(), kBenchMode); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.floatSubtract(
+                Fixtures::floatX(), Fixtures::floatY(), Fixtures::kRoundingMode);
+        });
 }
 BENCHMARK(floatSubtractImpl)->UseManualTime()->Iterations(kBenchIterations);
 

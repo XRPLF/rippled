@@ -15,8 +15,11 @@ floatDivideImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatDivide(benchFloatX(), benchFloatY(), kBenchMode); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.floatDivide(
+                Fixtures::floatX(), Fixtures::floatY(), Fixtures::kRoundingMode);
+        });
 }
 BENCHMARK(floatDivideImpl)->UseManualTime()->Iterations(kBenchIterations);
 

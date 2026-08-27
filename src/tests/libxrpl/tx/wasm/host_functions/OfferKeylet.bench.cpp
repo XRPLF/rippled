@@ -15,8 +15,10 @@ offerKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.offerKeylet(benchAlice().id(), kBenchSeq); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.offerKeylet(Fixtures::instance().alice().id(), Fixtures::kSeq);
+        });
 }
 BENCHMARK(offerKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

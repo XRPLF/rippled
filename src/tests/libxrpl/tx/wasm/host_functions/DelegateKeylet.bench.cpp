@@ -15,8 +15,11 @@ delegateKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.delegateKeylet(benchAlice().id(), benchBob().id()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.delegateKeylet(
+                Fixtures::instance().alice().id(), Fixtures::instance().bob().id());
+        });
 }
 BENCHMARK(delegateKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

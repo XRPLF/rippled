@@ -15,8 +15,8 @@ floatToIntImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatToInt(benchFloatX(), kBenchMode); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.floatToInt(Fixtures::floatX(), Fixtures::kRoundingMode); });
 }
 BENCHMARK(floatToIntImpl)->UseManualTime()->Iterations(kBenchIterations);
 

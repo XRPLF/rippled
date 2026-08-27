@@ -17,7 +17,7 @@ currentLedgerObjArrayLenImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchSignerListHost(); },
+        [] { return Fixtures::instance().signerListHost(); },
         [](auto& host) { return host.getCurrentLedgerObjArrayLen(sfSignerEntries); });
 }
 BENCHMARK(currentLedgerObjArrayLenImpl)->UseManualTime()->Iterations(kBenchIterations);

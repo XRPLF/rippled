@@ -16,13 +16,13 @@ ammKeyletImpl(benchmark::State& state)
 {
     static constexpr auto kWasmName = std::string_view{"amm_id"};
 
-    auto const usd = Asset{Issue{toCurrency("USD"), benchAlice().id()}};
+    auto const usd = Asset{Issue{toCurrency("USD"), Fixtures::instance().alice().id()}};
     auto const xrp = Asset{xrpIssue()};
 
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [&usd, &xrp](auto& host) { return host.ammKeylet(usd, xrp); });
 }
 BENCHMARK(ammKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);

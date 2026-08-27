@@ -17,7 +17,7 @@ ledgerObjArrayLenImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchCachedSignerListHost(); },
+        [] { return Fixtures::instance().cachedSignerListHost(); },
         [](auto& host) { return host.getLedgerObjArrayLen(1, sfSignerEntries); });
 }
 BENCHMARK(ledgerObjArrayLenImpl)->UseManualTime()->Iterations(kBenchIterations);

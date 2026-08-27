@@ -15,8 +15,10 @@ mptokenIssuanceKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.mptokenIssuanceKeylet(benchAlice().id(), kBenchSeq); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.mptokenIssuanceKeylet(Fixtures::instance().alice().id(), Fixtures::kSeq);
+        });
 }
 BENCHMARK(mptokenIssuanceKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

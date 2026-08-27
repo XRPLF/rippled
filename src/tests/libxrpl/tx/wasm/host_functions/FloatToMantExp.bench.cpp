@@ -21,7 +21,8 @@ void
 floatToMantExpThroughVm(benchmark::State& state)
 {
     static auto const kData = dataSegment(0, FloatTest::kPi);
-    benchmarkThroughVm(state, kWasmName, kImport, kData, kBody, [] { return benchHost(); });
+    benchmarkThroughVm(
+        state, kWasmName, kImport, kData, kBody, [] { return Fixtures::instance().host(); });
 }
 BENCHMARK(floatToMantExpThroughVm)->UseManualTime()->Iterations(kBenchIterations);
 
@@ -31,8 +32,8 @@ floatToMantExpImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatToMantExp(benchFloatX()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.floatToMantExp(Fixtures::floatX()); });
 }
 BENCHMARK(floatToMantExpImpl)->UseManualTime()->Iterations(kBenchIterations);
 

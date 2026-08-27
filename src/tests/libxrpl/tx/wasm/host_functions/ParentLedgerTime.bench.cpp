@@ -15,7 +15,7 @@ parentLedgerTimeImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) { return host.getParentLedgerTime(); });
 }
 BENCHMARK(parentLedgerTimeImpl)->UseManualTime()->Iterations(kBenchIterations);

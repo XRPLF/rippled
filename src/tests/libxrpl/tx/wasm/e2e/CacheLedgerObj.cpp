@@ -8,6 +8,7 @@
 #include <tx/wasm/WasmRun.h>
 
 #include <cstdint>
+#include <format>
 #include <string>
 
 namespace xrpl::test {
@@ -28,14 +29,14 @@ struct CacheLedgerObjE2e : RealVmTest
 TEST_F(CacheLedgerObjE2e, ContractComputesAKeyCachesTheObjectAndReadsItsField)
 {
     auto const owner = fund("owner");
-    auto const wat = std::string{R"wat(
+    auto const wat = std::format(
+        R"wat(
 (module
   (import "host_lib" "accountroot_id" (func $accountroot_id (param i32 i32 i32 i32) (result i32)))
   (import "host_lib" "cache_le" (func $cache_le (param i32 i32 i32) (result i32)))
   (import "host_lib" "le_field" (func $le_field (param i32 i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
-  (data (i32.const 0) ")wat"} +
-        watEscaped(RealHostFixture::toBytes(owner.id())) + R"wat(")
+  (data (i32.const 0) "{}")
   (func (export "escrow_finish") (result i32)
     (local $slot i32)
     (local $r i32)
@@ -46,9 +47,10 @@ TEST_F(CacheLedgerObjE2e, ContractComputesAKeyCachesTheObjectAndReadsItsField)
     (local.set $slot (call $cache_le (i32.const 64) (i32.const 32) (i32.const 0)))
     (if (i32.lt_s (local.get $slot) (i32.const 0)) (then (return (local.get $slot))))
     ;; And read a field of it through the slot the host just assigned.
-    (call $le_field (local.get $slot) (i32.const )wat" +
-        std::to_string(sfAccount.getCode()) + R"wat() (i32.const 128) (i32.const 32))))
-)wat";
+    (call $le_field (local.get $slot) (i32.const {}) (i32.const 128) (i32.const 32))))
+)wat",
+        watEscaped(RealHostFixture::toBytes(owner.id())),
+        sfAccount.getCode());
 
     auto const outcome = run(wat);
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);

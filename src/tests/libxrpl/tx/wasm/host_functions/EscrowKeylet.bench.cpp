@@ -28,12 +28,14 @@ escrowKeyletThroughVm(benchmark::State& state)
         auto seq = Bytes(4);
         for (auto i = 0U; i < 4; ++i)
         {
-            seq[i] = static_cast<std::uint8_t>((kBenchSeq >> (8 * i)) & 0xFF);
+            seq[i] = static_cast<std::uint8_t>((Fixtures::kSeq >> (8 * i)) & 0xFF);
         }
-        return dataSegment(0, RealHostFixture::toBytes(benchAlice().id())) + dataSegment(32, seq);
+        return dataSegment(0, RealHostFixture::toBytes(Fixtures::instance().alice().id())) +
+            dataSegment(32, seq);
     }();
 
-    benchmarkThroughVm(state, kWasmName, kImport, kData, kBody, [] { return benchHost(); });
+    benchmarkThroughVm(
+        state, kWasmName, kImport, kData, kBody, [] { return Fixtures::instance().host(); });
 }
 BENCHMARK(escrowKeyletThroughVm)->UseManualTime()->Iterations(kBenchIterations);
 
@@ -43,8 +45,10 @@ escrowKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.escrowKeylet(benchAlice().id(), kBenchSeq); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.escrowKeylet(Fixtures::instance().alice().id(), Fixtures::kSeq);
+        });
 }
 BENCHMARK(escrowKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

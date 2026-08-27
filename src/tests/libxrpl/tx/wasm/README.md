@@ -28,8 +28,8 @@ actually costs.
 **One `.bench.cpp` per host function, named after its test** — `EscrowKeylet.cpp` and
 `EscrowKeylet.bench.cpp` sit next to each other, 61 of each. That is a checklist rather than a
 judgment call: adding a host function means adding two files, and nobody has to decide where a
-benchmark belongs. Shared ledger setup lives in `BenchFixtures.h` (one ledger, funded once, for
-the whole binary) so each file holds only the call it measures.
+benchmark belongs. Shared ledger setup lives in the `Fixtures` type (`BenchFixtures.h`) — one
+ledger, funded once, for the whole binary — so each file holds only the call it measures.
 
 They build into a **separate executable** (`xrpl.bench.wasm`), and `xrpl_tests` filters
 `*.bench.cpp` out of its source globs, so benchmark runtime never lands on the `ctest` path.
@@ -51,12 +51,13 @@ none of it inlined) far more than it inflates the impls, so Debug overstates wha
 guest costs. Google Benchmark prints a warning when it detects this. Ratios between `Impl`
 cases survive Debug reasonably; absolute `implied_gas` does not.
 
-On Linux, Google Benchmark is built against libpfm (`enable_libpfm` in `conanfile.py`), so
-hardware counters are available as a cross-check on the timing:
-
-```bash
-./xrpl.bench.wasm --benchmark_perf_counters=INSTRUCTIONS,CYCLES
-```
+> **On hardware performance counters.** Google Benchmark can read instruction and cycle counts
+> through libpfm on Linux, and that was wired up here at one point, but it has been removed: its
+> counters start and stop around the whole `for (auto _ : state)` body, which for these cases
+> covers the loaded run _and_ the baseline run _and_ two module compilations. They would not
+> reflect the subtraction that makes these numbers mean anything. Getting useful instruction
+> counts needs a custom `perf_event_open` around the same regions `timeRun` brackets — worth
+> doing, but the dependency buys nothing until then.
 
 ### Reading the output
 
@@ -73,7 +74,6 @@ from one laptop's nanoseconds.
 | `implied_gas`   | the raw measurement, before the crossing is added back                                       |
 | `charged_gas`   | what the engine actually billed (`EscrowResult::cost`); confirms the right call was measured |
 | `ns_per_call`   | raw wall time, for debugging a suspicious ratio                                              |
-| `perf_counters` | 1 when libpfm is available                                                                   |
 
 `declared_gas` is read from the declaration through the `wasm_testkit` bridge
 (`declared_gas(wasm_name)`), not transcribed into C++ — 61 copied constants would drift from
@@ -82,7 +82,12 @@ to fail.
 
 `price_ratio` is what you sort by. **Below 1 is the direction that matters**: an underpriced call
 is one a contract can buy too cheaply, which is a denial-of-service vector rather than a rounding
-error. Above 1 the table merely overcharges.
+error. Above 1 the table merely overcharges. The mispriced functions come to the top with:
+
+```bash
+./build/xrpl.bench.wasm --benchmark_format=json |
+    jq -r '.benchmarks[] | select(.price_ratio) | [.price_ratio, .name] | @tsv' | sort -n
+```
 
 ### How `suggested_gas` is measured
 
@@ -92,9 +97,9 @@ one pool — so one unit of gas is, by construction, about one guest instruction
 question into a ratio: _how many guest instructions' worth of work is this host call?_ Everything
 below exists to answer that without any hard-coded constant.
 
-Four steps, each a subtraction, all in `WasmBench.h`.
+Four steps, each a subtraction, all in `WasmBench.h` / `WasmBench.cpp`.
 
-**1. `secondsPerGas()` — what one unit of gas costs on this machine.**
+**1. `Calibration::secondsPerGas()` — what one unit of gas costs on this machine.**
 Assemble two modules that differ only in a loop bound: one runs a trivial `i32.add` body
 `kCallsPerRun` times, the other zero times. Run both, and take
 
@@ -123,7 +128,7 @@ implied_gas = secondsPerCall / secondsPerGas
 
 Machine-independent: both terms scale with the box, so the ratio does not.
 
-**4. `crossingFloorGas()` — the toll every call pays.**
+**4. `Calibration::crossingFloorGas()` — the toll every call pays.**
 Measured once, from `ldgr_index` — the cheapest host function there is, taking no input and
 answering from a header already in hand, so almost nothing remains after subtracting it away:
 

@@ -18,7 +18,7 @@ currentLedgerObjNestedArrayLenImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchSignerListHost(); },
+        [] { return Fixtures::instance().signerListHost(); },
         [](auto& host) {
             return host.getCurrentLedgerObjNestedArrayLen(
                 FieldLocator{{sfSignerEntries.getCode()}});

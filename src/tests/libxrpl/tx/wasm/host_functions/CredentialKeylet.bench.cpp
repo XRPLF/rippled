@@ -18,10 +18,12 @@ credentialKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) {
             return host.credentialKeylet(
-                benchAlice().id(), benchBob().id(), Slice{kType.data(), kType.size()});
+                Fixtures::instance().alice().id(),
+                Fixtures::instance().bob().id(),
+                Slice{kType.data(), kType.size()});
         });
 }
 BENCHMARK(credentialKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);

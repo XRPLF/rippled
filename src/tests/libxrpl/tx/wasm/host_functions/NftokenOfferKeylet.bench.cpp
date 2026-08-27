@@ -15,8 +15,10 @@ nftokenOfferKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.nftokenOfferKeylet(benchAlice().id(), kBenchSeq); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.nftokenOfferKeylet(Fixtures::instance().alice().id(), Fixtures::kSeq);
+        });
 }
 BENCHMARK(nftokenOfferKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

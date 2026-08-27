@@ -15,8 +15,8 @@ accountKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.accountKeylet(benchAlice().id()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.accountKeylet(Fixtures::instance().alice().id()); });
 }
 BENCHMARK(accountKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

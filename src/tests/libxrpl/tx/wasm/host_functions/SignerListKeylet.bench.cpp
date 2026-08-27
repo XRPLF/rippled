@@ -15,8 +15,8 @@ signerListKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.signerListKeylet(benchAlice().id()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.signerListKeylet(Fixtures::instance().alice().id()); });
 }
 BENCHMARK(signerListKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

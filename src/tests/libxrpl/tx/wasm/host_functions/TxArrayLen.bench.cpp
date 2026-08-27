@@ -17,7 +17,7 @@ txArrayLenImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) { return host.getTxArrayLen(sfMemos); });
 }
 BENCHMARK(txArrayLenImpl)->UseManualTime()->Iterations(kBenchIterations);

@@ -22,7 +22,8 @@ void
 floatPowerThroughVm(benchmark::State& state)
 {
     static auto const kData = dataSegment(0, FloatTest::kPi);
-    benchmarkThroughVm(state, kWasmName, kImport, kData, kBody, [] { return benchHost(); });
+    benchmarkThroughVm(
+        state, kWasmName, kImport, kData, kBody, [] { return Fixtures::instance().host(); });
 }
 BENCHMARK(floatPowerThroughVm)->UseManualTime()->Iterations(kBenchIterations);
 
@@ -32,8 +33,8 @@ floatPowerImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatPower(benchFloatX(), 7, kBenchMode); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.floatPower(Fixtures::floatX(), 7, Fixtures::kRoundingMode); });
 }
 BENCHMARK(floatPowerImpl)->UseManualTime()->Iterations(kBenchIterations);
 

@@ -18,7 +18,7 @@ ledgerObjNestedArrayLenImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchCachedSignerListHost(); },
+        [] { return Fixtures::instance().cachedSignerListHost(); },
         [](auto& host) {
             return host.getLedgerObjNestedArrayLen(1, FieldLocator{{sfSignerEntries.getCode()}});
         });

@@ -15,8 +15,8 @@ nftIssuerImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.getNFTIssuer(benchNftId()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) { return host.getNFTIssuer(Fixtures::instance().nftId()); });
 }
 BENCHMARK(nftIssuerImpl)->UseManualTime()->Iterations(kBenchIterations);
 

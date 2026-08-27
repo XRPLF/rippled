@@ -18,7 +18,7 @@ ledgerObjNestedFieldImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchCachedHost(); },
+        [] { return Fixtures::instance().cachedHost(); },
         [](auto& host) {
             return host.getLedgerObjNestedField(1, FieldLocator{{sfAccount.getCode()}});
         });

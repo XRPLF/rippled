@@ -36,7 +36,7 @@ guestInstruction(benchmark::State& state)
     static constexpr std::string_view kBody = "(i32.add (local.get $r) (i32.const 1))";
     // Empty import name: this case prices no host function, so there is nothing to look a
     // declaration up for and it reports no `suggested_gas`.
-    benchmarkThroughVm(state, "", "", "", kBody, [] { return benchHost(); });
+    benchmarkThroughVm(state, "", "", "", kBody, [] { return Fixtures::instance().host(); });
 }
 BENCHMARK(guestInstruction)->UseManualTime()->Iterations(kBenchIterations);
 

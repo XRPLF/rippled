@@ -15,8 +15,11 @@ depositPreauthKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.depositPreauthKeylet(benchAlice().id(), benchBob().id()); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.depositPreauthKeylet(
+                Fixtures::instance().alice().id(), Fixtures::instance().bob().id());
+        });
 }
 BENCHMARK(depositPreauthKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

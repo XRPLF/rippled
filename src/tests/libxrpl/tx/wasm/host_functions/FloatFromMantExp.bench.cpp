@@ -15,8 +15,10 @@ floatFromMantExpImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.floatFromMantExp(3141592653589793, -15, kBenchMode); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.floatFromMantExp(3141592653589793, -15, Fixtures::kRoundingMode);
+        });
 }
 BENCHMARK(floatFromMantExpImpl)->UseManualTime()->Iterations(kBenchIterations);
 

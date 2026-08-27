@@ -33,7 +33,7 @@ isAmendmentEnabledByIdImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [&id](auto& host) { return host.isAmendmentEnabled(id); });
 }
 BENCHMARK(isAmendmentEnabledByIdImpl)->UseManualTime()->Iterations(kBenchIterations);
@@ -45,7 +45,7 @@ isAmendmentEnabledByNameImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) { return host.isAmendmentEnabled(std::string_view{benchAmendment()}); });
 }
 BENCHMARK(isAmendmentEnabledByNameImpl)->UseManualTime()->Iterations(kBenchIterations);

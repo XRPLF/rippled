@@ -17,7 +17,7 @@ txFieldImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) { return host.getTxField(sfAccount); });
 }
 BENCHMARK(txFieldImpl)->UseManualTime()->Iterations(kBenchIterations);

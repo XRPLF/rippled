@@ -8,6 +8,7 @@
 #include <tx/wasm/RealVmTest.h>
 
 #include <cstdint>
+#include <format>
 #include <string>
 
 namespace xrpl::test {
@@ -30,14 +31,15 @@ TEST_F(HostErrorE2e, ARealHostErrorReachesTheGuestAsItsWireCode)
     // guest reads was produced by the real lookup rather than staged.
     auto const owner = fund("owner");
 
-    auto const wat = std::string{R"wat(
+    auto const wat = std::format(
+        R"wat(
 (module
   (import "host_lib" "home_le_field" (func $home_le_field (param i32 i32 i32) (result i32)))
   (memory (export "memory") 1)
   (func (export "escrow_finish") (result i32)
-    (call $home_le_field (i32.const )wat"} +
-        std::to_string(sfMemoData.getCode()) + R"wat() (i32.const 0) (i32.const 32))))
-)wat";
+    (call $home_le_field (i32.const {}) (i32.const 0) (i32.const 32))))
+)wat",
+        sfMemoData.getCode());
 
     auto const outcome = run(wat, keylet::account(owner.id()));
 

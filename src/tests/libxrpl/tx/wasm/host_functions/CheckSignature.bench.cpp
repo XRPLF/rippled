@@ -5,6 +5,7 @@
 #include <tx/wasm/WasmBench.h>
 
 #include <cstdint>
+#include <format>
 #include <string>
 #include <string_view>
 
@@ -24,16 +25,21 @@ constexpr std::int32_t kPubkeyOffset = 512;
 void
 checkSignatureThroughVm(benchmark::State& state)
 {
-    auto const& m = benchSignedMessage();
+    auto const& m = Fixtures::instance().signedMessage();
     static auto const kData = dataSegment(kMessageOffset, m.message) +
         dataSegment(kSignatureOffset, m.signature) + dataSegment(kPubkeyOffset, m.publicKey);
-    static auto const kBody = std::string{"(call $check_sig (i32.const "} +
-        std::to_string(kMessageOffset) + ") (i32.const " + std::to_string(m.message.size()) +
-        ") (i32.const " + std::to_string(kSignatureOffset) + ") (i32.const " +
-        std::to_string(m.signature.size()) + ") (i32.const " + std::to_string(kPubkeyOffset) +
-        ") (i32.const " + std::to_string(m.publicKey.size()) + "))";
+    static auto const kBody = std::format(
+        "(call $check_sig (i32.const {}) (i32.const {}) (i32.const {}) (i32.const {}) "
+        "(i32.const {}) (i32.const {}))",
+        kMessageOffset,
+        m.message.size(),
+        kSignatureOffset,
+        m.signature.size(),
+        kPubkeyOffset,
+        m.publicKey.size());
 
-    benchmarkThroughVm(state, kWasmName, kImport, kData, kBody, [] { return benchHost(); });
+    benchmarkThroughVm(
+        state, kWasmName, kImport, kData, kBody, [] { return Fixtures::instance().host(); });
 }
 BENCHMARK(checkSignatureThroughVm)->UseManualTime()->Iterations(kBenchIterations);
 
@@ -43,9 +49,9 @@ checkSignatureImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [](auto& host) {
-            auto const& m = benchSignedMessage();
+            auto const& m = Fixtures::instance().signedMessage();
             return host.checkSignature(
                 Slice{m.message.data(), m.message.size()},
                 Slice{m.signature.data(), m.signature.size()},

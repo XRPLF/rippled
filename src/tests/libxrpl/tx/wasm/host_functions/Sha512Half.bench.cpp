@@ -7,7 +7,7 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <string>
+#include <format>
 #include <string_view>
 
 namespace xrpl::test::bench {
@@ -26,8 +26,9 @@ sha512HalfThroughVm(benchmark::State& state)
 {
     // Zeroed guest memory is a perfectly good hash input: `sha512_half` validates nothing about
     // its bytes, so there is no data segment to seed.
-    auto const body = std::string{"(call $sha512_half (i32.const 0) (i32.const "} +
-        std::to_string(state.range(0)) + ") (i32.const 8192) (i32.const 32))";
+    auto const body = std::format(
+        "(call $sha512_half (i32.const 0) (i32.const {}) (i32.const 8192) (i32.const 32))",
+        state.range(0));
 
     // The call count shrinks as the input grows: at 1 KiB a thousand calls would approach the
     // engine's per-run transfer budget and the tail of the loop would be measuring refusals.
@@ -37,7 +38,7 @@ sha512HalfThroughVm(benchmark::State& state)
         kImport,
         "",
         body,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         callsWithinTransferBudget(state.range(0) + 32));
     state.SetBytesProcessed(state.iterations() * state.range(0));
 }
@@ -54,7 +55,7 @@ sha512HalfImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
+        [] { return Fixtures::instance().host(); },
         [&data](auto& host) {
             return host.computeSha512HalfHash(Slice{data.data(), data.size()});
         });

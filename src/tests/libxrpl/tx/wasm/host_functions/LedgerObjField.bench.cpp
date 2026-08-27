@@ -17,7 +17,7 @@ ledgerObjFieldImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchCachedHost(); },
+        [] { return Fixtures::instance().cachedHost(); },
         [](auto& host) { return host.getLedgerObjField(1, sfAccount); });
 }
 BENCHMARK(ledgerObjFieldImpl)->UseManualTime()->Iterations(kBenchIterations);

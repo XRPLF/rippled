@@ -15,8 +15,10 @@ permissionedDomainKeyletImpl(benchmark::State& state)
     benchmarkImpl(
         state,
         kWasmName,
-        [] { return benchHost(); },
-        [](auto& host) { return host.permissionedDomainKeylet(benchAlice().id(), kBenchSeq); });
+        [] { return Fixtures::instance().host(); },
+        [](auto& host) {
+            return host.permissionedDomainKeylet(Fixtures::instance().alice().id(), Fixtures::kSeq);
+        });
 }
 BENCHMARK(permissionedDomainKeyletImpl)->UseManualTime()->Iterations(kBenchIterations);
 

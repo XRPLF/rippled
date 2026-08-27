@@ -87,17 +87,6 @@ if(TARGET GTest::gtest)
     )
     add_dependencies(xrpl.bench.wasm xrpl_crates)
 
-    # Hardware performance counters (INSTRUCTIONS, CYCLES, ...) come from libpfm,
-    # which Google Benchmark only builds on Linux (see the `enable_libpfm` option
-    # set in conanfile.py). Where it is available the benchmarks advertise the
-    # `--benchmark_perf_counters=...` flag; elsewhere they report wall time only.
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        target_compile_definitions(
-            xrpl.bench.wasm
-            PRIVATE XRPL_BENCH_PERF_COUNTERS=1
-        )
-    endif()
-
     add_dependencies(xrpl.benchmarks xrpl.bench.wasm)
 else()
     message(
