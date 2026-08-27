@@ -20,7 +20,6 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/telemetry/TxSpanNames.h>
-#include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -108,11 +107,14 @@
 #include <utility>
 #include <vector>
 
+// The span factories below are named only by the telemetry-enabled blocks in
+// this file: the consensus receive spans, and the tx.receive span in
+// handleTransaction(). Without this guard they would be unused includes in a
+// build without telemetry, which clang-tidy's misc-include-cleaner rejects.
 #ifdef XRPL_ENABLE_TELEMETRY
-// The consensus receive-span factories are named only by the
-// telemetry-enabled blocks in this file.
 #include <xrpld/telemetry/ConsensusReceiveTracing.h>
-#endif
+#include <xrpld/telemetry/TxTracing.h>
+#endif  // XRPL_ENABLE_TELEMETRY
 
 using namespace std::chrono_literals;
 
