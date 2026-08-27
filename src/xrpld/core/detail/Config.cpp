@@ -44,8 +44,6 @@
 #include <string>
 #include <string_view>
 #include <system_error>
-#include <thread>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -69,6 +67,7 @@ getMemorySize()
 
 #if BOOST_OS_LINUX
 #include <sys/sysinfo.h>  // IWYU pragma: keep
+#include <sys/types.h>
 
 #include <unistd.h>
 

@@ -11,6 +11,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
