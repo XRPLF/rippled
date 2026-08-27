@@ -74,10 +74,11 @@ public:
     void
     sweep()
     {
-        {
+        auto* const byHash = [this] {
             auto lockedMaps = ledgerMaps_.lock();
-            lockedMaps->byHash->sweep();
-        }
+            return lockedMaps->byHash.get();
+        }();
+        byHash->sweep();
         consensusValidated_.sweep();
     }
 
