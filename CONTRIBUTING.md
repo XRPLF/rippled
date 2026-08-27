@@ -642,7 +642,7 @@ Xrpld uses a linear workflow model that can be summarized as:
 
 1. Optimally, the `develop` branch will be ready to go, with all
    relevant PRs already merged.
-2. 2. If there are any PRs pending, merge them **BEFORE** preparing the beta.
+2. If there are any PRs pending, merge them **BEFORE** preparing the beta.
    1. If only one or two PRs need to be merged, merge those PRs [as
       normal](#when-and-how-to-merge-pull-requests), updating the second
       one, and waiting for CI to finish in between.
