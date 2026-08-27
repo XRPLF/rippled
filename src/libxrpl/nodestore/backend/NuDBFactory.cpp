@@ -449,11 +449,15 @@ public:
     }
 
 private:
+#ifdef XRPL_ENABLE_TELEMETRY
     /**
      * Fold one finished insert into the write-path counters.
      *
      * Always runs, including on the throwing path, so the depth gauge
      * returns to its true value even when the insert fails.
+     *
+     * Declared only with telemetry compiled in, because every counter it
+     * touches is, and its single caller is inside the same guard.
      *
      * @param begin When the insert started.
      */
@@ -477,6 +481,7 @@ private:
         {
         }
     }
+#endif
 
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
