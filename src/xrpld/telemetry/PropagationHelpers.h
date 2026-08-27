@@ -17,8 +17,15 @@
  *                      |  delegates, once there is something to write
  *          injectSpanContext(span, message)   <-- preferred entry point
  *
- * @note Prefer the overload that takes the whole message. It is a true
- *  no-op when nothing is recorded, because it decides whether to create
+ *      SpanGuard::hasCurrentContext()
+ *                |  gates
+ *                v
+ *          injectCurrentContext(message)      <-- no span handle needed
+ *                |
+ *                +--> SpanGuard::injectCurrentContextToProtobuf(proto)
+ *
+ * @note Prefer the helpers that take the whole message. They are true
+ *  no-ops when nothing is recorded, because they decide whether to create
  *  the TraceContext submessage at all. The overload taking a
  *  protocol::TraceContext& cannot be: its caller has already created the
  *  submessage and set its has-bit before this code runs.
@@ -89,6 +96,32 @@ injectSpanContext(SpanGuard const& span, Message& msg)
         return;
 
     injectSpanContext(span, *msg.mutable_trace_context());
+}
+
+/**
+ * Inject this thread's currently active span context into a message that
+ *  carries an optional TraceContext submessage.
+ *
+ *  For senders that have no SpanGuard in hand and want whatever span is
+ *  ambient on the calling thread, such as the consensus round span.
+ *
+ *  Tests for a live context before touching the message, so a build with
+ *  telemetry compiled out, disabled by config, or simply not tracing this
+ *  round sends no TraceContext submessage at all. Calling
+ *  mutable_trace_context() unconditionally would create it and set its
+ *  has-bit, putting an empty TraceContext on the wire and making every
+ *  receiving peer take its has_trace_context() branch for nothing.
+ *
+ * @param msg  The message to populate. Untouched when no span is active.
+ */
+template <class Message>
+void
+injectCurrentContext(Message& msg)
+{
+    if (!SpanGuard::hasCurrentContext())
+        return;
+
+    SpanGuard::injectCurrentContextToProtobuf(*msg.mutable_trace_context());
 }
 
 }  // namespace xrpl::telemetry

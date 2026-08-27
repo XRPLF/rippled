@@ -483,6 +483,23 @@ public:
     getTraceBytes() const;
 
     /**
+     * Report whether this thread has a live span context to propagate.
+     *
+     * Lets a caller decide whether to create an optional protobuf
+     * submessage before calling injectCurrentContextToProtobuf(), which
+     * writes nothing when no span is active. Tests exactly the two
+     * conditions that injector checks and allocates nothing, so it is cheap
+     * enough to call on every broadcast. threadLocalContext() is not
+     * a substitute: it builds a shared SpanContext::Impl before validity
+     * can be tested.
+     *
+     * @return true when a span with a valid context is active on this
+     * thread.
+     */
+    [[nodiscard]] static bool
+    hasCurrentContext() noexcept;
+
+    /**
      * Inject the calling thread's currently-active OTel context into a
      * protobuf TraceContext message for cross-node propagation.
      *
@@ -1073,6 +1090,12 @@ public:
     getTraceBytes() const
     {
         return {};
+    }
+
+    [[nodiscard]] static bool
+    hasCurrentContext() noexcept
+    {
+        return false;
     }
 
     static void
