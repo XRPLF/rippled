@@ -202,4 +202,90 @@ public:
     // NOLINTEND(readability-convert-member-functions-to-static)
 };
 
+/**
+ * A value kept only so that a change in it can be reported.
+ *
+ *  The common shape is compare-then-store: read whether the incoming value
+ *  differs from the last one, store it, and report an event only on a
+ *  change. `changedTo()` does all three in one call and answers false when
+ *  telemetry is compiled out, so the reporting branch is never taken.
+ *
+ * @tparam T  The mirrored value's type. Must be equality-comparable and
+ *  default-constructible.
+ *
+ * @note Holds a plain T, not an atomic, and is therefore not synchronized.
+ *  Guard it exactly the way you guard the state it sits beside. A value that
+ *  is read from another thread -- a gauge callback, for instance -- must stay
+ *  an atomic of its own; Mirror is not a substitute for one.
+ */
+template <class T>
+class Mirror
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    /**
+     * The last value stored.
+     */
+    T value_{};
+#endif
+
+public:
+    // These read value_ when telemetry is compiled in and touch no member
+    // when it is not, so clang-tidy asks for them to be static. Making them
+    // static would give the two builds different signatures.
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+
+    /**
+     * Store a value. A no-op, with no storage, when off.
+     *
+     * @param value  The value to remember.
+     */
+    void
+    store(T const& value) noexcept
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        value_ = value;
+#else
+        (void)value;
+#endif
+    }
+
+    /**
+     * Store a value and say whether it differed from the previous one.
+     *
+     * @param value  The value to compare against the stored one and then store.
+     *
+     * @return True only when telemetry is compiled in AND the value changed.
+     *  False when compiled out, so a caller's reporting branch never runs.
+     */
+    [[nodiscard]] bool
+    changedTo(T const& value) noexcept
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        bool const changed = value_ != value;
+        value_ = value;
+        return changed;
+#else
+        (void)value;
+        return false;
+#endif
+    }
+
+    /**
+     * The last value stored.
+     *
+     * @return The stored value, or T{} when telemetry is compiled out.
+     */
+    [[nodiscard]] T
+    load() const noexcept
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        return value_;
+#else
+        return T{};
+#endif
+    }
+
+    // NOLINTEND(readability-convert-member-functions-to-static)
+};
+
 }  // namespace xrpl::telemetry
