@@ -58,6 +58,9 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             ? *payloadOverride
             : proposal::unsignedPayload(env, pay(target, dest, XRP(1)), ticketSeq);
 
+        if (proposer.id() != target.id() && !env.le(keylet::signerList(target.id())))
+            proposal::authorizeProposer(env, target, proposer);
+
         env(proposal::create(proposer, payload, proposal::expiration(env, 1000s)));
         env.close();
 
@@ -126,6 +129,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const target{"target"};
         env.fund(XRP(10000), alice, target);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         // No such entry at all.
         env(proposal::cancel(alice, uint256{1}), Ter(tecNO_ENTRY));
@@ -186,7 +190,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         // The ticket the proposed transaction would have consumed still
         // belongs to the target.
         BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
-        BEAST_EXPECT(ownerCount(env, target) == 1);
+        BEAST_EXPECT(ownerCount(env, target) == 2);
 
         // The (target, ticket) slot is free again: a new proposal for the
         // same pair is not a duplicate.
@@ -237,8 +241,8 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         // proposer even when someone else cancels.
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
-        // The target account still holds one unused ticket object
-        BEAST_EXPECT(ownerCount(env, target) == 1);
+        // The target account still holds the SignerList plus one unused ticket.
+        BEAST_EXPECT(ownerCount(env, target) == 2);
     }
 
     // When the proposed transaction is initiated by a Delegate, that delegate
@@ -340,6 +344,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const ticketSeq = proposal::createTicket(env, target);
 
@@ -390,6 +395,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const ticketSeq = proposal::createTicket(env, target);
 
@@ -437,6 +443,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const ticketSeq = proposal::createTicket(env, target);
 
@@ -493,6 +500,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const ticketSeq = proposal::createTicket(env, target);
 
@@ -528,6 +536,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const ticketSeq = proposal::createTicket(env, target);
 
@@ -573,8 +582,9 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, target, bob, carol, daria);
         env.close();
 
-        // The target's authority comes from a SignerList.
-        env(signers(target, 2, {{carol, 1}, {daria, 1}}));
+        // The target's authority comes from a SignerList. Alice is on it so
+        // it may create the proposal this test then cancels.
+        env(signers(target, 2, {{alice, 1}, {carol, 1}, {daria, 1}}));
         env.close();
 
         // Cancel spending a ticket of the canceller.
@@ -616,6 +626,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         // A multi-account batch: bob submits the outer Batch and the target
         // authorizes its inner Cancel through a BatchSigners entry.
@@ -704,6 +715,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const payer{"payer"};
         env.fund(XRP(10000), alice, target, bob, payer);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         uint256 const proposalID = makeProposal(env, alice, target, bob);
 
@@ -747,6 +759,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const carol{"carol"};
         env.fund(XRP(10000), alice, target, carol);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         uint256 const proposalID = makeProposal(env, alice, target, alice);
 
@@ -777,6 +790,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const carol{"carol"};  // the LoanSet's Counterparty
         env.fund(XRP(10000), alice, borrower, carol);
         env.close();
+        proposal::authorizeProposer(env, borrower, alice);
 
         std::uint32_t const ticketSeq = proposal::createTicket(env, borrower);
 
@@ -816,6 +830,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         // Standalone: the Cancel is held as a retry and neither object is
         // touched.
@@ -831,7 +846,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
             BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
             BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
-            BEAST_EXPECT(ownerCount(env, target) == 1);
+            BEAST_EXPECT(ownerCount(env, target) == 2);
         }
 
         // The same attempt as an inner Batch transaction: tfAllOrNothing
@@ -852,7 +867,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
             BEAST_EXPECT(env.balance(bob) == bobBefore);
             BEAST_EXPECT(ownerCount(env, alice) == 2 * proposal::kProposalOwnerCount);
-            BEAST_EXPECT(ownerCount(env, target) == 2);
+            BEAST_EXPECT(ownerCount(env, target) == 3);
         }
     }
 
@@ -893,7 +908,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         // can only come from the nesting rule itself. The sibling inner uses
         // a sequence distinct from the wrapped transaction's, so the Batch is
         // not rejected as redundant either.
-        auto rejectWrapped = [&](json::Value const& wrapped) {
+        auto rejectWrapped = [&](json::Value const& wrapped, TER expected) {
             json::Value const payload = proposal::unsignedBatch(
                 env,
                 target,
@@ -901,13 +916,14 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
                 tfAllOrNothing,
                 {proposal::innerTx(pay(target, alice, XRP(1)), env.seq(target) + 1), wrapped});
 
-            env(proposal::create(alice, payload, expiration), Ter(temINVALID));
+            env(proposal::create(alice, payload, expiration), Ter(expected));
             env.close();
             BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
         };
 
         // A well-formed inner TransactionProposalCancel.
-        rejectWrapped(proposal::innerTx(proposal::cancel(target, uint256{1}), env.seq(target)));
+        rejectWrapped(
+            proposal::innerTx(proposal::cancel(target, uint256{1}), env.seq(target)), temINVALID);
 
         // A well-formed inner TransactionProposalCreate.
         rejectWrapped(
@@ -916,11 +932,12 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
                     target,
                     proposal::unsignedPayload(env, pay(target, alice, XRP(1)), 1),
                     expiration),
-                env.seq(target)));
+                env.seq(target)),
+            temINVALID);
 
-        // An inner Batch is rejected outright, closing the deeper wrap (a
-        // Batch inside a Batch hiding a proposal type) without relying on
-        // Batch's own no-nesting rule.
+        // An inner Batch is rejected at STTx construction (a Batch cannot
+        // contain a Batch), so Create surfaces temMALFORMED rather than the
+        // nesting rule's temINVALID.
         {
             json::Value nested;
             nested[jss::TransactionType] = jss::Batch;
@@ -931,7 +948,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             nested[jss::RawTransactions][1u][jss::RawTransaction] =
                 proposal::innerTx(proposal::cancel(target, uint256{1}), env.seq(target));
 
-            rejectWrapped(proposal::innerTx(std::move(nested), env.seq(target)));
+            rejectWrapped(proposal::innerTx(std::move(nested), env.seq(target)), temMALFORMED);
         }
     }
 

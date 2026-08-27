@@ -182,11 +182,9 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             reject(tx, temINVALID);
         }
 
-        // Nor may a proposal be buried inside a proposed Batch: isProposalTx
-        // walks the inner transactions and rejects the payload when any is
-        // itself a proposal type. An inner lacking a TransactionType must not
-        // defeat that walk — it is skipped, and a later proposal inner is still
-        // found (On-Chain Cosigner spec §5.3.1).
+        // A Batch inner lacking TransactionType cannot be constructed as an
+        // STTx, so Create rejects the payload as temMALFORMED before the
+        // nesting walk can skip it and find a later proposal inner.
         {
             json::Value missingType;
             missingType[jss::Account] = target.human();
@@ -204,7 +202,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                     {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
                      missingType,
                      proposal::innerTx(proposal::cancel(target, uint256{1}), env.seq(target) + 2)}),
-                temINVALID);
+                temMALFORMED);
         }
 
         // The proposed transaction must be ticket-based: a missing

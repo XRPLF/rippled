@@ -43,6 +43,10 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::chrono_literals;
 
+        Account const target = env.lookup(payload[jss::Account].asString());
+        if (proposer.id() != target.id() && !env.le(keylet::signerList(target.id())))
+            proposal::authorizeProposer(env, target, proposer);
+
         env(proposal::create(proposer, payload, proposal::expiration(env, 1000s)));
         env.close();
     }
@@ -74,7 +78,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
-        BEAST_EXPECT(ownerCount(env, target) == 2);
+        BEAST_EXPECT(ownerCount(env, target) == 3);
 
         // A different transaction type.
         env(noop(target), ticket::Use(ticketSeq), Ter(terTICKET_RESERVED));
@@ -92,7 +96,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
         BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
-        BEAST_EXPECT(ownerCount(env, target) == 2);
+        BEAST_EXPECT(ownerCount(env, target) == 3);
 
         // The reservation binds one ticket, not the account: its sequence
         // and its other tickets spend freely, and the proposal survives.
@@ -101,7 +105,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
-        BEAST_EXPECT(ownerCount(env, target) == 1);
+        BEAST_EXPECT(ownerCount(env, target) == 2);
     }
 
     // The proposal's own transaction consumes the reserved ticket through
@@ -141,7 +145,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
             BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
             BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, target) == 0);
+            BEAST_EXPECT(ownerCount(env, target) == 1);
         }
 
         // Multi-signed under the target's SignerList: the Signers array the
@@ -149,7 +153,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         // fixed at creation, so a proposer expecting multi-signed submission
         // must budget for the signatures then (XLS-0103 §4.2.1).
         {
-            env(signers(target, 2, {{bob, 1}, {carol, 1}}));
+            env(signers(target, 2, {{alice, 1}, {bob, 1}, {carol, 1}}));
             env.close();
 
             std::uint32_t const ticketSeq = proposal::createTicket(env, target);
@@ -257,7 +261,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
         BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(ownerCount(env, target) == 0);
+        BEAST_EXPECT(ownerCount(env, target) == 1);
     }
 
     // The reservation is keyed by target account and ticket, so another
@@ -356,6 +360,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, target, bob);
         env.close();
+        proposal::authorizeProposer(env, target, alice);
 
         std::uint32_t const ticketSeq = proposal::createTicket(env, target);
 
