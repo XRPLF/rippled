@@ -578,9 +578,9 @@ private:
      * ordering is enforced.
      */
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) final
+    visitEntry(InvariantEntry const& entry) final
     {
-        visitInvariantEntry(isDelete, before, after);
+        visitInvariantEntry(entry.isDelete(), entry.before(), entry.after());
     }
 
     [[nodiscard]] bool

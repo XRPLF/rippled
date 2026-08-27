@@ -73,7 +73,7 @@ class InvariantsAMM_test : public InvariantsBase
             if (deletedLPBalance)
             {
                 auto const sleAMM = makeAMM(*deletedLPBalance);
-                invariant.visitEntry(true, sleAMM, sleAMM);
+                invariant.visitEntry(InvariantEntry{true, sleAMM, sleAMM});
             }
 
             bool const actual = invariant.finalize(

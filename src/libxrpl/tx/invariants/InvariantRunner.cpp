@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -18,7 +17,6 @@
 #include <exception>
 #include <functional>
 #include <optional>
-#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -50,14 +48,11 @@ checkInvariantsHelper(
         auto checkers = getInvariantChecks();
 
         ctx.visit([&](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-            if (after == nullptr)
-                Throw<std::logic_error>("checkInvariants: after is never null");
-            if (isDelete && before == nullptr)
-                Throw<std::logic_error>("checkInvariants: deleted entry missing before state");
+            InvariantEntry const entry{isDelete, before, after};
 
             if (txCheck)
-                txCheck->get().visitEntry(isDelete, before, after);
-            (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+                txCheck->get().visitEntry(entry);
+            (..., std::get<Is>(checkers).visitEntry(entry));
         });
 
         if (txCheck)

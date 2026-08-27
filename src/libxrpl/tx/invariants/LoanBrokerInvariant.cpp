@@ -20,8 +20,11 @@
 namespace xrpl {
 
 void
-ValidLoanBroker::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidLoanBroker::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (after->getType() == ltLOAN_BROKER)
     {
         auto& broker = brokers_[after->key()];

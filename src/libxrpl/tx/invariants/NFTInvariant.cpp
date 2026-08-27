@@ -25,8 +25,12 @@
 namespace xrpl {
 
 void
-ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidNFTokenPage::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     static constexpr uint256 const& kPageBits = nft::kPageMask;
     static constexpr uint256 kAccountBits = ~kPageBits;
 
@@ -181,8 +185,11 @@ ValidNFTokenPage::finalize(
 
 //------------------------------------------------------------------------------
 void
-NFTokenCountTracking::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+NFTokenCountTracking::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (before && before->getType() == ltACCOUNT_ROOT)
     {
         beforeMintedTotal_ += (*before)[~sfMintedNFTokens].value_or(0);

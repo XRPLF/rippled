@@ -66,8 +66,12 @@ subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
 }  // namespace
 
 void
-ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidMPTIssuance::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // The sfReferenceHolding tracking and the deleted-holding capture are
     // only meaningful post-fixCleanup3_2_0 (the field is never set
     // pre-amendment, and the holding-deletion rule does not apply).
@@ -416,8 +420,11 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidMPTBalanceChanges::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (overflow_)
         return;
 
@@ -470,8 +477,7 @@ ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref a
     {
         overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
     }
-    if (!update(*after, Order::After))
-        return;
+    update(*after, Order::After);
 }
 
 bool
@@ -541,11 +547,12 @@ ValidMPTBalanceChanges::finalize(
 }
 
 void
-ValidConfidentialMPToken::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidConfidentialMPToken::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // Helper to get MPToken Issuance ID safely
     auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> uint192 {
         if (!sle)
@@ -796,11 +803,12 @@ ValidConfidentialMPToken::finalize(
 }
 
 void
-ValidMPTTransfer::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidMPTTransfer::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // Record the before/after MPTAmount for each (issuanceID, account) pair
     // so finalize() can determine whether a transfer actually occurred.
     auto update = [&](SLE const& sle, bool isBefore) {

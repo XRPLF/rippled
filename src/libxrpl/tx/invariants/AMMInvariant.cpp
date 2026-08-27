@@ -24,8 +24,12 @@
 namespace xrpl {
 
 void
-ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidAMM::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (isDelete)
     {
         if (before && before->getType() == ltAMM)

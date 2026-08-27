@@ -41,11 +41,12 @@ badExchangeRate(SLE const& dir)
 }  // namespace
 
 void
-ValidBookDirectory::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidBookDirectory::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // New root directories must have matching exchange-rate metadata. New
     // child directories, and modified directories that change sfRootIndex, must
     // point to an existing root.

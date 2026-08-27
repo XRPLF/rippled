@@ -667,7 +667,8 @@ class InvariantsPermissioned_test : public InvariantsBase
                 CurrentTransactionRulesGuard const rulesGuard(env.current()->rules());
 
                 ValidPermissionedDEX invariant;
-                invariant.visitEntry(isDelete, nullptr, sleOffer);
+                SLE::const_pointer const before = isDelete ? sleOffer : nullptr;
+                invariant.visitEntry(InvariantEntry{isDelete, before, sleOffer});
 
                 STTx const tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
                                   tx.setFieldH256(sfDomainID, pd2);
@@ -793,7 +794,8 @@ class InvariantsPermissioned_test : public InvariantsBase
             view.rawInsert(makeRootPage(rootDir, directoryQuality + 1));
 
             ValidBookDirectory invariant;
-            invariant.visitEntry(false, nullptr, makeChildPage(rootDir));
+            auto const childPage = makeChildPage(rootDir);
+            invariant.visitEntry(InvariantEntry{false, nullptr, childPage});
 
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
@@ -823,7 +825,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {
                 // add
                 ValidBookDirectory invariant;
-                invariant.visitEntry(false, nullptr, badRoot);
+                invariant.visitEntry(InvariantEntry{false, nullptr, badRoot});
 
                 BEAST_EXPECT(
                     !invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
@@ -831,7 +833,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {
                 // modify (without changing the sfRootIndex)
                 ValidBookDirectory invariant;
-                invariant.visitEntry(false, badRoot, badRoot);
+                invariant.visitEntry(InvariantEntry{false, badRoot, badRoot});
 
                 BEAST_EXPECT(
                     invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
@@ -843,7 +845,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 childAfter->setFieldH256(sfRootIndex, missingRootDir.key);
 
                 ValidBookDirectory invariant;
-                invariant.visitEntry(false, childBefore, childAfter);
+                invariant.visitEntry(InvariantEntry{false, childBefore, childAfter});
 
                 test::StreamSink missingRootSink{beast::Severity::Warning};
                 beast::Journal const missingRootJlog{missingRootSink};
@@ -858,7 +860,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 BEAST_EXPECT(!view.exists(rootDir));
 
                 ValidBookDirectory invariant;
-                invariant.visitEntry(true, badRoot, badRoot);
+                invariant.visitEntry(InvariantEntry{true, badRoot, badRoot});
                 BEAST_EXPECT(
                     invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
             }

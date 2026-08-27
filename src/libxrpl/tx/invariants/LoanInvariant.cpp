@@ -20,8 +20,11 @@
 namespace xrpl {
 
 void
-ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidLoan::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (after->getType() == ltLOAN)
     {
         loans_.emplace_back(before, after);

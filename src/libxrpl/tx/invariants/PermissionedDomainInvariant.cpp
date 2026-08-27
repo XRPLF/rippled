@@ -21,8 +21,12 @@
 namespace xrpl {
 
 void
-ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::const_ref after)
+ValidPermissionedDomain::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDel = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
     if (after->getType() != ltPERMISSIONED_DOMAIN)

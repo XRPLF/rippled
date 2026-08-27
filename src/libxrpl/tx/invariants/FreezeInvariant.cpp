@@ -25,8 +25,12 @@
 namespace xrpl {
 
 void
-TransfersNotFrozen::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+TransfersNotFrozen::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     /*
      * A trust line freeze state alone doesn't determine if a transfer is
      * frozen. The transfer must be examined "end-to-end" because both sides of

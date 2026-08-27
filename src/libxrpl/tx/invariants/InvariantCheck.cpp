@@ -88,7 +88,7 @@ ledgerEntryTypeName(SLE const& sle)
 }
 
 void
-TransactionFeeCheck::visitEntry(bool, SLE::const_ref, SLE::const_ref)
+TransactionFeeCheck::visitEntry(InvariantEntry const&)
 {
     // nothing to do
 }
@@ -131,8 +131,12 @@ TransactionFeeCheck::finalize(
 //------------------------------------------------------------------------------
 
 void
-XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+XRPNotCreated::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     /* We go through all modified ledger entries, looking only at account roots,
      * escrow payments, and payment channels. We remove from the total any
      * previous XRP values and add to the total any new XRP values. The net
@@ -225,8 +229,11 @@ XRPNotCreated::finalize(
 //------------------------------------------------------------------------------
 
 void
-XRPBalanceChecks::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+XRPBalanceChecks::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     auto isBad = [](STAmount const& balance) {
         if (!balance.native())
             return true;
@@ -272,8 +279,11 @@ XRPBalanceChecks::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoBadOffers::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+NoBadOffers::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
         if (pays < beast::kZero)
@@ -313,8 +323,11 @@ NoBadOffers::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoZeroEscrow::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+NoZeroEscrow::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     auto isBad = [](STAmount const& amount) {
         // XRP case
         if (amount.native())
@@ -417,8 +430,11 @@ NoZeroEscrow::finalize(
 //------------------------------------------------------------------------------
 
 void
-AccountRootsNotDeleted::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref)
+AccountRootsNotDeleted::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_++;
 }
@@ -469,8 +485,12 @@ AccountRootsNotDeleted::finalize(
 //------------------------------------------------------------------------------
 
 void
-AccountRootsDeletedClean::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+AccountRootsDeletedClean::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_.emplace_back(before, after);
 }
@@ -592,8 +612,11 @@ AccountRootsDeletedClean::finalize(
 //------------------------------------------------------------------------------
 
 void
-LedgerEntryTypesMatch::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+LedgerEntryTypesMatch::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (before && before->getType() != after->getType())
         typeMismatch_ = true;
 
@@ -643,8 +666,10 @@ LedgerEntryTypesMatch::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoXRPTrustLines::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
+NoXRPTrustLines::visitEntry(InvariantEntry const& entry)
 {
+    auto const& after = entry.after();
+
     bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
     if (after->getType() == ltRIPPLE_STATE)
@@ -683,8 +708,10 @@ NoXRPTrustLines::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
+NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(InvariantEntry const& entry)
 {
+    auto const& after = entry.after();
+
     if (after->getType() == ltRIPPLE_STATE)
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
@@ -726,8 +753,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidNewAccountRoot::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidNewAccountRoot::visitEntry(InvariantEntry const& entry)
 {
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (!before && after->getType() == ltACCOUNT_ROOT)
     {
         accountsCreated_++;
@@ -824,8 +854,12 @@ clawbackTrustLineBalanceInHolderTerms(
 }
 
 void
-ValidClawback::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidClawback::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (before && before->getType() == ltRIPPLE_STATE)
     {
         trustlinesChanged_++;
@@ -999,8 +1033,12 @@ ValidClawback::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidPseudoAccounts::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (isDelete)
     {
         // Deletion is ignored
@@ -1094,8 +1132,12 @@ ValidPseudoAccounts::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoModifiedUnmodifiableFields::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+NoModifiedUnmodifiableFields::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     if (isDelete || !before)
     {
         // Creation and deletion are ignored
@@ -1202,11 +1244,11 @@ NoModifiedUnmodifiableFields::finalize(
 }
 
 void
-ValidAmounts::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const& after)
+ValidAmounts::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& after = entry.after();
+
     if (!isDelete)
         afterEntries_.push_back(after);
 }
@@ -1233,8 +1275,11 @@ ValidAmounts::finalize(
 }
 
 void
-ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ObjectHasPseudoAccount::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+
     if (!isDelete)
         return;
 

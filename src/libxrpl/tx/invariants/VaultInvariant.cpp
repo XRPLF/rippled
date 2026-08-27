@@ -83,8 +83,12 @@ ValidVault::Shares::make(SLE const& from)
 }
 
 void
-ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidVault::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), and
     // preserves value scale (exponent) to round values to the same scale during

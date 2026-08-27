@@ -19,8 +19,11 @@
 namespace xrpl {
 
 void
-ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref, SLE::const_ref after)
+ValidPermissionedDEX::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& after = entry.after();
+
     auto trackDomain = [this, isDelete](uint256 const& domain) {
         domainsOld_.insert(domain);
         if (!isDelete)
