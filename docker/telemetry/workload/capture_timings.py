@@ -122,10 +122,17 @@ def _capture_status(metrics: dict, min_ratio: float) -> dict:
     keys on, and it is the same predicate that decides this script's exit
     code — see the module docstring for why it lives in the artifact.
 
-    An empty surface is vacuously complete: there is nothing for the capture
-    to have fallen short of, and that is the case the exit-code check has
-    always passed. Defining it any other way here would make the flag and the
-    exit code disagree, which is the drift this block exists to remove.
+    An empty surface is NOT complete. ``declared == 0`` means the capture asked
+    Prometheus for nothing: ``build_query_plan`` returns an empty plan, without
+    complaining, for any config that yields no ``spans``/``rpc_methods``/
+    ``job_queue`` entries -- a ``--metrics`` path pointing at the wrong file, a
+    truncated one, or every key excluded. Nothing about that run is evidence
+    the pipeline works, so treating it as vacuously complete would exit 0 and
+    hand the paste-me path a ``metrics: {}`` artifact to offer as baseline
+    material. Pasted in, it still reads as a placeholder, so the gate stays off
+    while the workflow reports the baseline as activated -- the silent-green
+    outcome the whole ``capture`` block exists to prevent. The exit code reads
+    this same flag, so the two still cannot disagree.
     """
     declared = len(metrics)
     captured = sum(1 for entry in metrics.values() if entry["value"] is not None)
@@ -133,7 +140,7 @@ def _capture_status(metrics: dict, min_ratio: float) -> dict:
         "declared": declared,
         "captured": captured,
         "min_ratio": min_ratio,
-        "complete": declared == 0 or (captured / declared) >= min_ratio,
+        "complete": declared > 0 and (captured / declared) >= min_ratio,
     }
 
 
@@ -236,16 +243,28 @@ def main() -> int:
     logger.info("Wrote %s (%d/%d metrics captured)", args.output, captured, total)
 
     if not status["complete"]:
-        logger.error(
-            "Only %d/%d (%.0f%%) metrics captured — below the %.0f%% minimum. "
-            "Is Prometheus reachable at %s? The file is marked "
-            "capture.complete=false and must not be pasted into the baseline.",
-            captured,
-            total,
-            captured / total * 100,
-            args.min_capture_ratio * 100,
-            args.prometheus,
-        )
+        if total == 0:
+            # No ratio to report: nothing was asked for, so the shortfall is the
+            # declared surface, not Prometheus. Named separately because the
+            # percentage below would divide by zero.
+            logger.error(
+                "No metrics were declared, so nothing was captured. Does %s "
+                "declare spans/rpc_methods/job_queue names, and does "
+                "excluded_keys leave any of them gated? The file is marked "
+                "capture.complete=false and must not be pasted into the baseline.",
+                args.metrics,
+            )
+        else:
+            logger.error(
+                "Only %d/%d (%.0f%%) metrics captured — below the %.0f%% minimum. "
+                "Is Prometheus reachable at %s? The file is marked "
+                "capture.complete=false and must not be pasted into the baseline.",
+                captured,
+                total,
+                captured / total * 100,
+                args.min_capture_ratio * 100,
+                args.prometheus,
+            )
         return 1
     return 0
 
