@@ -642,7 +642,7 @@ Xrpld uses a linear workflow model that can be summarized as:
 
 1. Optimally, the `develop` branch will be ready to go, with all
    relevant PRs already merged.
-2. If there are any PRs pending, merge them **BEFORE** preparing the beta.
+2. 2. If there are any PRs pending, merge them **BEFORE** preparing the beta.
    1. If only one or two PRs need to be merged, merge those PRs [as
       normal](#when-and-how-to-merge-pull-requests), updating the second
       one, and waiting for CI to finish in between.
@@ -656,8 +656,12 @@ Xrpld uses a linear workflow model that can be summarized as:
          are needed), being sure to sign each commit and update the
          commit message to include the PR number. You may be able to use
          a fast-forward merge for the first PR.
-      2. Push your branch.
-      3. Continue to [Making the release](#making-the-release) to update
+      2. Ensure that the release notes are ready:
+         - Create a dedicated section outlining the names of any new amendments.
+         - Credit issue reporters as best as possible.
+         - Share the initial release notes with the docs team.
+      3. Push your branch.
+      4. Continue to [Making the release](#making-the-release) to update
          the version number, etc.
 
       The workflow may look something like:
@@ -699,7 +703,7 @@ merged to `develop`. Be sure to include the commit ID.
 This includes, betas, and the first release candidate (RC).
 
 1. If you didn't create one [preparing the `develop`
-   branch](#preparing-the-develop-branch), Ensure there is no old
+   branch](#preparing-the-develop-branch), ensure there is no old
    `release-next` branch hanging around. Then make a `release-next`
    branch that only changes the version number. e.g.
 
@@ -985,6 +989,14 @@ git push --delete upstream-push master-next
     "Set as the latest release" is checked.
 12. Open a PR to update the [API-CHANGELOG](API-CHANGELOG.md) and `API-VERSION-[n].md` with the changes for this release (if any are missing).
 13. Finally, [reverse merge the release into `develop`](#follow-up-reverse-merge).
+
+##### Post-Release Communication
+
+Once the release is tagged, published on GitHub, and merged:
+
+1. Coordinate with the docs team to open PRs in [xrpl-dev-portal](https://github.com/XRPLF/xrpl-dev-portal) to update the [XRPL documentation](https://xrpl.org) and publish release notes on the [XRPL Blog](https://xrpl.org/blog).
+2. Send an announcement message to [ripple-server](https://groups.google.com/g/ripple-server).
+3. Update Altnet (Testnet) and Devnet servers (and deploy to Mainnet servers for stable releases).
 
 #### Special cases: point releases, hotfixes, etc.
 
