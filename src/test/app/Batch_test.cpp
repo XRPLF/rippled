@@ -3109,10 +3109,16 @@ class Batch_test : public beast::unit_test::Suite
         // (API v2), or at the top level, depending on message shape.
         auto const txHash = [](json::Value const& msg) -> std::string {
             if (msg.isMember(jss::hash))
+            {
                 return msg[jss::hash].asString();
+            }
             for (auto const& field : {jss::transaction, jss::tx_json})
+            {
                 if (msg.isMember(field) && msg[field].isMember(jss::hash))
+                {
                     return msg[field][jss::hash].asString();
+                }
+            }
             return {};
         };
         auto const isValidated = [](json::Value const& msg) {
@@ -3121,17 +3127,21 @@ class Batch_test : public beast::unit_test::Suite
 
         std::vector<json::Value> msgs;
         while (auto msg = wsc->getMsg(2s))
+        {
             msgs.push_back(*msg);
+        }
 
         // Proposed stream: the outer Batch only. pubProposedTransaction
         // drops tfInnerBatchTxn, so an inner must never appear unvalidated.
         std::size_t proposed = 0;
         for (auto const& msg : msgs)
+        {
             if (!isValidated(msg))
             {
                 ++proposed;
                 BEAST_EXPECT(txHash(msg) == batchID);
             }
+        }
         BEAST_EXPECT(proposed == 1);
 
         // Validated stream: the outer and both inners publish, each with
