@@ -4,6 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
@@ -3127,27 +3128,59 @@ private:
             std::nullopt,
             {features});
 
+        // Zero-fee bid without an explicit price pays a floor with fixCleanup3_4_0.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const cleanup340 = features[fixCleanup3_4_0];
+                auto const expectedPrice = cleanup340 ? minBidPrice : IOUAmount{0};
+                auto const expectedTokens = cleanup340
+                    ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                    : ammAlice.tokens();
+
+                env.close(seconds(kTotalTimeSlotSecs + 1));
+                env.close();
+                env(ammAlice.bid({.account = alice_}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, expectedPrice));
+                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), expectedTokens));
+
+                ammAlice.vote(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, expectedPrice));
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features});
+
         // Bid tiny amount
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
+                auto const cleanup340 = features[fixCleanup3_4_0];
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
-                // Auction slot purchase price is equal to the tiny amount
-                // since the minSlotPrice is 0 with no trading fee.
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
-                // The purchase price is too small to affect the total tokens
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000),
+                    USD(10'000),
+                    cleanup340 ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                               : ammAlice.tokens()));
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
                     .bidMin = IOUAmount{STAmount::kMinValue, STAmount::kMinOffset},
                 }));
                 // Pay slightly higher price
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
-                // The purchase price is still too small to affect the total
-                // tokens
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(
+                    0, 0, IOUAmount{Number{firstPrice} * Number{105, -2}}));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000),
+                    USD(10'000),
+                    cleanup340
+                        ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice} * Number{11, -1}}
+                        : ammAlice.tokens()));
             },
             std::nullopt,
             0,
@@ -5158,6 +5191,51 @@ private:
             0,
             std::nullopt,
             {features});
+    }
+
+    void
+    testCredentialPinsPseudoAccount()
+    {
+        testcase("Credential pins AMM pseudo-account");
+
+        using namespace jtx;
+        FeatureBitset const all{testableAmendments()};
+
+        // A credential issued to an AMM pseudo-account can't be accepted or
+        // deleted by it. A pin created before the cure activates stays pinned
+        // in the pseudo-account's owner directory and makes AMM deletion fail
+        // with tecINTERNAL (deleteAMMTrustLines rejects the unexpected
+        // directory entry).
+        Account const attacker{"attacker"};
+        char const credType[] = "FN36";
+
+        Env env(*this, all - fixCleanup3_3_0 - fixCleanup3_4_0);
+        fund(env, gw_, {alice_}, XRP(20'000), {USD(10'000)});
+        env.fund(XRP(1'000), attacker);
+        env.close();
+
+        AMM amm(env, alice_, XRP(10'000), USD(10'000));
+        Account const ammAcct{"amm pseudo-account", amm.ammAccount()};
+        env.memoize(ammAcct);
+
+        env(credentials::create(ammAcct, attacker, credType));
+        env.close();
+        auto const credKey = credentials::keylet(ammAcct, attacker, credType);
+        BEAST_EXPECT(env.le(credKey));
+
+        // Emptying the AMM would auto-delete it, but the pinned credential makes
+        // deleteAMMAccount fail; the withdraw is rolled back and the AMM stays.
+        amm.withdrawAll(alice_, std::nullopt, Ter(tecINTERNAL));
+        BEAST_EXPECT(amm.ammExists());
+
+        env.enableFeature(fixCleanup3_4_0);
+        env.close();
+
+        // The pre-existing pin is cleaned up and the AMM deletes.
+        amm.withdrawAll(alice_);
+        BEAST_EXPECT(!amm.ammExists());
+        BEAST_EXPECT(!env.le(credKey));
+        BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
     }
 
     void
@@ -7427,6 +7505,7 @@ private:
         FeatureBitset const all{testableAmendments()};
         testInvalidInstance();
         testInstanceCreate();
+        testCredentialPinsPseudoAccount();
         for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
             testInvalidDeposit(f);
         testDeposit();
@@ -7436,6 +7515,7 @@ private:
         testFeeVote();
         testInvalidBid();
         testBid(all);
+        testBid(all - fixCleanup3_4_0);
         testBid(all - fixAMMv1_3);
         testBid(all - fixAMMv1_1 - fixAMMv1_3);
         testInvalidAMMPayment();
