@@ -6,15 +6,20 @@
  * unconditionally returns a NullTelemetry that does nothing.
  *
  * When XRPL_ENABLE_TELEMETRY IS defined, the OTel virtual methods
- * (getTracer, startSpan) return noop tracers/spans. The makeTelemetry()
- * factory in this file is not used in that case -- Telemetry.cpp provides
- * its own factory that can return the real TelemetryImpl.
+ * (getTracer, startSpan, getMeter) return noop tracers, spans and meters, so
+ * the class stays concrete in both configurations. Every pure virtual the base
+ * declares behind that guard must be overridden here for that to hold. The
+ * makeTelemetry() factory in this file is not used in that case --
+ * Telemetry.cpp provides its own factory that can return the real
+ * TelemetryImpl.
  */
 
 #include <xrpl/telemetry/Telemetry.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
+#include <opentelemetry/metrics/meter.h>
+#include <opentelemetry/metrics/noop.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/noop.h>
 #include <opentelemetry/trace/span.h>
@@ -128,6 +133,14 @@ public:
     {
         return opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>(
             new opentelemetry::trace::NoopSpan(nullptr));
+    }
+
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    getMeter(std::string_view) override
+    {
+        static auto noopMeter = opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>(
+            new opentelemetry::metrics::NoopMeter());
+        return noopMeter;
     }
 #endif
 };
