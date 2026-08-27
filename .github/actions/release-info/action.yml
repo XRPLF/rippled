@@ -9,7 +9,7 @@ outputs:
     description: "The release channel this build belongs to."
     value: ${{ steps.release_info.outputs.channel }}
   pkg_release:
-    description: "The package release number: 1 for a tag, <run number>.<commit date>git<commit hash> otherwise."
+    description: "The package release number: 1 for a tag, <run number>.<commit date>git<short commit hash> otherwise."
     value: ${{ steps.release_info.outputs.pkg_release }}
 
 runs:
