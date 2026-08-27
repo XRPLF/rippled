@@ -68,13 +68,24 @@ def _build_simple_entries(
     cfg: dict,
     prefix: str,
     window: str,
+    excluded: frozenset[str] = frozenset(),
 ) -> list[QueryEntry]:
-    """Build QueryEntry list for a single-template category (spans, rpc)."""
+    """Build QueryEntry list for a single-template category (spans, rpc).
+
+    ``excluded`` holds flat keys the surface declares but does not gate (see
+    ``excluded_keys`` in regression-metrics.json). They are dropped here rather
+    than filtered later, so a key that no longer gates is never queried and
+    never appears in ``timings.json`` — a captured key with no baseline reports
+    as "new metric (not in baseline)", which reads as coverage while being
+    unable to gate.
+    """
     tmpl = cfg.get("_query_template", "")
     unit = cfg.get("_unit", "ms")
     entries: list[QueryEntry] = []
     for name in cfg.get("names", []):
         for q in cfg.get("_quantiles", []):
+            if f"{prefix}.{name}.p{_quantile_label(q)}" in excluded:
+                continue
             expr = (
                 tmpl.replace("{quantile}", _format_quantile(q))
                 .replace("{name}", name)
@@ -90,8 +101,14 @@ def _build_simple_entries(
     return entries
 
 
-def _build_job_entries(cfg: dict, window: str) -> list[QueryEntry]:
-    """Build QueryEntry list for the job_queue category (multi-phase)."""
+def _build_job_entries(
+    cfg: dict, window: str, excluded: frozenset[str] = frozenset()
+) -> list[QueryEntry]:
+    """Build QueryEntry list for the job_queue category (multi-phase).
+
+    ``excluded`` is applied for the same reason as in _build_simple_entries; the
+    key format is flat, so one exclusion list covers both categories.
+    """
     unit = cfg.get("_unit", "us")
     phases = cfg.get("_phases", ["queued", "running"])
     tmpl_map = {
@@ -105,6 +122,8 @@ def _build_job_entries(cfg: dict, window: str) -> list[QueryEntry]:
             if not tmpl:
                 continue
             for q in cfg.get("_quantiles", []):
+                if f"job.{name}.{phase}.p{_quantile_label(q)}" in excluded:
+                    continue
                 expr = (
                     tmpl.replace("{quantile}", _format_quantile(q))
                     .replace("{name}", name)
@@ -131,15 +150,19 @@ def build_query_plan(metrics_path: str | Path, window: str = "3m") -> list[Query
                       ``regression`` workload profile.
 
     Returns:
-        A list of ``QueryEntry`` values, one per (metric × quantile).
+        A list of ``QueryEntry`` values, one per (metric × quantile), less any
+        key listed in the config's ``excluded_keys`` map.
     """
     with open(metrics_path) as f:
         cfg = json.load(f)
 
+    excluded = frozenset(cfg.get("excluded_keys", {}))
     plan: list[QueryEntry] = []
-    plan.extend(_build_simple_entries(cfg.get("spans", {}), "span", window))
-    plan.extend(_build_simple_entries(cfg.get("rpc_methods", {}), "rpc", window))
-    plan.extend(_build_job_entries(cfg.get("job_queue", {}), window))
+    plan.extend(_build_simple_entries(cfg.get("spans", {}), "span", window, excluded))
+    plan.extend(
+        _build_simple_entries(cfg.get("rpc_methods", {}), "rpc", window, excluded)
+    )
+    plan.extend(_build_job_entries(cfg.get("job_queue", {}), window, excluded))
     return plan
 
 

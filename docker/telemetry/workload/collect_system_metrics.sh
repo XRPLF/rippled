@@ -68,6 +68,17 @@ OUTPUT_FILE="$3"
 IFS=',' read -ra RPC_PORTS <<<"$RPC_PORTS_CSV"
 SAMPLE_INTERVAL=5
 
+# Hard ceiling on every RPC probe below. curl applies no overall timeout of its
+# own, so a node that accepts the connection and then stops answering — what a
+# stalled job queue looks like from outside — parks the sampling loop for the
+# rest of the run. 5 s is one sample interval and some thousands of times a
+# healthy server_info, so it bounds a wedged node's cost to one lost sample
+# while never truncating a real reply. A probe that hits the ceiling exits
+# non-zero and is therefore skipped rather than recorded, which is the same
+# rule the latency loop already applies to a refused connection; if every
+# probe hits it, the empty file trips the placeholder warning below.
+CURL_MAX_TIME=5
+
 # Reject anything the sample arithmetic cannot use, instead of silently
 # treating it as 0.
 case "$DURATION" in
@@ -136,7 +147,7 @@ trap cleanup EXIT
 INITIAL_SEQ=0
 INITIAL_TIME=$(date +%s)
 for port in "${RPC_PORTS[@]}"; do
-    seq=$(curl -sf "http://localhost:$port" \
+    seq=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$port" \
         -d '{"method":"server_info"}' 2>/dev/null |
         jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$seq" -gt "$INITIAL_SEQ" ]; then
@@ -185,7 +196,7 @@ for sample in $(seq 1 "$SAMPLES"); do
     # and recording that as ~0 ms would pull the reported p99 down.
     for port in "${RPC_PORTS[@]}"; do
         start_ns=$(now_ns)
-        if curl -sf "http://localhost:$port" \
+        if curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$port" \
             -d '{"method":"server_info"}' >/dev/null 2>&1; then
             end_ns=$(now_ns)
             latency_ms=$(((end_ns - start_ns) / 1000000))
@@ -195,7 +206,7 @@ for sample in $(seq 1 "$SAMPLES"); do
 
     # Record current validated ledger seq.
     for port in "${RPC_PORTS[@]}"; do
-        seq=$(curl -sf "http://localhost:$port" \
+        seq=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$port" \
             -d '{"method":"server_info"}' 2>/dev/null |
             jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
         echo "$seq" >>"$LEDGER_FILE"
@@ -269,7 +280,7 @@ fi
 # TPS calculation from ledger sequence advancement.
 FINAL_SEQ=0
 for port in "${RPC_PORTS[@]}"; do
-    seq=$(curl -sf "http://localhost:$port" \
+    seq=$(curl -sf --max-time "$CURL_MAX_TIME" "http://localhost:$port" \
         -d '{"method":"server_info"}' 2>/dev/null |
         jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$seq" -gt "$FINAL_SEQ" ]; then
@@ -291,7 +302,12 @@ if [ "$ELAPSED" -gt 0 ] && [ "$LEDGER_ADVANCE" -gt 0 ]; then
     # but a strict parser rejects the whole file. awk's %.2f always pads.
     TPS=$(awk -v a="$LEDGER_ADVANCE" -v b="$ELAPSED" 'BEGIN { printf "%.2f", a / b }')
 else
+    # No ledger advance means the cluster produced nothing to divide, so 0 here
+    # is an absence of data, not a measured rate. Flagged like every other empty
+    # source so the run reports itself inconclusive instead of a real 0 TPS.
+    warn "Ledger seq did not advance (advance=$LEDGER_ADVANCE over ${ELAPSED}s); tps is a 0 placeholder"
     TPS="0"
+    METRICS_COMPLETE=false
 fi
 
 # Mean inter-ledger interval in ms: DURATION / (distinct ledgers - 1) * 1000.
@@ -304,7 +320,16 @@ if [ -s "$LEDGER_FILE" ]; then
     UNIQUE_LEDGERS=$(sort -u "$LEDGER_FILE" | wc -l)
     # The > 1 test also keeps the divisor below at 1 or more.
     if [ "$UNIQUE_LEDGERS" -gt 1 ]; then
-        CONSENSUS_MEAN=$(echo "scale=0; $DURATION * 1000 / ($UNIQUE_LEDGERS - 1)" | bc 2>/dev/null || echo "0")
+        # awk rather than bc, for the same reason as the TPS calculation above.
+        # bc is an optional package, and the `|| echo "0"` this replaces turned
+        # a missing or failing bc into a 0 that read exactly like a measured
+        # value: no warn(), and METRICS_COMPLETE left true, so the run reported
+        # a complete measurement and exited 0. awk is already required by the
+        # sampling loop and the CPU average, so computing this with awk removes
+        # the failure path rather than reporting it. The divisor is >= 1 by the
+        # test above.
+        CONSENSUS_MEAN=$(awk -v d="$DURATION" -v u="$UNIQUE_LEDGERS" \
+            'BEGIN { printf "%.0f", d * 1000 / (u - 1) }')
     else
         warn "Ledger seq never advanced ($UNIQUE_LEDGERS distinct); consensus_round_mean_ms is a 0 placeholder"
         CONSENSUS_MEAN="0"

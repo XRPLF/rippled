@@ -397,13 +397,26 @@ trace_ledger=1
 metrics_endpoint=http://localhost:4318/v1/metrics
 
 [insight]
+# server=otel is the only load-bearing key here -- it selects OTelCollector so
+# beast::insight metrics leave over OTLP. No prefix is set on purpose: on this
+# path it is inert, because OTelCollector's formatName() only lowercases the raw
+# instrument name and the one place the class reads prefix_ is its startup log
+# line. The service is identified by the OTel resource service.name.
 server=otel
 endpoint=http://localhost:4318/v1/metrics
-prefix=rippled
 service_instance_id=Node-${i}
 
 [rpc_startup]
-{ "command": "log_level", "severity": "warning" }
+# info, not warning: check_log_correlation() below greps these nodes' debug.log
+# for "trace_id=<hex> span_id=<hex>" and fails if it finds none. A line only
+# carries trace context when it is emitted while a span is current, and the one
+# line guaranteed to be is the consensus accept pair in RCLConsensus.cpp, which
+# logs at info inside the activation doAccept makes over its whole body. At
+# warning that pair is suppressed, leaving only whatever warn-or-worse line
+# happens to fire inside some active span -- so the check passed incidentally
+# rather than by construction. debug is deliberately not used here either, to
+# stay consistent with the workload harness.
+{ "command": "log_level", "severity": "info" }
 
 [ssl_verify]
 0

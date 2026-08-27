@@ -127,6 +127,10 @@ Warnings (printed, but do NOT fail the build)
      yet. Rule I's ratchet defers these rather than failing the build on the
      whole pre-existing metric surface at once; the warning is what keeps the
      outstanding conversion work visible instead of silently accepted.
+  M  A constant DEFINED in a *SpanNames.h that no code references — the reverse
+     of every rule above, which all start from a consumer. Constants referenced
+     only by test code are reported separately. A warning because a constant may
+     legitimately land a commit before its call site in a stacked chain.
 
 Exit code is non-zero if any present-and-enforced rule finds a violation.
 Warnings never change the exit code.
@@ -137,7 +141,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 
 # ---------------------------------------------------------------------------
 # Repo location
@@ -526,6 +530,9 @@ def main() -> None:
     header_symbols = spanname_symbol_names(headers)
     run_rule_f(root, report, header_symbols)
 
+    # --- Rule M (warning): L1 constants nothing references ------------------
+    run_rule_m_unreferenced(root, headers, report)
+
     # --- Cross-layer rules B/C/D/E (each presence-gated) -------------------
     # L6 native-metric labels: span attributes are not the only valid dashboard
     # labels — the MetricsRegistry emits OTel metrics whose label keys are an
@@ -802,6 +809,173 @@ def iter_calls(text: str):
         arglist = text[m.end() : i - 1]
         lineno = text.count("\n", 0, m.start()) + 1
         yield name, arglist, lineno
+
+
+# ---------------------------------------------------------------------------
+# Rule M: L1 constants nothing references (the reverse direction)
+# ---------------------------------------------------------------------------
+
+# A scope event: `namespace <name> {`, a bare `{`, or a `}`. Reuses NS_OPEN's
+# pattern, keeping its capture as group 1.
+NS_EVENT = re.compile(NS_OPEN.pattern + r"|\{|\}")
+IDENTIFIER_TOKEN = re.compile(r"[A-Za-z_]\w*")
+# A qualified name such as `ledger_span::attr::ledgerHash`, possibly wrapped
+# across lines. Bare names are useless here: `JSS(aborted)` in jss.h would
+# vouch for `val::aborted`.
+QUALIFIED_CHAIN = re.compile(r"[A-Za-z_]\w*(?:\s*::\s*[A-Za-z_]\w*)+")
+# Wider than the .h/.cpp the other rules parse: a file missed here would make a
+# live constant look dead.
+REFERENCE_EXTENSIONS = ("*.h", "*.cpp", "*.ipp", "*.hpp")
+RULE_M_DEAD = "no reference in src/ or include/"
+RULE_M_TEST_ONLY = "referenced only by test code"
+
+
+def iter_sources(
+    root: Path, extensions: Tuple[str, ...] = ("*.h", "*.cpp")
+) -> List[Path]:
+    """Every C++ source/header under src/ and include/. Rule M passes a wider
+    `extensions` set; see REFERENCE_EXTENSIONS."""
+    return [
+        p
+        for base in ("src", "include")
+        for ext in extensions
+        for p in (root / base).rglob(ext)
+        if p.is_file()
+    ]
+
+
+def constant_definitions(text: str) -> List[Tuple[str, str]]:
+    """Every `inline constexpr auto NAME = ...;`, as `(name, qualified)` where
+    `qualified` is `<innermost namespace>::NAME` — the form to grep for.
+
+    String literals are blanked to same-length spacing before the brace scan, so
+    a `{` inside a literal is not read as a scope and offsets stay valid."""
+    masked = STRING_LITERAL.sub(lambda m: " " * len(m.group(0)), text)
+    events: List[Tuple[int, bool, Optional[str]]] = []
+    for m in NS_EVENT.finditer(masked):
+        if m.group(1) is not None:
+            # `namespace a::b {` opens one brace; the innermost name is the
+            # qualifier a call site writes.
+            events.append((m.start(), True, m.group(1).split("::")[-1]))
+        elif m.group(0) == "{":
+            events.append((m.start(), True, None))
+        else:
+            events.append((m.start(), False, None))
+    out: List[Tuple[str, str]] = []
+    stack: List[Optional[str]] = []
+    event_idx = 0
+    for m in CONST_DEF.finditer(text):
+        while event_idx < len(events) and events[event_idx][0] < m.start():
+            _, is_open, ns = events[event_idx]
+            if is_open:
+                stack.append(ns)
+            elif stack:
+                stack.pop()
+            event_idx += 1
+        inner = next((ns for ns in reversed(stack) if ns), None)
+        name = m.group(1)
+        out.append((name, f"{inner}::{name}" if inner else name))
+    return out
+
+
+class References(NamedTuple):
+    """Reference forms found in one body of code: `<outer>::<inner>` pairs, plus
+    bare identifiers (needed only for a constant outside any namespace)."""
+
+    pairs: Set[str]
+    bare: Set[str]
+
+
+def qualified_references(text: str) -> Set[str]:
+    """Every adjacent `<outer>::<inner>` pair, so a constant is found however
+    deeply its call site qualifies it.
+
+    Whole chains are split rather than matched two segments at a time: a
+    non-overlapping regex over `a::b::c` eats `a::b` and never sees `b::c`."""
+    pairs: Set[str] = set()
+    for chain in QUALIFIED_CHAIN.finditer(text):
+        segments = [s.strip() for s in chain.group(0).split("::")]
+        for outer, inner in zip(segments, segments[1:]):
+            pairs.add(f"{outer}::{inner}")
+    return pairs
+
+
+def referenced_constants(root: Path) -> Tuple[References, References]:
+    """References made by production code and by test code, across `src/**` and
+    `include/**`.
+
+    Comments are stripped: a constant a doc comment only mentions is still dead.
+    In a `*SpanNames.h`, `using` re-exports are dropped too — an unused alias
+    must not vouch for the constant it renames."""
+    prod = References(set(), set())
+    tests = References(set(), set())
+    for path in iter_sources(root, REFERENCE_EXTENSIONS):
+        text = strip_comments(read_source(path))
+        if path.name.endswith("SpanNames.h"):
+            text = USING_DECL.sub("", text)
+        target = tests if is_test_path(path) else prod
+        target.pairs.update(qualified_references(text))
+        target.bare.update(IDENTIFIER_TOKEN.findall(text))
+    return prod, tests
+
+
+def sibling_bare_tokens(text: str) -> Set[str]:
+    """Bare identifiers on the right-hand side of one header's definitions, so a
+    sibling composed unqualified (`join(prefix, op::x)`) counts as used.
+
+    String literals are removed first, so `makeStr("header")` cannot vouch for a
+    constant named `header`."""
+    tokens: Set[str] = set()
+    for m in CONST_DEF.finditer(text):
+        tokens.update(IDENTIFIER_TOKEN.findall(STRING_LITERAL.sub("", m.group(2))))
+    return tokens
+
+
+def constant_is_referenced(name: str, qualified: str, refs: References) -> bool:
+    """True if `refs` names the constant by its qualified form, or by its bare
+    name when it sits outside any namespace and so has no qualified form."""
+    if qualified in refs.pairs:
+        return True
+    return qualified == name and name in refs.bare
+
+
+def run_rule_m_unreferenced(root: Path, headers: List[Path], report: Report) -> None:
+    """Rule M (WARN): a `*SpanNames.h` constant that no code references.
+
+    The reverse of the other rules, which start from a consumer and look for its
+    L1 source. Warns rather than fails: in a stacked chain a constant can
+    legitimately land a commit before its call site. A constant only test code
+    names is reported separately, since the fix differs.
+
+    Whole files are searched, not just telemetry call sites, because a constant
+    is also passed to helpers and used as an attribute VALUE. Matching is by
+    `<innermost namespace>::<name>`, so two headers declaring the same qualified
+    form share one key — under-reporting, the safe direction.
+
+    Presence-gated on `*SpanNames.h` existing."""
+    if not headers:
+        report.skip("M", "no *SpanNames.h present")
+        return
+    prod, tests = referenced_constants(root)
+    total = dead = test_only = 0
+    for h in sorted(headers):
+        rel = str(h.relative_to(root))
+        text = strip_comments(read_source(h))
+        siblings = sibling_bare_tokens(text)
+        for name, qualified in constant_definitions(text):
+            total += 1
+            if constant_is_referenced(name, qualified, prod) or name in siblings:
+                continue
+            if constant_is_referenced(name, qualified, tests):
+                test_only += 1
+                report.warning("M", rel, qualified, RULE_M_TEST_ONLY)
+            else:
+                dead += 1
+                report.warning("M", rel, qualified, RULE_M_DEAD)
+    note = f"M: {total} *SpanNames.h constant(s) checked for references"
+    if dead or test_only:
+        note += f" ({dead} unreferenced, {test_only} test-only — see warnings)"
+    report.ok(note)
 
 
 def run_rule_b_collector(root: Path, l1_keys: Set[str], report: Report) -> None:
@@ -1595,15 +1769,6 @@ def run_rule_i_metric_literals(root: Path, report: Report) -> None:
         report.ok("I: no string-literal names/label keys in converted metric families")
 
 
-def iter_sources(root: Path) -> List[Path]:
-    """Every C++ source/header under src/ and include/."""
-    return [
-        p
-        for base in ("src", "include")
-        for ext in ("*.h", "*.cpp")
-        for p in (root / base).rglob(ext)
-        if p.is_file()
-    ]
 
 
 def instrument_kinds(root: Path, wire_by_symbol: Dict[str, str]) -> Dict[str, Set[str]]:
@@ -1840,8 +2005,24 @@ def metric_prefixes(names: Set[str]) -> Set[str]:
 #   statsd_gauges / statsd_counters -- beast::insight metrics, whose wire names
 #     come from formatName() lowercasing an insight metric path;
 #   spanmetrics -- synthesised by the collector's spanmetrics connector from
-#     span names, not declared in C++ at all.
-NON_OTEL_METRIC_GROUPS = frozenset({"statsd_gauges", "statsd_counters", "spanmetrics"})
+#     span names, not declared in C++ at all;
+#   job_queue_per_type_gauges -- beast::insight gauges in the "jobq" group,
+#     created per job type by JobTypeData's constructor, so the wire name embeds
+#     a job-type name and there is no declared instrument to point at. This
+#     group needs the exemption only because the jobq_ FAMILY became owned when
+#     jobq_saturation was declared in MetricNames.h: Rule K checks a name only
+#     when its family is owned, so before that these entries were skipped for
+#     the accidental reason that nothing in the family was declared. Declaring
+#     constants for them is not an option -- there is one triple per job type,
+#     minted at runtime.
+NON_OTEL_METRIC_GROUPS = frozenset(
+    {
+        "statsd_gauges",
+        "statsd_counters",
+        "spanmetrics",
+        "job_queue_per_type_gauges",
+    }
+)
 
 
 def expected_metric_names(

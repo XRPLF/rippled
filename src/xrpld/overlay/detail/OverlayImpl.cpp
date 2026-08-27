@@ -628,6 +628,10 @@ OverlayImpl::start()
     timer->asyncWait();
 }
 
+// Not static: the metric macros below read the app_ member. With telemetry
+// compiled out they expand to nothing, so the body touches no member and
+// clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
 OverlayImpl::reportDnsResolve(std::chrono::steady_clock::time_point start, bool resolved)
 {
@@ -653,7 +657,12 @@ OverlayImpl::reportDnsResolve(std::chrono::steady_clock::time_point start, bool 
               resolved ? telemetry::lval::dns_resolve::resolved
                        : telemetry::lval::dns_resolve::empty)}});
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
+// Not static: the metric macros below read the app_ member. With telemetry
+// compiled out they expand to nothing, so the body touches no member and
+// clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void
 OverlayImpl::reportAcceptOutcome(char const* outcome)
 {
@@ -663,6 +672,7 @@ OverlayImpl::reportAcceptOutcome(char const* outcome)
         "Inbound peer connection attempts, by terminal outcome",
         {{telemetry::label::outcome, std::string(outcome)}});
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 PeerLedgerSupply
 OverlayImpl::getPeerLedgerSupply(std::uint32_t validatedSeq) const

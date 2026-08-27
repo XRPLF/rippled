@@ -96,7 +96,6 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <string_view>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
@@ -105,6 +104,9 @@
 #include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/tracer.h>
+
+// std::string_view appears only in the telemetry-enabled declarations below.
+#include <string_view>
 #endif
 
 namespace xrpl::telemetry {
@@ -485,7 +487,10 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
  * @return A populated Setup struct with defaults for missing values.
  * @throws std::runtime_error  If `enabled` is set and the mutual TLS (mTLS)
  * settings contradict each other: only one of `tls_client_cert`/`tls_client_key`
- * is given, or a client certificate is given while `use_tls` is 0. Those two
+ * is given, or a client certificate is given while `use_tls` is 0. Also if
+ * `enabled` and `use_tls` are both set and a non-empty `tls_ca_cert`,
+ * `tls_client_cert` or `tls_client_key` cannot be read; an empty path is skipped,
+ * so an empty `tls_ca_cert` still means "use the system CA store". All three
  * checks are skipped when `enabled` is 0.
  * @throws boost::bad_lexical_cast  If any numeric key (`enabled`, `use_tls`,
  * `batch_size`, the trace switches, ...) holds a value Section::valueOr cannot

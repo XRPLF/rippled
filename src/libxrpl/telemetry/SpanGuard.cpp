@@ -41,6 +41,7 @@
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/span.h>
+#include <opentelemetry/nostd/variant.h>
 #include <opentelemetry/semconv/exception_attributes.h>
 #include <opentelemetry/trace/context.h>
 #include <opentelemetry/trace/default_span.h>
@@ -472,6 +473,21 @@ SpanGuard::getTraceBytes() const
     result.traceFlags = spanCtx.trace_flags().flags();
     result.valid = true;
     return result;
+}
+
+bool
+SpanGuard::hasCurrentContext() noexcept
+{
+    // Read the active span straight out of the runtime context. GetSpan()
+    // would be shorter but heap-allocates a DefaultSpan whenever the context
+    // holds no span, which is the case this predicate exists to keep free.
+    // The two conditions below are the ones injectToProtobuf() returns early
+    // on, so a true result means that injector will write all three fields.
+    auto const ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+    auto const value = ctx.GetValue(otel_trace::kSpanKey);
+    auto const* const span =
+        opentelemetry::nostd::get_if<opentelemetry::nostd::shared_ptr<otel_trace::Span>>(&value);
+    return span != nullptr && *span && (*span)->GetContext().IsValid();
 }
 
 void

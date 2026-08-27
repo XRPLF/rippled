@@ -125,11 +125,13 @@ TransactionAcquire::finalizeAcquireSpan() noexcept
             // Recorded explicitly as well as implied by the span's own
             // duration: this is the number an operator reads straight off a
             // trace when asking how long a proposed set took to arrive.
+            // The attribute is milliseconds and the timer reports
+            // microseconds, so the cast down is what makes the unit right.
             acquireSpan_->setAttribute(
                 ledger_span::attr::durationMs,
-                static_cast<std::int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
-                                              std::chrono::steady_clock::now() - acquireStart_)
-                                              .count()));
+                static_cast<std::int64_t>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(acquireTimer_.elapsedUs())
+                        .count()));
             // Peers still tracked for this fetch. Safe here, unlike the ledger
             // equivalent: PeerSet::getPeerIds() returns its own member set and
             // takes no Overlay lock.
@@ -436,7 +438,7 @@ TransactionAcquire::init(int numPeers)
     // below calls trigger() per peer, and trigger() can reach done() in the
     // same call stack, so anything set up after it could be missed entirely by
     // a set that resolves immediately.
-    acquireStart_ = std::chrono::steady_clock::now();
+    acquireTimer_.restart();
 
     // Nothing left to start. getSet() releases its own lock before calling us,
     // so a round sweep or a shutdown can drop the set in that window. Returning

@@ -16,6 +16,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/Recording.h>
 
 #include <xrpl.pb.h>
 
@@ -43,14 +44,15 @@ public:
 
     /**
      * Parent-ledger hash of the round that last requested this set. Telemetry
-     * only: it tells getSet() whether a different round is asking now.
+     * only: it tells getSet() whether a different round is asking now, and it
+     * holds no storage in a build that never reports one.
      *
      * The parent hash rather than `seq`, which is only a height: two rounds
      * STARTED on different forks at the same height are different rounds that
      * `seq` cannot separate. It does not help for a mid-round wrong-ledger
      * recovery -- see the limitation on `RCLConsensus::Adaptor`'s round members.
      */
-    uint256 lastRoundParentHash;
+    telemetry::Mirror<uint256> lastRound;
 
     InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set)
         : seq(seq), set(set)
@@ -129,12 +131,13 @@ public:
             {
                 if (acquire)
                 {
-                    // Read before the store below overwrites it. We are called
-                    // once per peer proposal, so without this a set proposed by
-                    // 35 validators would gain 35 events per round.
-                    bool const newRequester = it->second.lastRoundParentHash != roundParentHash;
-
-                    it->second.lastRoundParentHash = roundParentHash;
+                    // Compares against the stored hash and then overwrites it,
+                    // in that order and in one call. We are called once per
+                    // peer proposal, so without this a set proposed by 35
+                    // validators would gain 35 events per round. Answers false
+                    // when telemetry is compiled out, so the branch below is
+                    // never taken there.
+                    bool const newRequester = it->second.lastRound.changedTo(roundParentHash);
 
                     it->second.seq = seq_;
                     if (it->second.acquire)
@@ -168,7 +171,7 @@ public:
             // Recorded as the last requester because init() below fires this
             // round's event. Without it, the round that started the fetch would
             // be counted a second time by its own next proposal.
-            obj.lastRoundParentHash = roundParentHash;
+            obj.lastRound.store(roundParentHash);
         }
 
         ta->init(kStartPeers);

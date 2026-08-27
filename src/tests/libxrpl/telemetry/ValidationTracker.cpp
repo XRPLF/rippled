@@ -377,3 +377,39 @@ TEST_F(ValidationTrackerTest, GrossAgreementsCountInitialOnly)
     // Additive invariant: gross agree + gross miss == ledgers reconciled.
     EXPECT_EQ(tracker_.totalAgreementsEver() + tracker_.totalMissedEver(), 5u);
 }
+
+// ---------------------------------------------------------------
+// 12. Pending map stays bounded when nothing ever reconciles
+//     reconcile() is the only pruning path, and it runs only from
+//     the observable-gauge callbacks -- which need telemetry both
+//     compiled in and enabled. A node with telemetry off, or with
+//     [telemetry] enabled=0, therefore never reconciles, so the
+//     record methods have to bound the map themselves.
+// ---------------------------------------------------------------
+TEST_F(ValidationTrackerTest, PendingStaysBoundedWithoutReconcile)
+{
+    constexpr std::uint64_t kFirstBatch = 4000;
+    constexpr std::uint64_t kSecondBatch = 8000;
+
+    for (std::uint64_t i = 0; i < kFirstBatch; ++i)
+        tracker_.recordOurValidation(makeHash(i), static_cast<LedgerIndex>(i));
+
+    auto const afterFirst = tracker_.pendingCount();
+
+    for (std::uint64_t i = kFirstBatch; i < kSecondBatch; ++i)
+        tracker_.recordOurValidation(makeHash(i), static_cast<LedgerIndex>(i));
+
+    auto const afterSecond = tracker_.pendingCount();
+
+    // Bounded at all: far fewer entries retained than recorded.
+    EXPECT_LT(afterFirst, kFirstBatch);
+
+    // Bounded at a fixed cap, not merely growing more slowly: doubling the
+    // input leaves the size unchanged. Asserted without naming the private
+    // constant, so the test survives a change to its value.
+    EXPECT_EQ(afterFirst, afterSecond);
+
+    // Every recorded validation is still counted, so bounding the map does not
+    // cost us the lifetime totals the gauges report.
+    EXPECT_EQ(tracker_.totalValidationsSent(), kSecondBatch);
+}

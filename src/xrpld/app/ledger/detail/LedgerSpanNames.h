@@ -173,7 +173,7 @@ namespace event {
  * `currentLedgerHash` / `currentLedgerSeq`. A fetch is wanted by many rounds, so
  * the span accumulates one event per requester; a single attribute could only
  * ever name the first. Requesters are told apart by parent-ledger hash -- see
- * `InboundTransactionSet::lastRoundParentHash`.
+ * `InboundTransactionSet::lastRound`.
  *
  * The event count is a LOWER BOUND on the rounds that waited, valid only while
  * the span is open. Once the span closes with an outcome -- `timeout` in

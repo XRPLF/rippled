@@ -182,7 +182,15 @@ TEST_P(BackendTypeTest, write_stats_reported_only_when_measured)
     auto backend = makeOpenBackend();
     auto const stats = backend->getWriteStats();
 
-    if (GetParam() == "nudb")
+    // NuDB records the write path only when telemetry is compiled in; without
+    // it there is no consumer, so it reports absence like every other backend.
+#ifdef XRPL_ENABLE_TELEMETRY
+    bool const measures = GetParam() == "nudb";
+#else
+    bool const measures = false;
+#endif
+
+    if (measures)
     {
         if (!stats.has_value())
             FAIL() << "nudb must report write stats";

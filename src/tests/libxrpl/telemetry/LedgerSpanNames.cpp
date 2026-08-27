@@ -32,15 +32,12 @@
  * whole input domain, which is what proves no exit can leave a span without an
  * outcome -- the property the emitters rely on and that no compiler enforces.
  *
- * Compiled only when XRPL_ENABLE_TELEMETRY is defined, because that is the
- * configuration in which this test target has `src/` on its include path and
- * can therefore reach <xrpld/app/ledger/detail/...> and
- * <xrpld/overlay/detail/...>. Neither header is telemetry-conditional
- * (constants and constexpr functions, no OTel types); only this file's ability
- * to include them is.
+ * Compiled in every build, telemetry on or off. Nothing here needs the OTel
+ * SDK: the span-name and outcome headers hold only constants and constexpr
+ * functions, `src/` is on this target's include path unconditionally, and the
+ * few guard assertions below use a default-constructed SpanGuard, which is
+ * inactive in either configuration.
  */
-
-#ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 
@@ -776,5 +773,3 @@ TEST(LedgerSpanNames, b2_inactive_guard_finalize_sequences_are_no_ops)
 }
 
 }  // namespace
-
-#endif  // XRPL_ENABLE_TELEMETRY

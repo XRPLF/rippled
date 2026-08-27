@@ -1,6 +1,7 @@
 #pragma once
 
-#include <atomic>
+#include <xrpl/telemetry/Recording.h>
+
 #include <cstdint>
 
 namespace xrpl {
@@ -34,8 +35,8 @@ namespace xrpl {
  *                  \--- recordTimeout() ------->|                 |
  *                                               |                 |
  *   InboundLedger  ---- recordGiveUp() -------->|  AcquireStats   |
- *                  |--- recordCompletion() ---->|   (7 atomic     |
- *                  \--- recordAbort() --------->|    counters)    |
+ *                  |--- recordCompletion() ---->|  (9 counters)   |
+ *                  \--- recordAbort() --------->|                 |
  *                                               |                 |
  *   InboundLedgers ---- recordSweepEviction() ->+-----------------+
  *                                                       |
@@ -71,14 +72,18 @@ namespace xrpl {
  * // the same as healthy. Check completions before concluding anything.
  * @endcode
  *
- * @note Thread-safe. Every counter is an independent relaxed atomic, so any
- *       number of threads may record concurrently without losing an
- *       increment. Because the counters are independent, no read across two
- *       of them is a consistent snapshot. Compare rates over an interval
- *       rather than instantaneous values.
+ * @note Thread-safe. Every counter is independent, so any number of threads
+ *       may record concurrently without losing an increment. Because the
+ *       counters are independent, no read across two of them is a consistent
+ *       snapshot. Compare rates over an interval rather than instantaneous
+ *       values.
  * @note All counters are monotonic for the life of the process and are never
  *       reset, so a reader differences successive samples to get a rate. They
  *       saturate only on 64-bit wraparound, which is unreachable in practice.
+ * @note The counts exist only to be reported, so they are held in
+ *       telemetry::Counter. In a build with telemetry compiled out the
+ *       counters carry no storage, recording is a no-op, and every accessor
+ *       returns 0. The public API is the same in both builds.
  * @note Completions count acquisitions that ended successfully, whether the
  *       data came from peers or was already present locally. They do not
  *       count an acquisition that is still in flight.
@@ -95,9 +100,9 @@ public:
     void
     recordDeferral(bool ledgerAcquisition = false)
     {
-        deferrals_.fetch_add(1, std::memory_order_relaxed);
+        deferrals_.add();
         if (ledgerAcquisition)
-            ledgerDeferrals_.fetch_add(1, std::memory_order_relaxed);
+            ledgerDeferrals_.add();
     }
 
     /**
@@ -109,9 +114,9 @@ public:
     void
     recordTimeout(bool ledgerAcquisition = false)
     {
-        timeouts_.fetch_add(1, std::memory_order_relaxed);
+        timeouts_.add();
         if (ledgerAcquisition)
-            ledgerTimeouts_.fetch_add(1, std::memory_order_relaxed);
+            ledgerTimeouts_.add();
     }
 
     /**
@@ -121,7 +126,7 @@ public:
     void
     recordGiveUp()
     {
-        giveUps_.fetch_add(1, std::memory_order_relaxed);
+        giveUps_.add();
     }
 
     /**
@@ -134,9 +139,9 @@ public:
     void
     recordAbort(bool hadPartialWork)
     {
-        aborts_.fetch_add(1, std::memory_order_relaxed);
+        aborts_.add();
         if (hadPartialWork)
-            abortsWithPartialWork_.fetch_add(1, std::memory_order_relaxed);
+            abortsWithPartialWork_.add();
     }
 
     /**
@@ -145,7 +150,7 @@ public:
     void
     recordCompletion()
     {
-        completions_.fetch_add(1, std::memory_order_relaxed);
+        completions_.add();
     }
 
     /**
@@ -154,7 +159,7 @@ public:
     void
     recordSweepEviction()
     {
-        sweepEvictions_.fetch_add(1, std::memory_order_relaxed);
+        sweepEvictions_.add();
     }
 
     /**
@@ -163,7 +168,7 @@ public:
     [[nodiscard]] std::uint64_t
     getDeferrals() const
     {
-        return deferrals_.load(std::memory_order_relaxed);
+        return deferrals_.load();
     }
 
     /**
@@ -172,7 +177,7 @@ public:
     [[nodiscard]] std::uint64_t
     getTimeouts() const
     {
-        return timeouts_.load(std::memory_order_relaxed);
+        return timeouts_.load();
     }
 
     /**
@@ -185,7 +190,7 @@ public:
     [[nodiscard]] std::uint64_t
     getLedgerDeferrals() const
     {
-        return ledgerDeferrals_.load(std::memory_order_relaxed);
+        return ledgerDeferrals_.load();
     }
 
     /**
@@ -198,7 +203,7 @@ public:
     [[nodiscard]] std::uint64_t
     getLedgerTimeouts() const
     {
-        return ledgerTimeouts_.load(std::memory_order_relaxed);
+        return ledgerTimeouts_.load();
     }
 
     /**
@@ -207,7 +212,7 @@ public:
     [[nodiscard]] std::uint64_t
     getGiveUps() const
     {
-        return giveUps_.load(std::memory_order_relaxed);
+        return giveUps_.load();
     }
 
     /**
@@ -216,7 +221,7 @@ public:
     [[nodiscard]] std::uint64_t
     getAborts() const
     {
-        return aborts_.load(std::memory_order_relaxed);
+        return aborts_.load();
     }
 
     /**
@@ -227,7 +232,7 @@ public:
     [[nodiscard]] std::uint64_t
     getAbortsWithPartialWork() const
     {
-        return abortsWithPartialWork_.load(std::memory_order_relaxed);
+        return abortsWithPartialWork_.load();
     }
 
     /**
@@ -236,7 +241,7 @@ public:
     [[nodiscard]] std::uint64_t
     getCompletions() const
     {
-        return completions_.load(std::memory_order_relaxed);
+        return completions_.load();
     }
 
     /**
@@ -245,54 +250,54 @@ public:
     [[nodiscard]] std::uint64_t
     getSweepEvictions() const
     {
-        return sweepEvictions_.load(std::memory_order_relaxed);
+        return sweepEvictions_.load();
     }
 
 private:
     /**
      * Timer jobs skipped because the job lane was at its limit.
      */
-    std::atomic<std::uint64_t> deferrals_{0};
+    telemetry::Counter<> deferrals_;
 
     /**
      * Deferrals attributable to ledger acquisition alone.
      */
-    std::atomic<std::uint64_t> ledgerDeferrals_{0};
+    telemetry::Counter<> ledgerDeferrals_;
 
     /**
      * Timeouts attributable to ledger acquisition alone.
      */
-    std::atomic<std::uint64_t> ledgerTimeouts_{0};
+    telemetry::Counter<> ledgerTimeouts_;
 
     /**
      * Timer bodies that ran and advanced the retry count.
      */
-    std::atomic<std::uint64_t> timeouts_{0};
+    telemetry::Counter<> timeouts_;
 
     /**
      * Acquisitions that exhausted their retry budget.
      */
-    std::atomic<std::uint64_t> giveUps_{0};
+    telemetry::Counter<> giveUps_;
 
     /**
      * Acquisitions destroyed before finishing.
      */
-    std::atomic<std::uint64_t> aborts_{0};
+    telemetry::Counter<> aborts_;
 
     /**
      * Aborts that discarded a partly built map.
      */
-    std::atomic<std::uint64_t> abortsWithPartialWork_{0};
+    telemetry::Counter<> abortsWithPartialWork_;
 
     /**
      * Acquisitions that finished successfully.
      */
-    std::atomic<std::uint64_t> completions_{0};
+    telemetry::Counter<> completions_;
 
     /**
      * Idle acquisitions evicted by the sweep.
      */
-    std::atomic<std::uint64_t> sweepEvictions_{0};
+    telemetry::Counter<> sweepEvictions_;
 };
 
 }  // namespace xrpl
