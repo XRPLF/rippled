@@ -13,13 +13,10 @@
  * directly: no LoadManager instance, no monitor thread, no sleeping, and no
  * test-only mutator added to production code to make it reachable.
  *
- * Compiled only when XRPL_ENABLE_TELEMETRY is defined, because that is the
- * configuration in which the test target has `src/` on its include path and can
- * therefore reach <xrpld/app/main/LoadManager.h>. The rule itself is not
- * telemetry-conditional; only this file's ability to include the header is.
+ * Compiled in every build, telemetry on or off. The rule is a constexpr member
+ * of a header the test target can always reach, so nothing here needs the OTel
+ * SDK.
  */
-
-#ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpld/app/main/LoadManager.h>
 
@@ -136,5 +133,3 @@ TEST(SyncStateSignals, rule_is_evaluated_at_compile_time)
     // Keeps the test body non-empty for readers scanning for an assertion.
     EXPECT_TRUE(LoadManager::evaluateStall(0, 10s, 10s).newEpisode);
 }
-
-#endif  // XRPL_ENABLE_TELEMETRY
