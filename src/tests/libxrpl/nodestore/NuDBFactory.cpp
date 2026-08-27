@@ -61,6 +61,11 @@ runRoundTrip(Section const& params, std::size_t expectedBlocksize)
     EXPECT_EQ(batch, copy);
 }
 
+// The round below and its two constants are used only by the write-stats tests,
+// which are themselves compiled in with telemetry. Outside this guard the round
+// is an unused function in a build without telemetry, which -Werror rejects.
+#ifdef XRPL_ENABLE_TELEMETRY
+
 /**
  * Threads used by the overlapping-insert round below.
  */
@@ -144,6 +149,8 @@ runOverlappingInsertRound(Backend& backend, int round)
     for (auto& th : threads)
         th.join();
 }
+
+#endif  // XRPL_ENABLE_TELEMETRY
 
 }  // namespace
 
