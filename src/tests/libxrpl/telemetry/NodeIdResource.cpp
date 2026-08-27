@@ -42,17 +42,19 @@ using namespace xrpl::telemetry;
 TEST(NodeIdResource, attribute_key_is_dotted_resource_form)
 {
     // The literal the collector, TraceQL and the dashboards all name.
-    EXPECT_EQ(std::string_view(attr::nodeId), "xrpl.node.id");
+    EXPECT_EQ(std::string_view(telemetry::attr::nodeId), "xrpl.node.id");
 
     // Dotted, not the underscore form used for span attributes.
-    EXPECT_EQ(std::string_view(attr::nodeId).find('_'), std::string_view::npos);
+    EXPECT_EQ(std::string_view(telemetry::attr::nodeId).find('_'), std::string_view::npos);
 
     // Sibling of the other two xrpl.* resource attributes, and distinct
     // from both.
-    EXPECT_EQ(std::string_view(attr::networkId), "xrpl.network.id");
-    EXPECT_EQ(std::string_view(attr::networkType), "xrpl.network.type");
-    EXPECT_NE(std::string_view(attr::nodeId), std::string_view(attr::networkId));
-    EXPECT_NE(std::string_view(attr::nodeId), std::string_view(attr::networkType));
+    EXPECT_EQ(std::string_view(telemetry::attr::networkId), "xrpl.network.id");
+    EXPECT_EQ(std::string_view(telemetry::attr::networkType), "xrpl.network.type");
+    EXPECT_NE(
+        std::string_view(telemetry::attr::nodeId), std::string_view(telemetry::attr::networkId));
+    EXPECT_NE(
+        std::string_view(telemetry::attr::nodeId), std::string_view(telemetry::attr::networkType));
 
     // Built from the shared segments, so the segment additions are exercised
     // too rather than only the joined result.
@@ -121,7 +123,7 @@ TEST(NodeIdResource, resource_carries_node_id_as_a_string)
     otel_resource::ResourceAttributes attrs;
     // std::string, never a string literal: the attribute variant's
     // char-const* overload binds to bool, which would record `true`.
-    attrs[std::string(attr::nodeId)] = nodeId;
+    attrs[std::string(telemetry::attr::nodeId)] = nodeId;
 
     auto const resource = otel_resource::Resource::Create(attrs);
     auto const& out = resource.GetAttributes();
@@ -147,7 +149,7 @@ TEST(NodeIdResource, resource_omits_node_id_when_it_was_never_set)
 
     otel_resource::ResourceAttributes attrs;
     if (!setup.nodeId.empty())
-        attrs[std::string(attr::nodeId)] = setup.nodeId;
+        attrs[std::string(telemetry::attr::nodeId)] = setup.nodeId;
 
     auto const resource = otel_resource::Resource::Create(attrs);
     auto const& out = resource.GetAttributes();

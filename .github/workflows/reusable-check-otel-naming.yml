@@ -58,3 +58,20 @@ jobs:
         # regressions and exit 0. Every failure looked like a green build.
         # This asserts each bound is still the one its own baseline implies.
         run: python .github/scripts/telemetry/check_regression_bounds.py
+      - name: Install the workload harness dependencies
+        # Its own step so a PyPI outage is reported as an install failure rather
+        # than as a failing harness. Last in the job, because every check above
+        # is stdlib-only and stays reachable if this fails.
+        run: pip3 install -r docker/telemetry/workload/requirements.txt
+      - name: Test the telemetry workload harness
+        # Run here rather than in telemetry-validation.yml so a broken harness is
+        # reported in seconds instead of after a full xrpld build, and on every
+        # PR rather than only when that workflow's paths match.
+        #
+        # Plain scripts, not `unittest discover`: these files hold bare test
+        # functions, not TestCase subclasses, so discover would collect nothing
+        # and exit 0. Each file fails when it collects no tests, which is what
+        # makes running them this way safe.
+        run: |
+          python3 docker/telemetry/workload/test_validate_telemetry.py
+          python3 docker/telemetry/workload/test_capture_timings.py

@@ -17,7 +17,6 @@
  *          |
  *          +-- Stopwatch    (a clock read nobody reads when off)
  *          +-- Counter<T>   (an atomic nobody reads when off)
- *          +-- Mirror<T>    (a value kept only to be reported)
  *
  * @note A no-op method does NOT skip evaluation of its arguments.
  *  `counter.add(expensiveCount())` still calls `expensiveCount()` when
@@ -30,8 +29,8 @@
  *  to keep those types out of call sites.
  *
  * @note Thread safety: `Counter` is safe to update from any thread.
- *  `Stopwatch` and `Mirror` are not synchronized; guard them the same way
- *  you guard the state they sit beside.
+ *  `Stopwatch` is not synchronized; guard it the same way you guard the state
+ *  it sits beside.
  *
  *  Usage:
  *  @code
