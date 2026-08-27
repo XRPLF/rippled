@@ -119,8 +119,14 @@ class RCLConsensus
          *  Used as a follows-from link target on the new round's span so
          *  consecutive rounds (each with its own deterministic trace-id)
          *  remain navigable in trace UIs as a connected sequence.
+         *
+         *  Read and written only by startRoundTracing(), which is compiled out
+         *  with telemetry, leaving this field unused in that build. Marked
+         *  rather than guarded so that the member set matches the two sibling
+         *  span contexts in both configurations; the compiled-out SpanContext
+         *  holds nothing.
          */
-        telemetry::SpanContext prevRoundSpanContext_;
+        [[maybe_unused]] telemetry::SpanContext prevRoundSpanContext_;
 
         /**
          * SpanContext snapshot of the current round's accept span.

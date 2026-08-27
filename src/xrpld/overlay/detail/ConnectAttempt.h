@@ -71,8 +71,13 @@ private:
      * True once this attempt's outcome has been reported, so the first
      * (most specific) terminal path wins and each attempt is counted at
      * most once. Not atomic on purpose -- see reportOutcome().
+     *
+     * Read and written only by reportOutcome(), whose body is compiled out
+     * with telemetry, leaving this field unused in that build. Marked rather
+     * than guarded so the member set is the same in both configurations, as it
+     * is for the two members either side of it.
      */
-    bool outcomeReported_{false};
+    [[maybe_unused]] bool outcomeReported_{false};
 
     /**
      * Spans this dial: started in run() beside `dialStart_`, ended by
