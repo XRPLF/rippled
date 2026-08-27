@@ -106,15 +106,18 @@ render_cfg() {
     # today, but a future rename should not silently mis-substitute.
     old_esc=$(printf '%s' "$old_id" | sed 's/[.[\*^$/]/\\&/g')
 
-    # Count what should be replaced before replacing it. A config reshuffle that
-    # renamed or dropped one of these would otherwise yield a copy that quietly
-    # kept the tracked identity -- which reads on the dashboards as the node
-    # having vanished rather than as a failed substitution.
+    # Count what should be replaced before replacing it, and require the rendered
+    # copy to carry the same number below. A config reshuffle that renamed or
+    # dropped one of these would otherwise yield a copy that quietly kept the
+    # tracked identity -- which reads on the dashboards as the node having
+    # vanished rather than as a failed substitution.
+    #
+    # The count is taken from the config rather than pinned to a number, because
+    # how many sections carry the identity is the config's business: only
+    # [telemetry] does today, [insight] having dropped the copy the collector
+    # discarded. Pinning it makes the next such edit fail here, far from where it
+    # was made.
     id_count=$(grep -c "^service_instance_id=$old_esc\$" "$src" || true)
-    if [ "$id_count" -ne 2 ]; then
-        echo "ERROR: $src has $id_count 'service_instance_id=$old_id' lines, expected 2 ([insight] and [telemetry])" >&2
-        exit 1
-    fi
     log_count=$(grep -c "logs/$old_esc/" "$src" || true)
     if [ "$log_count" -lt 1 ]; then
         echo "ERROR: $src has no 'logs/$old_id/' path to rename" >&2
@@ -137,8 +140,8 @@ render_cfg() {
         exit 1
     fi
     new_count=$(grep -c "^service_instance_id=$new_id\$" "$out" || true)
-    if [ "$new_count" -ne 2 ]; then
-        echo "ERROR: $out has $new_count 'service_instance_id=$new_id' lines, expected 2" >&2
+    if [ "$new_count" -ne "$id_count" ]; then
+        echo "ERROR: $out has $new_count 'service_instance_id=$new_id' lines, expected $id_count" >&2
         exit 1
     fi
     echo "rendered $(basename "$out") with service_instance_id=$new_id"
