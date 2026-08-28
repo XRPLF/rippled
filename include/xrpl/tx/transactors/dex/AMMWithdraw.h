@@ -109,6 +109,11 @@ public:
      * @param lpTokens current LPT balance
      * @param lpTokensWithdraw amount of tokens to withdraw
      * @param tfee trading fee in basis points
+     * @param freezeHandling whether a frozen balance is reported as zero
+     * @param authHandling whether an unauthorized MPT balance is reported as
+     *        zero
+     * @param reserveHandling whether the recipient owner-reserve check is
+     *        enforced when a trustline or MPToken has to be auto-created
      * @param withdrawAll if withdrawing all lptokens
      * @param priorBalance balance before fees
      * @return
@@ -151,6 +156,11 @@ public:
      * @param lpTokensAMMBalance current AMM LPT balance
      * @param lpTokensWithdraw amount of lptokens to withdraw
      * @param tfee trading fee in basis points
+     * @param freezeHandling whether a frozen balance is reported as zero
+     * @param authHandling whether an unauthorized MPT balance is reported as
+     *        zero
+     * @param reserveHandling whether the recipient owner-reserve check is
+     *        enforced when a trustline or MPToken has to be auto-created
      * @param withdrawAll if withdraw all lptokens
      * @param priorBalance balance before fees
      * @return

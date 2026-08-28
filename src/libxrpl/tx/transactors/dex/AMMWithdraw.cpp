@@ -683,25 +683,10 @@ AMMWithdraw::withdraw(
             });
         if (assetNotExists)
         {
-            // AMMClawback (reserveHandling == IgnoreReserve) is a compliance
-            // recovery that returns the holder's own asset without their
-            // cooperation, consistent with the IgnoreFreeze/IgnoreAuth handling
-            // used throughout the clawback path. Intentionally bypass the
-            // recipient's owner-reserve check here:
-            //   - Gating the paired-asset return on the recipient's reserve
-            //     would reintroduce a holder veto: a holder could block
-            //     clawback indefinitely by deleting this trustline/MPToken and
-            //     keeping spendable XRP below one incremental reserve.
-            //   - The trustline/MPToken holds the holder's own returned asset,
-            //     so failing does not protect them; it only denies them the
-            //     asset and blocks the issuer.
-            // Pre-fixCleanup3_4_0 the check below compared against the
-            // issuer's balance (priorBalance is the issuer's preFeeBalance_ on
-            // the clawback path): for IOU the issuer's XRP incidentally
-            // satisfied it, while for MPT a low-XRP issuer could be wrongly
-            // blocked. The amendment removes that incidental dependency by
-            // skipping the check outright. mptokenKey is already set above, so
-            // a deleted MPToken is still recreated by createMPToken().
+            // Intentionally ignore the reserve check for AMMClawback, so the
+            // holder can not avoid clawback by deleting the trustline/MPToken
+            // and keeping a low spendable balance. AMMClawback has a higher
+            // priority than the reserve check.
             if (view.rules().enabled(fixCleanup3_4_0) &&
                 reserveHandling == ReserveHandling::IgnoreReserve)
                 return tesSUCCESS;

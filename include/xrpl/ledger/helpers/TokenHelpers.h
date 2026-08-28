@@ -40,7 +40,7 @@ enum class AuthHandling { IgnoreAuth, ZeroIfUnauthorized };
 
 /**
  * Controls whether the recipient owner-reserve check is enforced when
- * auto-creating a trustline or MPToken during a withdrawal.
+ * auto-creating a trustline or MPToken during AMMWithdraw or AMMClawback.
  */
 enum class ReserveHandling : bool { EnforceReserve, IgnoreReserve };
 
