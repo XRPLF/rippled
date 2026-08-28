@@ -13,7 +13,9 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -2815,6 +2817,67 @@ class AMMClawback_test : public beast::unit_test::Suite
     }
 
     void
+    testExactLPTokenEquality(FeatureBitset features)
+    {
+        using namespace jtx;
+
+        if (!features[fixAMMv1_3] || !features[fixAMMClawbackRounding])
+            return;
+
+        testcase("test exact LP token equality boundary");
+
+        Env env(*this, features);
+        Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
+        env.fund(XRP(100000), gw, alice, bob);
+        env.close();
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+
+        auto const usd = gw["USD"];
+        env.trust(usd(100000), alice);
+        env(pay(gw, alice, usd(50000)));
+        env.trust(usd(100000), bob);
+        env(pay(gw, bob, usd(40000)));
+        env.close();
+
+        // bob keeps alice from being the sole LP, otherwise the clawback
+        // first rewrites the AMM's LP balance to alice's tokens and the
+        // boundary is no longer distinguishable.
+        AMM amm(env, alice, XRP(2), usd(1));
+        amm.deposit(alice, IOUAmount{1'876123487565916, -15});
+        amm.deposit(bob, IOUAmount{1'000'000});
+
+        auto const [amountBalance, amount2Balance, lptAMMBalance] = amm.balances(usd, XRP);
+        auto const aliceLP = amm.getLPTokensBalance(alice);
+        auto const holderLPTokens = STAmount{aliceLP, amm.lptIssue()};
+        BEAST_EXPECT(lptAMMBalance > holderLPTokens);
+
+        // Clawing alice's pro-rata share lands the transactor's computed LP
+        // amount exactly on her balance.
+        auto const amount = toSTAmount(usd, Number{amountBalance} * holderLPTokens / lptAMMBalance);
+        BEAST_EXPECT(
+            toSTAmount(lptAMMBalance.asset(), lptAMMBalance * (Number{amount} / amountBalance)) ==
+            holderLPTokens);
+
+        env(amm::ammClawback(gw, alice, usd, XRP, amount));
+        env.close();
+
+        auto const aliceLPAfter = amm.getLPTokensBalance(alice);
+        if (features[fixCleanup3_4_0])
+        {
+            // Equality takes the withdraw-all path, redeeming alice's tokens
+            // exactly.
+            BEAST_EXPECT(aliceLPAfter == IOUAmount(0));
+        }
+        else
+        {
+            // The fall-through re-rounds the LP amount against the much
+            // larger pool balance, leaving alice with dust.
+            BEAST_EXPECT(aliceLPAfter != IOUAmount(0) && aliceLPAfter < aliceLP);
+        }
+    }
+
+    void
     run() override
     {
         // For now, just disable SAV entirely, which locks in the small Number
@@ -2848,6 +2911,7 @@ class AMMClawback_test : public beast::unit_test::Suite
             testSingleDepositAndClawback(features);
             testLastHolderLPTokenBalance(features);
             testClawbackBypassesReserve(features);
+            testExactLPTokenEquality(features);
         }
     }
 };

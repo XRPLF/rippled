@@ -671,17 +671,16 @@ AMMWithdraw::withdraw(
         mptokenKey = std::nullopt;
         if (!enabledFixAmMv12 || isXRP(asset))
             return tesSUCCESS;
-        bool const isIssue = asset.holds<Issue>();
-        bool const assetNotExists = [&] {
-            if (isIssue)
-                return !view.exists(keylet::trustLine(account, asset.get<Issue>()));
-            auto const issuanceKey = keylet::mptokenIssuance(asset.get<MPTIssue>());
-            mptokenKey = keylet::mptoken(issuanceKey.key, account);
-            if (!view.exists(*mptokenKey))
-                return true;
-            mptokenKey = std::nullopt;
-            return false;
-        }();
+        bool const assetNotExists = asset.visit(
+            [&](Issue const& issue) { return !view.exists(keylet::trustLine(account, issue)); },
+            [&](MPTIssue const& issue) {
+                auto const issuanceKey = keylet::mptokenIssuance(issue);
+                mptokenKey = keylet::mptoken(issuanceKey.key, account);
+                if (!view.exists(*mptokenKey))
+                    return true;
+                mptokenKey = std::nullopt;
+                return false;
+            });
         if (assetNotExists)
         {
             // AMMClawback (reserveHandling == IgnoreReserve) is a compliance
@@ -718,7 +717,7 @@ AMMWithdraw::withdraw(
                     ? XRPAmount(beast::kZero)
                     : accountReserve(view, sleAccount, journal, {.ownerCountDelta = 1}));
 
-            auto const balanceAdj = isIssue ? std::max(priorBalance, balance) : priorBalance;
+            auto const balanceAdj = std::max(priorBalance, balance);
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }

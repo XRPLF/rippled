@@ -15,6 +15,7 @@
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
@@ -3319,6 +3320,65 @@ private:
     }
 
     void
+    testWithdrawReserveUsesLiveBalance()
+    {
+        testcase("Withdraw reserve check uses live balance");
+
+        using namespace jtx;
+
+        auto const test = [&](auto&& makeToken) {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, bob_);
+            env.close();
+
+            auto const token = makeToken(env);
+            AMM amm(env, gw_, XRP(100), token(100));
+
+            // The EUR trustline is an unrelated owner object. The XRP-only
+            // AMM deposit adds the LP token trustline, so Alice has 2 owners.
+            env.trust(gw_["EUR"](1), alice_);
+            amm.deposit(DepositArg{.account = alice_, .asset1In = XRP(10)});
+            BEAST_EXPECT(env.ownerCount(alice_) == 2);
+            env.require(Balance(alice_, token(kNone)));
+
+            // Drain Alice to one drop below the reserve for a third owner
+            // object, accounting for the fee on the drain payment.
+            auto const reserveForToken = reserve(env, 3);
+            auto const targetBalance = reserveForToken - XRPAmount{1};
+            auto const baseFee = env.current()->fees().base;
+            auto const currentBalance = env.balance(alice_).value().xrp();
+            auto const drainAmount = currentBalance - targetBalance - baseFee;
+            BEAST_EXPECT(drainAmount > XRPAmount{0});
+            env(pay(alice_, bob_, drops(drainAmount)));
+            env.close();
+
+            // AMMWithdraw captures priorBalance before the fee, then the XRP
+            // leg raises the live sandbox balance before the token leg.
+            // XRP(2) keeps the integral MPT side positive after rounding.
+            auto const xrpOut = XRP(2);
+            auto const tokenOut = token(2);
+            auto const priorBalance = env.balance(alice_).value().xrp();
+            auto const liveBalanceAfterXrpLeg = priorBalance - baseFee + xrpOut.value().xrp();
+            BEAST_EXPECT(priorBalance < reserveForToken);
+            BEAST_EXPECT(liveBalanceAfterXrpLeg > priorBalance);
+            BEAST_EXPECT(liveBalanceAfterXrpLeg >= reserveForToken);
+
+            // The XRP leg runs first, so the missing IOU trustline or MPToken
+            // is reserved against the updated sandbox balance.
+            amm.withdraw(
+                WithdrawArg{.account = alice_, .asset1Out = xrpOut, .asset2Out = tokenOut});
+
+            // The withdrawal succeeds only if the missing token holding can be
+            // reserved from the live balance after the XRP leg.
+            BEAST_EXPECT(env.ownerCount(alice_) == 3);
+            BEAST_EXPECT(env.balance(alice_, token).value().signum() > 0);
+        };
+
+        test([&](Env&) -> PrettyAsset { return gw_["USD"]; });
+        test([&](Env& env) -> PrettyAsset { return MPTTester({.env = env, .issuer = gw_}); });
+    }
+
+    void
     testInvalidFeeVote()
     {
         testcase("Invalid Fee Vote");
@@ -3992,24 +4052,30 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
+                auto const cleanup340 = env.current()->rules().enabled(fixCleanup3_4_0);
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
-                // Auction slot purchase price is equal to the tiny amount
-                // since the minSlotPrice is 0 with no trading fee.
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
-                // The purchase price is too small to affect the total tokens
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    MPT(ammAlice[0])(10'000'000'000), USD(10'000), ammAlice.tokens()));
+                    MPT(ammAlice[0])(10'000'000'000),
+                    USD(10'000),
+                    cleanup340 ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                               : ammAlice.tokens()));
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
                     .bidMin = IOUAmount{STAmount::kMinValue, STAmount::kMinOffset},
                 }));
                 // Pay slightly higher price
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
-                // The purchase price is still too small to affect the total
-                // tokens
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(
+                    0, 0, IOUAmount{Number{firstPrice} * Number{105, -2}}));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    MPT(ammAlice[0])(10'000'000'000), USD(10'000), ammAlice.tokens()));
+                    MPT(ammAlice[0])(10'000'000'000),
+                    USD(10'000),
+                    cleanup340
+                        ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice} * Number{11, -1}}
+                        : ammAlice.tokens()));
             },
             {{gAmmmpt(10'000'000'000), USD(10'000)}});
 
@@ -7485,10 +7551,12 @@ private:
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();
+        testWithdrawReserveUsesLiveBalance();
         testInvalidFeeVote();
         testFeeVote();
         testInvalidBid();
         testBid(all);
+        testBid(all - fixCleanup3_4_0);
         testClawback();
         testClawbackFromAMMAccount(all);
         testClawbackFromAMMAccount(all - featureSingleAssetVault);
