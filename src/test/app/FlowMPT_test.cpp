@@ -26,6 +26,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -740,6 +741,164 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 result.push_back(sle);
         });
         return result;
+    }
+
+    void
+    testOfferOwnerMPTCreation(FeatureBitset features)
+    {
+        using namespace jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const gw("gw");
+
+        {
+            testcase("Reserve-edge offer owner cannot create another object");
+
+            Env env(*this, features);
+
+            auto const baseFee = env.current()->fees().base;
+            auto const ownerIncrement = reserve(env, 1) - reserve(env, 0);
+            auto const xrpOffer = ownerIncrement - drops(1);
+            auto const bobStart = reserve(env, 2) - drops(1) + baseFee;
+
+            env.fund(XRP(10'000), alice, gw);
+            env.fund(bobStart, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .maxAmt = 10});
+
+            env(offer(bob, usd(1), xrpOffer));
+            env.close();
+
+            env.require(Balance(bob, reserve(env, 2) - drops(1)), Owners(bob, 1));
+
+            // This mirrors the full-crossing setup below. Bob has enough XRP
+            // for the resting offer, but not enough to pay a fee and add
+            // another owner-count object while the offer remains on ledger.
+            env(check::create(bob, alice, drops(1)), Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            env.require(Owners(bob, 1));
+            BEAST_EXPECT(offersOnAccount(env, bob).size() == 1);
+        }
+
+        {
+            testcase("Reserve-edge offer owner creates MPToken during consume");
+
+            Env env(*this, features);
+
+            auto const baseFee = env.current()->fees().base;
+            auto const ownerIncrement = reserve(env, 1) - reserve(env, 0);
+            auto const xrpOffer = ownerIncrement - drops(1);
+            auto const bobStart = reserve(env, 2) - drops(1) + baseFee;
+
+            env.fund(XRP(10'000), alice, carol, gw);
+            env.fund(bobStart, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 10});
+
+            env(pay(gw, alice, usd(1)));
+            env(offer(bob, usd(1), xrpOffer));
+            env.close();
+
+            env.require(Balance(bob, reserve(env, 2) - drops(1)), Owners(bob, 1));
+            BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
+            auto const carolXRP = env.balance(carol);
+
+            // Bob has enough XRP for the resting offer but is close to
+            // reserve. The payment should not create Bob's USD MPToken until
+            // the offer is actually consumed, otherwise the temporary owner
+            // count increase can make the offer look underfunded during path
+            // execution.
+            env(pay(alice, carol, xrpOffer),
+                Path(~XRP),
+                Sendmax(usd(1)),
+                Txflags(tfNoRippleDirect));
+            env.close();
+
+            env.require(Balance(carol, carolXRP + xrpOffer));
+            env.require(Balance(bob, usd(1)));
+            env.require(Balance(bob, reserve(env, 1)), Owners(bob, 1));
+            BEAST_EXPECT(env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
+            BEAST_EXPECT(offersOnAccount(env, bob).empty());
+        }
+
+        {
+            testcase("Partial offer owner creates MPToken during consume");
+
+            Env env(*this, features);
+
+            auto const baseFee = env.current()->fees().base;
+            auto const ownerIncrement = reserve(env, 1) - reserve(env, 0);
+            auto const bobStart = reserve(env, 3) + baseFee;
+
+            env.fund(XRP(10'000), alice, carol, gw);
+            env.fund(bobStart, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 10});
+
+            env(pay(gw, alice, usd(1)));
+            env(offer(bob, usd(2), drops(2 * ownerIncrement)));
+            env.close();
+
+            env.require(Balance(bob, reserve(env, 3)), Owners(bob, 1));
+            BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
+            auto const carolXRP = env.balance(carol);
+
+            // Partial consumption leaves Bob's offer on the ledger, so he ends
+            // up owning both the remaining offer and a newly created MPToken.
+            // The MPToken is created regardless of reserve; this setup simply
+            // funds Bob enough that he still meets reserve(2) afterward (the
+            // under-reserved case is covered in OfferMPT_test's no-reserve-check
+            // testcase).
+            env(pay(alice, carol, drops(ownerIncrement)),
+                Path(~XRP),
+                Sendmax(usd(1)),
+                Txflags(tfNoRippleDirect));
+            env.close();
+
+            env.require(Balance(carol, carolXRP + drops(ownerIncrement)));
+            env.require(Balance(bob, usd(1)));
+            env.require(Balance(bob, reserve(env, 2)), Owners(bob, 2));
+            BEAST_EXPECT(env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
+            BEAST_EXPECT(offersOnAccount(env, bob).size() == 1);
+            BEAST_EXPECT(isOffer(env, bob, usd(1), drops(ownerIncrement)));
+        }
+
+        {
+            testcase("Issuer-owned offer does not create issuer MPToken");
+
+            Env env(*this, features);
+
+            env.fund(XRP(10'000), alice, carol, gw);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 10});
+
+            env(pay(gw, alice, usd(1)));
+            env(offer(gw, usd(1), drops(1'000)));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), gw.id())));
+            auto const carolXRP = env.balance(carol);
+
+            // The issuer can own an offer that receives its own MPT without an
+            // MPToken. Consuming that offer should keep the issuer side
+            // tokenless.
+            env(pay(alice, carol, drops(1'000)),
+                Path(~XRP),
+                Sendmax(usd(1)),
+                Txflags(tfNoRippleDirect));
+            env.close();
+
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(carol, carolXRP + drops(1'000)));
+            BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), gw.id())));
+            BEAST_EXPECT(offersOnAccount(env, gw).empty());
+        }
     }
 
     void
@@ -2121,6 +2280,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testFalseDry(features);
         testDirectStep(features);
         testBookStep(features);
+        testOfferOwnerMPTCreation(features);
         testTransferRate(features);
         testSelfPayment1(features);
         testSelfPayment2(features);

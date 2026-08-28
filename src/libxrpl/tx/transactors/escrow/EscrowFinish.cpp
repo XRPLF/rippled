@@ -116,7 +116,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -231,7 +231,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (isFrozen(ctx.view, dest, *sleIssuance))
         return tecLOCKED;
 
     return tesSUCCESS;

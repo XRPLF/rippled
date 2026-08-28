@@ -341,7 +341,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 escrow::Bytecode(badWasmHex),
                 escrow::kCancelTime(env.now() + 100s),
                 Fee(txnFees),
-                Ter(temINVALID_BYTECODE));
+                Ter(temBAD_WASM));
             env.close();
         }
     }
@@ -1076,7 +1076,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
     //
     // kAllKeyletsWasmHex was built against the old trace ABI, where the trace_*
     // host functions returned i32 rather than void, so the module is rejected
-    // with temINVALID_BYTECODE and the escrow below is never created.
+    // with temBAD_WASM and the escrow below is never created.
     //
     // Regenerating it is not just a rebuild: all_keylets/ is still pinned to
     // xrpl-wasm-stdlib @ "renames" and uses modules that moved on

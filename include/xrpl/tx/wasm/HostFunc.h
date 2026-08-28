@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -12,9 +11,6 @@
 
 #include <cstdint>
 #include <expected>
-#include <functional>
-#include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -73,32 +69,11 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
 class HostFunctions
 {
 protected:
-    RTOptRef rt_;
     beast::Journal j_;
 
 public:
     HostFunctions(beast::Journal j = beast::Journal{beast::Journal::getNullSink()}) : j_(j)
     {
-    }
-
-    void
-    setRT(WasmRuntimeWrapper& rt)
-    {
-        rt_ = rt;
-    }
-
-    void
-    resetRT()
-    {
-        rt_ = std::nullopt;
-    }
-
-    [[nodiscard]] WasmRuntimeWrapper&
-    getRT() const
-    {
-        if (!rt_)
-            Throw<std::logic_error>("Wasm runtime not set");
-        return rt_->get();
     }
 
     [[nodiscard]] beast::Journal
@@ -494,7 +469,5 @@ public:
     virtual ~HostFunctions() = default;
     // LCOV_EXCL_STOP
 };
-
-using HFRef = std::reference_wrapper<HostFunctions>;
 
 }  // namespace xrpl
