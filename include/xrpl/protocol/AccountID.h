@@ -101,22 +101,6 @@ operator<<(std::ostream& os, AccountID const& x)
     return os;
 }
 
-/**
- * Initialize the global cache used to map AccountID to base58 conversions.
- *
- * The cache is optional and need not be initialized. But because conversion
- * is expensive (it requires a SHA-256 operation) in most cases the overhead
- * of the cache is worth the benefit.
- *
- * @param count The number of entries the cache should accommodate. Zero will
- *              disable the cache, releasing any memory associated with it.
- *
- * @note The function will only initialize the cache the first time it is
- *       invoked. Subsequent invocations do nothing.
- */
-void
-initAccountIdCache(std::size_t count);
-
 }  // namespace xrpl
 
 //------------------------------------------------------------------------------

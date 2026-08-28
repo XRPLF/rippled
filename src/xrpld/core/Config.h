@@ -40,7 +40,6 @@ enum class SizedItem : std::size_t {
     OpenFinalLimit,
     BurstSize,
     RamSizeGb,
-    AccountIdCacheSize,
 };
 
 /**
