@@ -5,7 +5,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -222,17 +221,21 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             return isSigner.error();
 
         // A delegate that the target has granted permission over the
-        // proposed transaction's own type — or one of that delegate's own
-        // signers — is equally authorized: it will need to help complete
-        // the proposed transaction's own authorization anyway once the
-        // proposal is submitted.
+        // proposed transaction — or one of that delegate's own signers — is
+        // equally authorized: it will need to help complete the proposed
+        // transaction's own authorization anyway once the proposal is
+        // submitted. xrpl::invokeCheckPermission is the type-erased
+        // submission hierarchy (not checkTxPermission alone, which would
+        // reject a matching granular grant). Qualify xrpl:: so the inherited
+        // Transactor template is not chosen; it cannot deduce T here. A
+        // failed grant is still "not authorized" and becomes
+        // tecNO_PERMISSION below — Create is already signed, so do not leak
+        // the pre-sign terNO_DELEGATE_PERMISSION.
         if (!*isSigner && proposedTx.isFieldPresent(sfDelegate))
         {
             AccountID const delegateAccount = proposedTx.getAccountID(sfDelegate);
-            // NOLINTNEXTLINE(readability-suspicious-call-argument)
-            auto const sleDelegate = ctx.view.read(keylet::delegate(target, delegateAccount));
-            if (sleDelegate &&
-                isTesSuccess(checkTxPermission(sleDelegate, STTx{STObject{proposedTx}})))
+            STTx const proposedStTx{STObject{proposedTx}};
+            if (isTesSuccess(xrpl::invokeCheckPermission(ctx.view, proposedStTx)))
             {
                 isSigner = isAuthorizedFor(delegateAccount);
                 if (!isSigner)

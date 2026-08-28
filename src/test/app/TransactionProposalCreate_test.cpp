@@ -6,6 +6,7 @@
 #include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
@@ -17,6 +18,7 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -870,6 +872,81 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         }
     }
 
+    // A delegate holding only a granular permission (XLS-75) that would
+    // authorize submitting the proposed transaction may also create a
+    // proposal for it. A granular grant that fails checkGranularSandbox
+    // still cannot.
+    void
+    testDelegatedGranularProposedTx(FeatureBitset features)
+    {
+        testcase("proposer authorized through granular delegate permission");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const gw{"gw"};        // issuer / proposed-tx Account
+        Account const alice{"alice"};  // holder of the trust line being authorized
+        Account const bob{"bob"};      // delegate with TrustlineAuthorize only
+        env.fund(XRP(10000), gw, alice, bob);
+        env(fset(gw, asfRequireAuth));
+        env.close();
+
+        env(trust(alice, gw["USD"](50)));
+        env.close();
+        env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
+        env.close();
+
+        auto delegatedTrustSet = [&](std::uint32_t ticketSeq, std::uint32_t flags) {
+            json::Value tx = trust(gw, gw["USD"](0), alice, flags);
+            tx[sfDelegate.jsonName] = bob.human();
+            return proposal::unsignedPayload(env, tx, ticketSeq);
+        };
+
+        // TrustlineAuthorize is sufficient for a tfSetfAuth TrustSet against
+        // an existing line whose limit is unchanged — the same shape that
+        // submits successfully under invokeCheckPermission.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, gw);
+            env(proposal::create(
+                    bob, delegatedTrustSet(ticketSeq, tfSetfAuth), proposal::expiration(env, 100s)),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, gw, ticketSeq));
+        }
+
+        // tfSetFreeze is not in TrustlineAuthorize's sandbox.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, gw);
+            env(proposal::create(
+                    bob,
+                    delegatedTrustSet(ticketSeq, tfSetFreeze),
+                    proposal::expiration(env, 100s)),
+                Ter(tecNO_PERMISSION),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, gw, ticketSeq));
+        }
+
+        // sfQualityOut is a valid TrustSet field but not in the granular
+        // template, so checkGranularSandbox rejects it.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, gw);
+            json::Value tx = trust(gw, gw["USD"](0), alice, tfSetfAuth);
+            tx[sfDelegate.jsonName] = bob.human();
+            tx[sfQualityOut.jsonName] = 100;
+            env(proposal::create(
+                    bob,
+                    proposal::unsignedPayload(env, tx, ticketSeq),
+                    proposal::expiration(env, 100s)),
+                Ter(tecNO_PERMISSION),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, gw, ticketSeq));
+        }
+    }
+
     // The target account must be able to authorize a transaction through a
     // SignerList, so a pseudo-account (here an AMM's) cannot be a target even
     // though it exists on-ledger (On-Chain Cosigner spec §5.3.2.5).
@@ -1390,6 +1467,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testProposerAuthorization(all);
         testCorruptSignerList(all);
         testDelegatedProposedTx(all);
+        testDelegatedGranularProposedTx(all);
         testPseudoTarget(all);
 
         // Apply

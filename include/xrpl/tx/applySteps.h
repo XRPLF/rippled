@@ -386,6 +386,21 @@ PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view);
 
 /**
+ * Type-erased overload of Transactor::invokeCheckPermission.
+ *
+ * Dispatches on the transaction type to Transactor::invokeCheckPermission<T>
+ * so a caller that only has an STTx still gets the same verdict submission
+ * uses: transaction-level permission, then granular permissions and
+ * checkGranularSandbox, then that type's checkGranularSemantics. Does not
+ * check SignerList or signing keys.
+ *
+ * An unknown transaction type (should not occur after a successful preflight)
+ * fails closed as terNO_DELEGATE_PERMISSION.
+ */
+NotTEC
+invokeCheckPermission(ReadView const& view, STTx const& tx);
+
+/**
  * Compute only the expected base fee for a transaction.
  *
  * Base fees are transaction specific, so any calculation

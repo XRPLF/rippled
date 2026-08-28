@@ -375,6 +375,23 @@ preflight(
     }
 }
 
+NotTEC
+invokeCheckPermission(ReadView const& view, STTx const& tx)
+{
+    try
+    {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
+            return Transactor::invokeCheckPermission<T>(view, tx);
+        });
+    }
+    catch (UnknownTxnType const&)
+    {
+        // LCOV_EXCL_START
+        return terNO_DELEGATE_PERMISSION;
+        // LCOV_EXCL_STOP
+    }
+}
+
 PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view)
 {
