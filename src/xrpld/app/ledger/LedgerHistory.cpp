@@ -46,8 +46,10 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
           app_.getJournal("TaggedCache"),
           beast::insight::NullCollector::make(),
           // A ledger byte size is ill-posed (nodes are shared copy-on-write
-          // across ledgers), so bound this cache by count.
-          app_.config().getValueFor(SizedItem::LedgerSize))
+          // across ledgers), so bound this cache by count. 0 = cap off when
+          // enforcement is disabled.
+          app_.config().cacheMemoryBudget() != 0 ? app_.config().getValueFor(SizedItem::LedgerSize)
+                                                 : 0)
     , consensusValidated_(
           "ConsensusValidated",
           64,
