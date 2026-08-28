@@ -3,13 +3,12 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/rpc/Context.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
-
-#include <boost/algorithm/string/case_conv.hpp>
 
 #include <cstdint>
 #include <limits>
@@ -38,7 +37,7 @@ doCanDelete(rpc::JsonContext& context)
         else
         {
             std::string canDeleteStr = canDelete.asString();
-            boost::to_lower(canDeleteStr);
+            canDeleteStr = toLower(canDeleteStr);
 
             if (canDeleteStr.find_first_not_of("0123456789") == std::string::npos)
             {

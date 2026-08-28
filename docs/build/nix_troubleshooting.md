@@ -131,3 +131,91 @@ once it picks up that rebuild, then re-run the `grep libgit2` check above to
 confirm it reports `1.9.4` or newer.
 
 Until then, prefer the workarounds above.
+
+## `wint_t` / `uint32_t` errors from the Nix libc++ headers
+
+A build that mixes the Nix toolchain with the system SDK fails in libc++ itself,
+with errors that look nothing like your code:
+
+```
+/nix/store/...-libcxx-.../include/c++/v1/cwchar:136:9: error: target of using declaration conflicts with declaration already in scope
+  136 | using ::wint_t _LIBCPP_USING_IF_EXISTS;
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_wint_t.h:32:25: note: target of using declaration
+...
+error: use of undeclared identifier 'UINT32_C'
+```
+
+The give-away is the second path: Nix's libc++ headers are being combined with
+the **Xcode Command Line Tools** SDK instead of the Nix one.
+
+### Why it happens
+
+`SDKROOT` and `DEVELOPER_DIR` are what point the toolchain at the Nix SDK, and
+they are not baked into the compiler — a dev shell gets them from the
+`apple-sdk` setup hook. CMake, finding neither, asks `xcrun`, which answers with
+the system SDK. Nix's `libc++` and Apple's headers then declare the same types
+twice.
+
+### Fix
+
+Run the build from inside the dev shell (`nix develop`), or from an environment
+that exports both variables. To confirm which SDK a configured build is using:
+
+```bash
+grep -o '\-isysroot [^ ]*' build/compile_commands.json | sort -u
+```
+
+It should print a `/nix/store/...-apple-sdk-*` path. If it prints
+`/Library/Developer/CommandLineTools/...`, re-configure from within the shell —
+CMake caches the sysroot, so an existing `build/` directory keeps the wrong one.
+
+## `Library not loaded: /nix/store/…` from a binary that used to work
+
+A binary stops starting after a `nix flake update`, or after
+`nix-collect-garbage` removes the paths the previous toolchain used:
+
+```
+dyld[57271]: Library not loaded: /nix/store/…-libresolv-93/lib/libresolv.9.dylib
+```
+
+[`bin/check-nix-store-refs.sh`](../../bin/check-nix-store-refs.sh) finds the same
+thing without having to run anything, and names the file:
+
+```
+$ bin/check-nix-store-refs.sh ~/.conan2-nix
+::error file=/Users/you/.conan2-nix/p/b/c-area24ded30c388c/p/bin/adig::references the Nix store at run time
+/Users/you/.conan2-nix/p/b/c-area24ded30c388c/p/bin/adig
+    /nix/store/p4lp3xq4imd1qzqh08x8vcq2zfhi7rca-libresolv-93/lib/libresolv.9.dylib
+/Users/you/.conan2-nix: checked 135, skipped 2495, 1 with Nix store references.
+```
+
+Conan's cache folders are named after a truncated package name plus a hash, so
+ask Conan which package the offending one belongs to — pass the folder holding
+the hash, not the file itself:
+
+```
+$ conan cache ref ~/.conan2-nix/p/b/c-area24ded30c388c
+c-ares/1.34.6#545240bb1c40e2cacd4362d6b8967650:dab5992496abe6d219defb7986ecbf367615a5e5#…
+```
+
+### Why it happens
+
+The binary records a store path that no longer exists. Nothing we build should:
+see [Prebuilt packages](./nix.md#prebuilt-packages) for why, and
+`libresolvSystemStub` in [`nix/darwin.nix`](../../nix/darwin.nix) for the one
+dependency that needed help to comply.
+
+A Conan package ID does not encode the nixpkgs revision, so a package built
+before that stub existed stays in your local cache and keeps being reused. The
+dev shell is also what tends to produce one: it is a slightly _less_ isolated
+build environment than CI's, because `mkShell` puts every tool's headers and
+libraries on the compiler's search path — which is how c-ares found the Nix
+`libresolv` in the first place.
+
+### Fix
+
+Drop that package and let Conan refetch or rebuild it:
+
+```bash
+conan remove 'c-ares/*'
+```

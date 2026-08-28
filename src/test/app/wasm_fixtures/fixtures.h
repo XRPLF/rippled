@@ -1,7 +1,5 @@
 #pragma once
 
-// TODO: consider moving these to separate files (and figure out the build)
-
 #include <string>
 
 extern std::string const kLedgerSqnWasmHex;

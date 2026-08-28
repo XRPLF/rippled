@@ -4,6 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
@@ -3127,27 +3128,59 @@ private:
             std::nullopt,
             {features});
 
+        // Zero-fee bid without an explicit price pays a floor with fixCleanup3_4_0.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const cleanup340 = features[fixCleanup3_4_0];
+                auto const expectedPrice = cleanup340 ? minBidPrice : IOUAmount{0};
+                auto const expectedTokens = cleanup340
+                    ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                    : ammAlice.tokens();
+
+                env.close(seconds(kTotalTimeSlotSecs + 1));
+                env.close();
+                env(ammAlice.bid({.account = alice_}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, expectedPrice));
+                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), expectedTokens));
+
+                ammAlice.vote(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, expectedPrice));
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features});
+
         // Bid tiny amount
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
+                auto const cleanup340 = features[fixCleanup3_4_0];
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
-                // Auction slot purchase price is equal to the tiny amount
-                // since the minSlotPrice is 0 with no trading fee.
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
-                // The purchase price is too small to affect the total tokens
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000),
+                    USD(10'000),
+                    cleanup340 ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                               : ammAlice.tokens()));
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
                     .bidMin = IOUAmount{STAmount::kMinValue, STAmount::kMinOffset},
                 }));
                 // Pay slightly higher price
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
-                // The purchase price is still too small to affect the total
-                // tokens
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(
+                    0, 0, IOUAmount{Number{firstPrice} * Number{105, -2}}));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000),
+                    USD(10'000),
+                    cleanup340
+                        ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice} * Number{11, -1}}
+                        : ammAlice.tokens()));
             },
             std::nullopt,
             0,
@@ -3778,6 +3811,21 @@ private:
                     BEAST_EXPECT(amm.expectBalances(XRP(1'000), USD(500), amm.tokens()));
                     BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(100), USD(55)}}}));
                 }
+                else if (!features[featureMPTokensV2])
+                {
+                    BEAST_EXPECT(amm.expectBalances(
+                        XRPAmount(909'090'909),
+                        STAmount{USD, UINT64_C(550'000000055), -9},
+                        amm.tokens()));
+                    BEAST_EXPECT(expectOffers(
+                        env,
+                        carol_,
+                        1,
+                        {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+                    BEAST_EXPECT(
+                        env.balance(carol_, USD) ==
+                        STAmount(USD, UINT64_C(29'949'94999999494), -11));
+                }
                 else
                 {
                     // Post-amendment the transfer fee is taken into account
@@ -3788,19 +3836,19 @@ private:
                     // quality.
                     // AMM offer ~50USD/91XRP
                     BEAST_EXPECT(amm.expectBalances(
-                        XRPAmount(909'090'909),
-                        STAmount{USD, UINT64_C(550'000000055), -9},
+                        XRPAmount(909'090'910),
+                        STAmount{USD, UINT64_C(549'99999945), -8},
                         amm.tokens()));
-                    // Offer ~91XRP/49.99USD
+                    // Offer ~91XRP/50USD
                     BEAST_EXPECT(expectOffers(
                         env,
                         carol_,
                         1,
-                        {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+                        {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
                     // Carol pays 0.1% fee on ~50USD =~ 0.05USD
                     BEAST_EXPECT(
                         env.balance(carol_, USD) ==
-                        STAmount(USD, UINT64_C(29'949'94999999494), -11));
+                        STAmount(USD, UINT64_C(29'949'95000060055), -11));
                 }
             },
             {{XRP(1'000), USD(500)}},
@@ -5146,6 +5194,51 @@ private:
     }
 
     void
+    testCredentialPinsPseudoAccount()
+    {
+        testcase("Credential pins AMM pseudo-account");
+
+        using namespace jtx;
+        FeatureBitset const all{testableAmendments()};
+
+        // A credential issued to an AMM pseudo-account can't be accepted or
+        // deleted by it. A pin created before the cure activates stays pinned
+        // in the pseudo-account's owner directory and makes AMM deletion fail
+        // with tecINTERNAL (deleteAMMTrustLines rejects the unexpected
+        // directory entry).
+        Account const attacker{"attacker"};
+        char const credType[] = "FN36";
+
+        Env env(*this, all - fixCleanup3_3_0 - fixCleanup3_4_0);
+        fund(env, gw_, {alice_}, XRP(20'000), {USD(10'000)});
+        env.fund(XRP(1'000), attacker);
+        env.close();
+
+        AMM amm(env, alice_, XRP(10'000), USD(10'000));
+        Account const ammAcct{"amm pseudo-account", amm.ammAccount()};
+        env.memoize(ammAcct);
+
+        env(credentials::create(ammAcct, attacker, credType));
+        env.close();
+        auto const credKey = credentials::keylet(ammAcct, attacker, credType);
+        BEAST_EXPECT(env.le(credKey));
+
+        // Emptying the AMM would auto-delete it, but the pinned credential makes
+        // deleteAMMAccount fail; the withdraw is rolled back and the AMM stays.
+        amm.withdrawAll(alice_, std::nullopt, Ter(tecINTERNAL));
+        BEAST_EXPECT(amm.ammExists());
+
+        env.enableFeature(fixCleanup3_4_0);
+        env.close();
+
+        // The pre-existing pin is cleaned up and the AMM deletes.
+        amm.withdrawAll(alice_);
+        BEAST_EXPECT(!amm.ammExists());
+        BEAST_EXPECT(!env.le(credKey));
+        BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+    }
+
+    void
     testAutoDelete()
     {
         testcase("Auto Delete");
@@ -6451,7 +6544,7 @@ private:
                 BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
                 BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(100), USD(55)}}}));
             }
-            else
+            else if (!features[featureMPTokensV2])
             {
                 BEAST_EXPECT(amm.expectBalances(
                     XRPAmount(909'090'909),
@@ -6462,6 +6555,19 @@ private:
                     carol_,
                     1,
                     {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+                BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(909'090'910),
+                    STAmount{USD, UINT64_C(549'99999945), -8},
+                    amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol_,
+                    1,
+                    {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
                 BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
             }
         }
@@ -6475,10 +6581,30 @@ private:
             AMM const amm(env, alice_, XRP(1'000), USD(500));
             env(offer(carol_, XRP(100), USD(55)));
             env.close();
-            BEAST_EXPECT(amm.expectBalances(
-                XRPAmount(909'090'909), STAmount{USD, UINT64_C(550'000000055), -9}, amm.tokens()));
-            BEAST_EXPECT(expectOffers(
-                env, carol_, 1, {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+            if (!features[featureMPTokensV2])
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(909'090'909),
+                    STAmount{USD, UINT64_C(550'000000055), -9},
+                    amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol_,
+                    1,
+                    {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(909'090'910),
+                    STAmount{USD, UINT64_C(549'99999945), -8},
+                    amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol_,
+                    1,
+                    {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
+            }
         }
     }
 
@@ -7379,6 +7505,7 @@ private:
         FeatureBitset const all{testableAmendments()};
         testInvalidInstance();
         testInstanceCreate();
+        testCredentialPinsPseudoAccount();
         for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
             testInvalidDeposit(f);
         testDeposit();
@@ -7388,6 +7515,7 @@ private:
         testFeeVote();
         testInvalidBid();
         testBid(all);
+        testBid(all - fixCleanup3_4_0);
         testBid(all - fixAMMv1_3);
         testBid(all - fixAMMv1_1 - fixAMMv1_3);
         testInvalidAMMPayment();
@@ -7400,6 +7528,7 @@ private:
         testFlags();
         testRippling();
         testAMMAndCLOB(all);
+        testAMMAndCLOB(all - featureMPTokensV2);
         testAMMAndCLOB(all - fixAMMv1_1 - fixAMMv1_3);
         testTradingFee(all);
         testTradingFee(all - fixAMMv1_3);
@@ -7419,8 +7548,10 @@ private:
         testOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testSwapRounding();
         testFixChangeSpotPriceQuality(all);
+        testFixChangeSpotPriceQuality(all - featureMPTokensV2);
         testFixChangeSpotPriceQuality(all - fixAMMv1_1 - fixAMMv1_3);
         testFixAMMOfferBlockedByLOB(all);
+        testFixAMMOfferBlockedByLOB(all - featureMPTokensV2);
         testFixAMMOfferBlockedByLOB(all - fixAMMv1_1 - fixAMMv1_3);
         testLPTokenBalance(all);
         testLPTokenBalance(all - fixAMMv1_3);
