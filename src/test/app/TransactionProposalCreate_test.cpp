@@ -1448,6 +1448,75 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, target) == 1 + proposal::kBatchProposalOwnerCount);
     }
 
+    // A proposed Batch's inner preflight must receive TapProposal, or an
+    // unsigned account-reserve SponsorshipTransfer is rejected at Create
+    // (On-Chain Cosigner spec §6.1.1: an inner Sponsor is a collectable
+    // signature slot). Other inner types that do not key on TapProposal keep
+    // their existing preflight result.
+    void
+    testProposedBatchInnerSponsorship(FeatureBitset features)
+    {
+        testcase("proposed batch inner account-reserve SponsorshipTransfer");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const bob{"bob"};  // named as Sponsor; signature collected later
+        env.fund(XRP(10000), target, bob);
+        env.close();
+
+        auto unsignedInnerSponsorship = [&](Account const& account) {
+            json::Value tx = sponsor::transfer(account, tfSponsorshipCreate);
+            tx[sfSponsor.getJsonName()] = bob.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
+            return tx;
+        };
+
+        // Payment (unaffected by TapProposal) plus an unsigned inner
+        // account-reserve SponsorshipTransfer. Create succeeds only if
+        // TapProposal reaches the inner.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            auto const seq = env.seq(target);
+            json::Value const proposedTx = proposal::unsignedBatch(
+                env,
+                target,
+                ticketSeq,
+                tfAllOrNothing,
+                {proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                 proposal::innerTx(unsignedInnerSponsorship(target), seq + 1)});
+
+            env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        }
+
+        // Structural inner failures are unchanged: missing sfSponsor is still
+        // temMALFORMED in SponsorshipTransfer::preflight, collapsed by Batch
+        // to temINVALID_INNER_BATCH. TapProposal does not skip that.
+        {
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            auto const seq = env.seq(target);
+            json::Value const proposedTx = proposal::unsignedBatch(
+                env,
+                target,
+                ticketSeq,
+                tfAllOrNothing,
+                {proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                 proposal::innerTx(sponsor::transfer(target, tfSponsorshipCreate), seq + 1)});
+
+            env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
+                Ter(temINVALID_INNER_BATCH),
+                proposal::verify::create());
+            env.close();
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        }
+    }
+
     void
     run() override
     {
@@ -1480,6 +1549,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testFeeSponsored(all);
         testBatchReserve(all);
         testMultiAccountBatch(all);
+        testProposedBatchInnerSponsorship(all);
     }
 };
 
