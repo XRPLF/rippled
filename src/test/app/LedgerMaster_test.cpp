@@ -11,12 +11,14 @@
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <sstream>
@@ -115,6 +117,26 @@ class LedgerMaster_test : public beast::unit_test::Suite
         }
     }
 
+    // Wait until the SHAMapStore has finished processing the ledger that the
+    // preceding env.close() produced.
+    //
+    // env.close() returns as soon as the ledger_accept RPC returns, but the
+    // validated ledger path -- LedgerMaster::setValidLedger() ->
+    // SHAMapStore::onLedgerClosed() -- runs on a job queue thread. Without
+    // draining the job queue first, the store may not have been handed the
+    // ledger at all, in which case rendezvous() observes working_ == false and
+    // returns immediately, before any work has been done.
+    [[nodiscard]] static bool
+    syncStore(jtx::Env& env)
+    {
+        using namespace std::chrono_literals;
+
+        env.app().getJobQueue().rendezvous();
+        // Use the timeout overload so that a store which never finishes fails
+        // this test rather than hanging the entire unit test job.
+        return env.app().getSHAMapStore().rendezvous(60s);
+    }
+
     void
     testCompleteLedgerRange(FeatureBitset features)
     {
@@ -138,11 +160,18 @@ class LedgerMaster_test : public beast::unit_test::Suite
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
-        BEAST_EXPECT(store.rendezvous());
+        BEAST_EXPECT(syncStore(env));
         LedgerIndex lastRotated = store.getLastRotated();
         BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
-        BEAST_EXPECTS(lastRotated == 3, to_string(lastRotated));
+        // The store initializes lastRotated from the first validated ledger it
+        // observes. onLedgerClosed() keeps only the most recent ledger in
+        // newLedger_, so validated ledgers that arrive while the store thread
+        // is still busy are coalesced away. Which of the existing complete
+        // ledgers therefore wins is a timing detail; all this test needs is
+        // that it is one of them. Everything below derives from the observed
+        // value rather than assuming a particular one.
+        BEAST_EXPECTS(lastRotated >= minSeq && lastRotated <= maxSeq, to_string(lastRotated));
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
         BEAST_EXPECT(minSeq + 1 > maxSeq - 1);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
@@ -157,7 +186,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
                 env(noop(alice));
             }
             env.close();
-            BEAST_EXPECT(store.rendezvous());
+            BEAST_EXPECT(syncStore(env));
 
             ++maxSeq;
 
@@ -173,7 +202,19 @@ class LedgerMaster_test : public beast::unit_test::Suite
             expectedRange << minSeq << "-" << maxSeq;
             BEAST_EXPECTS(lm.getCompleteLedgers() == expectedRange.str(), lm.getCompleteLedgers());
             BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
-            BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
+            // missingFromCompleteLedgerRange() treats first > last as a
+            // precondition violation and aborts a Debug build via UNREACHABLE.
+            // The range can only collapse if this test's model of minSeq /
+            // maxSeq has desynced from the store, so report that as a failure
+            // instead of taking down the whole unit test job.
+            if (minSeq + 1 <= maxSeq - 1)
+            {
+                BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
+            }
+            else
+            {
+                BEAST_EXPECTS(false, to_string(minSeq) + "-" + to_string(maxSeq));
+            }
             BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
             BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 2, maxSeq - 2) == 2);
             BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
