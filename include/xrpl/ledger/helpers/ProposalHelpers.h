@@ -51,7 +51,7 @@ proposalOwnerCount(STObject const& proposedTx)
  * TODO: cover ttTRANSACTION_PROPOSAL_SIGN once that transaction exists.
  */
 bool
-isValidProposal(STObject const& proposedTx);
+isValidProposalTxnType(STObject const& proposedTx);
 
 /**
  * Whether the proposed transaction carries any signature field.

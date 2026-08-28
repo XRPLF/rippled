@@ -41,7 +41,7 @@ constexpr auto kProposalTxTypes = std::to_array<TxType>({
 }  // namespace
 
 bool
-isValidProposal(STObject const& proposedTx)
+isValidProposalTxnType(STObject const& proposedTx)
 {
     auto const type = proposedTx.getFieldU16(sfTransactionType);
 

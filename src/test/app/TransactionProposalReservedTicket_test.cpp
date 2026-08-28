@@ -877,22 +877,23 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
     run() override
     {
         using namespace jtx;
-        testUnrelatedSpendBlocked(testableAmendments());
-        testMatchingPayloadExecutes(testableAmendments());
-        testCancelFreesTicket(testableAmendments());
-        testMatchingTecStillCleansUp(testableAmendments());
-        testOtherAccountsSameNumberedTicket(testableAmendments());
-        testProposerIsTarget(testableAmendments());
-        testBatchProposal(testableAmendments());
-        testMultiAccountBatchCompletes(testableAmendments());
-        testCounterpartySignatureMatches(testableAmendments());
-        testSponsorSignatureMatches(testableAmendments());
-        testInnerBatchSpendBlocked(testableAmendments());
-        testTerminalStillReservesTicket(testableAmendments());
-        testSponsoredReserveAutoDelete(testableAmendments());
-        testTargetAccountDeleted(testableAmendments());
-        testTargetDeletionRefundsEachOwner(testableAmendments());
-        testProposalBlocksOwnerAccountDelete(testableAmendments());
+        auto const all = testableAmendments();
+        testUnrelatedSpendBlocked(all);
+        testMatchingPayloadExecutes(all);
+        testCancelFreesTicket(all);
+        testMatchingTecStillCleansUp(all);
+        testOtherAccountsSameNumberedTicket(all);
+        testProposerIsTarget(all);
+        testBatchProposal(all);
+        testMultiAccountBatchCompletes(all);
+        testCounterpartySignatureMatches(all);
+        testSponsorSignatureMatches(all);
+        testInnerBatchSpendBlocked(all);
+        testTerminalStillReservesTicket(all);
+        testSponsoredReserveAutoDelete(all);
+        testTargetAccountDeleted(all);
+        testTargetDeletionRefundsEachOwner(all);
+        testProposalBlocksOwnerAccountDelete(all);
     }
 };
 

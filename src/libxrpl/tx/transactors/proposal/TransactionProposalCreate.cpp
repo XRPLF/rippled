@@ -83,7 +83,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // no batch inner transactions — and, if it is a Batch, none of its own
     // inner transactions may be a nested proposal or a pseudo-transaction
     // either.
-    if (!proposal::isValidProposal(proposedTx))
+    if (!proposal::isValidProposalTxnType(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn is not "
                                "independently submittable.";
