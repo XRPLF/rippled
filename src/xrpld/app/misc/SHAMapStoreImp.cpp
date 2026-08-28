@@ -122,7 +122,9 @@ SHAMapStoreImp::SHAMapStoreImp(
                 Keys::kCacheMb, std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
         }
 
-        if (!section.exists(Keys::kFilterBits) && config.cacheMemoryBudget() != 0)
+        // 32 GB is the budget the deprecated medium node_size tier maps to,
+        // preserving the old medium-and-up gate for the bloom filter.
+        if (!section.exists(Keys::kFilterBits) && config.cacheMemoryBudget() >= (32ull << 30))
             section.set(Keys::kFilterBits, "10");
     }
 
