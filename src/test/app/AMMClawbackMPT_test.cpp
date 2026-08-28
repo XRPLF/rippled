@@ -2225,7 +2225,6 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         env.close();
 
         env(fset(gw, asfAllowTrustLineClawback));
-        env(fset(gw, asfDefaultRipple));
         env.close();
 
         // The paired MPT: transferable so an AMM can hold it, and no
