@@ -19,8 +19,10 @@ BuildRequires: systemd-rpm-macros
 
 %undefine _debugsource_packages
 %debug_package
-# Intentionally trade larger RPM artifacts for faster package validation.
-%global _binary_payload w.ufdio
+# Level 3 rather than the el9 default of 19: it shrinks the multi-gigabyte
+# debuginfo package roughly fourfold in about a second, where 19 would spend
+# minutes on it.
+%global _binary_payload w3.zstdio
 %global _find_debuginfo_dwz_opts %{nil}
 
 %build_mtime_policy clamp_to_source_date_epoch

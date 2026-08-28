@@ -1,5 +1,3 @@
-// TODO: consider moving these to separate files (and figure out the build)
-
 #include <test/app/wasm_fixtures/fixtures.h>
 
 #include <string>

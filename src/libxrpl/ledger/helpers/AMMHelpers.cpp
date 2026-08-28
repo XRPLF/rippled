@@ -11,6 +11,8 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -633,7 +635,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
     return asset.visit(
         [&](MPTIssue const& issue) {
             if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID));
-                sle && !isFrozen(view, ammAccountID, issue))
+                sle && !isFrozen(view, ammAccountID, *sle))
                 return STAmount{issue, (*sle)[sfMPTAmount]};
             return STAmount{asset};
         },
@@ -689,6 +691,12 @@ deleteAMMTrustLines(
 
                 return {deleteAMMTrustLine(sb, sleItem, ammAccountID, j), SkipEntry::No};
             }
+            // A credential naming the pseudo-account as subject can't be
+            // accepted or deleted by it and would otherwise permanently pin the
+            // AMM. Clean it up here, inside the same bounded walk, so the
+            // pinned AMM can still be deleted.
+            if (sb.rules().enabled(fixCleanup3_4_0) && nodeType == ltCREDENTIAL)
+                return {credentials::deleteSLE(sb, sleItem, j), SkipEntry::No};
             // LCOV_EXCL_START
             JLOG(j.error()) << "deleteAMMObjects: deleting non-trustline or non-MPT " << nodeType;
             return {tecINTERNAL, SkipEntry::No};
@@ -766,6 +774,8 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
         // LCOV_EXCL_STOP
     }
 
+    // deleteAMMTrustLines also removes any credentials pinned to the AMM
+    // pseudo-account, within its bounded walk.
     if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, kMaxDeletableAmmTrustLines, j);
         !isTesSuccess(ter))
         return ter;
@@ -907,6 +917,11 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 ++nMPT;
                 continue;
             }
+            // A credential naming the pseudo-account as subject can be pinned
+            // to its owner directory. Ignore it here; deleteAMMTrustLines
+            // removes it when the AMM is deleted.
+            if (view.rules().enabled(fixCleanup3_4_0) && entryType == ltCREDENTIAL)
+                continue;
             if (entryType != ltRIPPLE_STATE)
                 return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const lowLimit = sle->getFieldAmount(sfLowLimit);

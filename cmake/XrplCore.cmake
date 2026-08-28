@@ -51,6 +51,8 @@ target_compile_options(
 
 target_link_libraries(xrpl.libpb PUBLIC protobuf::libprotobuf gRPC::grpc++)
 
+add_dependencies(tidy_prerequisites xrpl.libpb)
+
 # TODO: Clean up the number of library targets later.
 add_library(xrpl.imports.main INTERFACE)
 
@@ -67,7 +69,6 @@ target_link_libraries(
         Xrpl::opts
         Xrpl::syslibs
         secp256k1::secp256k1
-        wasmi::wasmi
         xrpl.libpb
         xxHash::xxhash
         $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
@@ -206,7 +207,11 @@ target_link_libraries(
 )
 
 add_module(xrpl tx)
-target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
+target_link_libraries(
+    xrpl.libxrpl.tx
+    PUBLIC xrpl.libxrpl.ledger xrpl_wasm_vm_ffi_cxxbridge
+)
+add_dependencies(xrpl.libxrpl.tx xrpl_crates)
 
 add_module(xrpl consensus)
 target_link_libraries(

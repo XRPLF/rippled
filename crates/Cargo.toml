@@ -1,0 +1,21 @@
+[workspace]
+members = [
+    "xrpl-wasm-vm-ffi",
+    "xrpl-wasm-vm",
+    "xrpl-wasm-testkit",
+    "xrpl-host-functions",
+    "xrpl-host-functions-macros",
+]
+resolver = "3"
+
+[workspace.dependencies]
+cxx = { version = "1.0.199", features = ["c++20"] }
+
+[workspace.package]
+edition = "2024"
+
+[profile.release]
+opt-level = 3
+overflow-checks = true
+lto = true
+debug = true
