@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -225,6 +226,8 @@ TER
 LoanSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
+    auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
+    auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
 
     {
         // Check for numeric overflow of the schedule before we load any
@@ -238,9 +241,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - getStartDate(ctx.view);
-
-        auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
-        auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
         auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDefaultGracePeriod);
 
         // The grace period can't be larger than the interval. Check it first,
@@ -308,6 +308,32 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     {
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(ctx.view, vault);
+        if (phase == VaultPhase::Subscription)
+        {
+            JLOG(ctx.j.warn()) << "Vault is still in the subscription phase.";
+            return tecTOO_SOON;
+        }
+        if (phase == VaultPhase::Redemption)
+        {
+            JLOG(ctx.j.warn()) << "Vault has entered the redemption phase.";
+            return tecEXPIRED;
+        }
+        if (phase == VaultPhase::Investment)
+        {
+            auto const finalPayment =
+                std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total);
+            if (finalPayment >= vault->at(sfRedemptionDate))
+            {
+                JLOG(ctx.j.warn()) << "Final loan payment date is on or after "
+                                      "the vault's redemption date.";
+                return tecNO_PERMISSION;
+            }
+        }
     }
 
     if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
