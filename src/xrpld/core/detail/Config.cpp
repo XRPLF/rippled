@@ -111,7 +111,7 @@ namespace xrpl {
 
 // clang-format off
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
-inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
+inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 12>
 kSizedItems
 {{
     // FIXME: We should document each of these items, explaining exactly
@@ -130,8 +130,7 @@ kSizedItems
     {SizedItem::LgrDbCache,         {{      4,       8,      16,      32,     128 }}},
     {SizedItem::OpenFinalLimit,     {{      8,      16,      32,      64,     128 }}},
     {SizedItem::BurstSize,          {{      4,       8,      16,      32,      48 }}},
-    {SizedItem::RamSizeGb,          {{      6,       8,      12,      24,       0 }}},
-    {SizedItem::AccountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
+    {SizedItem::RamSizeGb,          {{      6,       8,      12,      24,       0 }}}
 }};
 // clang-format on
 
