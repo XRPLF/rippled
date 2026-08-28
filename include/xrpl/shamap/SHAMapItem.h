@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/Slice.h>
@@ -15,12 +14,13 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <new>
 #include <type_traits>
 
 namespace xrpl {
 
 // an item stored in a SHAMap
-class SHAMapItem : public CountedObject<SHAMapItem>
+class alignas(8) SHAMapItem : public CountedObject<SHAMapItem>
 {
     // These are used to support boost::intrusive_ptr reference counting
     // These functions are used internally by boost::intrusive_ptr to handle
@@ -101,15 +101,15 @@ namespace detail {
 // The slab cutoffs and the number of megabytes per allocation are customized
 // based on the number of objects of each size we expect to need at any point
 // in time and with an eye to minimize the number of slack bytes in a block.
-inline SlabAllocatorSet<SHAMapItem> gSlabber({
-    {  128, megabytes(std::size_t(60)) },
-    {  192, megabytes(std::size_t(46)) },
-    {  272, megabytes(std::size_t(60)) },
-    {  384, megabytes(std::size_t(56)) },
-    {  564, megabytes(std::size_t(40)) },
-    {  772, megabytes(std::size_t(46)) },
-    { 1052, megabytes(std::size_t(60)) },
-});
+inline constinit slab::Allocator<SHAMapItem, slab::HeapFallback,
+    slab::Config<1000000, 128>,
+    slab::Config<1000000, 296>,
+    slab::Config<125000, 392>,
+    slab::Config<125000, 520>,
+    slab::Config<62500, 760>,
+    slab::Config<62500, 856>,
+    slab::Config<31250, 1048>
+> gSlabber;
 // clang-format on
 
 }  // namespace detail
@@ -150,23 +150,13 @@ makeShamapitem(uint256 const& tag, Slice data)
     XRPL_ASSERT(
         data.size() <= megabytes<std::size_t>(16), "xrpl::makeShamapitem : maximum input size");
 
-    // NOLINTNEXTLINE(misc-const-correctness)
-    std::uint8_t* raw = detail::gSlabber.allocate(data.size());
-
-    // If we can't grab memory from the slab allocators, we fall back to
-    // the standard library and try to grab a precisely-sized memory block:
-    if (raw == nullptr)
-        raw = new std::uint8_t[sizeof(SHAMapItem) + data.size()];
-
     // We do not increment the reference count here on purpose: the
-    // constructor of SHAMapItem explicitly sets it to 1. We use the fact
-    // that the refcount can never be zero before incrementing as an
-    // invariant.
-    return {new (raw) SHAMapItem{tag, data}, false};
-}
+    // constructor of SHAMapItem explicitly sets it to 1.
+    if (auto raw = detail::gSlabber.allocate(data.size())) [[likely]]
+        return {new (raw) SHAMapItem{tag, data}, false};
 
-static_assert(alignof(SHAMapItem) != 40);
-static_assert(alignof(SHAMapItem) == 8 || alignof(SHAMapItem) == 4);
+    Throw<std::bad_alloc>();
+}
 
 inline boost::intrusive_ptr<SHAMapItem>
 makeShamapitem(SHAMapItem const& other)
