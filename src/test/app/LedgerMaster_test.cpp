@@ -129,12 +129,10 @@ class LedgerMaster_test : public beast::unit_test::Suite
     [[nodiscard]] static bool
     syncStore(jtx::Env& env)
     {
-        using namespace std::chrono_literals;
-
         env.app().getJobQueue().rendezvous();
         // Use the timeout overload so that a store which never finishes fails
         // this test rather than hanging the entire unit test job.
-        return env.app().getSHAMapStore().rendezvous(60s);
+        return env.app().getSHAMapStore().rendezvous(std::chrono::seconds{60});
     }
 
     void
