@@ -472,8 +472,6 @@ public:
               getIoContext())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
     {
-        initAccountIdCache(config_->getValueFor(SizedItem::AccountIdCacheSize));
-
         add(resourceManager_.get());
 
         //
