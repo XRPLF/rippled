@@ -1649,10 +1649,9 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
         auto cfg = envconfig([](std::unique_ptr<Config> cfg) {
             auto& section = cfg->section(Sections::kTransactionQueue);
-            // Price above two transactions per ledger, not the standalone default of 1000.
+            // Price above two transactions per ledger, not the standalone
+            // default of 1000, so the three fillers below escalate the fee.
             section.set(Keys::kMinimumTxnInLedgerStandalone, "2");
-            // Hold that target across closes, which would otherwise ratchet it upward.
-            section.set(Keys::kNormalConsensusIncreasePercent, "0");
             return cfg;
         });
         Env env{*this, std::move(cfg), features};
