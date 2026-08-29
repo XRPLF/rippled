@@ -41,12 +41,13 @@ proposalOwnerCount(STObject const& proposedTx)
  * Whether the proposed transaction is independently submittable through the
  * ordinary multi-sign path: not a proposal transaction itself, not a
  * pseudo-transaction, not itself flagged as someone else's inner batch
- * transaction, and — if it is a Batch — none of its own inner transactions is
- * a proposal, a pseudo-transaction, or a nested Batch. A Batch inner
- * transaction cannot itself be pseudo or a nested Batch (preflight0 rejects
- * the pseudo/tfInnerBatchTxn combination and STTx construction rejects inner
- * Batches), but those guards live outside this feature, so they are checked
- * again here rather than relied upon.
+ * transaction, and — if it is a Batch — every one of its own inner
+ * transactions carries a TransactionType and is neither a proposal, a
+ * pseudo-transaction, nor a nested Batch. A Batch inner transaction cannot
+ * lack a TransactionType, be pseudo, or be a nested Batch (STTx construction
+ * rejects a typeless inner and an inner Batch, and preflight0 rejects the
+ * pseudo/tfInnerBatchTxn combination), but those guards live outside this
+ * feature, so they are checked again here rather than relied upon.
  *
  * TODO: cover ttTRANSACTION_PROPOSAL_SIGN once that transaction exists.
  */

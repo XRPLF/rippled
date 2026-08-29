@@ -60,8 +60,11 @@ isValidProposalTxnType(STObject const& proposedTx)
         STArray const& innerTxns = proposedTx.getFieldArray(sfRawTransactions);
         for (STObject const& inner : innerTxns)
         {
+            // The only production caller reaches this walk through STTx
+            // construction, which rejects a typeless inner first, so this is
+            // re-checked rather than relied upon.
             if (!inner.isFieldPresent(sfTransactionType))
-                continue;
+                return false;
 
             auto const innerType = inner.getFieldU16(sfTransactionType);
 
