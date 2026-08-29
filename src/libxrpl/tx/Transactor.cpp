@@ -328,10 +328,9 @@ Transactor::preflight2(PreflightContext const& ctx)
 
     auto const sigValid = checkValidity(ctx.registry.get().getHashRouter(), ctx.tx, ctx.rules);
     if (sigValid.first == Validity::SigBad)
-    {  // LCOV_EXCL_START
+    {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
         return temINVALID;
-        // LCOV_EXCL_STOP
     }
 
     // Do not add any checks after this point that are relevant for

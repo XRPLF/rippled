@@ -4,30 +4,49 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/proposal.h>
+#include <test/jtx/regkey.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -53,6 +72,21 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
         env(proposal::create(proposer, payload, proposal::expiration(env, 1000s)));
         env.close();
+    }
+
+    // Rebuild a transaction from a copy of it whose fields have been edited.
+    // Editing an STTx in place would leave getTransactionID — and the
+    // signature verdict the HashRouter caches under it — describing the
+    // transaction before the edit. Going through the bytes rather than
+    // STTx{STObject&&} is what makes this work on a copy of an already
+    // templated transaction: applyTemplate refuses a defaulted field that is
+    // explicitly present, which such a copy carries, and serializing omits it.
+    static std::shared_ptr<STTx const>
+    rebuilt(STObject const& tx)
+    {
+        Serializer s;
+        tx.add(s);
+        return std::make_shared<STTx const>(SerialIter{s.slice()});
     }
 
     // A transaction that is not the proposed transaction cannot consume the
@@ -873,6 +907,824 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             jss::TransactionProposal);
     }
 
+    // A proposal reserves a ticket, not the target's signing authority: the
+    // target stays free to rewrite its SignerList while signatures are being
+    // collected. Signatures gathered against the old list then no longer
+    // authorize the payload, and the payload's Fee was fixed at creation, so
+    // it cannot buy more of them. None of these failures claims a fee or
+    // applies anything, so the ticket stays reserved and the payload keeps
+    // whatever signing routes the rewritten list still leaves it
+    // (On-Chain Cosigner spec §4.2.1).
+    void
+    testSignerListChangedUnderProposal(FeatureBitset features)
+    {
+        testcase("target's SignerList changes under a stored proposal");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        // A signer dropped from the list can no longer contribute.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(10000), alice, target, bob, carol);
+            env.close();
+
+            env(signers(target, 2, {{alice, 1}, {bob, 1}, {carol, 1}}));
+            env.close();
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            auto const msigFee = env.current()->fees().base * 3;
+            json::Value proposedTx = pay(target, bob, XRP(1));
+            proposedTx[jss::Fee] = std::to_string(msigFee.drops());
+            json::Value const payload = proposal::unsignedPayload(env, proposedTx, ticketSeq);
+            makeProposal(env, alice, payload);
+
+            // The target drops carol after the proposal is stored.
+            env(signers(target, 2, {{alice, 1}, {bob, 1}}));
+            env.close();
+
+            env(payload, Msig(bob, carol), Ter(tefBAD_SIGNATURE));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+
+            // Only the dropped signer is gone, not the route: the signers
+            // still on the list meet the unchanged quorum, and because two
+            // signatures is what the Fee budgeted for, the payload completes.
+            env(payload, Msig(alice, bob));
+            env.close();
+
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+
+        // A quorum raised beyond what the fixed Fee can pay for. That closes
+        // the multisign route the Fee was budgeted for, but not the proposal:
+        // a SignerList does not revoke the master key, and signing singly
+        // costs less than the Fee already covers.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(10000), alice, target, bob, carol);
+            env.close();
+
+            env(signers(target, 1, {{alice, 1}, {bob, 1}, {carol, 1}}));
+            env.close();
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            auto const msigFee = env.current()->fees().base * 2;
+            json::Value proposedTx = pay(target, bob, XRP(1));
+            proposedTx[jss::Fee] = std::to_string(msigFee.drops());
+            json::Value const payload = proposal::unsignedPayload(env, proposedTx, ticketSeq);
+            makeProposal(env, alice, payload);
+
+            env(signers(target, 3, {{alice, 1}, {bob, 1}, {carol, 1}}));
+            env.close();
+
+            // The single signature the Fee paid for no longer reaches quorum.
+            env(payload, Msig(bob), Ter(tefBAD_QUORUM));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+
+            // And the three signatures that would reach it cost more than the
+            // Fee fixed at creation. They do satisfy the raised quorum, and
+            // checkSign runs ahead of checkFee, so nothing is masked here: a
+            // three-signer multisign is priced at four base fees against the
+            // two the payload fixed, and checkFee is what rejects it.
+            env(payload, Msig(alice, bob, carol), Ter(telINSUF_FEE_P));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+
+            // What closed is the multisign route, not the proposal. Raising a
+            // quorum does not revoke the master key, and one signature is
+            // priced at a single base fee, well inside what the Fee covers.
+            auto const bobBefore = env.balance(bob);
+            env(payload, Sig(target));
+            env.close();
+
+            BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1));
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+    }
+
+    // The signature-presence checks that TapProposal skips at creation time
+    // are not skipped at submission (On-Chain Cosigner spec §5.3.1.2). Each is
+    // a tem, so the submission claims no fee: the ticket keeps its
+    // reservation and the proposal stays put.
+    void
+    testDeferredSignatureChecksFireOnSubmission(FeatureBitset features)
+    {
+        testcase("deferred signature-presence checks fire at submission");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        // LoanSet's CounterpartySignature. testCounterpartySignatureMatches
+        // covers the completed submission; this covers its absence, which is
+        // what LoanSet::preflight stops checking under TapProposal.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};  // the borrower
+            Account const lender{"lender"};
+            env.fund(XRP(10000), alice, target, lender);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            json::Value tx = loan::set(target, uint256{1}, 1'000);
+            tx[sfCounterparty.getJsonName()] = lender.human();
+            json::Value const payload = proposal::unsignedPayload(env, tx, ticketSeq);
+            makeProposal(env, alice, payload);
+
+            env(payload, Ter(temBAD_SIGNER));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        }
+
+        // An account-level SponsorshipTransfer's SponsorSignature. Only the
+        // account-level form defers this: it needs no ObjectID, which is what
+        // distinguishes it from object-level sponsorship.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const backer{"backer"};
+            env.fund(XRP(10000), alice, target, backer);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            json::Value tx = sponsor::transfer(target, tfSponsorshipCreate);
+            tx[sfSponsor.getJsonName()] = backer.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
+            json::Value const payload = proposal::unsignedPayload(env, tx, ticketSeq);
+            makeProposal(env, alice, payload);
+
+            env(payload, Ter(temMALFORMED));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        }
+
+        // Reassignment is the other way into that check: creating and
+        // reassigning are gated by one account-level condition, so this pins
+        // the flags the check answers for rather than a second code path.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const backer{"backer"};
+            env.fund(XRP(10000), alice, target, backer);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            json::Value tx = sponsor::transfer(target, tfSponsorshipReassign);
+            tx[sfSponsor.getJsonName()] = backer.human();
+            tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
+            json::Value const payload = proposal::unsignedPayload(env, tx, ticketSeq);
+            makeProposal(env, alice, payload);
+
+            env(payload, Ter(temMALFORMED));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        }
+    }
+
+    // What a tem submission costs the proposal. Creation cannot store a
+    // payload that fails its own preflight, so the only payload rejected
+    // unaltered is one whose check creation defers: here a multi-account
+    // Batch, submitted without the BatchSigners entry it will eventually be
+    // given. payloadMatches is asserted first, so the rejection cannot be read
+    // as the test having submitted something else.
+    void
+    testTemSubmissionConsumesNothing(FeatureBitset features)
+    {
+        testcase("a tem submission consumes neither ticket nor proposal");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, target, bob, carol);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        json::Value const payload = proposal::unsignedBatch(
+            env,
+            target,
+            ticketSeq,
+            tfAllOrNothing,
+            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+             proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob))});
+        makeProposal(env, alice, payload);
+
+        auto const sle = proposal::entry(env, target, ticketSeq);
+        if (!BEAST_EXPECT(sle))
+            return;
+
+        // The transaction about to be rejected is the proposal's own payload.
+        auto const jt = env.jt(payload);
+        if (!BEAST_EXPECT(jt.stx))
+            return;
+        BEAST_EXPECT(
+            xrpl::proposal::payloadMatches(sle->getFieldObject(sfProposedTransaction), *jt.stx));
+
+        auto const targetBefore = env.balance(target);
+        auto const bobBefore = env.balance(bob);
+        auto const carolBefore = env.balance(carol);
+
+        env(payload, Ter(temBAD_SIGNER));
+        env.close();
+
+        // A tem is rejected before it can claim a fee, so the target paid
+        // nothing for the attempt and no inner transaction ran.
+        BEAST_EXPECT(env.balance(target) == targetBefore);
+        BEAST_EXPECT(env.balance(bob) == bobBefore);
+        BEAST_EXPECT(env.balance(carol) == carolBefore);
+
+        // The proposal is still stored, still holding its reserve, and the
+        // ticket still exists.
+        BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
+
+        // And the proposal still completes on that same ticket once the
+        // signatures it was waiting for arrive, which is what makes the
+        // rejection above a no-op rather than a loss.
+        env(payload, batch::Sig(bob));
+        env.close();
+
+        BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1) - XRP(2));
+        BEAST_EXPECT(env.balance(carol) == carolBefore + XRP(2));
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // Skipping Batch::preflightSigValidated at creation defers every shape of
+    // BatchSigners error, not just an absent array.
+    // testMultiAccountBatchCompletes covers the absent case; these are the
+    // malformed ones, each rejected at submission with the ticket and the
+    // proposal untouched.
+    void
+    testMalformedBatchSignersOnSubmission(FeatureBitset features)
+    {
+        testcase("malformed BatchSigners rejected at submission");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, target, bob, carol);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+        // Inners from three accounts, so the completed Batch needs an entry
+        // from each of bob and carol.
+        json::Value const payload = proposal::unsignedBatch(
+            env,
+            target,
+            ticketSeq,
+            tfAllOrNothing,
+            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+             proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob)),
+             proposal::innerTx(pay(carol, bob, XRP(1)), env.seq(carol))});
+        makeProposal(env, alice, payload);
+
+        auto const stillTicketReservedForProposal = [&]() {
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
+        };
+
+        // Batch signers are checked against the required signers positionally,
+        // both sorted by account ID, so which malformation a given array trips
+        // depends on this ordering. Pin it: if these fixed jtx accounts ever
+        // sort differently, that should fail here rather than quietly move the
+        // cases below onto a different branch. The outer account is included
+        // because the first case below relies on it sorting ahead of bob.
+        BEAST_EXPECT(target.id() < alice.id() && alice.id() < carol.id() && carol.id() < bob.id());
+
+        // The outer account may not sign for itself.
+        env(payload, batch::Sig(target, bob), Ter(temBAD_SIGNER));
+        env.close();
+        stillTicketReservedForProposal();
+
+        // A duplicated signer. It has to be carol, the first required signer:
+        // a duplicated bob would be rejected as a mismatch against carol
+        // before the array's second entry is ever examined.
+        env(payload, batch::Sig(carol, carol), Ter(temBAD_SIGNER));
+        env.close();
+        stillTicketReservedForProposal();
+
+        // An unsorted pair. batch::Sig sorts what it is given, so the array
+        // has to be swapped after the fact to express this. Swapping the two
+        // required signers would not reach the sort check either, so the pair
+        // is carol and alice: carol matches, then alice sorts below her.
+        {
+            auto jt = env.jt(payload, batch::Sig(alice, carol));
+            auto const first = jt.jv[sfBatchSigners.jsonName][0u];
+            auto const second = jt.jv[sfBatchSigners.jsonName][1u];
+            jt.jv[sfBatchSigners.jsonName][0u] = second;
+            jt.jv[sfBatchSigners.jsonName][1u] = first;
+
+            env(jt.jv, Ter(temBAD_SIGNER));
+            env.close();
+            stillTicketReservedForProposal();
+        }
+
+        // Correctly formed, the same proposal still completes: the rejections
+        // above are about the signers array, not the stored payload.
+        env(payload, batch::Sig(bob, carol));
+        env.close();
+
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // Create only rejects a payload whose LastLedgerSequence has *already*
+    // passed (tecEXPIRED). A bound that passes afterwards is a different
+    // matter, and the boundary does not line up: the proposal's own terminal
+    // rule triggers at view.seq() >= LastLedgerSequence, while
+    // checkPriorTxAndLastLedger rejects only at view.seq() >
+    // LastLedgerSequence. So there is exactly one ledger in which the proposal
+    // is terminal — anyone may cancel it — and its payload still submits.
+    void
+    testPayloadLastLedgerSequencePasses(FeatureBitset features)
+    {
+        testcase("payload's LastLedgerSequence passes while the proposal waits");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        // One ledger past the bound: the payload can no longer be submitted,
+        // and being a tef it takes neither the ticket nor the proposal with
+        // it. Cancel is the only exit left.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, target, bob);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            std::uint32_t const lastLedgerSeq = env.current()->seq() + 5;
+            json::Value payload =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+            payload[sfLastLedgerSequence.getJsonName()] = lastLedgerSeq;
+            makeProposal(env, alice, payload);
+
+            while (env.current()->seq() <= lastLedgerSeq)
+                env.close();
+
+            env(payload, Ter(tefMAX_LEDGER));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        }
+
+        // Exactly at the bound: terminal by the proposal's reckoning, still
+        // submittable by the transactor's, so the payload applies and cleans
+        // up as usual.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, target, bob);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            std::uint32_t const lastLedgerSeq = env.current()->seq() + 5;
+            json::Value payload =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+            payload[sfLastLedgerSequence.getJsonName()] = lastLedgerSeq;
+            makeProposal(env, alice, payload);
+
+            while (env.current()->seq() < lastLedgerSeq)
+                env.close();
+
+            auto const bobBefore = env.balance(bob);
+            env(payload);
+            env.close();
+
+            BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1));
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+    }
+
+    // Matching the stored payload is not authority to submit it. SigningPubKey
+    // and TxnSignature are excluded from the match, so the submission's key is
+    // checked on its own terms — and the target may change which keys count
+    // after the proposal is stored.
+    void
+    testSubmissionSigningAuthority(FeatureBitset features)
+    {
+        testcase("submission signed by an unauthorized or disabled key");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        // A key with no authority over the target. The payload still matches;
+        // it is the authority that is missing.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, target, bob);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            json::Value const payload =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+            makeProposal(env, alice, payload);
+
+            env(payload, Sig(bob), Ter(tefBAD_AUTH));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        }
+
+        // The target disables its master key after the proposal is stored. The
+        // key that would have submitted the payload no longer can.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, target, bob);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            json::Value const payload =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+            makeProposal(env, alice, payload);
+
+            // Disabling the master key requires another way in first.
+            env(regkey(target, bob));
+            env(fset(target, asfDisableMaster), Sig(target));
+            env.close();
+            // Signed with the master key the proposal was made under, the
+            // payload is now refused. The key has to be named explicitly:
+            // left to autofill, the submission would take the regular key
+            // set above and succeed, proving nothing.
+            env(payload, Sig(target), Ter(tefMASTER_DISABLED));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+
+            // The regular key set above is a route the payload can still take,
+            // so this proposal is stalled rather than dead.
+            auto const bobBefore = env.balance(bob);
+            env(payload, Sig(bob));
+            env.close();
+
+            BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1));
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+    }
+
+    // The payload's Fee is chosen at creation and is part of what a submission
+    // must match, so it can never be raised. A proposal that under-budgets the
+    // signatures it will need is therefore permanently unsubmittable. Both
+    // unsignedBatch's numSigners parameter and the LoanSet Fee multiplier
+    // exist to avoid this; these are the cases that walk into it.
+    void
+    testFeeFixedAtCreationCannotCoverSignatures(FeatureBitset features)
+    {
+        testcase("fee fixed at creation cannot cover the signatures needed");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        // A multi-account Batch that budgeted for no BatchSigners at all.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(10000), alice, target, bob, carol);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            json::Value const payload = proposal::unsignedBatch(
+                env,
+                target,
+                ticketSeq,
+                tfAllOrNothing,
+                {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+                 proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob))},
+                0u);
+            makeProposal(env, alice, payload);
+
+            // Bare, it cannot preflight: the signer entry is still required.
+            env(payload, Ter(temBAD_SIGNER));
+            env.close();
+
+            // With the entry it preflights, and then cannot pay for it.
+            env(payload, batch::Sig(bob), Ter(telINSUF_FEE_P));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
+        }
+
+        // A proposed LoanSet left at the single base fee, which cannot cover
+        // the CounterpartySignature it is going to need. unsignedPayload
+        // stamps the single base fee when the caller does not choose one,
+        // while LoanSet prices each counterparty signer at one further base
+        // fee, so the payload is short by exactly one.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};  // the borrower
+            Account const lender{"lender"};
+            env.fund(XRP(10000), alice, target, lender);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+            json::Value tx = loan::set(target, uint256{1}, 1'000);
+            tx[sfCounterparty.getJsonName()] = lender.human();
+            json::Value const payload = proposal::unsignedPayload(env, tx, ticketSeq);
+            makeProposal(env, alice, payload);
+
+            // The shortfall is what the case turns on, so pin it — read off
+            // the stored proposal rather than the JSON built above.
+            auto const sle = proposal::entry(env, target, ticketSeq);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(
+                sle->getFieldObject(sfProposedTransaction).getFieldAmount(sfFee).xrp() ==
+                env.current()->fees().base);
+
+            env(payload, Sig(sfCounterpartySignature, lender), Ter(telINSUF_FEE_P));
+            env.close();
+
+            BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+        }
+    }
+
+    // SigningPubKey and TxnSignature are excluded from the payload match, so a
+    // submission may carry whatever it likes in them and still match. Nothing
+    // about holding a proposal excuses the content of those fields: a key that
+    // is not a key is refused in preflight, and a well-formed signature that
+    // does not verify in preflight2.
+    //
+    // These go through xrpl::apply because jtx would overwrite the signature
+    // fields when it signs, and the submit path rejects a bad signature itself
+    // before a transactor sees it. The OpenView is discarded either way, so
+    // only the returned ter and applied flag are evidence here; the
+    // reservation surviving a tem is covered by
+    // testTemSubmissionConsumesNothing.
+    void
+    testSubmissionSignatureContent(FeatureBitset features)
+    {
+        testcase("submission carrying malformed signature content");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        // A SigningPubKey that is not a public key at all.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, target, bob);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            json::Value const payload =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+            makeProposal(env, alice, payload);
+
+            auto jt = env.jt(payload);
+            if (!BEAST_EXPECT(jt.stx))
+                return;
+
+            STObject mutated{*jt.stx};
+            std::string const badKey{"badkey"};
+            mutated.at(sfSigningPubKey) = makeSlice(badKey);
+            auto const stx = rebuilt(mutated);
+
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
+                auto const result = xrpl::apply(env.app(), view, *stx, TapNone, j);
+                BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
+                BEAST_EXPECT(!result.applied);
+                return result.applied;
+            });
+        }
+
+        // A signature that is structurally fine but was made over a different
+        // key's identity: bob's signature presented under the target's
+        // SigningPubKey. This is the case a malformed-key check cannot catch.
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, target, bob);
+            env.close();
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            json::Value const payload =
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
+            makeProposal(env, alice, payload);
+
+            auto jt = env.jt(payload);
+            auto jtOther = env.jt(payload, Sig(bob));
+            if (!BEAST_EXPECT(jt.stx && jtOther.stx))
+                return;
+
+            STObject mutated{*jt.stx};
+            Blob const otherSig = jtOther.stx->getFieldVL(sfTxnSignature);
+            mutated.at(sfTxnSignature) = makeSlice(otherSig);
+            auto const stx = rebuilt(mutated);
+
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
+                auto const result = xrpl::apply(env.app(), view, *stx, TapNone, j);
+                BEAST_EXPECT(result.ter == temINVALID);
+                BEAST_EXPECT(!result.applied);
+                return result.applied;
+            });
+        }
+    }
+
+    // The other way a fixed Fee stops being enough: the Fee does not change,
+    // the ledger's price does. This one is not fatal, and it is not
+    // telINSUF_FEE_P either — the queue holds the payload at terQUEUED rather
+    // than rejecting it, and applies it once the escalated fee drops. So an
+    // expensive ledger delays a completed proposal; it does not strand one.
+    void
+    testOpenLedgerFeeEscalation(FeatureBitset features)
+    {
+        testcase("open-ledger fee escalation only delays the payload");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        auto cfg = envconfig([](std::unique_ptr<Config> cfg) {
+            auto& section = cfg->section(Sections::kTransactionQueue);
+            // Price above two transactions per ledger, not the standalone default of 1000.
+            section.set(Keys::kMinimumTxnInLedgerStandalone, "2");
+            // Hold that target across closes, which would otherwise ratchet it upward.
+            section.set(Keys::kNormalConsensusIncreasePercent, "0");
+            return cfg;
+        });
+        Env env{*this, std::move(cfg), features};
+
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+
+        // Funded one at a time: with a target of two transactions per ledger,
+        // funding them together would itself escalate the fee.
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), target);
+        env.close();
+        env.fund(XRP(10000), bob);
+        env.close();
+
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+
+        // Name the Fee rather than letting fillFee supply it: the whole case
+        // turns on the payload being priced at the base fee while the ledger
+        // around it is not.
+        auto const baseFee = env.current()->fees().base;
+        json::Value proposedTx = pay(target, bob, XRP(1));
+        proposedTx[jss::Fee] = std::to_string(baseFee.drops());
+        json::Value const payload = proposal::unsignedPayload(env, proposedTx, ticketSeq);
+        makeProposal(env, alice, payload);
+
+        // Fill the open ledger past its target so the next transaction is
+        // priced above the base fee the payload was created with.
+        env(noop(alice));
+        env(noop(alice));
+        env(noop(alice));
+
+        // Both sides of the shortfall, so terQUEUED below rests on asserted
+        // facts rather than on the tuning above having worked: the stored
+        // payload is priced at the base fee, and the open ledger now charges
+        // more than that.
+        auto const sleProposal = proposal::entry(env, target, ticketSeq);
+        if (!BEAST_EXPECT(sleProposal))
+            return;
+        BEAST_EXPECT(
+            sleProposal->getFieldObject(sfProposedTransaction).getFieldAmount(sfFee).xrp() ==
+            baseFee);
+        BEAST_EXPECT(
+            toDrops(env.app().getTxQ().getMetrics(*env.current()).openLedgerFeeLevel, baseFee) >
+            baseFee);
+
+        auto const bobBefore = env.balance(bob);
+        env(payload, Ter(terQUEUED));
+
+        // Still intact while queued: nothing has been applied yet.
+        BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+
+        // Closing the ledger returns the price to the base fee, and that is
+        // what lets the queue apply a payload whose Fee was fixed there: it
+        // goes in unchanged, resolving the proposal as any match would.
+        env.close();
+
+        BEAST_EXPECT(
+            toDrops(env.app().getTxQ().getMetrics(*env.current()).openLedgerFeeLevel, baseFee) ==
+            baseFee);
+
+        BEAST_EXPECT(env.balance(bob) == bobBefore + XRP(1));
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
     void
     run() override
     {
@@ -894,6 +1746,15 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         testTargetAccountDeleted(all);
         testTargetDeletionRefundsEachOwner(all);
         testProposalBlocksOwnerAccountDelete(all);
+        testSignerListChangedUnderProposal(all);
+        testDeferredSignatureChecksFireOnSubmission(all);
+        testTemSubmissionConsumesNothing(all);
+        testMalformedBatchSignersOnSubmission(all);
+        testPayloadLastLedgerSequencePasses(all);
+        testSubmissionSigningAuthority(all);
+        testFeeFixedAtCreationCannotCoverSignatures(all);
+        testSubmissionSignatureContent(all);
+        testOpenLedgerFeeEscalation(all);
     }
 };
 
