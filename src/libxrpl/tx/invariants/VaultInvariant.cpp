@@ -250,14 +250,15 @@ ValidVault::deltaAssetsForParty(
     AccountID const& id,
     STTx const& tx,
     XRPAmount fee,
-    ReadView const& view) const
+    ReadView const& view,
+    bool fixEnabled) const
 {
     auto const& vaultAsset = afterVault_[0].asset;
     auto ret = deltaAssets(id);
     if (!ret.has_value() || !vaultAsset.native())
         return ret;
 
-    if (!view.rules().enabled(fixCleanup3_4_0))
+    if (!fixEnabled)
     {
         // Legacy behaviour: only tx[sfAccount] was ever considered for a fee
         // correction, and only when STTx::getFeePayerID identified it as the
@@ -891,7 +892,7 @@ ValidVault::finalize(
                 if (!issuerDeposit)
                 {
                     auto const maybeAccDeltaAssets =
-                        deltaAssetsForParty(tx[sfAccount], tx, fee, view);
+                        deltaAssetsForParty(tx[sfAccount], tx, fee, view, fixEnabled);
                     if (!maybeAccDeltaAssets)
                     {
                         JLOG(j.fatal())
@@ -1078,14 +1079,15 @@ ValidVault::finalize(
                         destinationField.has_value() && *destinationField != tx[sfAccount];
 
                     if (distinctDestination &&
-                        deltaAssetsForParty(tx[sfAccount], tx, fee, view).has_value())
+                        deltaAssetsForParty(tx[sfAccount], tx, fee, view, fixEnabled).has_value())
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must change one destination balance";
                         return false;
                     }
 
-                    auto const maybeRecipientDelta = deltaAssetsForParty(recipient, tx, fee, view);
+                    auto const maybeRecipientDelta =
+                        deltaAssetsForParty(recipient, tx, fee, view, fixEnabled);
 
                     if (!maybeRecipientDelta.has_value())
                     {

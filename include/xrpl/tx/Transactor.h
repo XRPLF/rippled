@@ -259,6 +259,13 @@ public:
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx, std::uint32_t extraBaseFeeMultiplier);
 
+    // Exposed for invariant checks (e.g. ValidVault) that need to know which
+    // ledger entry actually pays a transaction's fee, distinguishing an
+    // ordinary sender, a delegate, and pre-funded vs. co-signed fee
+    // sponsorship.
+    static FeePayer
+    getFeePayer(ReadView const& view, STTx const& tx);
+
     /* Do NOT define an invokePreflight function in a derived class.
        Instead, define:
 
@@ -514,14 +521,6 @@ protected:
         AccountID const& id,
         STObject const& sigObject,
         beast::Journal const j);
-
-public:
-    // Exposed for invariant checks (e.g. ValidVault) that need to know which
-    // ledger entry actually pays a transaction's fee, distinguishing an
-    // ordinary sender, a delegate, and pre-funded vs. co-signed fee
-    // sponsorship.
-    static FeePayer
-    getFeePayer(ReadView const& view, STTx const& tx);
 
 private:
     static NotTEC

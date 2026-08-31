@@ -164,16 +164,22 @@ private:
      * when it was itself, per @c STTx::getFeePayerID, the fee payer), and a
      * present-zero delta was returned as-is rather than collapsed.
      *
-     * @param id   Account being inspected as sender or destination.
-     * @param tx   The transaction being applied.
-     * @param fee  Fee charged by this transaction.
-     * @param view Read-only view of the ledger after the transaction.
+     * @param id         Account being inspected as sender or destination.
+     * @param tx         The transaction being applied.
+     * @param fee        Fee charged by this transaction.
+     * @param view       Read-only view of the ledger after the transaction.
+     * @param fixEnabled Whether @c fixCleanup3_4_0 is enabled, as already
+     *                   determined once by @c finalize.
      * @return The fee-adjusted delta, or @c std::nullopt if the net delta is
      *         zero (post-amendment only) or the entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
-    deltaAssetsForParty(AccountID const& id, STTx const& tx, XRPAmount fee, ReadView const& view)
-        const;
+    deltaAssetsForParty(
+        AccountID const& id,
+        STTx const& tx,
+        XRPAmount fee,
+        ReadView const& view,
+        bool fixEnabled) const;
 
     /**
      * @brief Return the vault-share balance-change delta for an account.
