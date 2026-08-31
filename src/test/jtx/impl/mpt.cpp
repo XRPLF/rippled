@@ -92,24 +92,20 @@ makePedersenParams(PedersenProofParams const& params)
     return res;
 }
 
-void
+Account const&
 setAccountField(json::Value& jv, std::optional<Account> const& account)
 {
-    if (!account)
-    {
-        Throw<std::runtime_error>("Account not specified");
-    }
-    jv[sfAccount] = account->human();
+    Account const& act = requireValue(account, "account");
+    jv[sfAccount] = act.human();
+    return act;
 }
 
-void
+Account const&
 setDestinationField(json::Value& jv, std::optional<Account> const& dest)
 {
-    if (!dest)
-    {
-        Throw<std::runtime_error>("Destination not specified");
-    }
-    jv[sfDestination] = dest->human();
+    Account const& act = requireValue(dest, "dest");
+    jv[sfDestination] = act.human();
+    return act;
 }
 
 void
@@ -1237,7 +1233,7 @@ MPTTester::convert(MPTConvert const& arg)
                         }
                         return false;
                     },
-                    arg.account);
+                    account);
             }));
         }
     }
@@ -1247,13 +1243,12 @@ json::Value
 MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
 {
     json::Value jv;
-    setAccountField(jv, arg.account);
+    Account const& account = setAccountField(jv, arg.account);
 
     jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
     setIssuanceIdField(jv, arg.id, id_);
 
-    if (arg.amt)
-        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+    jv[sfMPTAmount.jsonName] = std::to_string(requireValue(arg.amt, "amt"));
     if (arg.holderPubKey)
         jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
 
@@ -1273,7 +1268,6 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
     }
     else if (arg.fillSchnorrProof.value_or(arg.holderPubKey.has_value()))
     {
-        Account const& account = requireValue(arg.account, "account");
         auto const contextHash = getConvertContextHash(account.id(), issuanceID(), seq);
         setGeneratedProof(jv, getSchnorrProof(account, contextHash), kEcSchnorrProofLength);
     }
@@ -1418,14 +1412,8 @@ MPTTester::sendJV(
     json::Value jv;
     jv[jss::TransactionType] = jss::ConfidentialMPTSend;
 
-    setAccountField(jv, arg.account);
-    setDestinationField(jv, arg.dest);
-
-    if (!arg.amt)
-        Throw<std::runtime_error>("Amount not specified for testing purposes");
-
-    Account const& account = requireValue(arg.account, "account");
-    Account const& dest = requireValue(arg.dest, "dest");
+    Account const& account = setAccountField(jv, arg.account);
+    Account const& dest = setDestinationField(jv, arg.dest);
     auto const amt = requireValue(arg.amt, "amt");
 
     setIssuanceIdField(jv, arg.id, id_);
@@ -1447,8 +1435,7 @@ MPTTester::sendJV(
     }
     else if (auditor_.has_value() && arg.fillAuditorEncryptedAmt.value_or(false))
     {
-        auditorAmt = encryptAmount(
-            requireValue(auditor_, "auditor"), requireValue(arg.amt, "amt"), blindingFactor);
+        auditorAmt = encryptAmount(requireValue(auditor_, "auditor"), amt, blindingFactor);
     }
 
     jv[sfSenderEncryptedAmount] = strHex(senderAmt);
@@ -2023,15 +2010,13 @@ json::Value
 MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
 {
     json::Value jv;
-    setAccountField(jv, arg.account);
+    Account const& account = setAccountField(jv, arg.account);
 
     jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
     setIssuanceIdField(jv, arg.id, id_);
 
-    Account const& account = requireValue(arg.account, "account");
-
-    if (arg.amt)
-        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+    auto const amt = requireValue(arg.amt, "amt");
+    jv[sfMPTAmount.jsonName] = std::to_string(amt);
 
     Buffer holderCiphertext;
     Buffer issuerCiphertext;
@@ -2080,7 +2065,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
         {
             proof = getConvertBackProof(
                 account,
-                requireValue(arg.amt, "amt"),
+                amt,
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
