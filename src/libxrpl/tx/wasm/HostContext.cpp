@@ -1221,19 +1221,6 @@ HostContext::floatDivide(
 }
 
 std::int32_t
-HostContext::floatRoot(
-    rust::Slice<std::uint8_t const> x,
-    std::int32_t n,
-    std::int32_t mode,
-    rust::Slice<std::uint8_t> out) const noexcept
-{
-    return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
-        return invoke<false>(
-            out, [&] { return hostFunctions_.floatRoot(Slice{x.data(), x.size()}, n, mode); });
-    });
-}
-
-std::int32_t
 HostContext::floatPower(
     rust::Slice<std::uint8_t const> x,
     std::int32_t n,

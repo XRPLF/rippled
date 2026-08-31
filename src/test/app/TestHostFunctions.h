@@ -461,12 +461,6 @@ public:
     }
 
     [[nodiscard]] std::expected<Bytes, HostFunctionError>
-    floatRoot(Slice const& x, int32_t n, int32_t mode) const override
-    {
-        return wasm_float::floatRootImpl(x, n, mode);
-    }
-
-    [[nodiscard]] std::expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) const override
     {
         return wasm_float::floatPowerImpl(x, n, mode);

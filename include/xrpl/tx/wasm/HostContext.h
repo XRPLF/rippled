@@ -409,13 +409,6 @@ public:
         rust::Slice<std::uint8_t> out) const noexcept;
 
     [[nodiscard]] std::int32_t
-    floatRoot(
-        rust::Slice<std::uint8_t const> x,
-        std::int32_t n,
-        std::int32_t mode,
-        rust::Slice<std::uint8_t> out) const noexcept;
-
-    [[nodiscard]] std::int32_t
     floatPower(
         rust::Slice<std::uint8_t const> x,
         std::int32_t n,
