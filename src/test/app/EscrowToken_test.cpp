@@ -958,13 +958,9 @@ struct EscrowToken_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::literals;
 
-        // Creating an IOU escrow moves the owner's whole balance out of the
-        // trust line, so the owner can delete the now-zero line while the
-        // escrow is pending. Cancelling re-creates it: one object is destroyed
-        // and one created, leaving the owner's reserve requirement unchanged.
-        // Without fixCleanup3_4_0 the escrow is still counted when the new
-        // line's reserve is checked, so an owner funded for the final state is
-        // refused.
+        // Escrowing the whole IOU balance lets the owner delete the now-zero
+        // trust line, so cancelling has to re-create it: one object destroyed,
+        // one created, and the reserve requirement unchanged.
         Env env{*this, features};
         bool const fixEnabled = env.current()->rules().enabled(fixCleanup3_4_0);
 
@@ -1033,8 +1029,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
         }
         else
         {
-            // The tec keeps the escrow, so funding one more owner reserve lets
-            // the same cancel through.
+            // The tec keeps the escrow, so one more owner reserve lets the
+            // retry through.
             BEAST_EXPECT(env.le(escrowKey) != nullptr);
             BEAST_EXPECT(!env.current()->exists(trustLineKey));
             BEAST_EXPECT(env.ownerCount(alice) == 1);

@@ -343,11 +343,9 @@ EscrowFinish::doApply()
         }
     }
 
-    // Release the escrow's reserve before delivery. Delivery can auto-create
-    // the destination's holding, and the escrow being removed must not be
-    // counted against that new holding's reserve. The escrow and the holding
-    // only share a reserve payer for a self-escrow, or when one sponsor covers
-    // both.
+    // Delivery can auto-create the destination's holding; the removed escrow
+    // must not be counted against its reserve. The two share a reserve payer
+    // for a self-escrow, or when one sponsor covers both.
     bool const recycleReserve =
         ctx_.view().rules().enabled(featureSponsor) || ctx_.view().rules().enabled(fixCleanup3_4_0);
     if (recycleReserve)

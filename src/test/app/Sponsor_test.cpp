@@ -5467,14 +5467,12 @@ public:
         using namespace test::jtx;
         using namespace std::chrono_literals;
 
-        // Finishing a self-escrow (source == destination) whose trust line
-        // was deleted while the escrow was outstanding auto-creates the line,
-        // and the outcome of that reserve check depends on whether the escrow
-        // reserve is released before delivery. With the source's balance in the
-        // one-increment window [reserve(1), reserve(2)), releasing after
-        // delivery requires reserve(2) and fails, while releasing before it
-        // requires reserve(1) and succeeds. Either featureSponsor or
-        // fixCleanup3_4_0 releases it before delivery.
+        // Finishing a self-escrow (source == destination) whose trust line was
+        // deleted while the escrow was outstanding auto-creates the line. With
+        // the source's balance in the one-increment window
+        // [reserve(1), reserve(2)), the finish succeeds only when the escrow
+        // reserve is released before delivery, which either featureSponsor or
+        // fixCleanup3_4_0 does.
         auto runTest = [&](FeatureBitset features, TER expected) {
             Account const alice("alice");
             Account const gw("gw");
@@ -5539,11 +5537,7 @@ public:
             }
         };
 
-        // Neither amendment: the escrow still counts against the reserve while
-        // the auto-created line is checked.
         runTest(testableAmendments() - featureSponsor - fixCleanup3_4_0, tecNO_LINE_INSUF_RESERVE);
-
-        // Either amendment recycles the escrow reserve into the new line.
         runTest(testableAmendments() - featureSponsor, tesSUCCESS);
         runTest(testableAmendments() - fixCleanup3_4_0, tesSUCCESS);
         runTest(testableAmendments(), tesSUCCESS);
