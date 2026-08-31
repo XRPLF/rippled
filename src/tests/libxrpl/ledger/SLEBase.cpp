@@ -131,13 +131,26 @@ concept HasApplyView = requires(T& t) { t.applyView(); };
 
 namespace test {
 
-TEST(SLEBaseTests, ReadOnly)
+/**
+ * Scaffolding shared by the test cases below: a funded alice, an unfunded bob
+ * (for the entries that need to resolve to nothing), and the TxTest ledger
+ * they live in.
+ */
+class SLEBaseTests : public ::testing::Test
 {
+protected:
     TxTest env;
-    Account const alice("alice");
-    Account const bob("bob");
-    env.createAccount(alice, XRP(10'000));
+    Account const alice{"alice"};
+    Account const bob{"bob"};
 
+    SLEBaseTests()
+    {
+        env.createAccount(alice, XRP(10'000));
+    }
+};
+
+TEST_F(SLEBaseTests, ReadOnly)
+{
     AccountRootEntryR const absent(bob.id(), env.getClosedLedger());
     EXPECT_FALSE(absent.exists());
     EXPECT_FALSE(static_cast<bool>(absent));
@@ -155,12 +168,8 @@ TEST(SLEBaseTests, ReadOnly)
     EXPECT_EQ(&present.readView(), &env.getClosedLedger());
 }
 
-TEST(SLEBaseTests, AdoptSLE)
+TEST_F(SLEBaseTests, AdoptSLE)
 {
-    TxTest env;
-    Account const alice("alice");
-    env.createAccount(alice, XRP(10'000));
-
     auto const sle = env.getClosedLedger().read(keylet::account(alice.id()));
     ASSERT_NE(sle, nullptr);
 
@@ -192,12 +201,8 @@ TEST(SLEBaseTests, AdoptSLE)
         "writable entries must not be constructible from a bare SLE");
 }
 
-TEST(SLEBaseTests, WritableAccessors)
+TEST_F(SLEBaseTests, WritableAccessors)
 {
-    TxTest env;
-    Account const alice("alice");
-    env.createAccount(alice, XRP(10'000));
-
     ApplyViewImpl av(&env.getClosedLedger(), TapNone);
     beast::Journal const j{beast::Journal::getNullSink()};
 
@@ -231,12 +236,8 @@ TEST(SLEBaseTests, WritableAccessors)
         !HasApplyView<AccountRootEntryR>, "applyView() must not exist on a read-only entry");
 }
 
-TEST(SLEBaseTests, ApplyViewContextCtor)
+TEST_F(SLEBaseTests, ApplyViewContextCtor)
 {
-    TxTest env;
-    Account const alice("alice");
-    env.createAccount(alice, XRP(10'000));
-
     ApplyViewImpl av(&env.getClosedLedger(), TapNone);
     beast::Journal const j{beast::Journal::getNullSink()};
 
@@ -259,12 +260,8 @@ TEST(SLEBaseTests, ApplyViewContextCtor)
     EXPECT_EQ(fromCtx.rawSle(), fromView.rawSle());
 }
 
-TEST(SLEBaseTests, WritableLifecycle)
+TEST_F(SLEBaseTests, WritableLifecycle)
 {
-    TxTest env;
-    Account const alice("alice");
-    env.createAccount(alice, XRP(10'000));
-
     // A view we never apply, so nothing here reaches the ledger.
     ApplyViewImpl av(&env.getClosedLedger(), TapNone);
 
@@ -299,12 +296,8 @@ TEST(SLEBaseTests, WritableLifecycle)
     }
 }
 
-TEST(SLEBaseTests, Conversion)
+TEST_F(SLEBaseTests, Conversion)
 {
-    TxTest env;
-    Account const alice("alice");
-    env.createAccount(alice, XRP(10'000));
-
     ApplyViewImpl av(&env.getClosedLedger(), TapNone);
 
     AccountRootEntryW const writable(alice.id(), av);
@@ -321,12 +314,8 @@ TEST(SLEBaseTests, Conversion)
     EXPECT_EQ(generic.type(), ltACCOUNT_ROOT);
 }
 
-TEST(SLEBaseTests, ResolveEntryPeeks)
+TEST_F(SLEBaseTests, ResolveEntryPeeks)
 {
-    TxTest env;
-    Account const alice("alice");
-    env.createAccount(alice, XRP(10'000));
-
     // getOpenLedger() is an OpenView, which derives from ReadView but not
     // from ApplyView, so resolveEntry's dynamic_cast fails and this takes
     // the plain ReadView::read() path.
@@ -357,11 +346,8 @@ TEST(SLEBaseTests, ResolveEntryPeeks)
     EXPECT_EQ(readOnly->getFieldU32(sfSequence), bumped);
 }
 
-TEST(SLEBaseTests, ThrowsOnMissingEntry)
+TEST_F(SLEBaseTests, ThrowsOnMissingEntry)
 {
-    TxTest const env;
-    Account const bob("bob");
-
     // A generic read-only entry has no static type to fall back on, so
     // type() must read it off the (absent) SLE and throw.
     ReadOnlySLE const absent(keylet::account(bob.id()), env.getClosedLedger());
