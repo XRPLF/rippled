@@ -562,6 +562,7 @@ private:
             BEAST_EXPECT(vaultBeforeImpair);
             Number const lossBefore = vaultBeforeImpair->at(sfLossUnrealized);
 
+            advancePastDueDate(env, loanKeylet);
             env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
 
@@ -612,6 +613,7 @@ private:
                 ? principalOutstanding
                 : totalValueOutstanding - managementFeeOutstanding;
 
+            advancePastDueDate(env, loanKeylet);
             env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
 
@@ -822,12 +824,17 @@ private:
         Number const managementFeeBeforeImpair = loanBeforeImpair->at(sfManagementFeeOutstanding);
         Number const expectedExposure = totalValueBeforeImpair - managementFeeBeforeImpair;
 
+        // With fixCleanup3_4_0, impairment is only allowed once the
+        // payment is late. After the earlier LoanPay the due date advanced by
+        // one interval, so use the current due date rather than startDate.
+        std::uint32_t const dueDateBeforeImpair = loanBeforeImpair->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDateBeforeImpair}} + 1s);
+
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
 
-        LoanState const stateAtImpair = getCurrentState(env, broker, loanKeylet);
         env.close(
-            stateAtImpair.startDate + std::chrono::seconds(paymentInterval) +
+            NetClock::time_point{NetClock::duration{dueDateBeforeImpair}} +
             std::chrono::seconds(gracePeriod) + 60s);
 
         auto const vaultBeforeDefault = env.le(broker.vaultKeylet());
