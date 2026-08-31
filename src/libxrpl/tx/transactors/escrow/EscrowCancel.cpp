@@ -171,8 +171,8 @@ EscrowCancel::doApply()
 
     // Release the escrow's reserve before returning the funds. The owner is
     // also the receiver, so the return can re-create a holding they deleted
-    // while the escrow was pending, and the escrow must not be counted against
-    // that holding's reserve when the net owner count is unchanged.
+    // while the escrow was pending, and the escrow being removed must not be
+    // counted against that new holding's reserve.
     bool const recycleReserve = ctx_.view().rules().enabled(fixCleanup3_4_0);
     if (recycleReserve)
         decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);

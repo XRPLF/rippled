@@ -5470,10 +5470,11 @@ public:
         // Finishing a self-escrow (source == destination) whose trust line
         // was deleted while the escrow was outstanding auto-creates the line,
         // and the outcome of that reserve check depends on whether the escrow
-        // reserve is released before delivery (Sponsor) or after (legacy).
-        // With the source's balance in the one-increment window
-        // [reserve(1), reserve(2)), the legacy order requires reserve(2) and
-        // fails, while the Sponsor order requires reserve(1) and succeeds.
+        // reserve is released before delivery. With the source's balance in the
+        // one-increment window [reserve(1), reserve(2)), releasing after
+        // delivery requires reserve(2) and fails, while releasing before it
+        // requires reserve(1) and succeeds. Either featureSponsor or
+        // fixCleanup3_4_0 releases it before delivery.
         auto runTest = [&](FeatureBitset features, TER expected) {
             Account const alice("alice");
             Account const gw("gw");
@@ -5538,11 +5539,13 @@ public:
             }
         };
 
-        // Pre-amendment: legacy order — the escrow still counts against the
-        // reserve while the auto-created line is checked.
-        runTest(testableAmendments() - featureSponsor, tecNO_LINE_INSUF_RESERVE);
+        // Neither amendment: the escrow still counts against the reserve while
+        // the auto-created line is checked.
+        runTest(testableAmendments() - featureSponsor - fixCleanup3_4_0, tecNO_LINE_INSUF_RESERVE);
 
-        // Post-amendment: the escrow reserve is recycled into the new line.
+        // Either amendment recycles the escrow reserve into the new line.
+        runTest(testableAmendments() - featureSponsor, tesSUCCESS);
+        runTest(testableAmendments() - fixCleanup3_4_0, tesSUCCESS);
         runTest(testableAmendments(), tesSUCCESS);
     }
 
