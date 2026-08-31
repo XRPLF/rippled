@@ -17,7 +17,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -30,6 +30,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
 
 #include <utility/mpt_utility.h>
 
@@ -38,7 +39,6 @@
 #include <secp256k1_mpt.h>
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -93,21 +93,6 @@ makePedersenParams(PedersenProofParams const& params)
 }
 
 }  // namespace
-
-struct MPTSetFlagMapping
-{
-    std::uint32_t setFlag;
-    std::uint32_t ledgerFlag;
-};
-
-static constexpr std::array<MPTSetFlagMapping, 6> mptSetFlagMappings = {{
-    {.setFlag = tmfMPTSetCanLock, .ledgerFlag = lsfMPTCanLock},
-    {.setFlag = tmfMPTSetRequireAuth, .ledgerFlag = lsfMPTRequireAuth},
-    {.setFlag = tmfMPTSetCanEscrow, .ledgerFlag = lsfMPTCanEscrow},
-    {.setFlag = tmfMPTSetCanClawback, .ledgerFlag = lsfMPTCanClawback},
-    {.setFlag = tmfMPTSetCanTrade, .ledgerFlag = lsfMPTCanTrade},
-    {.setFlag = tmfMPTSetCanTransfer, .ledgerFlag = lsfMPTCanTransfer},
-}};
 
 void
 MptFlags::operator()(Env& env) const
@@ -195,7 +180,7 @@ makeMPTCreate(MPTInitDef const& arg)
             .transferFee = arg.transferFee,
             .pay = {{arg.holders, *arg.pay}},
             .flags = arg.flags,
-            .mutableFlags = arg.mutableFlags,
+            .immutableFlags = arg.immutableFlags,
             .authHolder = arg.authHolder};
     }
     return {
@@ -203,7 +188,7 @@ makeMPTCreate(MPTInitDef const& arg)
         .transferFee = arg.transferFee,
         .authorize = arg.holders,
         .flags = arg.flags,
-        .mutableFlags = arg.mutableFlags,
+        .immutableFlags = arg.immutableFlags,
         .authHolder = arg.authHolder};
 }
 
@@ -245,8 +230,8 @@ MPTTester::createJV(MPTCreate const& arg)
         jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
     if (arg.domainID)
         jv[sfDomainID] = to_string(*arg.domainID);
-    if (arg.mutableFlags)
-        jv[sfMutableFlags] = *arg.mutableFlags;
+    if (arg.immutableFlags)
+        jv[sfImmutableFlags] = *arg.immutableFlags;
     jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
 
     return jv;
@@ -264,7 +249,7 @@ MPTTester::create(MPTCreate const& arg)
          .assetScale = arg.assetScale,
          .transferFee = arg.transferFee,
          .metadata = arg.metadata,
-         .mutableFlags = arg.mutableFlags,
+         .immutableFlags = arg.immutableFlags,
          .domainID = arg.domainID});
     if (!isTesSuccess(submit(arg, jv)))
     {
@@ -463,8 +448,8 @@ MPTTester::setJV(MPTSet const& arg)
         jv[sfDelegate] = arg.delegate->human();
     if (arg.domainID)
         jv[sfDomainID] = to_string(*arg.domainID);
-    if (arg.mutableFlags)
-        jv[sfMutableFlags] = *arg.mutableFlags;
+    if (arg.immutableFlags)
+        jv[sfImmutableFlags] = *arg.immutableFlags;
     if (arg.transferFee)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
@@ -487,95 +472,85 @@ MPTTester::set(MPTSet const& arg)
         {.account = arg.account ? arg.account : issuer_,
          .holder = arg.holder,
          .id = arg.id ? arg.id : id_,
-         .mutableFlags = arg.mutableFlags,
+         .immutableFlags = arg.immutableFlags,
          .transferFee = arg.transferFee,
          .metadata = arg.metadata,
          .delegate = arg.delegate,
          .domainID = arg.domainID,
          .issuerPubKey = arg.issuerPubKey,
          .auditorPubKey = arg.auditorPubKey});
-    if (submit(arg, jv) == tesSUCCESS && ((arg.flags.value_or(0) != 0u) || arg.mutableFlags))
+    if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0) != 0u)
     {
-        if (((arg.flags.value_or(0) != 0u) || arg.mutableFlags))
-        {
-            auto require = [&](std::optional<Account> const& holder, bool unchanged) {
-                auto flags = getFlags(holder);
-                if (!unchanged)
+        auto require = [&](std::optional<Account> const& holder, bool unchanged) {
+            auto flags = getFlags(holder);
+            if (!unchanged)
+            {
+                if (arg.flags)
                 {
-                    if (arg.flags)
+                    if (*arg.flags & tfMPTLock)
                     {
-                        if (*arg.flags & tfMPTLock)
-                        {
-                            flags |= lsfMPTLocked;
-                        }
-                        else if (*arg.flags & tfMPTUnlock)
-                        {
-                            flags &= ~lsfMPTLocked;
-                        }
+                        flags |= lsfMPTLocked;
+                    }
+                    else if (*arg.flags & tfMPTUnlock)
+                    {
+                        flags &= ~lsfMPTLocked;
                     }
 
-                    if (arg.mutableFlags)
+                    for (auto const& f : MPTokenIssuanceSet::flagMapping)
                     {
-                        for (auto const& [setFlag, ledgerFlag] : mptSetFlagMappings)
+                        if ((*arg.flags & f.setFlag) != 0u)
                         {
-                            if ((*arg.mutableFlags & setFlag) != 0u)
-                            {
-                                flags |= ledgerFlag;
-                            }
+                            flags |= f.ledgerFlag;
                         }
-
-                        if (*arg.mutableFlags & tmfMPTSetCanHoldConfidentialBalance)
-                            flags |= tfMPTCanHoldConfidentialBalance;
                     }
                 }
-                env_.require(MptFlags(*this, flags, holder));
-            };
-            if (arg.account)
-                require(std::nullopt, arg.holder.has_value());
-            if (auto const account = (arg.holder ? std::get_if<Account>(&(*arg.holder)) : nullptr))
-                require(*account, false);
-
-            if (arg.issuerPubKey)
-            {
-                env_.require(RequireAny([&]() -> bool {
-                    return forObject([&](SLEP const& sle) -> bool {
-                        if (sle)
-                        {
-                            auto const issuerPubKey = getPubKey(issuer_);
-                            if (!issuerPubKey)
-                            {
-                                Throw<std::runtime_error>(
-                                    "MPTTester::set: issuer's pubkey is not set");
-                            }
-
-                            return strHex((*sle)[sfIssuerEncryptionKey]) == strHex(*issuerPubKey);
-                        }
-                        return false;
-                    });
-                }));
             }
-            if (arg.auditorPubKey)
-            {
-                env_.require(RequireAny([&]() -> bool {
-                    return forObject([&](SLEP const& sle) -> bool {
-                        if (sle)
+            env_.require(MptFlags(*this, flags, holder));
+        };
+        if (arg.account)
+            require(std::nullopt, arg.holder.has_value());
+        if (auto const account = (arg.holder ? std::get_if<Account>(&(*arg.holder)) : nullptr))
+            require(*account, false);
+
+        if (arg.issuerPubKey)
+        {
+            env_.require(RequireAny([&]() -> bool {
+                return forObject([&](SLEP const& sle) -> bool {
+                    if (sle)
+                    {
+                        auto const issuerPubKey = getPubKey(issuer_);
+                        if (!issuerPubKey)
                         {
-                            if (!auditor_.has_value())
-                                Throw<std::runtime_error>("MPTTester::set: auditor is not set");
-
-                            auto const auditorPubKey = getPubKey(*auditor_);
-                            if (!auditorPubKey)
-                            {
-                                Throw<std::runtime_error>(
-                                    "MPTTester::set: auditor's pubkey is not set");
-                            }
-
-                            return strHex((*sle)[sfAuditorEncryptionKey]) == strHex(*auditorPubKey);
+                            Throw<std::runtime_error>("MPTTester::set: issuer's pubkey is not set");
                         }
-                        return false;
-                    });
-                }));
-            }
+
+                        return strHex((*sle)[sfIssuerEncryptionKey]) == strHex(*issuerPubKey);
+                    }
+                    return false;
+                });
+            }));
+        }
+        if (arg.auditorPubKey)
+        {
+            env_.require(RequireAny([&]() -> bool {
+                return forObject([&](SLEP const& sle) -> bool {
+                    if (sle)
+                    {
+                        if (!auditor_.has_value())
+                            Throw<std::runtime_error>("MPTTester::set: auditor is not set");
+
+                        auto const auditorPubKey = getPubKey(*auditor_);
+                        if (!auditorPubKey)
+                        {
+                            Throw<std::runtime_error>(
+                                "MPTTester::set: auditor's pubkey is not set");
+                        }
+
+                        return strHex((*sle)[sfAuditorEncryptionKey]) == strHex(*auditorPubKey);
+                    }
+                    return false;
+                });
+            }));
         }
     }
 }
@@ -662,6 +637,15 @@ MPTTester::checkTransferFee(std::uint16_t transferFee) const
 MPTTester::isTransferFeePresent() const
 {
     return forObject([&](SLEP const& sle) -> bool { return sle->isFieldPresent(sfTransferFee); });
+}
+
+[[nodiscard]] bool
+MPTTester::checkImmutableFlags(std::uint32_t expectedFlags) const
+{
+    // sfImmutableFlags is soeDEFAULT, defaulting to 0 if not present.
+    return forObject([&](SLEP const& sle) -> bool {
+        return sle->getFieldU32(sfImmutableFlags) == expectedFlags;
+    });
 }
 
 void

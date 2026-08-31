@@ -19,6 +19,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -102,7 +103,8 @@ claim(
 uint256
 channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue)
 {
-    auto const k = keylet::payChannel(account, dst, seqProxyValue);
+    auto const seqProxy = SeqProxy::rawSequence(seqProxyValue);
+    auto const k = keylet::payChannel(account, dst, seqProxy);
     return k.key;
 }
 
@@ -146,7 +148,8 @@ signClaimAuth(
 Rate
 rate(Env& env, Account const& account, Account const& dest, std::uint32_t const& seq)
 {
-    auto const sle = env.le(keylet::payChannel(account.id(), dest.id(), seq));
+    auto const sle =
+        env.le(keylet::payChannel(account.id(), dest.id(), SeqProxy::rawSequence(seq)));
     if (sle->isFieldPresent(sfTransferRate))
         return xrpl::Rate((*sle)[sfTransferRate]);
     return Rate{0};

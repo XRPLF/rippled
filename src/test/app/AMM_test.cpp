@@ -4,6 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
@@ -26,6 +27,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -2293,8 +2295,9 @@ private:
         // ePrice = lptAMMBalance(100) * f(0.001) / amountBalance(100) = 0.001
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const err =
-                    env.enabled(fixCleanup3_3_0) ? Ter(tecAMM_FAILED) : Ter(tefEXCEPTION);
+                auto const err = env.enabled(fixCleanup3_3_0) || env.enabled(fixCleanup3_4_0)
+                    ? Ter(tecAMM_FAILED)
+                    : Ter(tefEXCEPTION);
                 ammAlice.withdraw(
                     WithdrawArg{
                         .account = alice_,
@@ -2305,7 +2308,7 @@ private:
             {{USD(100), EUR(100)}},
             1000,
             std::nullopt,
-            {all - fixCleanup3_3_0, all});
+            {all - fixCleanup3_3_0 - fixCleanup3_4_0, all - fixCleanup3_4_0, all});
     }
 
     void
@@ -3126,27 +3129,59 @@ private:
             std::nullopt,
             {features});
 
+        // Zero-fee bid without an explicit price pays a floor with fixCleanup3_4_0.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const cleanup340 = features[fixCleanup3_4_0];
+                auto const expectedPrice = cleanup340 ? minBidPrice : IOUAmount{0};
+                auto const expectedTokens = cleanup340
+                    ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                    : ammAlice.tokens();
+
+                env.close(seconds(kTotalTimeSlotSecs + 1));
+                env.close();
+                env(ammAlice.bid({.account = alice_}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, expectedPrice));
+                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), expectedTokens));
+
+                ammAlice.vote(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, expectedPrice));
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features});
+
         // Bid tiny amount
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
+                auto const cleanup340 = features[fixCleanup3_4_0];
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
-                // Auction slot purchase price is equal to the tiny amount
-                // since the minSlotPrice is 0 with no trading fee.
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
-                // The purchase price is too small to affect the total tokens
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000),
+                    USD(10'000),
+                    cleanup340 ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                               : ammAlice.tokens()));
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
                     .bidMin = IOUAmount{STAmount::kMinValue, STAmount::kMinOffset},
                 }));
                 // Pay slightly higher price
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
-                // The purchase price is still too small to affect the total
-                // tokens
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(
+                    0, 0, IOUAmount{Number{firstPrice} * Number{105, -2}}));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000),
+                    USD(10'000),
+                    cleanup340
+                        ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice} * Number{11, -1}}
+                        : ammAlice.tokens()));
             },
             std::nullopt,
             0,
@@ -3777,6 +3812,21 @@ private:
                     BEAST_EXPECT(amm.expectBalances(XRP(1'000), USD(500), amm.tokens()));
                     BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(100), USD(55)}}}));
                 }
+                else if (!features[featureMPTokensV2])
+                {
+                    BEAST_EXPECT(amm.expectBalances(
+                        XRPAmount(909'090'909),
+                        STAmount{USD, UINT64_C(550'000000055), -9},
+                        amm.tokens()));
+                    BEAST_EXPECT(expectOffers(
+                        env,
+                        carol_,
+                        1,
+                        {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+                    BEAST_EXPECT(
+                        env.balance(carol_, USD) ==
+                        STAmount(USD, UINT64_C(29'949'94999999494), -11));
+                }
                 else
                 {
                     // Post-amendment the transfer fee is taken into account
@@ -3787,19 +3837,19 @@ private:
                     // quality.
                     // AMM offer ~50USD/91XRP
                     BEAST_EXPECT(amm.expectBalances(
-                        XRPAmount(909'090'909),
-                        STAmount{USD, UINT64_C(550'000000055), -9},
+                        XRPAmount(909'090'910),
+                        STAmount{USD, UINT64_C(549'99999945), -8},
                         amm.tokens()));
-                    // Offer ~91XRP/49.99USD
+                    // Offer ~91XRP/50USD
                     BEAST_EXPECT(expectOffers(
                         env,
                         carol_,
                         1,
-                        {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+                        {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
                     // Carol pays 0.1% fee on ~50USD =~ 0.05USD
                     BEAST_EXPECT(
                         env.balance(carol_, USD) ==
-                        STAmount(USD, UINT64_C(29'949'94999999494), -11));
+                        STAmount(USD, UINT64_C(29'949'95000060055), -11));
                 }
             },
             {{XRP(1'000), USD(500)}},
@@ -5145,6 +5195,51 @@ private:
     }
 
     void
+    testCredentialPinsPseudoAccount()
+    {
+        testcase("Credential pins AMM pseudo-account");
+
+        using namespace jtx;
+        FeatureBitset const all{testableAmendments()};
+
+        // A credential issued to an AMM pseudo-account can't be accepted or
+        // deleted by it. A pin created before the cure activates stays pinned
+        // in the pseudo-account's owner directory and makes AMM deletion fail
+        // with tecINTERNAL (deleteAMMTrustLines rejects the unexpected
+        // directory entry).
+        Account const attacker{"attacker"};
+        char const credType[] = "FN36";
+
+        Env env(*this, all - fixCleanup3_3_0 - fixCleanup3_4_0);
+        fund(env, gw_, {alice_}, XRP(20'000), {USD(10'000)});
+        env.fund(XRP(1'000), attacker);
+        env.close();
+
+        AMM amm(env, alice_, XRP(10'000), USD(10'000));
+        Account const ammAcct{"amm pseudo-account", amm.ammAccount()};
+        env.memoize(ammAcct);
+
+        env(credentials::create(ammAcct, attacker, credType));
+        env.close();
+        auto const credKey = credentials::keylet(ammAcct, attacker, credType);
+        BEAST_EXPECT(env.le(credKey));
+
+        // Emptying the AMM would auto-delete it, but the pinned credential makes
+        // deleteAMMAccount fail; the withdraw is rolled back and the AMM stays.
+        amm.withdrawAll(alice_, std::nullopt, Ter(tecINTERNAL));
+        BEAST_EXPECT(amm.ammExists());
+
+        env.enableFeature(fixCleanup3_4_0);
+        env.close();
+
+        // The pre-existing pin is cleaned up and the AMM deletes.
+        amm.withdrawAll(alice_);
+        BEAST_EXPECT(!amm.ammExists());
+        BEAST_EXPECT(!env.le(credKey));
+        BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+    }
+
+    void
     testAutoDelete()
     {
         testcase("Auto Delete");
@@ -6025,7 +6120,7 @@ private:
 
     void
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-    testFixOverflowOffer(FeatureBitset featuresInitial)
+    testOverflowOffer(FeatureBitset featuresInitial)
     {
         using namespace jtx;
         using namespace std::chrono;
@@ -6260,7 +6355,7 @@ private:
              })
         {
             testcase(input.testCase);
-            for (auto const& features : {all - fixAMMOverflowOffer - fixAMMv1_1 - fixAMMv1_3, all})
+            for (auto const& features : {all - fixAMMv1_1 - fixAMMv1_3, all})
             {
                 Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
 
@@ -6309,11 +6404,6 @@ private:
                     return input.lpTokenBalanceAlt.value_or(input.lpTokenBalance);
                 }();
 
-                if (!features[fixAMMOverflowOffer])
-                {
-                    BEAST_EXPECT(amm.expectBalances(failUsdGH, failUsdBIT, lpTokenBalance));
-                }
-                else
                 {
                     BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
 
@@ -6455,7 +6545,7 @@ private:
                 BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
                 BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(100), USD(55)}}}));
             }
-            else
+            else if (!features[featureMPTokensV2])
             {
                 BEAST_EXPECT(amm.expectBalances(
                     XRPAmount(909'090'909),
@@ -6466,6 +6556,19 @@ private:
                     carol_,
                     1,
                     {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+                BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(909'090'910),
+                    STAmount{USD, UINT64_C(549'99999945), -8},
+                    amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol_,
+                    1,
+                    {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
                 BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
             }
         }
@@ -6479,10 +6582,30 @@ private:
             AMM const amm(env, alice_, XRP(1'000), USD(500));
             env(offer(carol_, XRP(100), USD(55)));
             env.close();
-            BEAST_EXPECT(amm.expectBalances(
-                XRPAmount(909'090'909), STAmount{USD, UINT64_C(550'000000055), -9}, amm.tokens()));
-            BEAST_EXPECT(expectOffers(
-                env, carol_, 1, {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+            if (!features[featureMPTokensV2])
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(909'090'909),
+                    STAmount{USD, UINT64_C(550'000000055), -9},
+                    amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol_,
+                    1,
+                    {{Amounts{XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(909'090'910),
+                    STAmount{USD, UINT64_C(549'99999945), -8},
+                    amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol_,
+                    1,
+                    {{Amounts{XRPAmount{9'090'910}, STAmount{USD, 5'0000005, -7}}}}));
+            }
         }
     }
 
@@ -7212,11 +7335,178 @@ private:
     }
 
     void
+    testDepositIntegralOverflow()
+    {
+        testcase("Deposit integral overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Found by Antithesis: two-asset deposit with a huge Amount against a
+        // tiny pool leg makes frac = Amount/amountBalance enormous, so the
+        // computed XRP-side deposit exceeds the integral asset's range and the
+        // conversion to an STAmount throws out of doApply.
+        //
+        // applyGuts catches std::runtime_error around the deposit math, which
+        // covers both ways the conversion can throw:
+        //   - value beyond int64 range: Number::operator rep() throws
+        //     std::overflow_error (a std::runtime_error); and
+        //   - value within int64 but above the asset maximum (kMaxNativeN):
+        //     STAmount::canonicalize throws std::runtime_error.
+        // XRP(10) is 1e7 drops, so the computed XRP leg is 1e7 * frac:
+        //   asset1In 1e15 => frac ~1e15 => ~1e22 drops, past int64max; and
+        //   asset1In 1e11 => frac ~1e11 => ~1e18 drops, in [kMaxNativeN=1e17,
+        //   int64max) - the canonicalize band, which would otherwise escape.
+        //
+        // Without fixCleanup3_4_0 the exception escapes and is converted to
+        // tefEXCEPTION by applySteps. With the amendment, applyGuts guards it
+        // and fails cleanly with tecAMM_FAILED.
+        auto const test = [this](FeatureBitset features, STAmount const& asset1In, TER expected) {
+            // These deposits intentionally trigger the overflow, which logs
+            // at error (guarded) or fatal (legacy tefEXCEPTION). Disable the
+            // log threshold to keep the test output clean.
+            Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            AMM amm(env, gw_, XRP(10), USD(1));
+            amm.deposit(
+                DepositArg{
+                    .account = alice_,
+                    .asset1In = asset1In,
+                    .asset2In = XRP(1),
+                    .err = Ter(expected)});
+        };
+
+        // int64-range band (overflow_error): legacy escapes as tefEXCEPTION,
+        // fixed returns a tec.
+        test(all - fixCleanup3_4_0, STAmount{USD, 1, 15}, tefEXCEPTION);
+        test(all, STAmount{USD, 1, 15}, tecAMM_FAILED);
+        // canonicalize band (runtime_error): same behavior. Regression guard
+        // for the band a plain overflow_error catch would miss.
+        test(all - fixCleanup3_4_0, STAmount{USD, 1, 11}, tefEXCEPTION);
+        test(all, STAmount{USD, 1, 11}, tecAMM_FAILED);
+    }
+
+    void
+    testDepositEPriceIntegralOverflow()
+    {
+        testcase("Deposit EPrice integral overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Found by Antithesis: a one-sided tfLimitLPToken deposit (Amount and
+        // EPrice) with Amount = 0 and a large EPrice makes the solved pool-side
+        // deposit enormous, so it exceeds the integral asset's range and the
+        // conversion to an STAmount throws out of doApply. This is the
+        // singleDepositEPrice sibling of testDepositIntegralOverflow.
+        //
+        // applyGuts catches std::runtime_error around the deposit math, which
+        // covers both ways the conversion can throw:
+        //   - value beyond int64 range: Number::operator rep() throws
+        //     std::overflow_error (a std::runtime_error); and
+        //   - value within int64 but above the asset maximum (kMaxNativeN):
+        //     STAmount::canonicalize throws std::runtime_error.
+        //
+        // Without fixCleanup3_4_0 the exception escapes and is converted to
+        // tefEXCEPTION by applySteps. With the amendment, applyGuts guards it
+        // and fails cleanly with tecAMM_FAILED.
+        auto const test = [this](FeatureBitset features, STAmount const& ePrice, TER expected) {
+            // These deposits intentionally trigger the overflow, which logs
+            // at error (guarded) or fatal (legacy tefEXCEPTION). Disable the
+            // log threshold to keep the test output clean.
+            Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            AMM amm(env, gw_, XRP(10), USD(1));
+            // Amount = 0 (XRP), EPrice large => tfLimitLPToken. The solved XRP
+            // leg blows past the integral range.
+            amm.deposit(
+                DepositArg{
+                    .account = alice_, .asset1In = XRP(0), .maxEP = ePrice, .err = Ter(expected)});
+        };
+
+        // For this XRP(10)/USD(1) pool the LPToken balance is
+        // sqrt(1e7 drops * 1) = 3162, so T^2/B = 1e7/1e7 = 1 and the solved
+        // XRP-side deposit is ~EPrice^2 drops.
+        //
+        // int64-range band (overflow_error): legacy escapes as tefEXCEPTION,
+        // fixed returns a tec. EPrice ~1e17 drops => solved deposit ~1e34 drops,
+        // past int64max, so Number::operator rep() throws.
+        auto const bigEP = STAmount{XRPAmount{99'999'999'999'999'999}};
+        test(all - fixCleanup3_4_0, bigEP, tefEXCEPTION);
+        test(all, bigEP, tecAMM_FAILED);
+        // canonicalize band (runtime_error): same behavior. Regression guard
+        // for the band a plain overflow_error catch would miss. EPrice 1e9 drops
+        // => solved deposit ~1e18 drops, in [kMaxNativeN=1e17, int64max), so
+        // STAmount::canonicalize throws.
+        auto const midEP = STAmount{XRPAmount{1'000'000'000}};
+        test(all - fixCleanup3_4_0, midEP, tefEXCEPTION);
+        test(all, midEP, tecAMM_FAILED);
+    }
+
+    void
+    testWithdrawIntegralNoOverflow()
+    {
+        testcase("Withdraw integral no overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Regression guard for the sibling of testDepositIntegralOverflow.
+        // AMMWithdraw::equalWithdrawLimit has the same
+        // getRoundedAsset(integralBalance, frac) structure as the deposit
+        // path and is likewise not wrapped in a try/catch. It is safe only
+        // because withdraw preclaim (checkAmount) rejects a requested Amount
+        // greater than the pool balance with tecAMM_BALANCE *before* the math
+        // runs, so frac = Amount / balance stays <= 1 and the Number ->
+        // integral STAmount conversion cannot overflow. Deposit has no such
+        // bound (depositing more than the pool holds is legal), which is why
+        // only the deposit path was exposed.
+        //
+        // This asserts the withdrawal analog of the deposit repro fails cleanly
+        // with a tec. If the preclaim bound is ever weakened, equalWithdrawLimit
+        // would be reached with a huge frac and Number::operator rep() would
+        // escape as tefEXCEPTION, failing this test.
+        auto const test = [this](FeatureBitset features) {
+            Env env(*this, features);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            // gw holds all LPTokens of a tiny XRP/USD pool.
+            AMM amm(env, gw_, XRP(10), USD(1));
+
+            // Two-asset limit withdraw (tfTwoAsset) requesting far more of the
+            // tiny USD leg than the pool holds - the mirror of the deposit
+            // repro. Rejected upstream, so no overflow is possible.
+            amm.withdraw(
+                WithdrawArg{
+                    .account = gw_,
+                    .asset1Out = STAmount{USD, 1, 15},
+                    .asset2Out = XRP(1),
+                    .err = Ter(tecAMM_BALANCE)});
+        };
+
+        // Bound holds regardless of the deposit-side fix amendment.
+        test(all - featureMPTokensV2);
+        test(all);
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{testableAmendments()};
         testInvalidInstance();
         testInstanceCreate();
+        testCredentialPinsPseudoAccount();
         for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
             testInvalidDeposit(f);
         testDeposit();
@@ -7226,6 +7516,7 @@ private:
         testFeeVote();
         testInvalidBid();
         testBid(all);
+        testBid(all - fixCleanup3_4_0);
         testBid(all - fixAMMv1_3);
         testBid(all - fixAMMv1_1 - fixAMMv1_3);
         testInvalidAMMPayment();
@@ -7238,6 +7529,7 @@ private:
         testFlags();
         testRippling();
         testAMMAndCLOB(all);
+        testAMMAndCLOB(all - featureMPTokensV2);
         testAMMAndCLOB(all - fixAMMv1_1 - fixAMMv1_3);
         testTradingFee(all);
         testTradingFee(all - fixAMMv1_3);
@@ -7252,13 +7544,15 @@ private:
         testSelection(all - fixAMMv1_1 - fixAMMv1_3);
         testFixDefaultInnerObj();
         testMalformed();
-        testFixOverflowOffer(all);
-        testFixOverflowOffer(all - fixAMMv1_3);
-        testFixOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
+        testOverflowOffer(all);
+        testOverflowOffer(all - fixAMMv1_3);
+        testOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testSwapRounding();
         testFixChangeSpotPriceQuality(all);
+        testFixChangeSpotPriceQuality(all - featureMPTokensV2);
         testFixChangeSpotPriceQuality(all - fixAMMv1_1 - fixAMMv1_3);
         testFixAMMOfferBlockedByLOB(all);
+        testFixAMMOfferBlockedByLOB(all - featureMPTokensV2);
         testFixAMMOfferBlockedByLOB(all - fixAMMv1_1 - fixAMMv1_3);
         testLPTokenBalance(all);
         testLPTokenBalance(all - fixAMMv1_3);
@@ -7283,6 +7577,9 @@ private:
         testFailedPseudoAccount();
         testStaleAuthAccountsAfterReinit(all);
         testStaleAuthAccountsAfterReinit(all - fixCleanup3_2_0);
+        testDepositIntegralOverflow();
+        testDepositEPriceIntegralOverflow();
+        testWithdrawIntegralNoOverflow();
     }
 };
 

@@ -99,7 +99,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
             return temBAD_SIGNATURE;
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
