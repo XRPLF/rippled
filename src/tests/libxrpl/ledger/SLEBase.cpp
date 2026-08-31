@@ -139,44 +139,44 @@ namespace test {
 class SLEBaseTests : public ::testing::Test
 {
 protected:
-    TxTest env;
-    Account const alice{"alice"};
-    Account const bob{"bob"};
+    TxTest env_;
+    Account const alice_{"alice"};
+    Account const bob_{"bob"};
 
     SLEBaseTests()
     {
-        env.createAccount(alice, XRP(10'000));
+        env_.createAccount(alice_, XRP(10'000));
     }
 };
 
 TEST_F(SLEBaseTests, ReadOnly)
 {
-    AccountRootEntryR const absent(bob.id(), env.getClosedLedger());
+    AccountRootEntryR const absent(bob_.id(), env_.getClosedLedger());
     EXPECT_FALSE(absent.exists());
     EXPECT_FALSE(static_cast<bool>(absent));
     // A typed entry knows its entry type even with nothing to read.
     EXPECT_EQ(absent.type(), ltACCOUNT_ROOT);
 
-    AccountRootEntryR const present(alice.id(), env.getClosedLedger());
+    AccountRootEntryR const present(alice_.id(), env_.getClosedLedger());
     EXPECT_TRUE(present.exists());
     EXPECT_TRUE(static_cast<bool>(present));
-    EXPECT_EQ(present.key(), keylet::account(alice.id()).key);
+    EXPECT_EQ(present.key(), keylet::account(alice_.id()).key);
     EXPECT_EQ(present.type(), ltACCOUNT_ROOT);
     EXPECT_EQ(present.keylet().type, ltACCOUNT_ROOT);
     EXPECT_EQ(present->getType(), ltACCOUNT_ROOT);
     EXPECT_EQ((*present).getType(), ltACCOUNT_ROOT);
-    EXPECT_EQ(&present.readView(), &env.getClosedLedger());
+    EXPECT_EQ(&present.readView(), &env_.getClosedLedger());
 }
 
 TEST_F(SLEBaseTests, AdoptSLE)
 {
-    auto const sle = env.getClosedLedger().read(keylet::account(alice.id()));
+    auto const sle = env_.getClosedLedger().read(keylet::account(alice_.id()));
     ASSERT_NE(sle, nullptr);
 
-    AccountRootEntryR const adopted(sle, env.getClosedLedger());
+    AccountRootEntryR const adopted(sle, env_.getClosedLedger());
     EXPECT_TRUE(adopted.exists());
     EXPECT_EQ(adopted.rawSle(), sle);
-    EXPECT_EQ(adopted.key(), keylet::account(alice.id()).key);
+    EXPECT_EQ(adopted.key(), keylet::account(alice_.id()).key);
     EXPECT_EQ(adopted.type(), ltACCOUNT_ROOT);
     // keylet() reports the SLE's own type, not the entry's static binding, so
     // it stays truthful in a Release build where the constructor's
@@ -185,12 +185,12 @@ TEST_F(SLEBaseTests, AdoptSLE)
 
     // Adopting a null SLE is allowed: the assert only fires on a
     // type mismatch, and a null pointer has no type to mismatch.
-    AccountRootEntryR const empty(SLE::const_pointer{}, env.getClosedLedger());
+    AccountRootEntryR const empty(SLE::const_pointer{}, env_.getClosedLedger());
     EXPECT_FALSE(empty.exists());
     EXPECT_EQ(empty.type(), ltACCOUNT_ROOT);
 
     // A generic entry adopting the same SLE has to read the type back.
-    ReadOnlySLE const generic(sle, env.getClosedLedger());
+    ReadOnlySLE const generic(sle, env_.getClosedLedger());
     EXPECT_TRUE(generic.exists());
     EXPECT_EQ(generic.type(), ltACCOUNT_ROOT);
     EXPECT_EQ(generic.keylet().type, ltACCOUNT_ROOT);
@@ -203,10 +203,10 @@ TEST_F(SLEBaseTests, AdoptSLE)
 
 TEST_F(SLEBaseTests, WritableAccessors)
 {
-    ApplyViewImpl av(&env.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
     beast::Journal const j{beast::Journal::getNullSink()};
 
-    AccountRootEntryW account(alice.id(), av, j);
+    AccountRootEntryW account(alice_.id(), av, j);
     EXPECT_TRUE(account.exists());
     EXPECT_EQ(account.mutableRawSle(), account.rawSle());
     EXPECT_EQ(&account.applyView(), &av);
@@ -238,38 +238,38 @@ TEST_F(SLEBaseTests, WritableAccessors)
 
 TEST_F(SLEBaseTests, ApplyViewContextCtor)
 {
-    ApplyViewImpl av(&env.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
     beast::Journal const j{beast::Journal::getNullSink()};
 
-    transactions::AccountSetBuilder builder{alice.id()};
-    builder.setSequence(env.getAccountRoot(alice.id()).getSequence());
+    transactions::AccountSetBuilder builder{alice_.id()};
+    builder.setSequence(env_.getAccountRoot(alice_.id()).getSequence());
     builder.setFee(XRPAmount(10));
-    auto const tx = builder.build(alice.pk(), alice.sk()).getSTTx();
+    auto const tx = builder.build(alice_.pk(), alice_.sk()).getSTTx();
     ASSERT_NE(tx, nullptr);
     ApplyViewContext const ctx{.view = av, .tx = *tx};
 
     // Delegates to the (Keylet, ApplyView&) constructor; ctx.tx is not
     // retained, so this must be indistinguishable from building from
     // ctx.view directly.
-    AccountRootEntryW fromCtx(keylet::account(alice.id()), ctx, j);
+    AccountRootEntryW fromCtx(keylet::account(alice_.id()), ctx, j);
     EXPECT_TRUE(fromCtx.exists());
     EXPECT_EQ(&fromCtx.applyView(), &av);
-    EXPECT_EQ(fromCtx.key(), keylet::account(alice.id()).key);
+    EXPECT_EQ(fromCtx.key(), keylet::account(alice_.id()).key);
 
-    AccountRootEntryW const fromView(keylet::account(alice.id()), av, j);
+    AccountRootEntryW const fromView(keylet::account(alice_.id()), av, j);
     EXPECT_EQ(fromCtx.rawSle(), fromView.rawSle());
 }
 
 TEST_F(SLEBaseTests, WritableLifecycle)
 {
     // A view we never apply, so nothing here reaches the ledger.
-    ApplyViewImpl av(&env.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
 
     // Entry that does not exist yet: newSLE() -> insert().
     {
-        TicketEntryW ticket(keylet::ticket(alice.id(), SeqProxy::rawTicket(1)), av);
+        TicketEntryW ticket(keylet::ticket(alice_.id(), SeqProxy::rawTicket(1)), av);
         EXPECT_FALSE(ticket.exists());
-        EXPECT_EQ(ticket.key(), keylet::ticket(alice.id(), SeqProxy::rawTicket(1)).key);
+        EXPECT_EQ(ticket.key(), keylet::ticket(alice_.id(), SeqProxy::rawTicket(1)).key);
         EXPECT_EQ(ticket.type(), ltTICKET);
         EXPECT_EQ(ticket.keylet().type, ltTICKET);
 
@@ -288,7 +288,7 @@ TEST_F(SLEBaseTests, WritableLifecycle)
     // the entry must drop its pointer or a later write would silently
     // land in transaction metadata.
     {
-        AccountRootEntryW account(alice.id(), av);
+        AccountRootEntryW account(alice_.id(), av);
         EXPECT_TRUE(account.exists());
 
         account.erase();
@@ -298,9 +298,9 @@ TEST_F(SLEBaseTests, WritableLifecycle)
 
 TEST_F(SLEBaseTests, Conversion)
 {
-    ApplyViewImpl av(&env.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
 
-    AccountRootEntryW const writable(alice.id(), av);
+    AccountRootEntryW const writable(alice_.id(), av);
     EXPECT_TRUE(writable.exists());
 
     AccountRootEntryR const readOnly = writable;
@@ -319,18 +319,18 @@ TEST_F(SLEBaseTests, ResolveEntryPeeks)
     // getOpenLedger() is an OpenView, which derives from ReadView but not
     // from ApplyView, so resolveEntry's dynamic_cast fails and this takes
     // the plain ReadView::read() path.
-    OpenView const& ledger = env.getOpenLedger();
-    AccountRootEntryR const overLedger(alice.id(), ledger);
+    OpenView const& ledger = env_.getOpenLedger();
+    AccountRootEntryR const overLedger(alice_.id(), ledger);
     EXPECT_TRUE(overLedger.exists());
 
     ApplyViewImpl av(&ledger, TapNone);
 
     // ReadView const& binds an ApplyViewImpl just as happily, and there the
     // dynamic_cast succeeds, so this one resolves through ApplyView::peek().
-    AccountRootEntryR const readOnly(alice.id(), av);
+    AccountRootEntryR const readOnly(alice_.id(), av);
     EXPECT_TRUE(readOnly.exists());
 
-    AccountRootEntryW writable(alice.id(), av);
+    AccountRootEntryW writable(alice_.id(), av);
     EXPECT_TRUE(writable.exists());
 
     // The invariant resolveEntry() exists to hold: one SLE per key per
@@ -350,13 +350,13 @@ TEST_F(SLEBaseTests, ThrowsOnMissingEntry)
 {
     // A generic read-only entry has no static type to fall back on, so
     // type() must read it off the (absent) SLE and throw.
-    ReadOnlySLE const absent(keylet::account(bob.id()), env.getClosedLedger());
+    ReadOnlySLE const absent(keylet::account(bob_.id()), env_.getClosedLedger());
     EXPECT_FALSE(absent.exists());
     EXPECT_THROW(std::ignore = absent.type(), std::logic_error);
 
     // A per-type read-only entry always knows its type, but keylet() and
     // key() still have to derive the ledger key from the SLE.
-    AccountRootEntryR const missing(bob.id(), env.getClosedLedger());
+    AccountRootEntryR const missing(bob_.id(), env_.getClosedLedger());
     EXPECT_FALSE(missing.exists());
     EXPECT_THROW(std::ignore = missing.key(), std::logic_error);
 }
