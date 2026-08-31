@@ -2640,7 +2640,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::chrono_literals;
 
-        bool const fixEnabled = features[fixCleanup3_4_0];
+        bool const fix340Enabled = features[fixCleanup3_4_0];
 
         Env env(*this, features);
 
@@ -2701,7 +2701,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(coverWithdrawToDest(), loan_broker::kDestination(dest), Ter{tecNO_PERMISSION});
         env.close();
 
-        if (!fixEnabled)
+        if (!fix340Enabled)
         {
             // Pre-fix: sfCredentialIDs in LoanBrokerCoverWithdraw is disabled
             env(coverWithdrawToDest(),
