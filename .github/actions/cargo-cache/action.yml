@@ -20,9 +20,10 @@ inputs:
     required: false
     default: ""
   save-if:
-    description: "Condition for saving the cache after the job."
+    description: >
+      Condition for saving the cache after the job. Defaults to save only from develop branch
     required: false
-    default: "true"
+    default: ${{ github.ref == 'refs/heads/develop' }}
 
 runs:
   using: composite

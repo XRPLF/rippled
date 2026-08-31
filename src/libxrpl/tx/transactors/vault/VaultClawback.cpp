@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -93,6 +94,17 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.error()) << "VaultClawback: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // A pseudo-account holds no vault shares, so a clawback naming one is a no-op: the vault's own
+    // pseudo-account issues the shares, and no flow hands them to another one.
+    // Pre-fixCleanup3_4_0: an implicit amount ends in tecPRECISION_LOSS, an explicit one debits the
+    // vault and trips the "shares must move" invariant.
+    // Post-fixCleanup3_4_0: refused here.
+    if (ctx.view.rules().enabled(fixCleanup3_4_0) && isPseudoAccount(ctx.view, holder))
+    {
+        JLOG(ctx.j.debug()) << "VaultClawback: holder is a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
     }
 
     Asset const share = MPTIssue{mptIssuanceID};
@@ -271,8 +283,15 @@ VaultClawback::assetsToClawback(
         }
         else
         {
+            // Pre-fixCleanup3_4_0: shares were rounded to nearest, so the
+            // round-trip back to assets could exceed clawbackAmount.
+            // Post-amendment: truncate shares so assetsRecovered <=
+            // clawbackAmount by construction (matches the clamp branch
+            // below).
+            auto const truncate = ctx_.view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes
+                                                                               : TruncateShares::No;
             auto const maybeShares =
-                assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount);
+                assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount, truncate);
             if (!maybeShares)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             sharesDestroyed = *maybeShares;
@@ -352,11 +371,6 @@ VaultClawback::doApply()
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
-
-    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
-    XRPL_ASSERT(
-        lossUnrealized <= (assetsTotal - assetsAvailable),
-        "xrpl::VaultClawback::doApply : loss and assets do balance");
 
     AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
