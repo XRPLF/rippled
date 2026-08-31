@@ -765,8 +765,13 @@ ValidVault::finalize(
                     result = false;
                 }
 
+                // AssetsTotal may exceed AssetsMaximum when the excess is interest. After
+                // fixCleanup3_4_0, only reject a VaultSet that supplies sfAssetsMaximum or
+                // otherwise changes the cap to a nonzero value still below AssetsTotal.
                 if (afterVault.assetsMaximum > kZero &&
-                    afterVault.assetsTotal > afterVault.assetsMaximum)
+                    afterVault.assetsTotal > afterVault.assetsMaximum &&
+                    (!fixEnabled || tx.isFieldPresent(sfAssetsMaximum) ||
+                     beforeVault.assetsMaximum != afterVault.assetsMaximum))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: set assets outstanding must not "
