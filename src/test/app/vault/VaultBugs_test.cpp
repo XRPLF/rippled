@@ -14,9 +14,11 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -26,9 +28,11 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <chrono>
 #include <cstdint>
@@ -425,6 +429,9 @@ private:
             testcase(
                 "bug: VaultDeposit below Vault precision canonicalized to zero "
                 "(pre-fixCleanup3_2_0)");
+            // Also remove fixCleanup3_4_0 so the VaultDeposit clamp
+            // introduced by that amendment does not short-circuit this
+            // pre-fixCleanup3_2_0 scenario with tecPRECISION_LOSS.
             runScenario(
                 testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
         }
@@ -564,44 +571,49 @@ private:
             env.close();
         };
 
+        // Strip featureLendingProtocolV1_1: this scenario runs an
+        // open-ended vault through deposit/broker/loan/repay/deposit,
+        // which spans both Subscription and post-loan lifetime — a phase
+        // pattern that only makes sense on open-ended vaults. The gate
+        // added by LP V1.1 is unrelated to the truncation bug asserted
+        // here.
+        auto const legacy = testableAmendments() - featureLendingProtocolV1_1;
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(testableAmendments() - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
+            runScenario(legacy - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_2_0 and pre-fixCleanup3_4_0)");
             runScenario(
-                testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0,
-                Line::Holding,
-                tecINVARIANT_FAILED);
+                legacy - fixCleanup3_2_0 - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
-            runScenario(testableAmendments(), Line::Holding, tecPRECISION_LOSS);
+            runScenario(legacy, Line::Holding, tecPRECISION_LOSS);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0, pre-fixCleanup3_2_0)");
-            runScenario(testableAmendments() - fixCleanup3_2_0, Line::Holding, tecPRECISION_LOSS);
+            runScenario(legacy - fixCleanup3_2_0, Line::Holding, tecPRECISION_LOSS);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation against a debt balance "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(testableAmendments() - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
+            runScenario(legacy - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation against a debt balance rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
-            runScenario(testableAmendments(), Line::InDebt, tecPRECISION_LOSS);
+            runScenario(legacy, Line::InDebt, tecPRECISION_LOSS);
         }
     }
 
@@ -799,6 +811,128 @@ private:
             testcase("bug: VaultWithdraw dust debit rejected cleanly (post-fixCleanup3_4_0)");
             runScenario(all_, tecPRECISION_LOSS);
         }
+    }
+
+    // Scale 15 seed + deposit 5: pre-fix credited > paid; post-fix credited <= paid.
+    // fixCleanup3_2_0 is off so roundToVaultScale does not shrink the deposit first.
+    void
+    testBugVaultDepositOvercreditsAcrossScaleBoundary()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool expectOvercredit) {
+            Env env(*this, features);
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(1'000'000), owner, issuer, depositor);
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Number const seed{9'999'999'999'999'999LL, -15};
+            Number const deposit{5};
+
+            env(trust(depositor, usd(1'000'000'000)));
+            env.close();
+            env(pay(issuer, depositor, usd(deposit)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            tx[sfScale] = 15;
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = issuer, .id = keylet.key, .amount = usd(seed)}));
+            env.close();
+
+            Number const totalBefore = env.le(keylet)->at(sfAssetsTotal);
+            Number const depositorBefore = env.balance(depositor, usd.raw()).number();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = usd(deposit)}));
+            env.close();
+
+            Number const totalAfter = env.le(keylet)->at(sfAssetsTotal);
+            Number const depositorAfter = env.balance(depositor, usd.raw()).number();
+            Number const paid = depositorBefore - depositorAfter;
+            Number const credited = totalAfter - totalBefore;
+
+            if (expectOvercredit)
+            {
+                BEAST_EXPECTS(
+                    credited > paid,
+                    "AssetsTotal credited " + to_string(credited) + " for a payment of " +
+                        to_string(paid) + ", expected an overcredit");
+            }
+            else
+            {
+                BEAST_EXPECTS(
+                    credited <= paid,
+                    "AssetsTotal credited " + to_string(credited) + " for a payment of " +
+                        to_string(paid));
+            }
+        };
+
+        testcase(
+            "bug: VaultDeposit overcredits across an IOU scale boundary "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_2_0 - fixCleanup3_4_0, true);
+
+        testcase(
+            "bug: VaultDeposit no longer overcredits across an IOU scale boundary "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, false);
+    }
+
+    // 1e17 IOU at scale 0. Withdraw all-but-one, then the last share:
+    // pre-fix tecINVARIANT_FAILED, post-fix tesSUCCESS.
+    void
+    testBugVaultLockedByPartialWithdraw()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            env.fund(XRP(1'000'000), owner, issuer, holder);
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(holder, usd(Number{1, 18})));
+            env.close();
+            env(pay(issuer, holder, usd(Number{1, 17})));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            tx[sfScale] = 0;
+            env(tx);
+            env.close();
+            env(vault.deposit(
+                {.depositor = holder, .id = keylet.key, .amount = usd(Number{1, 17})}));
+            env.close();
+
+            MPTIssue const share{env.le(keylet)->at(sfShareMPTID)};
+            std::int64_t const allButOne = 100'000'000'000'000'000LL - 1;
+            env(vault.withdraw(
+                {.depositor = holder, .id = keylet.key, .amount = STAmount{share, allButOne}}));
+            env.close();
+
+            env(vault.withdraw(
+                    {.depositor = holder, .id = keylet.key, .amount = STAmount{share, 1}}),
+                Ter(expected));
+            env.close();
+        };
+
+        testcase(
+            "bug: VaultWithdraw permanently locks a large IOU vault "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        testcase(
+            "bug: VaultWithdraw no longer locks a large IOU vault "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS);
     }
 
     // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
@@ -1104,7 +1238,10 @@ private:
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, bool withFix) {
-            Env env{*this, features};
+            // This regression requires the open-ended vault lifecycle: deposit,
+            // originate and repay a loan, then claw back shares. LP V1.1
+            // independently rejects attaching a broker to an open-ended vault.
+            Env env{*this, features - featureLendingProtocolV1_1};
 
             auto const setup = makeRoundTripOvershootVault(env);
             if (!BEAST_EXPECT(setup))
@@ -1165,7 +1302,10 @@ private:
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, bool withFix) {
-            Env env{*this, features};
+            // This regression requires the open-ended vault lifecycle: deposit,
+            // originate and repay a loan, then withdraw shares. LP V1.1
+            // independently rejects attaching a broker to an open-ended vault.
+            Env env{*this, features - featureLendingProtocolV1_1};
 
             auto const setup = makeRoundTripOvershootVault(env);
             if (!BEAST_EXPECT(setup))
@@ -1323,6 +1463,217 @@ private:
         BEAST_EXPECT(ownerCount(env, attacker) == 0);
     }
 
+    struct ImpairedLoanVault
+    {
+        test::jtx::Account issuer;
+        test::jtx::Account holder;
+        PrettyAsset usd;
+        test::jtx::Vault vault;
+        Keylet vaultKeylet;
+        MPTID shareId;
+    };
+
+    // Impairing a 1,000 loan in a 10,000 vault leaves AssetsAvailable=9,000
+    // and AssetsTotal=10,000. otherDeposit > 0 splits the shares, 0 leaves
+    // holder as the sole shareholder.
+    std::optional<ImpairedLoanVault>
+    makeImpairedLoanVault(test::jtx::Env& env, int otherDeposit)
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const other{"other"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, owner, holder, other, borrower);
+        env.close();
+
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        env.trust(usd(100'000), owner);
+        env.trust(usd(100'000), holder);
+        env.trust(usd(100'000), other);
+        env.trust(usd(100'000), borrower);
+        env.close();
+
+        int const holderDeposit = 10'000 - otherDeposit;
+        env(pay(issuer, holder, usd(holderDeposit)));
+        if (otherDeposit != 0)
+        {
+            env(pay(issuer, other, usd(otherDeposit)));
+        }
+        env.close();
+
+        Vault const vault{env};
+        auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner, .asset = usd, .subscriptionOffset = std::chrono::seconds{60}});
+        env(createTx);
+        env.close();
+
+        auto const vaultSle = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return std::nullopt;
+        MPTID const shareId = vaultSle->at(sfShareMPTID);
+
+        env(vault.deposit(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = usd(holderDeposit)}));
+        if (otherDeposit != 0)
+        {
+            env(vault.deposit(
+                {.depositor = other, .id = vaultKeylet.key, .amount = usd(otherDeposit)}));
+        }
+        env.close();
+
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(set(owner, vaultKeylet.key));
+        env.close();
+
+        auto const sleBroker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(sleBroker))
+            return std::nullopt;
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+        env(set(borrower, brokerKeylet.key, usd(1'000).value()),
+            loan::kInterestRate(percentageToTenthBips(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Under fixCleanup3_4_0, LoanManage rejects tfLoanImpair with
+        // tecTOO_SOON unless the payment is already late; advance the ledger
+        // past sfNextPaymentDueDate so impairment succeeds. No-op otherwise.
+        if (env.current()->rules().enabled(fixCleanup3_4_0))
+        {
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return std::nullopt;
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+        }
+
+        env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return std::nullopt;
+        BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == usd(9'000).value());
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == usd(1'000).value());
+
+        return ImpairedLoanVault{
+            .issuer = issuer,
+            .holder = holder,
+            .usd = usd,
+            .vault = vault,
+            .vaultKeylet = vaultKeylet,
+            .shareId = shareId};
+    }
+
+    // Legacy clawback pricing burns every share; fixCleanup3_4_0 leaves 10%
+    // outstanding, backed by the impaired receivable.
+    void
+    testBugClawbackAfterLoanImpair()
+    {
+        using namespace test::jtx;
+
+        auto clawbackHolder = [](ImpairedLoanVault const& setup, STAmount const& amount) {
+            return setup.vault.clawback(
+                {.issuer = setup.issuer,
+                 .id = setup.vaultKeylet.key,
+                 .holder = setup.holder,
+                 .amount = amount});
+        };
+
+        auto runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
+            testcase(
+                features[fixCleanup3_4_0]
+                    ? "VaultClawback after impaired loan (post-fixCleanup3_4_0)"
+                    : "VaultClawback after impaired loan (pre-fixCleanup3_4_0)");
+
+            Env env(*this, features);
+            auto const maybeSetup = makeImpairedLoanVault(env, 0);
+            if (!maybeSetup)
+            {
+                BEAST_EXPECT(false);
+                return;
+            }
+            ImpairedLoanVault const& setup = *maybeSetup;
+
+            auto const tokenBefore = env.le(keylet::mptoken(setup.shareId, setup.holder.id()));
+            auto const vaultBefore = env.le(setup.vaultKeylet);
+            auto const issuanceBefore = env.le(keylet::mptokenIssuance(setup.shareId));
+            if (!BEAST_EXPECT(tokenBefore) || !BEAST_EXPECT(vaultBefore) ||
+                !BEAST_EXPECT(issuanceBefore))
+                return;
+            std::uint64_t const sharesBefore = tokenBefore->getFieldU64(sfMPTAmount);
+
+            // The clawback of 19,000 exceeds AssetsAvailable (9,000), so
+            // VaultClawback clamps sharesDestroyed to whatever redeems
+            // exactly AssetsAvailable; compute that expected value using the
+            // same conversion helper VaultClawback itself uses, rather than
+            // assuming an exact 90/10 split holds under truncation.
+            auto const maybeSharesDestroyed = assetsToSharesWithdraw(
+                vaultBefore,
+                issuanceBefore,
+                setup.usd(9'000).value(),
+                TruncateShares::Yes,
+                WaiveUnrealizedLoss::Yes);
+            if (!BEAST_EXPECT(maybeSharesDestroyed))
+                return;
+            std::uint64_t const expectedSharesAfter =
+                sharesBefore - maybeSharesDestroyed->mpt().value();
+
+            env(clawbackHolder(setup, setup.usd(19'000).value()), Ter(expected));
+            env.close();
+            if (expected != tesSUCCESS)
+                return;
+
+            auto const vaultAfter = env.le(setup.vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == setup.usd(0).value());
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == setup.usd(1'000).value());
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == setup.usd(1'000).value());
+            auto const tokenAfter = env.le(keylet::mptoken(setup.shareId, setup.holder.id()));
+            if (!BEAST_EXPECT(tokenAfter))
+                return;
+            BEAST_EXPECT(tokenAfter->getFieldU64(sfMPTAmount) == expectedSharesAfter);
+        };
+
+        runSole(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runSole(all_, tesSUCCESS);
+
+        testcase("VaultClawback after impaired loan, non-sole holder");
+        {
+            Env env(*this, all_);
+            auto const maybeSetup = makeImpairedLoanVault(env, 1'000);
+            if (!maybeSetup)
+            {
+                BEAST_EXPECT(false);
+                return;
+            }
+            ImpairedLoanVault const& setup = *maybeSetup;
+            // The waiver does not apply, so the holder's 9,000 shares are
+            // still priced at the discounted rate and cannot cover 9,000.
+            env(clawbackHolder(setup, setup.usd(9'000).value()), Ter(tecINSUFFICIENT_FUNDS));
+        }
+    }
+
 public:
     void
     run() override
@@ -1335,12 +1686,15 @@ public:
         testBugDepositShareTruncationSubUlp();
         testVaultWithdrawCanonicalizeToZero();
         testBugVaultDustDebitCanonicalizesToNoOp();
+        testBugVaultDepositOvercreditsAcrossScaleBoundary();
+        testBugVaultLockedByPartialWithdraw();
         testVaultDepositNegativeBalanceFromOppositeLimit();
         testCredentialPinsPseudoAccount();
         testCredentialPinOverflow();
         testBug6LimitBypassWithShares();
         testBugClawbackRoundTripOvershoot();
         testBugWithdrawRoundTripOvershoot();
+        testBugClawbackAfterLoanImpair();
     }
 };
 

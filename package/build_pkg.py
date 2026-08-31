@@ -219,8 +219,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--channel",
-        default="unstable",
-        help="release channel, written to debian/changelog (default: %(default)s)",
+        required=True,
+        choices=("stable", "rc", "beta", "develop", "private", "UNRELEASED"),
+        help="release channel, written to debian/changelog",
     )
     args = parser.parse_args()
     package_type: str = args.package_type
