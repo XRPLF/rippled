@@ -10,7 +10,9 @@ a build configured with `-Dvalidator_keys=ON`.
 package/
   build_pkg.py        Staging and build script (called by the CMake `package` target and CI)
   sign_rpm.py         Signs the built RPMs (called by CI when publishing)
-  publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI)
+  docker/
+    Dockerfile          Packaging image, built by `build-packaging-images.yml`; installs its tooling with `bin/install-packaging-tools.sh`
+    publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
   rpm/
     xrpld.spec      RPM spec
   debian/           Debian control files (control, rules, copyright, xrpld.docs, xrpld.links, source/format)
@@ -147,15 +149,21 @@ Versions sort in row order, so moving to a more mature channel never downgrades.
 
 The action decides the package release number on the same split: a tag's version
 is unique, so its packages are release 1, while develop repeats the same version
-and takes `github.run_number` so each push supersedes the last. Both reach the
-packaging scripts as arguments, so neither script derives anything itself.
+and takes `<run number>.<commit date>git<commit hash>`, e.g.
+`857.20260826gitb6a8995` — the leading run number keeps each push superseding
+the last, and the date and hash say which commit a package on
+`packages.xrplf.org` came from. Both reach the packaging scripts as arguments,
+so neither script derives anything itself.
 
 Publishing is the last step of each packaging job, uploading from the container
-that built the packages. It runs when the caller passes `publish: true`:
-`on-trigger.yml` for develop pushes in `XRPLF/rippled`, `on-tag.yml` for tags in
-any `XRPLF` repository, `on-pr.yml` never. Both authenticate with the
+that built the packages with the `publish_pkg.py` shipped in the image — the
+same copy other repositories run. Without `publish: true` the step is a
+`--dry-run`, listing the uploads it would make without needing credentials, so
+any run that builds packages also exercises the upload routing. `on-trigger.yml`
+passes `publish: true` for develop pushes in `XRPLF/rippled` and `on-tag.yml`
+for tags in any `XRPLF` repository, both authenticating with the
 `NEXUS_REMOTE_USERNAME` / `NEXUS_REMOTE_PASSWORD` secrets already used for the
-Conan remote.
+Conan remote; `on-pr.yml` never publishes.
 
 Nexus owns the repository metadata; nothing here indexes anything. Worth knowing:
 
@@ -175,6 +183,12 @@ Nexus owns the repository metadata; nothing here indexes anything. Worth knowing
   POST and the yum PUT replace an existing asset.
 - The `develop` repositories gain a package per push, so they need a cleanup
   policy to stay bounded; tagged channels publish each version once.
+
+### Publishing from other repositories
+
+`publish_pkg.py` knows nothing about `xrpld`, so the packaging image
+installs it at `/usr/local/bin/publish_pkg.py` for other XRPLF repositories that
+build their packages elsewhere.
 
 ## How `build_pkg.py` works
 

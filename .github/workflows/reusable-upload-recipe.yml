@@ -49,6 +49,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@7bf7ceca5932114abdd0d43493c3c30c5a654e13
+        with:
+          enable_ccache: false
+
       - name: Determine release info
         id: release_info
         uses: ./.github/actions/release-info
