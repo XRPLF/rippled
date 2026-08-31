@@ -612,6 +612,13 @@ public:
     [[nodiscard]] bool
     checkImmutableFlags(std::uint32_t expectedFlags) const;
 
+    // Checks both key epochs on the issuance. Pass std::nullopt for an epoch
+    // that is expected to be absent, which means the key is never rotated.
+    [[nodiscard]] bool
+    checkKeyEpochs(
+        std::optional<std::uint32_t> issuerKeyEpoch,
+        std::optional<std::uint32_t> auditorKeyEpoch) const;
+
     [[nodiscard]] Account const&
     issuer() const
     {

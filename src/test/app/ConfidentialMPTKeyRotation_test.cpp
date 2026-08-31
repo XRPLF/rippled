@@ -5,11 +5,19 @@
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -41,12 +49,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         });
 
         // Verify that no epochs are set when registering for the first time.
-        {
-            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
-            BEAST_EXPECT(sleIssuance);
-            BEAST_EXPECT(sleIssuance && !sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
-            BEAST_EXPECT(sleIssuance && !sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
-        }
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
 
         // Rotating the issuer key requires the key rotation amendment
         bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
@@ -67,16 +70,12 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 expectedKey &&
                 strHex((*sleIssuance)[sfIssuerEncryptionKey]) == strHex(*expectedKey));
 
-            // Rotating the issuer key bumps the epoch.
+            // Rotating the issuer key bumps its epoch. The auditor key was
+            // never registered, so its epoch stays absent.
             if (rotationEnabled)
-            {
-                BEAST_EXPECT((*sleIssuance)[~sfIssuerKeyEpoch] == 1u);
-            }
+                BEAST_EXPECT(mptAlice.checkKeyEpochs(1u, std::nullopt));
             else
-            {
-                BEAST_EXPECT(!sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
-            }
-            BEAST_EXPECT(!sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
+                BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
         }
 
         if (rotationEnabled)
@@ -87,8 +86,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .issuerPubKey = mptAlice.getPubKey(alice),
             });
 
-            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
-            BEAST_EXPECT(sleIssuance && (*sleIssuance)[~sfIssuerKeyEpoch] == 2u);
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(2u, std::nullopt));
         }
     }
 
@@ -121,11 +119,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         });
 
         //  Verify that no epochs are set when registering for the first time.
-        {
-            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
-            BEAST_EXPECT(sleIssuance && !sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
-            BEAST_EXPECT(sleIssuance && !sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
-        }
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
 
         // Rotating both keys, it requires the amendment
         bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
@@ -151,15 +145,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             expectedAuditorKey &&
             strHex((*sleIssuance)[sfAuditorEncryptionKey]) == strHex(*expectedAuditorKey));
         if (rotationEnabled)
-        {
-            BEAST_EXPECT((*sleIssuance)[~sfIssuerKeyEpoch] == 1u);
-            BEAST_EXPECT((*sleIssuance)[~sfAuditorKeyEpoch] == 1u);
-        }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(1u, 1u));
         else
-        {
-            BEAST_EXPECT(!sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
-            BEAST_EXPECT(!sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
-        }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
 
         if (rotationEnabled)
         {
@@ -198,11 +186,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             });
 
             // Nothing changed: keys and epochs are untouched
-            {
-                auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
-                BEAST_EXPECT(sleIssuance && (*sleIssuance)[~sfIssuerKeyEpoch] == 1u);
-                BEAST_EXPECT(sleIssuance && (*sleIssuance)[~sfAuditorKeyEpoch] == 1u);
-            }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(1u, 1u));
 
             // A second rotation increments both epochs again
             mptAlice.set({
@@ -211,9 +195,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .auditorPubKey = mptAlice.getPubKey(auditor),
             });
 
-            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
-            BEAST_EXPECT(sleIssuance && (*sleIssuance)[~sfIssuerKeyEpoch] == 2u);
-            BEAST_EXPECT(sleIssuance && (*sleIssuance)[~sfAuditorKeyEpoch] == 2u);
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(2u, 2u));
         }
     }
 
@@ -263,7 +245,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         auto const issuerKey = mptAlice.getPubKey(alice);
         BEAST_EXPECT(
             issuerKey && strHex((*sleIssuance)[sfIssuerEncryptionKey]) == strHex(*issuerKey));
-        BEAST_EXPECT(!sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
 
         auto const expectedAuditorKey =
             rotationEnabled ? mptAlice.getPubKey(bob) : mptAlice.getPubKey(auditor);
@@ -271,15 +252,12 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             expectedAuditorKey &&
             strHex((*sleIssuance)[sfAuditorEncryptionKey]) == strHex(*expectedAuditorKey));
 
-        // Rotating the auditor key bumps its epoch.
+        // Rotating the auditor key bumps its epoch, and never registering the
+        // issuer key leaves the issuer epoch absent.
         if (rotationEnabled)
-        {
-            BEAST_EXPECT((*sleIssuance)[~sfAuditorKeyEpoch] == 1u);
-        }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, 1u));
         else
-        {
-            BEAST_EXPECT(!sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
-        }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
 
         if (rotationEnabled)
         {
@@ -289,11 +267,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .auditorPubKey = mptAlice.getPubKey(auditor),
             });
 
-            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
-            BEAST_EXPECT(sleIssuance && (*sleIssuance)[~sfAuditorKeyEpoch] == 2u);
-
             // The issuer key epoch is still untouched.
-            BEAST_EXPECT(sleIssuance && !sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, 2u));
         }
     }
 
@@ -336,8 +311,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         if (!BEAST_EXPECT(sleIssuance))
             return;
         BEAST_EXPECT(sleIssuance->isFieldPresent(sfAuditorEncryptionKey) == rotationEnabled);
-        BEAST_EXPECT(!sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
-        BEAST_EXPECT(!sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
     }
 
     void
@@ -397,8 +371,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         if (!BEAST_EXPECT(sleIssuance))
             return;
         BEAST_EXPECT(sleIssuance->isFieldPresent(sfAuditorEncryptionKey) == rotationEnabled);
-        BEAST_EXPECT(!sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
-        BEAST_EXPECT(!sleIssuance->isFieldPresent(sfAuditorKeyEpoch));
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
 
         // The circulating supply itself is not affected.
         BEAST_EXPECT((*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) == coaBefore);
@@ -498,13 +471,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         BEAST_EXPECT(
             expectedKey && strHex((*sleIssuance)[sfIssuerEncryptionKey]) == strHex(*expectedKey));
         if (rotationEnabled)
-        {
-            BEAST_EXPECT((*sleIssuance)[~sfIssuerKeyEpoch] == 1u);
-        }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(1u, std::nullopt));
         else
-        {
-            BEAST_EXPECT(!sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
-        }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
 
         // The confidential outstanding amount is not affected by the rotation
         BEAST_EXPECT(
@@ -520,6 +489,136 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
     }
 
     void
+    testMPTokenIssuanceSetKeyEpochAtMax(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        // Without the amendment the keys cannot be rotated at all, so there is
+        // no epoch to exhaust. Bail out before opening the testcase, otherwise
+        // it records no conditions and trips the runner's "forgot to call pass
+        // or fail" assertion.
+        if (!features[featureConfidentialMPTKeyRotation])
+            return;
+
+        testcase("MPTokenIssuanceSet key epoch cannot wrap");
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const auditor("auditor");
+
+        // Keep the ledger open so that we can write the key epochs directly into it.
+        MPTTester mptAlice(env, alice, {.holders = {bob}, .close = false});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+        });
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.generateKeyPair(auditor);
+
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .auditorPubKey = mptAlice.getPubKey(auditor),
+        });
+
+        auto const issuanceKeylet = keylet::mptokenIssuance(mptAlice.issuanceID());
+
+        // Writes the supplied key epochs straight into the open ledger so that
+        // the maximum epoch is reachable without submitting four billion
+        // rotations.
+        auto setEpochs = [&](std::optional<std::uint32_t> const& issuerKeyEpoch,
+                             std::optional<std::uint32_t> const& auditorKeyEpoch) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = view.read(issuanceKeylet);
+                if (!sle)
+                    return false;  // LCOV_EXCL_LINE
+
+                auto replacement = std::make_shared<SLE>(*sle);
+                if (issuerKeyEpoch)
+                    (*replacement)[sfIssuerKeyEpoch] = *issuerKeyEpoch;
+                if (auditorKeyEpoch)
+                    (*replacement)[sfAuditorKeyEpoch] = *auditorKeyEpoch;
+                view.rawReplace(replacement);
+                return true;
+            });
+        };
+
+        // Increment the auditor epoch to kMaxKeyEpoch - 1, leaving the issuer epoch absent.
+        setEpochs(std::nullopt, kMaxKeyEpoch - 1);
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, kMaxKeyEpoch - 1));
+
+        // Rotating the auditor key to kMaxKeyEpoch succeeds.
+        mptAlice.set({
+            .account = alice,
+            .auditorPubKey = mptAlice.getPubKey(carol),
+        });
+
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, kMaxKeyEpoch));
+
+        // A further auditor rotation is rejected because the epoch is exhausted.
+        mptAlice.set({
+            .account = alice,
+            .auditorPubKey = mptAlice.getPubKey(bob),
+            .err = tecNO_PERMISSION,
+        });
+
+        // Rotating both keys at once is rejected as a whole because the auditor
+        // epoch is exhausted.
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(auditor),
+            .auditorPubKey = mptAlice.getPubKey(bob),
+            .err = tecNO_PERMISSION,
+        });
+
+        // The issuer key is unaffected by the exhausted auditor epoch.
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(bob),
+        });
+
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(1u, kMaxKeyEpoch));
+
+        // Increment the issuer epoch to kMaxKeyEpoch - 1.
+        setEpochs(kMaxKeyEpoch - 1, std::nullopt);
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(kMaxKeyEpoch - 1, kMaxKeyEpoch));
+
+        // Rotating the issuer key to kMaxKeyEpoch succeeds.
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(carol),
+        });
+
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(kMaxKeyEpoch, kMaxKeyEpoch));
+
+        // With both epochs exhausted neither key can be rotated again.
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .err = tecNO_PERMISSION,
+        });
+        mptAlice.set({
+            .account = alice,
+            .auditorPubKey = mptAlice.getPubKey(bob),
+            .err = tecNO_PERMISSION,
+        });
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .auditorPubKey = mptAlice.getPubKey(bob),
+            .err = tecNO_PERMISSION,
+        });
+
+        BEAST_EXPECT(mptAlice.checkKeyEpochs(kMaxKeyEpoch, kMaxKeyEpoch));
+    }
+
+    void
     testMPTokenIssuanceSetWithFeats(FeatureBitset features)
     {
         testMPTokenIssuanceSetRotateIssuerKey(features);
@@ -529,6 +628,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         testMPTokenIssuanceSetRegisterAuditorKeyLaterWithCOA(features);
         testMPTokenIssuanceSetAuditorKeyWithoutIssuerKey(features);
         testMPTokenIssuanceSetRotateWithCOA(features);
+        testMPTokenIssuanceSetKeyEpochAtMax(features);
     }
 
 public:

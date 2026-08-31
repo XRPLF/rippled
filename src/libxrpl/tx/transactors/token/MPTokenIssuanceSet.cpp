@@ -255,6 +255,18 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if (txHasAuditorKey && sleHasAuditorKey &&
             ctx.tx[sfAuditorEncryptionKey] == (*sleMptIssuance)[sfAuditorEncryptionKey])
             return tecDUPLICATE;
+
+        // Key epochs must never wrap. Epoch 0 serves as the sentinel for "never
+        // rotated." Holders' mirror epochs are checked against it for equality,
+        // so a wrap would cause stale mirror ciphertexts to appear valid instead
+        // of failing loudly.
+        if (txHasIssuerKey && sleHasIssuerKey &&
+            (*sleMptIssuance)[~sfIssuerKeyEpoch].value_or(0) == kMaxKeyEpoch)
+            return tecNO_PERMISSION;
+
+        if (txHasAuditorKey && sleHasAuditorKey &&
+            (*sleMptIssuance)[~sfAuditorKeyEpoch].value_or(0) == kMaxKeyEpoch)
+            return tecNO_PERMISSION;
     }
     else
     {
@@ -444,7 +456,15 @@ MPTokenIssuanceSet::doApply()
         sle->setFieldVL(keyField, *pubKey);
 
         if (isRotation)
-            (*sle)[epochField] = (*sle)[~epochField].valueOr(0) + 1;
+        {
+            auto const epoch = (*sle)[~epochField].valueOr(0);
+
+            // Preclaim rejects a rotation that would wrap the epoch.
+            XRPL_ASSERT(
+                epoch < kMaxKeyEpoch, "MPTokenIssuanceSet::doApply : key epoch does not wrap");
+
+            (*sle)[epochField] = epoch + 1;
+        }
     };
 
     setEncryptionKey(sfIssuerEncryptionKey, sfIssuerKeyEpoch);

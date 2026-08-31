@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace xrpl {
 
@@ -542,6 +543,11 @@ constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_
  * Extra base fee multiplier charged to confidential MPT transactions.
  */
 constexpr std::uint32_t kConfidentialFeeMultiplier = 9;
+
+/**
+ * Maximum value a confidential MPT key epoch may reach.
+ */
+constexpr std::uint32_t kMaxKeyEpoch = std::numeric_limits<std::uint32_t>::max();
 
 /**
  * Compressed EC point prefix for even y-coordinate
