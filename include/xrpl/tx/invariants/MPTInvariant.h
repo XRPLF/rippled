@@ -215,6 +215,12 @@ class ValidMPTTransfer
     // Deleted MPToken
     // MPToken key: true if MPTAuthorized is set
     hash_map<uint256, bool> deletedAuthorized_;
+    // AccountRoot entries modified/deleted by a transaction:
+    // AccountID -> whether it was a pseudo-account BEFORE this transaction
+    // applied. Needed because a transaction may erase a pseudo-account and
+    // move MPT out of it in the same transaction; by finalize() time the
+    // view no longer shows it as a pseudo-account (or as existing at all).
+    hash_map<AccountID, bool> pseudoAccountBefore_;
 
 public:
     /**

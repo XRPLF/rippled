@@ -1850,6 +1850,96 @@ class LoanBroker_test : public beast::unit_test::Suite
     }
 
     void
+    testLoanBrokerDeleteRequireAuthMPT(FeatureBitset features)
+    {
+        testcase << "LoanBrokerDelete - auth-required broker pseudo-account MPT "
+                 << (features[fixCleanup3_4_0] ? "post-fix" : "pre-fix");
+        using namespace jtx;
+        using namespace loan_broker;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+
+        Env env(*this, features);
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        // Create an auth-required MPT and authorize alice as a holder. The
+        // broker pseudo-account's cover MPToken is auto-created later
+        // (addEmptyHolding -> authorizeMPToken) with lsfMPTAuthorized clear;
+        // the pseudo-account is implicitly authorized to hold any MPT
+        // regardless of that flag.
+        auto tester = MPTTester(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {alice},
+             .pay = 20'000,
+             .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+             .authHolder = true});
+
+        PrettyAsset const mpt{tester.issuanceID()};
+
+        // Create vault
+        Vault const vault{env};
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
+        env(tx);
+        env.close();
+
+        // Deposit into vault
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = mpt(10'000)}));
+        env.close();
+
+        // Create loan broker
+        auto const brokerKeylet =
+            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+        env(set(alice, vaultKeylet.key));
+        env.close();
+
+        // Deposit cover
+        env(coverDeposit(alice, brokerKeylet.key, mpt(5'000).value()));
+        env.close();
+
+        // Verify cover is deposited
+        auto const broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+        BEAST_EXPECT(broker->at(sfCoverAvailable) > 0);
+
+        // Get the broker pseudo-account
+        auto const brokerPseudoID = broker->at(sfAccount);
+
+        // Verify the broker pseudo-account has an MPToken, and that it was
+        // never explicitly authorized (issuer cannot authorize a
+        // pseudo-account holder; see MPTokenAuthorize::preclaim).
+        auto const pseudoMptKey = keylet::mptoken(tester.issuanceID(), brokerPseudoID);
+        auto const pseudoMpt = env.le(pseudoMptKey);
+        if (!BEAST_EXPECT(pseudoMpt))
+            return;
+        BEAST_EXPECT(!pseudoMpt->isFlag(lsfMPTAuthorized));
+
+        // Record alice's balance before deletion
+        auto const aliceBalanceBefore = env.balance(alice, mpt);
+
+        // LoanBrokerDelete sends the remaining cover out of the broker pseudo-account, deletes its
+        // now-empty MPToken, and erases the pseudo AccountRoot. Before the fix,
+        // ValidMPTTransfer::isAuthorized evaluates isPseudoAccount() on the post-transaction view
+        // (where the pseudo-account is already gone) and falls back to the MPToken's
+        // lsfMPTAuthorized flag, which was never set, so the invariant treats the broker as an
+        // unauthorized sender and the whole transaction fails once fixCleanup3_4_0 makes the check
+        // enforcing.
+        env(del(alice, brokerKeylet.key), Ter(tesSUCCESS));
+        env.close();
+
+        // Broker and its pseudo-account MPToken are gone
+        BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
+        BEAST_EXPECT(env.le(pseudoMptKey) == nullptr);
+
+        // Alice received the cover
+        auto const aliceBalanceAfter = env.balance(alice, mpt);
+        BEAST_EXPECT(aliceBalanceAfter > aliceBalanceBefore);
+    }
+
+    void
     testCoverDepositFreezes()
     {
         using namespace jtx;
@@ -3035,6 +3125,13 @@ public:
 
         testLoanBrokerDeleteFrozenIOU(all_);
         testLoanBrokerDeleteFrozenIOU(all_ - fixCleanup3_2_0);
+
+        // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
+        // but it's Supported::No (never enabled on real networks); exclude
+        // it here so fixCleanup3_4_0 alone is the deciding amendment, as it
+        // would be on mainnet.
+        testLoanBrokerDeleteRequireAuthMPT(all_ - featureMPTokensV2);
+        testLoanBrokerDeleteRequireAuthMPT(all_ - featureMPTokensV2 - fixCleanup3_4_0);
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
     }
