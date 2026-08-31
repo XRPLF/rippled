@@ -515,6 +515,14 @@ protected:
         STObject const& sigObject,
         beast::Journal const j);
 
+public:
+    // Exposed for invariant checks (e.g. ValidVault) that need to know which
+    // ledger entry actually pays a transaction's fee, distinguishing an
+    // ordinary sender, a delegate, and pre-funded vs. co-signed fee
+    // sponsorship.
+    static FeePayer
+    getFeePayer(ReadView const& view, STTx const& tx);
+
 private:
     static NotTEC
     checkPermission(
@@ -524,9 +532,6 @@ private:
 
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
-
-    static FeePayer
-    getFeePayer(ReadView const& view, STTx const& tx);
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
