@@ -1007,7 +1007,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const oneObject = env.current()->fees().accountReserve(1, 1);
         auto const twoObjects = env.current()->fees().accountReserve(2, 1);
         auto const balance = env.balance(alice).value().xrp();
-        env(pay(alice, bob, drops(balance.drops() - oneObject.drops() - baseFee.drops() * 20)));
+        auto const feeCushion = baseFee.drops() * 20;
+        env(pay(alice, bob, drops(balance.drops() - oneObject.drops() - feeCushion)));
         env.close();
         BEAST_EXPECT(env.balance(alice).value().xrp() >= oneObject);
         BEAST_EXPECT(env.balance(alice).value().xrp() < twoObjects);
