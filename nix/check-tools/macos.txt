@@ -114,8 +114,8 @@ Development tooling:
 
 Rust toolchain:
   ✅ cargo
-     cargo 1.95.0 (f2d3ce0bd 2026-03-21)
-     /nix/store/92vz1f4kislnj58j1pr1788l688py6f0-rust-minimal-1.95.0/bin/cargo
+     cargo 1.97.1 (c980f4866 2026-06-30)
+     /nix/store/bnfk1sl4s9angb0vj1cj9a5y5zvqinwy-rust-minimal-1.97.1/bin/cargo
   ✅ cargo-audit
      cargo-audit-audit 0.22.1
      /nix/store/snwkga2f5gyf404h7mmp9wriwxb8v65f-cargo-audit-0.22.1/bin/cargo-audit
@@ -126,17 +126,17 @@ Rust toolchain:
      cargo-nextest 0.9.137
      /nix/store/ylz7m947mhkgsp6i7611id3s3gcd58nq-cargo-nextest-0.9.137/bin/cargo-nextest
   ✅ clippy-driver
-     clippy 0.1.95 (59807616e1 2026-04-14)
-     /nix/store/92vz1f4kislnj58j1pr1788l688py6f0-rust-minimal-1.95.0/bin/clippy-driver
+     clippy 0.1.97 (8bab26f4f6 2026-07-14)
+     /nix/store/bnfk1sl4s9angb0vj1cj9a5y5zvqinwy-rust-minimal-1.97.1/bin/clippy-driver
   ✅ rust-analyzer
-     rust-analyzer 1.95.0 (59807616 2026-04-14)
-     /nix/store/jqvjap2727r9cjpr25fkw5glv2kbxrdx-rust-analyzer-preview-1.95.0-aarch64-apple-darwin/bin/rust-analyzer
+     rust-analyzer 1.97.1 (8bab26f4 2026-07-14)
+     /nix/store/j6apc5pmd0giy15da9p650r8zklslmvi-rust-analyzer-preview-1.97.1-aarch64-apple-darwin/bin/rust-analyzer
   ✅ rustc
-     rustc 1.95.0 (59807616e 2026-04-14)
-     /nix/store/92vz1f4kislnj58j1pr1788l688py6f0-rust-minimal-1.95.0/bin/rustc
+     rustc 1.97.1 (8bab26f4f 2026-07-14)
+     /nix/store/bnfk1sl4s9angb0vj1cj9a5y5zvqinwy-rust-minimal-1.97.1/bin/rustc
   ✅ rustfmt
-     rustfmt 1.9.0-stable (59807616e1 2026-04-14)
-     /nix/store/03x750yj6fakl7shbhicpnkxiwqxjrrs-rustfmt-preview-1.95.0-aarch64-apple-darwin/bin/rustfmt
+     rustfmt 1.9.0-stable (8bab26f4f6 2026-07-14)
+     /nix/store/5ymwgr9jqjz7zzbmj0j5vqbwcd3kp0vm-rustfmt-preview-1.97.1-aarch64-apple-darwin/bin/rustfmt
 
 Skipping git-over-HTTPS check (CHECK_TOOLS_SKIP_CLONE is set).
 
