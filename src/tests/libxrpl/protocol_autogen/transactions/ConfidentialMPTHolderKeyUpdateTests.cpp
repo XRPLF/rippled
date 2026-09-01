@@ -38,15 +38,15 @@ TEST(TransactionsConfidentialMPTHolderKeyUpdateTests, BuilderSettersRoundTrip)
     ConfidentialMPTHolderKeyUpdateBuilder builder{
         accountValue,
         mPTokenIssuanceIDValue,
-        holderEncryptionKeyValue,
-        zKProofValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setHolderEncryptionKey(holderEncryptionKeyValue);
     builder.setConfidentialBalanceSpending(confidentialBalanceSpendingValue);
     builder.setConfidentialBalanceInbox(confidentialBalanceInboxValue);
+    builder.setZKProof(zKProofValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -69,19 +69,15 @@ TEST(TransactionsConfidentialMPTHolderKeyUpdateTests, BuilderSettersRoundTrip)
         expectEqualField(expected, actual, "sfMPTokenIssuanceID");
     }
 
+    // Verify optional fields
     {
         auto const& expected = holderEncryptionKeyValue;
-        auto const actual = tx.getHolderEncryptionKey();
-        expectEqualField(expected, actual, "sfHolderEncryptionKey");
+        auto const actualOpt = tx.getHolderEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
+        EXPECT_TRUE(tx.hasHolderEncryptionKey());
     }
 
-    {
-        auto const& expected = zKProofValue;
-        auto const actual = tx.getZKProof();
-        expectEqualField(expected, actual, "sfZKProof");
-    }
-
-    // Verify optional fields
     {
         auto const& expected = confidentialBalanceSpendingValue;
         auto const actualOpt = tx.getConfidentialBalanceSpending();
@@ -96,6 +92,14 @@ TEST(TransactionsConfidentialMPTHolderKeyUpdateTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfConfidentialBalanceInbox should be present";
         expectEqualField(expected, *actualOpt, "sfConfidentialBalanceInbox");
         EXPECT_TRUE(tx.hasConfidentialBalanceInbox());
+    }
+
+    {
+        auto const& expected = zKProofValue;
+        auto const actualOpt = tx.getZKProof();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfZKProof should be present";
+        expectEqualField(expected, *actualOpt, "sfZKProof");
+        EXPECT_TRUE(tx.hasZKProof());
     }
 
 }
@@ -124,14 +128,14 @@ TEST(TransactionsConfidentialMPTHolderKeyUpdateTests, BuilderFromStTxRoundTrip)
     ConfidentialMPTHolderKeyUpdateBuilder initialBuilder{
         accountValue,
         mPTokenIssuanceIDValue,
-        holderEncryptionKeyValue,
-        zKProofValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setHolderEncryptionKey(holderEncryptionKeyValue);
     initialBuilder.setConfidentialBalanceSpending(confidentialBalanceSpendingValue);
     initialBuilder.setConfidentialBalanceInbox(confidentialBalanceInboxValue);
+    initialBuilder.setZKProof(zKProofValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -155,19 +159,14 @@ TEST(TransactionsConfidentialMPTHolderKeyUpdateTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, actual, "sfMPTokenIssuanceID");
     }
 
+    // Verify optional fields
     {
         auto const& expected = holderEncryptionKeyValue;
-        auto const actual = rebuiltTx.getHolderEncryptionKey();
-        expectEqualField(expected, actual, "sfHolderEncryptionKey");
+        auto const actualOpt = rebuiltTx.getHolderEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
     }
 
-    {
-        auto const& expected = zKProofValue;
-        auto const actual = rebuiltTx.getZKProof();
-        expectEqualField(expected, actual, "sfZKProof");
-    }
-
-    // Verify optional fields
     {
         auto const& expected = confidentialBalanceSpendingValue;
         auto const actualOpt = rebuiltTx.getConfidentialBalanceSpending();
@@ -180,6 +179,13 @@ TEST(TransactionsConfidentialMPTHolderKeyUpdateTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getConfidentialBalanceInbox();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfConfidentialBalanceInbox should be present";
         expectEqualField(expected, *actualOpt, "sfConfidentialBalanceInbox");
+    }
+
+    {
+        auto const& expected = zKProofValue;
+        auto const actualOpt = rebuiltTx.getZKProof();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfZKProof should be present";
+        expectEqualField(expected, *actualOpt, "sfZKProof");
     }
 
 }
@@ -226,14 +232,10 @@ TEST(TransactionsConfidentialMPTHolderKeyUpdateTests, OptionalFieldsReturnNullop
 
     // Transaction-specific required field values
     auto const mPTokenIssuanceIDValue = canonical_UINT192();
-    auto const holderEncryptionKeyValue = canonical_VL();
-    auto const zKProofValue = canonical_VL();
 
     ConfidentialMPTHolderKeyUpdateBuilder builder{
         accountValue,
         mPTokenIssuanceIDValue,
-        holderEncryptionKeyValue,
-        zKProofValue,
         sequenceValue,
         feeValue
     };
@@ -243,10 +245,14 @@ TEST(TransactionsConfidentialMPTHolderKeyUpdateTests, OptionalFieldsReturnNullop
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasHolderEncryptionKey());
+    EXPECT_FALSE(tx.getHolderEncryptionKey().has_value());
     EXPECT_FALSE(tx.hasConfidentialBalanceSpending());
     EXPECT_FALSE(tx.getConfidentialBalanceSpending().has_value());
     EXPECT_FALSE(tx.hasConfidentialBalanceInbox());
     EXPECT_FALSE(tx.getConfidentialBalanceInbox().has_value());
+    EXPECT_FALSE(tx.hasZKProof());
+    EXPECT_FALSE(tx.getZKProof().has_value());
 }
 
 }

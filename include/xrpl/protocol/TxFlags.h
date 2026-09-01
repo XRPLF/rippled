@@ -242,7 +242,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
                                                                                                                                                                \
     TRANSACTION(ConfidentialMPTHolderKeyUpdate,                                                                                                                \
         TF_FLAG(tfHolderKeyRotation, 0x00010000)                                                                                                               \
-        TF_FLAG(tfHolderKeyRecovery, 0x00020000),                                                                                                              \
+        TF_FLAG(tfHolderKeyRecovery, 0x00020000)                                                                                                               \
+        TF_FLAG(tfCancelRecovery, 0x00040000),                                                                                                                 \
         MASK_ADJ(0))
 
 // clang-format on

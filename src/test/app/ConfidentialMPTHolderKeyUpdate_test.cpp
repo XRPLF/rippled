@@ -90,6 +90,34 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
                 .err = temINVALID_FLAG,
             });
         }
+
+        // Rotation and Cancel flags both set.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            setupBobWithConfidentialBalance(env, mptAlice, alice, bob);
+
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .flags = tfHolderKeyRotation | tfCancelRecovery,
+                .err = temINVALID_FLAG,
+            });
+        }
+
+        // All three mode flags set.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            setupBobWithConfidentialBalance(env, mptAlice, alice, bob);
+
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .flags = tfHolderKeyRotation | tfHolderKeyRecovery | tfCancelRecovery,
+                .err = temINVALID_FLAG,
+            });
+        }
     }
 
     void
@@ -228,6 +256,46 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
     }
 
     void
+    testPreflightCancelRejectsExtraFields(FeatureBitset features)
+    {
+        testcase("HolderKeyUpdate preflight: Cancel mode must not include key/balances/proof");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        setupBobWithConfidentialBalance(env, mptAlice, alice, bob);
+
+        Account const bobNewKey("bobNewKey");
+        mptAlice.generateKeyPair(bobNewKey);
+
+        // HolderEncryptionKey present.
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = mptAlice.getPubKey(bobNewKey),
+            .flags = tfCancelRecovery,
+            .err = temMALFORMED,
+        });
+
+        // Ciphertexts present.
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .spendingCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
+            .inboxCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength),
+            .flags = tfCancelRecovery,
+            .err = temMALFORMED,
+        });
+
+        // ZKProof present.
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .proof = gMakeZeroBuffer(kEcHolderKeyRecoveryProofLength),
+            .flags = tfCancelRecovery,
+            .err = temMALFORMED,
+        });
+    }
+
+    void
     testPreclaimObjectsExist(FeatureBitset features)
     {
         testcase("HolderKeyUpdate preclaim: issuance/MPToken must exist");
@@ -300,6 +368,59 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
             .account = bob,
             .holderPubKey = mptAlice.getPubKey(bob),
             .flags = tfHolderKeyRecovery,
+            .err = tecNO_PERMISSION,
+        });
+    }
+
+    void
+    testPreclaimRecoveryAlreadyPending(FeatureBitset features)
+    {
+        testcase("HolderKeyUpdate preclaim: Recovery mode with pending recovery already set");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        setupBobWithConfidentialBalance(env, mptAlice, alice, bob);
+
+        Account const bobRecoveryKey("bobRecoveryKey");
+        mptAlice.generateKeyPair(bobRecoveryKey);
+
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = mptAlice.getPubKey(bobRecoveryKey),
+            .flags = tfHolderKeyRecovery,
+        });
+
+        // A second Recovery-mode transaction must not silently overwrite the
+        // already-pending RecoveryKey.
+        Account const bobRecoveryKey2("bobRecoveryKey2");
+        mptAlice.generateKeyPair(bobRecoveryKey2);
+
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = mptAlice.getPubKey(bobRecoveryKey2),
+            .flags = tfHolderKeyRecovery,
+            .err = tecNO_PERMISSION,
+        });
+    }
+
+    void
+    testPreclaimCancelNoPendingRecovery(FeatureBitset features)
+    {
+        testcase("HolderKeyUpdate preclaim: Cancel with no pending recovery");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        setupBobWithConfidentialBalance(env, mptAlice, alice, bob);
+
+        // bob never submitted a Recovery-mode transaction, so there is no
+        // sfRecoveryKey to cancel.
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .flags = tfCancelRecovery,
             .err = tecNO_PERMISSION,
         });
     }
@@ -398,6 +519,53 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
     }
 
     void
+    testCancelSucceeds(FeatureBitset features)
+    {
+        testcase("HolderKeyUpdate: Cancel mode clears pending recovery key only");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        setupBobWithConfidentialBalance(env, mptAlice, alice, bob);
+
+        Account const bobRecoveryKey("bobRecoveryKey");
+        mptAlice.generateKeyPair(bobRecoveryKey);
+
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = mptAlice.getPubKey(bobRecoveryKey),
+            .flags = tfHolderKeyRecovery,
+        });
+
+        auto const prevVersion = mptAlice.getMPTokenVersion(bob);
+        auto const prevSpending =
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
+        auto const prevInbox = mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox);
+        auto const prevKey = mptAlice.getPubKey(bob);
+
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .flags = tfCancelRecovery,
+        });
+
+        auto const sleMptoken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
+        if (!BEAST_EXPECT(sleMptoken))
+            return;
+
+        BEAST_EXPECT(!sleMptoken->isFieldPresent(sfRecoveryKey));
+
+        // The holder's encryption key, balances, and version are all
+        // untouched by cancellation.
+        BEAST_EXPECT(prevKey && strHex((*sleMptoken)[sfHolderEncryptionKey]) == strHex(*prevKey));
+        BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) == prevVersion);
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == prevSpending);
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == prevInbox);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testPreflightFlags(features);
@@ -405,15 +573,19 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
         testPreflightHolderKeyLength(features);
         testPreflightRotationRequiresCiphertexts(features);
         testPreflightRecoveryRejectsCiphertexts(features);
+        testPreflightCancelRejectsExtraFields(features);
         testPreflightBadCiphertext(features);
         testPreflightProof(features);
 
         testPreclaimObjectsExist(features);
         testPreclaimMissingConfidentialState(features);
         testPreclaimNoopKeyChange(features);
+        testPreclaimRecoveryAlreadyPending(features);
+        testPreclaimCancelNoPendingRecovery(features);
 
         testRotationSucceeds(features);
         testRecoverySucceeds(features);
+        testCancelSucceeds(features);
 
         // Not yet coverable: preclaim's Schnorr PoK / Compact Pedersen
         // equality proof failures both return tecBAD_PROOF, but

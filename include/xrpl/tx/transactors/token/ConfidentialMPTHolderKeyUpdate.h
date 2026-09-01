@@ -16,9 +16,9 @@ namespace xrpl {
 
 /**
  * @brief Allows a confidential MPT holder to rotate or recover their ElGamal
- * encryption key.
+ * encryption key, or to cancel a pending recovery.
  *
- * Submitted by the holder. Exactly one of two modes must be selected via
+ * Submitted by the holder. Exactly one of three modes must be selected via
  * the transaction flags:
  *
  * - Rotation (tfHolderKeyRotation): the holder still has their current
@@ -36,6 +36,12 @@ namespace xrpl {
  *   sfRecoveryKey; the confidential balances are left untouched. Completing
  *   the recovery (rewriting the balances) is done separately by the issuer
  *   via ConfidentialMPTRecoverBalance.
+ *
+ * - Cancel (tfCancelRecovery): the holder revokes a pending recovery
+ *   authorization created by a prior Recovery-mode transaction. No key
+ *   balances, or proof are carried; authorization is via the
+ *   holder's ordinary XRPL signature. sfRecoveryKey is removed and
+ *   everything else is left untouched. Fails if no recovery is pending.
  *
  * @note The zero-knowledge proof verification itself
  * (verifyHolderKeyUpdateProof) is currently a placeholder pending crypto-side
