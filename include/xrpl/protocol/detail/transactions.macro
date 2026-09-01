@@ -1209,7 +1209,6 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
     {sfHolder, SoeOptional},
     {sfIssuerEncryptedAmount, SoeOptional},
     {sfAuditorEncryptedAmount, SoeOptional},
-    {sfPreviousIssuerEncryptionKey, SoeOptional},
     {sfZKProof, SoeRequired},
 }))
 

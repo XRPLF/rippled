@@ -302,6 +302,49 @@ NotTEC
 checkEncryptedAmountFormat(STObject const& object);
 
 /**
+ * @brief Checks if an MPToken's issuer mirror epoch matches the MPTokenIssuance's
+ * issuer key epoch.
+ *
+ * Compares the epoch of the holder's issuer mirror against the epoch
+ * of the issuance object. An absent mirror epoch defaults to epoch 0.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the MPToken's issuer mirror is current; false if stale.
+ */
+[[nodiscard]] bool
+isIssuerMirrorCurrent(STObject const& issuance, STObject const& mptoken);
+
+/**
+ * @brief Checks if an MPToken's auditor mirror epoch matches the MPTokenIssuance's
+ * auditor key epoch.
+ *
+ * If the issuance does not have an auditor, this function returns true because no auditor mirror is
+ * required. If the issuance has an auditor, the function checks that the holder's auditor mirror
+ * epoch matches the issuance's auditor key epoch. An absent auditor mirror epoch defaults to epoch
+ * 0.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the auditor mirror is current or not required; false if stale.
+ */
+[[nodiscard]] bool
+isAuditorMirrorCurrent(STObject const& issuance, STObject const& mptoken);
+
+/**
+ * @brief Checks if both the issuer and auditor mirrors on an MPToken are current.
+ *
+ * Checks if both the issuer mirror and auditor mirror (if present) on the MPToken
+ * are encrypted under the currently registered keys on the MPTokenIssuance.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the required mirrors are current; Otherwise false.
+ */
+[[nodiscard]] bool
+areMirrorsCurrent(STObject const& issuance, STObject const& mptoken);
+
+/**
  * @brief Verifies revealed amount encryptions for all recipients.
  *
  * Validates that the same amount was correctly encrypted for the holder,

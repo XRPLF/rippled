@@ -9,7 +9,6 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -555,17 +554,11 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .ownerCount = 1,
             .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
         });
-        mptAlice.generateKeyPair(alice);
-
-        // A valid EC point
-        auto const validKey = mptAlice.getPubKey(alice);
-
         // Issuer mode but account is not the issuer.
         mptAlice.mirrorUpdate({
             .account = bob,
             .holder = carol,
             .issuerEncryptedAmount = validCipher,
-            .previousIssuerKey = validKey,
             .err = temMALFORMED,
         });
 
@@ -574,7 +567,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .account = alice,
             .holder = alice,
             .issuerEncryptedAmount = validCipher,
-            .previousIssuerKey = validKey,
             .err = temMALFORMED,
         });
 
@@ -592,37 +584,11 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .err = temMALFORMED,
         });
 
-        // Holder mode, previousIssuerKey should not be present.
-        mptAlice.mirrorUpdate({
-            .account = bob,
-            .issuerEncryptedAmount = validCipher,
-            .previousIssuerKey = validKey,
-            .err = temMALFORMED,
-        });
-
-        // Issuer mode, previousIssuerKey is provided but issuerEncryptedAmount is missing.
-        mptAlice.mirrorUpdate({
-            .account = alice,
-            .holder = bob,
-            .auditorEncryptedAmount = validCipher,
-            .previousIssuerKey = validKey,
-            .err = temMALFORMED,
-        });
-
-        // Issuer mode, issuerEncryptedAmount is present but previousIssuerKey is missing.
-        mptAlice.mirrorUpdate({
-            .account = alice,
-            .holder = bob,
-            .issuerEncryptedAmount = validCipher,
-            .err = temMALFORMED,
-        });
-
         // Issuer amount has the wrong length.
         mptAlice.mirrorUpdate({
             .account = alice,
             .holder = bob,
             .issuerEncryptedAmount = gMakeZeroBuffer(10),
-            .previousIssuerKey = validKey,
             .err = temBAD_CIPHERTEXT,
         });
 
@@ -639,7 +605,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .account = alice,
             .holder = bob,
             .issuerEncryptedAmount = getBadCiphertext(),
-            .previousIssuerKey = validKey,
             .err = temBAD_CIPHERTEXT,
         });
 
@@ -649,17 +614,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .holder = bob,
             .issuerEncryptedAmount = validCipher,
             .auditorEncryptedAmount = getBadCiphertext(),
-            .previousIssuerKey = validKey,
             .err = temBAD_CIPHERTEXT,
-        });
-
-        // previousIssuerKey is present but not a valid EC point.
-        mptAlice.mirrorUpdate({
-            .account = alice,
-            .holder = bob,
-            .issuerEncryptedAmount = validCipher,
-            .previousIssuerKey = gMakeZeroBuffer(kEcPubKeyLength),
-            .err = temMALFORMED,
         });
     }
 
@@ -670,7 +625,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         using namespace test::jtx;
 
         Buffer const& validCipher = getTrivialCiphertext();
-        Buffer const& validKey = getTrivialCommitment();
 
         // The issuance does not exist.
         {
@@ -704,7 +658,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .issuerEncryptedAmount = validCipher,
-                .previousIssuerKey = validKey,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -723,7 +676,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .issuerEncryptedAmount = validCipher,
-                .previousIssuerKey = validKey,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -744,7 +696,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = carol,
                 .issuerEncryptedAmount = validCipher,
-                .previousIssuerKey = validKey,
                 .err = tecNO_TARGET,
             });
         }
@@ -764,7 +715,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .issuerEncryptedAmount = validCipher,
-                .previousIssuerKey = validKey,
                 .err = tecOBJECT_NOT_FOUND,
             });
         }
@@ -785,7 +735,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .issuerEncryptedAmount = validCipher,
-                .previousIssuerKey = validKey,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -819,7 +768,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .issuerEncryptedAmount = validCipher,
-                .previousIssuerKey = validKey,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -909,7 +857,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .holder = bob,
                 .issuerEncryptedAmount = validCipher,
                 .auditorEncryptedAmount = validCipher,
-                .previousIssuerKey = validKey,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -942,7 +889,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .holder = bob,
                 .issuerEncryptedAmount = validCipher,
                 .auditorEncryptedAmount = validCipher,
-                .previousIssuerKey = validKey,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -1074,7 +1020,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         std::uint64_t const amount = 100;
 
         // Issuer mode issuer-mirror migration. The new issuer mirror is written
-        // and the auissuerditor mirror epoch advances to the issuer key epoch.
+        // and the auditor mirror epoch advances to the issuer key epoch.
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -1096,7 +1042,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .issuerEncryptedAmount = newIssuerCipher,
-                .previousIssuerKey = ct.mpt.getPubKey(alice),
             });
 
             auto const sle = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
@@ -1111,7 +1056,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .issuerEncryptedAmount = newIssuerCipher,
-                .previousIssuerKey = ct.mpt.getPubKey(alice),
                 .err = tecNO_PERMISSION,
             });
         }
@@ -1188,7 +1132,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .holder = bob,
                 .issuerEncryptedAmount = newIssuerCipher,
                 .auditorEncryptedAmount = newAuditorCipher,
-                .previousIssuerKey = ct.mpt.getPubKey(alice),
             });
 
             auto const sle = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
@@ -1399,7 +1342,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .account = alice,
             .holder = bob,
             .issuerEncryptedAmount = newIssuerCipher,
-            .previousIssuerKey = ct.mpt.getPubKey(alice),
         });
 
         {
@@ -1416,7 +1358,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .account = alice,
             .holder = bob,
             .issuerEncryptedAmount = newIssuerCipher,
-            .previousIssuerKey = ct.mpt.getPubKey(alice),
             .err = tecNO_PERMISSION,
         });
 
@@ -1507,7 +1448,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .holder = bob,
             .issuerEncryptedAmount = bothIssuerCipher,
             .auditorEncryptedAmount = bothAuditorCipher,
-            .previousIssuerKey = ct.mpt.getPubKey(issuerKey3),
         });
 
         {
@@ -1527,7 +1467,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .holder = bob,
             .issuerEncryptedAmount = bothIssuerCipher,
             .auditorEncryptedAmount = bothAuditorCipher,
-            .previousIssuerKey = ct.mpt.getPubKey(issuerKey5),
             .err = tecNO_PERMISSION,
         });
     }
