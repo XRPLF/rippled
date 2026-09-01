@@ -21,6 +21,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <algorithm>
@@ -235,21 +236,57 @@ ValidVault::deltaAssets(AccountID const& id) const
         vaultAsset.value());
 }
 
+std::optional<AccountID>
+ValidVault::feePayerAccountRoot(ReadView const& view, STTx const& tx)
+{
+    auto const feePayer = Transactor::getFeePayer(view, tx);
+    if (feePayer.type == FeePayerType::SponsorPreFunded)
+        return std::nullopt;
+    return feePayer.id;
+}
+
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
+ValidVault::deltaAssetsForParty(
+    ReadView const& view,
+    AccountID const& id,
+    STTx const& tx,
+    XRPAmount fee,
+    bool fix340Enabled) const
 {
     auto const& vaultAsset = afterVault_[0].asset;
-    auto ret = deltaAssets(tx[sfAccount]);
+    auto ret = deltaAssets(id);
     if (!ret.has_value() || !vaultAsset.native())
         return ret;
 
-    // Only add the fee back if tx[sfAccount] actually paid it. When the fee is
-    // paid by someone else (a delegate or a fee sponsor), the
-    // account's XRP balance moved only by the vault amount.
-    if (tx.getFeePayerID() != tx[sfAccount])
-        return ret;
+    if (!fix340Enabled)
+    {
+        // Legacy behaviour: only tx[sfAccount] was ever considered for a fee
+        // correction, and only when STTx::getFeePayerID identified it as the
+        // fee payer (which is never true for a sponsor, since
+        // self-sponsorship is disallowed). After that sender-only correction
+        // a zero delta is collapsed to absence; if the correction does not
+        // apply, a present-zero is returned as-is.
+        if (id != tx[sfAccount] || tx.getFeePayerID() != id)
+            return ret;
 
-    ret->delta += fee.drops();
+        ret->delta += fee.drops();
+        if (ret->delta == kZero)
+            return std::nullopt;
+
+        return ret;
+    }
+
+    // Add the fee back only onto the AccountRoot that actually paid it: an
+    // ordinary sender, a delegate, or a co-signed fee sponsor -- but never a
+    // pre-funded sponsorship, whose fee is drawn from the ltSponsorship
+    // object rather than the sponsor's own XRP balance.
+    if (auto const payer = feePayerAccountRoot(view, tx); payer && *payer == id)
+        ret->delta += fee.drops();
+
+    // Normalize an economically zero delta to absence regardless of who (if
+    // anyone) paid the fee, so a touched-but-unchanged AccountRoot (e.g. the
+    // sender in a third-party withdrawal, touched only for sequence/ticket
+    // processing) is never misread as a second payout recipient.
     if (ret->delta == kZero)
         return std::nullopt;
 
@@ -860,7 +897,8 @@ ValidVault::finalize(
 
                 if (!issuerDeposit)
                 {
-                    auto const maybeAccDeltaAssets = deltaAssetsTxAccount(tx, fee);
+                    auto const maybeAccDeltaAssets =
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fix340Enabled);
                     if (!maybeAccDeltaAssets)
                     {
                         JLOG(j.fatal())
@@ -1033,21 +1071,39 @@ ValidVault::finalize(
 
                 if (!issuerWithdrawal)
                 {
-                    auto const maybeAccDelta = deltaAssetsTxAccount(tx, fee);
-                    auto const maybeOtherAccDelta = [&]() -> std::optional<DeltaInfo> {
-                        if (auto const destination = tx[~sfDestination];
-                            destination && *destination != tx[sfAccount])
-                            return deltaAssets(*destination);
-                        return std::nullopt;
-                    }();
+                    // Identify the intended recipient explicitly from
+                    // sfDestination (falling back to sfAccount for a
+                    // self-withdrawal), rather than inferring it from which
+                    // side happens to show a delta. When a distinct
+                    // destination is named, the sending account must not
+                    // also show a real economic delta -- that would mean two
+                    // accounts were paid, which is always a bug, regardless
+                    // of what (if anything) the named destination received.
+                    auto const destinationField = tx[~sfDestination];
+                    AccountID const recipient = destinationField.value_or(tx[sfAccount]);
+                    bool const distinctDestination =
+                        destinationField.has_value() && *destinationField != tx[sfAccount];
 
-                    if (maybeAccDelta.has_value() == maybeOtherAccDelta.has_value())
+                    // Intentionally ungated: `fix340Enabled &&` here would let the
+                    // pre-amendment sponsored case succeed and change consensus.
+                    if (distinctDestination &&
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fix340Enabled)
+                            .has_value())
                     {
-                        // Both changed is always a bug. Neither changed is
-                        // consistent only with a legitimate zero-value
-                        // withdrawal, which moves nothing on either side —
-                        // there is nothing left to cross-check.
-                        if (!zeroDeltaIsLegitimate || maybeAccDelta.has_value())
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: withdrawal must change one destination balance";
+                        return false;
+                    }
+
+                    auto const maybeRecipientDelta =
+                        deltaAssetsForParty(view, recipient, tx, fee, fix340Enabled);
+
+                    if (!maybeRecipientDelta.has_value())
+                    {
+                        // A legitimate zero-value withdrawal moves nothing to
+                        // the recipient either; there is nothing left to
+                        // cross-check.
+                        if (!zeroDeltaIsLegitimate)
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: withdrawal must change one destination balance";
@@ -1059,8 +1115,7 @@ ValidVault::finalize(
                         // A one-sided change is cross-checked even for a
                         // legitimate zero vault delta: the destination must
                         // then have moved by (rounded) zero as well.
-                        auto const destinationDelta =
-                            *maybeAccDelta.or_else([&] { return maybeOtherAccDelta; });
+                        auto const destinationDelta = *maybeRecipientDelta;
 
                         // the scale of destinationDelta can be coarser than
                         // minScale, so we take that into account when rounding
