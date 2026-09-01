@@ -15,8 +15,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <libxrpl/tx/PreflightHelpers.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 namespace xrpl {
 
@@ -33,7 +32,7 @@ LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (!isPositiveAmount(dstAmount))
+    if (isNonPositiveAmount(dstAmount))
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))

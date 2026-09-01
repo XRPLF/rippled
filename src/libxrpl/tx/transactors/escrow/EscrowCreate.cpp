@@ -31,8 +31,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-
-#include <libxrpl/tx/PreflightHelpers.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <memory>
 #include <system_error>
@@ -102,7 +101,7 @@ NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
 {
     STAmount const amount = ctx.tx[sfAmount];
-    if (amount.native() || !isPositiveAmount(amount))
+    if (amount.native() || isNonPositiveAmount(amount))
         return temBAD_AMOUNT;
 
     if (isBadCurrency(amount.get<Issue>().currency))
@@ -119,7 +118,8 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || !isPositiveAmount(amount))
+    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} ||
+        isNonPositiveAmount(amount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -142,7 +142,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     }
     else
     {
-        if (!isPositiveXRPAmount(amount))
+        if (isNonPositiveXRPAmount(amount))
             return temBAD_AMOUNT;
     }
 

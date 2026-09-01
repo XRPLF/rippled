@@ -18,8 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-
-#include <libxrpl/tx/PreflightHelpers.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 namespace xrpl {
 
@@ -35,7 +34,7 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fixCleanup3_2_0) && isZeroId(ctx.tx[sfChannel]))
         return temMALFORMED;
 
-    if (!isPositiveXRPAmount(ctx.tx[sfAmount]))
+    if (isNonPositiveXRPAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

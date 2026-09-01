@@ -24,8 +24,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <libxrpl/tx/PreflightHelpers.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <cstdint>
 #include <unordered_set>

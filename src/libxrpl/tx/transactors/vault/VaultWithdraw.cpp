@@ -22,8 +22,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <libxrpl/tx/PreflightHelpers.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <stdexcept>
 
@@ -50,7 +49,7 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (!isPositiveAmount(ctx.tx[sfAmount]))
+    if (isNonPositiveAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])

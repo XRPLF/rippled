@@ -23,9 +23,8 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 #include <xrpl/tx/transactors/lending/LoanManage.h>
-
-#include <libxrpl/tx/PreflightHelpers.h>
 
 #include <algorithm>
 #include <bit>
@@ -53,7 +52,7 @@ LoanPay::preflight(PreflightContext const& ctx)
     if (isZeroId(ctx.tx[sfLoanID]))
         return temINVALID;
 
-    if (!isPositiveAmount(ctx.tx[sfAmount]))
+    if (isNonPositiveAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is

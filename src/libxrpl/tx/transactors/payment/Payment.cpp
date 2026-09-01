@@ -34,9 +34,8 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 #include <xrpl/tx/paths/RippleCalc.h>
-
-#include <libxrpl/tx/PreflightHelpers.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -185,13 +184,13 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Payment destination account not specified.";
         return temDST_NEEDED;
     }
-    if (hasMax && !isPositiveAmount(maxSourceAmount))
+    if (hasMax && isNonPositiveAmount(maxSourceAmount))
     {
         JLOG(j.trace()) << "Malformed transaction: bad max amount: "
                         << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (!isPositiveAmount(dstAmount))
+    if (isNonPositiveAmount(dstAmount))
     {
         JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;

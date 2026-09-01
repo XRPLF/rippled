@@ -21,8 +21,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <libxrpl/tx/PreflightHelpers.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <cstdint>
 #include <optional>
@@ -48,11 +47,11 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && !isPositiveXRPAmount(*bal))
+    if (bal && isNonPositiveXRPAmount(*bal))
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && !isPositiveXRPAmount(*amt))
+    if (amt && isNonPositiveXRPAmount(*amt))
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
