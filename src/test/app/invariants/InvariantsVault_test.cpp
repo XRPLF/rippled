@@ -2789,7 +2789,7 @@ class InvariantsVault_test : public InvariantsBase
                 sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
                 sleLoan->at(sfLoanSequence) = loanSeq;
                 sleLoan->at(sfBorrower) = a1.id();
-                sleLoan->at(sfStartDate) = closedEndedRed - (kLoanRedemptionBuffer - 1);
+                sleLoan->at(sfStartDate) = closedEndedRed - kLoanRedemptionBuffer;
                 sleLoan->at(sfPaymentInterval) = 1;
                 sleLoan->at(sfPaymentRemaining) = 1;
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
