@@ -820,11 +820,7 @@ private:
         T const& arg,
         json::Value& jv,
         Account const& account,
-        std::uint64_t amt,
-        Buffer& holderCiphertext,
-        Buffer& issuerCiphertext,
-        std::optional<Buffer>& auditorCiphertext,
-        Buffer& blindingFactor) const;
+        std::uint64_t amt) const;
 };
 
 }  // namespace xrpl::test::jtx

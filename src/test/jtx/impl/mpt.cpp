@@ -102,6 +102,13 @@ makePedersenParams(PedersenProofParams const& params)
     return res;
 }
 
+/**
+ * @brief Sets sfAccount on jv to the given account.
+ *
+ * @param jv The JSON object to set the field on.
+ * @param account The account to set. Throws if not present.
+ * @return The resolved account.
+ */
 Account const&
 setAccountField(json::Value& jv, std::optional<Account> const& account)
 {
@@ -110,6 +117,13 @@ setAccountField(json::Value& jv, std::optional<Account> const& account)
     return act;
 }
 
+/**
+ * @brief Sets sfDestination on jv to the given account.
+ *
+ * @param jv The JSON object to set the field on.
+ * @param dest The destination account to set. Throws if not present.
+ * @return The resolved account.
+ */
 Account const&
 setDestinationField(json::Value& jv, std::optional<Account> const& dest)
 {
@@ -1085,15 +1099,14 @@ MPTTester::fillConversionCiphertexts(
     T const& arg,
     json::Value& jv,
     Account const& account,
-    std::uint64_t amt,
-    Buffer& holderCiphertext,
-    Buffer& issuerCiphertext,
-    std::optional<Buffer>& auditorCiphertext,
-    Buffer& blindingFactor) const
+    std::uint64_t amt) const
 {
-    blindingFactor = arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
+    Buffer const blindingFactor =
+        arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
+    jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
 
     // Handle Holder
+    Buffer holderCiphertext;
     if (arg.holderEncryptedAmt)
     {
         holderCiphertext = *arg.holderEncryptedAmt;
@@ -1106,6 +1119,7 @@ MPTTester::fillConversionCiphertexts(
     jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
 
     // Handle Issuer
+    Buffer issuerCiphertext;
     if (arg.issuerEncryptedAmt)
     {
         issuerCiphertext = *arg.issuerEncryptedAmt;
@@ -1118,6 +1132,7 @@ MPTTester::fillConversionCiphertexts(
     jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
 
     // Handle Auditor
+    std::optional<Buffer> auditorCiphertext;
     if (arg.auditorEncryptedAmt)
     {
         auditorCiphertext = *arg.auditorEncryptedAmt;
@@ -1261,22 +1276,7 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
     if (arg.holderPubKey)
         jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
 
-    Buffer holderCiphertext;
-    Buffer issuerCiphertext;
-    std::optional<Buffer> auditorCiphertext;
-    Buffer blindingFactor;
-
-    fillConversionCiphertexts(
-        arg,
-        jv,
-        account,
-        amt,
-        holderCiphertext,
-        issuerCiphertext,
-        auditorCiphertext,
-        blindingFactor);
-
-    jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
+    fillConversionCiphertexts(arg, jv, account, amt);
 
     if (arg.proof)
     {
@@ -2034,22 +2034,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     auto const amt = requireValue(arg.amt, "amt");
     jv[sfMPTAmount.jsonName] = std::to_string(amt);
 
-    Buffer holderCiphertext;
-    Buffer issuerCiphertext;
-    std::optional<Buffer> auditorCiphertext;
-    Buffer blindingFactor;
-
-    fillConversionCiphertexts(
-        arg,
-        jv,
-        account,
-        amt,
-        holderCiphertext,
-        issuerCiphertext,
-        auditorCiphertext,
-        blindingFactor);
-
-    jv[sfBlindingFactor] = strHex(blindingFactor);
+    fillConversionCiphertexts(arg, jv, account, amt);
 
     auto const prevSpendingBalance = getDecryptedBalance(account, holderEncryptedSpending);
     if (!prevSpendingBalance)

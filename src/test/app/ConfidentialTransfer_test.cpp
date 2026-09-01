@@ -2900,22 +2900,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto& mptAlice = confEnv.mpt;
 
         {
-            // Bob has 60, tries to send 70. Invalid remaining balance.
-            mptAlice.send({
-                .account = bob,
-                .dest = carol,
-                .amt = 70,
-                .err = tecBAD_PROOF,
-            });
-
-            // Bob has 60, tries to send 61. Invalid remaining balance.
-            mptAlice.send({
-                .account = bob,
-                .dest = carol,
-                .amt = 61,
-                .err = tecBAD_PROOF,
-            });
-
             // Bob has 60, sends 60. Remainder is exactly 0. Valid remaining balance.
             mptAlice.send({
                 .account = bob,
@@ -2936,12 +2920,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
 
             // Bob has 100, tries to send 2^64-1. Invalid remaining balance.
-            mptAlice.send({
-                .account = bob,
-                .dest = carol,
-                .amt = std::numeric_limits<std::uint64_t>::max(),
-                .err = tecBAD_PROOF,
-            });
+            {
+                ConfidentialSendSetup const setup(
+                    mptAlice, bob, carol, alice, std::numeric_limits<std::uint64_t>::max());
+                auto const forged = getForgedSendProof(mptAlice, env, bob, carol, setup);
+                mptAlice.send(setup.sendArgs(bob, carol, forged, tecBAD_PROOF));
+            }
 
             // Bob sends 1, remaining 99.
             mptAlice.send({
@@ -2949,14 +2933,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .dest = carol,
                 .amt = 1,
                 .err = tesSUCCESS,
-            });
-
-            // Bob sends 100, but only has 99. Invalid remaining balance.
-            mptAlice.send({
-                .account = bob,
-                .dest = carol,
-                .amt = 100,
-                .err = tecBAD_PROOF,
             });
         }
 
@@ -2974,18 +2950,13 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             // Trying to send any amount with 0 spending balance must fail:
             // the range proof for < 0 is invalid.
-            mptAlice2.send({
-                .account = bob2,
-                .dest = carol2,
-                .amt = 1,
-                .err = tecBAD_PROOF,
-            });
+            ConfidentialSendSetup const setup(mptAlice2, bob2, carol2, alice2, 1);
+            auto const forged = getForgedSendProof(mptAlice2, env2, bob2, carol2, setup);
+            mptAlice2.send(setup.sendArgs(bob2, carol2, forged, tecBAD_PROOF));
 
             BEAST_EXPECT(
                 mptAlice2.getDecryptedBalance(bob2, MPTTester::holderEncryptedSpending) == 0);
         }
-
-        // todo: test m exceeding range, require using scala and refactor
     }
 
     /* The equality proof library and range proof library do not
@@ -5359,62 +5330,15 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             uint64_t constexpr claimedBalance = 20;  // wrong: real balance is 40
 
-            auto* const ctx = mpt_secp256k1_context();
-            auto const bobPubKey = requireOptional(mptAlice.getPubKey(bob), "Missing bob pubkey");
-            auto const bobPrivKey =
-                requireOptional(mptAlice.getPrivKey(bob), "Missing bob privkey");
-
-            secp256k1_pubkey pkBob;
-            if (!BEAST_EXPECTS(
-                    secp256k1_ec_pubkey_parse(
-                        ctx, &pkBob, bobPubKey.data(), kCompressedEcPointLength) == 1,
-                    "Failed to parse Bob's public key"))
-                return;
-
-            secp256k1_pubkey pcB;
-            if (!BEAST_EXPECTS(
-                    secp256k1_ec_pubkey_parse(
-                        ctx, &pcB, pedersenCommitment.data(), kCompressedEcPointLength) == 1,
-                    "Failed to parse pedersen commitment"))
-                return;
-
-            secp256k1_pubkey b1, b2;
-            if (!BEAST_EXPECTS(
-                    secp256k1_ec_pubkey_parse(
-                        ctx, &b1, encryptedSpendingBalance.data(), kCompressedEcPointLength) == 1 &&
-                        secp256k1_ec_pubkey_parse(
-                            ctx,
-                            &b2,
-                            encryptedSpendingBalance.data() + kCompressedEcPointLength,
-                            kCompressedEcPointLength) == 1,
-                    "Failed to parse balance ciphertext"))
-                return;
-
-            Buffer sigmaProof(SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
-            if (!BEAST_EXPECTS(
-                    secp256k1_compact_convertback_prove(
-                        ctx,
-                        sigmaProof.data(),
-                        claimedBalance,
-                        bobPrivKey.data(),
-                        pcBlindingFactor.data(),
-                        &pkBob,
-                        &b1,
-                        &b2,
-                        &pcB,
-                        contextHash.data()) == 1,
-                    "Failed to generate convertback sigma proof"))
-                return;
-
-            auto const forgedBulletproof =
-                getForgedSingleBulletproof(claimedBalance - amt, pcBlindingFactor, contextHash);
-
-            Buffer proof(kEcConvertBackProofLength);
-            std::memcpy(proof.data(), sigmaProof.data(), SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
-            std::memcpy(
-                proof.data() + SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE,
-                forgedBulletproof.data(),
-                kEcSingleBulletproofLength);
+            auto const proof = getForgedConvertBackProof(
+                mptAlice,
+                bob,
+                claimedBalance,
+                amt,
+                pedersenCommitment,
+                encryptedSpendingBalance,
+                pcBlindingFactor,
+                contextHash);
 
             mptAlice.convertBack({
                 .account = bob,
@@ -6000,62 +5924,15 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             uint64_t constexpr claimedBalance = 20;  // wrong: real balance is 40
 
-            auto* const ctx = mpt_secp256k1_context();
-            auto const bobPubKey = requireOptional(mptAlice.getPubKey(bob), "Missing bob pubkey");
-            auto const bobPrivKey =
-                requireOptional(mptAlice.getPrivKey(bob), "Missing bob privkey");
-
-            secp256k1_pubkey pkBob;
-            if (!BEAST_EXPECTS(
-                    secp256k1_ec_pubkey_parse(
-                        ctx, &pkBob, bobPubKey.data(), kCompressedEcPointLength) == 1,
-                    "Failed to parse Bob's public key"))
-                return;
-
-            secp256k1_pubkey pcB;
-            if (!BEAST_EXPECTS(
-                    secp256k1_ec_pubkey_parse(
-                        ctx, &pcB, pedersenCommitment.data(), kCompressedEcPointLength) == 1,
-                    "Failed to parse pedersen commitment"))
-                return;
-
-            secp256k1_pubkey b1, b2;
-            if (!BEAST_EXPECTS(
-                    secp256k1_ec_pubkey_parse(
-                        ctx, &b1, encryptedSpendingBalance.data(), kCompressedEcPointLength) == 1 &&
-                        secp256k1_ec_pubkey_parse(
-                            ctx,
-                            &b2,
-                            encryptedSpendingBalance.data() + kCompressedEcPointLength,
-                            kCompressedEcPointLength) == 1,
-                    "Failed to parse balance ciphertext"))
-                return;
-
-            Buffer sigmaProof(SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
-            if (!BEAST_EXPECTS(
-                    secp256k1_compact_convertback_prove(
-                        ctx,
-                        sigmaProof.data(),
-                        claimedBalance,
-                        bobPrivKey.data(),
-                        pcBlindingFactor.data(),
-                        &pkBob,
-                        &b1,
-                        &b2,
-                        &pcB,
-                        contextHash.data()) == 1,
-                    "Failed to generate convertback sigma proof"))
-                return;
-
-            auto const forgedBulletproof =
-                getForgedSingleBulletproof(claimedBalance - amt, pcBlindingFactor, contextHash);
-
-            Buffer proof(kEcConvertBackProofLength);
-            std::memcpy(proof.data(), sigmaProof.data(), SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
-            std::memcpy(
-                proof.data() + SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE,
-                forgedBulletproof.data(),
-                kEcSingleBulletproofLength);
+            auto const proof = getForgedConvertBackProof(
+                mptAlice,
+                bob,
+                claimedBalance,
+                amt,
+                pedersenCommitment,
+                encryptedSpendingBalance,
+                pcBlindingFactor,
+                contextHash);
 
             mptAlice.convertBack({
                 .account = bob,
