@@ -101,6 +101,10 @@ protected:
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
+        // VaultCreate flags (e.g. tfVaultPrivate). Distinct from `flags`,
+        // which are passed to LoanBrokerSet.
+        std::optional<std::uint32_t> vaultFlags =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
         // If set, the vault is created with this sfScale value. Useful for
         // tests that need finer loanScale to exercise rounding edge cases.
         std::optional<std::uint8_t> vaultScale =
@@ -526,6 +530,7 @@ protected:
         auto [tx, vaultKeylet] = vault.create(
             {.owner = lender,
              .asset = asset,
+             .flags = params.vaultFlags,
              .vaultKind = effectiveVaultKind == VaultKind::OpenEnded
                  ? std::optional<std::uint8_t>{}
                  : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},
