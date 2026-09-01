@@ -1,6 +1,8 @@
 # Installing xrpld 3.3.0 and earlier
 
-> [!IMPORTANT] These instructions apply to xrpld 3.3.0 and earlier, published to repos.ripple.com. For later releases see [install.md](./install.md).
+<!-- prettier-ignore -->
+> [!IMPORTANT]
+> These instructions apply to xrpld 3.3.0 and earlier, published to repos.ripple.com. For later releases see [install.md](./install.md).
 
 This document contains instructions for installing xrpld. The APT package manager is common on Debian-based Linux distributions like Ubuntu, while the YUM package manager is common on Red Hat-based Linux distributions like CentOS. Installing from source is an option for all platforms, and the only supported option for installing custom builds.
 

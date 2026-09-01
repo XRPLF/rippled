@@ -60,7 +60,9 @@ EOF
 
 The scripts guard against double-sourcing via `__ETC_PROFILE_NIX_SOURCED`, so this is safe even if a system-wide hook is later restored.
 
-> [!NOTE] `/etc/zshrc` and `~/.zshrc` are only read by **interactive** zsh. If the snippet is present but `zsh -c '…'`, a script, or an IDE terminal still can't find `nix`, that shell is non-interactive — put the snippet in `~/.zshenv` instead.
+<!-- prettier-ignore -->
+> [!NOTE]
+> `/etc/zshrc` and `~/.zshrc` are only read by **interactive** zsh. If the snippet is present but `zsh -c '…'`, a script, or an IDE terminal still can't find `nix`, that shell is non-interactive — put the snippet in `~/.zshenv` instead.
 
 ## Git worktrees
 
@@ -75,7 +77,9 @@ error:
 
 then your Nix is linked against a libgit2 older than **1.9.4**. Git 2.48+ writes the `extensions.relativeWorktrees` config entry when a worktree is created with relative paths (`git worktree add --relative-paths`, or with `worktree.useRelativePaths=true`), and older libgit2 versions refuse to open a repository that uses it. Nix uses libgit2 to read the flake, so evaluation fails.
 
-> [!IMPORTANT] This entry is written to the **shared** repository config, so once any relative worktree exists, `nix develop` fails in the main checkout too — not just inside the worktree.
+<!-- prettier-ignore -->
+> [!IMPORTANT]
+> This entry is written to the **shared** repository config, so once any relative worktree exists, `nix develop` fails in the main checkout too — not just inside the worktree.
 
 ### Workarounds
 
@@ -93,7 +97,9 @@ The fix is in [libgit2 1.9.4](https://github.com/libgit2/libgit2/releases/tag/v1
 nix-store -qR "$(readlink -f "$(command -v nix)")" | grep libgit2
 ```
 
-> [!WARNING] `nix upgrade-nix` does **not** help yet. It installs the build from the official [`nix-fallback-paths`](https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/installer/tools/nix-fallback-paths.nix), which is still linked against libgit2 `1.9.2` — there is no new upstream Nix release with the fix. (On some systems that build is even the exact store path you already have, making the upgrade a no-op.)
+<!-- prettier-ignore -->
+> [!WARNING]
+> `nix upgrade-nix` does **not** help yet. It installs the build from the official [`nix-fallback-paths`](https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/installer/tools/nix-fallback-paths.nix), which is still linked against libgit2 `1.9.2` — there is no new upstream Nix release with the fix. (On some systems that build is even the exact store path you already have, making the upgrade a no-op.)
 
 nixpkgs has already rebuilt Nix against the fixed libgit2 (e.g. `nix-2.34.7+1`), so the cleanest path is to reinstall Nix using your usual installation method once it picks up that rebuild, then re-run the `grep libgit2` check above to confirm it reports `1.9.4` or newer.
 

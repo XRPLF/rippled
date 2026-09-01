@@ -41,7 +41,9 @@ The first time you run this command, it will take a few minutes to download and 
 - **Linux**: `nix develop` gives you a shell with all the tooling necessary to develop xrpld and with the same GCC/glibc toolchain that Nix builds for CI. See [Choosing a different compiler](#choosing-a-different-compiler) for the custom-vs-plain toolchain trade-off.
 - **macOS**: `nix develop` gives you a full environment too, with Clang (and every other tool, including Conan) provided by Nix. To use your system-wide Apple Clang instead, enter `nix develop .#apple-clang`. Conan has no binary in the Nix cache for macOS, so it is built from source the first time you enter the shell, which makes the initial setup slower (this is handled automatically; see [`nix/devshell.nix`](../../nix/devshell.nix)).
 
-> [!TIP] To avoid typing `--experimental-features 'nix-command flakes'` every time, you can permanently enable flakes by creating `~/.config/nix/nix.conf`:
+<!-- prettier-ignore -->
+> [!TIP]
+> To avoid typing `--experimental-features 'nix-command flakes'` every time, you can permanently enable flakes by creating `~/.config/nix/nix.conf`:
 >
 > ```bash
 > mkdir -p ~/.config/nix
@@ -50,7 +52,9 @@ The first time you run this command, it will take a few minutes to download and 
 >
 > After this, you can simply use `nix develop` instead.
 
-> [!NOTE] The examples below assume you've enabled flakes in your config. If you haven't, add `--experimental-features 'nix-command flakes'` after each `nix` command.
+<!-- prettier-ignore -->
+> [!NOTE]
+> The examples below assume you've enabled flakes in your config. If you haven't, add `--experimental-features 'nix-command flakes'` after each `nix` command.
 
 ### Choosing a different compiler
 
@@ -94,7 +98,9 @@ nix develop -c fish
 nix develop -c "$SHELL"
 ```
 
-> [!WARNING] Your shell's interactive startup files (e.g. `config.fish`, `.zshrc`) may prepend other directories — most commonly Homebrew — to `$PATH`, which can shadow the tools provided by the Nix shell. After entering, verify that tools resolve into the Nix store:
+<!-- prettier-ignore -->
+> [!WARNING]
+> Your shell's interactive startup files (e.g. `config.fish`, `.zshrc`) may prepend other directories — most commonly Homebrew — to `$PATH`, which can shadow the tools provided by the Nix shell. After entering, verify that tools resolve into the Nix store:
 >
 > ```bash
 > command -v cmake   # should print a /nix/store/... path
@@ -128,7 +134,9 @@ A Conan package ID records the compiler and its major version, but nothing about
 
 That is safe as long as no cached artifact resolves a `/nix/store` path at run time, because store paths change on every update and the old ones disappear with `nix-collect-garbage`. With the `clang` toolchain macOS CI and the dev shell use, they do not: it links against `/usr/lib/libc++` and `/usr/lib/libSystem`, and store paths reach the `.a` files only through debug info, which nothing resolves at link or run time.
 
-> [!WARNING] This does not hold for `nix develop .#gcc` on macOS. There is no system libstdc++, so GCC links its own from the store and every binary keeps a `/nix/store` reference. That shell is fine for tooling, but it is not a build configuration CI covers, and no dependency binaries are published for it.
+<!-- prettier-ignore -->
+> [!WARNING]
+> This does not hold for `nix develop .#gcc` on macOS. There is no system libstdc++, so GCC links its own from the store and every binary keeps a `/nix/store` reference. That shell is fine for tooling, but it is not a build configuration CI covers, and no dependency binaries are published for it.
 
 This is checked rather than assumed. [`bin/check-nix-store-refs.sh`](../../bin/check-nix-store-refs.sh) takes one file or directory and fails if a binary under it resolves a store path at run time. CI runs it over the build output and the Conan cache, and again in the upload job before anything is published. You can run it yourself:
 
@@ -162,7 +170,9 @@ The repository already ships an `.envrc` at its root that activates the Nix flak
 1. [Install direnv](https://direnv.net/docs/installation.html) and [hook it into your shell](https://direnv.net/docs/hook.html) (bash, zsh, fish, …). Installing [nix-direnv](https://github.com/nix-community/nix-direnv) as well is recommended: it caches the shell so that activation is near-instant after the first run.
 2. Run `direnv allow` once in the repository root. direnv will then load (and reload) the Nix development shell automatically whenever you enter the directory.
 
-> [!NOTE] direnv only caches the `.direnv` directory (already listed in `.gitignore`); no other repository files are affected.
+<!-- prettier-ignore -->
+> [!NOTE]
+> direnv only caches the `.direnv` directory (already listed in `.gitignore`); no other repository files are affected.
 
 ## Updating `flake.lock` file
 

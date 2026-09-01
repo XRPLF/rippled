@@ -1,6 +1,8 @@
 # Installing xrpld
 
-> [!NOTE] These instructions apply to packages published from 2026-08-19 onwards. For xrpld 3.3.0 and earlier see [install-legacy.md](./install-legacy.md).
+<!-- prettier-ignore -->
+> [!NOTE]
+> These instructions apply to packages published from 2026-08-19 onwards. For xrpld 3.3.0 and earlier see [install-legacy.md](./install-legacy.md).
 
 `xrpld` is published as DEB and RPM packages for 64-bit x86 Linux. Use APT on Debian-based distributions such as Debian and Ubuntu, and YUM on Red Hat-based distributions such as RHEL, AlmaLinux, and Rocky Linux. To build from source instead, see [BUILD.md](../BUILD.md).
 
@@ -17,7 +19,9 @@ See [Publishing packages](../package/README.md#publishing-packages) for how chan
 
 The instructions below use `stable`. To follow another channel, replace `stable` with its name wherever it appears in the repository configuration.
 
-> [!WARNING] Channels other than `stable` may be broken at any time. Do not use them for production servers.
+<!-- prettier-ignore -->
+> [!WARNING]
+> Channels other than `stable` may be broken at any time. Do not use them for production servers.
 
 ## Install the xrpld package
 

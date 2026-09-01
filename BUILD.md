@@ -50,7 +50,9 @@ Once your [development environment](./docs/build/environment.md) is ready, set C
 
 That installs our [`global.conf`](./conan/global.conf), our Conan [profiles](./conan/profiles), and the `xrplf` remote that hosts some of our dependencies. It honours `CONAN_HOME` and never deletes an existing Conan home, so it is safe to re-run — it only overwrites the files it manages.
 
-> [!TIP] In the [Nix development shell](./docs/build/nix.md#conan-configuration) this is already done for you: the script runs on entry.
+<!-- prettier-ignore -->
+> [!TIP]
+> In the [Nix development shell](./docs/build/nix.md#conan-configuration) this is already done for you: the script runs on entry.
 
 You can inspect the resulting profile with `conan profile show`. If it is not suitable for your environment, create a custom profile and pass it to Conan — see [Advanced Conan configuration](./docs/build/advanced_conan.md).
 
@@ -185,7 +187,9 @@ Prerequisites for the coverage report:
 - `gcov` for GCC or `llvm-cov` for Clang, usually installed with the compiler
 - `Debug` build type
 
-> [!NOTE] Clang coverage is not available in the [Nix development shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell): its `clang` shells do not ship `llvm-cov`. Use a `gcc` shell instead (`.#gcc`, or `.#gcc-plain` on Linux), which provides a `gcov` matching its compiler.
+<!-- prettier-ignore -->
+> [!NOTE]
+> Clang coverage is not available in the [Nix development shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell): its `clang` shells do not ship `llvm-cov`. Use a `gcc` shell instead (`.#gcc`, or `.#gcc-plain` on Linux), which provides a `gcov` matching its compiler.
 
 A coverage report is created when the following steps are completed, in order:
 

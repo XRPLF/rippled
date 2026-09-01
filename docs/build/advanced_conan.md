@@ -54,7 +54,9 @@ cd ../../
 
 In the case we switch to a newer version of a dependency that still requires a patch or add a new dependency, it will be necessary for you to pull in the changes and re-export the updated dependencies with the newer version. However, if we switch to a newer version that no longer requires a patch, no action is required on your part, as the new recipe will be automatically pulled from the official Conan Center.
 
-> [!NOTE] You might need to add `--lockfile=""` to your `conan install` command to avoid automatic use of the existing `conan.lock` file when you run `conan export` manually on your machine
+<!-- prettier-ignore -->
+> [!NOTE]
+> You might need to add `--lockfile=""` to your `conan install` command to avoid automatic use of the existing `conan.lock` file when you run `conan export` manually on your machine
 >
 > This is not recommended though, as you might end up using different revisions of recipes.
 

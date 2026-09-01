@@ -180,7 +180,9 @@ pre-commit run clang-format --all-files
 
 You can also format individual files in place by running `clang-format -i <file>...` from any directory within this project.
 
-> [!NOTE] This uses whatever `clang-format` version is installed locally, which may differ from the pinned version used by `pre-commit` and CI, so the results can vary.
+<!-- prettier-ignore -->
+> [!NOTE]
+> This uses whatever `clang-format` version is installed locally, which may differ from the pinned version used by `pre-commit` and CI, so the results can vary.
 
 There is a Continuous Integration job that runs clang-format on pull requests. If the code doesn't comply, a patch file that corrects auto-fixable formatting issues is generated.
 
