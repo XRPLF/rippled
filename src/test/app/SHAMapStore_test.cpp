@@ -629,6 +629,32 @@ class SHAMapStore_test : public beast::unit_test::Suite
         ++maxSeq;
         parked.validated = maxSeq;
 
+        // Draining the job queue, on the other hand, is required. In standalone
+        // mode switchLCL() inserts the closed ledger into LedgerMaster's
+        // complete range and then posts an advance job, and publishing the
+        // ledger from that job inserts it a second time. Clearing the ledger
+        // between those two inserts does not leave a lasting gap: publication
+        // puts it straight back, the rotation's health checks see a healthy
+        // node, and the rotation runs to completion. Waiting for the queue to
+        // drain closes that window, because publication is what advances
+        // pubLedger_ -- once it has happened, the ledger is never published, and
+        // so never inserted, again.
+        //
+        // This waits only for the job queue, not for the store, whose thread is
+        // its own and is the thing being interrupted here.
+        env.app().getJobQueue().rendezvous();
+
+        // Publishing the ledger is what advances pubLedger_, so this is the
+        // observable confirmation that the window above has closed. Asserting it
+        // here means that if anything ever reopens it, this setup step says so
+        // directly instead of the tests below failing for reasons that look
+        // nothing like the cause.
+        auto const published = lm.getPublishedLedger();
+        if (!BEAST_EXPECTS(
+                published && published->header().seq >= parked.validated,
+                std::to_string(published ? published->header().seq : 0)))
+            return std::nullopt;
+
         if (!BEAST_EXPECT(log.waitFor(kRotating, 10s, rotationsBefore + 1)))
             return std::nullopt;
 
