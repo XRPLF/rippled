@@ -157,29 +157,31 @@ private:
      * asset movement rather than a fee-reduced balance change, regardless of
      * whether @p id is the sender, a distinct destination, a delegate, or a
      * co-signed fee sponsor. Post-@c fixCleanup3_4_0, any resulting
-     * economically-zero delta is normalized to absence.
+     * economically-zero delta is always normalized to absence.
      *
      * Pre-@c fixCleanup3_4_0 this replicates the legacy behaviour exactly:
      * only @c tx[sfAccount] could ever receive a fee correction (and only
-     * when it was itself, per @c STTx::getFeePayerID, the fee payer), and a
-     * present-zero delta was returned as-is rather than collapsed.
+     * when it was itself, per @c STTx::getFeePayerID, the fee payer). After
+     * that sender-only correction a zero delta is collapsed to absence; if
+     * the correction does not apply, a present-zero delta is kept as-is.
      *
-     * @param id         Account being inspected as sender or destination.
-     * @param tx         The transaction being applied.
-     * @param fee        Fee charged by this transaction.
-     * @param view       Read-only view of the ledger after the transaction.
-     * @param fixEnabled Whether @c fixCleanup3_4_0 is enabled, as already
-     *                   determined once by @c finalize.
+     * @param view          Read-only view of the ledger after the transaction.
+     * @param id            Account being inspected as sender or destination.
+     * @param tx            The transaction being applied.
+     * @param fee           Fee charged by this transaction.
+     * @param fix340Enabled Whether @c fixCleanup3_4_0 is enabled, as already
+     *                      determined once by @c finalize.
      * @return The fee-adjusted delta, or @c std::nullopt if the net delta is
-     *         zero (post-amendment only) or the entry was not touched.
+     *         zero (always post-amendment; pre-amendment only after the
+     *         sender-only fee correction) or the entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
     deltaAssetsForParty(
+        ReadView const& view,
         AccountID const& id,
         STTx const& tx,
         XRPAmount fee,
-        ReadView const& view,
-        bool fixEnabled) const;
+        bool fix340Enabled) const;
 
     /**
      * @brief Return the vault-share balance-change delta for an account.

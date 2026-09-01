@@ -247,24 +247,25 @@ ValidVault::feePayerAccountRoot(ReadView const& view, STTx const& tx)
 
 std::optional<ValidVault::DeltaInfo>
 ValidVault::deltaAssetsForParty(
+    ReadView const& view,
     AccountID const& id,
     STTx const& tx,
     XRPAmount fee,
-    ReadView const& view,
-    bool fixEnabled) const
+    bool fix340Enabled) const
 {
     auto const& vaultAsset = afterVault_[0].asset;
     auto ret = deltaAssets(id);
     if (!ret.has_value() || !vaultAsset.native())
         return ret;
 
-    if (!fixEnabled)
+    if (!fix340Enabled)
     {
         // Legacy behaviour: only tx[sfAccount] was ever considered for a fee
         // correction, and only when STTx::getFeePayerID identified it as the
         // fee payer (which is never true for a sponsor, since
-        // self-sponsorship is disallowed). A present-zero delta was returned
-        // as-is here, rather than being collapsed to absence.
+        // self-sponsorship is disallowed). After that sender-only correction
+        // a zero delta is collapsed to absence; if the correction does not
+        // apply, a present-zero is returned as-is.
         if (id != tx[sfAccount] || tx.getFeePayerID() != id)
             return ret;
 
@@ -892,7 +893,7 @@ ValidVault::finalize(
                 if (!issuerDeposit)
                 {
                     auto const maybeAccDeltaAssets =
-                        deltaAssetsForParty(tx[sfAccount], tx, fee, view, fixEnabled);
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fixEnabled);
                     if (!maybeAccDeltaAssets)
                     {
                         JLOG(j.fatal())
@@ -1078,8 +1079,10 @@ ValidVault::finalize(
                     bool const distinctDestination =
                         destinationField.has_value() && *destinationField != tx[sfAccount];
 
+                    // Intentionally ungated: `fixEnabled &&` here would let the
+                    // pre-amendment sponsored case succeed and change consensus.
                     if (distinctDestination &&
-                        deltaAssetsForParty(tx[sfAccount], tx, fee, view, fixEnabled).has_value())
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fixEnabled).has_value())
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must change one destination balance";
@@ -1087,7 +1090,7 @@ ValidVault::finalize(
                     }
 
                     auto const maybeRecipientDelta =
-                        deltaAssetsForParty(recipient, tx, fee, view, fixEnabled);
+                        deltaAssetsForParty(view, recipient, tx, fee, fixEnabled);
 
                     if (!maybeRecipientDelta.has_value())
                     {
