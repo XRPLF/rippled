@@ -2794,13 +2794,15 @@ class InvariantsVault_test : public InvariantsBase
                     "RedemptionDate";
 
         // A newly-created loan against a closed-ended vault must satisfy StartDate +
-        // PaymentInterval * PaymentRemaining < RedemptionDate. LoanSet::preclaim enforces the same
-        // bound; this test synthesises an invalid loan directly in the ApplyView so the invariant
-        // catches it even when preclaim is bypassed.
+        // PaymentInterval * PaymentRemaining + kLoanRedemptionBuffer <= RedemptionDate.
+        // LoanSet::preclaim enforces the same bound; this test synthesises a loan whose
+        // final payment is still before RedemptionDate (so the old unbuffered check would
+        // pass) but inside the buffer zone.
         Keylet closedEndedBrokerKeylet = keylet::amendments();
         std::uint32_t closedEndedRed = 0;
         doInvariantCheck(
-            {"closed-ended loan final payment must precede RedemptionDate"},
+            {"closed-ended loan final payment must precede RedemptionDate by at least "
+             "kLoanRedemptionBuffer"},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 // Touch the vault so ValidVault::finalizeLoanSet sees an
                 // entry in afterVault_; the vault is in Investment, so
@@ -2817,15 +2819,14 @@ class InvariantsVault_test : public InvariantsBase
                     return false;
                 std::uint32_t const loanSeq = sleBroker->at(sfLoanSequence);
 
-                // Synthesize a Loan whose final scheduled payment lands
-                // exactly at RedemptionDate: StartDate = red, interval = 60,
-                // remaining = 1 => red + 60 >= red.
+                // Final payment at RedemptionDate - (kLoanRedemptionBuffer - 1): still
+                // strictly before RedemptionDate, but inside the buffer.
                 auto sleLoan = makeLoanSle(closedEndedBrokerKeylet.key, loanSeq, a1.id());
                 sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
                 sleLoan->at(sfLoanSequence) = loanSeq;
                 sleLoan->at(sfBorrower) = a1.id();
-                sleLoan->at(sfStartDate) = closedEndedRed;
-                sleLoan->at(sfPaymentInterval) = 60;
+                sleLoan->at(sfStartDate) = closedEndedRed - kLoanRedemptionBuffer;
+                sleLoan->at(sfPaymentInterval) = 1;
                 sleLoan->at(sfPaymentRemaining) = 1;
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
                 sleLoan->at(sfPeriodicPayment) = Number(1);
