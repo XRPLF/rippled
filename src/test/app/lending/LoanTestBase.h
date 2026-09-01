@@ -115,8 +115,8 @@ protected:
         std::uint32_t subscriptionOffset = 60;
         // Seconds between SubscriptionDate and RedemptionDate. Must be >= kMinInvestmentPeriod, <
         // kMaxInvestmentPeriod, and generous enough to fit any loan schedule the test runs
-        // (finalPayment must be strictly before RedemptionDate). Default sized to comfortably
-        // exceed any schedule realistic tests are likely to configure.
+        // (finalPayment must precede RedemptionDate by at least kLoanRedemptionBuffer). Default
+        // sized to comfortably exceed any schedule realistic tests are likely to configure.
         std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
         // When true, createVaultAndBroker skips its automatic clock advance past SubscriptionDate.
         // Useful for tests that need to observe the vault while it is still in the Subscription

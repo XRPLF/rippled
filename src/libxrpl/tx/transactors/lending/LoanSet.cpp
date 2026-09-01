@@ -40,6 +40,12 @@
 
 namespace xrpl {
 
+// StartDate is strictly after SubscriptionDate. A min-gap vault must still
+// fit a minimum-interval loan plus kLoanRedemptionBuffer. The interval and
+// buffer constants are independent; only their sum (plus the +1 for a
+// strictly-later StartDate) is required to fit in kMinInvestmentPeriod.
+static_assert(kMinInvestmentPeriod >= LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer + 1);
+
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -327,10 +333,11 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         {
             auto const finalPayment =
                 std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total);
-            if (finalPayment >= vault->at(sfRedemptionDate))
+            if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
             {
-                JLOG(ctx.j.warn()) << "Final loan payment date is on or after "
-                                      "the vault's redemption date.";
+                JLOG(ctx.j.warn())
+                    << "Final loan payment date is fewer than " << kLoanRedemptionBuffer
+                    << " seconds before the vault's redemption date.";
                 return tecNO_PERMISSION;
             }
         }
