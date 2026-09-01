@@ -434,41 +434,61 @@ MPTokenIssuanceSet::doApply()
     // registration leaves the epoch absent (epoch 0), matching issuances
     // whose keys were registered before the ConfidentialMPTKeyRotation
     // amendment.
-    auto const setEncryptionKey = [&](SF_VL const& keyField, SF_UINT32 const& epochField) {
+    auto const setEncryptionKey = [&](SF_VL const& keyField, SF_UINT32 const& epochField) -> TER {
         auto const pubKey = ctx_.tx[~keyField];
         if (!pubKey)
-            return;
+            return tesSUCCESS;
 
-        // This is enforced in preflight.
-        XRPL_ASSERT(
-            sle->getType() == ltMPTOKEN_ISSUANCE,
-            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        // Preflight rejects a transaction carrying both sfHolder and an
+        // encryption key
+        if (sle->getType() != ltMPTOKEN_ISSUANCE)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : not an MPTokenIssuance");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         // NOTE: presence must be checked before the key is overwritten below.
         bool const isRotation = sle->isFieldPresent(keyField);
-
-        // Preclaim rejects overwriting an existing key unless the amendment is
-        // enabled, so a key epoch can never be written to a pre-amendment ledger.
-        XRPL_ASSERT(
-            !isRotation || view().rules().enabled(featureConfidentialMPTKeyRotation),
-            "MPTokenIssuanceSet::doApply : rotation requires ConfidentialMPTKeyRotation amendment");
-
         sle->setFieldVL(keyField, *pubKey);
 
         if (isRotation)
         {
+            // Preclaim rejects overwriting an existing key unless the amendment is
+            // enabled.
+            if (!view().rules().enabled(featureConfidentialMPTKeyRotation))
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : rotation without amendment");
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
+
             auto const epoch = (*sle)[~epochField].valueOr(0);
 
-            // Preclaim rejects a rotation that would wrap the epoch.
-            XRPL_ASSERT(
-                epoch < kMaxKeyEpoch, "MPTokenIssuanceSet::doApply : key epoch does not wrap");
+            // Preclaim rejects a rotation that would wrap the epoch. So this should never happen.
+            if (epoch >= kMaxKeyEpoch)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : key epoch overflow");
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
 
             (*sle)[epochField] = epoch + 1;
         }
+
+        return tesSUCCESS;
     };
 
-    setEncryptionKey(sfIssuerEncryptionKey, sfIssuerKeyEpoch);
-    setEncryptionKey(sfAuditorEncryptionKey, sfAuditorKeyEpoch);
+    if (auto const ter = setEncryptionKey(sfIssuerEncryptionKey, sfIssuerKeyEpoch);
+        !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
+
+    if (auto const ter = setEncryptionKey(sfAuditorEncryptionKey, sfAuditorKeyEpoch);
+        !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
     view().update(sle);
 
