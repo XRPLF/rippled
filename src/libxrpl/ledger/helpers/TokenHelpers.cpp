@@ -368,6 +368,7 @@ accountHolds(
     Currency const& currency,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
@@ -386,8 +387,23 @@ accountHolds(
     }
 
     // IOU: Return balance on trust line modulo freeze
-    SLE::const_pointer const sle =
-        getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
+    SLE::const_pointer sle = getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
+
+    // An unauthorized line's balance is unspendable except back to the
+    // issuer, so funding-style queries treat it as zero. Gated on
+    // fixCleanup3_4_0, which also enforces the ValidTrustLineAuth invariant
+    // and adds the pseudo-account carve-out inside requireAuth, so all
+    // three activate together. Unauthorized balances exist in ledger
+    // history: see XRPLF/rippled issue #5450. The AuthType cannot matter
+    // here -- the modes only differ for a missing trust line and this runs
+    // only when the line exists -- but StrongAuth states the situation and
+    // stays fail-closed should the guard ever change.
+    if (sle && zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized &&
+        view.rules().enabled(fixCleanup3_4_0) &&
+        !isTesSuccess(requireAuth(view, Issue{currency, issuer}, account, AuthType::StrongAuth)))
+    {
+        sle = nullptr;
+    }
 
     return getTrustLineBalance(view, sle, account, currency, issuer, returnSpendable, j);
 }
@@ -398,11 +414,19 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
     return accountHolds(
-        view, account, issue.currency, issue.account, zeroIfFrozen, j, includeFullBalance);
+        view,
+        account,
+        issue.currency,
+        issue.account,
+        zeroIfFrozen,
+        zeroIfUnauthorized,
+        j,
+        includeFullBalance);
 }
 
 STAmount
@@ -486,7 +510,8 @@ accountHolds(
 {
     return asset.visit(
         [&](Issue const& issue) {
-            return accountHolds(view, account, issue, zeroIfFrozen, j, includeFullBalance);
+            return accountHolds(
+                view, account, issue, zeroIfFrozen, zeroIfUnauthorized, j, includeFullBalance);
         },
         [&](MPTIssue const& issue) {
             return accountHolds(
@@ -500,28 +525,16 @@ accountFunds(
     AccountID const& id,
     STAmount const& saDefault,
     FreezeHandling freezeHandling,
-    beast::Journal j)
-{
-    XRPL_ASSERT(saDefault.holds<Issue>(), "xrpl::accountFunds: saDefault holds Issue");
-
-    if (!saDefault.native() && saDefault.getIssuer() == id)
-        return saDefault;
-
-    return accountHolds(
-        view, id, saDefault.get<Issue>().currency, saDefault.getIssuer(), freezeHandling, j);
-}
-
-STAmount
-accountFunds(
-    ReadView const& view,
-    AccountID const& id,
-    STAmount const& saDefault,
-    FreezeHandling freezeHandling,
     AuthHandling authHandling,
     beast::Journal j)
 {
     return saDefault.asset().visit(
-        [&](Issue const&) { return accountFunds(view, id, saDefault, freezeHandling, j); },
+        [&](Issue const& issue) {
+            if (!saDefault.native() && issue.account == id)
+                return saDefault;
+            return accountHolds(
+                view, id, issue.currency, issue.account, freezeHandling, authHandling, j);
+        },
         [&](MPTIssue const&) {
             return accountHolds(
                 view,

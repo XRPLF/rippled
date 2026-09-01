@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -430,12 +431,51 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
-        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField) &&
-            (*sleLine)[sfBalance] == beast::kZero)
+        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField))
         {
-            JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
-                             << " src: " << src_;
-            return terNO_AUTH;
+            // Post fixCleanup3_4_0 an unauthorized line may not receive at
+            // all: the zero-balance condition below was the historical
+            // grandfather clause letting a line that already carried a
+            // balance keep receiving, which is how an unauthorized position
+            // could grow (see XRPLF/rippled issue #5450). The
+            // ValidTrustLineAuth invariant remains the backstop for flows
+            // that bypass the payment engine.
+            if (ctx.view.rules().enabled(fixCleanup3_4_0))
+            {
+                JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
+                                 << " src: " << src_;
+                return tecNO_AUTH;
+            }
+
+            if ((*sleLine)[sfBalance] == beast::kZero)
+            {
+                JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
+                                 << " src: " << src_;
+                return terNO_AUTH;
+            }
+        }
+
+        // A balance the issuer never authorized may only be delivered to the
+        // issuer itself. toStrand appends the transaction's Destination as
+        // the final path element, so the step carrying ctx.isLast delivers
+        // to dst_; dst_ being this line's issuer then makes the strand a
+        // redemption. Any onward step spends the balance to a third party
+        // or converts it, which only a redemption or a Clawback may do. The
+        // ValidTrustLineAuth invariant remains the backstop for paths that
+        // bypass the payment engine.
+        if (!ctx.isLast && ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            // src_ holds dst_'s IOU exactly when the balance favors src_.
+            int const sign = (*sleLine)[sfBalance].signum();
+            bool const srcHoldsDstIou = src_ < dst_ ? sign > 0 : sign < 0;
+            if (srcHoldsDstIou &&
+                !isTesSuccess(
+                    requireAuth(ctx.view, Issue{currency_, dst_}, src_, AuthType::StrongAuth)))
+            {
+                JLOG(j_.debug()) << "DirectStepI: cannot spend an unauthorized balance. src: "
+                                 << src_;
+                return tecNO_AUTH;
+            }
         }
 
         if (ctx.prevStep != nullptr)
@@ -478,8 +518,12 @@ template <class TDerived>
 std::pair<IOUAmount, DebtDirection>
 DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
-    auto const srcOwed = toAmount<IOUAmount>(
-        accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_));
+    // IgnoreAuth: srcOwed also feeds redemption back to the issuer, the one
+    // movement an unauthorized line is allowed. Strands that would spend
+    // such a balance past the issuer are rejected in check(), and the
+    // ValidTrustLineAuth invariant backstops everything else.
+    auto const srcOwed = toAmount<IOUAmount>(accountHolds(
+        sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_));
 
     if (srcOwed.signum() > 0)
         return {srcOwed, DebtDirection::Redeems};
@@ -495,7 +539,9 @@ DirectStepI<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir) co
     if (dir == StrandDirection::Forward && cache_)
         return cache_->srcDebtDir;
 
-    auto const srcOwed = accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_);
+    // IgnoreAuth: see maxPaymentFlow.
+    auto const srcOwed = accountHolds(
+        sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
     return srcOwed.signum() > 0 ? DebtDirection::Redeems : DebtDirection::Issues;
 }
 

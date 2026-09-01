@@ -862,7 +862,14 @@ struct PayStrand_test : public beast::unit_test::Suite
             BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::Auth));
             env(pay(gw, alice, usd(100)));
             env.require(Balance(alice, usd(100)));
-            test(env, usd, std::nullopt, STPath(), terNO_AUTH);
+            // Post fixCleanup3_4_0 the unauthorized receive is a final
+            // tecNO_AUTH rather than the retriable terNO_AUTH.
+            test(
+                env,
+                usd,
+                std::nullopt,
+                STPath(),
+                features[fixCleanup3_4_0] ? TER{tecNO_AUTH} : TER{terNO_AUTH});
 
             // Check pure issue redeem still works
             auto [ter, strand] = toStrand(
@@ -1141,6 +1148,7 @@ struct PayStrand_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         auto const sa = testableAmendments();
+        testToStrand(sa - fixCleanup3_4_0);
         testToStrand(sa - featurePermissionedDEX);
         testToStrand(sa);
 

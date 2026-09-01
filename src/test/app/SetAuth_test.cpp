@@ -45,7 +45,12 @@ struct SetAuth_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
 
-        Env env(*this);
+        Env env(*this, features);
+
+        // Post fixCleanup3_4_0 paying an unauthorized line fails cleanly
+        // with tecNO_AUTH; before it, the retriable terNO_AUTH left a dry
+        // path.
+        TER const noAuth = features[fixCleanup3_4_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
 
         env.fund(XRP(100000), "alice", "bob", gw);
         env(fset(gw, asfRequireAuth));
@@ -55,10 +60,8 @@ struct SetAuth_test : public beast::unit_test::Suite
         env(trust("alice", usd(1000)));
         env(trust("bob", usd(1000)));
         env(pay(gw, "alice", usd(100)));
-        env(pay(gw, "bob", usd(100)),
-            Ter(tecPATH_DRY));  // Should be terNO_AUTH
-        env(pay("alice", "bob", usd(50)),
-            Ter(tecPATH_DRY));  // Should be terNO_AUTH
+        env(pay(gw, "bob", usd(100)), Ter(noAuth));
+        env(pay("alice", "bob", usd(50)), Ter(noAuth));
     }
 
     void
@@ -66,6 +69,7 @@ struct SetAuth_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         auto const sa = testableAmendments();
+        testAuth(sa - fixCleanup3_4_0);
         testAuth(sa - featurePermissionedDEX);
         testAuth(sa);
     }

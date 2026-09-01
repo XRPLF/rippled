@@ -195,8 +195,13 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // own currency
         auto const needed = bo->at(sfAmount);
 
-        if (accountFunds(ctx.view, (*bo)[sfOwner], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
-            needed)
+        if (accountFunds(
+                ctx.view,
+                (*bo)[sfOwner],
+                needed,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
+                ctx.j) < needed)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
@@ -265,8 +270,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unnecessary tec, and is also resolved with this amendment.
             if (accountFunds(
-                    ctx.view, ctx.tx[sfAccount], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
-                needed)
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    needed,
+                    FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::ZeroIfUnauthorized,
+                    ctx.j) < needed)
                 return tecINSUFFICIENT_FUNDS;
         }
 
@@ -354,9 +363,14 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     // just confirm that the end state is OK.
     if (!isTesSuccess(result))
         return result;
-    if (accountFunds(view(), from, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
+    // IgnoreAuth: these are negative-balance consistency guards, and zeroing
+    // an unauthorized line's balance would mask a real negative.
+    if (accountFunds(
+            view(), from, amount, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_)
+            .signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
+    if (accountFunds(view(), to, amount, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_)
+            .signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }

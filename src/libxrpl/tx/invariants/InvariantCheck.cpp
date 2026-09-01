@@ -1037,8 +1037,16 @@ ValidClawback::finalize(
                 [&](Issue const& issue) {
                     AccountID const issuer = tx.getAccountID(sfAccount);
                     AccountID const& holder = amount.getIssuer();
+                    // IgnoreAuth: clawback legitimately drains unauthorized
+                    // lines, and this invariant must see the real balance.
                     STAmount const holderBalance = accountHolds(
-                        view, holder, issue.currency, issuer, FreezeHandling::IgnoreFreeze, j);
+                        view,
+                        holder,
+                        issue.currency,
+                        issuer,
+                        FreezeHandling::IgnoreFreeze,
+                        AuthHandling::IgnoreAuth,
+                        j);
 
                     if (holderBalance.signum() < 0)
                     {
