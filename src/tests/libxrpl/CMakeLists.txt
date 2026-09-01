@@ -5,16 +5,6 @@ include(verify_headers)
 # Test requirements.
 find_package(GTest REQUIRED)
 
-# The wasm fixtures the test binary and the wasm benchmarks both need: a real genesis
-# ledger, the real host built over it, and the WAT assembler. Its own library because
-# it links **no test framework** — a benchmark wants a ledger and a host, not GTest's
-# lifecycle, and before this existed `xrpl.bench.wasm` had to link GTest and subclass
-# `testing::Test` just to reach them.
-#
-# Only the framework-free half of `tx/wasm/fixtures/` lives here. The GTest half
-# (`RealHostFixture`, `FloatFixture`, `NFTFixture`, `MockHostFunctions`, `WasmFixture`,
-# `RealVmTest`, `HostContextFixture`) compiles into `xrpl_tests` with the tests, and the
-# benchmark harness (`WasmBench`, `BenchFixtures`) into `xrpl.bench.wasm`.
 add_library(
     xrpl.testkit.wasm
     STATIC
@@ -25,7 +15,6 @@ add_library(
     tx/wasm/fixtures/WasmLedger.cpp
     tx/wasm/fixtures/WasmRun.cpp
 )
-# Fixtures include their siblings as <helpers/...> and <tx/wasm/fixtures/...>.
 target_include_directories(xrpl.testkit.wasm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(
     xrpl.testkit.wasm
@@ -33,8 +22,6 @@ target_link_libraries(
 )
 add_dependencies(xrpl.testkit.wasm xrpl_crates)
 
-# Single combined gtest binary built from the shared test helpers and all test
-# modules below.
 add_executable(xrpl_tests main.cpp)
 patch_nix_binary(xrpl_tests)
 set_target_properties(
@@ -77,12 +64,6 @@ foreach(module IN LISTS test_modules)
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
     )
-    # Sources under this tree that belong to another target:
-    #   * `*.bench.cpp` and the `WasmBench`/`BenchFixtures` harness -> xrpl.bench.wasm
-    #   * `NftSetup`/`WasmLedger`/`WasmRun` -> xrpl.testkit.wasm, which this binary links
-    #
-    # The GTest half of `tx/wasm/fixtures/` (RealHostFixture, HostContextFixture) is not
-    # excluded: it shares the tests' framework and belongs here.
     list(
         FILTER sources
         EXCLUDE
