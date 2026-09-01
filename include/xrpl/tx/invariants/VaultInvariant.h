@@ -211,8 +211,8 @@ private:
      *
      * For a closed-ended vault, a loan may only be originated while the vault is in the Investment
      * phase (strictly past @c SubscriptionDate and before @c RedemptionDate). Open-ended vaults (@c
-     * NoPhase) are unaffected. The complementary maturity bound (final payment strictly precedes @c
-     * RedemptionDate) is enforced by @c ValidLoan.
+     * NoPhase) are unaffected. The complementary maturity bound (final payment precedes @c
+     * RedemptionDate by at least @c kLoanRedemptionBuffer) is enforced by @c ValidLoan.
      */
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;
