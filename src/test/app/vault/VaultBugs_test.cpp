@@ -8,6 +8,7 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -1674,6 +1675,255 @@ private:
         }
     }
 
+    // addEmptyHolding() used to check isGlobalFrozen(issuer) and
+    // !lsfDefaultRipple before the "line already exists" tecDUPLICATE
+    // short circuit. doWithdraw() calls addEmptyHolding() for a
+    // self-destination payout and only tolerates tecDUPLICATE, so
+    // tecINTERNAL from a missing DefaultRipple flag aborted the
+    // withdrawal. fixCleanup3_4_0 checks existence first and maps the
+    // create-path DefaultRipple miss to terNO_RIPPLE.
+    void
+    testBugSelfWithdrawAfterIssuerClearsDefaultRipple()
+    {
+        using namespace test::jtx;
+
+        auto runExistingLine = [this](FeatureBitset features, TER selfExpected) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(10'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env(trust(bob, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usdIssue)));
+
+            // Alice's USD line is unchanged; a later deposit still succeeds.
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(10)}));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+
+            auto destTx =
+                vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)});
+            destTx[sfDestination] = bob.human();
+            env(destTx);
+            env.close();
+        };
+
+        auto runDeletedLine = [this](FeatureBitset features, TER selfExpected) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(500)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usdIssue)));
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+        };
+
+        auto runCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+            using namespace loan_broker;
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = alice, .asset = usd, .subscriptionOffset = std::chrono::seconds{60}});
+            (void)subscriptionDate;
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+            env(coverDeposit(alice, brokerKeylet.key, usd(100).value()));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usdIssue)));
+
+            env(coverWithdraw(alice, brokerKeylet.key, usd(50).value()), Ter(selfExpected));
+            env.close();
+        };
+
+        auto runPrivateVault = [this](FeatureBitset features, TER selfExpected, TER destExpected) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const pdOwner{"pdOwner"};
+            Account const credIssuer{"credIssuer"};
+            std::string const credType = "credential";
+
+            env.fund(XRP(10'000), issuer, alice, bob, pdOwner, credIssuer);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(alice, usd(10'000)));
+            env(trust(bob, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] =
+                vault.create({.owner = alice, .asset = usd, .flags = tfVaultPrivate});
+            env(vaultTx);
+            env.close();
+
+            pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+            env(pdomain::setTx(pdOwner, credentials));
+            auto const domainId = pdomain::getNewDomain(env.meta());
+            {
+                auto domainTx = vault.set({.owner = alice, .id = vaultKeylet.key});
+                domainTx[sfDomainID] = to_string(domainId);
+                env(domainTx);
+                env.close();
+            }
+
+            env(credentials::create(alice, credIssuer, credType));
+            env(credentials::accept(alice, credIssuer, credType));
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+
+            // Bob has a USD line but is not in the vault's domain; post-fixCleanup3_4_0
+            // that is not a usable destination.
+            auto destTx =
+                vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)});
+            destTx[sfDestination] = bob.human();
+            env(destTx, Ter(destExpected));
+            env.close();
+        };
+
+        testcase(
+            "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
+            "clears asfDefaultRipple even though the trust line exists "
+            "(pre-fixCleanup3_4_0)");
+        runExistingLine(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: VaultWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
+        runExistingLine(all_, tesSUCCESS);
+
+        testcase(
+            "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
+            "clears asfDefaultRipple and the trust line was deleted "
+            "(pre-fixCleanup3_4_0)");
+        runDeletedLine(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: VaultWithdraw to self fails with terNO_RIPPLE after issuer "
+            "clears asfDefaultRipple and the trust line was deleted "
+            "(post-fixCleanup3_4_0)");
+        runDeletedLine(all_, terNO_RIPPLE);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
+            "issuer clears asfDefaultRipple even though the trust line exists "
+            "(pre-fixCleanup3_4_0)");
+        runCoverWithdraw(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
+        runCoverWithdraw(all_, tesSUCCESS);
+
+        testcase(
+            "bug: private VaultWithdraw to self fails with tecINTERNAL after "
+            "issuer clears asfDefaultRipple; third-party dest still works "
+            "(pre-fixCleanup3_4_0)");
+        runPrivateVault(all_ - fixCleanup3_4_0, tecINTERNAL, tesSUCCESS);
+
+        testcase(
+            "bug: private VaultWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple; third-party dest is tecNO_AUTH "
+            "(post-fixCleanup3_4_0)");
+        runPrivateVault(all_, tesSUCCESS, tecNO_AUTH);
+    }
+
 public:
     void
     run() override
@@ -1695,6 +1945,7 @@ public:
         testBugClawbackRoundTripOvershoot();
         testBugWithdrawRoundTripOvershoot();
         testBugClawbackAfterLoanImpair();
+        testBugSelfWithdrawAfterIssuerClearsDefaultRipple();
     }
 };
 
