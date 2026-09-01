@@ -3,8 +3,8 @@
 #include <xrpl/protocol/UintTypes.h>
 
 #include <benchmark/benchmark.h>
-#include <tx/wasm/BenchFixtures.h>
-#include <tx/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/BenchFixtures.h>
+#include <tx/wasm/fixtures/WasmBench.h>
 
 #include <string_view>
 

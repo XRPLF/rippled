@@ -1,7 +1,7 @@
 #include <benchmark/benchmark.h>
-#include <tx/wasm/BenchFixtures.h>
-#include <tx/wasm/FloatFixture.h>
-#include <tx/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/BenchFixtures.h>
+#include <tx/wasm/fixtures/FloatConstants.h>
+#include <tx/wasm/fixtures/WasmBench.h>
 
 #include <string_view>
 
@@ -21,7 +21,8 @@ constexpr std::string_view kBody =
 void
 floatAddThroughVm(benchmark::State& state)
 {
-    static auto const kData = dataSegment(0, FloatTest::kPi) + dataSegment(16, FloatTest::kTwo);
+    static auto const kData =
+        dataSegment(0, FloatConstants::kPi) + dataSegment(16, FloatConstants::kTwo);
     benchmarkThroughVm(
         state, kWasmName, kImport, kData, kBody, [] { return Fixtures::instance().host(); });
 }

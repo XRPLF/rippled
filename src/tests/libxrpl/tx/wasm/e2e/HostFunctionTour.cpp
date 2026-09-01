@@ -1,7 +1,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <gtest/gtest.h>
-#include <tx/wasm/RealVmTest.h>
+#include <tx/wasm/fixtures/RealVmTest.h>
 
 #include <string_view>
 

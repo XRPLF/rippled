@@ -3,9 +3,9 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
-#include <tx/wasm/RealHostFixture.h>
-#include <tx/wasm/RealVmTest.h>
-#include <tx/wasm/WasmRun.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
+#include <tx/wasm/fixtures/RealVmTest.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 
 #include <cstdint>
 #include <format>

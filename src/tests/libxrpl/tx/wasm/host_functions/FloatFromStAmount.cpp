@@ -7,8 +7,8 @@
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <helpers/TxTest.h>
-#include <tx/wasm/FloatFixture.h>
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/FloatFixture.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <cstdint>
 

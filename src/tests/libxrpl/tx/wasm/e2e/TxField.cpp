@@ -5,8 +5,8 @@
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <helpers/TxTest.h>
-#include <tx/wasm/RealHostFixture.h>
-#include <tx/wasm/RealVmTest.h>
+#include <tx/wasm/fixtures/RealVmTest.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
 
 #include <cstdint>
 #include <format>

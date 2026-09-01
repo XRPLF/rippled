@@ -8,8 +8,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <helpers/CaptureSink.h>
-#include <tx/wasm/MockHostFunctions.h>
-#include <tx/wasm/WasmRun.h>
+#include <tx/wasm/fixtures/MockHostFunctions.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 
 #include <cstdint>
 #include <expected>

@@ -6,8 +6,7 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <helpers/Account.h>
-#include <tx/wasm/RealHostFixture.h>
-#include <tx/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
 
 #include <cstdint>
 
@@ -100,7 +99,7 @@ private:
     [[nodiscard]] TxAssembler
     memoTx();
 
-    BenchFixture ledger_;
+    WasmLedger ledger_;
     Account alice_;
     Account bob_;
     Account signerListOwner_;

@@ -5,8 +5,7 @@
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <benchmark/benchmark.h>
-#include <tx/wasm/RealHostFixture.h>
-#include <tx/wasm/WasmRun.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 
 #include <algorithm>
 #include <chrono>
@@ -59,20 +58,6 @@ inline constexpr std::int64_t kTransferLimitBytes = 1 << 20;
 int
 callsWithinTransferBudget(std::int64_t bytesPerCall);
 
-// A benchmark wants a fixture's ledger, host and setup helpers.
-// Templated so a case can reuse whichever fixture its test uses — `Bench<NFTTest>` for the
-// NFT benchmarks, `Bench<FloatTest>` for the float ones — instead of duplicating that setup.
-template <class Fixture>
-struct Bench : Fixture
-{
-    void
-    TestBody() override
-    {
-    }
-};
-
-using BenchFixture = Bench<RealHostFixture>;
-
 // One run of a contract: how long it took, and what the engine charged it.
 struct Timing
 {
@@ -107,8 +92,6 @@ public:
     static Calibration const&
     instance();
 
-    Calibration();
-
     // Seconds of wall time one unit of gas buys here.
     [[nodiscard]] double
     secondsPerGas() const
@@ -125,6 +108,8 @@ public:
     }
 
 private:
+    Calibration();
+
     double secondsPerGas_{};
     double crossingFloorGas_{};
 };

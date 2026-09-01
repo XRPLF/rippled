@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 namespace xrpl::test {
 

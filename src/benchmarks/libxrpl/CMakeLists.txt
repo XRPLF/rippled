@@ -24,15 +24,13 @@ add_dependencies(xrpl.benchmarks xrpl.bench.nodestore)
 # xrpl.bench.wasm — gas calibration for the wasm host functions.
 #
 # Each `*.bench.cpp` sits beside the test that covers the same host function, under
-# `src/tests/libxrpl/tx/wasm/`. Keeping the benchmark next to the test means the
-# two move together and share one fixture; a separate executable means benchmark
-# runtime never lands on the `ctest` path (the test binary filters `*.bench.cpp`
-# back out).
+# `src/tests/libxrpl/tx/wasm/`, so the two move together. A separate executable keeps
+# benchmark runtime off the `ctest` path (the test binary filters `*.bench.cpp` out).
 #
-# Reusing those fixtures means compiling a few test sources and linking GTest:
-# `RealHostFixture` derives from `testing::Test`. Nothing here registers a test.
-find_package(GTest QUIET)
-if(TARGET GTest::gtest)
+# The ledger and host come from `xrpl.testkit.wasm`, which links no test framework — so
+# this target links **no GTest and no GMock**, and compiles no test sources of its own
+# beyond the benchmark harness.
+if(TARGET xrpl.testkit.wasm)
     file(
         GLOB_RECURSE wasm_bench_sources
         CONFIGURE_DEPENDS
@@ -42,28 +40,20 @@ if(TARGET GTest::gtest)
     add_executable(
         xrpl.bench.wasm
         ${wasm_bench_sources}
-        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/Account.cpp"
-        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/TestSink.cpp"
-        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/helpers/TxTest.cpp"
-        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/RealHostFixture.cpp"
-        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/NFTFixture.cpp"
-        # The benchmark harness and its shared ledger setup. Named without the
-        # `.bench.cpp` suffix because they are infrastructure rather than a benchmark,
-        # so the glob above does not find them and `xrpl_tests` excludes them by name.
-        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/BenchFixtures.cpp"
-        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/WasmBench.cpp"
-        # The WAT assembler, shared with the test binary rather than benchmark-only:
-        # both binaries compile their own copy.
-        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/WasmRun.cpp"
+        # The benchmark harness. Named without the `.bench.cpp` suffix because it is
+        # infrastructure rather than a benchmark, so the glob above does not find it and
+        # `xrpl_tests` excludes it by name.
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/fixtures/BenchFixtures.cpp"
+        "${CMAKE_SOURCE_DIR}/src/tests/libxrpl/tx/wasm/fixtures/WasmBench.cpp"
     )
 
-    # Google Benchmark registers cases through static registrars declared in
-    # anonymous namespaces; merging several such files into one unity translation
-    # unit collides them. Same reason as `xrpl_add_benchmark`.
+    # Google Benchmark registers cases through static registrars declared in anonymous
+    # namespaces; merging several such files into one unity translation unit collides
+    # them. Same reason as `xrpl_add_benchmark`.
     #
     # The output directory matches too: benchmarks land in the build root beside
-    # `xrpl_tests`, because they are run by hand and comparing two of them should
-    # not mean typing two long paths.
+    # `xrpl_tests`, because they are run by hand and comparing two of them should not
+    # mean typing two long paths.
     set_target_properties(
         xrpl.bench.wasm
         PROPERTIES
@@ -71,26 +61,15 @@ if(TARGET GTest::gtest)
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
     )
 
-    # The fixtures include their siblings as <helpers/...> and <tx/wasm/...>, the
-    # same spelling the test binary gives them.
-    target_include_directories(
-        xrpl.bench.wasm
-        PRIVATE "${CMAKE_SOURCE_DIR}/src/tests/libxrpl"
-    )
     target_link_libraries(
         xrpl.bench.wasm
-        PRIVATE
-            xrpl.imports.bench
-            GTest::gtest
-            GTest::gmock
-            xrpl_wasm_testkit_cxxbridge
+        PRIVATE xrpl.imports.bench xrpl.testkit.wasm
     )
-    add_dependencies(xrpl.bench.wasm xrpl_crates)
 
     add_dependencies(xrpl.benchmarks xrpl.bench.wasm)
 else()
     message(
         STATUS
-        "GTest not found; skipping xrpl.bench.wasm (it reuses the test fixtures)."
+        "xrpl.testkit.wasm not built (tests disabled); skipping xrpl.bench.wasm."
     )
 endif()

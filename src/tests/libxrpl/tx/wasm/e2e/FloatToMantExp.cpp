@@ -1,9 +1,9 @@
 #include <xrpl/protocol/TER.h>
 
 #include <gtest/gtest.h>
-#include <tx/wasm/FloatFixture.h>
-#include <tx/wasm/RealVmTest.h>
-#include <tx/wasm/WasmRun.h>
+#include <tx/wasm/fixtures/FloatFixture.h>
+#include <tx/wasm/fixtures/RealVmTest.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 
 #include <cstdint>
 #include <format>

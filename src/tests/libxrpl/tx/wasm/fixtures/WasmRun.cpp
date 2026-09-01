@@ -1,4 +1,4 @@
-#include <tx/wasm/WasmRun.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>

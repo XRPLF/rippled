@@ -1,9 +1,9 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <benchmark/benchmark.h>
-#include <tx/wasm/BenchFixtures.h>
-#include <tx/wasm/RealHostFixture.h>
-#include <tx/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/BenchFixtures.h>
+#include <tx/wasm/fixtures/WasmBench.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
 
 #include <cstdint>
 #include <string_view>
@@ -29,7 +29,7 @@ escrowKeyletThroughVm(benchmark::State& state)
         {
             seq[i] = static_cast<std::uint8_t>((Fixtures::kSeq >> (8 * i)) & 0xFF);
         }
-        return dataSegment(0, RealHostFixture::toBytes(Fixtures::instance().alice().id())) +
+        return dataSegment(0, WasmLedger::toBytes(Fixtures::instance().alice().id())) +
             dataSegment(32, seq);
     }();
 

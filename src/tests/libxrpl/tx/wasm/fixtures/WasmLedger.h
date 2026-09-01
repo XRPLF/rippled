@@ -8,7 +8,6 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
@@ -19,51 +18,36 @@
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
-#include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <helpers/CaptureSink.h>
 #include <helpers/TxTest.h>
 
 #include <cstdint>
-#include <expected>
 #include <functional>
 #include <memory>
-#include <source_location>
 #include <span>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
+// A real genesis ledger and the real host built over it, with **no test framework**.
+//
+// This is the piece both `xrpl_tests` and `xrpl.bench.wasm` need, and the reason it is its own
+// type: a benchmark wants a ledger and a host, not GTest's lifecycle. `RealHostFixture` adds the
+// framework on top (`: testing::Test, WasmLedger`) plus the assertion helpers; a benchmark uses
+// `WasmLedger` directly and links no GTest at all.
+//
+// Setup steps here **throw** rather than `EXPECT_`. That is the point of the separation, not a
+// detail: an `EXPECT_` outside a running test is recorded and discarded, so a benchmark whose
+// escrow was never created would still run its host call, take the not-found path, and report a
+// cheap, plausible, completely wrong price. Throwing turns that into a stopped run.
+
 namespace xrpl::test {
 
-template <typename T, typename U>
-void
-expectValue(
-    std::expected<T, HostFunctionError> const& result,
-    U const& expected,
-    std::source_location loc = std::source_location::current())
-{
-    auto trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
-    ASSERT_TRUE(result.has_value())
-        << "expected a value, got error " << static_cast<int>(result.error());
-    EXPECT_EQ(*result, expected);
-}
-
-template <typename T>
-void
-expectError(
-    std::expected<T, HostFunctionError> const& result,
-    HostFunctionError expected,
-    std::source_location loc = std::source_location::current())
-{
-    auto trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
-    ASSERT_FALSE(result.has_value()) << "expected error, got a value";
-    EXPECT_EQ(result.error(), expected);
-}
-
-void
-expectKeyletMatches(std::expected<Bytes, HostFunctionError> const& result, Keylet const& expected);
+// Fail a setup step loudly. See the note above on why this is not an `EXPECT_`.
+[[noreturn]] void
+fixtureFailed(std::string_view what);
 
 struct SignedMessage
 {
@@ -116,7 +100,7 @@ private:
     std::unique_ptr<WasmHostFunctionsImpl> host_;
 };
 
-class RealHostFixture : public testing::Test
+class WasmLedger
 {
 public:
     TxTest ledger;

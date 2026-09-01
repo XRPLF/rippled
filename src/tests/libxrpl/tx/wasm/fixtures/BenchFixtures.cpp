@@ -1,4 +1,4 @@
-#include <tx/wasm/BenchFixtures.h>
+#include <tx/wasm/fixtures/BenchFixtures.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -15,25 +15,15 @@
 
 #include <helpers/Account.h>
 #include <helpers/TxTest.h>
-#include <tx/wasm/FloatFixture.h>
-#include <tx/wasm/NFTFixture.h>
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/FloatConstants.h>
+#include <tx/wasm/fixtures/NftSetup.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
 
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
 
 namespace xrpl::test::bench {
-namespace {
-
-[[noreturn]] void
-setupFailed(std::string_view what)
-{
-    throw std::runtime_error{"benchmark fixture setup failed: " + std::string{what}};
-}
-
-}  // namespace
 
 Fixtures::Fixtures()
     : alice_{ledger_.fund("benchAlice")}
@@ -41,7 +31,7 @@ Fixtures::Fixtures()
     , signerListOwner_{ledger_.fund("benchSigners")}
     , escrow_{keylet::account(AccountID{})}
     , signedMessage_{signMessage("the quick brown fox jumps over the lazy dog")}
-    , nftId_{NFTTest::makeNftId(alice_.id())}
+    , nftId_{NftIds::makeNftId(alice_.id())}
 {
     ledger_.makeSignerList(signerListOwner_, 2, {{alice_, 1}, {bob_, 1}});
 
@@ -55,7 +45,7 @@ Fixtures::Fixtures()
         alice_);
     if (created.ter != tesSUCCESS)
     {
-        setupFailed(std::string{"creating the escrow: "} + transToken(created.ter));
+        fixtureFailed(std::string{"creating the escrow: "} + transToken(created.ter));
     }
     ledger_.ledger.close();
     escrow_ = keylet::escrow(alice_.id(), SeqProxy::rawSequence(ownerSeq));
@@ -80,8 +70,8 @@ Fixtures::memoTx()
     assembler.build = [inner = std::move(assembler.build)](STObject& obj) {
         inner(obj);
         auto memos = STArray{};
-        memos.push_back(makeMemo(RealHostFixture::toBytes("hello")));
-        memos.push_back(makeMemo(RealHostFixture::toBytes("world")));
+        memos.push_back(makeMemo(WasmLedger::toBytes("hello")));
+        memos.push_back(makeMemo(WasmLedger::toBytes("world")));
         obj.setFieldArray(sfMemos, memos);
     };
     return assembler;
@@ -107,7 +97,7 @@ Fixtures::cachedHost()
     auto wasmHost = host();
     if (!wasmHost->cacheLedgerObj(keylet::account(alice_.id()).key, 1).has_value())
     {
-        setupFailed("caching the account root into slot 1");
+        fixtureFailed("caching the account root into slot 1");
     }
     return wasmHost;
 }
@@ -128,7 +118,7 @@ Fixtures::cachedSignerListHost()
         ledger_.makeHost(keylet::account(AccountID{}), assembler.type, std::move(assembler.build));
     if (!wasmHost->cacheLedgerObj(keylet::signerList(signerListOwner_.id()).key, 1).has_value())
     {
-        setupFailed("caching the signer list into slot 1");
+        fixtureFailed("caching the signer list into slot 1");
     }
     return wasmHost;
 }
@@ -154,13 +144,13 @@ Fixtures::escrowHost()
 Slice
 Fixtures::floatX()
 {
-    return FloatTest::slice(FloatTest::kPi);
+    return FloatConstants::slice(FloatConstants::kPi);
 }
 
 Slice
 Fixtures::floatY()
 {
-    return FloatTest::slice(FloatTest::kTwo);
+    return FloatConstants::slice(FloatConstants::kTwo);
 }
 
 SignedMessage const&

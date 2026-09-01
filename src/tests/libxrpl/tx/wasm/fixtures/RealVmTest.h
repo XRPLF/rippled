@@ -7,8 +7,8 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
-#include <tx/wasm/RealHostFixture.h>
-#include <tx/wasm/WasmRun.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 
 #include <cstdint>
 #include <expected>

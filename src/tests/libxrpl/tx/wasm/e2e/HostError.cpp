@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
-#include <tx/wasm/RealVmTest.h>
+#include <tx/wasm/fixtures/RealVmTest.h>
 
 #include <cstdint>
 #include <format>

@@ -30,7 +30,7 @@ mod ffi {
         ///
         /// Throws `rust::Error` on an unknown name — a typo should fail loudly rather than
         /// quietly compare against zero.
-        fn declared_gas(wasm_name: &str) -> Result<u64>;
+        fn host_function_gas(wasm_name: &str) -> Result<u64>;
     }
 }
 
@@ -38,7 +38,7 @@ fn compile_wat(wat: &str) -> Result<Vec<u8>, wat::Error> {
     wat::parse_str(wat)
 }
 
-fn declared_gas(wasm_name: &str) -> Result<u64, UnknownHostFunction> {
+fn host_function_gas(wasm_name: &str) -> Result<u64, UnknownHostFunction> {
     xrpl_host_functions::HostFunctionSpec::ALL
         .iter()
         .find(|op| op.wasm_name() == wasm_name)
@@ -59,7 +59,7 @@ impl std::error::Error for UnknownHostFunction {}
 
 #[cfg(test)]
 mod tests {
-    use super::compile_wat;
+    use super::*;
 
     #[test]
     fn a_module_assembles_to_something_beginning_with_the_wasm_magic() {
@@ -73,7 +73,7 @@ mod tests {
         // `trace` is the cheapest declaration in the table; the point is not the number but
         // that the lookup reaches the same constant the engine charges from.
         assert_eq!(
-            super::declared_gas("trace").expect("trace is a host function"),
+            host_function_gas("trace").expect("trace is a host function"),
             xrpl_host_functions::HostFunctionSpec::Trace.gas()
         );
     }
@@ -82,7 +82,7 @@ mod tests {
     fn every_host_function_is_reachable_by_its_import_name() {
         for op in xrpl_host_functions::HostFunctionSpec::ALL {
             assert_eq!(
-                super::declared_gas(op.wasm_name()).expect("declared"),
+                host_function_gas(op.wasm_name()).expect("declared"),
                 op.gas(),
                 "{} must be reachable by name",
                 op.wasm_name()
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn an_unknown_name_is_an_error_rather_than_zero_gas() {
-        super::declared_gas("not_a_host_function").expect_err("must not resolve");
+        host_function_gas("not_a_host_function").expect_err("must not resolve");
     }
 
     #[test]

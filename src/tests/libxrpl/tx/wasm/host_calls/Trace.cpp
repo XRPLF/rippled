@@ -9,7 +9,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/WasmFixture.h>
+#include <tx/wasm/fixtures/WasmFixture.h>
 // For `TraceDataType`: declared in the cxx bridge, defined in the header it generates.
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 

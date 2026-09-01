@@ -1,8 +1,8 @@
 #include <xrpl/basics/Slice.h>
 
 #include <benchmark/benchmark.h>
-#include <tx/wasm/BenchFixtures.h>
-#include <tx/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/BenchFixtures.h>
+#include <tx/wasm/fixtures/WasmBench.h>
 
 #include <cstdint>
 #include <format>

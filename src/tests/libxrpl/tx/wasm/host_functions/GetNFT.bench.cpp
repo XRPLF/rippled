@@ -1,7 +1,7 @@
 
 #include <benchmark/benchmark.h>
-#include <tx/wasm/NFTFixture.h>
-#include <tx/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/NftSetup.h>
+#include <tx/wasm/fixtures/WasmBench.h>
 
 #include <string_view>
 
@@ -16,9 +16,11 @@ getNFTImpl(benchmark::State& state)
     // A really minted token, so the lookup walks a real page rather than failing fast — a
     // not-found answer would measure the rejection instead of the work.
     static constexpr auto kUri = std::string_view{"ipfs://benchmark"};
-    static auto nft = Bench<NFTTest>{};
+    // Its own ledger rather than the shared `Fixtures`: minting mutates state, and the shared
+    // one is deliberately read-only after construction.
+    static auto nft = WasmLedger{};
     static auto const kOwner = nft.fund("benchNftOwner");
-    static auto const kMinted = nft.mintNFT(kOwner, kUri);
+    static auto const kMinted = mintNft(nft, kOwner, kUri);
 
     benchmarkImpl(
         state,

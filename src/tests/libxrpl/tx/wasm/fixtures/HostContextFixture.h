@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 #include <helpers/CaptureSink.h>
 #include <rust/cxx.h>
-#include <tx/wasm/MockHostFunctions.h>
+#include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <cstddef>
 #include <cstdint>

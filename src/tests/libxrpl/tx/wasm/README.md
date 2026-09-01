@@ -15,8 +15,27 @@ the breadth it might seem to be missing lives in a sibling layer. This file is t
 | `e2e/` (`RealVmTest`)                 | `.../e2e`                                                                                   | real | ✓   | real   | **full-stack integration** — VM + `HostContext` + real impl + real ledger, driven by a WAT contract                                         |
 
 `MockVmTest` / `RealVmTest` are the mock-host and real-host counterparts of the same VM harness;
-both forward to the shared `runWat(HostFunctions&, ...)` in `WasmRun.h`, differing only in the
-host they inject.
+both forward to the shared `runWat(HostFunctions&, ...)` in `fixtures/WasmRun.h`, differing only
+in the host they inject.
+
+## `fixtures/` — and why it is split in two
+
+Everything shared sits in `fixtures/`, divided by whether it needs a test framework:
+
+|                                                         |                                                                                                                                                                                                                |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **No GTest** — the `xrpl.testkit.wasm` library          | `WasmLedger` (a real genesis ledger + the real host over it), `WasmRun` (the WAT assembler), `NftSetup`, `FloatConstants`                                                                                      |
+| **GTest** — compiled into `xrpl_tests`                  | `RealHostFixture` (`: testing::Test, WasmLedger` plus `expectValue`/`expectError`/`expectKeyletMatches`), `FloatFixture`, `NFTFixture`, `MockHostFunctions`, `WasmFixture`, `RealVmTest`, `HostContextFixture` |
+| **Benchmark harness** — compiled into `xrpl.bench.wasm` | `WasmBench`, `BenchFixtures`                                                                                                                                                                                   |
+
+The split exists because **a benchmark wants a ledger and a host, not GTest's lifecycle.** Both
+binaries link the library; `xrpl.bench.wasm` links no GTest and no GMock at all.
+
+One consequence worth knowing: setup steps in `WasmLedger` and `NftSetup` **throw** (via
+`fixtureFailed`) rather than using `EXPECT_`. That is not stylistic. An `EXPECT_` outside a
+running test is recorded and discarded, so a benchmark whose escrow was never created would still
+run its host call, take the not-found path, and report a cheap, plausible, completely wrong price.
+Throwing turns that into a stopped run. If you add a setup step that can fail, throw.
 
 ## `*.bench.cpp` — gas calibration
 
@@ -28,11 +47,12 @@ actually costs.
 **One `.bench.cpp` per host function, named after its test** — `EscrowKeylet.cpp` and
 `EscrowKeylet.bench.cpp` sit next to each other, 61 of each. That is a checklist rather than a
 judgment call: adding a host function means adding two files, and nobody has to decide where a
-benchmark belongs. Shared ledger setup lives in the `Fixtures` type (`BenchFixtures.h`) — one
+benchmark belongs. Shared ledger setup lives in the `Fixtures` type (`fixtures/BenchFixtures.h`) — one
 ledger, funded once, for the whole binary — so each file holds only the call it measures.
 
-They build into a **separate executable** (`xrpl.bench.wasm`), and `xrpl_tests` filters
-`*.bench.cpp` out of its source globs, so benchmark runtime never lands on the `ctest` path.
+They build into a **separate executable** (`xrpl.bench.wasm`) that links `xrpl.testkit.wasm` and
+no test framework, and `xrpl_tests` filters `*.bench.cpp` out of its source globs, so benchmark
+runtime never lands on the `ctest` path.
 
 ### Running them
 

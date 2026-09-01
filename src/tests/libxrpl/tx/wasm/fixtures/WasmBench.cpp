@@ -1,4 +1,4 @@
-#include <tx/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/WasmBench.h>
 
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
@@ -6,7 +6,8 @@
 
 #include <benchmark/benchmark.h>
 #include <rust/cxx.h>
-#include <tx/wasm/WasmRun.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 #include <xrpl_wasm_testkit_cxxbridge/lib.h>
 
 #include <algorithm>
@@ -102,7 +103,7 @@ measureSecondsPerGas()
     auto const busy = assembleWat(makeLoopWat("", "", kBody, kCallsPerRun));
     auto const idle = assembleWat(makeLoopWat("", "", kBody, 0));
 
-    auto fixture = BenchFixture{};
+    auto fixture = WasmLedger{};
 
     // Warm the instruction cache and the allocator before the pairs that count, so the first-run
     // penalty does not land on one side of the subtraction.
@@ -147,7 +148,7 @@ measureCrossingFloorGas(double secondsPerGas)
     auto const loaded = assembleWat(makeLoopWat(kImport, "", kBody, kCallsPerRun));
     auto const baseline = assembleWat(makeLoopWat(kImport, "", kBody, 0));
 
-    auto fixture = BenchFixture{};
+    auto fixture = WasmLedger{};
 
     auto vmTotal = 0.0;
     for (auto i = 0; i < kBenchIterations; ++i)
@@ -199,7 +200,7 @@ double
 declaredGas(std::string_view wasmName)
 {
     return static_cast<double>(
-        rs::wasm_testkit::declared_gas(rust::Str{wasmName.data(), wasmName.size()}));
+        rs::wasm_testkit::host_function_gas(rust::Str{wasmName.data(), wasmName.size()}));
 }
 
 void
@@ -223,7 +224,7 @@ report(
         return;
 
     auto const declared = declaredGas(wasmName);
-    state.counters["declared_gas"] = declared;
+    state.counters["host_function_gas"] = declared;
     state.counters["suggested_gas"] = suggested;
     // Above 1: the table charges more than the work costs. Below 1: underpriced, which is the
     // direction that matters — an underpriced call is one a contract can buy too cheaply.

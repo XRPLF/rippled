@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/WasmFixture.h>
+#include <tx/wasm/fixtures/WasmFixture.h>
 
 #include <cstdint>
 #include <expected>
