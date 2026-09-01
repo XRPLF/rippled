@@ -45,6 +45,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -979,6 +980,78 @@ public:
                 Fee(XRP(1)),
                 Ter(tecINSUFFICIENT_RESERVE));
             env.close();
+        }
+    }
+
+    void
+    testSequentialSponsorshipExhaustion()
+    {
+        // A prefunded Sponsorship object's FeeAmount/RemainingOwnerCount is
+        // shared across however many sponsored transactions the sponsee
+        // submits over time, not just a single one. Submit a run of
+        // transactions against a budget that only covers a few of them, and
+        // confirm the early ones succeed while the ones submitted once the
+        // budget is drained fail, without corrupting the object.
+        testcase("Sequential sponsorship exhaustion across transactions");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+
+        // Fee exhaustion: enough FeeAmount for 3 of 6 fee-sponsored
+        // transactions; RemainingOwnerCount is generous so reserve is never
+        // the limiting factor.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            env(sponsor::set(sponsor, 0, 10, XRP(3)), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+
+            for (int i = 1; i <= 6; ++i)
+            {
+                auto const expectedTer = i <= 3 ? tesSUCCESS : TER{terINSUF_FEE_B};
+                env(check::create(alice, bob, XRP(1)),
+                    sponsor::As(sponsor, spfSponsorFee),
+                    Sig(sfSponsorSignature, sponsor),
+                    Fee(XRP(1)),
+                    Ter(expectedTer));
+                env.close();
+            }
+
+            auto const sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+        }
+
+        // Reserve exhaustion: enough RemainingOwnerCount for 3 of 6
+        // reserve-sponsored transactions; FeeAmount is generous so fee is
+        // never the limiting factor.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            env(sponsor::set(sponsor, 0, 3, XRP(100)), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+
+            for (int i = 1; i <= 6; ++i)
+            {
+                auto const expectedTer = i <= 3 ? tesSUCCESS : TER{tecINSUFFICIENT_RESERVE};
+                env(check::create(alice, bob, XRP(1)),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Fee(XRP(1)),
+                    Ter(expectedTer));
+                env.close();
+            }
+
+            auto const sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
         }
     }
 
@@ -6031,6 +6104,50 @@ public:
     }
 
     void
+    testFeeOnlySponsorshipObjectRouting()
+    {
+        // "Object always wins" fee routing: getFeePayer prefers an existing
+        // Sponsorship object over the co-signed sponsor's own balance. A
+        // fee-only-empty object (created by set_reserve, so sfFeeAmount is
+        // absent) therefore makes fee sponsorship fail with terINSUF_FEE_B
+        // even when the sponsor validly co-signs and could easily pay from
+        // its own balance. This is the intended precedence: once a
+        // Sponsorship object exists, all fee sponsorship for that
+        // sponsor/sponsee pair is routed through its pre-funded FeeAmount.
+        testcase("Fee-only Sponsorship object outranks a valid co-sign");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        // Reserve-only sponsorship: no sfFeeAmount on the object.
+        env(sponsor::set_reserve(sponsor, 0, 5), sponsor::SponseeAcc(alice));
+        env.close();
+
+        auto sle = env.le(keylet::sponsorship(sponsor, alice));
+        BEAST_EXPECT(sle && !sle->isFieldPresent(sfFeeAmount));
+
+        auto const aliceBalance = env.balance(alice);
+        auto const sponsorBalance = env.balance(sponsor);
+
+        env(noop(alice),
+            Fee(env.current()->fees().base),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(terINSUF_FEE_B));
+
+        // Nothing was charged anywhere and the object is untouched.
+        BEAST_EXPECT(env.balance(alice) == aliceBalance);
+        BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
+        sle = env.le(keylet::sponsorship(sponsor, alice));
+        BEAST_EXPECT(sle && !sle->isFieldPresent(sfFeeAmount));
+        BEAST_EXPECT(sle && sle->getFieldU32(sfRemainingOwnerCount) == 5);
+    }
+
+    void
     testZeroValueUpdateOnAbsentFields()
     {
         // Updating a Sponsorship with all-zero FeeAmount/MaxFee when those
@@ -6103,56 +6220,14 @@ public:
         env.fund(XRP(10000), alice, sponsor);
         env.close();
 
-        auto tx = noop(alice);
-        tx[sfSponsor.jsonName] = sponsor.human();
-        tx[sfSponsorFlags.jsonName] = static_cast<std::uint32_t>(spfSponsorFee);
-        tx[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] = "";
-
-        env(tx, Fee(XRP(1)), Ter(telENV_RPC_FAILED));
-    }
-
-    void
-    testFeeOnlySponsorshipObjectRouting()
-    {
-        // "Object always wins" fee routing: getFeePayer prefers an existing
-        // Sponsorship object over the co-signed sponsor's own balance. A
-        // fee-only-empty object (created by set_reserve, so sfFeeAmount is
-        // absent) therefore makes fee sponsorship fail with terINSUF_FEE_B
-        // even when the sponsor validly co-signs and could easily pay from
-        // its own balance. This is the intended precedence: once a
-        // Sponsorship object exists, all fee sponsorship for that
-        // sponsor/sponsee pair is routed through its pre-funded FeeAmount.
-        testcase("Fee-only Sponsorship object outranks a valid co-sign");
-        using namespace test::jtx;
-
-        Env env{*this, testableAmendments()};
-        Account const alice("alice");
-        Account const sponsor("sponsor");
-        env.fund(XRP(10000), alice, sponsor);
-        env.close();
-
-        // Reserve-only sponsorship: no sfFeeAmount on the object.
-        env(sponsor::set_reserve(sponsor, 0, 5), sponsor::SponseeAcc(alice));
-        env.close();
-
-        auto sle = env.le(keylet::sponsorship(sponsor, alice));
-        BEAST_EXPECT(sle && !sle->isFieldPresent(sfFeeAmount));
-
-        auto const aliceBalance = env.balance(alice);
-        auto const sponsorBalance = env.balance(sponsor);
-
-        env(noop(alice),
-            Fee(env.current()->fees().base),
+        env(
+            noop(alice),
             sponsor::As(sponsor, spfSponsorFee),
-            Sig(sfSponsorSignature, sponsor),
-            Ter(terINSUF_FEE_B));
-
-        // Nothing was charged anywhere and the object is untouched.
-        BEAST_EXPECT(env.balance(alice) == aliceBalance);
-        BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
-        sle = env.le(keylet::sponsorship(sponsor, alice));
-        BEAST_EXPECT(sle && !sle->isFieldPresent(sfFeeAmount));
-        BEAST_EXPECT(sle && sle->getFieldU32(sfRemainingOwnerCount) == 5);
+            [](Env&, JTx& jt) {
+                jt.jv[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] = "";
+            },
+            Fee(XRP(1)),
+            Ter(telENV_RPC_FAILED));
     }
 
     void
@@ -6273,9 +6348,18 @@ public:
 
         // Control: for the unsponsored account, xrpLiquid = balance - base
         // reserve = 0, so OfferCreate's funding check fails.
+        beast::Journal const j{beast::Journal::getNullSink()};
+        BEAST_EXPECT(accountReserve(*env.current(), bob.id(), j) == fees.accountReserve(0, 1));
+        BEAST_EXPECT(xrpLiquid(*env.current(), bob.id(), 0, j) == XRPAmount(0));
         env(offer(bob, usd(5), XRP(5)), Ter(tecUNFUNDED_OFFER));
         env.close();
         BEAST_EXPECT(ownerCount(env, bob) == 0);
+
+        // The sponsored account contributes 0 to its own reserve, so its
+        // reserve is 0 (no owned objects yet), and its full balance is
+        // liquid.
+        BEAST_EXPECT(accountReserve(*env.current(), alice.id(), j) == fees.accountReserve(0, 0));
+        BEAST_EXPECT(xrpLiquid(*env.current(), alice.id(), 0, j) == env.balance(alice));
 
         // The sponsored account's reserve is just the owner increment, so the
         // same offer is funded and can even be placed on the book.
@@ -6437,6 +6521,63 @@ public:
     }
 
     void
+    testExpiredSponsoredCredentialIndirectDeletion()
+    {
+        // CredentialAccept on an already-expired sponsored credential fails
+        // with tecEXPIRED, but still deletes the credential as a side effect
+        // (removeExpired). That indirect deletion must still refund the
+        // sponsor's SponsoringOwnerCount and the issuer's SponsoredOwnerCount,
+        // just like the third-party EscrowCancel and payment-engine
+        // trust-line deletion cases above.
+        testcase("Indirect deletion of an expired sponsored credential");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, bob, sponsor);
+        env.close();
+
+        auto const credType = std::string("test");
+
+        // alice (issuer) creates a credential for bob (subject), with a
+        // short expiration.
+        auto const expiration =
+            env.current()->header().parentCloseTime.time_since_epoch().count() + 20;
+        auto jv = credentials::create(bob, alice, credType);
+        jv[sfExpiration.jsonName] = expiration;
+        env(jv);
+        env.close();
+
+        auto const credKeylet = credentials::keylet(bob, alice, credType);
+        env(sponsor::transfer(alice, tfSponsorshipCreate, credKeylet.key),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // Advance past expiration.
+        for (; env.current()->header().parentCloseTime.time_since_epoch().count() <=
+             static_cast<std::int64_t>(expiration);
+             env.close())
+        {
+        }
+
+        // Bob's accept fails (expired), but removeExpired deletes the
+        // credential as a side effect.
+        env(credentials::accept(bob, alice, credType), Ter(tecEXPIRED));
+        env.close();
+
+        BEAST_EXPECT(!env.le(credKeylet));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+    }
+
+    void
     testReserveSponsorAllowListNoOp()
     {
         // Allow-listed transaction types that create no owner-counted object:
@@ -6500,10 +6641,7 @@ public:
         // MPTokenIssuanceSet
         MPTTester mptt(env, alice, {.fund = false});
         mptt.create({.flags = tfMPTCanLock});
-        json::Value jvSet;
-        jvSet[sfTransactionType.jsonName] = jss::MPTokenIssuanceSet;
-        jvSet[sfAccount.jsonName] = alice.human();
-        jvSet[sfMPTokenIssuanceID.jsonName] = to_string(mptt.issuanceID());
+        json::Value jvSet = mptt.setJV({.account = alice, .id = mptt.issuanceID()});
         jvSet[sfFlags.jsonName] = tfMPTLock;
         env(jvSet,
             sponsor::As(sponsor, spfSponsorReserve),
@@ -6612,6 +6750,7 @@ protected:
         testSimpleSponsorshipSet();
 
         testPreFundAndCosign();
+        testSequentialSponsorshipExhaustion();
         testSponsoredFreeTierReserve();
         testSponsoredTicketUse();
 
@@ -6641,13 +6780,14 @@ protected:
 
         testAccountSponsorshipTransferPermissions();
         testCosignedTransferConsumesPrefundedBudget();
+        testFeeOnlySponsorshipObjectRouting();
         testZeroValueUpdateOnAbsentFields();
         testEmptySponsorSignatureObject();
-        testFeeOnlySponsorshipObjectRouting();
         testOuterMultisignedSponsoredTx();
         testSponsoredAccountBaseReserveExclusion();
         testThirdPartyEscrowCancelRefundsSponsor();
         testPaymentEngineTrustLineDeletion();
+        testExpiredSponsoredCredentialIndirectDeletion();
         testReserveSponsorAllowListNoOp();
         testPseudoAccountAsSponsor();
         testCosignedClosedLedgerFeeCap();

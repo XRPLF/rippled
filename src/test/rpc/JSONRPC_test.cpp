@@ -6,6 +6,7 @@
 #include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
@@ -2753,9 +2754,7 @@ public:
         // signs; SponsorSignature and Signers are not signing fields, so
         // later sign_for calls don't invalidate the sponsor's signature.
         auto setupTx = [&]() {
-            json::Value tx;
-            tx[jss::Account] = alice.human();
-            tx[jss::TransactionType] = jss::AccountSet;
+            json::Value tx = accountSet(alice);
             tx[jss::Fee] = (3 * baseFee).jsonClipped();
             tx[jss::Sequence] = env.seq(alice);
             tx[jss::SigningPubKey] = "";

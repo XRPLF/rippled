@@ -5,6 +5,7 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/check.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
@@ -2421,6 +2422,60 @@ public:
     }
 
     void
+    testSponsorReserveQueueExhaustion()
+    {
+        using namespace jtx;
+        testcase("reserve-sponsored queue exhaustion across transactions");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto sponsor = Account("sponsor");
+        auto sponsee = Account("sponsee");
+        auto filler = Account("filler");
+
+        env.fund(XRP(50000), noripple(sponsor, sponsee));
+        env.close();
+        env.fund(XRP(50000), noripple(filler));
+        env.close();
+
+        // Prefund the sponsor's reserve budget for exactly 2 sponsored
+        // objects.
+        env(sponsor::set_reserve(sponsor, 0, 2), sponsor::SponseeAcc(sponsee));
+        env.close();
+
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Queue 4 reserve-sponsored Check::create transactions from the same
+        // sponsee. Queuing only preclaims against the sponsorship's current
+        // (not-yet-consumed) budget, so all 4 queue successfully.
+        auto queued = Ter(terQUEUED);
+        auto const sponseeSeq = env.seq(sponsee);
+        for (int i = 0; i < 4; ++i)
+        {
+            env(check::create(sponsee, filler, XRP(10)),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Seq(sponseeSeq + i),
+                queued);
+        }
+        checkMetrics(*this, env, 4, 6, 4, 3);
+
+        // Once the ledger closes, the queued transactions apply in order:
+        // only the first 2 succeed, since the sponsor's RemainingOwnerCount
+        // is exhausted by the time the 3rd and 4th are reached.
+        env.close();
+
+        BEAST_EXPECT(env.le(keylet::check(sponsee, sponseeSeq)));
+        BEAST_EXPECT(env.le(keylet::check(sponsee, sponseeSeq + 1)));
+        BEAST_EXPECT(!env.le(keylet::check(sponsee, sponseeSeq + 2)));
+        BEAST_EXPECT(!env.le(keylet::check(sponsee, sponseeSeq + 3)));
+
+        auto const sponsorSle = env.le(keylet::account(sponsor));
+        if (BEAST_EXPECT(sponsorSle))
+            BEAST_EXPECT(sponsorSle->at(~sfSponsoringOwnerCount) == 2);
+    }
+
+    void
     testSponsorPrefundedTxCannotQueue()
     {
         using namespace jtx;
@@ -4824,6 +4879,7 @@ public:
         testInFlightBalance();
         testSponsorTxCannotQueue();
         testSponsorReserveTxCanQueue();
+        testSponsorReserveQueueExhaustion();
         testSponsorPrefundedTxCannotQueue();
         testDelegateTxCannotQueue();
         testConsequences();

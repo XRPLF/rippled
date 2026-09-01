@@ -399,9 +399,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // Signed SponsorSignature (non-empty TxnSignature)
             json::Value params;
-            json::Value txJson = json::ValueType::Object;
-            txJson[jss::TransactionType] = jss::AccountSet;
-            txJson[jss::Account] = env.master.human();
+            json::Value txJson = accountSet(env.master);
             json::Value sponsorSignature = json::ValueType::Object;
             sponsorSignature[jss::TxnSignature] = "1200ABCD";
             txJson[sfSponsorSignature] = sponsorSignature;
@@ -1031,9 +1029,7 @@ class Simulate_test : public beast::unit_test::Suite
             }
         };
 
-        json::Value tx;
-        tx[jss::Account] = alice.human();
-        tx[jss::TransactionType] = jss::AccountSet;
+        json::Value tx = accountSet(alice);
         tx[sfDomain] = "123ABC";
         tx[sfSponsor.jsonName] = sponsor.human();
         tx[sfSponsorFlags.jsonName] = spfSponsorFee;

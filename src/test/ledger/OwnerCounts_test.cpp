@@ -113,8 +113,6 @@ class OwnerCounts_test : public beast::unit_test::Suite
         testcase("equality");
 
         auto const a = makeCounts(3, 1, 2);
-        auto const& self = a;
-        BEAST_EXPECT(a == self);                 // self-compare
         BEAST_EXPECT(a == makeCounts(3, 1, 2));  // all fields equal
         BEAST_EXPECT(a != makeCounts(4, 1, 2));  // differing owner
         BEAST_EXPECT(a != makeCounts(3, 2, 2));  // differing sponsored
@@ -123,6 +121,12 @@ class OwnerCounts_test : public beast::unit_test::Suite
         // equality; the fields themselves must match
         BEAST_EXPECT(a.count() == makeCounts(4, 0, 0).count());
         BEAST_EXPECT(a != makeCounts(4, 0, 0));
+
+        // Equality at the count() saturation boundary: same clamped
+        // count() (both maxU32) is not enough; fields must still match
+        constexpr auto maxU32 = std::numeric_limits<std::uint32_t>::max();
+        BEAST_EXPECT(makeCounts(maxU32, 0, 1) == makeCounts(maxU32, 0, 1));
+        BEAST_EXPECT(makeCounts(maxU32, 0, 1) != makeCounts(maxU32, 0, 2));
     }
 
     void

@@ -519,6 +519,8 @@ class PaymentSandbox_test : public beast::unit_test::Suite
                 PaymentSandbox sb2(&sb);
                 sb2.adjustOwnerCountHook(alice, OwnerCounts(), counts);
 
+                // The child already holds the new value
+                BEAST_EXPECT(sb2.ownerCountHook(alice, OwnerCounts()) == counts);
                 // The parent has no entry for alice yet
                 BEAST_EXPECT(sb.ownerCountHook(alice, OwnerCounts()) == OwnerCounts());
 
@@ -558,6 +560,10 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             {
                 PaymentSandbox sb2(&sb);
                 sb2.adjustOwnerCountHook(bob, OwnerCounts(), lower);
+                // The child's view already reflects the parent's higher
+                // inherited value; adjusting with a lower one doesn't
+                // regress it.
+                BEAST_EXPECT(sb2.ownerCountHook(bob, OwnerCounts()) == higher);
                 sb2.apply(sb);
             }
             BEAST_EXPECT(sb.ownerCountHook(bob, OwnerCounts()) == higher);
