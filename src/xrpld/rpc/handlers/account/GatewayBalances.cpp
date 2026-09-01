@@ -146,8 +146,12 @@ doGatewayBalances(RPC::JsonContext& context)
     {
         forEachItem(*ledger, accountID, [&](SLE::const_ref sle) {
             if (!sle)
-	    	return;
-
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::doGatewayBalances : null SLE");
+	    	    return;
+                // LCOV_EXCL_STOP
+            }
 	    if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
