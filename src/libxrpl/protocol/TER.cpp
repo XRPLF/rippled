@@ -205,7 +205,7 @@ transResults()
         MAKE_ERROR(temBAD_TRANSFER_FEE,          "Malformed: Transfer fee is outside valid range."),
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
         MAKE_ERROR(temBAD_CIPHERTEXT,            "Malformed: Invalid ciphertext."),
-        MAKE_ERROR(temBAD_WASM,                  "Malformed: Provided WASM code is invalid."),
+        MAKE_ERROR(temINVALID_BYTECODE,          "Malformed: Provided byte code is invalid."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
