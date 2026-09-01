@@ -2588,8 +2588,6 @@ MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg)
         jv[sfIssuerEncryptedAmount] = strHex(*arg.issuerEncryptedAmount);
     if (arg.auditorEncryptedAmount)
         jv[sfAuditorEncryptedAmount] = strHex(*arg.auditorEncryptedAmount);
-    if (arg.previousIssuerKey)
-        jv[sfPreviousIssuerEncryptionKey] = strHex(*arg.previousIssuerKey);
 
     // Placeholder for proof, the logic will be added in the future
     if (arg.zkProof)
@@ -2598,7 +2596,7 @@ MPTTester::mirrorUpdate(MPTMirrorUpdate const& arg)
     }
     else
     {
-        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcGamalEncryptedTotalLength));
+        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
     }
 
     submit(arg, jv);

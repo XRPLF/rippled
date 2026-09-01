@@ -137,32 +137,6 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousIssuerEncryptionKey (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
-    getPreviousIssuerEncryptionKey() const
-    {
-        if (hasPreviousIssuerEncryptionKey())
-        {
-            return this->tx_->at(sfPreviousIssuerEncryptionKey);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousIssuerEncryptionKey is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousIssuerEncryptionKey() const
-    {
-        return this->tx_->isFieldPresent(sfPreviousIssuerEncryptionKey);
-    }
-
-    /**
      * @brief Get sfZKProof (SoeRequired)
      * @return The field value.
      */
@@ -261,17 +235,6 @@ public:
     setAuditorEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfAuditorEncryptedAmount] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfPreviousIssuerEncryptionKey (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    ConfidentialMPTMirrorUpdateBuilder&
-    setPreviousIssuerEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
-    {
-        object_[sfPreviousIssuerEncryptionKey] = value;
         return *this;
     }
 
