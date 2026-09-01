@@ -650,9 +650,9 @@ private:
     }
 
     void
-    testCashBasisLoanSetAfterInterestHitsCap()
+    testCashBasisLoanSetAfterInterestExceedsCap()
     {
-        testcase("cash-basis: LoanSet after interest pushes AssetsTotal to AssetsMaximum");
+        testcase("cash-basis: LoanSet after interest pushes AssetsTotal past AssetsMaximum");
 
         using namespace jtx;
         using namespace loan;
@@ -1267,7 +1267,7 @@ public:
         testCashBasisLoanSetOrigination();
         testCashBasisLoanPay();
         testVaultSetWhileAssetsTotalExceedsMaximum();
-        testCashBasisLoanSetAfterInterestHitsCap();
+        testCashBasisLoanSetAfterInterestExceedsCap();
         testCashBasisLoanManage();
         testLegacyVaultKeepsAccrualAfterAmendmentEnabled();
         testCashBasisEndToEndTrajectory();

@@ -476,7 +476,7 @@ LoanSet::doApply()
             getVaultVersion(vaultSle) == VaultVersion::CashBasis ||
             *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
-        "Vault is below maximum limit");
+        "accrual vault is below maximum limit");
 
     if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
     {
