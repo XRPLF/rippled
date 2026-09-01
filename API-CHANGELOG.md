@@ -28,8 +28,7 @@ This section contains changes targeting a future version.
 
 ### Additions
 
-- `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`.
-  When paginating delegate-filtered queries, a marker from a delegate-filtered query includes a `delegate` flag and is only valid for follow-up requests that also supply `delegate` (mixing marker conventions returns `invalidParams`). Because filtering is applied after the ledger scan, a page may contain fewer results than `limit` (possibly zero) while still returning a marker, so callers must continue until no marker is present.
+- `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`. When paginating delegate-filtered queries, a marker from a delegate-filtered query includes a `delegate` flag and is only valid for follow-up requests that also supply `delegate` (mixing marker conventions returns `invalidParams`). Because filtering is applied after the ledger scan, a page may contain fewer results than `limit` (possibly zero) while still returning a marker, so callers must continue until no marker is present.
 - `ledger_entry`, `account_objects`: The `Delegate` ledger entry now includes an optional `DestinationNode` field, which stores the index into the authorized account's owner directory. This field is present on entries created after bidirectional directory tracking was introduced and may appear in RPC responses for those entries. ([#6681](https://github.com/XRPLF/rippled/pull/6681))
 - `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
   - `TRANSACTION_FORMATS`: Describes the fields and their optionality for each transaction type, including common fields shared across all transactions.
@@ -208,9 +207,7 @@ This release contains bug fixes only and no API changes.
   - Adds `AMMDelete` transaction type to delete `AMM` instance.
   - Adds `sfAMMID` to `AccountRoot` to indicate that the account is `AMM`'s account. `AMMID` is used to fetch `ltAMM`.
   - Adds `lsfAMMNode` `TrustLine` flag to indicate that one side of the `TrustLine` is `AMM` account.
-  - Adds `tfLPToken`, `tfSingleAsset`, `tfTwoAsset`, `tfOneAssetLPToken`, `tfLimitLPToken`, `tfTwoAssetIfEmpty`,
-    `tfWithdrawAll`, `tfOneAssetWithdrawAll` which allow a trader to specify different fields combination
-    for `AMMDeposit` and `AMMWithdraw` transactions.
+  - Adds `tfLPToken`, `tfSingleAsset`, `tfTwoAsset`, `tfOneAssetLPToken`, `tfLimitLPToken`, `tfTwoAssetIfEmpty`, `tfWithdrawAll`, `tfOneAssetWithdrawAll` which allow a trader to specify different fields combination for `AMMDeposit` and `AMMWithdraw` transactions.
   - Adds new transaction result codes:
     - tecUNFUNDED_AMM: insufficient balance to fund AMM. The account does not have funds for liquidity provision.
     - tecAMM_BALANCE: AMM has invalid balance. Calculated balances greater than the current pool balances.
@@ -253,14 +250,11 @@ This release contains bug fixes only and no API changes.
 
 ## XRP Ledger server version 1.10.0
 
-[Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0)
-was released on Mar 14, 2023.
+[Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0) was released on Mar 14, 2023.
 
 ### Breaking changes in 1.10
 
-- If the `XRPFees` feature is enabled, the `fee_ref` field will be
-  removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer
-  have any meaning.
+- If the `XRPFees` feature is enabled, the `fee_ref` field will be removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer have any meaning.
 
 # Unit tests for API changes
 

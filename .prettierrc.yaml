@@ -1,0 +1,7 @@
+# Collapse hard-wrapped Markdown prose to one line per paragraph instead of
+# preserving manual line breaks (the prettier default). Scoped to Markdown
+# only, since proseWrap also reflows YAML block scalars.
+overrides:
+  - files: "*.md"
+    options:
+      proseWrap: never

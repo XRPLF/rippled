@@ -11,21 +11,16 @@ The files in this directory are generated from macro definition files:
 
 ## Generation Process
 
-Generation requires a one-time setup step to create a virtual environment
-and install Python dependencies, followed by running the generation target:
+Generation requires a one-time setup step to create a virtual environment and install Python dependencies, followed by running the generation target:
 
 ```bash
 cmake --build . --target setup_code_gen # create venv and install dependencies (once)
 cmake --build . --target code_gen       # generate code
 ```
 
-By default, `CODEGEN_VENV_DIR` points to `.venv` in the project root. The
-`setup_code_gen` target creates a venv there and installs the required packages.
-The `code_gen` target then uses the venv's Python interpreter to run generation.
+By default, `CODEGEN_VENV_DIR` points to `.venv` in the project root. The `setup_code_gen` target creates a venv there and installs the required packages. The `code_gen` target then uses the venv's Python interpreter to run generation.
 
-Generation is pure Python, so the same targets are also available as a
-standalone project that needs neither the dependencies nor a compiler. This is
-what CI uses, and it is handy if you only want to regenerate these files:
+Generation is pure Python, so the same targets are also available as a standalone project that needs neither the dependencies nor a compiler. This is what CI uses, and it is handy if you only want to regenerate these files:
 
 ```bash
 cmake -S cmake/codegen -B build/codegen

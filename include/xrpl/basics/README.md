@@ -15,8 +15,7 @@ The module xrpl/basics should contain no dependencies on other modules.
 - `std::list`
   - For ordered containers with inserts and erases to the middle.
   - For containers with iterators stable over insert and erase.
-  - Generally slower and bigger than `std::vector` or `std::deque` except for
-    those cases.
+  - Generally slower and bigger than `std::vector` or `std::deque` except for those cases.
 
 - `std::set`
   - For sorted containers.
@@ -26,9 +25,7 @@ The module xrpl/basics should contain no dependencies on other modules.
   - For "small" sets, `std::set` might be faster and smaller.
 
 - `xrpl::hardened_hash_set`
-  - For data sets where the key could be manipulated by an attacker
-    in an attempt to mount an algorithmic complexity attack: see
-    http://en.wikipedia.org/wiki/Algorithmic_complexity_attack
+  - For data sets where the key could be manipulated by an attacker in an attempt to mount an algorithmic complexity attack: see http://en.wikipedia.org/wiki/Algorithmic_complexity_attack
 
 The following container is deprecated
 

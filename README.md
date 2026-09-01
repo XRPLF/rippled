@@ -56,8 +56,7 @@ Here are some good places to start learning the source code:
 | `./src`    | Source code.                                   |
 | `./crates` | Rust source code.                              |
 
-Some of the directories under `src` are external repositories included using
-git-subtree. See those directories' README files for more details.
+Some of the directories under `src` are external repositories included using git-subtree. See those directories' README files for more details.
 
 ## Additional Documentation
 

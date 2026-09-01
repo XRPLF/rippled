@@ -46,16 +46,16 @@ src/xrpld/app/rdb/
 
 ### File Contents
 
-| File                      | Contents                                                                                                                                             |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Node.[h\|cpp]`           | Defines/Implements methods used by `SQLiteDatabase` for interacting with SQLite node databases                                                       |
+| File | Contents |
+| --- | --- |
+| `Node.[h\|cpp]` | Defines/Implements methods used by `SQLiteDatabase` for interacting with SQLite node databases |
 | `SQLiteDatabase.[h\|cpp]` | Defines/Implements the class `SQLiteDatabase`/`SQLiteDatabaseImp` which inherits from `RelationalDatabase` and is used to operate on the main stores |
-| `PeerFinder.[h\|cpp]`     | Defines/Implements methods for interacting with the PeerFinder SQLite database                                                                       |
-| `RelationalDatabase.cpp`  | Implements the static method `RelationalDatabase::init` which is used to initialize an instance of `RelationalDatabase`                              |
-| `RelationalDatabase.h`    | Defines the abstract class `RelationalDatabase`, the primary class of the Relational Database Interface                                              |
-| `State.[h\|cpp]`          | Defines/Implements methods for interacting with the State SQLite database which concerns ledger deletion and database rotation                       |
-| `Vacuum.[h\|cpp]`         | Defines/Implements a method for performing the `VACUUM` operation on SQLite databases                                                                |
-| `Wallet.[h\|cpp]`         | Defines/Implements methods for interacting with Wallet SQLite databases                                                                              |
+| `PeerFinder.[h\|cpp]` | Defines/Implements methods for interacting with the PeerFinder SQLite database |
+| `RelationalDatabase.cpp` | Implements the static method `RelationalDatabase::init` which is used to initialize an instance of `RelationalDatabase` |
+| `RelationalDatabase.h` | Defines the abstract class `RelationalDatabase`, the primary class of the Relational Database Interface |
+| `State.[h\|cpp]` | Defines/Implements methods for interacting with the State SQLite database which concerns ledger deletion and database rotation |
+| `Vacuum.[h\|cpp]` | Defines/Implements a method for performing the `VACUUM` operation on SQLite databases |
+| `Wallet.[h\|cpp]` | Defines/Implements methods for interacting with Wallet SQLite databases |
 
 ## Classes
 
