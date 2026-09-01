@@ -4,32 +4,41 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -421,6 +430,9 @@ private:
             testcase(
                 "bug: VaultDeposit below Vault precision canonicalized to zero "
                 "(pre-fixCleanup3_2_0)");
+            // Also remove fixCleanup3_4_0 so the VaultDeposit clamp
+            // introduced by that amendment does not short-circuit this
+            // pre-fixCleanup3_2_0 scenario with tecPRECISION_LOSS.
             runScenario(
                 testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
         }
@@ -560,44 +572,49 @@ private:
             env.close();
         };
 
+        // Strip featureLendingProtocolV1_1: this scenario runs an
+        // open-ended vault through deposit/broker/loan/repay/deposit,
+        // which spans both Subscription and post-loan lifetime — a phase
+        // pattern that only makes sense on open-ended vaults. The gate
+        // added by LP V1.1 is unrelated to the truncation bug asserted
+        // here.
+        auto const legacy = testableAmendments() - featureLendingProtocolV1_1;
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(testableAmendments() - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
+            runScenario(legacy - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_2_0 and pre-fixCleanup3_4_0)");
             runScenario(
-                testableAmendments() - fixCleanup3_2_0 - fixCleanup3_4_0,
-                Line::Holding,
-                tecINVARIANT_FAILED);
+                legacy - fixCleanup3_2_0 - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
-            runScenario(testableAmendments(), Line::Holding, tecPRECISION_LOSS);
+            runScenario(legacy, Line::Holding, tecPRECISION_LOSS);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0, pre-fixCleanup3_2_0)");
-            runScenario(testableAmendments() - fixCleanup3_2_0, Line::Holding, tecPRECISION_LOSS);
+            runScenario(legacy - fixCleanup3_2_0, Line::Holding, tecPRECISION_LOSS);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation against a debt balance "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(testableAmendments() - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
+            runScenario(legacy - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation against a debt balance rejected with "
                 "tecPRECISION_LOSS (post-fixCleanup3_4_0)");
-            runScenario(testableAmendments(), Line::InDebt, tecPRECISION_LOSS);
+            runScenario(legacy, Line::InDebt, tecPRECISION_LOSS);
         }
     }
 
@@ -797,6 +814,128 @@ private:
         }
     }
 
+    // Scale 15 seed + deposit 5: pre-fix credited > paid; post-fix credited <= paid.
+    // fixCleanup3_2_0 is off so roundToVaultScale does not shrink the deposit first.
+    void
+    testBugVaultDepositOvercreditsAcrossScaleBoundary()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool expectOvercredit) {
+            Env env(*this, features);
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(1'000'000), owner, issuer, depositor);
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Number const seed{9'999'999'999'999'999LL, -15};
+            Number const deposit{5};
+
+            env(trust(depositor, usd(1'000'000'000)));
+            env.close();
+            env(pay(issuer, depositor, usd(deposit)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            tx[sfScale] = 15;
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = issuer, .id = keylet.key, .amount = usd(seed)}));
+            env.close();
+
+            Number const totalBefore = env.le(keylet)->at(sfAssetsTotal);
+            Number const depositorBefore = env.balance(depositor, usd.raw()).number();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = usd(deposit)}));
+            env.close();
+
+            Number const totalAfter = env.le(keylet)->at(sfAssetsTotal);
+            Number const depositorAfter = env.balance(depositor, usd.raw()).number();
+            Number const paid = depositorBefore - depositorAfter;
+            Number const credited = totalAfter - totalBefore;
+
+            if (expectOvercredit)
+            {
+                BEAST_EXPECTS(
+                    credited > paid,
+                    "AssetsTotal credited " + to_string(credited) + " for a payment of " +
+                        to_string(paid) + ", expected an overcredit");
+            }
+            else
+            {
+                BEAST_EXPECTS(
+                    credited <= paid,
+                    "AssetsTotal credited " + to_string(credited) + " for a payment of " +
+                        to_string(paid));
+            }
+        };
+
+        testcase(
+            "bug: VaultDeposit overcredits across an IOU scale boundary "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_2_0 - fixCleanup3_4_0, true);
+
+        testcase(
+            "bug: VaultDeposit no longer overcredits across an IOU scale boundary "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, false);
+    }
+
+    // 1e17 IOU at scale 0. Withdraw all-but-one, then the last share:
+    // pre-fix tecINVARIANT_FAILED, post-fix tesSUCCESS.
+    void
+    testBugVaultLockedByPartialWithdraw()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            env.fund(XRP(1'000'000), owner, issuer, holder);
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(holder, usd(Number{1, 18})));
+            env.close();
+            env(pay(issuer, holder, usd(Number{1, 17})));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = usd.raw()});
+            tx[sfScale] = 0;
+            env(tx);
+            env.close();
+            env(vault.deposit(
+                {.depositor = holder, .id = keylet.key, .amount = usd(Number{1, 17})}));
+            env.close();
+
+            MPTIssue const share{env.le(keylet)->at(sfShareMPTID)};
+            std::int64_t const allButOne = 100'000'000'000'000'000LL - 1;
+            env(vault.withdraw(
+                {.depositor = holder, .id = keylet.key, .amount = STAmount{share, allButOne}}));
+            env.close();
+
+            env(vault.withdraw(
+                    {.depositor = holder, .id = keylet.key, .amount = STAmount{share, 1}}),
+                Ter(expected));
+            env.close();
+        };
+
+        testcase(
+            "bug: VaultWithdraw permanently locks a large IOU vault "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        testcase(
+            "bug: VaultWithdraw no longer locks a large IOU vault "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS);
+    }
+
     // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
     // shFULL_BALANCE), which for an IOU asset adds the counterparty's
     // LowLimit/HighLimit to the depositor's raw balance (TokenHelpers.cpp:
@@ -972,6 +1111,904 @@ private:
         }
     }
 
+    // Shared setup for testBugClawbackRoundTripOvershoot and
+    // testBugWithdrawRoundTripOvershoot, which both need a vault at
+    // assetsTotal=7, sharesTotal=5 and differ only in what they do once
+    // that state is reached.
+    //
+    // The (7, 5) state is reached through ordinary transactions: a 5 USD
+    // deposit mints 5 shares 1:1, then a loan broker on the vault issues a
+    // single-payment bullet loan for the full 5 USD at 40% interest. When
+    // the borrower repays a year later, LoanPay books the 2 USD of accrued
+    // interest into sfAssetsTotal without minting shares, leaving
+    // assetsTotal=7 against sharesTotal=5 (see
+    // testBugDepositShareTruncationSubUlp for the same technique in more
+    // detail).
+    struct RoundTripOvershootVault
+    {
+        test::jtx::Account issuer;
+        test::jtx::Account holder;
+        PrettyAsset usd;
+        test::jtx::Vault vault;
+        Keylet vaultKeylet;
+        Number initialAssetsTotal;
+        Number initialAssetsAvailable;
+    };
+
+    std::optional<RoundTripOvershootVault>
+    makeRoundTripOvershootVault(test::jtx::Env& env)
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000), issuer, owner, holder, borrower);
+        env.close();
+
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        env.trust(usd(1'000), owner);
+        env.trust(usd(1'000), holder);
+        env.trust(usd(1'000), borrower);
+        env.close();
+
+        env(pay(issuer, holder, usd(100)));
+        env(pay(issuer, borrower, usd(100)));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = usd});
+        vaultTx[sfScale] = 0;
+        env(vaultTx);
+        env.close();
+
+        // Holder deposits 5 USD, minting 5 shares 1:1.
+        env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = usd(5)}));
+        env.close();
+
+        // A loan broker on the vault, then a single bullet loan for the
+        // entire deposit at 40% interest, one payment, one year out.
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(set(owner, vaultKeylet.key));
+        env.close();
+
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        env(set(borrower, brokerKeylet.key, usd(5).value()),
+            loan::kInterestRate(percentageToTenthBips(40)),
+            kGracePeriod(60),
+            kPaymentInterval(365 * 24 * 60 * 60),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Advance to just before the single payment falls due and let the
+        // borrower repay principal plus interest. Share supply stays at 5,
+        // so assetsTotal/sharesTotal becomes 7/5.
+        env.close(std::chrono::seconds{(365 * 24 * 60 * 60) - 3600});
+        env(pay(borrower, loanKeylet.key, usd(10).value()), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return std::nullopt;
+        auto const mptIssuanceID = vaultSle->at(sfShareMPTID);
+
+        Number const initialAssetsTotal = vaultSle->at(sfAssetsTotal);
+        Number const initialAssetsAvailable = vaultSle->at(sfAssetsAvailable);
+        BEAST_EXPECT(initialAssetsTotal == usd(7).number());
+        BEAST_EXPECT(initialAssetsAvailable == usd(7).number());
+        {
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptIssuanceID));
+            if (!BEAST_EXPECT(sleIssuance))
+                return std::nullopt;
+            BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == 5);
+        }
+
+        return RoundTripOvershootVault{
+            .issuer = issuer,
+            .holder = holder,
+            .usd = usd,
+            .vault = vault,
+            .vaultKeylet = vaultKeylet,
+            .initialAssetsTotal = initialAssetsTotal,
+            .initialAssetsAvailable = initialAssetsAvailable};
+    }
+
+    // VaultClawback::assetsToClawback converts clawbackAmount to shares
+    // with round-to-nearest, then round-trips back to assets. When shares
+    // round up, assetsRecovered can exceed clawbackAmount.
+    //
+    // Repro: assetsTotal=7, sharesTotal=5, request 4:
+    //   shares = round(20/7) = 3, assets = 7*3/5 = 4.2 > 4.
+    //
+    // Post-fixCleanup3_4_0: truncate shares so assetsRecovered <=
+    // clawbackAmount by construction.
+    void
+    testBugClawbackRoundTripOvershoot()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool withFix) {
+            // This regression requires the open-ended vault lifecycle: deposit,
+            // originate and repay a loan, then claw back shares. LP V1.1
+            // independently rejects attaching a broker to an open-ended vault.
+            Env env{*this, features - featureLendingProtocolV1_1};
+
+            auto const setup = makeRoundTripOvershootVault(env);
+            if (!BEAST_EXPECT(setup))
+                return;
+
+            auto const clawbackAmount = setup->usd(4);
+            env(setup->vault.clawback(
+                {.issuer = setup->issuer,
+                 .id = setup->vaultKeylet.key,
+                 .holder = setup->holder,
+                 .amount = clawbackAmount.value()}));
+
+            auto const vaultSleAfter = env.current()->read(setup->vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Number const finalAssetsTotal = vaultSleAfter->at(sfAssetsTotal);
+            Number const assetsRecovered = setup->initialAssetsTotal - finalAssetsTotal;
+            Number const clawbackNum = clawbackAmount.number();
+
+            Number const expectedPost{28LL, -1};
+            Number const expectedPre{42LL, -1};
+            if (withFix)
+            {
+                BEAST_EXPECT(assetsRecovered <= clawbackNum);
+                BEAST_EXPECT(assetsRecovered == expectedPost);
+            }
+            else
+            {
+                BEAST_EXPECT(assetsRecovered > clawbackNum);
+                BEAST_EXPECT(assetsRecovered == expectedPre);
+            }
+        };
+
+        {
+            testcase(
+                "bug: VaultClawback round-trip overshoot lets issuer recover "
+                "more than requested (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, false);
+        }
+        {
+            testcase(
+                "bug: VaultClawback round-trip overshoot is clamped so "
+                "assetsRecovered <= clawbackAmount (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), true);
+        }
+    }
+
+    // Same root cause as testBugClawbackRoundTripOvershoot on the
+    // withdraw path. Also bypasses the preclaim canWithdraw check, which
+    // validates destination limits against the requested amount only.
+    //
+    // Repro: assetsTotal=7, sharesTotal=5, request 4:
+    //   pre-fix : shares = round(20/7) = 3, assets = 7*3/5 = 4.2 > 4.
+    //   post-fix: shares = floor(20/7) = 2, assets = 7*2/5 = 2.8 <= 4.
+    void
+    testBugWithdrawRoundTripOvershoot()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool withFix) {
+            // This regression requires the open-ended vault lifecycle: deposit,
+            // originate and repay a loan, then withdraw shares. LP V1.1
+            // independently rejects attaching a broker to an open-ended vault.
+            Env env{*this, features - featureLendingProtocolV1_1};
+
+            auto const setup = makeRoundTripOvershootVault(env);
+            if (!BEAST_EXPECT(setup))
+                return;
+
+            auto const requested = setup->usd(4);
+            env(setup->vault.withdraw(
+                {.depositor = setup->holder,
+                 .id = setup->vaultKeylet.key,
+                 .amount = requested.value()}));
+
+            auto const vaultSleAfter = env.current()->read(setup->vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Number const finalAssetsTotal = vaultSleAfter->at(sfAssetsTotal);
+            Number const assetsWithdrawn = setup->initialAssetsTotal - finalAssetsTotal;
+            Number const requestedNum = requested.number();
+
+            Number const expectedPost{28LL, -1};
+            Number const expectedPre{42LL, -1};
+            if (withFix)
+            {
+                BEAST_EXPECT(assetsWithdrawn <= requestedNum);
+                BEAST_EXPECT(assetsWithdrawn == expectedPost);
+            }
+            else
+            {
+                BEAST_EXPECT(assetsWithdrawn > requestedNum);
+                BEAST_EXPECT(assetsWithdrawn == expectedPre);
+            }
+        };
+
+        {
+            testcase(
+                "bug: VaultWithdraw round-trip overshoot delivers more than "
+                "requested (pre-fixCleanup3_4_0)");
+            runScenario(testableAmendments() - fixCleanup3_4_0, false);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw round-trip overshoot is clamped so "
+                "assetsWithdrawn <= requested (post-fixCleanup3_4_0)");
+            runScenario(testableAmendments(), true);
+        }
+    }
+
+    void
+    testCredentialPinsPseudoAccount()
+    {
+        using namespace test::jtx;
+
+        // A credential issued to a vault pseudo-account can't be accepted or
+        // deleted by it (pseudo-accounts can't sign), so it stays pinned in the
+        // pseudo-account's owner directory and blocks VaultDelete with
+        // tecHAS_OBLIGATIONS. A pin created before the cure activates is removed
+        // by VaultDelete once it does.
+        Account const owner{"owner"};
+        Account const attacker{"attacker"};
+        char const credType[] = "FN36";
+
+        Env env{*this, all_ - fixCleanup3_3_0 - fixCleanup3_4_0};
+        env.fund(XRP(1'000'000), owner, attacker);
+        env.close();
+
+        Vault const vault{env};
+        PrettyAsset const asset = xrpIssue();
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        auto const vaultSle = env.le(keylet);
+        BEAST_EXPECT(vaultSle);
+        Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+        env.memoize(pseudo);
+
+        // The pseudo-account owns the share issuance; the pin must not change
+        // its owner count (an unaccepted credential is owned by the issuer).
+        auto const pseudoOwnerCount = ownerCount(env, pseudo);
+
+        testcase("Credential pins vault pseudo-account");
+        env(credentials::create(pseudo, attacker, credType));
+        env.close();
+
+        auto const credKey = credentials::keylet(pseudo, attacker, credType);
+        BEAST_EXPECT(env.le(credKey));
+        BEAST_EXPECT(ownerCount(env, attacker) == 1);
+        BEAST_EXPECT(ownerCount(env, pseudo) == pseudoOwnerCount);
+
+        // The pin blocks deletion of an otherwise-empty vault.
+        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tecHAS_OBLIGATIONS));
+        env.close();
+
+        env.enableFeature(fixCleanup3_4_0);
+        env.close();
+
+        // The pre-existing pin no longer blocks deletion; the credential is
+        // cleaned up and the issuer's owner count is restored.
+        testcase("VaultDelete removes pinned credential");
+        env(vault.del({.owner = owner, .id = keylet.key}));
+        env.close();
+
+        BEAST_EXPECT(!env.le(credKey));
+        BEAST_EXPECT(!env.le(keylet));
+        BEAST_EXPECT(!env.le(::xrpl::keylet::account(pseudo.id())));
+        BEAST_EXPECT(ownerCount(env, attacker) == 0);
+    }
+
+    void
+    testCredentialPinOverflow()
+    {
+        using namespace test::jtx;
+        testcase("Credential pin cleanup is bounded (tecINCOMPLETE)");
+
+        // A pseudo-account can be pinned with more credentials than one
+        // transaction is allowed to clean up. VaultDelete then removes them a
+        // bounded batch at a time, returning tecINCOMPLETE until the last batch.
+        Account const owner{"owner"};
+        Account const attacker{"attacker"};
+
+        Env env{*this, all_ - fixCleanup3_3_0 - fixCleanup3_4_0};
+        env.fund(XRP(10'000'000), owner, attacker);
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(tx);
+        env.close();
+        auto const vaultSle = env.le(keylet);
+        BEAST_EXPECT(vaultSle);
+        Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+        env.memoize(pseudo);
+
+        // Pin more than one cleanup batch's worth of credentials.
+        std::uint16_t const count = kMaxDeletablePseudoAccountCredentials + 3;
+        for (std::uint16_t i = 0; i < count; ++i)
+            env(credentials::create(pseudo, attacker, std::to_string(i)));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, attacker) == count);
+
+        env.enableFeature(fixCleanup3_4_0);
+        env.close();
+
+        // First delete removes one bounded batch and reports it isn't finished.
+        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tecINCOMPLETE));
+        env.close();
+        BEAST_EXPECT(env.le(keylet));  // vault still exists
+        auto const remaining = ownerCount(env, attacker);
+        BEAST_EXPECT(remaining > 0 && remaining < count);
+
+        // Second delete finishes the cleanup and removes the vault.
+        env(vault.del({.owner = owner, .id = keylet.key}));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet));
+        BEAST_EXPECT(!env.le(::xrpl::keylet::account(pseudo.id())));
+        BEAST_EXPECT(ownerCount(env, attacker) == 0);
+    }
+
+    struct ImpairedLoanVault
+    {
+        test::jtx::Account issuer;
+        test::jtx::Account holder;
+        PrettyAsset usd;
+        test::jtx::Vault vault;
+        Keylet vaultKeylet;
+        MPTID shareId;
+    };
+
+    // Impairing a 1,000 loan in a 10,000 vault leaves AssetsAvailable=9,000
+    // and AssetsTotal=10,000. otherDeposit > 0 splits the shares, 0 leaves
+    // holder as the sole shareholder.
+    std::optional<ImpairedLoanVault>
+    makeImpairedLoanVault(test::jtx::Env& env, int otherDeposit)
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const other{"other"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, owner, holder, other, borrower);
+        env.close();
+
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        env.trust(usd(100'000), owner);
+        env.trust(usd(100'000), holder);
+        env.trust(usd(100'000), other);
+        env.trust(usd(100'000), borrower);
+        env.close();
+
+        int const holderDeposit = 10'000 - otherDeposit;
+        env(pay(issuer, holder, usd(holderDeposit)));
+        if (otherDeposit != 0)
+        {
+            env(pay(issuer, other, usd(otherDeposit)));
+        }
+        env.close();
+
+        Vault const vault{env};
+        auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+            {.owner = owner, .asset = usd, .subscriptionOffset = std::chrono::seconds{60}});
+        env(createTx);
+        env.close();
+
+        auto const vaultSle = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return std::nullopt;
+        MPTID const shareId = vaultSle->at(sfShareMPTID);
+
+        env(vault.deposit(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = usd(holderDeposit)}));
+        if (otherDeposit != 0)
+        {
+            env(vault.deposit(
+                {.depositor = other, .id = vaultKeylet.key, .amount = usd(otherDeposit)}));
+        }
+        env.close();
+
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(set(owner, vaultKeylet.key));
+        env.close();
+
+        auto const sleBroker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(sleBroker))
+            return std::nullopt;
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+        env(set(borrower, brokerKeylet.key, usd(1'000).value()),
+            loan::kInterestRate(percentageToTenthBips(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Under fixCleanup3_4_0, LoanManage rejects tfLoanImpair with
+        // tecTOO_SOON unless the payment is already late; advance the ledger
+        // past sfNextPaymentDueDate so impairment succeeds. No-op otherwise.
+        if (env.current()->rules().enabled(fixCleanup3_4_0))
+        {
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return std::nullopt;
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+        }
+
+        env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return std::nullopt;
+        BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == usd(9'000).value());
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == usd(1'000).value());
+
+        return ImpairedLoanVault{
+            .issuer = issuer,
+            .holder = holder,
+            .usd = usd,
+            .vault = vault,
+            .vaultKeylet = vaultKeylet,
+            .shareId = shareId};
+    }
+
+    // Legacy clawback pricing burns every share; fixCleanup3_4_0 leaves 10%
+    // outstanding, backed by the impaired receivable.
+    void
+    testBugClawbackAfterLoanImpair()
+    {
+        using namespace test::jtx;
+
+        auto clawbackHolder = [](ImpairedLoanVault const& setup, STAmount const& amount) {
+            return setup.vault.clawback(
+                {.issuer = setup.issuer,
+                 .id = setup.vaultKeylet.key,
+                 .holder = setup.holder,
+                 .amount = amount});
+        };
+
+        auto runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
+            testcase(
+                features[fixCleanup3_4_0]
+                    ? "VaultClawback after impaired loan (post-fixCleanup3_4_0)"
+                    : "VaultClawback after impaired loan (pre-fixCleanup3_4_0)");
+
+            Env env(*this, features);
+            auto const maybeSetup = makeImpairedLoanVault(env, 0);
+            if (!maybeSetup)
+            {
+                BEAST_EXPECT(false);
+                return;
+            }
+            ImpairedLoanVault const& setup = *maybeSetup;
+
+            auto const tokenBefore = env.le(keylet::mptoken(setup.shareId, setup.holder.id()));
+            auto const vaultBefore = env.le(setup.vaultKeylet);
+            auto const issuanceBefore = env.le(keylet::mptokenIssuance(setup.shareId));
+            if (!BEAST_EXPECT(tokenBefore) || !BEAST_EXPECT(vaultBefore) ||
+                !BEAST_EXPECT(issuanceBefore))
+                return;
+            std::uint64_t const sharesBefore = tokenBefore->getFieldU64(sfMPTAmount);
+
+            // The clawback of 19,000 exceeds AssetsAvailable (9,000), so
+            // VaultClawback clamps sharesDestroyed to whatever redeems
+            // exactly AssetsAvailable; compute that expected value using the
+            // same conversion helper VaultClawback itself uses, rather than
+            // assuming an exact 90/10 split holds under truncation.
+            auto const maybeSharesDestroyed = assetsToSharesWithdraw(
+                vaultBefore,
+                issuanceBefore,
+                setup.usd(9'000).value(),
+                TruncateShares::Yes,
+                WaiveUnrealizedLoss::Yes);
+            if (!BEAST_EXPECT(maybeSharesDestroyed))
+                return;
+            std::uint64_t const expectedSharesAfter =
+                sharesBefore - maybeSharesDestroyed->mpt().value();
+
+            env(clawbackHolder(setup, setup.usd(19'000).value()), Ter(expected));
+            env.close();
+            if (expected != tesSUCCESS)
+                return;
+
+            auto const vaultAfter = env.le(setup.vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == setup.usd(0).value());
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == setup.usd(1'000).value());
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == setup.usd(1'000).value());
+            auto const tokenAfter = env.le(keylet::mptoken(setup.shareId, setup.holder.id()));
+            if (!BEAST_EXPECT(tokenAfter))
+                return;
+            BEAST_EXPECT(tokenAfter->getFieldU64(sfMPTAmount) == expectedSharesAfter);
+        };
+
+        runSole(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runSole(all_, tesSUCCESS);
+
+        testcase("VaultClawback after impaired loan, non-sole holder");
+        {
+            Env env(*this, all_);
+            auto const maybeSetup = makeImpairedLoanVault(env, 1'000);
+            if (!maybeSetup)
+            {
+                BEAST_EXPECT(false);
+                return;
+            }
+            ImpairedLoanVault const& setup = *maybeSetup;
+            // The waiver does not apply, so the holder's 9,000 shares are
+            // still priced at the discounted rate and cannot cover 9,000.
+            env(clawbackHolder(setup, setup.usd(9'000).value()), Ter(tecINSUFFICIENT_FUNDS));
+        }
+    }
+
+    // Bug 1: a sponsored XRP VaultWithdraw to a distinct destination is
+    // rejected because the vault invariant treats the holder's touched
+    // but economically unchanged AccountRoot as a second payout
+    // recipient. Sequence/ticket processing still touches the holder
+    // while the sponsor pays the fee, so the holder's XRP delta is
+    // present-zero and is not normalized away. If this happens on the
+    // last Subscription ledger of a closed-ended vault, the holder
+    // cannot retry until Redemption (tecTOO_SOON during Investment).
+    //
+    // Fixed by ValidVault::deltaAssetsForParty always collapsing an
+    // economically-zero XRP delta to absence, regardless of who paid the
+    // fee.
+    void
+    testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env{*this, features};
+            Account const owner{"owner"};
+            Account const holder{"holder"};
+            Account const destination{"destination"};
+            Account const sponsor{"sponsor"};
+            env.fund(XRP(10'000), owner, holder, destination, sponsor);
+            env.close();
+
+            constexpr std::uint32_t investmentPeriod = 14u * 24u * 60u * 60u;
+            auto const [vault, vaultKeylet, subscriptionDate, redemptionDate] =
+                makeClosedEndedVault(env, owner, xrpIssue(), 120u, investmentPeriod);
+            BEAST_EXPECT(redemptionDate - subscriptionDate == investmentPeriod);
+
+            env(vault.deposit(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+            env.close();
+
+            // Inclusive SubscriptionDate boundary: still Subscription, so an
+            // ordinary withdrawal is allowed.
+            closeToTime(env, tp{d{subscriptionDate}});
+
+            auto const vaultBefore = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultBefore))
+                return;
+            auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+            auto const holderBalanceBefore = env.balance(holder);
+            auto const destinationBalanceBefore = env.balance(destination);
+            auto const sponsorBalanceBefore = env.balance(sponsor);
+            auto const fee = env.current()->fees().base;
+
+            auto withdraw = vault.withdraw(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+            withdraw[sfDestination] = destination.human();
+            env(withdraw,
+                Fee(fee),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(expected));
+            env.close();
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
+
+            if (expected == tesSUCCESS)
+            {
+                BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+                BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
+                BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
+                return;
+            }
+
+            // Invariant rollback: the payout and share burn are undone, but
+            // sequence processing and the sponsored fee charge remain.
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+            BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
+            BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore);
+
+            // Once the ledger advances into Investment, the same holder
+            // cannot retry until Redemption.
+            auto retry = vault.withdraw(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+            retry[sfDestination] = destination.human();
+            env(retry, Ter(tecTOO_SOON));
+        };
+
+        testcase(
+            "bug: sponsored XRP withdrawal to a distinct destination misreads a "
+            "touched-but-zero sender delta as a second recipient "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+
+        testcase(
+            "bug: sponsored XRP withdrawal to a distinct destination succeeds "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS);
+    }
+
+    // Bug 2: a co-signed fee sponsor named as the withdrawal's own
+    // destination pays its fee from the same AccountRoot it is paid into,
+    // so its net XRP delta is (payout - fee). The invariant never fee-
+    // corrected the destination side at all, so this always failed the
+    // equal-amount check against the vault's outflow (payout).
+    //
+    // Fixed by ValidVault::deltaAssetsForParty adding the fee back onto
+    // whichever inspected party's AccountRoot actually paid it -- the
+    // sender, or a distinct destination -- not just the sender.
+    void
+    testBugSponsorAsDestinationFeeMisappliedToPayout()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env{*this, features};
+            Account const owner{"owner"};
+            Account const holder{"holder"};
+            Account const sponsor{"sponsor"};
+            env.fund(XRP(10'000), owner, holder, sponsor);
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+            env.close();
+
+            auto const vaultBefore = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultBefore))
+                return;
+            auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+            auto const sponsorBalanceBefore = env.balance(sponsor);
+            auto const fee = env.current()->fees().base;
+
+            // The sponsor both receives the withdrawal (as sfDestination)
+            // and pays its own fee (co-signed) from the same AccountRoot.
+            auto withdraw = vault.withdraw(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+            withdraw[sfDestination] = sponsor.human();
+            env(withdraw,
+                Fee(fee),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(expected));
+            env.close();
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+
+            if (expected == tesSUCCESS)
+            {
+                BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+                // Paid the withdrawal, then separately debited for the fee
+                // it chose to cover; net effect is payout minus fee.
+                BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore + XRP(100) - fee);
+                return;
+            }
+
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
+        };
+
+        testcase(
+            "bug: co-signed sponsor named as withdrawal destination has its "
+            "own fee debit misread as breaking the payout equality "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+
+        testcase(
+            "bug: co-signed sponsor named as withdrawal destination succeeds "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS);
+    }
+
+    // Pre-funded fee sponsorship draws the fee from ltSponsorship.sfFeeAmount,
+    // so feePayerAccountRoot must return nullopt rather than the sponsor's
+    // AccountRoot. A bystander sponsor leaves that branch unexercised: the
+    // result is only consulted by deltaAssetsForParty via `payer && *payer ==
+    // id`. Naming the sponsor as sfDestination makes the early return
+    // load-bearing -- returning the sponsor's id instead of nullopt would add
+    // the fee back onto a balance that never paid it, and the equal-amount
+    // check against the vault outflow would fail.
+    //
+    // Contrast testBugSponsorAsDestinationFeeMisappliedToPayout, where the
+    // sponsor co-signs and so really does pay from its own AccountRoot.
+    void
+    testPrefundedFeeWithdraw()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](
+                               FeatureBitset features,
+                               TER expected,
+                               bool const sponsorIsDestination) {
+            Env env{*this, features};
+            Account const owner{"owner"};
+            Account const holder{"holder"};
+            Account const destination{"destination"};
+            Account const sponsor{"sponsor"};
+            env.fund(XRP(10'000), owner, holder, destination, sponsor);
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+            env.close();
+
+            auto const fee = env.current()->fees().base;
+            env(sponsor::set_fee(sponsor, 0, fee), sponsor::SponseeAcc(holder));
+            env.close();
+
+            auto const vaultBefore = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultBefore))
+                return;
+            auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+            auto const holderBalanceBefore = env.balance(holder);
+            auto const destinationBalanceBefore = env.balance(destination);
+            auto const sponsorBalanceBefore = env.balance(sponsor);
+
+            Account const& recipient = sponsorIsDestination ? sponsor : destination;
+            auto withdraw = vault.withdraw(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+            withdraw[sfDestination] = recipient.human();
+            env(withdraw, Fee(fee), sponsor::As(sponsor, spfSponsorFee), Ter(expected));
+            env.close();
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            // Holder is economically unchanged (sequence only); the fee is
+            // taken from the sponsorship object, not any AccountRoot.
+            BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
+
+            if (expected == tesSUCCESS)
+            {
+                BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+                if (sponsorIsDestination)
+                {
+                    // The sponsor receives the payout and is not debited for
+                    // the fee. The sponsor has to BE the destination for
+                    // FeePayerType::SponsorPreFunded to matter.
+                    BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore + XRP(100));
+                }
+                else
+                {
+                    BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
+                    BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore);
+                }
+                auto const sponsorship = env.le(keylet::sponsorship(sponsor, holder));
+                if (!BEAST_EXPECT(sponsorship))
+                    return;
+                BEAST_EXPECT(!sponsorship->isFieldPresent(sfFeeAmount));
+                return;
+            }
+
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore);
+            if (!sponsorIsDestination)
+                BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore);
+        };
+
+        testcase(
+            "pre-funded fee XRP withdrawal to a distinct destination succeeds "
+            "(post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS, false);
+
+        testcase(
+            "bug: pre-funded sponsor named as withdrawal destination misreads "
+            "the sender's touched-but-zero delta as a second recipient "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED, true);
+
+        testcase(
+            "bug: pre-funded sponsor named as withdrawal destination receives "
+            "the full payout (post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS, true);
+    }
+
+    // Unsponsored third-party XRP withdrawal: the sender's AccountRoot moves
+    // by exactly -fee. Pre-amendment, the sender-only fee correction then
+    // collapses that to absence so the dual-recipient guard does not fire.
+    void
+    testUnsponsoredWithdrawToDistinctDestinationPreAmendment()
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "unsponsored XRP withdrawal to a distinct destination succeeds "
+            "(pre-fixCleanup3_4_0)");
+
+        Env env{*this, all_ - fixCleanup3_4_0};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const destination{"destination"};
+        env.fund(XRP(10'000), owner, holder, destination);
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+        env.close();
+
+        auto const vaultBefore = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+        auto const holderBalanceBefore = env.balance(holder);
+        auto const destinationBalanceBefore = env.balance(destination);
+        auto const fee = env.current()->fees().base;
+
+        auto withdraw = vault.withdraw(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+        withdraw[sfDestination] = destination.human();
+        env(withdraw, Fee(fee), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+        BEAST_EXPECT(env.balance(holder) == holderBalanceBefore - fee);
+        BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
+    }
+
 public:
     void
     run() override
@@ -984,8 +2021,19 @@ public:
         testBugDepositShareTruncationSubUlp();
         testVaultWithdrawCanonicalizeToZero();
         testBugVaultDustDebitCanonicalizesToNoOp();
+        testBugVaultDepositOvercreditsAcrossScaleBoundary();
+        testBugVaultLockedByPartialWithdraw();
         testVaultDepositNegativeBalanceFromOppositeLimit();
+        testCredentialPinsPseudoAccount();
+        testCredentialPinOverflow();
         testBug6LimitBypassWithShares();
+        testBugClawbackRoundTripOvershoot();
+        testBugWithdrawRoundTripOvershoot();
+        testBugClawbackAfterLoanImpair();
+        testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
+        testBugSponsorAsDestinationFeeMisappliedToPayout();
+        testPrefundedFeeWithdraw();
+        testUnsponsoredWithdrawToDistinctDestinationPreAmendment();
     }
 };
 

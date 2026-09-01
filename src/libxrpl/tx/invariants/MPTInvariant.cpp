@@ -234,6 +234,14 @@ ValidMPTIssuance::finalize(
 
         if (hasPrivilege(tx, Privilege::DestroyMptIssuance))
         {
+            // A VaultDelete that is still cleaning up credentials pinned to its
+            // pseudo-account returns tecINCOMPLETE and has not yet reached the
+            // share issuance. Don't require the issuance to be removed until
+            // the deletion completes (a later transaction).
+            if (rules.enabled(fixCleanup3_4_0) && txnType == ttVAULT_DELETE &&
+                result == tecINCOMPLETE)
+                return mptIssuancesDeleted_ == 0 && mptIssuancesCreated_ == 0;
+
             if (mptIssuancesDeleted_ == 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
@@ -824,6 +832,14 @@ ValidMPTTransfer::visitEntry(
 
     if (after)
         update(*after, false);
+
+    // Record whether every touched AccountRoot was a pseudo-account BEFORE
+    // the transaction applied (true and false). A transaction that erases a
+    // pseudo-account (and moves MPT out of it) in the same transaction leaves
+    // no trace of its pseudo-account status in the post-transaction view
+    // isAuthorized() sees at finalize() time.
+    if (before && before->getType() == ltACCOUNT_ROOT)
+        pseudoAccountsBefore_[before->at(sfAccount)] = isPseudoAccount(before);
 }
 
 bool
@@ -836,10 +852,19 @@ ValidMPTTransfer::isAuthorized(
     // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their
     // participants and are implicitly authorized for any MPT they hold,
     // including vault shares whose underlying asset would otherwise require
-    // auth.  Exempt them here rather than relying on requireAuth: the recursive
+    // auth. Exempt them here rather than relying on requireAuth: the recursive
     // share -> underlying descent in requireAuth fails for a pseudo-account
     // that holds the share but not the underlying.
-    if (isPseudoAccount(view, holder, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
+    //
+    // Use the pre-transaction classification for any account this
+    // transaction touched (pseudoAccountsBefore_): the post-transaction view
+    // is wrong for an account this same transaction erased. Untouched
+    // accounts aren't in the map, so fall back to the current view, which is
+    // still accurate for them since nothing changed.
+    auto const pseudoIt = pseudoAccountsBefore_.find(holder);
+    bool const isPseudo =
+        pseudoIt != pseudoAccountsBefore_.end() ? pseudoIt->second : isPseudoAccount(view, holder);
+    if (isPseudo)
         return true;
 
     auto const key = keylet::mptoken(mptid, holder);
