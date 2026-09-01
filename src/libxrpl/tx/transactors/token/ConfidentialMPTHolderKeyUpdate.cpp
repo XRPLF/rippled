@@ -33,9 +33,12 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
 {
     bool const rotation = ctx.tx.isFlag(tfHolderKeyRotation);
     bool const recovery = ctx.tx.isFlag(tfHolderKeyRecovery);
+    bool const cancel = ctx.tx.isFlag(tfCancelRecovery);
 
-    // Exactly one of the two mode flags must be set.
-    if (rotation == recovery)
+    // Exactly one of the three mode flags must be set.
+    int const modeCount =
+        static_cast<int>(rotation) + static_cast<int>(recovery) + static_cast<int>(cancel);
+    if (modeCount != 1)
         return temINVALID_FLAG;
 
     auto const account = ctx.tx[sfAccount];
@@ -45,11 +48,23 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
     if (account == issuer)
         return temMALFORMED;
 
-    if (ctx.tx[sfHolderEncryptionKey].length() != kEcPubKeyLength)
-        return temMALFORMED;
-
+    bool const hasHolderKey = ctx.tx.isFieldPresent(sfHolderEncryptionKey);
     bool const hasSpending = ctx.tx.isFieldPresent(sfConfidentialBalanceSpending);
     bool const hasInbox = ctx.tx.isFieldPresent(sfConfidentialBalanceInbox);
+    bool const hasProof = ctx.tx.isFieldPresent(sfZKProof);
+
+    if (cancel)
+    {
+        // Cancel mode only revokes a pending recovery authorization; it
+        // carries no key material, balances, or proof.
+        if (hasHolderKey || hasSpending || hasInbox || hasProof)
+            return temMALFORMED;
+
+        return tesSUCCESS;
+    }
+
+    if (!hasHolderKey || ctx.tx[sfHolderEncryptionKey].length() != kEcPubKeyLength)
+        return temMALFORMED;
 
     // Rotation mode requires re-encrypted balances; Recovery mode must not
     // provide them since the holder cannot decrypt the current ones.
@@ -74,7 +89,7 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
             return temBAD_CIPHERTEXT;
     }
 
-    if (!ctx.tx.isFieldPresent(sfZKProof))
+    if (!hasProof)
         return temMALFORMED;
 
     auto const expectedProofLength =
@@ -116,11 +131,24 @@ ConfidentialMPTHolderKeyUpdate::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    if (ctx.tx.isFlag(tfCancelRecovery))
+    {
+        // Nothing to cancel if no recovery is pending.
+        if (!sleMptoken->isFieldPresent(sfRecoveryKey))
+            return tecNO_PERMISSION;
+
+        return tesSUCCESS;
+    }
+
     auto const newPubKey = ctx.tx[sfHolderEncryptionKey];
     if (newPubKey == (*sleMptoken)[sfHolderEncryptionKey])
         return tecNO_PERMISSION;
 
     bool const rotation = ctx.tx.isFlag(tfHolderKeyRotation);
+
+    // Recovery mode: reject if a recovery is already pending
+    if (!rotation && sleMptoken->isFieldPresent(sfRecoveryKey))
+        return tecNO_PERMISSION;
 
     // TODO: replace with a real holder-key-update context hash once the
     // crypto side lands (mirrors getSendContextHash / getConvertContextHash
@@ -157,6 +185,15 @@ ConfidentialMPTHolderKeyUpdate::doApply()
             "MPToken exists");
         return tecINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    if (ctx_.tx.isFlag(tfCancelRecovery))
+    {
+        // The holder revokes their pending recovery authorization; the
+        // current key and balances are left untouched.
+        sleMptoken->makeFieldAbsent(sfRecoveryKey);
+        view().update(sleMptoken);
+        return tesSUCCESS;
     }
 
     auto const newPubKey = ctx_.tx[sfHolderEncryptionKey];

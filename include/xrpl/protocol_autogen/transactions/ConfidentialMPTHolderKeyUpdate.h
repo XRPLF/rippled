@@ -59,14 +59,29 @@ public:
     }
 
     /**
-     * @brief Get sfHolderEncryptionKey (SoeRequired)
-     * @return The field value.
+     * @brief Get sfHolderEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    protocol_autogen::Optional<SF_VL::type::value_type>
     getHolderEncryptionKey() const
     {
-        return this->tx_->at(sfHolderEncryptionKey);
+        if (hasHolderEncryptionKey())
+        {
+            return this->tx_->at(sfHolderEncryptionKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHolderEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHolderEncryptionKey() const
+    {
+        return this->tx_->isFieldPresent(sfHolderEncryptionKey);
     }
 
     /**
@@ -122,14 +137,29 @@ public:
     }
 
     /**
-     * @brief Get sfZKProof (SoeRequired)
-     * @return The field value.
+     * @brief Get sfZKProof (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    protocol_autogen::Optional<SF_VL::type::value_type>
     getZKProof() const
     {
-        return this->tx_->at(sfZKProof);
+        if (hasZKProof())
+        {
+            return this->tx_->at(sfZKProof);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfZKProof is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasZKProof() const
+    {
+        return this->tx_->isFieldPresent(sfZKProof);
     }
 };
 
@@ -147,20 +177,16 @@ public:
      * @brief Construct a new ConfidentialMPTHolderKeyUpdateBuilder with required fields.
      * @param account The account initiating the transaction.
      * @param mPTokenIssuanceID The sfMPTokenIssuanceID field value.
-     * @param holderEncryptionKey The sfHolderEncryptionKey field value.
-     * @param zKProof The sfZKProof field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     ConfidentialMPTHolderKeyUpdateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                     std::decay_t<typename SF_VL::type::value_type> const& holderEncryptionKey,                     std::decay_t<typename SF_VL::type::value_type> const& zKProof,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<ConfidentialMPTHolderKeyUpdateBuilder>(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, account, sequence, fee)
     {
         setMPTokenIssuanceID(mPTokenIssuanceID);
-        setHolderEncryptionKey(holderEncryptionKey);
-        setZKProof(zKProof);
     }
 
     /**
@@ -193,7 +219,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolderEncryptionKey (SoeRequired)
+     * @brief Set sfHolderEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTHolderKeyUpdateBuilder&
@@ -226,7 +252,7 @@ public:
     }
 
     /**
-     * @brief Set sfZKProof (SoeRequired)
+     * @brief Set sfZKProof (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTHolderKeyUpdateBuilder&

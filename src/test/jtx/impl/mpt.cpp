@@ -2036,6 +2036,7 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg)
         jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
 
     bool const rotation = (arg.flags.value_or(0) & tfHolderKeyRotation) != 0;
+    bool const cancel = (arg.flags.value_or(0) & tfCancelRecovery) != 0;
 
     auto const reencryptOrDummy = [&](EncryptedBalanceType balanceType) {
         if (arg.account && arg.holderPubKey)
@@ -2078,11 +2079,12 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg)
     {
         jv[sfZKProof.jsonName] = strHex(*arg.proof);
     }
-    else
+    else if (!cancel)
     {
         // Real proof verification is not wired up yet (see
         // verifyHolderKeyUpdateProof); a correctly-sized filler buffer is
-        // enough to pass preflight's length check.
+        // enough to pass preflight's length check. Cancel mode carries no
+        // proof at all, so nothing is auto-filled here.
         auto const proofLength =
             rotation ? kEcHolderKeyRotationProofLength : kEcHolderKeyRecoveryProofLength;
         jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(proofLength));

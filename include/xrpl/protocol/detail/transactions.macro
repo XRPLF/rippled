@@ -1178,10 +1178,13 @@ TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 92, ConfidentialMPTHolderKeyUp
     NoPriv,
     ({
     {sfMPTokenIssuanceID, SoeRequired},
-    {sfHolderEncryptionKey, SoeRequired},
+    // HolderEncryptionKey and ZKProof are required in Rotation/Recovery mode
+    // (tfHolderKeyRotation/tfHolderKeyRecovery) and forbidden in Cancel mode
+    // (tfCancelRecovery)
+    {sfHolderEncryptionKey, SoeOptional},
     {sfConfidentialBalanceSpending, SoeOptional},
     {sfConfidentialBalanceInbox, SoeOptional},
-    {sfZKProof, SoeRequired},
+    {sfZKProof, SoeOptional},
 }))
 
 /** This transaction transfers sponsorship on an object/account. */
