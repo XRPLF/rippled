@@ -30,7 +30,9 @@ updateDataThroughVm(benchmark::State& state)
         "",
         body,
         [] { return Fixtures::instance().host(); },
-        callsWithinTransferBudget(state.range(0)));
+        // `set_data` answers a scalar and writes nothing into guest memory, so the
+        // transfer budget does not constrain it however large the input gets.
+        callsWithinTransferBudget(0));
     state.SetBytesProcessed(state.iterations() * state.range(0));
 }
 BENCHMARK(updateDataThroughVm)

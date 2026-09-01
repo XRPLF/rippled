@@ -47,16 +47,23 @@ inline constexpr std::int32_t kBenchIterations = 50;
 // best-of with a mean did.
 inline constexpr std::int32_t kCalibrationPairs = 400;
 
-// Every run gets this much guest<->host copying before `charge_transfer` starts refusing
-// calls. It is a per-run budget, so it resets between the runs a benchmark makes —
-// but a single run of `kCallsPerRun` calls moving a kilobyte each would exhaust it partway
-// through and spend the rest of the loop measuring the refusal path instead of the host function.
+// How much a run may write into guest memory before `charge_transfer` starts refusing calls
+// (`TRANSFER_LIMIT_BYTES` in crates/xrpl-wasm-vm/src/vm.rs). Per run, so it resets between the
+// runs a benchmark makes — but one run of `kCallsPerRun` calls could exhaust it partway through
+// and spend the rest of the loop measuring the refusal path instead of the host function.
 inline constexpr std::int64_t kTransferLimitBytes = 1 << 20;
 
-// How many calls a run can afford at `bytesPerCall`, staying clear of the transfer budget.
-// Halved because most functions move bytes in *both* directions.
+// How many calls a run can afford, given how many bytes each one has the host **write into guest
+// memory**.
+//
+// One direction only: the budget is charged in `write_into` / `write_buffered` / `write_mant_exp`
+// and nowhere else. What the guest passes *in* is borrowed rather than copied and costs nothing
+// against it, so a caller passes the size of its output region, not of its input.
+//
+// Never raises the count to meet a floor — that would be the one thing this function exists to
+// prevent. A case that cannot afford a single call cannot be measured, so that fails loudly.
 int
-callsWithinTransferBudget(std::int64_t bytesPerCall);
+callsWithinTransferBudget(std::int64_t bytesWrittenPerCall);
 
 // One run of a contract: how long it took, and what the engine charged it.
 struct Timing

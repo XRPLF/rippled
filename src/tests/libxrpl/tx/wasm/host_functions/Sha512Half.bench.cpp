@@ -30,8 +30,8 @@ sha512HalfThroughVm(benchmark::State& state)
         "(call $sha512_half (i32.const 0) (i32.const {}) (i32.const 8192) (i32.const 32))",
         state.range(0));
 
-    // The call count shrinks as the input grows: at 1 KiB a thousand calls would approach the
-    // engine's per-run transfer budget and the tail of the loop would be measuring refusals.
+    // A hash is 32 bytes back to the guest whatever the input length, and the transfer budget
+    // counts only what the host writes — so the input sweep does not shrink the call count.
     benchmarkThroughVm(
         state,
         kWasmName,
@@ -39,7 +39,7 @@ sha512HalfThroughVm(benchmark::State& state)
         "",
         body,
         [] { return Fixtures::instance().host(); },
-        callsWithinTransferBudget(state.range(0) + 32));
+        callsWithinTransferBudget(32));
     state.SetBytesProcessed(state.iterations() * state.range(0));
 }
 BENCHMARK(sha512HalfThroughVm)

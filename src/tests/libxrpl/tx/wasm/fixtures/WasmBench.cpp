@@ -21,14 +21,20 @@
 namespace xrpl::test::bench {
 
 int
-callsWithinTransferBudget(std::int64_t bytesPerCall)
+callsWithinTransferBudget(std::int64_t bytesWrittenPerCall)
 {
-    if (bytesPerCall <= 0)
+    // Writes nothing back to the guest, so the budget does not apply at all.
+    if (bytesWrittenPerCall <= 0)
     {
         return kCallsPerRun;
     }
-    auto const affordable = (kTransferLimitBytes / 2) / bytesPerCall;
-    return static_cast<int>(std::clamp<std::int64_t>(affordable, 16, kCallsPerRun));
+
+    auto const affordable = kTransferLimitBytes / bytesWrittenPerCall;
+    if (affordable < 1)
+    {
+        fixtureFailed("a single call would exceed the run's transfer budget");
+    }
+    return static_cast<int>(std::min<std::int64_t>(affordable, kCallsPerRun));
 }
 
 std::string
