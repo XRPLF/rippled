@@ -37,6 +37,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -731,6 +732,140 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
     JLOG(j.fatal()) << "Invariant failed: a trust line with deep freeze flag "
                        "without normal freeze was created";
     return false;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidTrustLineAuth::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    // `after` is never null, even for deletions; a null here is a
+    // programming error, but check defensively so release builds skip the
+    // entry instead of crashing.
+    XRPL_ASSERT(after, "xrpl::ValidTrustLineAuth::visitEntry : valid after");
+    if (!after)
+        return;
+
+    // An erased entry's `after` still carries its final field state, so a
+    // pseudo-account deleted together with its trust lines (e.g. a full AMM
+    // withdrawal) remains recognizable to finalize through this map.
+    if (after->getType() == ltACCOUNT_ROOT)
+    {
+        accountRoots_.emplace(after->at(sfAccount), std::make_pair(before, after));
+        return;
+    }
+
+    if (after->getType() != ltRIPPLE_STATE || (before && before->getType() != ltRIPPLE_STATE))
+        return;
+
+    // sfBalance is signed from the low account's perspective: low holds
+    // max(balance, 0) and high holds max(-balance, 0) of the other side's
+    // IOU. Deleting a line drops its holdings to zero, so it is recorded as
+    // the holder sending the whole balance.
+    auto const holdings = [](STAmount amount, bool holderIsHigh) {
+        if (holderIsHigh)
+            amount.negate();
+        return amount.signum() > 0 ? amount : amount.zeroed();
+    };
+    STAmount const balanceBefore = before ? before->at(sfBalance) : after->at(sfBalance).zeroed();
+    STAmount const balanceAfter = isDelete ? after->at(sfBalance).zeroed() : after->at(sfBalance);
+    Currency const currency = balanceAfter.get<Issue>().currency;
+
+    // Every balance change is recorded, authorized or not: finalize needs the
+    // complete set of receivers per issue to recognize a pure return to the
+    // issuer.
+    //
+    // Both holder perspectives must be examined, not just the one the final
+    // balance sign selects: a balance crossing zero (e.g. -5 to +3) is two
+    // changes at once -- high sent 5 of low's IOU and low gained 3 of
+    // high's -- with a different issuer, authorization flag, and issue group
+    // each. When the balance does not cross zero, the other perspective's
+    // holdings are unchanged (zero to zero) and its iteration is skipped.
+    for (bool const holderIsHigh : {false, true})
+    {
+        auto const holdingsBefore = holdings(balanceBefore, holderIsHigh);
+        auto const holdingsAfter = holdings(balanceAfter, holderIsHigh);
+        if (holdingsAfter == holdingsBefore)
+            continue;
+
+        AccountID const issuer = after->at(holderIsHigh ? sfLowLimit : sfHighLimit).getIssuer();
+        auto& group = changes_[Issue{currency, issuer}];
+
+        BalanceChange const change{
+            .holder = after->at(holderIsHigh ? sfHighLimit : sfLowLimit).getIssuer(),
+            .authorized = after->isFlag(holderIsHigh ? lsfLowAuth : lsfHighAuth)};
+        (holdingsAfter > holdingsBefore ? group.receivers : group.senders).push_back(change);
+    }
+}
+
+bool
+ValidTrustLineAuth::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    bool const enforce = view.rules().enabled(fixCleanup3_4_0);
+
+    // Pseudo-accounts hold assets on behalf of the object that owns them and
+    // are implicitly authorized, mirroring requireAuth. The marker must
+    // predate the transaction (or the root be created by it): an after-state
+    // marker stamped onto a pre-existing root is corruption, not authority.
+    // Roots deleted by the transaction (e.g. a full AMM withdrawal) resolve
+    // through the visited entries.
+    auto const isPseudoHolder = [&](AccountID const& id) {
+        if (auto const it = accountRoots_.find(id); it != accountRoots_.end())
+        {
+            auto const& [before, after] = it->second;
+            return isPseudoAccount(before ? before : after);
+        }
+        return isPseudoAccount(view.read(keylet::account(id)));
+    };
+
+    bool ok = true;
+    auto const check =
+        [&](std::vector<BalanceChange> const& side, bool issuerKnown, char const* verb) {
+            for (auto const& change : side)
+            {
+                // With the issuer's account root missing, authorization is
+                // unknowable and no exemption applies.
+                if (issuerKnown && (change.authorized || isPseudoHolder(change.holder)))
+                    continue;
+
+                JLOG(j.fatal()) << "Invariant failed: an unauthorized trust line " << verb
+                                << " funds" << (issuerKnown ? "" : " (missing issuer account root)")
+                                << " for " << tx.getTransactionID();
+                if (enforce)
+                    ok = false;
+            }
+        };
+
+    for (auto const& [issue, group] : changes_)
+    {
+        auto const issuerSle = view.read(keylet::account(issue.account));
+        if (issuerSle && !issuerSle->isFlag(lsfRequireAuth))
+            continue;
+
+        // The issuer's account root can legitimately be missing in exactly
+        // one shape: the issuer was itself deleted together with its trust
+        // lines -- a fully withdrawn AMM pseudo-account burns its LP token
+        // lines -- In this case, there are no group.receivers category.
+        bool const issuerKnown = static_cast<bool>(issuerSle);
+
+        check(group.receivers, issuerKnown, "gained");
+
+        // A sender's funds either reached another line of the same issue (a
+        // receiver) or returned to the issuer. Returning funds -- a holder
+        // redemption or a Clawback -- is the one movement an unauthorized
+        // line is allowed; see the class comment for why the absence of
+        // receivers identifies it.
+        bool const returnedToIssuer = group.receivers.empty();
+        if (!returnedToIssuer)
+            check(group.senders, issuerKnown, "spent");
+    }
+
+    return ok;
 }
 
 //------------------------------------------------------------------------------

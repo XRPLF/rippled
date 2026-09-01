@@ -2,6 +2,8 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -19,6 +21,7 @@
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <cstdint>
+#include <map>
 #include <set>
 #include <string>
 #include <tuple>
@@ -270,6 +273,62 @@ public:
 };
 
 /**
+ * @brief Invariant: an unauthorized trust line may only return funds to the
+ * issuer.
+ *
+ * We group each transaction's
+ * trust line balance changes by currency and issuer and ensure that an
+ * unauthorized line's balance never increases, and only decreases when the
+ * group has no receivers -- when the funds drain back to the issuer, which
+ * is the shape of both a holder redemption and a Clawback. Unauthorized
+ * balances exist in ledger history (see XRPLF/rippled issue #5450) and those
+ * two flows are their only permitted remediation; anything else, such as
+ * spending the balance to a third party, is an authorization bypass.
+ *
+ * The absence of receivers identifies a return to the issuer because the
+ * issuer holds no line to itself -- returned funds are simply extinguished --
+ * while every other way of holding an IOU shows up as a trust line change in
+ * the same transaction: escrow locks by routing funds to the issuer, checks
+ * and offers move nothing until the delivery transaction, and AMMs and
+ * vaults hold through pseudo-account lines. A future primitive custodying
+ * IOUs off trust lines without transiting the issuer would need its own
+ * treatment here.
+ *
+ * Pseudo-accounts hold assets on behalf of the object that owns them and are
+ * implicitly authorized, mirroring requireAuth.
+ *
+ */
+class ValidTrustLineAuth
+{
+    struct BalanceChange
+    {
+        AccountID holder;
+        bool authorized;
+    };
+
+    struct IssueChanges
+    {
+        std::vector<BalanceChange> senders;
+        std::vector<BalanceChange> receivers;
+    };
+
+    std::map<Issue, IssueChanges> changes_;
+
+    // Deleted accounts vanish from the post-transaction view, so finalize
+    // resolves pseudo-account holders against the visited account roots
+    // first (cf. TransfersNotFrozen::possibleIssuers_). Pair is
+    // <before, after>; before is null for roots created by the transaction.
+    std::map<AccountID, std::pair<SLE::const_pointer, SLE::const_pointer>> accountRoots_;
+
+public:
+    void
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+};
+
+/**
  * @brief Invariant: offers should be for non-negative amounts and must not
  *                   be XRP to XRP.
  *
@@ -441,6 +500,7 @@ using InvariantChecks = std::tuple<
     NoXRPTrustLines,
     NoDeepFreezeTrustLinesWithoutFreeze,
     TransfersNotFrozen,
+    ValidTrustLineAuth,
     NoBadOffers,
     NoZeroEscrow,
     ValidNewAccountRoot,
