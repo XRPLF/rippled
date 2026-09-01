@@ -22,6 +22,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <algorithm>
 #include <chrono>
@@ -76,7 +77,7 @@ AMMBid::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
         auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
-        if (authAccounts.size() > kAuctionSlotMaxAuthAccounts)
+        if (!checkSize(authAccounts, kAuctionSlotMaxAuthAccounts))
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
             return temMALFORMED;

@@ -20,6 +20,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <chrono>
 #include <cstdint>
@@ -62,14 +63,14 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     }
 
     auto const uri = tx[~sfURI];
-    if (uri && (uri->empty() || (uri->size() > kMaxCredentialUriLength)))
+    if (uri && !checkSizeNonEmpty(*uri, kMaxCredentialUriLength))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
         return temMALFORMED;
     }
 
     auto const credType = tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
+    if (!checkSizeNonEmpty(credType, kMaxCredentialTypeLength))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
