@@ -79,7 +79,7 @@ DerivedData
 /.agents
 /.augment
 /.claude/settings.local.json
-AGENTS.local.md
+AGENTS.override.md
 CLAUDE.local.md
 GEMINI.local.md
 
