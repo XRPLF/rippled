@@ -40,6 +40,12 @@
 
 namespace xrpl {
 
+// StartDate is strictly after SubscriptionDate. A min-gap vault must still
+// fit a minimum-interval loan plus kLoanRedemptionBuffer. The interval and
+// buffer constants are independent; only their sum (plus the +1 for a
+// strictly-later StartDate) is required to fit in kMinInvestmentPeriod.
+static_assert(kMinInvestmentPeriod >= LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer + 1);
+
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -327,16 +333,22 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         {
             auto const finalPayment =
                 std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total);
-            if (finalPayment >= vault->at(sfRedemptionDate))
+            if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
             {
-                JLOG(ctx.j.warn()) << "Final loan payment date is on or after "
-                                      "the vault's redemption date.";
+                JLOG(ctx.j.warn())
+                    << "Final loan payment date is fewer than " << kLoanRedemptionBuffer
+                    << " seconds before the vault's redemption date.";
                 return tecNO_PERMISSION;
             }
         }
     }
 
-    if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
+    // Accrual origination credits interestDue into AssetsTotal, so a vault
+    // already at AssetsMaximum cannot take another loan. Cash-basis origination
+    // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
+    // this leftover accrual gate must not apply there.
+    if (getVaultVersion(vault) != VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
+        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
         JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
         return tecLIMIT_EXCEEDED;
@@ -467,9 +479,11 @@ LoanSet::doApply()
         properties.loanState.managementFeeDue);
 
     XRPL_ASSERT_PARTS(
-        *vaultSle->at(sfAssetsMaximum) == 0 || *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
+        *vaultSle->at(sfAssetsMaximum) == 0 ||
+            getVaultVersion(vaultSle) == VaultVersion::CashBasis ||
+            *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
-        "Vault is below maximum limit");
+        "accrual vault is below maximum limit");
 
     if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
     {
