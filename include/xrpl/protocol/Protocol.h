@@ -529,6 +529,11 @@ constexpr std::size_t kEcConvertBackProofLength =
 constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
 
 /**
+ * Length of compact equality proof.
+ */
+constexpr std::size_t kEcEqualityProofLength = 128;
+
+/**
  * Extra base fee multiplier charged to confidential MPT transactions.
  */
 constexpr std::uint32_t kConfidentialFeeMultiplier = 9;

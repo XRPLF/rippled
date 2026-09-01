@@ -62,14 +62,6 @@ ConfidentialMPTMirrorUpdate::preflight(PreflightContext const& ctx)
     if (!hasIssuerAmount && !hasAuditorAmount)
         return temMALFORMED;
 
-    // The previous issuer key is required exactly for an issuer-mode
-    // re-encryption of the issuer mirror，either issuer key rotation or
-    // issuer/auditor key simultaneous rotation.
-    bool const hasPreviousIssuerKey = ctx.tx.isFieldPresent(sfPreviousIssuerEncryptionKey);
-    bool const needsPreviousIssuerKey = hasHolder && hasIssuerAmount;
-    if (hasPreviousIssuerKey != needsPreviousIssuerKey)
-        return temMALFORMED;
-
     // Check the length of the encrypted amounts. Length check is cheaper than format check so put
     // it before the format check.
     if (hasIssuerAmount && ctx.tx[sfIssuerEncryptedAmount].length() != kEcGamalEncryptedTotalLength)
@@ -85,10 +77,6 @@ ConfidentialMPTMirrorUpdate::preflight(PreflightContext const& ctx)
 
     if (hasAuditorAmount && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
-
-    // If previous issuer key is present, it must be a valid EC point.
-    if (hasPreviousIssuerKey && !isValidCompressedECPoint(ctx.tx[sfPreviousIssuerEncryptionKey]))
-        return temMALFORMED;
 
     // todo: check zkproof
 

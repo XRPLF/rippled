@@ -33,7 +33,6 @@ TEST(TransactionsConfidentialMPTMirrorUpdateTests, BuilderSettersRoundTrip)
     auto const holderValue = canonical_ACCOUNT();
     auto const issuerEncryptedAmountValue = canonical_VL();
     auto const auditorEncryptedAmountValue = canonical_VL();
-    auto const previousIssuerEncryptionKeyValue = canonical_VL();
     auto const zKProofValue = canonical_VL();
 
     ConfidentialMPTMirrorUpdateBuilder builder{
@@ -48,7 +47,6 @@ TEST(TransactionsConfidentialMPTMirrorUpdateTests, BuilderSettersRoundTrip)
     builder.setHolder(holderValue);
     builder.setIssuerEncryptedAmount(issuerEncryptedAmountValue);
     builder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
-    builder.setPreviousIssuerEncryptionKey(previousIssuerEncryptionKeyValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -102,14 +100,6 @@ TEST(TransactionsConfidentialMPTMirrorUpdateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasAuditorEncryptedAmount());
     }
 
-    {
-        auto const& expected = previousIssuerEncryptionKeyValue;
-        auto const actualOpt = tx.getPreviousIssuerEncryptionKey();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPreviousIssuerEncryptionKey should be present";
-        expectEqualField(expected, *actualOpt, "sfPreviousIssuerEncryptionKey");
-        EXPECT_TRUE(tx.hasPreviousIssuerEncryptionKey());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -130,7 +120,6 @@ TEST(TransactionsConfidentialMPTMirrorUpdateTests, BuilderFromStTxRoundTrip)
     auto const holderValue = canonical_ACCOUNT();
     auto const issuerEncryptedAmountValue = canonical_VL();
     auto const auditorEncryptedAmountValue = canonical_VL();
-    auto const previousIssuerEncryptionKeyValue = canonical_VL();
     auto const zKProofValue = canonical_VL();
 
     // Build an initial transaction
@@ -145,7 +134,6 @@ TEST(TransactionsConfidentialMPTMirrorUpdateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setHolder(holderValue);
     initialBuilder.setIssuerEncryptedAmount(issuerEncryptedAmountValue);
     initialBuilder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
-    initialBuilder.setPreviousIssuerEncryptionKey(previousIssuerEncryptionKeyValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -195,13 +183,6 @@ TEST(TransactionsConfidentialMPTMirrorUpdateTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getAuditorEncryptedAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuditorEncryptedAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptedAmount");
-    }
-
-    {
-        auto const& expected = previousIssuerEncryptionKeyValue;
-        auto const actualOpt = rebuiltTx.getPreviousIssuerEncryptionKey();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPreviousIssuerEncryptionKey should be present";
-        expectEqualField(expected, *actualOpt, "sfPreviousIssuerEncryptionKey");
     }
 
 }
@@ -269,8 +250,6 @@ TEST(TransactionsConfidentialMPTMirrorUpdateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getIssuerEncryptedAmount().has_value());
     EXPECT_FALSE(tx.hasAuditorEncryptedAmount());
     EXPECT_FALSE(tx.getAuditorEncryptedAmount().has_value());
-    EXPECT_FALSE(tx.hasPreviousIssuerEncryptionKey());
-    EXPECT_FALSE(tx.getPreviousIssuerEncryptionKey().has_value());
 }
 
 }

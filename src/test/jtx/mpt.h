@@ -371,7 +371,6 @@ struct MPTMirrorUpdate
     std::optional<MPTID> id = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmount = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmount = std::nullopt;
-    std::optional<Buffer> previousIssuerKey = std::nullopt;
     std::optional<Buffer> zkProof = std::nullopt;
     std::optional<XRPAmount> fee = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
