@@ -184,13 +184,13 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Payment destination account not specified.";
         return temDST_NEEDED;
     }
-    if (hasMax && isNonPositiveAmount(maxSourceAmount))
+    if (hasMax && !isPositiveAmount(maxSourceAmount))
     {
         JLOG(j.trace()) << "Malformed transaction: bad max amount: "
                         << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (isNonPositiveAmount(dstAmount))
+    if (!isPositiveAmount(dstAmount))
     {
         JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;

@@ -41,18 +41,18 @@ isZeroId(T const& id)
     return id == beast::kZero;
 }
 
-// Checks whether an amount is not a strictly positive XRP amount.
+// Checks whether an amount is a strictly positive XRP amount.
 inline bool
-isNonPositiveXRPAmount(STAmount const& amount)
+isPositiveXRPAmount(STAmount const& amount)
 {
-    return !isXRP(amount) || amount <= beast::kZero;
+    return isXRP(amount) && amount > beast::kZero;
 }
 
-// Checks whether an amount (of any asset type) is not strictly positive.
+// Checks whether an amount (of any asset type) is strictly positive.
 inline bool
-isNonPositiveAmount(STAmount const& amount)
+isPositiveAmount(STAmount const& amount)
 {
-    return amount <= beast::kZero;
+    return amount > beast::kZero;
 }
 
 // Checks whether a currency code is the reserved "bad"/XRP currency code,

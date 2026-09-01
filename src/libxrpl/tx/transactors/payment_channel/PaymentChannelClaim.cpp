@@ -47,11 +47,11 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && isNonPositiveXRPAmount(*bal))
+    if (bal && !isPositiveXRPAmount(*bal))
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && isNonPositiveXRPAmount(*amt))
+    if (amt && !isPositiveXRPAmount(*amt))
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)

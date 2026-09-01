@@ -49,7 +49,7 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (isNonPositiveAmount(ctx.tx[sfAmount]))
+    if (!isPositiveAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])
