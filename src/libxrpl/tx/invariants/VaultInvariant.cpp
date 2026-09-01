@@ -1070,9 +1070,9 @@ ValidVault::finalize(
                         // may safely round down to zero.
                         //
                         // XRP and MPT remain strict for rounding artifacts. A zero destination
-                        // delta is still allowed when zeroDeltaIsLegitimate, as a backstop if
-                        // some other apply path records a one-sided zero change (pre-amendment
-                        // doWithdraw still inserts an empty self-destination holding).
+                        // delta is still allowed when zeroDeltaIsLegitimate, to tolerate a
+                        // one-sided rounded-zero change during a legitimate zero-value
+                        // withdrawal.
                         bool const tolerateZeroDelta =
                             view.rules().enabled(fixCleanup3_2_0) && !vaultAsset.integral();
                         auto const invalidBalanceChange =
