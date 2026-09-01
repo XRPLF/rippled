@@ -1855,11 +1855,15 @@ private:
                 outstandingBefore - sharesToRedeem);
         };
 
-        runScenario(all_, false, false, tesSUCCESS);
-        runScenario(all_, false, true, tesSUCCESS);
-        runScenario(all_, true, false, tesSUCCESS);
-        runScenario(all_, true, true, tesSUCCESS);
-        runScenario(all_ - fixCleanup3_4_0, true, true, tecINVARIANT_FAILED);
+        runScenario(all_, false /* removeAssetToken */, false /* withdrawAllShares */, tesSUCCESS);
+        runScenario(all_, false /* removeAssetToken */, true /* withdrawAllShares */, tesSUCCESS);
+        runScenario(all_, true /* removeAssetToken */, false /* withdrawAllShares */, tesSUCCESS);
+        runScenario(all_, true /* removeAssetToken */, true /* withdrawAllShares */, tesSUCCESS);
+        runScenario(
+            all_ - fixCleanup3_4_0,
+            true /* removeAssetToken */,
+            true /* withdrawAllShares */,
+            tecINVARIANT_FAILED);
     }
 
 public:
