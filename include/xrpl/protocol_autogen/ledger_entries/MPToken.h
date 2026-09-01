@@ -269,6 +269,54 @@ public:
     }
 
     /**
+     * @brief Get sfIssuerKeyMirrorEpoch (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getIssuerKeyMirrorEpoch() const
+    {
+        if (hasIssuerKeyMirrorEpoch())
+            return this->sle_->at(sfIssuerKeyMirrorEpoch);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfIssuerKeyMirrorEpoch is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerKeyMirrorEpoch() const
+    {
+        return this->sle_->isFieldPresent(sfIssuerKeyMirrorEpoch);
+    }
+
+    /**
+     * @brief Get sfAuditorKeyMirrorEpoch (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAuditorKeyMirrorEpoch() const
+    {
+        if (hasAuditorKeyMirrorEpoch())
+            return this->sle_->at(sfAuditorKeyMirrorEpoch);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorKeyMirrorEpoch is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorKeyMirrorEpoch() const
+    {
+        return this->sle_->isFieldPresent(sfAuditorKeyMirrorEpoch);
+    }
+
+    /**
      * @brief Get sfHolderEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -468,6 +516,28 @@ public:
     setAuditorEncryptedBalance(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfAuditorEncryptedBalance] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfIssuerKeyMirrorEpoch (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setIssuerKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfIssuerKeyMirrorEpoch] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorKeyMirrorEpoch (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setAuditorKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAuditorKeyMirrorEpoch] = value;
         return *this;
     }
 
