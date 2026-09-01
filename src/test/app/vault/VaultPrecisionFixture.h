@@ -13,7 +13,9 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -33,14 +35,9 @@ namespace xrpl::test {
 
 // Shared fixture for VaultInvariantPrecision_test and
 // VaultTransactorPrecision_test.
-//
-// Layout:
-//   - A-1 (impairAndPaySibling=false): 1000 USD vault + one ordinary loan.
-//     assetsTotal ~= 1000.353..., assetsAvailable == 993, lossUnrealized == 0.
-//   - A-3 (impairAndPaySibling=true):  add a second loan of principal 11,
-//     impair the first loan, and pay off the second in full.  This drives
-//     the vault to the lossUnrealized == (assetsTotal - assetsAvailable)
-//     boundary where the loss invariant used to spuriously fire.
+// impairAndPaySibling=false: 1000 USD vault and one ordinary loan.
+// impairAndPaySibling=true: a second loan is impaired then a sibling is paid
+// off, leaving lossUnrealized at assetsTotal - assetsAvailable.
 class VaultPrecisionFixture : public LoanTestBase
 {
 protected:
@@ -82,11 +79,16 @@ protected:
     {
         Asset asset;
         MPTIssue share;
+        // The {} initializers are not redundant: Number's default constructor is explicit, so
+        // fields omitted from the designated initializer in read() below would otherwise fail
+        // copy-list-initialization.
+        // NOLINTBEGIN(readability-redundant-member-init)
         Number assetsTotal{};      // sfAssetsTotal
         Number assetsAvailable{};  // sfAssetsAvailable
         Number lossUnrealized{};   // sfLossUnrealized
         Number pseudo{};           // vault pseudo-account balance in the asset
         Number sharesTotal{};      // sfOutstandingAmount on the share MPT
+        // NOLINTEND(readability-redundant-member-init)
     };
 
     static Numbers
@@ -224,15 +226,27 @@ protected:
         // Loan 2: sibling loan of principal 11.
         f.loan2Keylet = setLoan(Number{11});
 
-        // Impair loan 1 → drives sfLossUnrealized to loan 1's value.
-        env(jtx::loan::manage(f.lender, f.loan1Keylet.key, tfLoanImpair), bigFee);
-        env.close();
-
         // Pay off loan 2 in full so its total value flows into the vault
         // and pushes T-A upward, meeting the residual loss.  Generous
         // upper bound; the transactor takes only what is due.
+        //
+        // This happens before the impair below because impair under
+        // fixCleanup3_4_0 requires loan 1 to already be late, and the two
+        // loans are originated close enough together that advancing past
+        // loan 1's due date also makes loan 2 late — which would reject
+        // this full payment with tecEXPIRED.
         auto const payoff = asset(Number{50}).value();
         env(pay(f.borrower, f.loan2Keylet.key, payoff, tfLoanFullPayment), bigFee);
+        env.close();
+
+        // Impair loan 1 → drives sfLossUnrealized to loan 1's value.
+        if (env.current()->rules().enabled(fixCleanup3_4_0))
+        {
+            std::uint32_t const dueDate = env.le(f.loan1Keylet)->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+        }
+
+        env(jtx::loan::manage(f.lender, f.loan1Keylet.key, tfLoanImpair), bigFee);
         env.close();
 
         return f;

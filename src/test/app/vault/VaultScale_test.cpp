@@ -22,6 +22,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -71,7 +72,12 @@ private:
 
         auto testCase = [&, this](
                             std::uint8_t scale, std::function<void(Env & env, Data data)> test) {
-            Env env{*this, testableAmendments()};
+            // These scale-focused tests build an open-ended vault and
+            // exercise deposit/withdraw/clawback (with one test also
+            // attaching a loan broker). featureLendingProtocolV1_1 adds a
+            // closed-ended vault gate on LoanBrokerSet::preclaim and is
+            // orthogonal to what this suite asserts, so strip it here.
+            Env env{*this, testableAmendments() - featureLendingProtocolV1_1};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};
@@ -891,6 +897,117 @@ private:
                 // 600 of 1000 shares destroyed, 400 remain
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(400));
             }
+        });
+
+        // peek() writes the open ledger only; do not close() before le().
+        auto seedLargeTotal = [](Env& env,
+                                 Data& d,
+                                 Number const& total,
+                                 Number const& available,
+                                 std::uint64_t outstanding) {
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+            d.peek([&](SLE& vault, SLE& shares) -> bool {
+                vault[sfAssetsTotal] = total;
+                vault[sfAssetsAvailable] = available;
+                shares[sfOutstandingAmount] = outstanding;
+                return true;
+            });
+        };
+
+        auto expectVault = [this](
+                               Env& env,
+                               Data const& d,
+                               Number const& total,
+                               Number const& available,
+                               STAmount const& shareBalance) {
+            auto const sle = env.le(d.keylet);
+            BEAST_EXPECT(sle != nullptr);
+            BEAST_EXPECT(sle->at(sfAssetsTotal) == total);
+            BEAST_EXPECT(sle->at(sfAssetsAvailable) == available);
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == shareBalance);
+        };
+
+        // T-6 is exact after the decade; recover 6.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback uses posterior scale across decade boundary");
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{6};
+            seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
+
+            auto tx =
+                d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tesSUCCESS));
+            expectVault(env, d, midGridTotal - available, Number(0), d.share(94));
+        });
+
+        // T stays on the 10-asset grid; 6 is unrepresentable.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback rejects amount below posterior scale");
+
+            Number const midGridTotal{12345678901234567ll};
+            Number const available{6};
+            seedLargeTotal(env, d, midGridTotal, available, 12345678901234567ull);
+
+            auto tx =
+                d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tecPRECISION_LOSS));
+            expectVault(env, d, midGridTotal, available, d.share(100));
+        });
+
+        // A recovery larger than the anterior ULP also lands exactly on the finer posterior grid.
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale clawback preserves exact posterior amount");
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{15};
+            seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
+
+            auto tx =
+                d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
+            env(tx, Ter(tesSUCCESS));
+            expectVault(env, d, midGridTotal - available, Number(0), d.share(85));
+        });
+
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale deposit rejects amount below posterior scale");
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{100};
+            seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
+
+            auto const assetsBefore = env.balance(d.depositor, d.assets);
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(6))});
+            env(tx, Ter(tecPRECISION_LOSS));
+            expectVault(env, d, midGridTotal, available, d.share(100));
+            BEAST_EXPECT(env.balance(d.depositor, d.assets) == assetsBefore);
+        });
+
+        testCase(0, [&, this](Env& env, Data d) {
+            testcase("Scale withdraw uses posterior scale across decade boundary");
+
+            Number const midGridTotal{10000000000000005ll};
+            Number const available{100};
+            seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
+
+            auto const assetsBefore = env.balance(d.depositor, d.assets);
+            auto tx = d.vault.withdraw(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.share, Number(15))});
+            env(tx, Ter(tesSUCCESS));
+            expectVault(env, d, midGridTotal - Number(15), Number(85), d.share(85));
+            BEAST_EXPECT(
+                env.balance(d.depositor, d.assets) ==
+                STAmount(d.asset, assetsBefore.number() + Number(15)));
         });
     }
 
