@@ -26,11 +26,13 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 This section contains changes targeting a future version.
 
-### Additions
+## XRP Ledger server version 3.4.0
+
+### Additions in 3.4.0
 
 - `ledger`: `nftoken_id`, `nftoken_ids`, and `offer_id` are now included in transaction metadata when transactions are expanded (`expand`, or admin-only `full`), matching the `tx`, `account_tx`, and `subscribe` (`transactions` stream) responses. ([#5706](https://github.com/XRPLF/rippled/pull/5706))
 
-### Bugfixes
+### Bugfixes in 3.4.0
 
 - `get_aggregate_price`: Duplicate entries in the `oracles` request array are now ignored. [#6586](https://github.com/XRPLF/rippled/pull/6586)
 - `vault_info`: Errors now identify what the request got wrong instead of reporting every failure as the unregistered token `malformedRequest`, and the `error`, `error_code` and `error_message` fields now agree with each other. An invalid `vault_id` or `seq` returns `invalidParams`, an invalid `owner` returns `actMalformed`, and a request that mixes `vault_id` with `owner`/`seq` or supplies neither returns `invalidParams` with a message naming the accepted combinations. [#8015](https://github.com/XRPLF/rippled/pull/8015)
