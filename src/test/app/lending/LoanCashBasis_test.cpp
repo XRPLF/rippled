@@ -45,8 +45,9 @@ class LoanCashBasis_test : public LoanTestBase
 {
 private:
     // 1. LoanSet origination: Vault.AssetsTotal/LoanBroker.DebtTotal deltas,
-    // and the AssetsMaximum/DebtMaximum guards (which always check against
-    // principal + interestDue, regardless of the amendment).
+    // and the AssetsMaximum/DebtMaximum guards. Accrual AssetsMaximum still
+    // requires headroom for interestDue; cash-basis AssetsMaximum does not,
+    // because origination does not credit interest into AssetsTotal.
     void
     testCashBasisLoanSetOrigination()
     {
@@ -518,11 +519,11 @@ private:
 
         auto run =
             [&](FeatureBitset features, TER expectedOverCapSet, bool native, bool vaultPrivate) {
-                bool const fixEnabled = features[fixCleanup3_4_0];
+                bool const fix340Enabled = features[fixCleanup3_4_0];
                 testcase(
                     std::string("cash-basis: VaultSet while AssetsTotal exceeds AssetsMaximum") +
                     (native ? " XRP" : " IOU") + (vaultPrivate ? " private" : "") +
-                    (fixEnabled ? " (fixCleanup3_4_0)" : " (pre-fix)"));
+                    (fix340Enabled ? " (fixCleanup3_4_0)" : " (pre-fix)"));
 
                 Account const issuer{"issuer"};
                 Account const lender{"lender"};
@@ -622,7 +623,7 @@ private:
                     env.close();
                 }
 
-                if (!fixEnabled)
+                if (!fix340Enabled)
                     return;
 
                 {
