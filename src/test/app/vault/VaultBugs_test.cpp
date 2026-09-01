@@ -1867,6 +1867,132 @@ private:
             tecINVARIANT_FAILED);
     }
 
+    // Same zero-payout withdrawal as testBugMptZeroWithdrawMissingHolding, but
+    // the vault asset is XRP. addEmptyHolding is a no-op for native assets, so
+    // skipping it does not hide the sender AccountRoot: sequence processing
+    // still touches it. A sponsored fee leaves that root economically
+    // unchanged (present-with-zero). Post-fixCleanup3_4_0 that one-sided zero
+    // destination delta must not fail ValidVault.
+    void
+    testBugXrpZeroWithdrawSponsoredFee()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            testcase(
+                std::string{"bug: XRP vault zero-value withdraw with sponsored fee"} +
+                (features[fixCleanup3_4_0] ? " (post-fixCleanup3_4_0)" : " (pre-fixCleanup3_4_0)"));
+
+            Env env(*this, features);
+
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const borrower{"borrower"};
+            Account const sponsor{"sponsor"};
+
+            env.fund(XRP(100'000), owner, alice, bob, borrower, sponsor);
+            env.close();
+
+            PrettyAsset const asset{xrpIssue()};
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = 60s});
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(2)}));
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = asset(8)}));
+            env.close();
+
+            vault.closePastSubscription(subscriptionDate);
+
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            auto const loanKeylet = keylet::loan(
+                brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+            env(set(borrower, brokerKeylet.key, asset(10).value()),
+                kInterestRate(percentageToTenthBips(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return;
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+
+            env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+
+            auto const vaultImpaired = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultImpaired))
+                return;
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsAvailable) == asset(0).value());
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsTotal) == vaultImpaired->at(sfLossUnrealized));
+            Number const totalBefore = vaultImpaired->at(sfAssetsTotal);
+            Number const lossBefore = vaultImpaired->at(sfLossUnrealized);
+
+            MPTID const shareId = vaultImpaired->at(sfShareMPTID);
+            auto const tokenAlice = env.le(keylet::mptoken(shareId, alice.id()));
+            if (!BEAST_EXPECT(tokenAlice))
+                return;
+            std::uint64_t const sharesBefore = tokenAlice->getFieldU64(sfMPTAmount);
+            BEAST_EXPECT(sharesBefore == 2);
+            STAmount const redeemShares{MPTIssue{shareId}, Number(1)};
+
+            std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
+            env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+
+            auto const aliceBalanceBefore = env.balance(alice);
+            auto const sponsorBalanceBefore = env.balance(sponsor);
+            auto const fee = env.current()->fees().base;
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
+                Fee(fee),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(expected));
+            env.close();
+
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
+            BEAST_EXPECT(env.balance(alice) == aliceBalanceBefore);
+
+            if (expected != tesSUCCESS)
+                return;
+
+            auto const shareAfter = env.le(keylet::mptoken(shareId, alice.id()));
+            if (!BEAST_EXPECT(shareAfter))
+                return;
+            BEAST_EXPECT(shareAfter->getFieldU64(sfMPTAmount) == sharesBefore - 1);
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == asset(0).value());
+        };
+
+        runScenario(all_, tesSUCCESS);
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+    }
+
     // Bug 1: a sponsored XRP VaultWithdraw to a distinct destination is
     // rejected because the vault invariant treats the holder's touched
     // but economically unchanged AccountRoot as a second payout
@@ -2223,6 +2349,7 @@ public:
         testBugWithdrawRoundTripOvershoot();
         testBugClawbackAfterLoanImpair();
         testBugMptZeroWithdrawMissingHolding();
+        testBugXrpZeroWithdrawSponsoredFee();
         testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
         testBugSponsorAsDestinationFeeMisappliedToPayout();
         testPrefundedFeeWithdraw();
