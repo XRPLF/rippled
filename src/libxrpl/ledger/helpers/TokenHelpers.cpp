@@ -389,7 +389,7 @@ accountHolds(
     // IOU: Return balance on trust line modulo freeze
     SLE::const_pointer sle = getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
 
-    // An unauthorized line's balance is unspendable except back to the
+    // An unauthorized line's balance cannot be spent except back to the
     // issuer, so funding-style queries treat it as zero. Gated on
     // fixCleanup3_4_0, which also enforces the ValidTrustLineAuth invariant
     // and adds the pseudo-account carve-out inside requireAuth, so all
