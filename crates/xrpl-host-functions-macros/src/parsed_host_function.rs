@@ -1,11 +1,13 @@
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Attribute, Ident, LitInt, LitStr, PathArguments, ReceiverKind, ReturnType, Safety, Signature,
-    TraitItemFn, Type, TypePath, parse::Parse,
+    Attribute, FnArg, GenericArgument, Ident, LitInt, LitStr, Pat, PatIdent, PatType,
+    PathArguments, ReceiverKind, ReturnType, Safety, Signature, TraitItemFn, Type, TypePath,
+    parse::Parse,
 };
 
 use crate::errors;
+use crate::lowering::{ParamType, ResultType, WasmValType};
 
 /// `#[gas = N]`: the base gas charged before the call runs.
 const GAS: &str = "gas";
@@ -27,10 +29,18 @@ pub(crate) struct ParsedHostFunction {
     /// The enum variant this declaration becomes, spanned at the function name.
     pub(crate) variant: Ident,
     pub(crate) signature: Signature,
+    /// The declared parameters, in order, with the receiver dropped: `&self` is
+    /// not part of the wasm ABI.
+    ///
+    /// Private, as is `result`: the wasm signature leaves this module only as
+    /// the tokens `spec_arm` emits.
+    params: Vec<ParamType>,
+    /// What the declaration's `HostResult<T>` answers with.
+    result: ResultType,
 }
 
 impl ParsedHostFunction {
-    /// `#[doc …] fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;`
+    /// `#[doc …] fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;`
     pub(crate) fn trait_method(&self) -> TokenStream {
         let docs = &self.docs;
         // The declaration is already a trait method: emitted verbatim, so what
@@ -53,17 +63,40 @@ impl ParsedHostFunction {
         }
     }
 
-    /// `Self::GetLedgerSqn => HostFnSpec { name: "ldgr_index", gas: 60u64 }`
+    /// `Self::GetLedgerSqn => HostFnSpec { name: "ldgr_index", gas: 60u64,
+    /// wasm_params: &[WasmValType::I32, WasmValType::I32], wasm_result:
+    /// Some(WasmValType::I32) }`
     pub(crate) fn spec_arm(&self) -> TokenStream {
         let Self {
             gas,
             wasm_name,
             variant,
+            result,
             ..
         } = self;
+        let wasm_params = self.wasm_params();
+        let wasm_result = result.wasm_result_tokens();
+
         quote! {
-            Self::#variant => HostFnSpec { name: #wasm_name, gas: #gas }
+            Self::#variant => HostFnSpec {
+                name: #wasm_name,
+                gas: #gas,
+                wasm_params: &[#(#wasm_params),*],
+                wasm_result: #wasm_result,
+            }
         }
+    }
+
+    /// The wasm parameters this declaration lowers to, in declaration order,
+    /// which is wire order.
+    ///
+    /// Flat: the pair a region lowers to is two parameters here, and nothing in
+    /// the sequence says which two came from one declared parameter.
+    fn wasm_params(&self) -> impl Iterator<Item = WasmValType> {
+        self.params
+            .iter()
+            .flat_map(|param| param.as_wasm_params())
+            .copied()
     }
 
     pub(crate) fn parse(function: TraitItemFn) -> syn::Result<Self> {
@@ -126,27 +159,31 @@ impl ParsedHostFunction {
             ));
         }
         errors.extend(check_receiver(&function.sig).err());
-        errors.extend(check_return_type(&function.sig).err());
         if let Some(name) = &wasm_name {
             errors.extend(check_wasm_name(name).err());
         }
-        reject_modifiers(&function.sig, &mut errors);
+        errors.extend(reject_modifiers(&function.sig).err());
+
+        // The wasm signature, derived from the declared types. Each half is
+        // reported against its own span, and the two are held to each other
+        // only once both are known.
+        let params = errors::record(parse_params(&function.sig), &mut errors);
+        let result = errors::record(parse_result(&function.sig), &mut errors);
+        if let (Some(params), Some(result)) = (&params, result) {
+            errors.extend(check_result_matches_regions(&function.sig, params, result).err());
+        }
 
         // A name whose PascalCase form is not a legal variant is reported here
         // rather than emitted, which would either panic or fail downstream.
-        let variant = match variant_ident(&function.sig.ident) {
-            Ok(variant) => Some(variant),
-            Err(error) => {
-                errors.push(error);
-                None
-            }
-        };
+        let variant = errors::record(variant_ident(&function.sig.ident), &mut errors);
 
         if let Some(error) = errors::combine(errors) {
             return Err(error);
         }
 
-        let (Some(gas), Some(wasm_name), Some(variant)) = (gas, wasm_name, variant) else {
+        let (Some(gas), Some(wasm_name), Some(variant), Some(params), Some(result)) =
+            (gas, wasm_name, variant, params, result)
+        else {
             unreachable!("every absent field is reported above");
         };
 
@@ -156,6 +193,8 @@ impl ParsedHostFunction {
             docs,
             variant,
             signature: function.sig,
+            params,
+            result,
         })
     }
 }
@@ -189,6 +228,82 @@ fn check_receiver(signature: &Signature) -> syn::Result<()> {
     Ok(())
 }
 
+/// The declared parameters, lowered, with the receiver skipped.
+///
+/// Every parameter is reported against its own span, so a declaration surfaces
+/// all of its parameter mistakes in one build rather than one per rebuild.
+fn parse_params(signature: &Signature) -> syn::Result<Vec<ParamType>> {
+    let mut params = Vec::new();
+    let mut errors = Vec::new();
+
+    for input in &signature.inputs {
+        // The receiver, which Rust's grammar puts first and nowhere else, and
+        // which `check_receiver` holds to `&self`.
+        let FnArg::Typed(PatType { pat, ty, .. }) = input else {
+            continue;
+        };
+        errors.extend(check_parameter_name(pat).err());
+        match ParamType::parse(ty) {
+            Ok(param) => params.push(param),
+            Err(error) => errors.push(error),
+        }
+    }
+
+    errors::into_result(params, errors)
+}
+
+/// A parameter is named, and by a plain identifier.
+///
+/// The name is how the declaration states what the parameter is for — the wasm
+/// signature it lowers to is all `i32`s and says nothing — so `_`, `mut bytes`
+/// and destructuring patterns are refused rather than carried into the trait.
+fn check_parameter_name(pat: &Pat) -> syn::Result<()> {
+    if matches!(
+        pat,
+        Pat::Ident(PatIdent {
+            by_ref: None,
+            mutability: None,
+            subpat: None,
+            ..
+        })
+    ) {
+        return Ok(());
+    }
+
+    Err(syn::Error::new_spanned(
+        pat,
+        "a host function's parameter must be a plain name, as in `seq: u32`",
+    ))
+}
+
+/// `HostResult<usize>` and an output region are one fact stated twice.
+///
+/// The length answered is the length of what was written *there*, so either
+/// alone is a declaration nothing can serve: a length with nowhere to write, or
+/// a region whose written length the guest is never told. The whole block holds
+/// to this, and how a value reaches the guest is chosen by it.
+fn check_result_matches_regions(
+    signature: &Signature,
+    params: &[ParamType],
+    result: ResultType,
+) -> syn::Result<()> {
+    let writes_a_region = params.iter().any(|param| param.is_out_region());
+
+    match (result.is_buffer_length(), writes_a_region) {
+        (true, false) => Err(syn::Error::new_spanned(
+            &signature.ident,
+            "a host function returning `HostResult<usize>` must take an output region \
+             (`&mut [u8]`): the length it answers is the length of what it wrote there",
+        )),
+        (false, true) => Err(syn::Error::new_spanned(
+            &signature.ident,
+            "a host function taking an output region (`&mut [u8]`) must return \
+             `HostResult<usize>`: the length it wrote is what the guest is answered",
+        )),
+        (true, true) | (false, false) => Ok(()),
+    }
+}
+
 /// Every declaration returns `HostResult<T>`, including the ones that yield
 /// nothing (`HostResult<()>`).
 ///
@@ -196,7 +311,10 @@ fn check_receiver(signature: &Signature) -> syn::Result<()> {
 /// all: lift the arguments out of guest memory, call the host, then turn `Ok(T)`
 /// into the wire's non-negative `i32` and `Err(e)` into a negative code or a trap.
 /// A function returning a bare `T` would need its own arm.
-fn check_return_type(signature: &Signature) -> syn::Result<()> {
+///
+/// The `HostResult` wrapper is checked here and its success type is lowered by
+/// [`ResultType`], which is what says which `T`s the ABI has.
+fn parse_result(signature: &Signature) -> syn::Result<ResultType> {
     const SHAPE: &str = "a host function must return `HostResult<T>` — \
                          `HostResult<()>` if it yields nothing";
 
@@ -226,20 +344,28 @@ fn check_return_type(signature: &Signature) -> syn::Result<()> {
             format!("`{HOST_RESULT}` needs its success type: `{HOST_RESULT}<T>`"),
         ));
     };
-    if arguments.args.len() != 1 {
-        return Err(syn::Error::new_spanned(
-            arguments,
-            format!("`{HOST_RESULT}` takes exactly one type: `{HOST_RESULT}<T>`"),
-        ));
-    }
-    Ok(())
+    // One argument, and a type: neither `HostResult<'a>` nor `HostResult<i32, i32>`
+    // names a success type.
+    let success = match (arguments.args.len(), arguments.args.first()) {
+        (1, Some(GenericArgument::Type(success))) => success,
+        _ => {
+            return Err(syn::Error::new_spanned(
+                arguments,
+                format!("`{HOST_RESULT}` takes exactly one type: `{HOST_RESULT}<T>`"),
+            ));
+        }
+    };
+
+    ResultType::parse(success)
 }
 
 /// `const`, `async`, `unsafe`/`safe` and `extern "…"` have no meaning in the
 /// wasm ABI, and would otherwise pass silently into the generated trait.
-fn reject_modifiers(signature: &Signature, errors: &mut Vec<syn::Error>) {
+fn reject_modifiers(signature: &Signature) -> syn::Result<()> {
     const PLAIN: &str =
         "a host function must be a plain `fn`: this modifier is not part of the wasm ABI";
+
+    let mut errors = Vec::new();
 
     if let Some(constness) = &signature.constness {
         errors.push(syn::Error::new_spanned(constness, PLAIN));
@@ -255,6 +381,8 @@ fn reject_modifiers(signature: &Signature, errors: &mut Vec<syn::Error>) {
     if let Some(abi) = &signature.abi {
         errors.push(syn::Error::new_spanned(abi, PLAIN));
     }
+
+    errors::into_result((), errors)
 }
 
 /// The wasm import name reaches the engine's import table verbatim, so it is
@@ -400,7 +528,7 @@ mod tests {
         let parsed = ParsedHostFunction::parse(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         })
         .unwrap();
 
@@ -471,7 +599,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = -5]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -483,7 +611,7 @@ mod tests {
         let empty = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = ""]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
         assert_eq!(empty.len(), 1, "{empty:?}");
         assert_eq!(empty[0], "the wasm name must not be empty");
@@ -491,7 +619,7 @@ mod tests {
         let spaced = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
         assert_eq!(spaced.len(), 1, "{spaced:?}");
         assert!(spaced[0].contains("may only contain"), "{spaced:?}");
@@ -500,10 +628,10 @@ mod tests {
     #[test]
     fn rejects_signature_modifiers() {
         for declaration in [
-            quote! { unsafe fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>; },
-            quote! { async fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>; },
-            quote! { const fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>; },
-            quote! { extern "C" fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>; },
+            quote! { unsafe fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>; },
+            quote! { async fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>; },
+            quote! { const fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>; },
+            quote! { extern "C" fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>; },
         ] {
             let function: TraitItemFn = syn::parse2(quote! {
                 #[gas = 60]
@@ -524,7 +652,7 @@ mod tests {
             /// Hashes `data`.
             #[gas = 2000]
             #[wasm_name = "sha512_half"]
-            fn sha512_half(&self, data: &[u8]) -> HostResult<[u8; 32]>;
+            fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize>;
         })
         .unwrap();
 
@@ -536,24 +664,27 @@ mod tests {
             "{method}"
         );
         assert!(
-            method
-                .contains("fn sha512_half (& self , data : & [u8]) -> HostResult < [u8 ; 32] > ;"),
+            method.contains(
+                "fn sha512_half (& self , data : & [u8] , out : & mut [u8]) -> HostResult < usize > ;"
+            ),
             "{method}"
         );
     }
 
     #[test]
-    fn spec_arm_carries_the_name_and_the_gas() {
+    fn spec_arm_carries_the_name_the_gas_and_the_wasm_signature() {
         let parsed = ParsedHostFunction::parse(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         })
         .unwrap();
 
         assert_eq!(
             parsed.spec_arm().to_string(),
-            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 }"
+            "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 , \
+             wasm_params : & [WasmValType :: I32 , WasmValType :: I32] , \
+             wasm_result : Some (WasmValType :: I32) , }"
         );
     }
 
@@ -565,7 +696,7 @@ mod tests {
             /// Third line.
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         })
         .unwrap();
 
@@ -576,34 +707,189 @@ mod tests {
     #[test]
     fn preserves_parameters_and_return_type() {
         let traced = ParsedHostFunction::parse(parse_quote! {
-            #[gas = 500]
+            #[gas = 30]
             #[wasm_name = "trace"]
-            fn trace(&self, msg: &str, data: &[u8], as_hex: bool) -> HostResult<()>;
+            fn trace(&self, msg: &str, data_type: TraceDataType, data: &[u8]) -> HostResult<()>;
         })
         .unwrap();
-        // The receiver is `inputs[0]`; the three wasm parameters follow it.
+
+        // The receiver is `inputs[0]`; the three declared parameters follow it.
         assert_eq!(traced.signature.inputs.len(), 4);
         assert_eq!(
             traced.signature.output.to_token_stream().to_string(),
             "-> HostResult < () >"
         );
+    }
 
-        let hashed = ParsedHostFunction::parse(parse_quote! {
-            #[gas = 2000]
-            #[wasm_name = "sha512_half"]
-            fn sha512_half(&self, data: &[u8]) -> HostResult<[u8; HASH_LEN]>;
+    /// The declared parameter list and the wasm signature are different lengths,
+    /// and this is the declaration that shows why: `account` and `out` are a
+    /// `(ptr, len)` pair each, and `seq` — which reads like a scalar — is a third
+    /// pair, holding four little-endian bytes. Three declared parameters, six
+    /// wasm ones, and nothing but the lowering says so.
+    #[test]
+    fn derives_the_wasm_signature_from_the_declared_types() {
+        let keylet = ParsedHostFunction::parse(parse_quote! {
+            #[gas = 350]
+            #[wasm_name = "check_id"]
+            fn check_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize>;
         })
         .unwrap();
+
         assert_eq!(
-            hashed.signature.output.to_token_stream().to_string(),
-            "-> HostResult < [u8 ; HASH_LEN] >"
+            keylet.params,
+            [ParamType::InBytes, ParamType::InU32, ParamType::OutBytes]
+        );
+        assert_eq!(
+            keylet.wasm_params().collect::<Vec<_>>(),
+            [WasmValType::I32; 6]
+        );
+        assert_eq!(keylet.result, ResultType::BufferLength);
+    }
+
+    /// The scalars are the exception: spelled as themselves, and in declaration
+    /// order, which is wire order.
+    #[test]
+    fn passes_the_wasm_scalars_through_in_declaration_order() {
+        let from_int = ParsedHostFunction::parse(parse_quote! {
+            #[gas = 100]
+            #[wasm_name = "float_from_int"]
+            fn float_from_int(&self, x: i64, out: &mut [u8], mode: i32) -> HostResult<usize>;
+        })
+        .unwrap();
+
+        assert_eq!(
+            from_int.wasm_params().collect::<Vec<_>>(),
+            [
+                WasmValType::I64,
+                WasmValType::I32,
+                WasmValType::I32,
+                WasmValType::I32
+            ]
+        );
+    }
+
+    /// `&self` is `inputs[0]` and is not a parameter. Read as one it would be a
+    /// declared type the ABI does not have, so every declaration in the block
+    /// would be refused.
+    #[test]
+    fn does_not_read_the_receiver_as_a_parameter() {
+        let array_len = ParsedHostFunction::parse(parse_quote! {
+            #[gas = 40]
+            #[wasm_name = "tx_arr_len"]
+            fn get_tx_array_len(&self, field: i32) -> HostResult<i32>;
+        })
+        .unwrap();
+
+        assert_eq!(array_len.params, [ParamType::I32]);
+        assert_eq!(array_len.result, ResultType::Value);
+    }
+
+    /// One diagnostic per parameter, each on its own span, so a declaration's
+    /// mistakes all surface in one build.
+    #[test]
+    fn rejects_parameter_types_the_abi_does_not_have() {
+        let messages = messages(parse_quote! {
+            #[gas = 60]
+            #[wasm_name = "ldgr_index"]
+            fn get_ledger_sqn(&self, flag: bool, data: Vec<u8>) -> HostResult<i32>;
+        });
+
+        assert_eq!(messages.len(), 2, "{messages:?}");
+        assert!(
+            messages.iter().all(|m| m.contains("must be `i32`")),
+            "{messages:?}"
+        );
+    }
+
+    /// A parameter with no plain name has none to state what it is for, and the
+    /// wasm signature it lowers to is all `i32`s and states nothing either.
+    #[test]
+    fn rejects_parameters_that_are_not_plain_names() {
+        for parameter in [
+            quote! { _: i32 },
+            quote! { mut field: i32 },
+            quote! { (field, flag): i32 },
+        ] {
+            let function: TraitItemFn = syn::parse2(quote! {
+                #[gas = 40]
+                #[wasm_name = "tx_arr_len"]
+                fn get_tx_array_len(&self, #parameter) -> HostResult<i32>;
+            })
+            .unwrap_or_else(|_| panic!("`{parameter}` should parse"));
+
+            let messages = messages(function);
+            assert!(
+                messages.iter().any(|m| m.contains("must be a plain name")),
+                "`{parameter}`: {messages:?}"
+            );
+        }
+    }
+
+    /// Two mistakes on one parameter are two diagnostics, and neither stands in
+    /// for the other: the name is refused on its own grounds and so is the type.
+    #[test]
+    fn reports_a_parameter_s_name_and_its_type_separately() {
+        let messages = messages(parse_quote! {
+            #[gas = 40]
+            #[wasm_name = "tx_arr_len"]
+            fn get_tx_array_len(&self, _: bool) -> HostResult<i32>;
+        });
+
+        assert_eq!(messages.len(), 2, "{messages:?}");
+        assert!(messages[0].contains("must be a plain name"), "{messages:?}");
+        assert!(messages[1].contains("must be `i32`"), "{messages:?}");
+    }
+
+    /// The success type is held to the three the ABI has, which is what makes it
+    /// a wasm result. `[u8; 4]` is the one worth pinning: it says what the value
+    /// *is*, which is the guest SDK's business and not the wire's.
+    #[test]
+    fn rejects_success_types_the_abi_does_not_have() {
+        let messages = messages(parse_quote! {
+            #[gas = 60]
+            #[wasm_name = "ldgr_index"]
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<[u8; 4]>;
+        });
+
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(
+            messages[0].contains("must return `HostResult<usize>`"),
+            "{messages:?}"
+        );
+    }
+
+    /// A length answered with nowhere to have written the value, and a written
+    /// region whose length the guest never learns: each half of the pairing,
+    /// refused on its own.
+    #[test]
+    fn rejects_a_result_that_does_not_match_the_regions() {
+        let no_region = messages(parse_quote! {
+            #[gas = 60]
+            #[wasm_name = "ldgr_index"]
+            fn get_ledger_sqn(&self) -> HostResult<usize>;
+        });
+        assert_eq!(no_region.len(), 1, "{no_region:?}");
+        assert!(
+            no_region[0].contains("must take an output region"),
+            "{no_region:?}"
+        );
+
+        let unreported = messages(parse_quote! {
+            #[gas = 60]
+            #[wasm_name = "ldgr_index"]
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<i32>;
+        });
+        assert_eq!(unreported.len(), 1, "{unreported:?}");
+        assert!(
+            unreported[0].contains("must return `HostResult<usize>`"),
+            "{unreported:?}"
         );
     }
 
     #[test]
     fn reports_both_missing_attributes_at_once() {
         let messages = messages(parse_quote! {
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
 
         assert_eq!(messages.len(), 2);
@@ -616,7 +902,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = 60]
             #[wsam_name = "typo"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
 
         // The typo'd attribute, plus the `wasm_name` it failed to be.
@@ -632,7 +918,7 @@ mod tests {
         let gas = messages(parse_quote! {
             #[gas = "60"]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
         assert_eq!(gas.len(), 1, "{gas:?}");
         assert!(
@@ -643,7 +929,7 @@ mod tests {
         let name = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = 7]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
         assert_eq!(name.len(), 1, "{name:?}");
         assert!(
@@ -657,7 +943,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = 99999999999999999999999]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -669,7 +955,7 @@ mod tests {
         let bare = messages(parse_quote! {
             #[gas]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
         assert_eq!(bare.len(), 1, "{bare:?}");
         assert!(bare[0].contains("gas = ..."), "{bare:?}");
@@ -677,7 +963,7 @@ mod tests {
         let list = messages(parse_quote! {
             #[gas(60)]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
         assert_eq!(list.len(), 1, "{list:?}");
     }
@@ -689,7 +975,7 @@ mod tests {
             #[gas = 70]
             #[wasm_name = "ldgr_index"]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
 
         assert_eq!(messages.len(), 2, "{messages:?}");
@@ -706,7 +992,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = "60"]
             #[wasm_name = 7]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
         });
 
         assert_eq!(messages.len(), 2, "{messages:?}");
@@ -721,7 +1007,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]> { Ok([0; 4]) }
+            fn get_ledger_sqn(&self) -> HostResult<i32> { Ok(0) }
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -733,7 +1019,7 @@ mod tests {
         let parameter = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn<T>(&self) -> HostResult<T>;
+            fn get_ledger_sqn<T>(&self) -> HostResult<i32>;
         });
         assert_eq!(parameter.len(), 1, "{parameter:?}");
         assert!(
@@ -744,7 +1030,7 @@ mod tests {
         let clause = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> HostResult<[u8; 4]> where Self: Sized;
+            fn get_ledger_sqn(&self) -> HostResult<i32> where Self: Sized;
         });
         assert_eq!(clause.len(), 1, "{clause:?}");
     }
@@ -754,7 +1040,7 @@ mod tests {
         let messages = messages(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn() -> HostResult<[u8; 4]>;
+            fn get_ledger_sqn(out: &mut [u8]) -> HostResult<usize>;
         });
 
         assert_eq!(messages.len(), 1, "{messages:?}");
@@ -778,7 +1064,7 @@ mod tests {
             let function: TraitItemFn = syn::parse2(quote! {
                 #[gas = 60]
                 #[wasm_name = "ldgr_index"]
-                fn get_ledger_sqn(#receiver) -> HostResult<[u8; 4]>;
+                fn get_ledger_sqn(#receiver) -> HostResult<i32>;
             })
             .unwrap_or_else(|_| panic!("`{receiver}` should parse"));
 
@@ -826,7 +1112,7 @@ mod tests {
         let parsed = ParsedHostFunction::parse(parse_quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
-            fn get_ledger_sqn(&self) -> xrpl_host_functions::HostResult<[u8; 4]>;
+            fn get_ledger_sqn(&self) -> xrpl_host_functions::HostResult<i32>;
         })
         .unwrap();
 
@@ -834,7 +1120,7 @@ mod tests {
             parsed
                 .trait_method()
                 .to_string()
-                .contains("xrpl_host_functions :: HostResult < [u8 ; 4] >"),
+                .contains("xrpl_host_functions :: HostResult < i32 >"),
             "{}",
             parsed.trait_method()
         );

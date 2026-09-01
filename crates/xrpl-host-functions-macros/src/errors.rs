@@ -10,3 +10,27 @@ pub(crate) fn combine(errors: Vec<syn::Error>) -> Option<syn::Error> {
         first
     })
 }
+
+/// `value`, unless diagnostics were recorded: the folded error then, as the one
+/// `Err` a check answers with.
+pub(crate) fn into_result<T>(value: T, errors: Vec<syn::Error>) -> syn::Result<T> {
+    match combine(errors) {
+        Some(error) => Err(error),
+        None => Ok(value),
+    }
+}
+
+/// Files `result`'s diagnostics and answers `None`, or answers its value.
+///
+/// The one place a `syn::Result` joins an accumulator, so a check that yields a
+/// value reports the same way as one that yields nothing — which is what lets
+/// the caller keep going and report the rest of the declaration's mistakes.
+pub(crate) fn record<T>(result: syn::Result<T>, errors: &mut Vec<syn::Error>) -> Option<T> {
+    match result {
+        Ok(value) => Some(value),
+        Err(error) => {
+            errors.push(error);
+            None
+        }
+    }
+}

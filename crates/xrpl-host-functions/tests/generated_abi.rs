@@ -8,7 +8,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 
 use xrpl_host_functions::{
-    HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult, TraceDataType,
+    HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult, TraceDataType, WasmValType,
 };
 
 /// Records what it was asked to do; enough to prove the trait is usable.
@@ -947,6 +947,115 @@ fn the_spec_table_matches_the_declarations() {
     );
 }
 
+/// The wire shape of every function: the parameters a guest's import must declare
+/// and the result it must expect, which is what a module fails to instantiate over.
+///
+/// A change-detector like the table above, and for the same reason — these are
+/// consensus input. It is also the one statement of the wasm signature that is *not*
+/// derived from the declarations: the literals were read off the `func_wrap` closures
+/// `xrpl-wasm-vm` registers, so the two sides of the ABI are compared here rather
+/// than one being checked against itself.
+///
+/// What it catches is arity and value types — the `u32` parameters that read like
+/// scalars and are `(ptr, len)` pairs, and `trace`'s missing result. Not order: every
+/// region lowers to `i32`, so swapping two parameters leaves the signature identical.
+#[test]
+fn the_wasm_signatures_match_the_declarations() {
+    let table: Vec<String> = HostFunctionSpec::ALL
+        .iter()
+        .map(|function| format!("{} {}", function.wasm_name(), signature(*function)))
+        .collect();
+
+    assert_eq!(
+        table,
+        [
+            "ldgr_index (i32, i32) -> i32",
+            "parent_ldgr_time (i32, i32) -> i32",
+            "parent_ldgr_hash (i32, i32) -> i32",
+            "base_fee (i32, i32) -> i32",
+            "amendment_enabled (i32, i32) -> i32",
+            "cache_le (i32, i32, i32) -> i32",
+            "tx_field (i32, i32, i32) -> i32",
+            "home_le_field (i32, i32, i32) -> i32",
+            "le_field (i32, i32, i32, i32) -> i32",
+            "tx_inner (i32, i32, i32, i32) -> i32",
+            "home_le_inner (i32, i32, i32, i32) -> i32",
+            "le_inner (i32, i32, i32, i32, i32) -> i32",
+            "tx_arr_len (i32) -> i32",
+            "home_le_arr_len (i32) -> i32",
+            "le_arr_len (i32, i32) -> i32",
+            "tx_inner_arr_len (i32, i32) -> i32",
+            "home_le_inner_arr_len (i32, i32) -> i32",
+            "le_inner_arr_len (i32, i32, i32) -> i32",
+            "check_sig (i32, i32, i32, i32, i32, i32) -> i32",
+            "accountroot_id (i32, i32, i32, i32) -> i32",
+            "amm_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "check_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "credential_id (i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "delegate_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "deposit_preauth_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "did_id (i32, i32, i32, i32) -> i32",
+            "escrow_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "trustline_id (i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "mpt_issuance_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "mptoken_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "nft_offer_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "offer_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "oracle_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "paychan_id (i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "permissioned_domain_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "signers_id (i32, i32, i32, i32) -> i32",
+            "ticket_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "vault_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "sha512_half (i32, i32, i32, i32) -> i32",
+            "trace (i32, i32, i32, i32, i32)",
+            "set_data (i32, i32) -> i32",
+            "nft_uri (i32, i32, i32, i32, i32, i32) -> i32",
+            "nft_issuer (i32, i32, i32, i32) -> i32",
+            "nft_taxon (i32, i32, i32, i32) -> i32",
+            "nft_flags (i32, i32) -> i32",
+            "nft_xfer_fee (i32, i32) -> i32",
+            "nft_serial (i32, i32, i32, i32) -> i32",
+            "float_from_int (i64, i32, i32, i32) -> i32",
+            "float_from_uint (i32, i32, i32, i32, i32) -> i32",
+            "float_from_stamount (i32, i32, i32, i32, i32) -> i32",
+            "float_from_stnumber (i32, i32, i32, i32, i32) -> i32",
+            "float_to_int (i32, i32, i32, i32, i32) -> i32",
+            "float_to_mant_exp (i32, i32, i32, i32, i32, i32) -> i32",
+            "float_from_mant_exp (i64, i32, i32, i32, i32) -> i32",
+            "float_cmp (i32, i32, i32, i32) -> i32",
+            "float_add (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "float_sub (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "float_mult (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "float_div (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "float_pow (i32, i32, i32, i32, i32, i32) -> i32",
+        ]
+    );
+}
+
+/// `(i32, i32) -> i32`: one function type, spelled as wasm's text format spells the
+/// types and as wasmi's own errors report them.
+fn signature(function: HostFunctionSpec) -> String {
+    let params: Vec<&str> = function
+        .wasm_params()
+        .iter()
+        .copied()
+        .map(spelled)
+        .collect();
+
+    match function.wasm_result() {
+        Some(result) => format!("({}) -> {}", params.join(", "), spelled(result)),
+        None => format!("({})", params.join(", ")),
+    }
+}
+
+fn spelled(val_type: WasmValType) -> &'static str {
+    match val_type {
+        WasmValType::I32 => "i32",
+        WasmValType::I64 => "i64",
+    }
+}
+
 /// The other half of the wire vocabulary, and the same change-detector argument: the
 /// codes are what a guest passes, so they are pinned as literals here. `ALL` is in code
 /// order, so the round trip pins the discriminants and not just the membership.
@@ -982,15 +1091,19 @@ fn every_variant_appears_in_all_exactly_once() {
     assert_eq!(names.len(), HostFunctionSpec::ALL.len());
 }
 
-/// Both accessors are `const`, so an engine can build its import and gas tables at
-/// compile time rather than on every invocation. The assertions sit in `const`
-/// blocks so they are checked while compiling, which is the claim; the values
+/// Every accessor is `const`, so an engine can build its import, signature and gas
+/// tables at compile time rather than on every invocation. The assertions sit in
+/// `const` blocks so they are checked while compiling, which is the claim; the values
 /// themselves are pinned above.
 #[test]
 fn the_table_is_usable_in_const_context() {
     const NAME: &str = HostFunctionSpec::Trace.wasm_name();
     const GAS: u64 = HostFunctionSpec::Trace.gas();
+    const PARAMS: &[WasmValType] = HostFunctionSpec::Trace.wasm_params();
+    const RESULT: Option<WasmValType> = HostFunctionSpec::Trace.wasm_result();
 
     const { assert!(!NAME.is_empty()) };
     const { assert!(GAS > 0) };
+    const { assert!(!PARAMS.is_empty()) };
+    const { assert!(RESULT.is_none()) };
 }

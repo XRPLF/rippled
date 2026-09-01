@@ -9,6 +9,10 @@
 //! derived from the declarations is generated. The expansion names nothing this file
 //! does not, so the two sides meet only in the block below.
 //!
+//! [`WasmValType`] crosses that split the other way: no declaration mentions it, but
+//! the wasm signature derived from each one is spelled in it, so it is hand-written
+//! here and the expansion names it.
+//!
 //! So this file is lists — error codes, trace data types, functions. The `macro_rules!`
 //! that expand the first two into enums live in `macros.rs`.
 
@@ -67,6 +71,18 @@ trace_data_types! {
     AsHex = 6,
     /// Bytes rendered verbatim as text.
     AsText = 7,
+}
+
+/// A wasm value type, as much of them as this ABI uses.
+///
+/// The vocabulary the generated wasm signatures are spelled in: a declaration's
+/// parameters and its result are these, and an engine maps them to its own value
+/// types once. Both positions use the same enum, since a wasm value type is one
+/// thing wherever it stands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WasmValType {
+    I32,
+    I64,
 }
 
 // Two rules hold over every declaration below, and neither is visible at any one of
