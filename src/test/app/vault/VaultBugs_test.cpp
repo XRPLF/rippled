@@ -1868,11 +1868,15 @@ private:
     }
 
     // Same zero-payout withdrawal as testBugMptZeroWithdrawMissingHolding, but
-    // the vault asset is XRP. addEmptyHolding is a no-op for native assets, so
-    // skipping it does not hide the sender AccountRoot: sequence processing
-    // still touches it. A sponsored fee leaves that root economically
-    // unchanged (present-with-zero). Post-fixCleanup3_4_0 that one-sided zero
-    // destination delta must not fail ValidVault.
+    // the vault asset is XRP. addEmptyHolding is a no-op for native assets.
+    // Sequence processing still touches the sender AccountRoot; a sponsored
+    // fee leaves that XRP balance economically unchanged. After the
+    // sponsored-withdraw fee-payer fix, deltaAssetsForParty collapses that
+    // economically-zero XRP delta to absence, so tesSUCCESS takes the
+    // missing-recipient-delta arm gated by zeroDeltaIsLegitimate. This test
+    // covers that live SUCCESS path; it does not execute the present-delta
+    // zeroDeltaIsLegitimate disjunct. Pre-fixCleanup3_4_0 still fails the
+    // invariant.
     void
     testBugXrpZeroWithdrawSponsoredFee()
     {
