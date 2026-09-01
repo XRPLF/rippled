@@ -25,7 +25,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
     auto const& offerIds = ctx.tx[sfNFTokenOffers];
 
-    if (!checkSizeNonEmpty(offerIds, kMaxTokenOfferCancelCount))
+    if (!checkSizeAndNonEmpty(offerIds, kMaxTokenOfferCancelCount))
         return temMALFORMED;
 
     // Zero offer IDs cannot be passed as ledger entry keys.

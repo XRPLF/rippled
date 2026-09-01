@@ -51,7 +51,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (!checkSizeNonEmpty(credType, kMaxCredentialTypeLength))
+    if (!checkSizeAndNonEmpty(credType, kMaxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;

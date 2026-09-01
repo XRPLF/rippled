@@ -27,7 +27,7 @@ checkSize(T const& value, std::size_t const max)
 // Checks whether a container is non-empty and its size is at most max.
 template <class T>
 inline bool
-checkSizeNonEmpty(T const& value, std::size_t const max)
+checkSizeAndNonEmpty(T const& value, std::size_t const max)
 {
     return !value.empty() && value.size() <= max;
 }
