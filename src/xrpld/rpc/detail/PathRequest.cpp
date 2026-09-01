@@ -73,7 +73,7 @@ PathRequest::PathRequest(
 PathRequest::PathRequest(
     Application& app,
     std::function<void(void)> completion,
-    Resource::Consumer& consumer,
+    resource::Consumer& consumer,
     int id,
     PathRequestManager& owner,
     beast::Journal journal)
@@ -344,7 +344,7 @@ PathRequest::parseJson(json::Value const& jvParams)
     {
         json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
         if (!jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
-            jvSrcCurrencies.size() > RPC::Tuning::kMaxSrcCur)
+            jvSrcCurrencies.size() > rpc::tuning::kMaxSrcCur)
         {
             jvStatus_ = rpcError(RpcSrcCurMalformed);
             return PFR_PJ_INVALID;
@@ -416,20 +416,22 @@ PathRequest::parseJson(json::Value const& jvParams)
                 // If the assets don't match, ignore the source asset.
                 if (srcPathAsset == saSendMax_->asset())
                 {
-                    // If neither is the source and they are not equal, then the
-                    // source issuer is illegal.
-                    if (srcIssuerID != *raSrcAccount_ &&
-                        saSendMax_->getIssuer() != *raSrcAccount_ &&
-                        srcIssuerID != saSendMax_->getIssuer())
-                    {
-                        jvStatus_ = rpcError(RpcSrcIsrMalformed);
-                        return PFR_PJ_INVALID;
-                    }
-
-                    // If both are the source, use the source.
-                    // Otherwise, use the one that's not the source.
-                    srcPathAsset.visit(
+                    auto const status = srcPathAsset.visit(
                         [&](Currency const& currency) {
+                            // If neither is the source and they are not equal,
+                            // then the source issuer is illegal. srcIssuerID
+                            // comes from the optional IOU source_currencies
+                            // issuer field, so this reconciliation is IOU-only.
+                            if (srcIssuerID != *raSrcAccount_ &&
+                                saSendMax_->getIssuer() != *raSrcAccount_ &&
+                                srcIssuerID != saSendMax_->getIssuer())
+                            {
+                                jvStatus_ = rpcError(RpcSrcIsrMalformed);
+                                return PFR_PJ_INVALID;
+                            }
+
+                            // If both are the source, use the source.
+                            // Otherwise, use the one that's not the source.
                             if (srcIssuerID != *raSrcAccount_)
                             {
                                 sciSourceAssets_.insert(Issue{currency, srcIssuerID});
@@ -438,11 +440,18 @@ PathRequest::parseJson(json::Value const& jvParams)
                             {
                                 sciSourceAssets_.insert(Issue{currency, saSendMax_->getIssuer()});
                             }
+                            else
                             {
                                 sciSourceAssets_.insert(Issue{currency, *raSrcAccount_});
                             }
+                            return PFR_PJ_NOCHANGE;
                         },
-                        [&](MPTID const& mpt) { sciSourceAssets_.insert(mpt); });
+                        [&](MPTID const& mpt) {
+                            sciSourceAssets_.insert(mpt);
+                            return PFR_PJ_NOCHANGE;
+                        });
+                    if (status == PFR_PJ_INVALID)
+                        return status;
                 }
             }
             else
@@ -556,7 +565,7 @@ PathRequest::findPaths(
                     [&]<typename TAsset>(TAsset const& a) {
                         if (!sameAccount || a != saDstAmount_.asset())
                         {
-                            if (sourceAssets.size() >= RPC::Tuning::kMaxAutoSrcCur)
+                            if (sourceAssets.size() >= rpc::tuning::kMaxAutoSrcCur)
                                 return false;
                             if constexpr (std::is_same_v<TAsset, Currency>)
                             {

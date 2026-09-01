@@ -6,13 +6,13 @@ on:
       - develop
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - "package/Dockerfile"
-      - "package/install-packaging-tools.sh"
+      - "bin/install-packaging-tools.sh"
+      - "package/docker/**"
   pull_request:
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - "package/Dockerfile"
-      - "package/install-packaging-tools.sh"
+      - "bin/install-packaging-tools.sh"
+      - "package/docker/**"
   workflow_dispatch:
 
 concurrency:
@@ -33,14 +33,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Newest of each distro: these images only wrap pre-built binaries, so
+        # they set no floor for consumers. build_pkg.py pins the RPM dist tag.
         distro:
           - name: debian
-            base_image: debian:bookworm
+            base_image: debian:trixie
+          # AlmaLinux rather than UBI, which does not ship rpm-sign.
           - name: rhel
-            base_image: registry.access.redhat.com/ubi9/ubi:latest
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@9e7e4e80af9e684c116b38369add8eea64451f32
+            base_image: almalinux:10
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@65d5a0bd72be4ecea95cff0673a6e0672ab5243a
     with:
       image_name: xrpld/packaging-${{ matrix.distro.name }}
-      dockerfile: package/Dockerfile
+      dockerfile: package/docker/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
       push: ${{ github.event_name == 'push' }}

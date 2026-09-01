@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -22,6 +23,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -39,6 +41,12 @@
 
 namespace xrpl {
 
+// StartDate is strictly after SubscriptionDate. A min-gap vault must still
+// fit a minimum-interval loan plus kLoanRedemptionBuffer. The interval and
+// buffer constants are independent; only their sum (plus the +1 for a
+// strictly-later StartDate) is required to fit in kMinInvestmentPeriod.
+static_assert(kMinInvestmentPeriod >= LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer + 1);
+
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -54,7 +62,7 @@ LoanSet::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanSet::preflight(PreflightContext const& ctx)
 {
-    using namespace Lending;
+    using namespace lending;
 
     auto const& tx = ctx.tx;
 
@@ -225,6 +233,8 @@ TER
 LoanSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
+    auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
+    auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
 
     {
         // Check for numeric overflow of the schedule before we load any
@@ -238,9 +248,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - getStartDate(ctx.view);
-
-        auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
-        auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
         auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDefaultGracePeriod);
 
         // The grace period can't be larger than the interval. Check it first,
@@ -310,7 +317,39 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(ctx.view, vault);
+        if (phase == VaultPhase::Subscription)
+        {
+            JLOG(ctx.j.warn()) << "Vault is still in the subscription phase.";
+            return tecTOO_SOON;
+        }
+        if (phase == VaultPhase::Redemption)
+        {
+            JLOG(ctx.j.warn()) << "Vault has entered the redemption phase.";
+            return tecEXPIRED;
+        }
+        if (phase == VaultPhase::Investment)
+        {
+            auto const finalPayment =
+                std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total);
+            if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
+            {
+                JLOG(ctx.j.warn())
+                    << "Final loan payment date is fewer than " << kLoanRedemptionBuffer
+                    << " seconds before the vault's redemption date.";
+                return tecNO_PERMISSION;
+            }
+        }
+    }
+
+    // Accrual origination credits interestDue into AssetsTotal, so a vault
+    // already at AssetsMaximum cannot take another loan. Cash-basis origination
+    // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
+    // this leftover accrual gate must not apply there.
+    if (getVaultVersion(vault) != VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
+        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
         JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
         return tecLIMIT_EXCEEDED;
@@ -440,12 +479,14 @@ LoanSet::doApply()
         principalRequested,
         properties.loanState.managementFeeDue);
 
-    auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
     XRPL_ASSERT_PARTS(
-        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
+        *vaultSle->at(sfAssetsMaximum) == 0 ||
+            getVaultVersion(vaultSle) == VaultVersion::CashBasis ||
+            *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
-        "Vault is below maximum limit");
-    if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
+        "accrual vault is below maximum limit");
+
+    if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
     {
         JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
         return tecLIMIT_EXCEEDED;
@@ -491,8 +532,9 @@ LoanSet::doApply()
 
     auto const loanAssetsToBorrower = principalRequested - originationFee;
 
-    auto const newDebtDelta = principalRequested + state.interestDue;
-    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + newDebtDelta;
+    auto const [assetsTotalDelta, debtTotalDelta] =
+        loanOriginationDeltas(vaultSle, principalRequested, state.interestDue);
+    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + debtTotalDelta;
     if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
         debtMaximum != 0 && debtMaximum < newDebtTotal)
     {
@@ -594,7 +636,8 @@ LoanSet::doApply()
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
 
     // Create the loan
-    auto loan = std::make_shared<SLE>(keylet::loan(brokerID, *loanSequenceProxy));
+    auto loan =
+        std::make_shared<SLE>(keylet::loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy)));
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
@@ -635,7 +678,7 @@ LoanSet::doApply()
 
     // Update the balances in the vault
     vaultAvailableProxy -= principalRequested;
-    vaultTotalProxy += state.interestDue;
+    vaultTotalProxy += assetsTotalDelta;
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
@@ -643,7 +686,7 @@ LoanSet::doApply()
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), debtTotalDelta, vaultAsset, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j_);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it

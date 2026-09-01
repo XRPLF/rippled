@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <optional>
 #include <set>
+#include <vector>
 
 namespace xrpl {
 
@@ -45,20 +46,26 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 bool
-hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
+hasExpired(
+    ReadView const& view,
+    std::optional<std::uint32_t> const& exp,
+    ExpiryComparison comparison)
 {
     using d = NetClock::duration;
     using tp = NetClock::time_point;
 
-    return exp && (view.parentCloseTime() >= tp{d{*exp}});
+    if (!exp)
+        return false;
+    auto const boundary = tp{d{*exp}};
+    return comparison == ExpiryComparison::Inclusive  //
+        ? view.parentCloseTime() >= boundary
+        : view.parentCloseTime() > boundary;
 }
 
-bool
-isVaultPseudoAccountFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptShare,
-    std::uint8_t depth)
+namespace {
+
+std::optional<bool>
+checkVaultPseudoAccountFrozenPreconditions(ReadView const& view, std::uint8_t depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
@@ -66,26 +73,37 @@ isVaultPseudoAccountFrozen(
     if (depth >= kMaxAssetCheckDepth)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");
+        UNREACHABLE(
+            "xrpl::View::checkVaultPseudoAccountFrozenPreconditions : reached asset check depth");
         return true;
         // LCOV_EXCL_STOP
     }
 
-    auto const mptIssuance = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
-    if (mptIssuance == nullptr)
-        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+    return std::nullopt;
+}
 
-    auto const issuer = mptIssuance->getAccountID(sfIssuer);
+bool
+isVaultPseudoAccountFrozenForIssuance(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth)
+{
+    XRPL_ASSERT(
+        issuanceSle.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isVaultPseudoAccountFrozenForIssuance : MPTokenIssuance SLE");
+
+    auto const issuer = issuanceSle.getAccountID(sfIssuer);
 
     // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
     // to the vault pseudo's MPToken or RippleState for the underlying.
     // Read it to derive the underlying asset and recurse, skipping the
     // issuer-account-then-vault chain. Pre-amendment shares (no field)
     // fall back to the chain lookup below.
-    if (mptIssuance->isFieldPresent(sfReferenceHolding))
+    if (issuanceSle.isFieldPresent(sfReferenceHolding))
     {
         auto const sleHolding =
-            view.read(keylet::unchecked(mptIssuance->getFieldH256(sfReferenceHolding)));
+            view.read(keylet::unchecked(issuanceSle.getFieldH256(sfReferenceHolding)));
         if (!sleHolding)
         {
             // LCOV_EXCL_START
@@ -94,7 +112,7 @@ isVaultPseudoAccountFrozen(
             // LCOV_EXCL_STOP
         }
         return isAnyFrozen(
-            view, {issuer, account}, assetOfHolding(*mptIssuance, *sleHolding), depth + 1);
+            view, {issuer, account}, assetOfHolding(issuanceSle, *sleHolding), depth + 1);
     }
 
     auto const mptIssuer = view.read(keylet::account(issuer));
@@ -120,6 +138,38 @@ isVaultPseudoAccountFrozen(
     return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
 }
 
+}  // namespace
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, issuanceSle, depth);
+}
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
+
+    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
+    if (issuanceSle == nullptr)
+        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, *issuanceSle, depth);
+}
+
 bool
 isLPTokenFrozen(
     ReadView const& view,
@@ -128,6 +178,33 @@ isLPTokenFrozen(
     Asset const& asset2)
 {
     return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
+}
+
+TER
+canTransferLPToken(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    AccountID const& lpTokenIssuer)
+{
+    // Only AMM-issued LPTokens are subject to this check. The LPToken's issuer
+    // is the AMM account; if it is not an AMM, this is not an LPToken.
+    auto const sleIssuer = view.read(keylet::account(lpTokenIssuer));
+    if (!sleIssuer || !sleIssuer->isFieldPresent(sfAMMID))
+        return tesSUCCESS;
+
+    auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+    if (!sleAmm)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const transferable = [&](Asset const& a) -> TER {
+        if (!a.holds<MPTIssue>())
+            return tesSUCCESS;
+        return canTransfer(view, a.get<MPTIssue>(), from, to);
+    };
+    if (auto const err = transferable((*sleAmm)[sfAsset]); !isTesSuccess(err))
+        return err;
+    return transferable((*sleAmm)[sfAsset2]);
 }
 
 bool
@@ -391,7 +468,8 @@ canWithdraw(
     AccountID const& to,
     SLE::const_ref toSle,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<uint256>> const& credentialIDs)
 {
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
         return ret;
@@ -402,7 +480,28 @@ canWithdraw(
     if (toSle->isFlag(lsfDepositAuth))
     {
         if (!view.exists(keylet::depositPreauth(to, from)))
-            return tecNO_PERMISSION;
+        {
+            if (credentialIDs.has_value())
+            {
+                STVector256 const credIDs{*credentialIDs};
+
+                // Callers must have validated these in preclaim, so a missing
+                // credential here is an invariant violation.
+                for (auto const& h : credIDs)
+                {
+                    if (!view.exists(keylet::credential(h)))
+                        return tecINTERNAL;  // LCOV_EXCL_LINE
+                }
+
+                if (auto const ret = credentials::authorizedDepositPreauth(view, credIDs, to);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
+            else
+            {
+                return tecNO_PERMISSION;
+            }
+        }
     }
 
     return withdrawToDestExceedsLimit(view, from, to, amount);
@@ -414,11 +513,12 @@ canWithdraw(
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<uint256>> const& credentialIDs)
 {
     auto const toSle = view.read(keylet::account(to));
 
-    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag);
+    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag, credentialIDs);
 }
 
 [[nodiscard]] TER
@@ -427,7 +527,8 @@ canWithdraw(ReadView const& view, STTx const& tx)
     auto const from = tx[sfAccount];
     auto const to = tx[~sfDestination].value_or(from);
 
-    return canWithdraw(view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag));
+    return canWithdraw(
+        view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag), tx[~sfCredentialIDs]);
 }
 
 TER
