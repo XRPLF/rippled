@@ -44,6 +44,7 @@
 #include <cstring>
 #include <functional>
 #include <optional>
+#include <source_location>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -63,14 +64,23 @@ constexpr std::uint64_t kElGamalDecryptRangeHigh = 3000;
  *
  * @param opt The optional to unwrap.
  * @param what Description used in the thrown exception if opt is empty.
+ * @param loc The call site to report in the thrown exception, defaulting to
+ *            the immediate caller.
  * @return A const reference to the contained value.
  */
 template <class T>
 [[nodiscard]] T const&
-requireValue(std::optional<T> const& opt, char const* what)
+requireValue(
+    std::optional<T> const& opt,
+    char const* what,
+    std::source_location const& loc = std::source_location::current())
 {
     if (!opt)
-        Throw<std::logic_error>(what);
+    {
+        Throw<std::logic_error>(
+            std::string(what) + " must be present (called from " +
+            std::string(loc.function_name()) + ")");
+    }
     return *opt;
 }
 
@@ -108,45 +118,16 @@ setDestinationField(json::Value& jv, std::optional<Account> const& dest)
     return act;
 }
 
+/**
+ * @brief Sets sfZKProof to the given proof if present, otherwise to a
+ *        zero-filled placeholder of the given length.
+ *
+ * @param jv The JSON object to set the field on.
+ * @param proof The real proof to use, if generated.
+ * @param dummyLen The length of the placeholder buffer to use when proof is not set.
+ */
 void
-setIssuanceIdField(
-    json::Value& jv,
-    std::optional<MPTID> const& id,
-    std::optional<MPTID> const& fallbackId)
-{
-    if (id)
-    {
-        jv[sfMPTokenIssuanceID] = to_string(*id);
-    }
-    else if (fallbackId)
-    {
-        jv[sfMPTokenIssuanceID] = to_string(*fallbackId);
-    }
-    else
-    {
-        Throw<std::runtime_error>("MPT has not been created");
-    }
-}
-
-[[nodiscard]] std::uint32_t
-ticketOrSeq(
-    Env& env,
-    std::optional<std::uint32_t> const& ticketSeq,
-    std::optional<Account> const& account)
-{
-    if (ticketSeq)
-    {
-        return *ticketSeq;
-    }
-    if (account)
-    {
-        return env.seq(*account);
-    }
-    return 0;
-}
-
-void
-setGeneratedProof(json::Value& jv, std::optional<Buffer> const& proof, std::size_t dummyLen)
+setProofOrDummy(json::Value& jv, std::optional<Buffer> const& proof, std::size_t dummyLen)
 {
     jv[sfZKProof.jsonName] = strHex(proof ? *proof : gMakeZeroBuffer(dummyLen));
 }
@@ -976,7 +957,7 @@ MPTTester::getPedersenCommitment(std::uint64_t const amount, Buffer const& peder
     return buf;
 }
 
-Buffer
+std::optional<Buffer>
 MPTTester::getConvertBackProof(
     Account const& holder,
     std::uint64_t const amount,
@@ -988,13 +969,13 @@ MPTTester::getConvertBackProof(
 
     auto const sleMptoken = env_.le(keylet::mptoken(issuanceID(), holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
-        return gMakeZeroBuffer(kExpectedProofLength);
+        return std::nullopt;
 
     auto const holderPubKey = getPubKey(holder);
     auto const holderPrivKey = getPrivKey(holder);
 
     if (!holderPubKey || !holderPrivKey)
-        return gMakeZeroBuffer(kExpectedProofLength);
+        return std::nullopt;
 
     auto const pedersenParams = makePedersenParams(pcParams);
     Buffer proof(kExpectedProofLength);
@@ -1006,7 +987,7 @@ MPTTester::getConvertBackProof(
             amount,
             &pedersenParams,
             proof.data()) != 0)
-        return gMakeZeroBuffer(kExpectedProofLength);
+        return std::nullopt;
 
     return proof;
 }
@@ -1059,6 +1040,33 @@ MPTTester::getFlags(std::optional<Account> const& holder) const
     return flags;
 }
 
+void
+MPTTester::setIssuanceIdField(json::Value& jv, std::optional<MPTID> const& id) const
+{
+    if (id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*id);
+    }
+    else if (id_)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+    else
+    {
+        Throw<std::runtime_error>("MPT has not been created");
+    }
+}
+
+std::uint32_t
+MPTTester::ticketOrSeq(
+    std::optional<std::uint32_t> const& ticketSeq,
+    std::optional<Account> const& account) const
+{
+    if (ticketSeq)
+        return *ticketSeq;
+    return env_.seq(requireValue(account, "account"));
+}
+
 MPT
 MPTTester::operator[](std::string const& name) const
 {
@@ -1076,6 +1084,8 @@ void
 MPTTester::fillConversionCiphertexts(
     T const& arg,
     json::Value& jv,
+    Account const& account,
+    std::uint64_t amt,
     Buffer& holderCiphertext,
     Buffer& issuerCiphertext,
     std::optional<Buffer>& auditorCiphertext,
@@ -1090,8 +1100,7 @@ MPTTester::fillConversionCiphertexts(
     }
     else
     {
-        holderCiphertext = encryptAmount(
-            requireValue(arg.account, "account"), requireValue(arg.amt, "amt"), blindingFactor);
+        holderCiphertext = encryptAmount(account, amt, blindingFactor);
     }
 
     jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
@@ -1103,7 +1112,7 @@ MPTTester::fillConversionCiphertexts(
     }
     else
     {
-        issuerCiphertext = encryptAmount(issuer_, requireValue(arg.amt, "amt"), blindingFactor);
+        issuerCiphertext = encryptAmount(issuer_, amt, blindingFactor);
     }
 
     jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
@@ -1115,8 +1124,7 @@ MPTTester::fillConversionCiphertexts(
     }
     else if (auditor_.has_value() && arg.fillAuditorEncryptedAmt.value_or(false))
     {
-        auditorCiphertext = encryptAmount(
-            requireValue(auditor_, "auditor"), requireValue(arg.amt, "amt"), blindingFactor);
+        auditorCiphertext = encryptAmount(requireValue(auditor_, "auditor"), amt, blindingFactor);
     }
 
     // Update auditor JSON only if ciphertext exists
@@ -1127,7 +1135,7 @@ MPTTester::fillConversionCiphertexts(
 void
 MPTTester::convert(MPTConvert const& arg)
 {
-    json::Value const jv = convertJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
+    json::Value const jv = convertJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
     Account const& account = requireValue(arg.account, "account");
     auto const amt = requireValue(arg.amt, "amt");
@@ -1246,9 +1254,10 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
     Account const& account = setAccountField(jv, arg.account);
 
     jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
-    setIssuanceIdField(jv, arg.id, id_);
+    setIssuanceIdField(jv, arg.id);
 
-    jv[sfMPTAmount.jsonName] = std::to_string(requireValue(arg.amt, "amt"));
+    auto const amt = requireValue(arg.amt, "amt");
+    jv[sfMPTAmount.jsonName] = std::to_string(amt);
     if (arg.holderPubKey)
         jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
 
@@ -1258,7 +1267,14 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
     Buffer blindingFactor;
 
     fillConversionCiphertexts(
-        arg, jv, holderCiphertext, issuerCiphertext, auditorCiphertext, blindingFactor);
+        arg,
+        jv,
+        account,
+        amt,
+        holderCiphertext,
+        issuerCiphertext,
+        auditorCiphertext,
+        blindingFactor);
 
     jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
 
@@ -1269,7 +1285,7 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
     else if (arg.fillSchnorrProof.value_or(arg.holderPubKey.has_value()))
     {
         auto const contextHash = getConvertContextHash(account.id(), issuanceID(), seq);
-        setGeneratedProof(jv, getSchnorrProof(account, contextHash), kEcSchnorrProofLength);
+        setProofOrDummy(jv, getSchnorrProof(account, contextHash), kEcSchnorrProofLength);
     }
 
     return jv;
@@ -1278,7 +1294,7 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
 void
 MPTTester::send(MPTConfidentialSend const& arg)
 {
-    json::Value const jv = sendJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
+    json::Value const jv = sendJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
     Account const& account = requireValue(arg.account, "account");
     Account const& dest = requireValue(arg.dest, "dest");
@@ -1393,7 +1409,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
 
             // verify sender
             env_.require(RequireAny([&]() -> bool {
-                return prevSenderAuditor >= amt && *postSenderAuditor == *prevSenderAuditor - amt;
+                return *prevSenderAuditor >= amt && *postSenderAuditor == *prevSenderAuditor - amt;
             }));
 
             // verify dest
@@ -1416,7 +1432,7 @@ MPTTester::sendJV(
     Account const& dest = setDestinationField(jv, arg.dest);
     auto const amt = requireValue(arg.amt, "amt");
 
-    setIssuanceIdField(jv, arg.id, id_);
+    setIssuanceIdField(jv, arg.id);
 
     Buffer const blindingFactor =
         arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
@@ -1551,7 +1567,7 @@ MPTTester::sendJV(
         std::optional<Buffer> proof;
 
         // Skip proof generation when spending balance is 0
-        if (arg.account != arg.dest && prevEncryptedSenderSpending && prevSenderSpending > 0)
+        if (prevEncryptedSenderSpending && prevSenderSpending > 0)
         {
             proof = getConfidentialSendProof(
                 account,
@@ -1573,7 +1589,7 @@ MPTTester::sendJV(
                 });
         }
 
-        setGeneratedProof(jv, proof, kEcSendProofLength);
+        setProofOrDummy(jv, proof, kEcSendProofLength);
     }
 
     return jv;
@@ -1640,7 +1656,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     jv[sfHolder] = holder.human();
 
     jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
-    setIssuanceIdField(jv, arg.id, id_);
+    setIssuanceIdField(jv, arg.id);
 
     auto const amt = requireValue(arg.amt, "amt");
     jv[sfMPTAmount] = std::to_string(amt);
@@ -1662,7 +1678,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         auto const proof =
             getClawbackProof(holder, amt, requireValue(privKey, "privKey"), contextHash);
 
-        setGeneratedProof(jv, proof, kEcClawbackProofLength);
+        setProofOrDummy(jv, proof, kEcClawbackProofLength);
     }
 
     auto const holderPubAmt = getBalance(holder);
@@ -1817,7 +1833,7 @@ MPTTester::mergeInboxJV(MPTMergeInbox const& arg) const
 {
     json::Value jv;
     setAccountField(jv, arg.account);
-    setIssuanceIdField(jv, arg.id, id_);
+    setIssuanceIdField(jv, arg.id);
     jv[sfTransactionType] = jss::ConfidentialMPTMergeInbox;
     return jv;
 }
@@ -1926,7 +1942,7 @@ MPTTester::getMPTokenVersion(Account const account) const
 void
 MPTTester::convertBack(MPTConvertBack const& arg)
 {
-    json::Value const jv = convertBackJV(arg, ticketOrSeq(env_, arg.ticketSeq, arg.account));
+    json::Value const jv = convertBackJV(arg, ticketOrSeq(arg.ticketSeq, arg.account));
 
     Account const& account = requireValue(arg.account, "account");
     auto const amt = requireValue(arg.amt, "amt");
@@ -2013,7 +2029,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     Account const& account = setAccountField(jv, arg.account);
 
     jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
-    setIssuanceIdField(jv, arg.id, id_);
+    setIssuanceIdField(jv, arg.id);
 
     auto const amt = requireValue(arg.amt, "amt");
     jv[sfMPTAmount.jsonName] = std::to_string(amt);
@@ -2024,7 +2040,14 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     Buffer blindingFactor;
 
     fillConversionCiphertexts(
-        arg, jv, holderCiphertext, issuerCiphertext, auditorCiphertext, blindingFactor);
+        arg,
+        jv,
+        account,
+        amt,
+        holderCiphertext,
+        issuerCiphertext,
+        auditorCiphertext,
+        blindingFactor);
 
     jv[sfBlindingFactor] = strHex(blindingFactor);
 
@@ -2056,12 +2079,8 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
         auto const contextHash =
             getConvertBackContextHash(account.id(), issuanceID(), seq, version);
 
-        Buffer proof;
-        if (!prevEncSpending)
-        {
-            proof = gMakeZeroBuffer(kEcConvertBackProofLength);
-        }
-        else
+        std::optional<Buffer> proof;
+        if (prevEncSpending)
         {
             proof = getConvertBackProof(
                 account,
@@ -2075,7 +2094,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
                 });
         }
 
-        jv[sfZKProof] = strHex(proof);
+        setProofOrDummy(jv, proof, kEcConvertBackProofLength);
     }
 
     return jv;

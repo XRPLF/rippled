@@ -2193,6 +2193,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .account = bob,
                 .dest = bob,
                 .amt = 10,
+                .proof = getTrivialSendProofHex(),
                 .err = temMALFORMED,
             });
 
@@ -3464,7 +3465,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             uint256 const convertBackContextHash =
                 getConvertBackContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), version);
 
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 convertBackAmt,
                 convertBackContextHash,
@@ -3474,6 +3475,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             {
                 json::Value jv;
@@ -3485,7 +3488,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 jv[sfIssuerEncryptedAmount.jsonName] = strHex(convertBackIssuerCiphertext);
                 jv[sfBlindingFactor.jsonName] = strHex(convertBackBlindingFactor);
                 jv[sfBalanceCommitment.jsonName] = strHex(pedersenCommitment);
-                jv[sfZKProof.jsonName] = strHex(proof);
+                jv[sfZKProof.jsonName] = strHex(requireOptionalRef(proof, "Missing proof"));
 
                 env(jv, Ter(tesSUCCESS));
             }
@@ -5285,7 +5288,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
             Buffer const badPedersenCommitment =
                 mptAlice.getPedersenCommitment(1, pcBlindingFactor);
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 contextHash,
@@ -5295,6 +5298,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5315,7 +5320,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             uint256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 contextHash,
@@ -5325,6 +5330,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = generateBlindingFactor(),  // wrong blinding factor
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5339,22 +5346,75 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         }
 
         // Test 3: Proof generated with wrong balance value.
-        // The proof claims balance=1 but the encrypted spending balance contains
-        // the actual balance. Verification fails because the values don't match.
+        // The sigma proof claims balance=20 but the pedersen commitment and
+        // encrypted spending balance were built for the actual balance (40).
+        // mpt_get_convert_back_proof refuses to build a proof with a claimed
+        // balance below the amount being converted, so we forge the sigma
+        // proof directly against the real commitment/ciphertext (mirroring
+        // testConvertBackOverdraftBulletproofImpl) to exercise the ledger's
+        // balance-linkage check instead of that client-side guard.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
-            Buffer const proof = mptAlice.getConvertBackProof(
-                bob,
-                amt,
-                contextHash,
-                {
-                    .pedersenCommitment = pedersenCommitment,
-                    .amt = 1,  // wrong balance
-                    .encryptedAmt = encryptedSpendingBalance,
-                    .blindingFactor = pcBlindingFactor,
-                });
+            uint64_t constexpr claimedBalance = 20;  // wrong: real balance is 40
+
+            auto* const ctx = mpt_secp256k1_context();
+            auto const bobPubKey = requireOptional(mptAlice.getPubKey(bob), "Missing bob pubkey");
+            auto const bobPrivKey =
+                requireOptional(mptAlice.getPrivKey(bob), "Missing bob privkey");
+
+            secp256k1_pubkey pkBob;
+            if (!BEAST_EXPECTS(
+                    secp256k1_ec_pubkey_parse(
+                        ctx, &pkBob, bobPubKey.data(), kCompressedEcPointLength) == 1,
+                    "Failed to parse Bob's public key"))
+                return;
+
+            secp256k1_pubkey pcB;
+            if (!BEAST_EXPECTS(
+                    secp256k1_ec_pubkey_parse(
+                        ctx, &pcB, pedersenCommitment.data(), kCompressedEcPointLength) == 1,
+                    "Failed to parse pedersen commitment"))
+                return;
+
+            secp256k1_pubkey b1, b2;
+            if (!BEAST_EXPECTS(
+                    secp256k1_ec_pubkey_parse(
+                        ctx, &b1, encryptedSpendingBalance.data(), kCompressedEcPointLength) == 1 &&
+                        secp256k1_ec_pubkey_parse(
+                            ctx,
+                            &b2,
+                            encryptedSpendingBalance.data() + kCompressedEcPointLength,
+                            kCompressedEcPointLength) == 1,
+                    "Failed to parse balance ciphertext"))
+                return;
+
+            Buffer sigmaProof(SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
+            if (!BEAST_EXPECTS(
+                    secp256k1_compact_convertback_prove(
+                        ctx,
+                        sigmaProof.data(),
+                        claimedBalance,
+                        bobPrivKey.data(),
+                        pcBlindingFactor.data(),
+                        &pkBob,
+                        &b1,
+                        &b2,
+                        &pcB,
+                        contextHash.data()) == 1,
+                    "Failed to generate convertback sigma proof"))
+                return;
+
+            auto const forgedBulletproof =
+                getForgedSingleBulletproof(claimedBalance - amt, pcBlindingFactor, contextHash);
+
+            Buffer proof(kEcConvertBackProofLength);
+            std::memcpy(proof.data(), sigmaProof.data(), SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
+            std::memcpy(
+                proof.data() + SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE,
+                forgedBulletproof.data(),
+                kEcSingleBulletproofLength);
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5377,7 +5437,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
             Buffer const badPedersenCommitment =
                 mptAlice.getPedersenCommitment(1, pcBlindingFactor);
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 contextHash,
@@ -5387,6 +5447,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5407,7 +5469,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         {
             uint256 const badContextHash{1};
 
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 badContextHash,  // wrong context hash
@@ -5417,6 +5479,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5436,7 +5500,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             uint256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 contextHash,
@@ -5446,6 +5510,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5921,22 +5987,75 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // linkage, and that the remaining balance is non-negative.
 
         // Test 1: Proof generated with wrong balance value.
-        // The sigma proof claims balance=1 but the spending balance contains the
-        // actual balance. The compact proof's balance-linkage check fails.
+        // The sigma proof claims balance=20 but the pedersen commitment and
+        // encrypted spending balance were built for the actual balance (40).
+        // mpt_get_convert_back_proof refuses to build a proof with a claimed
+        // balance below the amount being converted, so we forge the sigma
+        // proof directly against the real commitment/ciphertext (mirroring
+        // testConvertBackOverdraftBulletproofImpl) to exercise the ledger's
+        // balance-linkage check instead of that client-side guard.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
-            Buffer const proof = mptAlice.getConvertBackProof(
-                bob,
-                amt,
-                contextHash,
-                {
-                    .pedersenCommitment = pedersenCommitment,
-                    .amt = 1,  // wrong balance (actual balance is ~40)
-                    .encryptedAmt = encryptedSpendingBalance,
-                    .blindingFactor = pcBlindingFactor,
-                });
+            uint64_t constexpr claimedBalance = 20;  // wrong: real balance is 40
+
+            auto* const ctx = mpt_secp256k1_context();
+            auto const bobPubKey = requireOptional(mptAlice.getPubKey(bob), "Missing bob pubkey");
+            auto const bobPrivKey =
+                requireOptional(mptAlice.getPrivKey(bob), "Missing bob privkey");
+
+            secp256k1_pubkey pkBob;
+            if (!BEAST_EXPECTS(
+                    secp256k1_ec_pubkey_parse(
+                        ctx, &pkBob, bobPubKey.data(), kCompressedEcPointLength) == 1,
+                    "Failed to parse Bob's public key"))
+                return;
+
+            secp256k1_pubkey pcB;
+            if (!BEAST_EXPECTS(
+                    secp256k1_ec_pubkey_parse(
+                        ctx, &pcB, pedersenCommitment.data(), kCompressedEcPointLength) == 1,
+                    "Failed to parse pedersen commitment"))
+                return;
+
+            secp256k1_pubkey b1, b2;
+            if (!BEAST_EXPECTS(
+                    secp256k1_ec_pubkey_parse(
+                        ctx, &b1, encryptedSpendingBalance.data(), kCompressedEcPointLength) == 1 &&
+                        secp256k1_ec_pubkey_parse(
+                            ctx,
+                            &b2,
+                            encryptedSpendingBalance.data() + kCompressedEcPointLength,
+                            kCompressedEcPointLength) == 1,
+                    "Failed to parse balance ciphertext"))
+                return;
+
+            Buffer sigmaProof(SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
+            if (!BEAST_EXPECTS(
+                    secp256k1_compact_convertback_prove(
+                        ctx,
+                        sigmaProof.data(),
+                        claimedBalance,
+                        bobPrivKey.data(),
+                        pcBlindingFactor.data(),
+                        &pkBob,
+                        &b1,
+                        &b2,
+                        &pcB,
+                        contextHash.data()) == 1,
+                    "Failed to generate convertback sigma proof"))
+                return;
+
+            auto const forgedBulletproof =
+                getForgedSingleBulletproof(claimedBalance - amt, pcBlindingFactor, contextHash);
+
+            Buffer proof(kEcConvertBackProofLength);
+            std::memcpy(proof.data(), sigmaProof.data(), SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
+            std::memcpy(
+                proof.data() + SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE,
+                forgedBulletproof.data(),
+                kEcSingleBulletproofLength);
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5958,7 +6077,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             uint256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 contextHash,
@@ -5968,6 +6087,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = generateBlindingFactor(),  // wrong blinding factor
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5987,7 +6108,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // makes the proof invalid for this transaction, preventing replay attacks.
         {
             uint256 const badContextHash{1};
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 badContextHash,  // wrong context hash
@@ -5997,6 +6118,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -6016,7 +6139,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             uint256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 contextHash,
@@ -6026,6 +6149,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -6075,7 +6200,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
             auto const version = mptAlice.getMPTokenVersion(bob);
 
-            Buffer const proof = mptAlice.getConvertBackProof(
+            auto const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
                 makeContextHash(env, mptAlice, alice, bob, carol, version),
@@ -6086,6 +6211,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                         encryptedSpendingBalance, "Missing encrypted spending balance"),
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -6175,7 +6302,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         uint256 const contextHashA =
             getConvertBackContextHash(bob, mptAlice.issuanceID(), currentSeq, version);
 
-        Buffer const proofA = mptAlice.getConvertBackProof(
+        auto const proofA = mptAlice.getConvertBackProof(
             bob,
             amtA,
             contextHashA,
@@ -6185,6 +6312,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .encryptedAmt = encryptedSpendingBalance,
                 .blindingFactor = pcBlindingFactor,
             });
+        if (!BEAST_EXPECT(proofA.has_value()))
+            return;
 
         // Construct Transaction B with Amount m2 = 20 and attach Proof pi
         uint64_t const amtB = 20;
@@ -6256,7 +6385,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         uint256 const oldContextHash =
             getConvertBackContextHash(bob, mptAlice.issuanceID(), currentSeq, versionV);
 
-        Buffer const oldProof = mptAlice.getConvertBackProof(
+        auto const oldProof = mptAlice.getConvertBackProof(
             bob,
             amt,
             oldContextHash,
@@ -6266,6 +6395,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .encryptedAmt = encryptedSpendingBalanceV,
                 .blindingFactor = pcBlindingFactor,
             });
+        if (!BEAST_EXPECT(oldProof.has_value()))
+            return;
 
         // Submit and verify failure
         mptAlice.convertBack({
@@ -6328,7 +6459,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         uint256 const contextHash =
             getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), currentVersion);
 
-        Buffer const proof = mptAlice.getConvertBackProof(
+        auto const proof = mptAlice.getConvertBackProof(
             bob,
             amt,
             contextHash,
@@ -6338,6 +6469,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .encryptedAmt = spendingBalEnc,
                 .blindingFactor = pcBf,
             });
+        if (!BEAST_EXPECT(proof.has_value()))
+            return;
 
         // Submit transaction with Divergent Ciphertexts
         // Holder Ciphertext encrypts 11. Issuer Ciphertext encrypts 10.
@@ -6471,7 +6604,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         uint256 const contextHash =
             getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), currentVersion);
 
-        Buffer const proof = mptAlice.getConvertBackProof(
+        auto const proof = mptAlice.getConvertBackProof(
             bob,
             1,
             contextHash,
@@ -6481,6 +6614,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .encryptedAmt = underflowedCt,
                 .blindingFactor = pcBf,
             });
+        if (!BEAST_EXPECT(proof.has_value()))
+            return;
 
         mptAlice.convertBack({
             .account = bob,
@@ -7743,7 +7878,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             uint256 const convertBackCtxHash =
                 getConvertBackContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), version);
 
-            Buffer const convertBackProof = mptAlice.getConvertBackProof(
+            auto const convertBackProof = mptAlice.getConvertBackProof(
                 bob,
                 sendAmount,
                 convertBackCtxHash,
@@ -7753,14 +7888,18 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                     .encryptedAmt = encryptedSpending,
                     .blindingFactor = pcBlindingFactor,
                 });
+            if (!BEAST_EXPECT(convertBackProof.has_value()))
+                return;
 
             // Resize the convertBack proof to match the expected send proof
             // size so it passes preflight's size check and reaches the actual
             // ZK verification in doApply.
             auto const expectedSendSize = kEcSendProofLength;
             Buffer resizedProof(expectedSendSize);
-            auto const copyLen = std::min(convertBackProof.size(), expectedSendSize);
-            std::memcpy(resizedProof.data(), convertBackProof.data(), copyLen);
+            Buffer const& convertBackProofRef =
+                requireOptionalRef(convertBackProof, "Missing proof");
+            auto const copyLen = std::min(convertBackProofRef.size(), expectedSendSize);
+            std::memcpy(resizedProof.data(), convertBackProofRef.data(), copyLen);
             // Zero-pad the rest (if convertBack proof is shorter)
             if (copyLen < expectedSendSize)
                 std::memset(resizedProof.data() + copyLen, 0, expectedSendSize - copyLen);
