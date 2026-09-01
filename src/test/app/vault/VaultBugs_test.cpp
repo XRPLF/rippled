@@ -1913,6 +1913,85 @@ private:
         BEAST_EXPECT(!sponsorship->isFieldPresent(sfFeeAmount));
     }
 
+    // Same pre-funded fee path, but with the sponsor named as the withdrawal's
+    // own destination, so the sponsor is an inspected party and the
+    // SponsorPreFunded case in feePayerAccountRoot becomes load-bearing:
+    // returning the sponsor's AccountRoot here instead of nullopt would add a
+    // fee back that its balance never lost, inflating the destination delta to
+    // (payout + fee) and breaking the equality against the vault's outflow.
+    //
+    // Contrast testBugSponsorAsDestinationFeeMisappliedToPayout, where the
+    // sponsor co-signs and so really does pay from its own AccountRoot.
+    void
+    testPrefundedSponsorAsDestinationKeepsFullPayout()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env{*this, features};
+            Account const owner{"owner"};
+            Account const holder{"holder"};
+            Account const sponsor{"sponsor"};
+            env.fund(XRP(10'000), owner, holder, sponsor);
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+            env.close();
+
+            auto const fee = env.current()->fees().base;
+            env(sponsor::set_fee(sponsor, 0, fee), sponsor::SponseeAcc(holder));
+            env.close();
+
+            auto const vaultBefore = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultBefore))
+                return;
+            auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+            auto const holderBalanceBefore = env.balance(holder);
+            auto const sponsorBalanceBefore = env.balance(sponsor);
+
+            // The sponsor receives the withdrawal, but its fee is drawn from
+            // the sponsorship object rather than the AccountRoot being paid.
+            auto withdraw = vault.withdraw(
+                {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+            withdraw[sfDestination] = sponsor.human();
+            env(withdraw, Fee(fee), sponsor::As(sponsor, spfSponsorFee), Ter(expected));
+            env.close();
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            // Either way the fee never touches the sponsor's own balance.
+            BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
+
+            if (expected == tesSUCCESS)
+            {
+                BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+                BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore + XRP(100));
+                return;
+            }
+
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore);
+        };
+
+        testcase(
+            "bug: pre-funded sponsor named as withdrawal destination misreads "
+            "the sender's touched-but-zero delta as a second recipient "
+            "(pre-fixCleanup3_4_0)");
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+
+        testcase(
+            "bug: pre-funded sponsor named as withdrawal destination receives "
+            "the full payout (post-fixCleanup3_4_0)");
+        runScenario(all_, tesSUCCESS);
+    }
+
     // Unsponsored third-party XRP withdrawal: the sender's AccountRoot moves
     // by exactly -fee. Pre-amendment, the sender-only fee correction then
     // collapses that to absence so the dual-recipient guard does not fire.
@@ -1987,6 +2066,7 @@ public:
         testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
         testBugSponsorAsDestinationFeeMisappliedToPayout();
         testPrefundedFeeWithdrawToDistinctDestination();
+        testPrefundedSponsorAsDestinationKeepsFullPayout();
         testUnsponsoredWithdrawToDistinctDestinationPreAmendment();
     }
 };

@@ -417,7 +417,7 @@ ValidVault::finalize(
     beast::Journal const& j)
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
-    bool const fixEnabled = view.rules().enabled(fixCleanup3_4_0);
+    bool const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
@@ -609,7 +609,7 @@ ValidVault::finalize(
     else
     {
         bool const gapExceeded = [&] {
-            if (!fixEnabled)
+            if (!fix340Enabled)
             {
                 return afterVault.lossUnrealized >
                     afterVault.assetsTotal - afterVault.assetsAvailable;
@@ -631,7 +631,7 @@ ValidVault::finalize(
         }
     }
 
-    if (fixEnabled && afterVault.lossUnrealized < kZero)
+    if (fix340Enabled && afterVault.lossUnrealized < kZero)
     {
         JLOG(j.fatal()) << "Invariant failed: loss unrealized must not be negative";
         result = false;
@@ -893,7 +893,7 @@ ValidVault::finalize(
                 if (!issuerDeposit)
                 {
                     auto const maybeAccDeltaAssets =
-                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fixEnabled);
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fix340Enabled);
                     if (!maybeAccDeltaAssets)
                     {
                         JLOG(j.fatal())
@@ -918,7 +918,7 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    bool const acctVaultAddsUp = fixEnabled
+                    bool const acctVaultAddsUp = fix340Enabled
                         ? agreesWithinOneUnit(
                               localVaultDeltaAssets * -1,
                               accountDeltaAssets,
@@ -973,7 +973,7 @@ ValidVault::finalize(
 
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                bool const totalAddsUp = fixEnabled
+                bool const totalAddsUp = fix340Enabled
                     ? agreesWithinOneUnit(assetTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
                     : assetTotalDelta == vaultDeltaAssets;
                 if (!totalAddsUp)
@@ -985,7 +985,7 @@ ValidVault::finalize(
 
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-                bool const availableAddsUp = fixEnabled
+                bool const availableAddsUp = fix340Enabled
                     ? agreesWithinOneUnit(
                           assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
                     : assetAvailableDelta == vaultDeltaAssets;
@@ -1031,7 +1031,7 @@ ValidVault::finalize(
                 // value merely rounds down to zero, so a missing delta while
                 // the pool still held positive effective value indicates a
                 // real accounting bug, not this exception.
-                bool const zeroDeltaIsLegitimate = fixEnabled && !maybeVaultDeltaAssets &&
+                bool const zeroDeltaIsLegitimate = fix340Enabled && !maybeVaultDeltaAssets &&
                     beforeVault.assetsTotal == beforeVault.lossUnrealized;
 
                 if (!maybeVaultDeltaAssets && !zeroDeltaIsLegitimate)
@@ -1079,10 +1079,11 @@ ValidVault::finalize(
                     bool const distinctDestination =
                         destinationField.has_value() && *destinationField != tx[sfAccount];
 
-                    // Intentionally ungated: `fixEnabled &&` here would let the
+                    // Intentionally ungated: `fix340Enabled &&` here would let the
                     // pre-amendment sponsored case succeed and change consensus.
                     if (distinctDestination &&
-                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fixEnabled).has_value())
+                        deltaAssetsForParty(view, tx[sfAccount], tx, fee, fix340Enabled)
+                            .has_value())
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must change one destination balance";
@@ -1090,7 +1091,7 @@ ValidVault::finalize(
                     }
 
                     auto const maybeRecipientDelta =
-                        deltaAssetsForParty(view, recipient, tx, fee, fixEnabled);
+                        deltaAssetsForParty(view, recipient, tx, fee, fix340Enabled);
 
                     if (!maybeRecipientDelta.has_value())
                     {
@@ -1154,7 +1155,7 @@ ValidVault::finalize(
                                 vaultDeltaAssets.delta * -1 - destinationDelta.delta,
                                 destinationScale,
                                 Number::RoundingMode::Downward) == kZero;
-                        bool const withdrawAddsUp = fixEnabled
+                        bool const withdrawAddsUp = fix340Enabled
                             ? agreesWithinOneUnit(
                                   localPseudoDeltaAssets * -1,
                                   roundedDestinationDelta,
@@ -1204,7 +1205,7 @@ ValidVault::finalize(
                 auto const assetTotalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 // Note, vaultBalance is negative (see check above)
-                bool const totalAddsUp = fixEnabled
+                bool const totalAddsUp = fix340Enabled
                     ? agreesWithinOneUnit(
                           assetTotalDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
                     : assetTotalDelta == vaultPseudoDeltaAssets;
@@ -1218,7 +1219,7 @@ ValidVault::finalize(
                 auto const assetAvailableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
 
-                bool const availableAddsUp = fixEnabled
+                bool const availableAddsUp = fix340Enabled
                     ? agreesWithinOneUnit(
                           assetAvailableDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
                     : assetAvailableDelta == vaultPseudoDeltaAssets;
@@ -1267,7 +1268,7 @@ ValidVault::finalize(
 
                     auto const assetsTotalDelta = roundToAsset(
                         vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    bool const totalAddsUp = fixEnabled
+                    bool const totalAddsUp = fix340Enabled
                         ? agreesWithinOneUnit(
                               assetsTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
                         : assetsTotalDelta == vaultDeltaAssets;
@@ -1282,7 +1283,7 @@ ValidVault::finalize(
                         vaultAsset,
                         afterVault.assetsAvailable - beforeVault.assetsAvailable,
                         minScale);
-                    bool const availableAddsUp = fixEnabled
+                    bool const availableAddsUp = fix340Enabled
                         ? agreesWithinOneUnit(
                               assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
                         : assetAvailableDelta == vaultDeltaAssets;
