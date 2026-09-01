@@ -515,10 +515,6 @@ mod ffi {
         fn float_divide(self: &HostContext, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
-        #[cxx_name = "floatRoot"]
-        fn float_root(self: &HostContext, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> i32;
-
-        #[namespace = "xrpl"]
         #[cxx_name = "floatPower"]
         fn float_power(self: &HostContext, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> i32;
     }
@@ -878,10 +874,6 @@ impl HostFunctions for CxxHost<'_> {
 
     fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.float_divide(x, y, mode, out))
-    }
-
-    fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        bytes_written(self.ctx.float_root(x, n, mode, out))
     }
 
     fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {

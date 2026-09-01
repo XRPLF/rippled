@@ -407,6 +407,16 @@ using TxID = uint256;
 constexpr std::uint16_t kMaxDeletableAmmTrustLines = 512;
 
 /**
+ * The maximum number of owner-directory entries to walk when clearing
+ * credentials pinned to a pseudo-account, in a single transaction.
+ *
+ * The walk stops after this many entries whether or not each one turns out to
+ * be a credential, so a directory that also holds other objects yields fewer
+ * deletions per transaction.
+ */
+constexpr std::uint16_t kMaxDeletablePseudoAccountCredentials = 512;
+
+/**
  * The maximum length of a URI inside an Oracle
  */
 constexpr std::size_t kMaxOracleUri = 256;

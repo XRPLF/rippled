@@ -2,7 +2,7 @@
 
 These tests are deliberately **layered**: each layer isolates one thing, so a failure points at
 one place instead of "somewhere in the stack." If a folder looks thin, the breadth it seems to be
-missing lives in a sibling layer. This file is the map.
+missing lives in a sibling layer.
 
 ## The layers
 
@@ -63,7 +63,7 @@ cmake --build build --target xrpl.bench.wasm
 | ------------------- | ---------------------------------------------------------------------------------- |
 | `suggested_gas`     | **the answer** — what this function should be priced at                            |
 | `host_function_gas` | what `lib.rs` says today, read through the `wasm_testkit` bridge so it can't drift |
-| `price_ratio`       | `declared / suggested`. **1.0 is correct; below 1 is underpriced**                 |
+| `price_ratio`       | `host_function_gas / suggested_gas`. **1.0 is correct; below 1 is underpriced**    |
 | `implied_gas`       | the raw measurement, before the crossing is added back                             |
 | `charged_gas`       | what the engine actually billed; confirms the right call was measured              |
 | `ns_per_call`       | raw wall time, for debugging a suspicious ratio                                    |
@@ -176,9 +176,3 @@ the `EscrowFinish` transactor, so there is no caller under `src/xrpld`. When it 
 need a home as C++ transactor tests over a real `Env` — `set_data` persistence (including on
 `tecBYTECODE_REJECTED`), `sfGasUsed` / `sfVMReturnCode` in transaction metadata, and owner-reserve
 accounting for a bytecode-bearing escrow. The layers here deliberately stop at the VM boundary.
-
----
-
-The old→new coverage map for the retired `Wasm_test.cpp` and `wasm_fixtures/` guests lives in the
-migration notes and this PR's history; it is a record of a completed port rather than something a
-reader of these tests needs.

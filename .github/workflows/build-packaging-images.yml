@@ -33,12 +33,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Newest of each distro: these images only wrap pre-built binaries, so
+        # they set no floor for consumers. build_pkg.py pins the RPM dist tag.
         distro:
           - name: debian
-            base_image: debian:bookworm
-          # AlmaLinux rather than UBI9, which does not ship rpm-sign.
+            base_image: debian:trixie
+          # AlmaLinux rather than UBI, which does not ship rpm-sign.
           - name: rhel
-            base_image: almalinux:9
+            base_image: almalinux:10
     uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@65d5a0bd72be4ecea95cff0673a6e0672ab5243a
     with:
       image_name: xrpld/packaging-${{ matrix.distro.name }}

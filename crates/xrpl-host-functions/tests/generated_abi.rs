@@ -560,14 +560,6 @@ impl HostFunctions for FakeHost {
         put(out, &[x[0]])
     }
 
-    /// A one-float-and-integer operator; `InvalidParams` on an empty operand.
-    fn float_root(&self, x: &[u8], _n: i32, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        if x.is_empty() {
-            return Err(HostError::InvalidParams);
-        }
-        put(out, &[x[0]])
-    }
-
     /// The same shape, for exponentiation.
     fn float_power(&self, x: &[u8], _n: i32, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
         if x.is_empty() {
@@ -824,7 +816,6 @@ fn the_trait_is_implementable() {
     assert_eq!(host.float_subtract(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
     assert_eq!(host.float_multiply(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
     assert_eq!(host.float_divide(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_root(&[3; 8], 2, 0, &mut out), Ok(1));
     assert_eq!(host.float_power(&[3; 8], 2, 0, &mut out), Ok(1));
 
     assert_eq!(*host.traced.borrow(), ["hello/AsHex/2"]);
@@ -951,7 +942,6 @@ fn the_spec_table_matches_the_declarations() {
             ("float_sub", 160),
             ("float_mult", 300),
             ("float_div", 300),
-            ("float_root", 5500),
             ("float_pow", 5500),
         ]
     );

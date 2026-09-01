@@ -1011,23 +1011,6 @@ fn float_add_reads_both_operands_and_the_mode() {
     );
 }
 
-/// A unary operator that reads one float region, an integer, and a mode: all three
-/// reach the host, tagged by operator.
-#[test]
-fn float_root_reads_the_float_the_degree_and_the_mode() {
-    let host = FakeHost::new().answering_float(support::Answer::filler(8));
-
-    let wat = module(
-        &[import::FLOAT_ROOT, ONE_PAGE],
-        "(call $float_root (i32.const 0) (i32.const 8) (i32.const 3) (i32.const 64) (i32.const 8) (i32.const 1))",
-    );
-    assert_eq!(status(&wat, &host), 8, "the result length");
-    assert_eq!(
-        *host.float_unary_ops_asked.borrow(),
-        vec![("root", vec![0u8; 8], 3, 1)]
-    );
-}
-
 /// A leading scalar parameter reaches the host as declared.
 #[test]
 fn home_le_field_passes_the_field_selector_through() {
@@ -1309,7 +1292,6 @@ fn float_div_reads_both_operands_and_the_mode() {
     );
 }
 
-/// `float_pow` marshals like `float_root`: one float region, an integer degree, and a mode.
 #[test]
 fn float_pow_reads_the_float_the_degree_and_the_mode() {
     let host = FakeHost::new().answering_float(support::Answer::filler(8));

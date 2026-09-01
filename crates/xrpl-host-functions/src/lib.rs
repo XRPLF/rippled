@@ -496,11 +496,6 @@ host_functions! {
     #[wasm_name = "float_div"]
     fn float_divide(&self, x: &[u8], y: &[u8], mode: i32, out: &mut [u8]) -> HostResult<usize>;
 
-    /// The `n`-th root of the float `x` under rounding `mode`.
-    #[gas = 5500]
-    #[wasm_name = "float_root"]
-    fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize>;
-
     /// The float `x` raised to the power `n` under rounding `mode`.
     #[gas = 5500]
     #[wasm_name = "float_pow"]
