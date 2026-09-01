@@ -303,7 +303,7 @@ class ValidTrustLineAuth
     struct BalanceChange
     {
         AccountID holder;
-        bool authorized;
+        bool authorized = false;
     };
 
     struct IssueChanges

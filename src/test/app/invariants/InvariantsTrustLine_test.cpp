@@ -13,9 +13,11 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -37,6 +39,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -307,6 +310,26 @@ class InvariantsTrustLine_test : public InvariantsBase
             STTx{ttPAYMENT, [](STObject& tx) {}},
             {tesSUCCESS, tesSUCCESS},
             authorizedLine);
+
+        // test: the authorization must predate the transaction. Stamping the
+        // flag onto the line in the same transaction that credits it can
+        // only be a buggy transactor -- a legitimate grant (TrustSet with
+        // tfSetfAuth) never moves a balance.
+        doInvariantCheck(
+            {{"an unauthorized trust line gained funds"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::trustLine(a1, g1["USD"]));
+                if (!sle)
+                    return false;
+                bool const g1IsLow = g1.id() < a1.id();
+                sle->setFieldU32(sfFlags, sle->getFlags() | (g1IsLow ? lsfLowAuth : lsfHighAuth));
+                ac.view().update(sle);
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            unauthorizedLine);
 
         // test: a gain under a missing issuer account root -- possible only
         // through a buggy transactor -- leaves authorization unknowable, so

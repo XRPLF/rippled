@@ -791,9 +791,15 @@ ValidTrustLineAuth::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_
         AccountID const issuer = after->at(holderIsHigh ? sfLowLimit : sfHighLimit).getIssuer();
         auto& group = changes_[Issue{currency, issuer}];
 
+        // The flag on the issuer's side of the line authorizes the opposite
+        // (holder) side. Like the pseudo-account marker, it must predate the
+        // transaction (or the line be created by it): granting authorization
+        // (TrustSet with tfSetfAuth) never moves a balance, so a same-
+        // transaction flag-and-credit can only be a buggy transactor.
         BalanceChange const change{
             .holder = after->at(holderIsHigh ? sfHighLimit : sfLowLimit).getIssuer(),
-            .authorized = after->isFlag(holderIsHigh ? lsfLowAuth : lsfHighAuth)};
+            .authorized =
+                (before ? before : after)->isFlag(holderIsHigh ? lsfLowAuth : lsfHighAuth)};
         (holdingsAfter > holdingsBefore ? group.receivers : group.senders).push_back(change);
     }
 }
