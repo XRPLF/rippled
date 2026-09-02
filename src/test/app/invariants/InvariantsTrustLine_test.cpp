@@ -254,7 +254,7 @@ class InvariantsTrustLine_test : public InvariantsBase
 
         // Preclose: g1 requires authorization and a1 opens a line that g1
         // never authorizes. No valid transaction can give it a balance.
-        auto const unauthorizedLine = [&](Account const& a1, Account const& a2, Env& env) {
+        auto const unauthorizedLine = [&](Account const& a1, Account const&, Env& env) {
             env.fund(XRP(1000), g1);
             env(fset(g1, asfRequireAuth));
             env.close();
@@ -286,7 +286,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         // fixCleanup3_4_0 the invariant enforces).
         doInvariantCheck(
             {{"an unauthorized trust line gained funds"}},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return setHolderBalance(a1, ac, 100);
             },
             XRPAmount{},
@@ -300,7 +300,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         doInvariantCheck(
             makeEnv(testableAmendments() - fixCleanup3_4_0),
             {{"an unauthorized trust line gained funds"}},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return setHolderBalance(a1, ac, 100);
             },
             XRPAmount{},
@@ -311,7 +311,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         // test: once the issuer grants authorization the line may gain funds.
         doInvariantCheck(
             {},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return setHolderBalance(a1, ac, 100);
             },
             XRPAmount{},
@@ -319,13 +319,26 @@ class InvariantsTrustLine_test : public InvariantsBase
             {tesSUCCESS, tesSUCCESS},
             authorizedLine);
 
+        // test: AMMClawback is exempt from the invariant -- issuer-driven
+        // remediation may recreate the paired-asset balance on an
+        // unauthorized line and must not be held hostage by it.
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttAMM_CLAWBACK, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            unauthorizedLine);
+
         // test: the authorization must predate the transaction. Stamping the
         // flag onto the line in the same transaction that credits it can
         // only be a buggy transactor -- a legitimate grant (TrustSet with
         // tfSetfAuth) never moves a balance.
         doInvariantCheck(
             {{"an unauthorized trust line gained funds"}},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
                 auto const sle = ac.view().peek(keylet::trustLine(a1, g1["USD"]));
                 if (!sle)
                     return false;
@@ -339,12 +352,31 @@ class InvariantsTrustLine_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             unauthorizedLine);
 
-        // test: a gain under a missing issuer account root -- possible only
-        // through a buggy transactor -- leaves authorization unknowable, so
-        // it fails closed with every exemption withheld.
+        // test: like the line's auth flags, the issuer's lsfRequireAuth is
+        // read from the pre-transaction state: clearing it (AccountSet) never
+        // moves a balance, so a same-transaction clear-and-credit cannot
+        // suppress the check.
         doInvariantCheck(
-            {{"an unauthorized trust line gained funds (missing issuer account root)"}},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            {{"an unauthorized trust line gained funds"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const root = ac.view().peek(keylet::account(g1.id()));
+                if (!root)
+                    return false;
+                root->setFieldU32(sfFlags, root->getFlags() & ~lsfRequireAuth);
+                ac.view().update(root);
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            unauthorizedLine);
+
+        // test: deleting the issuer's account root cannot suppress the check
+        // either -- the root still resolves through its pre-transaction
+        // state.
+        doInvariantCheck(
+            {{"an unauthorized trust line gained funds"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
                 auto const root = ac.view().peek(keylet::account(g1.id()));
                 if (!root)
                     return false;
@@ -356,16 +388,40 @@ class InvariantsTrustLine_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             unauthorizedLine);
 
+        // test: a gain under an issuer account root that existed in neither
+        // the pre- nor the post-transaction state -- possible only through a
+        // buggy transactor rewriting the line's limit fields -- leaves
+        // authorization unknowable, so it fails closed with every exemption
+        // withheld.
+        doInvariantCheck(
+            {{"an unauthorized trust line gained funds (missing issuer account root)"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::trustLine(a1, g1["USD"]));
+                if (!sle)
+                    return false;
+                // Repoint the issuer's side of the line at an account that
+                // never existed.
+                Account const phantom{"phantom"};
+                bool const a1IsLow = a1.id() < g1.id();
+                sle->setFieldAmount(a1IsLow ? sfHighLimit : sfLowLimit, phantom["USD"](0));
+                ac.view().update(sle);
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            unauthorizedLine);
+
         // test: an issuer without lsfRequireAuth needs no authorization.
         doInvariantCheck(
             {},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return setHolderBalance(a1, ac, 100);
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject& tx) {}},
             {tesSUCCESS, tesSUCCESS},
-            [&](Account const& a1, Account const& a2, Env& env) {
+            [&](Account const& a1, Account const&, Env& env) {
                 env.fund(XRP(1000), g1);
                 env.trust(g1["USD"](10000), a1);
                 env.close();
@@ -406,7 +462,7 @@ class InvariantsTrustLine_test : public InvariantsBase
                 a1,
                 a2,
                 {},
-                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
                     return setHolderBalance(a1, ac, 40);
                 },
                 XRPAmount{},
@@ -425,7 +481,7 @@ class InvariantsTrustLine_test : public InvariantsBase
                 a1,
                 a2,
                 {{"an unauthorized trust line gained funds"}},
-                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
                     return setHolderBalance(a1, ac, 150);
                 },
                 XRPAmount{},
@@ -577,7 +633,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         std::optional<Keylet> vaultKeylet;
         doInvariantCheck(
             {},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            [&](Account const&, Account const&, ApplyContext& ac) {
                 if (!vaultKeylet)
                     return false;
                 auto const vaultSle = ac.view().read(*vaultKeylet);
@@ -608,6 +664,72 @@ class InvariantsTrustLine_test : public InvariantsBase
                 env.close();
                 return env.le(keylet) != nullptr;
             });
+    }
+
+    void
+    testValidTrustLineAuthLPTokens()
+    {
+        using namespace test::jtx;
+        testcase << "unauthorized LPToken gains";
+
+        Account const g1{"G1"};
+        std::optional<Issue> lpIssue;
+
+        // Preclose: g1 requires authorization for USD; a1 (authorized)
+        // creates an XRP/USD pool; a2 opens an LPToken line but is never
+        // authorized for USD.
+        auto const ammWithUnauthorizedHolder = [&](Account const& a1, Account const& a2, Env& env) {
+            env.fund(XRP(1000), g1);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            env(trust(g1, g1["USD"](0), a1, tfSetfAuth));
+            env.trust(g1["USD"](1000), a1);
+            env.close();
+            env(pay(g1, a1, g1["USD"](100)));
+            env.close();
+            AMM const amm(env, a1, XRP(100), g1["USD"](100));
+            lpIssue = amm.lptIssue();
+            env.trust(STAmount{*lpIssue, 1000}, a2);
+            env.close();
+            return true;
+        };
+
+        // Overwrite a2's LPToken balance directly, bypassing every
+        // transactor gate; only the invariant remains.
+        auto const gainLPTokens = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            if (!lpIssue)
+                return false;
+            auto const sle = ac.view().peek(keylet::trustLine(a2, *lpIssue));
+            if (!sle)
+                return false;
+            STAmount balance{*lpIssue, 10};
+            if (a2.id() > lpIssue->account)
+                balance.negate();
+            sle->setFieldAmount(sfBalance, balance);
+            ac.view().update(sle);
+            return true;
+        };
+
+        // test: post fixCleanup3_4_0 an LPToken gain by a receiver not
+        // authorized for both pool assets is rejected.
+        doInvariantCheck(
+            {{"an account gained LPTokens without authorization for the AMM's assets"}},
+            gainLPTokens,
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            ammWithUnauthorizedHolder);
+
+        // test: pre-amendment the same gain is logged but not failed.
+        lpIssue.reset();
+        doInvariantCheck(
+            makeEnv(testableAmendments() - fixCleanup3_4_0),
+            {{"an account gained LPTokens without authorization for the AMM's assets"}},
+            gainLPTokens,
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            ammWithUnauthorizedHolder);
     }
 
     void
@@ -925,6 +1047,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         testNoDeepFreezeTrustLinesWithoutFreeze();
         testTransfersNotFrozen();
         testValidTrustLineAuth();
+        testValidTrustLineAuthLPTokens();
         testUnauthorizedAccountHolds();
         testLegacyUnauthorizedEndToEnd();
         testUnauthorizedCheckCash();

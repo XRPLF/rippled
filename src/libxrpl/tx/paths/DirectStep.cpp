@@ -478,6 +478,23 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
             }
         }
 
+        // src_ being an AMM account means this step delivers its LPToken to
+        // dst_, handing dst_ exposure to both of the AMM's pool assets, so
+        // dst_ must be authorized for both; see checkLPTokenAuthorization.
+        // The reverse direction (dst_ is the AMM) is a return to the issuer
+        // and stays legal, letting an unauthorized holder divest.
+        if (ctx.view.rules().enabled(fixCleanup3_4_0) && sleSrc->isFieldPresent(sfAMMID))
+        {
+            if (auto const ter = checkLPTokenAuthorization(ctx.view, dst_, src_);
+                !isTesSuccess(ter))
+            {
+                JLOG(j_.debug()) << "DirectStepI: cannot deliver an LPToken to an account not "
+                                    "authorized for the AMM's assets. dst: "
+                                 << dst_;
+                return ter;
+            }
+        }
+
         if (ctx.prevStep != nullptr)
         {
             if (ctx.prevStep->bookStepBook())

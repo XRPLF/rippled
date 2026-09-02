@@ -312,6 +312,28 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
             return ter;
     }
+    else if (ctx.view.rules().enabled(fixCleanup3_4_0))
+    {
+        // fixCleanup3_4_0 forbids gaining LPTokens without authorization for
+        // both pool assets (the ValidTrustLineAuth invariant enforces it), so
+        // reject the deposit cleanly even on a ledger where neither
+        // fixCleanup3_3_0 nor featureAMMClawback has activated the checks
+        // above. Freeze handling is unchanged here; only authorization is.
+        auto checkAsset = [&](Asset const& asset) -> TER {
+            if (auto const ter = requireAuth(ctx.view, asset, accountID, AuthType::WeakAuth))
+            {
+                JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, " << asset;
+                return ter;
+            }
+            return tesSUCCESS;
+        };
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset]))
+            return ter;
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
+            return ter;
+    }
 
     auto checkAmount = [&](std::optional<STAmount> const& amount, bool checkBalance) -> TER {
         if (amount)

@@ -9,6 +9,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -31,6 +32,7 @@
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -758,6 +760,12 @@ ValidTrustLineAuth::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_
     if (after->getType() != ltRIPPLE_STATE || (before && before->getType() != ltRIPPLE_STATE))
         return;
 
+    // A deleted line vanishes from the post-transaction view; keep its
+    // pre-transaction state so finalize can still consult authorization that
+    // predates the transaction.
+    if (isDelete && before)
+        deletedLines_.emplace(after->key(), before);
+
     // sfBalance is signed from the low account's perspective: low holds
     // max(balance, 0) and high holds max(-balance, 0) of the other side's
     // IOU. Deleting a line drops its holdings to zero, so it is recorded as
@@ -812,6 +820,15 @@ ValidTrustLineAuth::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
+    // AMMClawback is issuer-driven remediation and deliberately ignores
+    // authorization: clawing one pool asset returns the paired asset to the
+    // holder even when the holder's line is missing or unauthorized, so the
+    // clawback is never held hostage by the paired asset's authorization
+    // state. The balance it recreates is still constrained like any other
+    // unauthorized balance -- it can only move back to its issuer.
+    if (tx.getTxnType() == ttAMM_CLAWBACK)
+        return true;
+
     bool const enforce = view.rules().enabled(fixCleanup3_4_0);
 
     // Pseudo-accounts hold assets on behalf of the object that owns them and
@@ -849,14 +866,85 @@ ValidTrustLineAuth::finalize(
 
     for (auto const& [issue, group] : changes_)
     {
-        auto const issuerSle = view.read(keylet::account(issue.account));
+        // Like the trust line auth flags and the pseudo-account markers, the
+        // issuer's flags are read from the pre-transaction state: clearing
+        // lsfRequireAuth (AccountSet) never moves a balance, so a same-
+        // transaction clear-and-credit can only be a buggy transactor.
+        // Issuers untouched by the transaction resolve through the view.
+        auto const issuerSle = [&]() -> SLE::const_pointer {
+            if (auto const it = accountRoots_.find(issue.account); it != accountRoots_.end())
+            {
+                auto const& [before, after] = it->second;
+                return before ? before : after;
+            }
+            return view.read(keylet::account(issue.account));
+        }();
+
+        // An LPToken -- an IOU issued by an AMM account -- is checked
+        // against the AMM's pool assets instead (see
+        // checkLPTokenAuthorization); the per-line rule below never applies
+        // because an AMM account never sets lsfRequireAuth. Senders are
+        // exempt: an unauthorized position can still unwind, transferred to
+        // a checked receiver or redeemed one asset at a time through a
+        // single-asset AMMWithdraw.
+        if (issuerSle && issuerSle->isFieldPresent(sfAMMID))
+        {
+            if (group.receivers.empty())
+                continue;
+
+            // Read through the post-transaction view like requireAuth; an
+            // unreadable AMM entry withholds every exemption (fail closed).
+            auto const ammSle = view.read(keylet::amm((*issuerSle)[sfAMMID]));
+
+            // The post-transaction lookup cannot see a pool-asset line the
+            // transaction itself deleted -- a deposit of a line's full
+            // balance deletes a default-shape line in the very transaction
+            // that delivers the LPTokens -- so consult the deleted line's
+            // captured pre-transaction state: authorization that predates
+            // the transaction still counts.
+            auto const deletedLineAuthorized = [&](AccountID const& holder, Asset const& asset) {
+                if (!asset.holds<Issue>())
+                    return false;
+                auto const& poolIssue = asset.get<Issue>();
+                auto const it = deletedLines_.find(
+                    keylet::trustLine(holder, poolIssue.account, poolIssue.currency).key);
+                if (it == deletedLines_.end())
+                    return false;
+                return it->second->isFlag(holder > poolIssue.account ? lsfLowAuth : lsfHighAuth);
+            };
+
+            auto const authorizedForBoth = [&](AccountID const& holder) {
+                if (!ammSle)
+                    return false;
+                std::array const assets{(*ammSle)[sfAsset], (*ammSle)[sfAsset2]};
+                return std::ranges::all_of(assets, [&](Asset const& asset) {
+                    return isTesSuccess(requireAuth(view, asset, holder, AuthType::WeakAuth)) ||
+                        deletedLineAuthorized(holder, asset);
+                });
+            };
+
+            for (auto const& change : group.receivers)
+            {
+                if (isPseudoHolder(change.holder) || authorizedForBoth(change.holder))
+                    continue;
+
+                JLOG(j.fatal()) << "Invariant failed: an account gained LPTokens without "
+                                   "authorization for the AMM's assets for "
+                                << tx.getTransactionID();
+                if (enforce)
+                    ok = false;
+            }
+            continue;
+        }
+
         if (issuerSle && !issuerSle->isFlag(lsfRequireAuth))
             continue;
 
-        // The issuer's account root can legitimately be missing in exactly
-        // one shape: the issuer was itself deleted together with its trust
-        // lines -- a fully withdrawn AMM pseudo-account burns its LP token
-        // lines -- In this case, there are no group.receivers category.
+        // Issuers deleted by the transaction (a fully withdrawn AMM
+        // pseudo-account burning its LP token lines) resolve through their
+        // pre-transaction root above, so a still-missing issuer root means
+        // the account existed in neither state: a trust line naming a
+        // nonexistent issuer is corruption, and no exemption applies.
         bool const issuerKnown = static_cast<bool>(issuerSle);
 
         check(group.receivers, issuerKnown, "gained");

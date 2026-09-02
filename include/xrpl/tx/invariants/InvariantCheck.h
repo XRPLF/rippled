@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
@@ -297,6 +298,10 @@ public:
  * Pseudo-accounts hold assets on behalf of the object that owns them and are
  * implicitly authorized, mirroring requireAuth.
  *
+ * LPTokens -- IOUs issued by an AMM account -- are checked differently: a
+ * receiver must be authorized to hold both of the AMM's pool assets; see
+ * checkLPTokenAuthorization.
+ *
  */
 class ValidTrustLineAuth
 {
@@ -319,6 +324,13 @@ class ValidTrustLineAuth
     // first (cf. TransfersNotFrozen::possibleIssuers_). Pair is
     // <before, after>; before is null for roots created by the transaction.
     std::map<AccountID, std::pair<SLE::const_pointer, SLE::const_pointer>> accountRoots_;
+
+    // Trust lines deleted by the transaction vanish from the post-transaction
+    // view too; their pre-transaction state, keyed by ledger index, lets
+    // finalize consult authorization that predates the transaction (e.g. a
+    // full-balance AMMCreate deletes the drained line in the very transaction
+    // that delivers the LPTokens).
+    std::map<uint256, SLE::const_pointer> deletedLines_;
 
 public:
     void

@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -913,7 +914,12 @@ tokenOfferCreatePreclaim(
             return tecNO_PERMISSION;
     }
 
-    if (view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !amount.native())
+    // fixCleanup3_4_0 only adds the LPToken pool-asset check inside
+    // checkTrustlineAuthorized; the trust line checks proper stay gated on
+    // fixEnforceNFTokenTrustlineV2 internally.
+    if ((view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
+         view.rules().enabled(fixCleanup3_4_0)) &&
+        !amount.native())
     {
         // If this is a sell offer, check that the account is allowed to
         // receive IOUs. If this is a buy offer, we have to check that trustline
@@ -1046,6 +1052,21 @@ checkTrustlineAuthorized(
             {
                 return tecNO_AUTH;
             }
+        }
+    }
+
+    // An NFT offer can be denominated in an LPToken, whose receiver must be
+    // authorized for both of the AMM's pool assets (see
+    // checkLPTokenAuthorization); the lsfRequireAuth check above cannot
+    // cover this.
+    if (view.rules().enabled(fixCleanup3_4_0))
+    {
+        if (auto const ter = checkLPTokenAuthorization(view, id, issue.account); !isTesSuccess(ter))
+        {
+            JLOG(j.debug()) << "xrpl::nft::checkTrustlineAuthorized: not "
+                               "authorized for the AMM's assets: "
+                            << to_string(id);
+            return ter;
         }
     }
 

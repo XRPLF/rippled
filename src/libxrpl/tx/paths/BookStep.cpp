@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -772,6 +773,19 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // Remove this offer even if no crossing occurs.
             removeOffer();
             // Returning true causes offers.step() to delete the offer.
+            return true;
+        }
+
+        // An offer owner not authorized for an LPToken's pool assets (see
+        // checkLPTokenAuthorization) cannot receive it. Remove the offer,
+        // as above, rather than leave it to fail the ValidTrustLineAuth
+        // invariant on every crossing -- e.g. an offer resting since before
+        // the amendment activated.
+        if (applyView.rules().enabled(fixCleanup3_4_0) && !isAssetInMPT && !isXRP(assetIn) &&
+            !isTesSuccess(
+                checkLPTokenAuthorization(applyView, owner, assetIn.get<Issue>().account)))
+        {
+            removeOffer();
             return true;
         }
 
