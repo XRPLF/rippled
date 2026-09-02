@@ -1,12 +1,8 @@
-We recommend two different methods to depend on libxrpl in your own [CMake][]
-project.
-Both methods add a CMake library target named `xrpl::libxrpl`.
+We recommend two different methods to depend on libxrpl in your own [CMake][] project. Both methods add a CMake library target named `xrpl::libxrpl`.
 
 ## Conan requirement
 
-The first method adds libxrpl as a [Conan][] requirement.
-With this method, there is no need for a Git [submodule][].
-It is good for when you just need a dependency on libxrpl as-is.
+The first method adds libxrpl as a [Conan][] requirement. With this method, there is no need for a Git [submodule][]. It is good for when you just need a dependency on libxrpl as-is.
 
 ```
 # This conanfile.txt is just an example.
@@ -49,16 +45,7 @@ cmake --build . --parallel
 
 ## CMake subdirectory
 
-The second method adds the [xrpld][] project as a CMake
-[subdirectory][add_subdirectory].
-This method works well when you keep the xrpld project as a Git
-[submodule][].
-It's good for when you want to make changes to libxrpl as part of your own
-project.
-Be careful, though.
-Your project will inherit all of the same CMake options,
-so watch out for name collisions.
-We still recommend using [Conan][] to download, build, and connect dependencies.
+The second method adds the [xrpld][] project as a CMake [subdirectory][add_subdirectory]. This method works well when you keep the xrpld project as a Git [submodule][]. It's good for when you want to make changes to libxrpl as part of your own project. Be careful, though. Your project will inherit all of the same CMake options, so watch out for name collisions. We still recommend using [Conan][] to download, build, and connect dependencies.
 
 ```
 # Add the project as a Git submodule.

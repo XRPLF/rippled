@@ -1,91 +1,70 @@
-| :warning: **WARNING** :warning:                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| :warning: **WARNING** :warning: |
+| --- |
 | These instructions assume you have a C++ development environment ready with Git, Python, Conan, CMake, and a C++ compiler. For help setting one up on Linux, macOS, or Windows, [see this guide](./docs/build/environment.md).<br><br>These instructions also assume a basic familiarity with Conan and CMake. If you are unfamiliar with Conan, you can read our [crash course](./docs/build/conan.md) or the official [Getting Started][conan-getting-started] walkthrough. |
 
 ## Minimum Requirements
 
-For the hardware needed to run a node, see
-[System Requirements](https://xrpl.org/system-requirements.html).
+For the hardware needed to run a node, see [System Requirements](https://xrpl.org/system-requirements.html).
 
-For the software needed to build xrpld, see the
-[environment setup guide](./docs/build/environment.md).
+For the software needed to build xrpld, see the [environment setup guide](./docs/build/environment.md).
 
 ## Operating Systems
 
 ### Linux
 
-The Ubuntu Linux distribution has received the highest level of quality
-assurance, testing, and support. We also support Red Hat and use Debian
-internally.
-Our Linux CI tooling is distro-independent and uses a Nix-based environment, so it should be possible to build on other Linux distributions as well, although we have not tested them.
+The Ubuntu Linux distribution has received the highest level of quality assurance, testing, and support. We also support Red Hat and use Debian internally. Our Linux CI tooling is distro-independent and uses a Nix-based environment, so it should be possible to build on other Linux distributions as well, although we have not tested them.
 
 ### macOS
 
-Many `xrpld` engineers use macOS for development.
-The minimum supported version is macOS 15 (Sequoia).
-CI testing is done in macOS 26 (Tahoe), but the build defaults `CMAKE_OSX_DEPLOYMENT_TARGET` to 15.
+Many `xrpld` engineers use macOS for development. The minimum supported version is macOS 15 (Sequoia). CI testing is done in macOS 26 (Tahoe), but the build defaults `CMAKE_OSX_DEPLOYMENT_TARGET` to 15.
 
 ### Windows
 
-Windows is used by some engineers for development only, and is not recommended
-for production use.
+Windows is used by some engineers for development only, and is not recommended for production use.
 
 ## Steps
 
 ### Branches
 
-For the latest set of untested features, or to contribute, choose the `develop`
-branch.
+For the latest set of untested features, or to contribute, choose the `develop` branch.
 
 ```bash
 git checkout develop
 ```
 
-For a release candidate, choose the relevant release branch, e.g.
-`release/3.2.x`.
+For a release candidate, choose the relevant release branch, e.g. `release/3.2.x`.
 
 ```bash
 git checkout release/3.2.x
 ```
 
-For a stable release, choose one of the [tagged
-releases](https://github.com/XRPLF/rippled/releases).
+For a stable release, choose one of the [tagged releases](https://github.com/XRPLF/rippled/releases).
 
 ### Set Up Conan
 
-Once your [development environment](./docs/build/environment.md) is ready, set
-Conan up for this repository:
+Once your [development environment](./docs/build/environment.md) is ready, set Conan up for this repository:
 
 ```bash
 ./conan/init.sh
 ```
 
-That installs our [`global.conf`](./conan/global.conf), our Conan
-[profiles](./conan/profiles), and the `xrplf` remote that hosts some of our
-dependencies. It honours `CONAN_HOME` and never deletes an existing Conan home,
-so it is safe to re-run — it only overwrites the files it manages.
+That installs our [`global.conf`](./conan/global.conf), our Conan [profiles](./conan/profiles), and the `xrplf` remote that hosts some of our dependencies. It honours `CONAN_HOME` and never deletes an existing Conan home, so it is safe to re-run — it only overwrites the files it manages.
 
+<!-- prettier-ignore -->
 > [!TIP]
-> In the [Nix development shell](./docs/build/nix.md#conan-configuration) this is
-> already done for you: the script runs on entry.
+> In the [Nix development shell](./docs/build/nix.md#conan-configuration) this is already done for you: the script runs on entry.
 
-You can inspect the resulting profile with `conan profile show`. If it is not
-suitable for your environment, create a custom profile and pass it to Conan — see
-[Advanced Conan configuration](./docs/build/advanced_conan.md).
+You can inspect the resulting profile with `conan profile show`. If it is not suitable for your environment, create a custom profile and pass it to Conan — see [Advanced Conan configuration](./docs/build/advanced_conan.md).
 
 ### Set Up Ccache
 
-To speed up repeated compilations, we recommend that you install
-[ccache](https://ccache.dev), a tool that wraps your compiler so that it can
-cache build objects locally.
+To speed up repeated compilations, we recommend that you install [ccache](https://ccache.dev), a tool that wraps your compiler so that it can cache build objects locally.
 
 On Linux and macOS, `ccache` is included in the [Nix development shell](./docs/build/nix.md).
 
 #### Windows
 
-You can install it using Chocolatey, i.e. `choco install ccache`. If you already
-have Ccache installed, then `choco upgrade ccache` will update it to the latest
-version. However, if you see an error such as:
+You can install it using Chocolatey, i.e. `choco install ccache`. If you already have Ccache installed, then `choco upgrade ccache` will update it to the latest version. However, if you see an error such as:
 
 ```
 terminate called after throwing an instance of 'std::bad_alloc'
@@ -93,8 +72,7 @@ terminate called after throwing an instance of 'std::bad_alloc'
 C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppCommon.targets(617,5): error MSB6006: "cl.exe" exited with code 3.
 ```
 
-then please install a specific version of Ccache that we know works, via: `choco
-install ccache --version 4.11.3 --allow-downgrade`.
+then please install a specific version of Ccache that we know works, via: `choco install ccache --version 4.11.3 --allow-downgrade`.
 
 ### Build and Test
 
@@ -105,14 +83,9 @@ install ccache --version 4.11.3 --allow-downgrade`.
    cd .build
    ```
 
-   You can use any directory name. Conan treats your working directory as an
-   install folder and generates files with implementation details.
-   You don't need to worry about these files, but make sure to change
-   your working directory to your build directory before calling Conan.
+   You can use any directory name. Conan treats your working directory as an install folder and generates files with implementation details. You don't need to worry about these files, but make sure to change your working directory to your build directory before calling Conan.
 
-   **Note:** You can specify a directory for the installation files by adding
-   the `install-folder` or `-if` option to every `conan install` command
-   in the next step.
+   **Note:** You can specify a directory for the installation files by adding the `install-folder` or `-if` option to every `conan install` command in the next step.
 
 2. Use conan to generate CMake files for every configuration you want to build:
 
@@ -123,25 +96,15 @@ install ccache --version 4.11.3 --allow-downgrade`.
 
    To build Debug, in the next step, be sure to set `-DCMAKE_BUILD_TYPE=Debug`
 
-   For a single-configuration generator, e.g. `Unix Makefiles` or `Ninja`,
-   you only need to run this command once.
-   For a multi-configuration generator, e.g. `Visual Studio`, you may want to
-   run it more than once.
+   For a single-configuration generator, e.g. `Unix Makefiles` or `Ninja`, you only need to run this command once. For a multi-configuration generator, e.g. `Visual Studio`, you may want to run it more than once.
 
-   Each of these commands should also have a different `build_type` setting.
-   A second command with the same `build_type` setting will overwrite the files
-   generated by the first. You can pass the build type on the command line with
-   `--settings build_type=$BUILD_TYPE` or in the profile itself,
-   under the section `[settings]` with the key `build_type`.
+   Each of these commands should also have a different `build_type` setting. A second command with the same `build_type` setting will overwrite the files generated by the first. You can pass the build type on the command line with `--settings build_type=$BUILD_TYPE` or in the profile itself, under the section `[settings]` with the key `build_type`.
 
-3. Configure CMake and pass the toolchain file generated by Conan, located at
-   `$OUTPUT_FOLDER/build/generators/conan_toolchain.cmake`.
+3. Configure CMake and pass the toolchain file generated by Conan, located at `$OUTPUT_FOLDER/build/generators/conan_toolchain.cmake`.
 
    Single-config generators:
 
-   Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
-   and make sure it matches the one of the `build_type` settings
-   you chose in the previous step.
+   Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type] and make sure it matches the one of the `build_type` settings you chose in the previous step.
 
    For example, to build Debug, in the next command, replace "Release" with "Debug"
 
@@ -159,9 +122,7 @@ install ccache --version 4.11.3 --allow-downgrade`.
 
 4. Build `xrpld`.
 
-   For a single-configuration generator, it will build whatever configuration
-   you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator, you
-   must pass the option `--config` to select the build configuration.
+   For a single-configuration generator, it will build whatever configuration you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator, you must pass the option `--config` to select the build configuration.
 
    Single-config generators:
 
@@ -176,8 +137,7 @@ install ccache --version 4.11.3 --allow-downgrade`.
    cmake --build . --config Debug --parallel N
    ```
 
-   Replace the `--parallel` parameter N with the desired number of parallel jobs. A common starting point is half of the number of available CPU
-   cores.
+   Replace the `--parallel` parameter N with the desired number of parallel jobs. A common starting point is half of the number of available CPU cores.
 
 5. Test xrpld.
 
@@ -194,28 +154,20 @@ install ccache --version 4.11.3 --allow-downgrade`.
    ./Debug/xrpld --unittest --unittest-jobs N
    ```
 
-   Replace the `--unittest-jobs` parameter N with the desired unit tests
-   concurrency. Recommended setting is half of the number of available CPU
-   cores.
+   Replace the `--unittest-jobs` parameter N with the desired unit tests concurrency. Recommended setting is half of the number of available CPU cores.
 
-   The location of `xrpld` binary in your build directory depends on your
-   CMake generator. Pass `--help` to see the rest of the command line options.
+   The location of `xrpld` binary in your build directory depends on your CMake generator. Pass `--help` to see the rest of the command line options.
 
 ## Code generation
 
-The protocol wrapper classes in `include/xrpl/protocol_autogen/` are generated
-from macro definition files in `include/xrpl/protocol/detail/`. If you modify
-the macro files (e.g. `transactions.macro`, `ledger_entries.macro`) or the
-generation scripts/templates in `cmake/scripts/codegen/`, you need to regenerate the
-files:
+The protocol wrapper classes in `include/xrpl/protocol_autogen/` are generated from macro definition files in `include/xrpl/protocol/detail/`. If you modify the macro files (e.g. `transactions.macro`, `ledger_entries.macro`) or the generation scripts/templates in `cmake/scripts/codegen/`, you need to regenerate the files:
 
 ```
 cmake --build . --target setup_code_gen  # create venv and install dependencies (once)
 cmake --build . --target code_gen        # regenerate code
 ```
 
-The same targets are also available as a standalone project, which does not
-need the dependencies to be configured first:
+The same targets are also available as a standalone project, which does not need the dependencies to be configured first:
 
 ```
 cmake -S cmake/codegen -B build/codegen
@@ -223,15 +175,11 @@ cmake --build build/codegen --target setup_code_gen
 cmake --build build/codegen --target code_gen
 ```
 
-The regenerated files should be committed alongside your changes. CI verifies
-that they are up-to-date.
+The regenerated files should be committed alongside your changes. CI verifies that they are up-to-date.
 
 ## Coverage report
 
-The coverage report is intended for developers using compilers GCC
-or Clang (including Apple Clang). It is generated by the build target `coverage`,
-which is only enabled when the `coverage` option is set, e.g. with
-`--options coverage=True` in `conan` or `-Dcoverage=ON` variable in `cmake`
+The coverage report is intended for developers using compilers GCC or Clang (including Apple Clang). It is generated by the build target `coverage`, which is only enabled when the `coverage` option is set, e.g. with `--options coverage=True` in `conan` or `-Dcoverage=ON` variable in `cmake`
 
 Prerequisites for the coverage report:
 
@@ -239,34 +187,19 @@ Prerequisites for the coverage report:
 - `gcov` for GCC or `llvm-cov` for Clang, usually installed with the compiler
 - `Debug` build type
 
+<!-- prettier-ignore -->
 > [!NOTE]
-> Clang coverage is not available in the [Nix development shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell):
-> its `clang` shells do not ship `llvm-cov`. Use a `gcc` shell instead (`.#gcc`,
-> or `.#gcc-plain` on Linux), which provides a `gcov` matching its compiler.
+> Clang coverage is not available in the [Nix development shell](./docs/build/nix.md#building-xrpld-in-the-nix-shell): its `clang` shells do not ship `llvm-cov`. Use a `gcc` shell instead (`.#gcc`, or `.#gcc-plain` on Linux), which provides a `gcov` matching its compiler.
 
 A coverage report is created when the following steps are completed, in order:
 
-1. `xrpld` binary built with instrumentation data, enabled by the `coverage`
-   option mentioned above
+1. `xrpld` binary built with instrumentation data, enabled by the `coverage` option mentioned above
 2. completed one or more run of the unit tests, which populates coverage capture data
-3. completed run of the `gcovr` tool (which internally invokes either `gcov` or `llvm-cov`)
-   to assemble both instrumentation data and the coverage capture data into a coverage report
+3. completed run of the `gcovr` tool (which internally invokes either `gcov` or `llvm-cov`) to assemble both instrumentation data and the coverage capture data into a coverage report
 
-The last step of the above is automated into a single target `coverage`. The instrumented
-`xrpld` binary can also be used for regular development or testing work, at
-the cost of extra disk space utilization and a small performance hit
-(to store coverage capture data). Since `xrpld` binary is simply a dependency of the
-coverage report target, it is possible to re-run the `coverage` target without
-rebuilding the `xrpld` binary. Note, running of the unit tests before the `coverage`
-target is left to the developer. Each such run will append to the coverage data
-collected in the build directory.
+The last step of the above is automated into a single target `coverage`. The instrumented `xrpld` binary can also be used for regular development or testing work, at the cost of extra disk space utilization and a small performance hit (to store coverage capture data). Since `xrpld` binary is simply a dependency of the coverage report target, it is possible to re-run the `coverage` target without rebuilding the `xrpld` binary. Note, running of the unit tests before the `coverage` target is left to the developer. Each such run will append to the coverage data collected in the build directory.
 
-The default coverage report format is `html-details`, but the user
-can override it to any of the formats listed in `Builds/CMake/CodeCoverage.cmake`
-by setting the `coverage_format` variable in `cmake`. It is also possible
-to generate more than one format at a time by setting the `coverage_extra_args`
-variable in `cmake`. The specific command line used to run the `gcovr` tool will be
-displayed if the `CODE_COVERAGE_VERBOSE` variable is set.
+The default coverage report format is `html-details`, but the user can override it to any of the formats listed in `Builds/CMake/CodeCoverage.cmake` by setting the `coverage_format` variable in `cmake`. It is also possible to generate more than one format at a time by setting the `coverage_extra_args` variable in `cmake`. The specific command line used to run the `gcovr` tool will be displayed if the `CODE_COVERAGE_VERBOSE` variable is set.
 
 Example use with some cmake variables set:
 
@@ -277,16 +210,14 @@ cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -Dxrpld=ON -Dtests=ON -Dcoverage_te
 cmake --build . --target coverage
 ```
 
-After the `coverage` target is completed, the generated coverage report will be
-stored inside the build directory, as either of:
+After the `coverage` target is completed, the generated coverage report will be stored inside the build directory, as either of:
 
 - file named `coverage.`_extension_, with a suitable extension for the report format, or
 - directory named `coverage`, with the `index.html` and other files inside, for the `html-details` or `html-nested` report formats.
 
 ## Sanitizers
 
-To build dependencies and xrpld with sanitizer instrumentation, set the
-`SANITIZERS` environment variable when running `conan install` and use the `sanitizers` profile:
+To build dependencies and xrpld with sanitizer instrumentation, set the `SANITIZERS` environment variable when running `conan install` and use the `sanitizers` profile:
 
 ```bash
 export SANITIZERS=address,undefinedbehavior
@@ -300,42 +231,27 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 
 ## Options
 
-| Option           | Default Value | Description                                                                   |
-| ---------------- | ------------- | ----------------------------------------------------------------------------- |
-| `assert`         | OFF           | Force enabling assertions.                                                    |
-| `coverage`       | OFF           | Prepare the coverage report.                                                  |
-| `rust`           | OFF           | Build the Rust crates and the C++ code that depends on them.                  |
-| `tests`          | OFF           | Build tests.                                                                  |
-| `unity`          | OFF           | Configure a unity build.                                                      |
-| `verify_headers` | ON            | Make the `verify-headers` target available to compile each header on its own. |
-| `xrpld`          | OFF           | Build the xrpld application, and not just the libxrpl library.                |
-| `werr`           | OFF           | Treat compilation warnings as errors                                          |
-| `wextra`         | OFF           | Enable additional compilation warnings                                        |
+| Option | Default Value | Description |
+| --- | --- | --- |
+| `assert` | OFF | Force enabling assertions. |
+| `coverage` | OFF | Prepare the coverage report. |
+| `rust` | OFF | Build the Rust crates and the C++ code that depends on them. |
+| `tests` | OFF | Build tests. |
+| `unity` | OFF | Configure a unity build. |
+| `verify_headers` | ON | Make the `verify-headers` target available to compile each header on its own. |
+| `xrpld` | OFF | Build the xrpld application, and not just the libxrpl library. |
+| `werr` | OFF | Treat compilation warnings as errors |
+| `wextra` | OFF | Enable additional compilation warnings |
 
-[Unity builds][unity-build] may be faster for the first build (at the cost of much more
-memory) since they concatenate sources into fewer translation units. Non-unity
-builds may be faster for incremental builds, and can be helpful for detecting
-`#include` omissions.
+[Unity builds][unity-build] may be faster for the first build (at the cost of much more memory) since they concatenate sources into fewer translation units. Non-unity builds may be faster for incremental builds, and can be helpful for detecting `#include` omissions.
 
 ### Rust crates
 
-The Rust crates in `crates/` are only part of the build when `rust` is ON. With
-`-Drust=OFF` (the default) the `crates` directory is not added to the build, no
-cxxbridge bindings are generated, and the C++ tests that exercise the Rust
-interop are not compiled — so no Rust toolchain is needed. CI builds always pass
-`-Drust=ON`.
+The Rust crates in `crates/` are only part of the build when `rust` is ON. With `-Drust=OFF` (the default) the `crates` directory is not added to the build, no cxxbridge bindings are generated, and the C++ tests that exercise the Rust interop are not compiled — so no Rust toolchain is needed. CI builds always pass `-Drust=ON`.
 
-With `-Drust=ON` you need one extra dependency: a Rust toolchain (`cargo`,
-`rustc`) matching the channel pinned in
-[`rust-toolchain.toml`](./rust-toolchain.toml), which compiles the crates and
-generates the cxxbridge bindings. It is provided by the
-[Nix development shell](./docs/build/nix.md), so `-Drust=ON` works there without
-any extra setup; otherwise install it as described in
-[Rust](./docs/build/environment.md#rust).
+With `-Drust=ON` you need one extra dependency: a Rust toolchain (`cargo`, `rustc`) matching the channel pinned in [`rust-toolchain.toml`](./rust-toolchain.toml), which compiles the crates and generates the cxxbridge bindings. It is provided by the [Nix development shell](./docs/build/nix.md), so `-Drust=ON` works there without any extra setup; otherwise install it as described in [Rust](./docs/build/environment.md#rust).
 
-The crates also have their own Rust unit tests. Those are run with `cargo` and
-need only the Rust toolchain, independently of CMake and of the `rust` option
-(CI runs them with `cargo nextest`):
+The crates also have their own Rust unit tests. Those are run with `cargo` and need only the Rust toolchain, independently of CMake and of the `rust` option (CI runs them with `cargo nextest`):
 
 ```bash
 cargo test --manifest-path crates/Cargo.toml --workspace
@@ -343,22 +259,13 @@ cargo test --manifest-path crates/Cargo.toml --workspace
 
 ### Verifying headers
 
-The regular build only compiles `.cpp` files, so a header is only ever checked
-through whatever translation unit happens to include it. A header that forgets
-an `#include` is not caught as long as every `.cpp` that uses it includes its
-missing dependency first. The `verify_headers` option (ON by default) adds a
-`verify-headers` target that compiles every header on its own, which fails if a
-header is not self-contained:
+The regular build only compiles `.cpp` files, so a header is only ever checked through whatever translation unit happens to include it. A header that forgets an `#include` is not caught as long as every `.cpp` that uses it includes its missing dependency first. The `verify_headers` option (ON by default) adds a `verify-headers` target that compiles every header on its own, which fails if a header is not self-contained:
 
 ```bash
 cmake --build . --target verify-headers
 ```
 
-The per-header objects are excluded from the `all` target, so a normal build
-never compiles them; they are built only through `verify-headers`. The generated
-translation units do appear in `compile_commands.json`, so clang-tidy (and
-clangd and IDEs) can lint each header on its own. Pass `-Dverify_headers=OFF` to
-omit them entirely.
+The per-header objects are excluded from the `all` target, so a normal build never compiles them; they are built only through `verify-headers`. The generated translation units do appear in `compile_commands.json`, so clang-tidy (and clangd and IDEs) can lint each header on its own. Pass `-Dverify_headers=OFF` to omit them entirely.
 
 ## Troubleshooting
 
@@ -385,20 +292,15 @@ After any updates or changes to dependencies, you may need to do the following:
 4. [Regenerate lockfile](./docs/build/advanced_conan.md#conan-lockfile).
 5. Re-run [conan install](#build-and-test).
 
-If you are using the Nix development shell, whether prebuilt Conan binaries apply
-depends on your platform — see
-[Prebuilt packages](./docs/build/nix.md#prebuilt-packages).
+If you are using the Nix development shell, whether prebuilt Conan binaries apply depends on your platform — see [Prebuilt packages](./docs/build/nix.md#prebuilt-packages).
 
 #### ERROR: Package not resolved
 
-If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
-please [set Conan up](#set-up-conan) so the `xrplf` remote is configured, or re-run `conan export` for [patched recipes](./docs/build/advanced_conan.md#patched-recipes).
+If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`, please [set Conan up](#set-up-conan) so the `xrplf` remote is configured, or re-run `conan export` for [patched recipes](./docs/build/advanced_conan.md#patched-recipes).
 
 ### `protobuf/port_def.inc` file not found
 
-If `cmake --build .` results in an error due to a missing a protobuf file, then
-you might have generated CMake files for a different `build_type` than the
-`CMAKE_BUILD_TYPE` you passed to Conan.
+If `cmake --build .` results in an error due to a missing a protobuf file, then you might have generated CMake files for a different `build_type` than the `CMAKE_BUILD_TYPE` you passed to Conan.
 
 ```
 /xrpld/.build/pb-xrpl.libpb/xrpl/proto/xrpl.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found

@@ -1,13 +1,10 @@
 # Installing xrpld
 
+<!-- prettier-ignore -->
 > [!NOTE]
-> These instructions apply to packages published from 2026-08-19 onwards.
-> For xrpld 3.3.0 and earlier see [install-legacy.md](./install-legacy.md).
+> These instructions apply to packages published from 2026-08-19 onwards. For xrpld 3.3.0 and earlier see [install-legacy.md](./install-legacy.md).
 
-`xrpld` is published as DEB and RPM packages for 64-bit x86 Linux.
-Use APT on Debian-based distributions such as Debian and Ubuntu,
-and YUM on Red Hat-based distributions such as RHEL, AlmaLinux, and Rocky Linux.
-To build from source instead, see [BUILD.md](../BUILD.md).
+`xrpld` is published as DEB and RPM packages for 64-bit x86 Linux. Use APT on Debian-based distributions such as Debian and Ubuntu, and YUM on Red Hat-based distributions such as RHEL, AlmaLinux, and Rocky Linux. To build from source instead, see [BUILD.md](../BUILD.md).
 
 ## Release channels
 
@@ -20,13 +17,11 @@ Packages are published to four channels:
 
 See [Publishing packages](../package/README.md#publishing-packages) for how channels are produced.
 
-The instructions below use `stable`.
-To follow another channel, replace `stable` with its name
-wherever it appears in the repository configuration.
+The instructions below use `stable`. To follow another channel, replace `stable` with its name wherever it appears in the repository configuration.
 
+<!-- prettier-ignore -->
 > [!WARNING]
-> Channels other than `stable` may be broken at any time.
-> Do not use them for production servers.
+> Channels other than `stable` may be broken at any time. Do not use them for production servers.
 
 ## Install the xrpld package
 
@@ -103,8 +98,7 @@ wherever it appears in the repository configuration.
     REPOFILE
     ```
 
-    `gpgcheck=1` verifies each package against the key above.
-    `repo_gpgcheck=1` verifies the repository metadata, which the server signs with the same key.
+    `gpgcheck=1` verifies each package against the key above. `repo_gpgcheck=1` verifies the repository metadata, which the server signs with the same key.
 
 3.  Install the `xrpld` package:
 
@@ -114,8 +108,7 @@ wherever it appears in the repository configuration.
 
 ## The xrpld service
 
-Both package managers install a systemd unit and enable it, so `xrpld` starts on boot.
-Check whether it is already running:
+Both package managers install a systemd unit and enable it, so `xrpld` starts on boot. Check whether it is already running:
 
 ```bash
 systemctl status xrpld.service
@@ -129,8 +122,7 @@ sudo systemctl start xrpld.service
 
 ### Optional: binding to privileged ports
 
-To serve incoming API requests on port 80 or 443, grant the service the capability to bind them.
-You must also update the config file's port settings.
+To serve incoming API requests on port 80 or 443, grant the service the capability to bind them. You must also update the config file's port settings.
 
 ```bash
 sudo install -d -m 0755 /etc/systemd/system/xrpld.service.d

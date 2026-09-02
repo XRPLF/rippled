@@ -1,29 +1,20 @@
 # Installing xrpld 3.3.0 and earlier
 
+<!-- prettier-ignore -->
 > [!IMPORTANT]
-> These instructions apply to xrpld 3.3.0 and earlier, published to
-> repos.ripple.com.
-> For later releases see [install.md](./install.md).
+> These instructions apply to xrpld 3.3.0 and earlier, published to repos.ripple.com. For later releases see [install.md](./install.md).
 
-This document contains instructions for installing xrpld.
-The APT package manager is common on Debian-based Linux distributions like
-Ubuntu,
-while the YUM package manager is common on Red Hat-based Linux distributions
-like CentOS.
-Installing from source is an option for all platforms,
-and the only supported option for installing custom builds.
+This document contains instructions for installing xrpld. The APT package manager is common on Debian-based Linux distributions like Ubuntu, while the YUM package manager is common on Red Hat-based Linux distributions like CentOS. Installing from source is an option for all platforms, and the only supported option for installing custom builds.
 
 ## From source
 
-From a source build, you can install xrpld and libxrpl using CMake's
-`--install` mode:
+From a source build, you can install xrpld and libxrpl using CMake's `--install` mode:
 
 ```
 cmake --install . --prefix /opt/local
 ```
 
-The default [prefix][1] is typically `/usr/local` on Linux and macOS and
-`C:/Program Files/xrpld` on Windows.
+The default [prefix][1] is typically `/usr/local` on Linux and macOS and `C:/Program Files/xrpld` on Windows.
 
 [1]: https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
 

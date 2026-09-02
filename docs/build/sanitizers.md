@@ -1,11 +1,10 @@
 # Sanitizer Configuration for Xrpld
 
-This document explains how to properly configure and run sanitizers (`AddressSanitizer`, `UndefinedBehaviorSanitizer`, `ThreadSanitizer`) with the xrpld project.
-Corresponding suppression files are located in the `sanitizers/suppressions` directory.
+This document explains how to properly configure and run sanitizers (`AddressSanitizer`, `UndefinedBehaviorSanitizer`, `ThreadSanitizer`) with the xrpld project. Corresponding suppression files are located in the `sanitizers/suppressions` directory.
 
+<!-- prettier-ignore -->
 > [!CAUTION]
-> Do not mix Address and Thread sanitizers - they are incompatible.
-> Also, we don't yet support MSVC sanitizers, so this is only for Clang/GCC builds.
+> Do not mix Address and Thread sanitizers - they are incompatible. Also, we don't yet support MSVC sanitizers, so this is only for Clang/GCC builds.
 
 - [Sanitizer Configuration for Xrpld](#sanitizer-configuration-for-xrpld)
   - [Building with Sanitizers](#building-with-sanitizers)
@@ -35,10 +34,10 @@ Corresponding suppression files are located in the `sanitizers/suppressions` dir
 Follow the same instructions as mentioned in [BUILD.md](../../BUILD.md) but with the following changes:
 
 1. Make sure you have a clean build directory.
-2. Set the `SANITIZERS` environment variable before calling `conan install`. Only set it once.
-   Example: `export SANITIZERS=address,undefinedbehavior`
+2. Set the `SANITIZERS` environment variable before calling `conan install`. Only set it once. Example: `export SANITIZERS=address,undefinedbehavior`
 3. Use `--profile:all sanitizers` with Conan to build dependencies with sanitizer instrumentation.
 
+   <!-- prettier-ignore -->
    > [!NOTE]
    > Building with sanitizer-instrumented dependencies is slower but produces fewer false positives.
 
