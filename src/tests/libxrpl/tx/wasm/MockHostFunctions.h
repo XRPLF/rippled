@@ -400,12 +400,6 @@ struct MockHostFunctions : HostFunctions
 
     MOCK_METHOD(
         (std::expected<Bytes, HostFunctionError>),
-        floatRoot,
-        (Slice const& x, std::int32_t n, std::int32_t mode),
-        (const, override));
-
-    MOCK_METHOD(
-        (std::expected<Bytes, HostFunctionError>),
         floatPower,
         (Slice const& x, std::int32_t n, std::int32_t mode),
         (const, override));

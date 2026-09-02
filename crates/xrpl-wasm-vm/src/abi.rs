@@ -657,9 +657,6 @@ mod tests {
         ) -> HostResult<usize> {
             unreachable!("no unit test in this module calls the host")
         }
-        fn float_root(&self, _x: &[u8], _n: i32, _mode: i32, _out: &mut [u8]) -> HostResult<usize> {
-            unreachable!("no unit test in this module calls the host")
-        }
         fn float_power(
             &self,
             _x: &[u8],

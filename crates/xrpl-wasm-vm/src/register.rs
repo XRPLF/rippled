@@ -1169,26 +1169,6 @@ pub(crate) fn register_host_functions(
                     })
                 },
             ),
-            HostFunctionSpec::FloatRoot => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 in_ptr: i32,
-                 in_len: i32,
-                 n: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatRoot, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let x = Region::new(in_ptr, in_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_root(x.read(data)?, n, mode, buf)
-                        })
-                    })
-                },
-            ),
             HostFunctionSpec::FloatPower => linker.func_wrap(
                 HOST_MODULE,
                 op.wasm_name(),
