@@ -7,6 +7,7 @@
 #include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
@@ -1675,6 +1676,463 @@ private:
         }
     }
 
+    // Bug: a fully impaired vault may pay zero assets for a share burn.
+    // doWithdraw used to call addEmptyHolding for a self-destination even
+    // when the payout was zero, so a missing asset MPToken was created at
+    // amount 0. ValidVault then saw a one-sided zero destination delta and
+    // fired for integral assets; redeeming Alice's last share in the same tx
+    // also created that token while deleting Alice's share MPToken, which
+    // ValidMPTIssuance rejects (created + deleted > 1). Bob still owns shares,
+    // so this is not the vault's final outstanding share.
+    //
+    // Post-fixCleanup3_4_0, doWithdraw skips addEmptyHolding on a zero
+    // payout. ValidVault accepts a missing recipient delta when
+    // zeroDeltaIsLegitimate; a present destination delta of zero is still
+    // rejected.
+    void
+    testBugMptZeroWithdrawMissingHolding()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        auto runScenario = [this](
+                               FeatureBitset features,
+                               bool removeAssetToken,
+                               bool withdrawAllAliceShares,
+                               TER expected) {
+            testcase(
+                std::string{"bug: MPT vault zero-value withdraw "} +
+                (removeAssetToken ? "without asset MPToken" : "with asset MPToken (control)") +
+                (withdrawAllAliceShares ? ", Alice's last share" : ", Alice has leftover shares") +
+                (features[fixCleanup3_4_0] ? " (post-fixCleanup3_4_0)" : " (pre-fixCleanup3_4_0)"));
+
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(100'000), issuer, owner, alice, bob, borrower);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            mptt.authorize({.account = borrower});
+            env.close();
+
+            env(pay(issuer, alice, asset(2)));
+            env(pay(issuer, bob, asset(8)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = 60s});
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(2)}));
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = asset(8)}));
+            env.close();
+
+            vault.closePastSubscription(subscriptionDate);
+
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            auto const loanKeylet = keylet::loan(
+                brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+            env(set(borrower, brokerKeylet.key, asset(10).value()),
+                kInterestRate(percentageToTenthBips(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return;
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+
+            env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+
+            auto const vaultImpaired = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultImpaired))
+                return;
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsAvailable) == asset(0).value());
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsTotal) == vaultImpaired->at(sfLossUnrealized));
+            Number const totalBefore = vaultImpaired->at(sfAssetsTotal);
+            Number const lossBefore = vaultImpaired->at(sfLossUnrealized);
+
+            MPTID const shareId = vaultImpaired->at(sfShareMPTID);
+            auto const issuanceBefore = env.le(keylet::mptokenIssuance(shareId));
+            if (!BEAST_EXPECT(issuanceBefore))
+                return;
+            std::uint64_t const outstandingBefore =
+                issuanceBefore->getFieldU64(sfOutstandingAmount);
+
+            auto const tokenAlice = env.le(keylet::mptoken(shareId, alice.id()));
+            if (!BEAST_EXPECT(tokenAlice))
+                return;
+            std::uint64_t const sharesBefore = tokenAlice->getFieldU64(sfMPTAmount);
+            BEAST_EXPECT(sharesBefore == 2);
+            std::uint64_t const sharesToRedeem = withdrawAllAliceShares ? sharesBefore : 1;
+            STAmount const redeemShares{MPTIssue{shareId}, Number(sharesToRedeem)};
+
+            auto const assetTokenKeylet = keylet::mptoken(mptt.issuanceID(), alice.id());
+            if (removeAssetToken)
+            {
+                mptt.authorize({.account = alice, .flags = tfMPTUnauthorize});
+                env.close();
+                BEAST_EXPECT(!env.le(assetTokenKeylet));
+            }
+            else
+            {
+                auto const existing = env.le(assetTokenKeylet);
+                if (!BEAST_EXPECT(existing))
+                    return;
+                BEAST_EXPECT(existing->getFieldU64(sfMPTAmount) == 0);
+            }
+
+            std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
+            env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
+                Ter(expected));
+            env.close();
+            if (expected != tesSUCCESS)
+                return;
+
+            if (removeAssetToken)
+            {
+                BEAST_EXPECT(!env.le(assetTokenKeylet));
+            }
+            else
+            {
+                auto const assetAfter = env.le(assetTokenKeylet);
+                if (!BEAST_EXPECT(assetAfter))
+                    return;
+                BEAST_EXPECT(assetAfter->getFieldU64(sfMPTAmount) == 0);
+            }
+
+            auto const shareAfter = env.le(keylet::mptoken(shareId, alice.id()));
+            if (withdrawAllAliceShares)
+            {
+                BEAST_EXPECT(!shareAfter);
+            }
+            else if (BEAST_EXPECT(shareAfter))
+            {
+                BEAST_EXPECT(shareAfter->getFieldU64(sfMPTAmount) == sharesBefore - sharesToRedeem);
+            }
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == asset(0).value());
+
+            auto const issuanceAfter = env.le(keylet::mptokenIssuance(shareId));
+            if (!BEAST_EXPECT(issuanceAfter))
+                return;
+            BEAST_EXPECT(
+                issuanceAfter->getFieldU64(sfOutstandingAmount) ==
+                outstandingBefore - sharesToRedeem);
+        };
+
+        runScenario(
+            all_, false /* removeAssetToken */, false /* withdrawAllAliceShares */, tesSUCCESS);
+        runScenario(
+            all_, false /* removeAssetToken */, true /* withdrawAllAliceShares */, tesSUCCESS);
+        runScenario(
+            all_, true /* removeAssetToken */, false /* withdrawAllAliceShares */, tesSUCCESS);
+        runScenario(
+            all_, true /* removeAssetToken */, true /* withdrawAllAliceShares */, tesSUCCESS);
+        runScenario(
+            all_ - fixCleanup3_4_0,
+            true /* removeAssetToken */,
+            false /* withdrawAllAliceShares */,
+            tecINVARIANT_FAILED);
+        runScenario(
+            all_ - fixCleanup3_4_0,
+            true /* removeAssetToken */,
+            true /* withdrawAllAliceShares */,
+            tecINVARIANT_FAILED);
+    }
+
+    // IOU analogue of the missing-MPToken case above. Alice removes her
+    // zero-balance trust line after depositing, then burns one of her two
+    // shares after the vault is fully impaired. Bob's eight shares keep this
+    // out of the sole-shareholder loss-waiver and final-outstanding-share
+    // paths. A zero payout must not recreate Alice's unsolicited trust line.
+    void
+    testBugIouZeroWithdrawMissingTrustLine()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        Env env(*this, all_);
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, owner, alice, bob, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const asset = issuer["USD"];
+        env.trust(asset(100), owner);
+        env.trust(asset(100), alice);
+        env.trust(asset(100), bob);
+        env.trust(asset(100), borrower);
+        env.close();
+
+        env(pay(issuer, alice, asset(2)));
+        env(pay(issuer, bob, asset(8)));
+        env.close();
+
+        Vault const vault{env};
+        auto const [createTx, vaultKeylet, subscriptionDate] =
+            vault.createClosedEnded({.owner = owner, .asset = asset, .subscriptionOffset = 60s});
+        env(createTx);
+        env.close();
+
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(2)}));
+        env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = asset(8)}));
+        env.close();
+
+        auto const assetLine = keylet::trustLine(alice, asset.raw().get<Issue>());
+        if (!BEAST_EXPECT(env.le(assetLine)))
+            return;
+        env.trust(asset(0), alice);
+        env.close();
+        BEAST_EXPECT(!env.le(assetLine));
+
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(set(owner, vaultKeylet.key));
+        env.close();
+
+        auto const sleBroker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+        env(set(borrower, brokerKeylet.key, asset(10).value()),
+            kInterestRate(percentageToTenthBips(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanBefore = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanBefore))
+            return;
+        std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+
+        env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultImpaired = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultImpaired))
+            return;
+        BEAST_EXPECT(vaultImpaired->at(sfAssetsAvailable) == asset(0).value());
+        BEAST_EXPECT(vaultImpaired->at(sfAssetsTotal) == vaultImpaired->at(sfLossUnrealized));
+        Number const totalBefore = vaultImpaired->at(sfAssetsTotal);
+        Number const lossBefore = vaultImpaired->at(sfLossUnrealized);
+
+        MPTID const shareId = vaultImpaired->at(sfShareMPTID);
+        auto const tokenAlice = env.le(keylet::mptoken(shareId, alice.id()));
+        if (!BEAST_EXPECT(tokenAlice))
+            return;
+        std::uint64_t const sharesBefore = tokenAlice->getFieldU64(sfMPTAmount);
+        BEAST_EXPECT(sharesBefore == 2);
+        STAmount const redeemShares{MPTIssue{shareId}, Number(1)};
+
+        std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
+        env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+
+        env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // A regression in the View guard would recreate this line even though
+        // no asset value was paid.
+        BEAST_EXPECT(!env.le(assetLine));
+
+        auto const shareAfter = env.le(keylet::mptoken(shareId, alice.id()));
+        if (!BEAST_EXPECT(shareAfter))
+            return;
+        BEAST_EXPECT(shareAfter->getFieldU64(sfMPTAmount) == sharesBefore - 1);
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == asset(0).value());
+    }
+
+    // Same zero-payout withdrawal as testBugMptZeroWithdrawMissingHolding, but
+    // the vault asset is XRP. addEmptyHolding is a no-op for native assets.
+    // Sequence processing still touches the sender AccountRoot; a sponsored
+    // fee leaves that XRP balance economically unchanged. After the
+    // sponsored-withdraw fee-payer fix, deltaAssetsForParty collapses that
+    // economically-zero XRP delta to absence, so tesSUCCESS takes the
+    // missing-recipient-delta arm gated by zeroDeltaIsLegitimate. This test
+    // covers that live SUCCESS path. Pre-fixCleanup3_4_0 still fails the
+    // invariant.
+    void
+    testBugXrpZeroWithdrawSponsoredFee()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            testcase(
+                std::string{"bug: XRP vault zero-value withdraw with sponsored fee"} +
+                (features[fixCleanup3_4_0] ? " (post-fixCleanup3_4_0)" : " (pre-fixCleanup3_4_0)"));
+
+            Env env(*this, features);
+
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const borrower{"borrower"};
+            Account const sponsor{"sponsor"};
+
+            env.fund(XRP(100'000), owner, alice, bob, borrower, sponsor);
+            env.close();
+
+            PrettyAsset const asset{xrpIssue()};
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = 60s});
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(2)}));
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = asset(8)}));
+            env.close();
+
+            vault.closePastSubscription(subscriptionDate);
+
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            auto const loanKeylet = keylet::loan(
+                brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+            env(set(borrower, brokerKeylet.key, asset(10).value()),
+                kInterestRate(percentageToTenthBips(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return;
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+
+            env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+
+            auto const vaultImpaired = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultImpaired))
+                return;
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsAvailable) == asset(0).value());
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsTotal) == vaultImpaired->at(sfLossUnrealized));
+            Number const totalBefore = vaultImpaired->at(sfAssetsTotal);
+            Number const lossBefore = vaultImpaired->at(sfLossUnrealized);
+
+            MPTID const shareId = vaultImpaired->at(sfShareMPTID);
+            auto const tokenAlice = env.le(keylet::mptoken(shareId, alice.id()));
+            if (!BEAST_EXPECT(tokenAlice))
+                return;
+            std::uint64_t const sharesBefore = tokenAlice->getFieldU64(sfMPTAmount);
+            BEAST_EXPECT(sharesBefore == 2);
+            STAmount const redeemShares{MPTIssue{shareId}, Number(1)};
+
+            std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
+            env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+
+            auto const aliceBalanceBefore = env.balance(alice);
+            auto const sponsorBalanceBefore = env.balance(sponsor);
+            auto const fee = env.current()->fees().base;
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
+                Fee(fee),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(expected));
+            env.close();
+
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
+            BEAST_EXPECT(env.balance(alice) == aliceBalanceBefore);
+
+            if (expected != tesSUCCESS)
+                return;
+
+            auto const shareAfter = env.le(keylet::mptoken(shareId, alice.id()));
+            if (!BEAST_EXPECT(shareAfter))
+                return;
+            BEAST_EXPECT(shareAfter->getFieldU64(sfMPTAmount) == sharesBefore - 1);
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == asset(0).value());
+        };
+
+        runScenario(all_, tesSUCCESS);
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+    }
+
     // Bug 1: a sponsored XRP VaultWithdraw to a distinct destination is
     // rejected because the vault invariant treats the holder's touched
     // but economically unchanged AccountRoot as a second payout
@@ -2030,6 +2488,9 @@ public:
         testBugClawbackRoundTripOvershoot();
         testBugWithdrawRoundTripOvershoot();
         testBugClawbackAfterLoanImpair();
+        testBugMptZeroWithdrawMissingHolding();
+        testBugIouZeroWithdrawMissingTrustLine();
+        testBugXrpZeroWithdrawSponsoredFee();
         testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
         testBugSponsorAsDestinationFeeMisappliedToPayout();
         testPrefundedFeeWithdraw();
