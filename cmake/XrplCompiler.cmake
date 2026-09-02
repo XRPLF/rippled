@@ -120,7 +120,10 @@ if(MSVC)
             _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
             $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>:_CRTDBG_MAP_ALLOC>
     )
-    target_link_libraries(common INTERFACE -errorreport:none -machine:X64)
+    target_link_libraries(
+        common
+        INTERFACE -errorreport:none -machine:X64 -ignore:4099
+    )
 else()
     target_compile_options(
         common
@@ -185,32 +188,6 @@ else()
         )
         string(STRIP "${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
         add_link_options($<$<LINK_LANGUAGE:CXX>:-stdlib=libstdc++>)
-    endif()
-endif()
-
-# Linker warnings are errors where we control the toolchain and the dependencies: CI and the Nix dev shell.
-# On non-Nix macOS we suppress the deployment target warning: an old Conan profile may not pin os.version.
-if(is_macos OR is_linux)
-    if(is_ci OR is_nix_compiler)
-        if(is_macos)
-            set(fatal_warnings_flag "-Wl,-fatal_warnings")
-        else()
-            set(fatal_warnings_flag "-Wl,--fatal-warnings")
-        endif()
-        message(
-            STATUS
-            "Treating all linker warnings as errors (${fatal_warnings_flag})"
-        )
-        target_link_options(common INTERFACE "${fatal_warnings_flag}")
-        unset(fatal_warnings_flag)
-    elseif(is_macos)
-        set(silence_flag "-Wl,-deployment_target_mismatches,suppress")
-        message(
-            STATUS
-            "Silencing macOS deployment target mismatch warnings (${silence_flag})"
-        )
-        target_link_options(common INTERFACE "${silence_flag}")
-        unset(silence_flag)
     endif()
 endif()
 
@@ -292,9 +269,49 @@ elseif(use_lld)
     )
     if("${LD_VERSION}" MATCHES "LLD")
         target_link_libraries(common INTERFACE -fuse-ld=lld)
+        # remembered for the linker flag probe below
+        set(fuse_ld_flag "-fuse-ld=lld")
     endif()
     unset(LD_VERSION)
 endif()
+
+# Linker warnings are errors where we control the toolchain and the dependencies: CI and the Nix dev shell.
+# On non-Nix macOS we suppress the deployment target warning: an old Conan profile may not pin os.version.
+# Only the new Apple linker understands the flag, so probe the actual linker (lld may be selected above).
+if(is_macos OR is_linux)
+    if(is_ci OR is_nix_compiler)
+        if(is_macos)
+            set(fatal_warnings_flag "-Wl,-fatal_warnings")
+        else()
+            set(fatal_warnings_flag "-Wl,--fatal-warnings")
+        endif()
+        message(
+            STATUS
+            "Treating all linker warnings as errors (${fatal_warnings_flag})"
+        )
+        target_link_options(common INTERFACE "${fatal_warnings_flag}")
+        unset(fatal_warnings_flag)
+    elseif(is_macos)
+        set(silence_flag "-Wl,-deployment_target_mismatches,suppress")
+        set(probe_flags ${fuse_ld_flag} "${silence_flag}")
+        include(CheckLinkerFlag)
+        check_linker_flag(
+            CXX
+            "${probe_flags}"
+            have_deployment_target_mismatches
+        )
+        if(have_deployment_target_mismatches)
+            message(
+                STATUS
+                "Silencing macOS deployment target mismatch warnings (${silence_flag})"
+            )
+            target_link_options(common INTERFACE "${silence_flag}")
+        endif()
+        unset(probe_flags)
+        unset(silence_flag)
+    endif()
+endif()
+unset(fuse_ld_flag)
 
 if(assert)
     foreach(var_ CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE)

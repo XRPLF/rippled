@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -143,6 +144,8 @@ ValidMPTIssuance::finalize(
     //     must not dangle outside that controlled lifecycle.
     if (rules.enabled(fixCleanup3_2_0))
     {
+        // Not an amendment gate like the same-named flags below, just an
+        // accumulator, so that every violation gets logged before returning.
         bool invariantPasses = true;
         if (referenceHoldingMutated_)
         {
@@ -208,7 +211,7 @@ ValidMPTIssuance::finalize(
         }
 
         auto const txnType = tx.getTxnType();
-        if (hasPrivilege(tx, CreateMptIssuance))
+        if (hasPrivilege(tx, Privilege::CreateMptIssuance))
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -229,8 +232,16 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (hasPrivilege(tx, DestroyMptIssuance))
+        if (hasPrivilege(tx, Privilege::DestroyMptIssuance))
         {
+            // A VaultDelete that is still cleaning up credentials pinned to its
+            // pseudo-account returns tecINCOMPLETE and has not yet reached the
+            // share issuance. Don't require the issuance to be removed until
+            // the deletion completes (a later transaction).
+            if (rules.enabled(fixCleanup3_4_0) && txnType == ttVAULT_DELETE &&
+                result == tecINCOMPLETE)
+                return mptIssuancesDeleted_ == 0 && mptIssuancesCreated_ == 0;
+
             if (mptIssuancesDeleted_ == 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
@@ -256,7 +267,8 @@ ValidMPTIssuance::finalize(
         // non-amendment-gated side effects.
         bool const enforceEscrowFinish = (txnType == ttESCROW_FINISH) &&
             (rules.enabled(featureSingleAssetVault) || lendingProtocolEnabled);
-        if (hasPrivilege(tx, MustAuthorizeMpt | MayAuthorizeMpt) || enforceEscrowFinish)
+        if (hasPrivilege(tx, Privilege::MustAuthorizeMpt | Privilege::MayAuthorizeMpt) ||
+            enforceEscrowFinish)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -272,7 +284,7 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
-            if (mptV2Enabled && hasPrivilege(tx, MayAuthorizeMpt) &&
+            if (mptV2Enabled && hasPrivilege(tx, Privilege::MayAuthorizeMpt) &&
                 (txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK))
             {
                 if (submittedByIssuer && txnType == ttAMM_WITHDRAW && mptokensCreated_ > 0)
@@ -282,12 +294,13 @@ ValidMPTIssuance::finalize(
                                        "but created bad number of mptokens";
                     return false;
                 }
-                //  At most one MPToken may be created on withdraw/clawback since:
+                //  At most two MPToken may be created on withdraw/clawback since:
                 //  - Liquidity Provider must have at least one token in order
-                //    participate in AMM pool liquidity.
+                //    participate in AMM pool liquidity or have LPTokens only.
                 //  - At most two MPTokens may be deleted if AMM pool, which has exactly
                 //    two tokens, is empty after withdraw/clawback.
-                if (mptokensCreated_ > 1 || mptokensDeleted_ > 2)
+                SOMETIMES(mptokensCreated_ == 2, "AMM withdraw/clawback recreated two MPTokens");
+                if (mptokensCreated_ > 2 || mptokensDeleted_ > 2)
                 {
                     JLOG(j.fatal()) << "Invariant failed: MPT authorize  succeeded "
                                        "but created/deleted bad number of mptokens";
@@ -307,7 +320,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer && hasPrivilege(tx, MustAuthorizeMpt) &&
+                !submittedByIssuer && hasPrivilege(tx, Privilege::MustAuthorizeMpt) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -320,7 +333,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, MayCreateMpt))
+        if (hasPrivilege(tx, Privilege::MayCreateMpt))
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -375,7 +388,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, MayDeleteMpt) &&
+        if (hasPrivilege(tx, Privilege::MayDeleteMpt) &&
             ((txnType == ttAMM_DELETE && mptokensDeleted_ <= 2) || mptokensDeleted_ == 1) &&
             mptokensCreated_ == 0 && mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
             return true;
@@ -472,7 +485,9 @@ ValidMPTBalanceChanges::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (isTesSuccess(result))
+    auto const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+
+    if (isTesSuccess(result) || fix340Enabled)
     {
         // Confidential transactions are validated by ValidConfidentialMPToken.
         // They modify encrypted fields and sfConfidentialOutstandingAmount
@@ -484,7 +499,9 @@ ValidMPTBalanceChanges::finalize(
             return true;
         }
 
-        bool const invariantPasses = !view.rules().enabled(featureMPTokensV2);
+        // Returned when a violation is found below, so this is the log-only
+        // condition. Either amendment makes the checks enforcing.
+        auto const invariantPasses = !(view.rules().enabled(featureMPTokensV2) || fix340Enabled);
         if (overflow_)
         {
             JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
@@ -506,6 +523,18 @@ ValidMPTBalanceChanges::finalize(
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
                                 << data.outstanding[kIBefore] << " " << data.outstanding[kIAfter]
                                 << " " << data.mptAmount;
+                return invariantPasses;
+            }
+
+            // A failed transaction must not have moved MPT value; the check
+            // above ties mptAmount to the OutstandingAmount delta. No result
+            // code is exempt: on any tec the transactor discards the view and
+            // re-applies only offer, trust line, NFT offer and credential
+            // deletions (Transactor::typesForResult), none of which touch MPTs.
+            if (!isTesSuccess(result) && data.mptAmount != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: OutstandingAmount balance changed on failure "
+                                << tx.getTxnType() << " " << result;
                 return invariantPasses;
             }
         }
@@ -803,6 +832,14 @@ ValidMPTTransfer::visitEntry(
 
     if (after)
         update(*after, false);
+
+    // Record whether every touched AccountRoot was a pseudo-account BEFORE
+    // the transaction applied (true and false). A transaction that erases a
+    // pseudo-account (and moves MPT out of it) in the same transaction leaves
+    // no trace of its pseudo-account status in the post-transaction view
+    // isAuthorized() sees at finalize() time.
+    if (before && before->getType() == ltACCOUNT_ROOT)
+        pseudoAccountsBefore_[before->at(sfAccount)] = isPseudoAccount(before);
 }
 
 bool
@@ -815,10 +852,19 @@ ValidMPTTransfer::isAuthorized(
     // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their
     // participants and are implicitly authorized for any MPT they hold,
     // including vault shares whose underlying asset would otherwise require
-    // auth.  Exempt them here rather than relying on requireAuth: the recursive
+    // auth. Exempt them here rather than relying on requireAuth: the recursive
     // share -> underlying descent in requireAuth fails for a pseudo-account
     // that holds the share but not the underlying.
-    if (isPseudoAccount(view, holder, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
+    //
+    // Use the pre-transaction classification for any account this
+    // transaction touched (pseudoAccountsBefore_): the post-transaction view
+    // is wrong for an account this same transaction erased. Untouched
+    // accounts aren't in the map, so fall back to the current view, which is
+    // still accurate for them since nothing changed.
+    auto const pseudoIt = pseudoAccountsBefore_.find(holder);
+    bool const isPseudo =
+        pseudoIt != pseudoAccountsBefore_.end() ? pseudoIt->second : isPseudoAccount(view, holder);
+    if (isPseudo)
         return true;
 
     auto const key = keylet::mptoken(mptid, holder);
@@ -831,13 +877,21 @@ ValidMPTTransfer::isAuthorized(
 bool
 ValidMPTTransfer::finalize(
     STTx const& tx,
-    TER const,
+    TER const result,
     XRPAmount const,
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (hasPrivilege(tx, OverrideFreeze))
+    if (hasPrivilege(tx, Privilege::OverrideFreeze))
         return true;
+
+    // XLS-0066: a broker must be able to default an already-late loan
+    // regardless of the vault asset's lock state. Gated behind
+    // fixCleanup3_4_0, and scoped below to exactly the broker/vault
+    // pseudo-accounts and the vault's own MPT issuance -- see
+    // FreezeInvariant.cpp's TransfersNotFrozen::finalize for the IOU-side
+    // equivalent and rationale.
+    auto const loanDefaultAccounts = getLoanDefaultFreezeExemptAccounts(view, tx);
 
     // DEX transactions (AMM[Create,Deposit], cross-currency payments, offer creates) are
     // subject to the MPTCanTrade flag in addition to the standard transfer rules.
@@ -854,9 +908,19 @@ ValidMPTTransfer::finalize(
         return txnType == ttAMM_CREATE || txnType == ttAMM_DEPOSIT || txnType == ttOFFER_CREATE;
     }();
 
-    // Only enforce once MPTokensV2 is enabled to preserve consensus with non-V2 nodes.
-    // Log invariant failure error even if MPTokensV2 is disabled.
-    auto const invariantPasses = !view.rules().enabled(featureMPTokensV2);
+    auto const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
+    // Returned when a violation is found below, so this is the log-only
+    // condition. Either amendment makes the checks enforcing.
+    auto const invariantPasses = !(view.rules().enabled(featureMPTokensV2) || fix340Enabled);
+
+    // A failed transaction must not persist an MPToken deletion. Pre-loop
+    // because deletedAuthorized_ is not issuance-scoped and orphans continue.
+    if (fix340Enabled && !isTesSuccess(result) && !deletedAuthorized_.empty())
+    {
+        JLOG(j.fatal()) << "Invariant failed: MPToken deleted on failure " << txnType << " "
+                        << result;
+        return invariantPasses;
+    }
 
     for (auto const& [mptID, values] : amount_)
     {
@@ -866,6 +930,20 @@ ValidMPTTransfer::finalize(
         auto const sleIssuance = view.read(keylet::mptokenIssuance(mptID));
         if (!sleIssuance)
         {
+            // MPTokenIssuanceDestroy only requires a zero OutstandingAmount, so
+            // an orphaned MPToken can outlive its issuance and be cleaned up
+            // later by a transaction of any type. There are no transfer rules
+            // left to check, but its balance is zero and nothing can raise it,
+            // so any change other than deletion is a bug.
+            for (auto const& [account, value] : values)
+            {
+                if (value.amtAfter.has_value() && value.amtBefore.value_or(0) != *value.amtAfter)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: orphaned MPToken balance changed "
+                                    << txnType << " " << result;
+                    return invariantPasses;
+                }
+            }
             continue;
         }
 
@@ -879,6 +957,13 @@ ValidMPTTransfer::finalize(
         auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer) || waivesCanTransfer;
         auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
         auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
+
+        // This issuance is the LoanManage default's own vault asset, so the
+        // broker/vault freeze exemption applies to it -- an unrelated MPT
+        // issuance the same accounts happen to hold is still caught.
+        bool const isLoanDefaultAsset = loanDefaultAccounts &&
+            loanDefaultAccounts->asset.holds<MPTIssue>() &&
+            loanDefaultAccounts->asset.get<MPTIssue>().getMptID() == mptID;
 
         for (auto const& [account, value] : values)
         {
@@ -898,8 +983,15 @@ ValidMPTTransfer::finalize(
 
                 // Check once: if any involved account is frozen, the whole issuance transfer is
                 // considered frozen. Only need to check for frozen if there is a transfer of funds.
+                //
+                // The LoanManage default exemption only waives the frozen check, and only for
+                // the specific broker/vault pseudo-accounts identified above -- authorization is
+                // still enforced for them, and both checks still apply to every other account.
+                bool const exemptFromFreeze = isLoanDefaultAsset && loanDefaultAccounts &&
+                    (account == loanDefaultAccounts->broker ||
+                     account == loanDefaultAccounts->vault);
                 if (!invalidTransfer &&
-                    (isFrozen(view, account, MPTIssue{mptID}) ||
+                    ((!exemptFromFreeze && isFrozen(view, account, *sleIssuance)) ||
                      !isAuthorized(view, mptID, account, reqAuth)))
                 {
                     invalidTransfer = true;
@@ -913,6 +1005,16 @@ ValidMPTTransfer::finalize(
             receivers > 0)
         {
             JLOG(j.fatal()) << "Invariant failed: invalid MPToken transfer between holders";
+            return invariantPasses;
+        }
+
+        // A failed transaction must not have changed a holder's balance. One
+        // side is enough, unlike the transfer check above, so this also catches
+        // a lock/unlock moving value between sfMPTAmount and sfLockedAmount.
+        if (fix340Enabled && !isTesSuccess(result) && (senders > 0 || receivers > 0))
+        {
+            JLOG(j.fatal()) << "Invariant failed: MPToken balance changed on failure " << txnType
+                            << " " << result;
             return invariantPasses;
         }
     }

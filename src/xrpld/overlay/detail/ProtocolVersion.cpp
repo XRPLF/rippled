@@ -16,6 +16,7 @@
 #include <optional>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -28,7 +29,6 @@ namespace xrpl {
  */
 
 constexpr ProtocolVersion const kSupportedProtocolList[]{
-    {2, 1},
     {2, 2},
     {2, 3},
 };
@@ -53,7 +53,7 @@ to_string(ProtocolVersion const& p)
 }
 
 std::vector<ProtocolVersion>
-parseProtocolVersions(boost::beast::string_view const& value)
+parseProtocolVersions(std::string_view value)
 {
     static boost::regex const kRE(
         "^"                        // start of line
@@ -120,7 +120,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
 }
 
 std::optional<ProtocolVersion>
-negotiateProtocolVersion(boost::beast::string_view const& versions)
+negotiateProtocolVersion(std::string_view versions)
 {
     auto const them = parseProtocolVersions(versions);
 

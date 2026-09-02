@@ -227,6 +227,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 sb,
                 *ammSle,
                 holder,
+                issuer,
                 ammAccount,
                 amountBalance,
                 amount2Balance,
@@ -311,19 +312,30 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& holdLPtokens,
     STAmount const& amount)
 {
+    // The clawback issuer signs for its own asset only. Threaded into the
+    // withdrawal so a recreated MPToken is auto-authorized only for the
+    // clawback issuer's asset, never for a paired asset from another issuer.
+    // preflight guarantees sfAccount is the clawed asset's issuer (it rejects
+    // the tx as temMALFORMED when sfAsset's issuer != sfAccount), so this is
+    // the issuer, not just any signer.
+    AccountID const issuer = ctx_.tx[sfAccount];
+
     auto frac = Number{amount} / amountBalance;
     auto amount2Withdraw = amount2Balance * frac;
 
     auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
-    if (lpTokensWithdraw > holdLPtokens)
+    auto const& rules = sb.rules();
+    // Pre-fixCleanup3_4_0 only a strictly greater computed LP amount takes
+    // the withdraw-all path. Equality left the last holder unable to be
+    // fully clawed. The amendment treats equality as withdraw-all.
+    if (rules.enabled(fixCleanup3_4_0) ? lpTokensWithdraw >= holdLPtokens
+                                       : lpTokensWithdraw > holdLPtokens)
     {
-        // if lptoken balance less than what the issuer intended to clawback,
-        // clawback all the tokens. Because we are doing a two-asset withdrawal,
-        // tfee is actually not used, so pass tfee as 0.
         return AMMWithdraw::equalWithdrawTokens(
             sb,
             ammSle,
             holder,
+            issuer,
             ammAccount,
             amountBalance,
             amount2Balance,
@@ -338,7 +350,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             ctx_.journal);
     }
 
-    auto const& rules = sb.rules();
     if (rules.enabled(fixAMMClawbackRounding))
     {
         auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
@@ -364,6 +375,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             sb,
             ammSle,
             ammAccount,
+            issuer,
             holder,
             amountBalance,
             amountRounded,
@@ -384,6 +396,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         sb,
         ammSle,
         ammAccount,
+        issuer,
         holder,
         amountBalance,
         amount,

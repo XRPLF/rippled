@@ -15,6 +15,7 @@
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
@@ -27,19 +28,24 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/AMMBid.h>
@@ -3269,6 +3275,107 @@ private:
                     ammAlice.expectBalances(MPT(ammAlice[1])(1), XRP(10'000), IOUAmount{100000}));
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
+
+        // MPT/MPT equal withdrawal after LP deletes both zero-balance MPTokens.
+        // AMMWithdraw must recreate both missing MPTokens; the invariant allows
+        // up to two MPToken creations per AMMWithdraw/AMMClawback (threshold > 2).
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            env.close();
+            MPTTester btc(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 10'000,
+                 .flags = kMptDexFlags});
+            MPTTester eth(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 10'000,
+                 .flags = kMptDexFlags});
+
+            // Alice deposits everything into the MPT/MPT pool; her MPT
+            // balances drop to zero.
+            AMM ammAlice(env, alice_, btc(10'000), eth(10'000));
+            BEAST_EXPECT(expectMPT(env, alice_, btc(0)));
+            BEAST_EXPECT(expectMPT(env, alice_, eth(0)));
+
+            // Alice deletes both zero-balance MPTokens to reclaim reserve.
+            btc.authorize({.account = alice_, .flags = tfMPTUnauthorize});
+            eth.authorize({.account = alice_, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), alice_.id())));
+            BEAST_EXPECT(!env.le(keylet::mptoken(eth.issuanceID(), alice_.id())));
+
+            // Equal withdrawal succeeds: both missing MPTokens are recreated
+            // (mptokensCreated_ == 2, which satisfies the > 2 invariant check).
+            ammAlice.withdrawAll(alice_);
+            BEAST_EXPECT(env.le(keylet::mptoken(btc.issuanceID(), alice_.id())));
+            BEAST_EXPECT(env.le(keylet::mptoken(eth.issuanceID(), alice_.id())));
+            BEAST_EXPECT(expectMPT(env, alice_, btc(10'000)));
+            BEAST_EXPECT(expectMPT(env, alice_, eth(10'000)));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+    }
+
+    void
+    testWithdrawReserveUsesLiveBalance()
+    {
+        testcase("Withdraw reserve check uses live balance");
+
+        using namespace jtx;
+
+        auto const test = [&](auto&& makeToken) {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, bob_);
+            env.close();
+
+            auto const token = makeToken(env);
+            AMM amm(env, gw_, XRP(100), token(100));
+
+            // The EUR trustline is an unrelated owner object. The XRP-only
+            // AMM deposit adds the LP token trustline, so Alice has 2 owners.
+            env.trust(gw_["EUR"](1), alice_);
+            amm.deposit(DepositArg{.account = alice_, .asset1In = XRP(10)});
+            BEAST_EXPECT(env.ownerCount(alice_) == 2);
+            env.require(Balance(alice_, token(kNone)));
+
+            // Drain Alice to one drop below the reserve for a third owner
+            // object, accounting for the fee on the drain payment.
+            auto const reserveForToken = reserve(env, 3);
+            auto const targetBalance = reserveForToken - XRPAmount{1};
+            auto const baseFee = env.current()->fees().base;
+            auto const currentBalance = env.balance(alice_).value().xrp();
+            auto const drainAmount = currentBalance - targetBalance - baseFee;
+            BEAST_EXPECT(drainAmount > XRPAmount{0});
+            env(pay(alice_, bob_, drops(drainAmount)));
+            env.close();
+
+            // AMMWithdraw captures priorBalance before the fee, then the XRP
+            // leg raises the live sandbox balance before the token leg.
+            // XRP(2) keeps the integral MPT side positive after rounding.
+            auto const xrpOut = XRP(2);
+            auto const tokenOut = token(2);
+            auto const priorBalance = env.balance(alice_).value().xrp();
+            auto const liveBalanceAfterXrpLeg = priorBalance - baseFee + xrpOut.value().xrp();
+            BEAST_EXPECT(priorBalance < reserveForToken);
+            BEAST_EXPECT(liveBalanceAfterXrpLeg > priorBalance);
+            BEAST_EXPECT(liveBalanceAfterXrpLeg >= reserveForToken);
+
+            // The XRP leg runs first, so the missing IOU trustline or MPToken
+            // is reserved against the updated sandbox balance.
+            amm.withdraw(
+                WithdrawArg{.account = alice_, .asset1Out = xrpOut, .asset2Out = tokenOut});
+
+            // The withdrawal succeeds only if the missing token holding can be
+            // reserved from the live balance after the XRP leg.
+            BEAST_EXPECT(env.ownerCount(alice_) == 3);
+            BEAST_EXPECT(env.balance(alice_, token).value().signum() > 0);
+        };
+
+        test([&](Env&) -> PrettyAsset { return gw_["USD"]; });
+        test([&](Env& env) -> PrettyAsset { return MPTTester({.env = env, .issuer = gw_}); });
     }
 
     void
@@ -3945,24 +4052,30 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
                 auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
+                auto const cleanup340 = env.current()->rules().enabled(fixCleanup3_4_0);
+                auto const minBidPrice = IOUAmount{ammAuctionMinSlotPrice(ammAlice.tokens(), 1)};
+                auto const firstPrice = cleanup340 ? minBidPrice : IOUAmount{tiny};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
-                // Auction slot purchase price is equal to the tiny amount
-                // since the minSlotPrice is 0 with no trading fee.
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
-                // The purchase price is too small to affect the total tokens
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, firstPrice));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    MPT(ammAlice[0])(10'000'000'000), USD(10'000), ammAlice.tokens()));
+                    MPT(ammAlice[0])(10'000'000'000),
+                    USD(10'000),
+                    cleanup340 ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice}}
+                               : ammAlice.tokens()));
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
                     .bidMin = IOUAmount{STAmount::kMinValue, STAmount::kMinOffset},
                 }));
                 // Pay slightly higher price
-                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
-                // The purchase price is still too small to affect the total
-                // tokens
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(
+                    0, 0, IOUAmount{Number{firstPrice} * Number{105, -2}}));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    MPT(ammAlice[0])(10'000'000'000), USD(10'000), ammAlice.tokens()));
+                    MPT(ammAlice[0])(10'000'000'000),
+                    USD(10'000),
+                    cleanup340
+                        ? IOUAmount{Number{ammAlice.tokens()} - Number{minBidPrice} * Number{11, -1}}
+                        : ammAlice.tokens()));
             },
             {{gAmmmpt(10'000'000'000), USD(10'000)}});
 
@@ -4041,9 +4154,9 @@ private:
             {
                 auto jtx = env.jt(tx, Seq(1), Fee(10));
                 env.app().config().features.erase(featureMPTokensV2);
-                PreflightContext const pfctx(
+                PreflightContext const ctx(
                     env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto pf = AMMBid::checkExtraFeatures(pfctx);
+                auto pf = AMMBid::checkExtraFeatures(ctx);
                 BEAST_EXPECT(pf == false);
                 env.app().config().features.insert(featureMPTokensV2);
             }
@@ -4053,9 +4166,9 @@ private:
                 jtx.jv["Asset2"]["currency"] = "XRP";
                 jtx.jv["Asset2"].removeMember("mpt_issuance_id");
                 jtx.stx = env.ust(jtx);
-                PreflightContext const pfctx(
+                PreflightContext const ctx(
                     env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = AMMBid::preflight(ctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }
@@ -4901,7 +5014,7 @@ private:
                 XRP(10'100), MPT(ammAlice[1])(10'000'000000000001), ammAlice.tokens()));
             env.require(Balance(carol_, MPT(ammAlice[1])(30'199'999999999999)));
 
-            // Initial 30,000 - 10000(AMM pool LP) - 100(AMMoffer) -
+            // Initial 30,000 - 10000(AMM pool LP) - 100(AMM offer) -
             // - 100(offer) - 10(tx fee) - 10(tx fee of MPTTester init as
             // holder) - one reserve
             BEAST_EXPECT(expectLedgerEntryRoot(
@@ -5010,12 +5123,12 @@ private:
             env.close();
 
             BEAST_EXPECT(
-                amm.expectBalances(XRPAmount(909'090'909), btc(550'000000055001), amm.tokens()));
-            // Offer ~91XRP/49.99e12BTC
+                amm.expectBalances(XRPAmount(909'090'910), btc(549'999999450001), amm.tokens()));
+            // Offer ~91XRP/50e12BTC
             BEAST_EXPECT(expectOffers(
-                env, carol_, 1, {{Amounts{XRPAmount{9'090'909}, btc(4'999999950000)}}}));
-            // Carol pays 0.1% fee on 50'000000055000BTC = 50'000000055BTC
-            env.require(Balance(carol_, btc(29'949'949'999'944'943)));
+                env, carol_, 1, {{Amounts{XRPAmount{9'090'910}, btc(5'000000500000)}}}));
+            // Carol pays 0.1% fee on 49'999999450001BTC.
+            env.require(Balance(carol_, btc(29'949'950'000'550'548)));
         }
 
         {
@@ -5065,15 +5178,15 @@ private:
             env.close();
 
             BEAST_EXPECT(ammAlice.expectBalances(
-                btc(1'060'6848287928033), eth(1'037'0658372213574), ammAlice.tokens()));
+                btc(1'060'6848287928025), eth(1'037'0658372213582), ammAlice.tokens()));
             // Consumed offer ~72.93e13ETH/72.93e13BTC
             BEAST_EXPECT(expectOffers(
-                env, carol_, 1, {Amounts{eth(27'0658372213574), btc(27'0658372213575)}}));
+                env, carol_, 1, {Amounts{eth(27'0658372213582), btc(27'0658372213582)}}));
             BEAST_EXPECT(expectOffers(env, bob_, 0));
             BEAST_EXPECT(expectOffers(env, ed, 0));
 
-            env.require(Balance(carol_, btc(19'116'439'640'089'955)));
-            env.require(Balance(carol_, eth(20'729'341'627'786'426)));
+            env.require(Balance(carol_, btc(19'116'439'640'089'965)));
+            env.require(Balance(carol_, eth(20'729'341'627'786'418)));
             env.require(Balance(bob_, btc(20'100'000'000'000'000)));
             env.require(Balance(ed, eth(19'875'000'000'000'000)));
         }
@@ -5670,6 +5783,87 @@ private:
                 BEAST_EXPECT(lp2TakerGets == offer["taker_gets"].asString());
                 BEAST_EXPECT(lp2TakerPays == offer["taker_pays"]["value"].asString());
             });
+    }
+
+    void
+    testAMMOfferGenerationPolicy(FeatureBitset features)
+    {
+        testcase("AMM payment offer generation picks economically coarser integral side");
+
+        using namespace jtx;
+
+        enum class GeneratedFirst { TakerPays, TakerGets };
+
+        auto const check = [&](std::uint64_t mptUnitsPerXRP, GeneratedFirst generatedFirst) {
+            TAmounts<XRPAmount, MPTAmount> const pool{
+                XRPAmount{1'000'000}, MPTAmount{1'000'000'125}};
+            TAmounts<XRPAmount, MPTAmount> const clobOffer{
+                kDropsPerXrp, MPTAmount{static_cast<std::int64_t>(mptUnitsPerXRP)}};
+            Quality const clobQuality{clobOffer};
+
+            auto const expectedAmounts = generatedFirst == GeneratedFirst::TakerGets
+                ? getAMMOfferStartWithTakerGets(pool, clobQuality, 0)
+                : getAMMOfferStartWithTakerPays(pool, clobQuality, 0);
+            auto const otherAmounts = generatedFirst == GeneratedFirst::TakerGets
+                ? getAMMOfferStartWithTakerPays(pool, clobQuality, 0)
+                : getAMMOfferStartWithTakerGets(pool, clobQuality, 0);
+            BEAST_EXPECT(expectedAmounts);
+            BEAST_EXPECT(otherAmounts);
+            if (!expectedAmounts || !otherAmounts)
+                return;
+
+            // Make the tested branch observable: these cases are chosen so the
+            // payment consumes different AMM amounts depending on which side
+            // is generated first.
+            BEAST_EXPECT(*expectedAmounts != *otherAmounts);
+
+            Env env(*this, features);
+            auto const gw = Account("gw");
+            auto const lp = Account("lp");
+            auto const maker = Account("maker");
+            auto const taker = Account("taker");
+            auto const dst = Account("dst");
+
+            env.fund(XRP(10'000), gw, lp, maker, taker, dst);
+            env.close();
+
+            MPTTester const token(
+                {.env = env, .issuer = gw, .holders = {lp, maker, dst}, .flags = kMptDexFlags});
+            env(pay(gw, lp, token(pool.out.value())));
+            env(pay(gw, maker, token(10'000'000)));
+            env.close();
+
+            AMM const amm(env, lp, drops(pool.in), token(pool.out.value()));
+            auto const makerOfferSeq = env.seq(maker);
+            env(offer(maker, XRP(1), token(mptUnitsPerXRP)), Txflags(tfPassive));
+            env.close();
+
+            env(pay(taker, dst, token(expectedAmounts->out.value())),
+                Sendmax(drops(expectedAmounts->in)));
+            env.close();
+
+            BEAST_EXPECT(amm.expectBalances(
+                drops(pool.in + expectedAmounts->in),
+                token((pool.out - expectedAmounts->out).value()),
+                amm.tokens()));
+            env.require(Balance(dst, token(expectedAmounts->out.value())));
+            BEAST_EXPECT(env.le(keylet::offer(maker.id(), SeqProxy::rawSequence(makerOfferSeq))));
+        };
+
+        // CLOB price: 10'000'000 MPT per 1 XRP, so one raw MPT unit is worth
+        // 0.1 drops. One drop is the economically coarser unit and the AMM
+        // offer is generated from takerPays.
+        check(10 * kDropsPerXrp.drops(), GeneratedFirst::TakerPays);
+
+        // CLOB price: 1'000'000 MPT per 1 XRP, so one raw MPT unit is worth
+        // one drop. Ties use takerGets to preserve the historical XRP-output
+        // behavior.
+        check(kDropsPerXrp.drops(), GeneratedFirst::TakerGets);
+
+        // CLOB price: 100'000 MPT per 1 XRP, so one raw MPT unit is worth
+        // 10 drops. MPT is the economically coarser unit and the AMM offer is
+        // generated from takerGets.
+        check(kDropsPerXrp.drops() / 10, GeneratedFirst::TakerGets);
     }
 
     void
@@ -7242,7 +7436,7 @@ private:
         // overflow. Deposit has no such bound, which is why only the deposit
         // path was exposed.
         //
-        // These mirror the deposit repros: the same oversized two-asset
+        // These mirror the deposit tests: the same oversized two-asset
         // request is rejected cleanly. If the preclaim bound is ever weakened,
         // equalWithdrawLimit would be reached with a huge frac and
         // Number::operator rep() would escape as tefEXCEPTION, failing this.
@@ -7296,6 +7490,57 @@ private:
     }
 
     void
+    testDanglingAMMMPTokenFreezeCheck()
+    {
+        testcase("Dangling AMM MPToken freeze check");
+
+        using namespace jtx;
+        FeatureBitset const all{testableAmendments()};
+
+        Env env(*this, all);
+
+        env.fund(XRP(1'000), gw_, alice_);
+        MPTTester usd({.env = env, .issuer = gw_});
+        MPTTester const btc({.env = env, .issuer = gw_});
+
+        AMM amm(env, gw_, usd(10'000), btc(10'000));
+        for (auto i = 0; i < kMaxDeletableAmmTrustLines + 10; ++i)
+        {
+            Account const a{std::to_string(i)};
+            env.fund(XRP(1'000), a);
+            env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+            env.close();
+        }
+
+        // With too many LP-token trust lines to delete in one pass, the AMM
+        // remains in an empty state with zero-balance MPToken objects.
+        amm.withdrawAll(gw_);
+        BEAST_EXPECT(amm.ammExists());
+        BEAST_EXPECT(amm.expectBalances(usd(0), btc(0), IOUAmount{0}));
+
+        auto const ammToken = env.le(keylet::mptoken(usd.issuanceID(), amm.ammAccount()));
+        if (!BEAST_EXPECT(ammToken))
+            return;
+        BEAST_EXPECT((*ammToken)[sfMPTAmount] == 0);
+
+        usd.destroy();
+        BEAST_EXPECT(env.le(keylet::mptokenIssuance(usd.issuanceID())) == nullptr);
+        BEAST_EXPECT(!isFrozen(*env.current(), amm.ammAccount(), *ammToken));
+        // A Payment cannot cross this empty AMM because BookStep skips AMMs
+        // with zero LPTokenBalance. Probe the same ZeroIfFrozen balance read
+        // used by AMM accounting.
+        auto const balance = accountHolds(
+            *env.current(),
+            amm.ammAccount(),
+            MPTIssue{usd.issuanceID()},
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::IgnoreAuth,
+            env.journal);
+
+        BEAST_EXPECT(balance == usd(0));
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::testableAmendments()};
@@ -7306,10 +7551,12 @@ private:
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();
+        testWithdrawReserveUsesLiveBalance();
         testInvalidFeeVote();
         testFeeVote();
         testInvalidBid();
         testBid(all);
+        testBid(all - fixCleanup3_4_0);
         testClawback();
         testClawbackFromAMMAccount(all);
         testClawbackFromAMMAccount(all - featureSingleAssetVault);
@@ -7318,6 +7565,7 @@ private:
         testAMMTokens();
         testAmendment();
         testAMMAndCLOB(all);
+        testAMMOfferGenerationPolicy(all);
         testTradingFee(all);
         testTradingFee(all - fixAMMv1_3);
         testAdjustedTokens(all);
@@ -7334,6 +7582,7 @@ private:
         testDepositIntegralOverflowMPT(all);
         testDepositIntegralOverflowMPT(all - fixCleanup3_4_0);
         testWithdrawIntegralNoOverflowMPT();
+        testDanglingAMMMPTokenFreezeCheck();
     }
 };
 
