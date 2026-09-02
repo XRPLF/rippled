@@ -11,6 +11,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
@@ -242,8 +243,31 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
     // is part of the domain
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissioned_dex::accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
+        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            auto const domainID = ctx.tx[sfDomainID];
+            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
+            if (!sleDomain)
+                return tecNO_PERMISSION;
+
+            // Domain owner is always considered in the domain, no credential check
+            // needed. For all other accounts, use validDomain which detects expired
+            // credentials. Suppress tecEXPIRED here so doApply can run and delete
+            // the expired credential SLEs from the ledger.
+            if (sleDomain->getAccountID(sfOwner) != id)
+            {
+                // validDomain returns tecNO_AUTH when no matching credential is
+                // found. Map it to tecNO_PERMISSION to preserve existing behavior.
+                if (auto const err = credentials::validDomain(ctx.view, domainID, id);
+                    !isTesSuccess(err) && err != tecEXPIRED)
+                    return tecNO_PERMISSION;
+            }
+        }
+        else
+        {
+            if (!permissioned_dex::accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
+                return tecNO_PERMISSION;
+        }
     }
 
     if (auto const ter = canTrade(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
@@ -1023,6 +1047,27 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 TER
 OfferCreate::doApply()
 {
+    // If a DomainID is present, verify the account is still in the domain and
+    // delete any expired credential SLEs. This must happen before the Sandboxes
+    // are created: if we return a tec error, the engine applies sbCancel (not
+    // sb) to rawView, so deletions made inside sb would be lost. Deletions made
+    // directly to ctx_.view() here are preserved regardless of which branch
+    // applyGuts takes.
+    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_4_0))
+    {
+        auto const domainID = ctx_.tx[sfDomainID];
+        auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
+        if (!sleDomain)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        if (sleDomain->getAccountID(sfOwner) != accountID_)
+        {
+            if (auto const err = verifyValidDomain(ctx_.view(), accountID_, domainID, j_);
+                !isTesSuccess(err))
+                return err;
+        }
+    }
+
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
