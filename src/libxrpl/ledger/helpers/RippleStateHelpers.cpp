@@ -659,7 +659,7 @@ addEmptyHolding(
     // Post-fixCleanup3_4_0: an existing line is a no-op. Issuer freeze and
     // DefaultRipple only matter when this function has to create a line.
     bool const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
-    if (fix340Enabled && ctx.view.read(index))
+    if (fix340Enabled && ctx.view.exists(index))
         return tecDUPLICATE;
 
     if (isGlobalFrozen(ctx.view, issuerId))
@@ -672,7 +672,7 @@ addEmptyHolding(
     if (!sleSrc->isFlag(lsfDefaultRipple))
         return fix340Enabled ? TER{terNO_RIPPLE} : tecINTERNAL;
     // If the line already exists, don't create it again.
-    if (!fix340Enabled && ctx.view.read(index))
+    if (!fix340Enabled && ctx.view.exists(index))
         return tecDUPLICATE;
 
     // A reserve sponsor only covers tx.Account's own objects.
