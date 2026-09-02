@@ -12,8 +12,11 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -21,6 +24,29 @@ bool
 VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfDomainID) || ctx.rules.enabled(featurePermissionedDomains);
+}
+
+std::uint32_t
+VaultSet::getFlagsMask(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(featureLendingProtocolV1_1))
+        return tfVaultSetMask;
+
+    // Add tfVaultDepositBlock and tfVaultDepositUnblock flags to indicate they are disabled
+    return tfVaultSetMask | tfVaultDepositBlock | tfVaultDepositUnblock;
+}
+
+static bool
+isValidVaultUpdate(PreflightContext const& ctx)
+{
+    auto const atLeastOneFieldPresent = ctx.tx.isFieldPresent(sfDomainID) ||
+        ctx.tx.isFieldPresent(sfAssetsMaximum) || ctx.tx.isFieldPresent(sfData);
+
+    // Mask of valid, non-universal flags: any bit set here means the
+    // transaction is requesting a meaningful flag change.
+    auto const expectedFlags = ~(VaultSet::getFlagsMask(ctx) | tfUniversal);
+
+    return atLeastOneFieldPresent || ((ctx.tx.getFlags() & expectedFlags) != 0u);
 }
 
 NotTEC
@@ -50,11 +76,17 @@ VaultSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (!ctx.tx.isFieldPresent(sfDomainID) && !ctx.tx.isFieldPresent(sfAssetsMaximum) &&
-        !ctx.tx.isFieldPresent(sfData))
+    if (!isValidVaultUpdate(ctx))
     {
         JLOG(ctx.j.debug()) << "VaultSet: nothing is being updated.";
         return temMALFORMED;
+    }
+
+    if (ctx.tx.isFlag(tfVaultDepositBlock) && ctx.tx.isFlag(tfVaultDepositUnblock))
+    {
+        JLOG(ctx.j.debug())
+            << "VaultSet: cannot set tfVaultDepositBlock and tfVaultDepositUnblock simultaneously.";
+        return temINVALID_FLAG;
     }
 
     return tesSUCCESS;
@@ -107,6 +139,29 @@ VaultSet::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.error()) << "VaultSet: issuance of vault shares is not private.";
             return tefINTERNAL;
             // LCOV_EXCL_STOP
+        }
+    }
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        // The Vault is not configured to support deposit blocking
+        if (!vault->isFlag(lsfVaultOwnerCanBlockDeposit) &&
+            (ctx.tx.isFlag(tfVaultDepositBlock) || ctx.tx.isFlag(tfVaultDepositUnblock)))
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: vault does not support blocking deposits";
+            return tecNO_PERMISSION;
+        }
+
+        if (vault->isFlag(lsfVaultDepositBlocked) && ctx.tx.isFlag(tfVaultDepositBlock))
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: vault deposit is already blocked";
+            return tecNO_PERMISSION;
+        }
+
+        if (!vault->isFlag(lsfVaultDepositBlocked) && ctx.tx.isFlag(tfVaultDepositUnblock))
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: vault deposit is already unblocked";
+            return tecNO_PERMISSION;
         }
     }
 
@@ -165,6 +220,15 @@ VaultSet::doApply()
             sleIssuance->makeFieldAbsent(sfDomainID);
         }
         view().update(sleIssuance);
+    }
+
+    if (view().rules().enabled(featureLendingProtocolV1_1))
+    {
+        if (tx.isFlag(tfVaultDepositBlock))
+            vault->setFlag(lsfVaultDepositBlocked);
+
+        if (tx.isFlag(tfVaultDepositUnblock))
+            vault->clearFlag(lsfVaultDepositBlocked);
     }
 
     // Note, we must update Vault object even if only DomainID is being updated

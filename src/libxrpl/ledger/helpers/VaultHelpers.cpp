@@ -225,6 +225,20 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
     return sleToken->getFieldU64(sfMPTAmount) == outstanding;
 }
 
+[[nodiscard]] bool
+isVaultInsolvent(SLE::const_ref vault, SLE::const_ref shareIssuance)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::isVaultInsolvent : Vault sle");
+    XRPL_ASSERT(
+        shareIssuance && shareIssuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isVaultInsolvent : MPTokenIssuance sle");
+
+    auto const assetsTotal = vault->at(sfAssetsTotal);
+    auto const sharesOutstanding = shareIssuance->at(sfOutstandingAmount);
+
+    return assetsTotal == 0 && sharesOutstanding > 0;
+}
+
 [[nodiscard]] VaultVersion
 getVaultVersion(SLE::const_ref vault)
 {

@@ -152,8 +152,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
-    if (!sleIssuance)
+    auto const sleShareIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    if (!sleShareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
@@ -170,19 +170,37 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         }
 
         // Cannot donate to a vault with no shares
-        if (sleIssuance->at(sfOutstandingAmount) == 0)
+        if (sleShareIssuance->at(sfOutstandingAmount) == 0)
         {
             JLOG(ctx.j.debug()) << "VaultDeposit: empty vault cannot receive donations.";
             return tecNO_PERMISSION;
         }
     }
 
-    if (sleIssuance->isFlag(lsfMPTLocked))
+    if (sleShareIssuance->isFlag(lsfMPTLocked))
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: issuance of vault shares is locked.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        // Perform these checks early to avoid unnecessary processing
+
+        // The Vault is insolvent, deposits are not allowed
+        if (isVaultInsolvent(vault, sleShareIssuance))
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: Vault is insolvent, deposits are not allowed";
+            return tecLOCKED;
+        }
+
+        if (vault->isFlag(lsfVaultDepositBlocked))
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: Vault deposits are blocked";
+            return tecNO_PERMISSION;
+        }
     }
 
     if (fix330Enabled)
@@ -205,7 +223,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     // credential is tolerated here because doApply deletes it.
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
-        if (auto const err = checkVaultDomain(ctx.view, sleIssuance, account, SuppressExpired::Yes);
+        if (auto const err =
+                checkVaultDomain(ctx.view, sleShareIssuance, account, SuppressExpired::Yes);
             !isTesSuccess(err))
             return err;
     }

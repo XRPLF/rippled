@@ -170,6 +170,14 @@ private:
             env(tx, Ter{temINVALID_FLAG});
 
             {
+                env.disableFeature(featureLendingProtocolV1_1);
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
+                env(tx, Ter(temINVALID_FLAG));
+                env.enableFeature(featureLendingProtocolV1_1);
+            }
+
+            {
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfFlags] = tfClearDeepFreeze;
                 env(tx, Ter{temINVALID_FLAG});
