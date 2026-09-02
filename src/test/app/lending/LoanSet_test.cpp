@@ -793,10 +793,10 @@ private:
             env.close();
 
             PrettyAsset const usd{issuer["USD"]};
-            env(trust(lender, usd(100'000)));
-            env(trust(borrower, usd(100'000)));
+            env(trust(lender, usd(10'000'000)));
+            env(trust(borrower, usd(10'000'000)));
             env.close();
-            env(pay(issuer, lender, usd(50'000)));
+            env(pay(issuer, lender, usd(2'000'000)));
             env(pay(issuer, borrower, usd(1'000)));
             env.close();
             BEAST_EXPECT(env.le(keylet::trustLine(borrower.id(), usd.raw().get<Issue>())));
@@ -815,9 +815,13 @@ private:
 
             Number const destAfter = env.balance(borrower, usd.raw()).number();
             if (isTesSuccess(expected))
+            {
                 BEAST_EXPECT(destAfter == destBefore + Number{100});
+            }
             else
+            {
                 BEAST_EXPECT(destAfter == destBefore);
+            }
         };
 
         run(all_ - fixCleanup3_4_0, terNO_RIPPLE);
