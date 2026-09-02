@@ -15,6 +15,7 @@
 #include <xrpl/tx/invariants/NFTInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
+#include <xrpl/tx/invariants/PseudoAccountInvariant.h>
 #include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
@@ -454,6 +455,7 @@ using InvariantChecks = std::tuple<
     ValidAMM,
     NoModifiedUnmodifiableFields,
     ValidPseudoAccounts,
+    ValidPseudoAccountOwnership,
     ValidLoanBroker,
     ValidLoan,
     ValidVault,
