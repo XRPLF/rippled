@@ -46,10 +46,13 @@ innerTxn(STObject const& wrapper)
 bool
 isOuterSigningFor(STObject const& proposedTx, AccountID const& signingFor)
 {
-    if (signingFor == proposedTx.getAccountID(sfAccount))
-        return true;
-    return proposedTx.isFieldPresent(sfDelegate) &&
-        signingFor == proposedTx.getAccountID(sfDelegate);
+    // A payload with sfDelegate has handed authority to the Delegate: the
+    // Delegate signs, the Account itself no longer can. Mirrors the check in
+    // Transactor::checkSign so that a contribution recorded here matches the
+    // signature the ordinary submit path will later look for.
+    if (proposedTx.isFieldPresent(sfDelegate))
+        return signingFor == proposedTx.getAccountID(sfDelegate);
+    return signingFor == proposedTx.getAccountID(sfAccount);
 }
 
 STObject*

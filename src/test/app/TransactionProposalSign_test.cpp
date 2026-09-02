@@ -300,6 +300,62 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
     }
 
     void
+    testDelegatedPayloadRejectsAccountSigningFor(FeatureBitset features)
+    {
+        testcase("delegated payload rejects SigningFor = Account");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const dest{"dest"};
+        Account const delegateAcct{"delegateAcct"};
+        Account const ds1{"ds1"};
+        env.fund(XRP(10000), target, dest, delegateAcct, ds1);
+        env.close();
+
+        env(delegate::set(target, delegateAcct, {"Payment"}));
+        env(signers(delegateAcct, 1, {{ds1, 1}}));
+        env.close();
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        json::Value tx = pay(target, dest, XRP(1));
+        tx[sfDelegate.jsonName] = delegateAcct.human();
+        env(proposal::create(
+            target,
+            proposal::unsignedPayload(env, tx, ticketSeq, /*extraSigners=*/1),
+            proposal::expiration(env, 100s)));
+        env.close();
+
+        // The Delegate authorizes this payload; the Account does not. Its
+        // contribution must be refused rather than written into the payload's
+        // own signature slot, where it would lock the Delegate out for good.
+        env(proposal::sign(env, target, target, ticketSeq, target, target), Ter(tecNO_PERMISSION));
+        env.close();
+
+        {
+            auto const sle = proposal::entry(env, target, ticketSeq);
+            if (!BEAST_EXPECT(sle))
+                return;
+            auto const stored = sle->getFieldObject(sfProposedTransaction);
+            BEAST_EXPECT(stored.getFieldVL(sfSigningPubKey).empty());
+            BEAST_EXPECT(!stored.isFieldPresent(sfTxnSignature));
+        }
+
+        // The Delegate's signer is still able to contribute and complete it.
+        env(proposal::sign(env, ds1, target, ticketSeq, delegateAcct, ds1));
+        env.close();
+
+        env(proposedJson(env, target, ticketSeq), Sig(kNone));
+        env.close();
+
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(env.balance(dest) == XRP(10000) + XRP(1));
+    }
+
+    void
     testExpired(FeatureBitset features)
     {
         testcase("sign against a terminal proposal deletes it");
@@ -545,6 +601,7 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         testOrdinaryMultiSign(all);
         testOrdinarySingleSign(all);
         testOrdinaryDelegate(all);
+        testDelegatedPayloadRejectsAccountSigningFor(all);
         testExpired(all);
         testExpiredWithBadSignature(all);
         testWrongSign(all);
