@@ -148,7 +148,8 @@ class SHAMapStore_test : public beast::unit_test::Suite
         countLocked(std::optional<beast::Severity> severity, std::string const& text) const
         {
             return std::count_if(messages_.begin(), messages_.end(), [&](auto const& message) {
-                return (!severity || message.first == *severity) && message.second.contains(text);
+                return (!severity || message.first == *severity) &&
+                    message.second.find(text) != std::string::npos;
             });
         }
 
