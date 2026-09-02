@@ -164,7 +164,8 @@ class LedgerMaster_test : public beast::unit_test::Suite
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
-        BEAST_EXPECT(syncStore(env));
+        if (!BEAST_EXPECT(syncStore(env)))
+            return;
         LedgerIndex lastRotated = store.getLastRotated();
         BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
@@ -176,9 +177,10 @@ class LedgerMaster_test : public beast::unit_test::Suite
         // that it is one of them. Everything below derives from the observed
         // value rather than assuming a particular one.
         //
-        // This one is fatal rather than merely reported, because it is the only
-        // place a value from the store enters minSeq. A lastRotated of 0 -- the
-        // value getLastRotated() reports until the store has been handed a
+        // This check and the syncStore() one above both end the testcase rather
+        // than merely reporting, because lastRotated is the only value from the
+        // store that enters minSeq. A lastRotated of 0 -- the value
+        // getLastRotated() reports until the store has been handed a
         // validated ledger -- makes minSeq 0 below, and the minSeq - 1 and
         // minSeq - 2 ranges then underflow to first > last, which aborts a
         // Debug build inside missingFromCompleteLedgerRange().

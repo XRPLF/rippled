@@ -1270,7 +1270,8 @@ public:
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
         auto& netOPs = env.app().getOPs();
-        BEAST_EXPECT(syncStore(env));
+        if (!BEAST_EXPECT(syncStore(env)))
+            return;
         // The store initializes lastRotated from the first validated ledger it
         // observes, and onLedgerClosed() keeps only the most recent ledger in
         // newLedger_, so validated ledgers arriving while the store thread is
@@ -1278,12 +1279,13 @@ public:
         // is therefore a timing detail. Spinning until it equals a hard-coded
         // value never terminates when a different one legitimately wins.
         //
-        // The range check is fatal rather than merely reported, because this is
-        // the only place a value from the store enters minSeq. A lastRotated of
-        // 0 -- the value getLastRotated() reports until the store has been
-        // handed a validated ledger -- makes minSeq 0 below, and the minSeq - 1
-        // and minSeq - 2 ranges then underflow to first > last, which aborts a
-        // Debug build inside missingFromCompleteLedgerRange().
+        // The range check and the syncStore() one above both end the testcase
+        // rather than merely reporting, because lastRotated is the only value
+        // from the store that enters minSeq. A lastRotated of 0 -- the value
+        // getLastRotated() reports until the store has been handed a validated
+        // ledger -- makes minSeq 0 below, and the minSeq - 1 and minSeq - 2
+        // ranges then underflow to first > last, which aborts a Debug build
+        // inside missingFromCompleteLedgerRange().
         LedgerIndex lastRotated = store.getLastRotated();
         if (!BEAST_EXPECTS(
                 lastRotated >= minSeq && lastRotated <= maxSeq, std::to_string(lastRotated)))
