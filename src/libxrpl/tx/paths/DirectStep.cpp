@@ -392,7 +392,25 @@ DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 std::pair<IOUAmount, DebtDirection>
 DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
 {
-    return maxPaymentFlow(sb);
+    auto const flow = maxPaymentFlow(sb);
+
+    // check() lets a redeeming step through even when dst_ was never
+    // authorized to hold src_'s issuance, because returning dst_'s own IOU
+    // creates no unauthorized holding. check() runs once at strand
+    // construction, though, while the flow engine re-evaluates maxFlow every
+    // iteration: once the redeemed balance reaches zero maxPaymentFlow
+    // switches to the Issues branch and would extend the unauthorized line
+    // fresh credit, which is the zero-crossing mint behind XRPLF/rippled
+    // issue #5450. Go dry instead, so such a line drains to zero and stops.
+    // A pseudo-account dst_ is exempt for the reason given in check().
+    if (issues(flow.second) && sb.rules().enabled(fixCleanup3_5_0) &&
+        !isTesSuccess(requireAuth(sb, Issue{currency_, src_}, dst_, AuthType::StrongAuth)) &&
+        !isPseudoAccount(sb, dst_))
+    {
+        return {IOUAmount(beast::kZero), DebtDirection::Issues};
+    }
+
+    return flow;
 }
 
 std::pair<IOUAmount, DebtDirection>
@@ -431,6 +449,10 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
+        // src_ holds dst_'s IOU exactly when the balance favors src_.
+        int const balanceSign = (*sleLine)[sfBalance].signum();
+        bool const srcHoldsDstIou = src_ < dst_ ? balanceSign > 0 : balanceSign < 0;
+
         if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField))
         {
             // Post fixCleanup3_5_0 an unauthorized line may not receive at
@@ -440,13 +462,23 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
             // could grow (see XRPLF/rippled issue #5450). The
             // ValidTrustLineAuth invariant remains the backstop for flows
             // that bypass the payment engine.
-            if (ctx.view.rules().enabled(fixCleanup3_5_0))
+            //
+            // srcHoldsDstIou excludes the opposite direction: there the
+            // balance favors src_, so the step returns dst_'s own issuance
+            // to it instead of handing dst_ a balance src_ never
+            // authorized. That redemption is one of the two permitted
+            // flows, and maxFlow caps it at the redeemable amount so it
+            // cannot cross zero into an unauthorized holding.
+            if (ctx.view.rules().enabled(fixCleanup3_5_0) && !srcHoldsDstIou)
             {
                 JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
                                  << " src: " << src_;
                 return tecNO_AUTH;
             }
 
+            // A zero balance means !srcHoldsDstIou, so post amendment the
+            // gate above has already returned: this branch is reachable
+            // pre-amendment only.
             if ((*sleLine)[sfBalance] == beast::kZero)
             {
                 JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
@@ -465,12 +497,9 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
         // bypass the payment engine.
         if (!ctx.isLast && ctx.view.rules().enabled(fixCleanup3_5_0))
         {
-            // src_ holds dst_'s IOU exactly when the balance favors src_.
             // A pseudo-account src_ is exempt: it cannot submit a TrustSet
             // to become authorized, mirroring the fixCleanup3_4_0 carve-out
             // inside requireAuth without depending on that amendment.
-            int const sign = (*sleLine)[sfBalance].signum();
-            bool const srcHoldsDstIou = src_ < dst_ ? sign > 0 : sign < 0;
             if (srcHoldsDstIou && !isPseudoAccount(ctx.view, src_) &&
                 !isTesSuccess(
                     requireAuth(ctx.view, Issue{currency_, dst_}, src_, AuthType::StrongAuth)))

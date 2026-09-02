@@ -568,8 +568,9 @@ class InvariantsTrustLine_test : public InvariantsBase
         // transactor's auth gate (DirectIPaymentStep::check) only fired on
         // an exactly-zero balance, waving the payment through on the
         // strength of the pre-existing opposite-direction balance. Both
-        // behaviors documented: post fixCleanup3_5_0 the engine rejects the
-        // crossing outright; pre amendment it succeeds and mints an
+        // behaviors documented: post fixCleanup3_5_0 the engine delivers the
+        // redeemable part and then goes dry, so a payment asking for more
+        // cannot complete; pre amendment it succeeds and mints an
         // unauthorized balance.
         for (bool const withCleanup : {true, false})
         {
@@ -592,9 +593,27 @@ class InvariantsTrustLine_test : public InvariantsBase
             // make the unauthorized a1 a holder of g1's IOU.
             if (withCleanup)
             {
-                env(pay(g1, a1, g1["USD"](10)), Ter(tecNO_AUTH));
+                // Only the 5 redeemable units are available, so the strand
+                // goes dry short of the requested amount and the whole
+                // payment fails without touching the balance. An
+                // unauthorized balance being invisible to a funding check
+                // is the same shape as the tecPATH_PARTIAL that
+                // accountHolds(ZeroIfUnauthorized) produces elsewhere.
+                env(pay(g1, a1, g1["USD"](10)), Ter(tecPATH_PARTIAL));
                 env.close();
                 BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](-5));
+
+                // Redeeming exactly what g1 holds creates no unauthorized
+                // balance, so it stays legal and drains the line to zero.
+                env(pay(g1, a1, g1["USD"](5)));
+                env.close();
+                BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](0));
+
+                // With the line at zero there is nothing left to redeem, so
+                // any further receive is the plain unauthorized-receive case.
+                env(pay(g1, a1, g1["USD"](1)), Ter(tecNO_AUTH));
+                env.close();
+                BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](0));
             }
             else
             {
