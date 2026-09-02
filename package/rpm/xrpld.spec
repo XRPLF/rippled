@@ -110,7 +110,7 @@ ln -s %{_bindir}/%{name} %{buildroot}/usr/local/bin/rippled
 
 
 %{_unitdir}/xrpld.service
-%{_presetdir}/50-xrpld.preset
+%attr(0644,root,root) %{_presetdir}/50-xrpld.preset
 %{_sysusersdir}/xrpld.conf
 %{_tmpfilesdir}/xrpld.conf
 %ghost %dir /var/lib/xrpld
