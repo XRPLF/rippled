@@ -204,9 +204,9 @@ allFoldToOther()
 static_assert(allPassThroughUnchanged());
 static_assert(allFoldToOther());
 
-// The verified size of the pass-through set as of this branch: 43 all-letter
-// job-name literals. Pinned so that adding or removing a job name without
-// revisiting the label-cardinality budget fails the build here.
+// The pass-through set is every all-letter job-name literal in the tree: 43
+// of them. Pinned so that adding or removing a job name without revisiting
+// the label-cardinality budget fails the build here.
 static_assert(kPassThroughHandlers.size() == 43);
 
 /**

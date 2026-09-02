@@ -226,8 +226,8 @@ private:
     /**
      * Spans the acquire lifecycle: started in init(), finalized in done()
      * with the outcome (complete/failed), timeout count, and peer count.
-     * Gives operators visibility into back-fill / fork-recovery cost, which
-     * previously emitted no span or metric.
+     * This span is the only signal for back-fill / fork-recovery cost; no
+     * other span or metric covers it.
      * Thread-free: emplaced by the acquiring thread, reset on a JtLedgerData
      * worker. A SpanGuard owns no thread-local Scope, so it can be destroyed
      * on the worker without corrupting the origin thread's context stack.

@@ -704,10 +704,10 @@ private:
     /**
      * Record the OTel metrics for one completed `TMGetObjectByHash` request.
      *
-     * Extracted from `processGetObjectByHash()` purely to keep that method
-     * within the 80-line limit; it holds no logic of its own beyond deriving
-     * the hit/miss split from `requested` and `found`. Called once per
-     * request, after the fetch loop and the `charge()` call.
+     * Called once per request from `processGetObjectByHash()`, after the fetch
+     * loop and the `charge()` call. A separate method so that one stays within
+     * the 80-line limit; it holds no logic of its own beyond deriving the
+     * hit/miss split from `requested` and `found`.
      *
      * Records `getobject_request_objects`, `getobject_lookup_us`,
      * `getobject_charge`, and both label values of

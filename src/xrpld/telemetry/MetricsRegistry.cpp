@@ -30,11 +30,12 @@
 
 // The app and overlay includes below are why
 // .github/scripts/levelization/results/loops.txt records
-// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry`, where
-// ordering.txt previously had telemetry strictly below both. The observable
-// gauges are pull-model: their callbacks sample live state when the reader
-// thread fires, so they need the concrete types to call getJqTransOverflow(),
-// size(), getPeerDisconnectCharges(), foreach() and txMetrics().
+// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry` as
+// cycles, rather than an acyclic ordering.txt entry placing telemetry strictly
+// below both. The observable gauges are pull-model: their callbacks sample live
+// state when the reader thread fires, so they need the concrete types to call
+// getJqTransOverflow(), size(), getPeerDisconnectCharges(), foreach() and
+// txMetrics().
 //
 // The cycle is confined to this translation unit. No telemetry header includes
 // app or overlay (MetricsRegistry.h forward-declares what it needs and takes a
