@@ -64,11 +64,12 @@ foreach(module IN LISTS test_modules)
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
     )
+    # The framework-free half of tx/wasm/fixtures/ is compiled into xrpl.testkit.wasm,
+    # which this binary links; the rest of that folder belongs here.
     list(
         FILTER sources
         EXCLUDE
-        REGEX
-            "\\.bench\\.cpp$|/fixtures/(WasmBench|BenchFixtures|NftSetup|WasmLedger|WasmRun)\\.cpp$"
+        REGEX "/fixtures/(NftSetup|WasmLedger|WasmRun)\\.cpp$"
     )
     target_sources(xrpl_tests PRIVATE ${sources})
 
@@ -90,14 +91,6 @@ file(
     "${CMAKE_CURRENT_SOURCE_DIR}/csf/*.cpp"
 )
 target_sources(xrpl_tests PRIVATE ${csf_sources})
-
-if(benchmark AND TARGET benchmark::benchmark)
-    target_include_directories(
-        xrpl_tests
-        PRIVATE
-            $<TARGET_PROPERTY:benchmark::benchmark,INTERFACE_INCLUDE_DIRECTORIES>
-    )
-endif()
 
 # The test helpers and per-module test headers are not built with add_module,
 # so verify them against the test binary's own compile environment.

@@ -594,6 +594,16 @@ fn a_memory64_memory_is_refused_by_screening() {
     );
 }
 
+/// The corruption fixtures below are written as hex strings, which is how the old Beast suite
+/// carried them — the bytes are deliberately malformed, so there is nothing to assemble them
+/// from.
+fn hex(s: &str) -> Vec<u8> {
+    (0..s.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+        .collect()
+}
+
 /// Malformed modules crafted to abuse the parser rather than merely be invalid — a vector
 /// length that lies about its size, a section that overruns its payload, a locals-count bomb,
 /// and a non-terminating LEB128 — are refused at compile like any other garbage. These guard
@@ -601,12 +611,6 @@ fn a_memory64_memory_is_refused_by_screening() {
 /// fixtures); the plainer "bad magic / wrong version" shapes are covered by `garbage_does_not_pass`.
 #[test]
 fn parser_abuse_shapes_are_refused() {
-    fn hex(s: &str) -> Vec<u8> {
-        (0..s.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
-            .collect()
-    }
     let cases = [
         ("vector length lies", "0061736d010000000105ffffffff0f"),
         ("section overruns its payload", "0061736d01000000010a0160"),
@@ -631,12 +635,6 @@ fn parser_abuse_shapes_are_refused() {
 /// alongside `garbage_does_not_pass`: guards against a wasmi upgrade loosening the validator.
 #[test]
 fn structurally_malformed_modules_are_refused() {
-    fn hex(s: &str) -> Vec<u8> {
-        (0..s.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
-            .collect()
-    }
     let cases = [
         ("corrupt magic number", "0161736d01000000"),
         ("wrong version", "0061736d02000000"),
