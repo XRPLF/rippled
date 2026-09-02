@@ -1,6 +1,8 @@
 #include <xrpl/protocol/Sign.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -11,6 +13,30 @@
 #include <xrpl/protocol/Serializer.h>
 
 namespace xrpl {
+
+HashPrefix
+signingPrefix(SField const* sigField, bool multiSigning, Rules const& rules)
+{
+    // Before fixCleanup3_4_0 every signature on a transaction covered the same
+    // bytes, so a signature could be moved from one role to another.
+    if (sigField != nullptr && rules.enabled(fixCleanup3_4_0))
+    {
+        if (*sigField == sfCounterpartySignature)
+        {
+            return multiSigning ? HashPrefix::CounterpartyTxMultiSign
+                                : HashPrefix::CounterpartyTxSign;
+        }
+        if (*sigField == sfSponsorSignature)
+            return multiSigning ? HashPrefix::SponsorTxMultiSign : HashPrefix::SponsorTxSign;
+
+        // LCOV_EXCL_START
+        if (*sigField != sfTransaction)
+            UNREACHABLE("xrpl::signingPrefix : unknown signature field");
+        // LCOV_EXCL_STOP
+    }
+
+    return multiSigning ? HashPrefix::TxMultiSign : HashPrefix::TxSign;
+}
 
 void
 sign(
@@ -70,18 +96,18 @@ verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL 
 // So, if we support multiple levels of signing, then we'll need to
 // incorporate the "signing for" accounts into the signing data as well.
 Serializer
-buildMultiSigningData(STObject const& obj, AccountID const& signingID)
+buildMultiSigningData(STObject const& obj, AccountID const& signingID, HashPrefix prefix)
 {
-    Serializer s{startMultiSigningData(obj)};
+    Serializer s{startMultiSigningData(obj, prefix)};
     finishMultiSigningData(signingID, s);
     return s;
 }
 
 Serializer
-startMultiSigningData(STObject const& obj)
+startMultiSigningData(STObject const& obj, HashPrefix prefix)
 {
     Serializer s;
-    s.add32(HashPrefix::TxMultiSign);
+    s.add32(prefix);
     obj.addWithoutSigningFields(s);
     return s;
 }

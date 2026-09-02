@@ -684,10 +684,14 @@ transactionPreProcessImpl(
     if (!passesLocalChecks(*stTx, reason))
         return rpc::makeError(RpcInvalidParams, reason);
 
+    // The signing prefix binds the signature to the field it goes into.
+    auto const prefix = signingPrefix(
+        signatureTarget, signingArgs.isMultiSigning(), app.getOpenLedger().current()->rules());
+
     // If multisign then return multiSignature, else set TxnSignature field.
     if (signingArgs.isMultiSigning())
     {
-        Serializer const s = buildMultiSigningData(*stTx, signingArgs.getSigner());
+        Serializer const s = buildMultiSigningData(*stTx, signingArgs.getSigner(), prefix);
 
         auto multisig = xrpl::sign(pk, sk, s.slice());
 
@@ -695,7 +699,7 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning())
     {
-        stTx->sign(pk, sk, signatureTarget);
+        stTx->sign(pk, sk, signatureTarget, prefix);
     }
 
     return TransactionPreProcessResult{std::move(stTx)};

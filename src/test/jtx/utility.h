@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/STObject.h>
 
 #include <stdexcept>
@@ -35,10 +36,17 @@ parse(json::Value const& jv);
 
 /**
  * Sign automatically into a specific Json field of the jv object.
+ * @param prefix Prefix to insert before the serialized transaction when
+ * hashing. Use signingPrefix to get the prefix that matches the field that
+ * holds sigObject.
  * @note This only works on accounts with multi-signing off.
  */
 void
-sign(json::Value& jv, Account const& account, json::Value& sigObject);
+sign(
+    json::Value& jv,
+    Account const& account,
+    json::Value& sigObject,
+    HashPrefix prefix = HashPrefix::TxSign);
 
 /**
  * Sign automatically.

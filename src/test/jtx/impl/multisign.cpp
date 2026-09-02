@@ -64,6 +64,7 @@ Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
+        auto const prefix = signingPrefix(subField, true, env.current()->rules());
         // Where to put the signature. Supports sfCounterPartySignature and
         // sfSponsorSignature.
         auto& sigObject = subField ? jtx[*subField] : jtx.jv;
@@ -95,7 +96,7 @@ Msig::operator()(Env& env, JTx& jt) const
             jo[jss::Account] = e.acct.human();
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer const ss{buildMultiSigningData(*st, e.acct.id())};
+            Serializer const ss{buildMultiSigningData(*st, e.acct.id(), prefix)};
             auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
             jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
         }

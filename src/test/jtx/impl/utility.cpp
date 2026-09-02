@@ -37,11 +37,11 @@ parse(json::Value const& jv)
 }
 
 void
-sign(json::Value& jv, Account const& account, json::Value& sigObject)
+sign(json::Value& jv, Account const& account, json::Value& sigObject, HashPrefix prefix)
 {
     sigObject[jss::SigningPubKey] = strHex(account.pk().slice());
     Serializer ss;
-    ss.add32(HashPrefix::TxSign);
+    ss.add32(prefix);
     parse(jv).addWithoutSigningFields(ss);
     auto const sig = xrpl::sign(account.pk(), account.sk(), ss.slice());
     sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});

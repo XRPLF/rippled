@@ -168,10 +168,10 @@ STTx::getMentionedAccounts() const
 }
 
 static Blob
-getSigningData(STTx const& that)
+getSigningData(STTx const& that, HashPrefix prefix = HashPrefix::TxSign)
 {
     Serializer s;
-    s.add32(HashPrefix::TxSign);
+    s.add32(prefix);
     that.addWithoutSigningFields(s);
     return s.getData();
 }
@@ -216,9 +216,10 @@ void
 STTx::sign(
     PublicKey const& publicKey,
     SecretKey const& secretKey,
-    std::optional<std::reference_wrapper<SField const>> signatureTarget)
+    std::optional<std::reference_wrapper<SField const>> signatureTarget,
+    HashPrefix prefix)
 {
-    auto const data = getSigningData(*this);
+    auto const data = getSigningData(*this, prefix);
 
     auto const sig = xrpl::sign(publicKey, secretKey, makeSlice(data));
 
@@ -235,7 +236,7 @@ STTx::sign(
 }
 
 std::expected<void, std::string>
-STTx::checkSign(Rules const& rules, STObject const& sigObject) const
+STTx::checkSign(Rules const& rules, STObject const& sigObject, SField const* sigField) const
 {
     try
     {
@@ -244,8 +245,10 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
         // multi-signing.  Otherwise we're single-signing.
 
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
-        return signingPubKey.empty() ? checkMultiSign(rules, sigObject)
-                                     : checkSingleSign(sigObject);
+        bool const multiSigning = signingPubKey.empty();
+        auto const prefix = signingPrefix(sigField, multiSigning, rules);
+        return multiSigning ? checkMultiSign(rules, sigObject, prefix)
+                            : checkSingleSign(sigObject, prefix);
     }
     catch (...)
     {
@@ -256,20 +259,20 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
 std::expected<void, std::string>
 STTx::checkSign(Rules const& rules) const
 {
-    if (auto const ret = checkSign(rules, *this); !ret)
+    if (auto const ret = checkSign(rules, *this, nullptr); !ret)
         return ret;
 
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
-        if (auto const ret = checkSign(rules, counterSig); !ret)
+        if (auto const ret = checkSign(rules, counterSig, &sfCounterpartySignature); !ret)
             return std::unexpected("Counterparty: " + ret.error());
     }
 
     if (isFieldPresent(sfSponsorSignature))
     {
         auto const sponsorSignatureObj = getFieldObject(sfSponsorSignature);
-        if (auto const ret = checkSign(rules, sponsorSignatureObj); !ret)
+        if (auto const ret = checkSign(rules, sponsorSignatureObj, &sfSponsorSignature); !ret)
             return std::unexpected("Sponsor: " + ret.error());
     }
 
@@ -447,9 +450,9 @@ singleSignHelper(STObject const& sigObject, Slice const& data)
 }
 
 std::expected<void, std::string>
-STTx::checkSingleSign(STObject const& sigObject) const
+STTx::checkSingleSign(STObject const& sigObject, HashPrefix prefix) const
 {
-    auto const data = getSigningData(*this);
+    auto const data = getSigningData(*this, prefix);
     return singleSignHelper(sigObject, makeSlice(data));
 }
 
@@ -566,7 +569,7 @@ STTx::checkBatchMultiSign(
 }
 
 std::expected<void, std::string>
-STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
+STTx::checkMultiSign(Rules const& rules, STObject const& sigObject, HashPrefix prefix) const
 {
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
@@ -578,7 +581,7 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
-    Serializer dataStart = startMultiSigningData(*this);
+    Serializer dataStart = startMultiSigningData(*this, prefix);
     return multiSignHelper(
         sigObject,
         txnAccountID,

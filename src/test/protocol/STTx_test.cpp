@@ -1,9 +1,13 @@
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -11,6 +15,7 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
@@ -55,6 +60,164 @@ public:
         testSTTx(KeyType::Ed25519);
         testObjectCtorErrors();
         testBatchInnerCtorErrors();
+        testSigningPrefixes();
+        testRoleSignatureBinding();
+    }
+
+    // Rules with no amendments enabled, and rules with only fixCleanup3_4_0
+    // enabled. Rules keep a reference to the presets, so the presets must
+    // outlive the Rules; both are returned together.
+    struct RulesFixture
+    {
+        std::unordered_set<uint256, beast::Uhash<>> const noPresets{};
+        std::unordered_set<uint256, beast::Uhash<>> const fixPresets{fixCleanup3_4_0};
+        Rules const legacy{noPresets};
+        Rules const fixed{fixPresets};
+    };
+
+    // A transaction with fixed contents, so its signing data is stable from
+    // run to run.
+    static STTx
+    makeFixedTx()
+    {
+        auto const keypair = generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase"));
+        return STTx(ttACCOUNT_SET, [&keypair](auto& obj) {
+            obj.setAccountID(sfAccount, calcAccountID(keypair.first));
+            obj.setFieldAmount(sfFee, STAmount(10ull));
+            obj.setFieldU32(sfSequence, 1);
+            obj.setFieldVL(sfSigningPubKey, keypair.first.slice());
+        });
+    }
+
+    void
+    testSigningPrefixes()
+    {
+        testcase("signing prefixes");
+
+        // The prefixes are protocol constants. Spell them out so that a typo
+        // in a prefix character fails here, and not in a downstream library.
+        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::TxSign) == 0x53545800);
+        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::TxMultiSign) == 0x534D5400);
+        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::CounterpartyTxSign) == 0x43505400);
+        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::CounterpartyTxMultiSign) == 0x43504D00);
+        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::SponsorTxSign) == 0x53504E00);
+        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::SponsorTxMultiSign) == 0x53504D00);
+
+        RulesFixture const r;
+
+        // Every role gets its own prefix once the fix is enabled.
+        BEAST_EXPECT(signingPrefix(nullptr, false, r.fixed) == HashPrefix::TxSign);
+        BEAST_EXPECT(signingPrefix(nullptr, true, r.fixed) == HashPrefix::TxMultiSign);
+        BEAST_EXPECT(
+            signingPrefix(&sfCounterpartySignature, false, r.fixed) ==
+            HashPrefix::CounterpartyTxSign);
+        BEAST_EXPECT(
+            signingPrefix(&sfCounterpartySignature, true, r.fixed) ==
+            HashPrefix::CounterpartyTxMultiSign);
+        BEAST_EXPECT(
+            signingPrefix(&sfSponsorSignature, false, r.fixed) == HashPrefix::SponsorTxSign);
+        BEAST_EXPECT(
+            signingPrefix(&sfSponsorSignature, true, r.fixed) == HashPrefix::SponsorTxMultiSign);
+
+        // Before the fix, every role signs the same bytes.
+        for (SField const* sigField :
+             {static_cast<SField const*>(nullptr), &sfCounterpartySignature, &sfSponsorSignature})
+        {
+            BEAST_EXPECT(signingPrefix(sigField, false, r.legacy) == HashPrefix::TxSign);
+            BEAST_EXPECT(signingPrefix(sigField, true, r.legacy) == HashPrefix::TxMultiSign);
+        }
+
+        // The bytes signed by an ordinary transaction must not move. Both the
+        // single- and the multi-signing data are pinned, and neither depends
+        // on the amendment.
+        auto const tx = makeFixedTx();
+        for (Rules const& rules : {r.legacy, r.fixed})
+        {
+            Serializer single;
+            single.add32(signingPrefix(nullptr, false, rules));
+            tx.addWithoutSigningFields(single);
+            BEAST_EXPECT(
+                strHex(single.peekData()) ==
+                "53545800120003220000000024000000016840000000000000"
+                "0A7321ED5F5AC8B98974A3CA843326D9B88CEBD0560177B456"
+                "1E0C6DF7A3A66D1E1D0C4B81145E7B112523F68D2F5E879DB4"
+                "EAC51C6698A69304");
+            BEAST_EXPECT(
+                to_string(single.getSHA512Half()) ==
+                "8D18B0BFCEFCB18AA5D2A21E14A34A1E3DAA0EE79C69AAB88C64B4B4C3AA9E3E");
+
+            auto const signer = calcAccountID(
+                generateKeyPair(KeyType::Secp256k1, generateSeed("multisigner")).first);
+            Serializer const multi =
+                buildMultiSigningData(tx, signer, signingPrefix(nullptr, true, rules));
+
+            // The multi-signing data is the single-signing data with a
+            // different prefix and the signer's account appended.
+            Serializer expected;
+            expected.add32(HashPrefix::TxMultiSign);
+            tx.addWithoutSigningFields(expected);
+            expected.addBitString(signer);
+            BEAST_EXPECT(strHex(multi.peekData()) == strHex(expected.peekData()));
+        }
+    }
+
+    void
+    testRoleSignatureBinding()
+    {
+        testcase("role signature binding");
+
+        RulesFixture const r;
+
+        auto const keypair = generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase"));
+        auto const account = calcAccountID(keypair.first);
+
+        // A transaction signed by its own account, with that signature copied
+        // into an alternate signature field. sfSponsorSignature is a common
+        // field; sfCounterpartySignature is only on a LoanSet.
+        auto makeCopiedSig = [&keypair, &account](SField const& sigField) {
+            bool const counterparty = sigField == sfCounterpartySignature;
+            STTx tx(counterparty ? ttLOAN_SET : ttACCOUNT_SET, [&](auto& obj) {
+                obj.setAccountID(sfAccount, account);
+                obj.setFieldAmount(sfFee, STAmount(10ull));
+                obj.setFieldU32(sfSequence, 1);
+                obj.setFieldVL(sfSigningPubKey, keypair.first.slice());
+                if (counterparty)
+                {
+                    obj.setFieldH256(sfLoanBrokerID, uint256{1});
+                    obj.setFieldNumber(
+                        sfPrincipalRequested, STNumber{sfPrincipalRequested, Number{1}});
+                }
+                else
+                {
+                    obj.setAccountID(sfSponsor, account);
+                    obj.setFieldU32(sfSponsorFlags, 0);
+                }
+            });
+            tx.sign(keypair.first, keypair.second);
+
+            STObject sigObject(sigField);
+            sigObject.setFieldVL(sfSigningPubKey, keypair.first.slice());
+            sigObject.setFieldVL(sfTxnSignature, tx.getSignature());
+
+            STObject copy{tx};
+            copy.setFieldObject(sigField, sigObject);
+            return STTx{std::move(copy)};
+        };
+
+        for (SField const& sigField :
+             {std::cref(sfCounterpartySignature), std::cref(sfSponsorSignature)})
+        {
+            auto const tx = makeCopiedSig(sigField);
+
+            // Before the fix, the copied signature verifies in the other role.
+            BEAST_EXPECT(tx.checkSign(r.legacy));
+
+            // With the fix, it does not.
+            auto const ret = tx.checkSign(r.fixed);
+            BEAST_EXPECT(!ret);
+            if (!ret)
+                BEAST_EXPECT(matches(ret.error().c_str(), "Invalid signature"));
+        }
     }
 
     void

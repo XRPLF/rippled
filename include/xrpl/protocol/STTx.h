@@ -5,6 +5,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -105,11 +106,22 @@ public:
     [[nodiscard]] json::Value
     getJson(JsonOptions options, bool binary) const;
 
+    /**
+     * Sign the transaction.
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
+     * @param signatureTarget Field in which to store the signature. If not
+     *     specified, the signature goes into the top level sfTxnSignature.
+     * @param prefix Prefix to insert before the serialized transaction when
+     *     hashing. Use signingPrefix to get the prefix that matches
+     *     signatureTarget.
+     */
     void
     sign(
         PublicKey const& publicKey,
         SecretKey const& secretKey,
-        std::optional<std::reference_wrapper<SField const>> signatureTarget = {});
+        std::optional<std::reference_wrapper<SField const>> signatureTarget = {},
+        HashPrefix prefix = HashPrefix::TxSign);
 
     /**
      * Check the signature.
@@ -165,16 +177,20 @@ private:
      * @param rules The current ledger rules.
      * @param sigObject Reference to object that contains the signature fields.
      *     Will be *this more often than not.
+     * @param sigField Field that holds sigObject: nullptr when sigObject is
+     *     *this, otherwise the field of the alternate signature, such as
+     *     sfSponsorSignature. Determines the signing prefix, which binds the
+     *     signature to the role that made it.
      * @return `true` if valid signature. If invalid, the error message string.
      */
     [[nodiscard]] std::expected<void, std::string>
-    checkSign(Rules const& rules, STObject const& sigObject) const;
+    checkSign(Rules const& rules, STObject const& sigObject, SField const* sigField) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkSingleSign(STObject const& sigObject) const;
+    checkSingleSign(STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkMultiSign(Rules const& rules, STObject const& sigObject) const;
+    checkMultiSign(Rules const& rules, STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
     checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
