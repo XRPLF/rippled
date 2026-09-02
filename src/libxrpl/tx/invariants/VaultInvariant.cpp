@@ -1129,14 +1129,10 @@ ValidVault::finalize(
                         // only. If the receiver's trust line sits at a coarser scale, the inflow
                         // may safely round down to zero.
                         //
-                        // XRP and MPT remain strict for rounding artifacts. A zero destination
-                        // delta is still allowed when zeroDeltaIsLegitimate, to tolerate a
-                        // one-sided rounded-zero change during a legitimate zero-value
-                        // withdrawal.
+                        // XRP and MPT remain strict for rounding artifacts.
                         bool const tolerateZeroDelta =
                             view.rules().enabled(fixCleanup3_2_0) && !vaultAsset.integral();
-                        auto const invalidBalanceChange =
-                            (tolerateZeroDelta || zeroDeltaIsLegitimate)
+                        auto const invalidBalanceChange = tolerateZeroDelta
                             ? roundedDestinationDelta < kZero
                             : roundedDestinationDelta <= kZero;
                         if (invalidBalanceChange)
