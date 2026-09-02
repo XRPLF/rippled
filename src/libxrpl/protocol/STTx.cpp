@@ -168,7 +168,7 @@ STTx::getMentionedAccounts() const
 }
 
 static Blob
-getSigningData(STTx const& that, HashPrefix prefix = HashPrefix::TxSign)
+getSigningData(STTx const& that, HashPrefix prefix)
 {
     Serializer s;
     s.add32(prefix);
@@ -215,7 +215,9 @@ STTx::getSeqProxy() const
 void
 STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 {
-    auto const data = getSigningData(*this);
+    // The account's own signature always covers the plain transaction prefix;
+    // see signingPrefix for the role signatures that do not.
+    auto const data = getSigningData(*this, HashPrefix::TxSign);
 
     setFieldVL(sfTxnSignature, xrpl::sign(publicKey, secretKey, makeSlice(data)));
     tid_ = getHash(HashPrefix::TransactionId);

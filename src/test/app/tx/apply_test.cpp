@@ -2,6 +2,8 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/noop.h>
@@ -11,7 +13,6 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
@@ -56,53 +57,72 @@ public:
 
         Account const alice{"alice"};
         Account const sponsor{"sponsor"};
-        preFix.fund(XRP(10'000), alice, sponsor);
-        preFix.close();
-        postFix.fund(XRP(10'000), alice, sponsor);
-        postFix.close();
-
-        // Direction 1: a good verdict under the old prefix must not let a
-        // signature moved between roles survive the amendment.
+        Account const counterparty{"counterparty"};
+        for (auto* env : {&preFix, &postFix})
         {
-            auto const jt = preFix.jt(
+            env->fund(XRP(10'000), alice, sponsor, counterparty);
+            env->close();
+        }
+
+        // Both directions for a transaction whose role signature sits in the
+        // field that makeTx signs. makeTx builds the transaction in the Env it
+        // is given, so the role signature carries that era's prefix.
+        auto checkBothDirections = [&](std::function<JTx(test::jtx::Env&)> const& makeTx) {
+            // Direction 1: a good verdict under the old prefix must not let a
+            // signature moved between roles survive the amendment.
+            {
+                auto const jt = makeTx(preFix);
+                if (!BEAST_EXPECT(jt.stx))
+                    return;
+
+                auto& router = preFix.app().getHashRouter();
+                BEAST_EXPECT(checkValidity(router, *jt.stx, preFixRules).first == Validity::Valid);
+
+                // Same router, asked again under the post-fix rules. The Valid
+                // verdict above was reached under the old prefix and must not
+                // be reused, or a signature moved between roles would survive
+                // the amendment.
+                BEAST_EXPECT(
+                    checkValidity(router, *jt.stx, postFixRules).first == Validity::SigBad);
+            }
+
+            // Direction 2: a bad verdict under the old prefix must not condemn
+            // a transaction that the new prefixes accept. A node whose
+            // validated rules still lag the open ledger will run this check
+            // pre-fix first and reject a correctly new-prefix-signed
+            // transaction; the post-fix check must then verify it afresh
+            // instead of reusing the pre-fix verdict.
+            {
+                auto const jt = makeTx(postFix);
+                if (!BEAST_EXPECT(jt.stx))
+                    return;
+
+                auto& router = postFix.app().getHashRouter();
+                BEAST_EXPECT(checkValidity(router, *jt.stx, preFixRules).first == Validity::SigBad);
+                BEAST_EXPECT(checkValidity(router, *jt.stx, postFixRules).first == Validity::Valid);
+            }
+        };
+
+        // sfSponsorSignature, which uses the SPN and SPM prefixes.
+        checkBothDirections([&](Env& env) {
+            return env.jt(
                 noop(alice),
                 Fee(XRP(1)),
                 sponsor::As(sponsor, spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor));
-            BEAST_EXPECT(jt.stx);
-            if (!jt.stx)
-                return;
+        });
 
-            auto& router = preFix.app().getHashRouter();
-            BEAST_EXPECT(checkValidity(router, *jt.stx, preFixRules).first == Validity::Valid);
-
-            // Same router, asked again under the post-fix rules. The Valid
-            // verdict above was reached under the old prefix and must not be
-            // reused, or a signature moved between roles would survive the
-            // amendment.
-            BEAST_EXPECT(checkValidity(router, *jt.stx, postFixRules).first == Validity::SigBad);
-        }
-
-        // Direction 2: a bad verdict under the old prefix must not condemn a
-        // transaction that the new prefixes accept. A node whose validated
-        // rules still lag the open ledger will run this check pre-fix first
-        // and reject a correctly new-prefix-signed transaction; the post-fix
-        // check must then verify it afresh instead of reusing the pre-fix
-        // verdict.
-        {
-            auto const jt = postFix.jt(
-                noop(alice),
+        // sfCounterpartySignature, which uses its own prefixes, CPT and CPM,
+        // and only appears on a LoanSet. The transaction does not have to be
+        // applicable: checkValidity verifies signatures without consulting the
+        // ledger, so a placeholder LoanBrokerID is enough.
+        checkBothDirections([&](Env& env) {
+            return env.jt(
+                loan::set(alice, uint256{1}, Number{1}),
+                loan::kCounterparty(counterparty),
                 Fee(XRP(1)),
-                sponsor::As(sponsor, spfSponsorFee),
-                Sig(sfSponsorSignature, sponsor));
-            BEAST_EXPECT(jt.stx);
-            if (!jt.stx)
-                return;
-
-            auto& router = postFix.app().getHashRouter();
-            BEAST_EXPECT(checkValidity(router, *jt.stx, preFixRules).first == Validity::SigBad);
-            BEAST_EXPECT(checkValidity(router, *jt.stx, postFixRules).first == Validity::Valid);
-        }
+                Sig(sfCounterpartySignature, counterparty));
+        });
     }
 
     void

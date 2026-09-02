@@ -24,8 +24,8 @@
 
 namespace xrpl {
 
-// These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
-// HashRouter.h
+// This file owns HashRouterFlags::PRIVATE1-4 and PRIVATE7-8 in HashRouter.h.
+// These are the first four; the other two are below.
 constexpr HashRouterFlags kSfSigbad = HashRouterFlags::PRIVATE1;     // Signature is bad
 constexpr HashRouterFlags kSfSiggood = HashRouterFlags::PRIVATE2;    // Signature is good
 constexpr HashRouterFlags kSfLocalbad = HashRouterFlags::PRIVATE3;   // Local checks failed

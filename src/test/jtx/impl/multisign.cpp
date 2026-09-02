@@ -60,10 +60,10 @@ signers(Account const& account, NoneT)
 //------------------------------------------------------------------------------
 
 void
-Msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env&, JTx& jt) const
 {
     auto const mySigners = signers;
-    auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
+    auto callback = [subField = subField, mySigners](Env& env, JTx& jtx) {
         auto const prefix =
             signingPrefix(jtx::signatureRole(subField), true, env.current()->rules());
         // Where to put the signature. Supports sfCounterPartySignature and
