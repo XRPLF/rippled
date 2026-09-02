@@ -138,16 +138,15 @@ doNoRippleCheck(RPC::JsonContext& context)
     }
 
     forEachItemAfter(*ledger, accountID, uint256(), 0, limit, [&](SLE::const_ref ownedItem) {
-        
-	if (!ownedItem)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::doNoRippleCheck : null SLE");
-	    return false;
-        // LCOV_EXCL_STOP
-    }
+        if (!ownedItem)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::doNoRippleCheck : null SLE");
+            return false;
+            // LCOV_EXCL_STOP
+        }
 
-	if (ownedItem->getType() == ltRIPPLE_STATE)
+        if (ownedItem->getType() == ltRIPPLE_STATE)
         {
             bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();
 

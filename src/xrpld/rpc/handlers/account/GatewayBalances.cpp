@@ -149,7 +149,7 @@ doGatewayBalances(RPC::JsonContext& context)
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::doGatewayBalances : null SLE");
-	    	    return;
+                return;
                 // LCOV_EXCL_STOP
             }
 	    if (sle->getType() == ltESCROW)
