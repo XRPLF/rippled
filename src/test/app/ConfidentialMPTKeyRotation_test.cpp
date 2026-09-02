@@ -111,10 +111,10 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .auditorPubKey = mptAlice.getPubKey(auditor),
         });
 
-        //  Verify that no epochs are set when registering for the first time.
+        // Verify that no epochs are set when registering for the first time.
         BEAST_EXPECT(mptAlice.checkKeyEpochs(std::nullopt, std::nullopt));
 
-        // Rotating both keys, it requires the amendment
+        // Rotating both keys requires the amendment
         bool const rotationEnabled = features[featureConfidentialMPTKeyRotation];
         mptAlice.set({
             .account = alice,
