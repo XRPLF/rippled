@@ -15,6 +15,7 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -2720,8 +2721,9 @@ class AMMClawback_test : public beast::unit_test::Suite
     {
         // Clawback must not fail the holder-side reserve check: a holder could
         // otherwise veto it by omitting the paired trustline. AMMWithdraw still
-        // enforces the check. Pre-fixCleanup3_4_0 the clawback path used the
-        // issuer's XRP, so a low-XRP issuer was blocked.
+        // enforces the check. Pre-fixCleanup3_4_0 the holder's reserve was
+        // compared against max(issuer pre-fee, holder current) XRP, so the
+        // clawback was blocked when neither balance covered it.
         testcase("test clawback bypasses recipient reserve");
         using namespace jtx;
 
@@ -2742,7 +2744,6 @@ class AMMClawback_test : public beast::unit_test::Suite
         env.close();
 
         env(fset(gw, asfAllowTrustLineClawback));
-        env(fset(gw, asfDefaultRipple));
         env.close();
 
         env.trust(usd(1'000'000), carol);
@@ -2758,7 +2759,6 @@ class AMMClawback_test : public beast::unit_test::Suite
         env(pay(gw, alice, usd(1'000)));
         env.close();
         amm.deposit(alice, usd(100));
-        env.close();
 
         BEAST_EXPECT(env.ownerCount(alice) == 2);
         // alice cannot afford a third owner object.
@@ -2768,7 +2768,6 @@ class AMMClawback_test : public beast::unit_test::Suite
         amm.withdraw(
             WithdrawArg{
                 .account = alice, .asset1Out = eur(1), .err = Ter(tecINSUFFICIENT_RESERVE)});
-        env.close();
         BEAST_EXPECT(env.ownerCount(alice) == 2);
 
         if (features[fixCleanup3_4_0])
@@ -2777,6 +2776,9 @@ class AMMClawback_test : public beast::unit_test::Suite
             // newly created EUR trustline.
             env(amm::ammClawback(gw, alice, usd, eur, usd(10)), Ter(tesSUCCESS));
             env.close();
+
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), eur.issue())));
+            BEAST_EXPECT(env.balance(alice, eur) > eur(0));
             BEAST_EXPECT(env.ownerCount(alice) == 3);
         }
         else

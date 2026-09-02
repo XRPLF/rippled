@@ -2247,14 +2247,12 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         env(pay(gw, alice, usd(1'000)));
         env.close();
         amm.deposit(alice, usd(100));
-        env.close();
 
         BEAST_EXPECT(env.ownerCount(alice) == 2);
         BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID, alice.id())));
 
         // AMMWithdraw still enforces the reserve check.
         amm.withdrawAll(alice, std::nullopt, Ter(tecINSUFFICIENT_RESERVE));
-        env.close();
         BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID, alice.id())));
         BEAST_EXPECT(env.ownerCount(alice) == 2);
         // alice cannot afford a third owner object.
