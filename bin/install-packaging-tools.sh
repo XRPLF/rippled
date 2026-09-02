@@ -25,7 +25,7 @@ esac
 # Packaging runs in a vanilla distro image, so the tooling comes from the distro's
 # archive rather than from nixpkgs:
 #
-#   - debhelper and dpkg-dev build the DEB
+#   - debhelper and dpkg-dev build the DEB, and lintian checks it
 #   - rpm-build builds the RPM, with systemd-rpm-macros and redhat-rpm-config
 #     supplying the systemd and find-debuginfo macros the spec uses
 #   - rpm-sign and gnupg2 sign the built RPM
@@ -42,6 +42,7 @@ function install() {
                 debhelper-compat \
                 dpkg-dev \
                 git \
+                lintian \
                 python3
             ;;
 

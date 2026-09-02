@@ -1,5 +1,5 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: rippled
+Upstream-Name: xrpld
 Source: https://github.com/XRPLF/rippled
 
 Files: *
@@ -15,7 +15,7 @@ Copyright: 2016, Ripple Labs Inc.
  2009-2010, Satoshi Nakamoto
  2011, The Bitcoin developers
  2003-2005, Tom Wu
-License: ISC
+License: ISC and BSL-1.0 and MIT and Tom-Wu
 Comment: Built from https://github.com/ripple/validator-keys-tool at the commit
  pinned in cmake/XrplValidatorKeys.cmake. Besides ISC-licensed code it
  incorporates work under the Boost Software License 1.0 (ASIO), the MIT/X11
