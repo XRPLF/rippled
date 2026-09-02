@@ -11,9 +11,12 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/apply.h>
 
 #include <functional>
@@ -32,13 +35,13 @@ public:
         testRoleSignatureCacheIsEraSpecific();
     }
 
-    // A signature verdict reached before fixCleanup3_4_0 must not be honored
-    // after it, because the two eras require the sponsor signature to cover
-    // different bytes. The two calls below use one HashRouter and differ only in
-    // the rules, which is what the flag ledger looks like in practice: relay and
-    // submit verify against the validated rules, which lag the open ledger rules
-    // that preflight2 verifies against, so one transaction gets checked under
-    // both prefixes at the same time.
+    // A signature verdict reached under one prefix era must not be honored in
+    // the other, because the two eras require the sponsor signature to cover
+    // different bytes. Each direction below uses one HashRouter and differs
+    // only in the rules, which is what the flag ledger looks like in practice:
+    // relay and submit verify against the validated rules, which lag the open
+    // ledger rules that preflight2 verifies against, so one transaction gets
+    // checked under both prefixes at the same time.
     void
     testRoleSignatureCacheIsEraSpecific()
     {
@@ -48,32 +51,58 @@ public:
 
         Env preFix{*this, testableAmendments() - fixCleanup3_4_0};
         Env postFix{*this, testableAmendments()};
+        auto const preFixRules = preFix.current()->rules();
         auto const postFixRules = postFix.current()->rules();
 
         Account const alice{"alice"};
         Account const sponsor{"sponsor"};
         preFix.fund(XRP(10'000), alice, sponsor);
         preFix.close();
+        postFix.fund(XRP(10'000), alice, sponsor);
+        postFix.close();
 
-        // Signed while the fix is disabled, so the sponsor signature carries
-        // the old prefix, which is shared with the top level signature.
-        auto const jt = preFix.jt(
-            noop(alice),
-            Fee(XRP(1)),
-            sponsor::As(sponsor, spfSponsorFee),
-            Sig(sfSponsorSignature, sponsor));
-        BEAST_EXPECT(jt.stx);
-        if (!jt.stx)
-            return;
+        // Direction 1: a good verdict under the old prefix must not let a
+        // signature moved between roles survive the amendment.
+        {
+            auto const jt = preFix.jt(
+                noop(alice),
+                Fee(XRP(1)),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor));
+            BEAST_EXPECT(jt.stx);
+            if (!jt.stx)
+                return;
 
-        auto& router = preFix.app().getHashRouter();
-        BEAST_EXPECT(
-            checkValidity(router, *jt.stx, preFix.current()->rules()).first == Validity::Valid);
+            auto& router = preFix.app().getHashRouter();
+            BEAST_EXPECT(checkValidity(router, *jt.stx, preFixRules).first == Validity::Valid);
 
-        // Same router, asked again under the post-fix rules. The verdict above
-        // was reached under the old prefix and must not be reused, or a
-        // signature moved between roles would survive the amendment.
-        BEAST_EXPECT(checkValidity(router, *jt.stx, postFixRules).first == Validity::SigBad);
+            // Same router, asked again under the post-fix rules. The Valid
+            // verdict above was reached under the old prefix and must not be
+            // reused, or a signature moved between roles would survive the
+            // amendment.
+            BEAST_EXPECT(checkValidity(router, *jt.stx, postFixRules).first == Validity::SigBad);
+        }
+
+        // Direction 2: a bad verdict under the old prefix must not condemn a
+        // transaction that the new prefixes accept. A node whose validated
+        // rules still lag the open ledger will run this check pre-fix first
+        // and reject a correctly new-prefix-signed transaction; the post-fix
+        // check must then verify it afresh instead of reusing the pre-fix
+        // verdict.
+        {
+            auto const jt = postFix.jt(
+                noop(alice),
+                Fee(XRP(1)),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor));
+            BEAST_EXPECT(jt.stx);
+            if (!jt.stx)
+                return;
+
+            auto& router = postFix.app().getHashRouter();
+            BEAST_EXPECT(checkValidity(router, *jt.stx, preFixRules).first == Validity::SigBad);
+            BEAST_EXPECT(checkValidity(router, *jt.stx, postFixRules).first == Validity::Valid);
+        }
     }
 
     void

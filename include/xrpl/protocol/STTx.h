@@ -144,7 +144,7 @@ public:
     checkSign(Rules const& rules) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchSign(Rules const& rules) const;
+    checkBatchSign() const;
 
     // SQL Functions with metadata.
     static std::string const&
@@ -201,16 +201,13 @@ private:
     checkSingleSign(STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkMultiSign(Rules const& rules, STObject const& sigObject, HashPrefix prefix) const;
+    checkMultiSign(STObject const& sigObject, HashPrefix prefix) const;
 
     [[nodiscard]] std::expected<void, std::string>
     checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchMultiSign(
-        STObject const& batchSigner,
-        Rules const& rules,
-        std::vector<uint256> const& txIds) const;
+    checkBatchMultiSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
 
     void
     buildBatchTxns();
