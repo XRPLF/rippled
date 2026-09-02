@@ -4,7 +4,6 @@
 #include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Sign.h>
 
 namespace xrpl::test::jtx {

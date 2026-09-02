@@ -233,9 +233,13 @@ STTx::sign(
     auto const sig = xrpl::sign(publicKey, secretKey, makeSlice(data));
 
     if (auto const target = signatureField(role))
+    {
         peekFieldObject(*target).setFieldVL(sfTxnSignature, sig);
+    }
     else
+    {
         setFieldVL(sfTxnSignature, sig);
+    }
 
     tid_ = getHash(HashPrefix::TransactionId);
 }

@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -29,6 +30,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <ostream>
 #include <regex>
@@ -69,7 +71,7 @@ public:
     // outlive the Rules; both are returned together.
     struct RulesFixture
     {
-        std::unordered_set<uint256, beast::Uhash<>> const noPresets{};
+        std::unordered_set<uint256, beast::Uhash<>> const noPresets;
         std::unordered_set<uint256, beast::Uhash<>> const fixPresets{fixCleanup3_4_0};
         Rules const legacy{noPresets};
         Rules const fixed{fixPresets};
@@ -214,6 +216,7 @@ public:
             sigObject.setFieldVL(sfSigningPubKey, keypair.first.slice());
             sigObject.setFieldVL(sfTxnSignature, tx.getSignature());
 
+            // NOLINTNEXTLINE(cppcoreguidelines-slicing)
             STObject copy{tx};
             copy.setFieldObject(sigField, sigObject);
             return STTx{std::move(copy)};

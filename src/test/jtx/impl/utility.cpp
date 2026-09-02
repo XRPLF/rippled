@@ -19,9 +19,11 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <stdexcept>
 #include <utility>
 #include <vector>
 

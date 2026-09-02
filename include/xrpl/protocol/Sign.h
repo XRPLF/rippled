@@ -10,7 +10,6 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 
-#include <functional>
 #include <optional>
 
 namespace xrpl {
