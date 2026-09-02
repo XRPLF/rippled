@@ -5585,9 +5585,9 @@ public:
             Ter(tesSUCCESS));
         env.close();
 
-        // The same helper (deltaAssetsTxAccount) drives the withdraw path, so a
-        // fee-sponsored withdrawal back to the depositor's own account also
-        // passes on the destination side.
+        // The same fee-correction logic (ValidVault::deltaAssetsForParty)
+        // drives the withdraw path, so a fee-sponsored withdrawal back to
+        // the depositor's own account also passes on the destination side.
         env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(50)}),
             Fee(XRP(1)),
             sponsor::As(sponsor, spfSponsorFee),

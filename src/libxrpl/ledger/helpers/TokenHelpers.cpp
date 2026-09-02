@@ -596,6 +596,32 @@ canAddHolding(ReadView const& view, Asset const& asset)
         asset.value());
 }
 
+[[nodiscard]] bool
+holdingExists(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    if (issue.native() || account == issue.getIssuer())
+        return true;
+    return view.exists(keylet::trustLine(account, issue));
+}
+
+[[nodiscard]] bool
+holdingExists(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
+{
+    if (account == mptIssue.getIssuer())
+        return true;
+    return view.exists(keylet::mptoken(mptIssue.getMptID(), account));
+}
+
+[[nodiscard]] bool
+holdingExists(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> bool {
+            return holdingExists(view, account, issue);
+        },
+        asset.value());
+}
+
 TER
 addEmptyHolding(
     ApplyViewContext ctx,
