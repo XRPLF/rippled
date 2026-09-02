@@ -54,15 +54,16 @@ namespace xrpl::test {
 
 class SHAMapStore_test : public beast::unit_test::Suite
 {
-    static auto const kDeleteInterval = 8;
+    static constexpr int kDeleteInterval = 8;
 
     // Mirrors SHAMapStoreImp::kMinimumDeletionIntervalSa, the floor that
     // online_delete is held to in standalone mode. Note that the
     // max_waiting_ledgers floor is derived from this minimum rather than from
-    // the configured interval, so both constants below stay put if
-    // kDeleteInterval is ever raised.
-    static auto const kMinDeleteInterval = 8;
-    static auto const kMinWaitingLedgers = kMinDeleteInterval / 4;
+    // the configured interval -- SHAMapStoreImp.cpp computes it as
+    // minInterval / 4 -- so both constants below stay put if kDeleteInterval is
+    // ever raised.
+    static constexpr int kMinDeleteInterval = 8;
+    static constexpr int kMinWaitingLedgers = kMinDeleteInterval / 4;
     static_assert(kDeleteInterval >= kMinDeleteInterval);
 
     // The two wait durations healthWait() can choose from, spelled as they
@@ -186,17 +187,35 @@ class SHAMapStore_test : public beast::unit_test::Suite
             return countLocked(std::nullopt, text);
         }
 
-        // Blocks until `text` has been logged at least `expected` times in
-        // total, or until the timeout expires. Returns whether it got there.
+        // Blocks until `text` has been logged at least `expected` times at
+        // `severity` -- or at any severity, if that is nullopt -- or until the
+        // timeout expires. Returns whether it got there.
+        //
+        // Waiting rather than sleeping-then-counting matters for the branches
+        // that are only reached after a rotation has started: the store gets
+        // there when it gets there, so a fixed sleep has to be sized for the
+        // slowest plausible machine, whereas this returns as soon as the
+        // message appears.
         [[nodiscard]] bool
         waitFor(
+            std::optional<beast::Severity> severity,
             std::string const& text,
             std::chrono::milliseconds timeout,
             std::size_t expected = 1)
         {
             std::unique_lock lock(mutex_);
             return cond_.wait_for(
-                lock, timeout, [&] { return countLocked(std::nullopt, text) >= expected; });
+                lock, timeout, [&] { return countLocked(severity, text) >= expected; });
+        }
+
+        // As above, at any severity.
+        [[nodiscard]] bool
+        waitFor(
+            std::string const& text,
+            std::chrono::milliseconds timeout,
+            std::size_t expected = 1)
+        {
+            return waitFor(std::nullopt, text, timeout, expected);
         }
     };
 
@@ -216,7 +235,10 @@ class SHAMapStore_test : public beast::unit_test::Suite
     // advances by delete_batch rows per iteration, so a delete_batch of 1 costs
     // one sleep per ledger removed, for each of the three tables it is called
     // on. That is what gives parkMidRotation() below a window measured in
-    // seconds rather than in microseconds.
+    // seconds rather than in microseconds. delete_batch is therefore the actual
+    // lever; back_off_milliseconds is set to the value SHAMapStoreImp already
+    // defaults to, and is spelled out only so the arithmetic above can be
+    // checked against the config rather than against the implementation.
     //
     // max_waiting_ledgers is pinned to its floor so that tripping the circuit
     // breaker takes the fewest possible ledger closes.
@@ -330,9 +352,15 @@ class SHAMapStore_test : public beast::unit_test::Suite
     [[nodiscard]] static bool
     syncStore(jtx::Env& env)
     {
+        // Drain the job queue first, so that onLedgerClosed() has run and
+        // working_ is set. Then use the store's timeout overload, so a store
+        // that never finishes fails this test instead of blocking on it.
+        //
+        // Only the second wait is bounded: JobQueue::rendezvous() has no
+        // timeout overload, so a job that never completes hangs here. That is
+        // pre-existing -- ~AppBundle waits on it the same way for every jtx
+        // test -- but it does mean this helper is not hang-proof end to end.
         env.app().getJobQueue().rendezvous();
-        // Use the timeout overload so that a store which never finishes fails
-        // this test rather than hanging the entire unit test job.
         return env.app().getSHAMapStore().rendezvous(std::chrono::seconds{60});
     }
 
@@ -368,9 +396,8 @@ class SHAMapStore_test : public beast::unit_test::Suite
     //
     // Note that ~AppBundle does not run when the Env constructor throws, so the
     // global debug log sink it installed -- which holds a reference to this
-    // suite -- is left in place until the next Env is constructed. The caller
-    // must therefore end with a configuration that is accepted, so that a
-    // successful ~AppBundle clears the sink before the suite goes out of scope.
+    // suite -- would outlive the suite. The catch below clears it, so callers
+    // are free to end on a configuration that is rejected.
     std::optional<std::string>
     storeConfigResult(std::function<void(Config&)> const& tweak)
     {
@@ -395,6 +422,9 @@ class SHAMapStore_test : public beast::unit_test::Suite
         // this testcase.
         catch (std::exception const& e)
         {
+            // ~AppBundle did not run, so drop the sink it installed by hand
+            // rather than leaving a reference to this suite live in a global.
+            setDebugLogSink(nullptr);
             return std::string{e.what()};
         }
     }
@@ -487,6 +517,14 @@ class SHAMapStore_test : public beast::unit_test::Suite
         // observed.
         netOPs.setMode(OperatingMode::CONNECTED);
 
+        // The gap goes one below the sequence that the close further down makes
+        // validated, never at that sequence itself: healthWait() derives
+        // buildingIndex from numMissing == 1 && !haveLedger(index), so a gap at
+        // the validated index reads as "that ledger is about to be built" and
+        // takes the short trace wait, whereas a gap below it reads as a
+        // genuinely incomplete range and takes the full wait. Nothing refills
+        // the gap, so the wait loop ends only when the circuit breaker trips or
+        // stop() intervenes.
         if (createGap)
         {
             std::size_t iterations = 30;
@@ -1538,7 +1576,8 @@ public:
         using namespace test::jtx;
 
         auto logs = std::make_unique<StoreLogs>();
-        auto const* const log = logs.get();
+        // Not `auto const*`: waitFor() blocks, so it is not const.
+        auto* const log = logs.get();
         Env env{*this, envconfig(onlineDelete), std::move(logs), beast::Severity::Trace};
 
         auto& store = env.app().getSHAMapStore();
@@ -1549,23 +1588,33 @@ public:
         if (!parked)
             return;
 
-        // Hold the non-FULL mode for longer than recovery_wait_seconds so the
-        // store is certain to sample it and log at least once. With no gap, a
-        // fresh validated ledger and a mode that is not DISCONNECTED, the only
-        // check left that can report unhealthy is "mode != FULL".
-        BEAST_EXPECT(!store.rendezvous(1500ms));
+        // Hold the non-FULL mode until the store has logged that it is waiting
+        // on it. With no gap, a fresh validated ledger and a mode that is not
+        // DISCONNECTED, the only check left that can report unhealthy is
+        // "mode != FULL", and a mode that is not FULL is not expected to fix
+        // itself, so the wait is logged at warn, for the full duration.
+        //
+        // Waiting for the message rather than sleeping past it is what keeps
+        // this from depending on how quickly the store gets around to sampling.
+        // The store cannot leave the wait loop while the mode stays put -- the
+        // validated ledger index does not advance, so the circuit breaker is
+        // never reached -- so the rendezvous() below is not racing it.
+        BEAST_EXPECT(log->waitFor(beast::Severity::Warning, kFullWait, 10s));
+        BEAST_EXPECT(!store.rendezvous(10ms));
         BEAST_EXPECT(netOPs.getOperatingMode() != OperatingMode::FULL);
         BEAST_EXPECT(netOPs.getOperatingMode() != OperatingMode::DISCONNECTED);
         BEAST_EXPECTS(
             store.getLastRotated() == parked->lastRotated, std::to_string(store.getLastRotated()));
-        // A mode that is not FULL is not expected to fix itself, so the wait is
-        // logged at warn, for the full duration.
-        BEAST_EXPECT(log->count(beast::Severity::Warning, kFullWait) > 0);
 
         // Now make the mode FULL but the validated ledger stale. Advancing the
         // clock without closing a ledger ages the validated ledger past
         // age_threshold_seconds, which defaults to 60. The mode check can no
         // longer be the reason the store is unhealthy, so the age check is.
+        //
+        // This one does sleep: what is being asserted is that the store did not
+        // rotate, and 1500ms is long enough for it to have re-sampled the server
+        // at least once -- the full wait is 1000ms -- so the age check, not a
+        // stale sample of the old mode, is what held it back.
         auto const closeTime = env.now();
         env.timeKeeper().set(closeTime + 2min);
         netOPs.setMode(OperatingMode::FULL);
@@ -1591,7 +1640,8 @@ public:
         using namespace test::jtx;
 
         auto logs = std::make_unique<StoreLogs>();
-        auto const* const log = logs.get();
+        // Not `auto const*`: waitFor() blocks, so it is not const.
+        auto* const log = logs.get();
         Env env{*this, envconfig(onlineDelete), std::move(logs), beast::Severity::Trace};
 
         auto& lm = env.app().getLedgerMaster();
@@ -1608,10 +1658,11 @@ public:
         // enough to have fallen behind.
         BEAST_EXPECT(lm.haveLedger(parked->validated));
         BEAST_EXPECT(!lm.haveLedger(parked->gap));
-        BEAST_EXPECT(!store.rendezvous(1500ms));
-        BEAST_EXPECT(log->count(beast::Severity::Info, kFullWait) > 0);
+        BEAST_EXPECT(log->waitFor(beast::Severity::Info, kFullWait, 10s));
         // Nothing so far should have looked like a ledger being built.
         BEAST_EXPECT(log->count(beast::Severity::Trace, kShortWait) == 0);
+        // Nothing fills the gap in, so the store is still in the wait loop.
+        BEAST_EXPECT(!store.rendezvous(10ms));
 
         // Move the gap onto the validated ledger itself. That is the one case
         // the store treats as transient -- the ledger is expected to be built
@@ -1623,8 +1674,8 @@ public:
         lm.clearLedger(parked->validated);
         BEAST_EXPECT(lm.haveLedger(parked->gap));
         BEAST_EXPECT(!lm.haveLedger(parked->validated));
-        BEAST_EXPECT(!store.rendezvous(1500ms));
-        BEAST_EXPECT(log->count(beast::Severity::Trace, kShortWait) > 0);
+        BEAST_EXPECT(log->waitFor(beast::Severity::Trace, kShortWait, 10s));
+        BEAST_EXPECT(!store.rendezvous(10ms));
         BEAST_EXPECTS(
             store.getLastRotated() == parked->lastRotated, std::to_string(store.getLastRotated()));
 
@@ -1692,10 +1743,13 @@ public:
         // validated ledger index never advances to reach the circuit breaker.
         //
         // stop() joins the store's thread, so its return is the
-        // synchronisation point here. Deliberately do not call the untimed
-        // rendezvous() afterwards: run() returns from the Stopping arm without
-        // clearing working_, so rendezvous() would block forever.
+        // synchronisation point here. rendezvous() afterwards is only a
+        // cross-check, and cannot block: the store is parked in the health
+        // check that gates a rotation, so Stopping there merely leaves
+        // readyToRotate false, and run() falls through to the top of its loop,
+        // where it clears working_ and notifies before returning on stop_.
         store.stop();
+        BEAST_EXPECT(store.rendezvous());
         BEAST_EXPECTS(
             store.getLastRotated() == parked->lastRotated, std::to_string(store.getLastRotated()));
     }

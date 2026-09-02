@@ -129,9 +129,15 @@ class LedgerMaster_test : public beast::unit_test::Suite
     [[nodiscard]] static bool
     syncStore(jtx::Env& env)
     {
+        // Drain the job queue first, so that onLedgerClosed() has run and
+        // working_ is set. Then use the store's timeout overload, so a store
+        // that never finishes fails this test instead of blocking on it.
+        //
+        // Only the second wait is bounded: JobQueue::rendezvous() has no
+        // timeout overload, so a job that never completes hangs here. That is
+        // pre-existing -- ~AppBundle waits on it the same way for every jtx
+        // test -- but it does mean this helper is not hang-proof end to end.
         env.app().getJobQueue().rendezvous();
-        // Use the timeout overload so that a store which never finishes fails
-        // this test rather than hanging the entire unit test job.
         return env.app().getSHAMapStore().rendezvous(std::chrono::seconds{60});
     }
 
