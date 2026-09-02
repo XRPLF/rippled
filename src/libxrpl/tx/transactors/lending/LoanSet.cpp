@@ -372,8 +372,18 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const ter = canAddHolding(ctx.view, asset))
-        return ter;
+    // canAddHolding does not look at existing lines. After
+    // fixCleanup3_4_0, addEmptyHolding is a no-op when the destination
+    // already holds the asset, so skip this gate unless a holding would
+    // actually be created (borrower always; broker owner if there is an
+    // origination fee).
+    auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
+    if (!ctx.view.rules().enabled(fixCleanup3_4_0) || !holdingExists(ctx.view, borrower, asset) ||
+        (originationFee != beast::kZero && !holdingExists(ctx.view, brokerOwner, asset)))
+    {
+        if (auto const ter = canAddHolding(ctx.view, asset))
+            return ter;
+    }
 
     // vaultPseudo is going to send funds, so it can't be frozen.
     if (auto const ret = checkFrozen(ctx.view, vaultPseudo, asset))

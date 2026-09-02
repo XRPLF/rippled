@@ -37,6 +37,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <string>
 #include <type_traits>
 
 namespace xrpl::test {
@@ -1419,6 +1420,69 @@ private:
         BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
     }
 
+    // LoanPay does not call canAddHolding. addEmptyHolding recreates the
+    // broker-owner holding when the borrower is also the broker owner. After
+    // fixCleanup3_4_0 an existing line is a no-op even if DefaultRipple is
+    // off; pre-fix that path dies with tecINTERNAL.
+    void
+    testLoanPaySelfBrokerExistingLineDefaultRipple()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        auto run = [this](FeatureBitset features, TER expected) {
+            testcase(
+                std::string(
+                    "LoanPay broker-owner borrower existing line after "
+                    "issuer clears asfDefaultRipple (") +
+                (features[fixCleanup3_4_0] ? "post" : "pre") + "-fixCleanup3_4_0)");
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(alice, usd(100'000)));
+            env.close();
+            env(pay(issuer, alice, usd(50'000)));
+            env.close();
+
+            auto const broker = createVaultAndBroker(env, usd, alice);
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+            if (!BEAST_EXPECT(brokerSle))
+                return;
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+            Number const serviceFee = usd(2).value();
+            env(set(alice, broker.brokerID, usd(1'000).value()),
+                Sig(sfCounterpartySignature, alice),
+                kLoanServiceFee(serviceFee),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usd.raw().get<Issue>())));
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            STAmount const payment{
+                usd,
+                roundPeriodicPayment(usd, state.periodicPayment + serviceFee, state.loanScale)};
+
+            env(pay(alice, loanKeylet.key, payment), Ter(expected));
+            env.close();
+        };
+
+        run(all_ - fixCleanup3_4_0, tecINTERNAL);
+        run(all_, tesSUCCESS);
+    }
+
     void
     runAmendmentIndependent()
     {
@@ -1429,6 +1493,7 @@ private:
         testLoanPayCatchUpFeeAtExactDueDatePostAmendment();
         testLoanPayCatchUpFeeAtExactDueDatePreAmendment();
         testRepayIntoUnauthorizedVault();
+        testLoanPaySelfBrokerExistingLineDefaultRipple();
     }
 
     // Tests run under each entry in amendmentCombinations().

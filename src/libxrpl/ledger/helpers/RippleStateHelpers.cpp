@@ -669,6 +669,11 @@ addEmptyHolding(
     auto const sleDst = ctx.view.peek(keylet::account(dstId));
     if (!sleDst || !sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    // Create path: DefaultRipple is still required. terNO_RIPPLE is
+    // intentional so VaultWithdraw / CoverWithdraw fail in preclaim via
+    // canAddHolding (retryable, no fee) rather than claiming a tec* fee
+    // in doApply. Transactor::operator() will not apply and will not
+    // convert it to tefINTERNAL.
     if (!sleSrc->isFlag(lsfDefaultRipple))
         return fix340Enabled ? TER{terNO_RIPPLE} : tecINTERNAL;
     // If the line already exists, don't create it again.

@@ -239,12 +239,14 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 //------------------------------------------------------------------------------
 
 /**
- * If the destination already holds this IOU, returns tecDUPLICATE and does
- * not consult issuer freeze or DefaultRipple (post-fixCleanup3_4_0).
- * Transactors that may create a new holding in doApply must call
- * canAddHolding() in preclaim with the same View and Asset. Do not call
- * canAddHolding() merely because addEmptyHolding() is invoked: that helper
- * does not check whether a holding already exists.
+ * After fixCleanup3_4_0, if the destination already holds this IOU, returns
+ * tecDUPLICATE and does not consult issuer freeze or DefaultRipple. Freeze
+ * and DefaultRipple still apply on the create path (DefaultRipple off is
+ * terNO_RIPPLE). Transactors that may create a new holding in doApply must
+ * call canAddHolding() in preclaim only when that destination does not
+ * already hold the asset. Do not call canAddHolding() merely because
+ * addEmptyHolding() is invoked: that helper does not check whether a
+ * holding already exists.
  */
 [[nodiscard]] TER
 addEmptyHolding(
