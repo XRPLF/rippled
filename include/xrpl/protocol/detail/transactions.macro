@@ -890,7 +890,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
         .privileges = Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt,
     }),
     ({
-    {sfVaultID, SoeRequired},
+    {sfVaultID, SoeOptional},
     {sfLoanBrokerID, SoeOptional},
     {sfData, SoeOptional},
     {sfManagementFeeRate, SoeOptional},
