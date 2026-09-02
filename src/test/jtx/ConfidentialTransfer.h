@@ -127,8 +127,8 @@ protected:
     // Forges a ConvertBack proof (compact sigma + single bulletproof) that
     // claims claimedBalance while binding to the real pedersen commitment and
     // encrypted spending balance ciphertext already on the ledger.
-    // mpt_get_confidential_send_proof does not allow to build a proof whose amount
-    // exceeds the sender's claimed balance.
+    // mpt_get_convert_back_proof does not allow to build a proof whose amount
+    // exceeds the holder's claimed balance.
     static Buffer
     getForgedConvertBackProof(
         test::jtx::MPTTester& mpt,
