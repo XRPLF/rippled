@@ -101,6 +101,7 @@ Sig::operator()(Env& env, JTx& jt) const
         Serializer msg;
         serializeBatch(
             msg,
+            HashPrefix::Batch,
             stx.getAccountID(sfAccount),
             stx.getSeqProxy().value(),
             stx.getFlags(),
@@ -145,6 +146,7 @@ Msig::operator()(Env& env, JTx& jt) const
         Serializer msg;
         serializeBatch(
             msg,
+            HashPrefix::BatchMultiSign,
             stx.getAccountID(sfAccount),
             stx.getSeqProxy().value(),
             stx.getFlags(),

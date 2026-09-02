@@ -10,15 +10,24 @@
 
 namespace xrpl {
 
+/**
+ * Serialize the data that a batch signer signs.
+ *
+ * @param prefix HashPrefix::Batch when the batch signer signs on its own,
+ * HashPrefix::BatchMultiSign when the signature comes from a signer list. The
+ * two forms differ by the signer account that the caller appends, so the
+ * prefix keeps them in separate hash spaces, as with TxSign and TxMultiSign.
+ */
 inline void
 serializeBatch(
     Serializer& msg,
+    HashPrefix prefix,
     AccountID const& outerAccount,
     std::uint32_t outerSeqValue,
     std::uint32_t const& flags,
     std::vector<uint256> const& txids)
 {
-    msg.add32(HashPrefix::Batch);
+    msg.add32(prefix);
     msg.addBitString(outerAccount);
     msg.add32(outerSeqValue);
     msg.add32(flags);

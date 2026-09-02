@@ -31,6 +31,7 @@
 #include <xrpld/app/misc/TxQ.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -648,6 +649,7 @@ class Batch_test : public beast::unit_test::Suite
             Serializer msg;
             serializeBatch(
                 msg,
+                HashPrefix::Batch,
                 jt.stx->getAccountID(sfAccount),
                 jt.stx->getSeqProxy().value(),
                 tfAllOrNothing,
@@ -2908,6 +2910,79 @@ class Batch_test : public beast::unit_test::Suite
             batch::Sig(unfunded, Reg{carol, alice}),
             Ter(tefBAD_AUTH));
         env.close();
+    }
+
+    void
+    testSigningPrefixes(FeatureBitset features)
+    {
+        testcase("signing prefixes");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // A batch signer signs one of two payloads: the batch data plus its
+        // own account, or, when it signs from a signer list, the batch data
+        // plus its own account plus the signer's account. Each payload has its
+        // own prefix, so a signature made for one cannot be read as the other.
+        static_assert(safeCast<std::uint32_t>(HashPrefix::Batch) == 0x42434800);
+        static_assert(safeCast<std::uint32_t>(HashPrefix::BatchMultiSign) == 0x42434D00);
+
+        Env env{*this, features};
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const dave = Account("dave");
+        env.fund(XRP(10000), alice, bob, carol, dave);
+        env.close();
+
+        env(signers(bob, 1, {{carol, 1}, {dave, 1}}));
+        env.close();
+
+        // A multi-signature over the single-signing payload is rejected.
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 2, 2);
+            auto jt = env.jtnofill(
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::Inner(pay(bob, alice, XRP(5)), env.seq(bob)));
+
+            Serializer msg;
+            serializeBatch(
+                msg,
+                HashPrefix::Batch,
+                jt.stx->getAccountID(sfAccount),
+                jt.stx->getSeqProxy().value(),
+                tfAllOrNothing,
+                jt.stx->getBatchTransactionIDs());
+            msg.addBitString(bob.id());
+            finishMultiSigningData(carol.id(), msg);
+            auto const sig = xrpl::sign(carol.pk(), carol.sk(), msg.slice());
+
+            auto& bso = jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName];
+            bso[sfAccount.jsonName] = bob.human();
+            bso[sfSigningPubKey.jsonName] = "";
+            auto& iso = bso[sfSigners.jsonName][0u][sfSigner.jsonName];
+            iso[sfAccount.jsonName] = carol.human();
+            iso[sfSigningPubKey.jsonName] = strHex(carol.pk());
+            iso[sfTxnSignature.jsonName] = strHex(Slice{sig.data(), sig.size()});
+
+            env(jt.jv, Ter(telENV_RPC_FAILED));
+            env.close();
+        }
+
+        // The same signature over the multi-signing payload is accepted.
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 2, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::Inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::Msig(bob, {carol}),
+                Ter(tesSUCCESS));
+            env.close();
+        }
     }
 
     void
@@ -5913,6 +5988,7 @@ class Batch_test : public beast::unit_test::Suite
         testInnerSubmitRPC(features);
         testAccountActivation(features);
         testCheckAllSignatures(features);
+        testSigningPrefixes(features);
         testAccountSet(features);
         testAccountDelete(features);
         testLoan(features);

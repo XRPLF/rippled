@@ -41,6 +41,7 @@ This section contains changes targeting a future version.
 
 ### Bugfixes
 
+- `sign_for`, `submit_multisigned`: A `BatchSigner` that signs from a signer list now covers a different signing prefix (`BCM`) than a `BatchSigner` that signs on its own (`BCH`), matching the existing split between `STX` and `SMT`. Clients that build batch signatures themselves must use the new prefix for the multi-signing form. `Batch` is not enabled on any network, so no existing signature is affected.
 - `get_aggregate_price`: Duplicate entries in the `oracles` request array are now ignored. [#6586](https://github.com/XRPLF/rippled/pull/6586)
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 - `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)

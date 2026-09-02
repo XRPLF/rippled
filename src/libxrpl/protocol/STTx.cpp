@@ -458,7 +458,8 @@ STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> con
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
-    serializeBatch(msg, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
+    serializeBatch(
+        msg, HashPrefix::Batch, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
     return singleSignHelper(batchSigner, msg.slice());
 }
@@ -552,7 +553,13 @@ STTx::checkBatchMultiSign(
     // with the stuff that stays constant from signature to signature.
     auto const batchSignerAccount = batchSigner.getAccountID(sfAccount);
     Serializer dataStart;
-    serializeBatch(dataStart, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
+    serializeBatch(
+        dataStart,
+        HashPrefix::BatchMultiSign,
+        getAccountID(sfAccount),
+        getSeqProxy().value(),
+        getFlags(),
+        txIds);
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
         batchSigner,
