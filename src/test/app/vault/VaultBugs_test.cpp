@@ -9,6 +9,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
@@ -16,6 +17,7 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
@@ -2133,6 +2135,357 @@ private:
         runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
     }
 
+    // addEmptyHolding() used to check isGlobalFrozen(issuer) and
+    // !lsfDefaultRipple before the "line already exists" tecDUPLICATE
+    // short circuit. doWithdraw() calls addEmptyHolding() for a
+    // self-destination payout and only tolerates tecDUPLICATE, so
+    // tecINTERNAL from a missing DefaultRipple flag aborted the
+    // withdrawal. fixCleanup3_4_0 checks existence first and maps the
+    // create-path DefaultRipple miss to terNO_RIPPLE. Global freeze on an
+    // existing line is still rejected later by checkWithdrawFreeze.
+    void
+    testBugSelfWithdrawAfterIssuerClearsDefaultRipple()
+    {
+        using namespace test::jtx;
+
+        auto runExistingLine = [this](
+                                   FeatureBitset features,
+                                   TER selfExpected,
+                                   bool issuerGlobalFreeze = false) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(10'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env(trust(bob, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+            if (issuerGlobalFreeze)
+            {
+                env(fset(issuer, asfGlobalFreeze));
+                env.close();
+            }
+
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usdIssue)));
+
+            // Alice's USD line is unchanged; a later deposit still succeeds
+            // unless the issuer is globally frozen.
+            if (!issuerGlobalFreeze)
+            {
+                env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(10)}));
+                env.close();
+            }
+
+            Number const destBefore = env.balance(alice, usd.raw()).number();
+            Number const vaultBefore = env.le(vaultKeylet)->at(sfAssetsTotal);
+            Number const withdrawAmt{50};
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+
+            Number const destAfter = env.balance(alice, usd.raw()).number();
+            Number const vaultAfter = env.le(vaultKeylet)->at(sfAssetsTotal);
+            if (isTesSuccess(selfExpected))
+            {
+                BEAST_EXPECT(destAfter == destBefore + withdrawAmt);
+                BEAST_EXPECT(vaultAfter == vaultBefore - withdrawAmt);
+            }
+            else
+            {
+                BEAST_EXPECT(destAfter == destBefore);
+                BEAST_EXPECT(vaultAfter == vaultBefore);
+            }
+
+            if (!issuerGlobalFreeze)
+            {
+                auto destTx =
+                    vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)});
+                destTx[sfDestination] = bob.human();
+                env(destTx);
+                env.close();
+            }
+        };
+
+        auto runDeletedLine = [this](FeatureBitset features, TER selfExpected) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(500)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usdIssue)));
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+        };
+
+        auto runCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+            using namespace loan_broker;
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = alice, .asset = usd, .subscriptionOffset = std::chrono::seconds{60}});
+            (void)subscriptionDate;
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+            env(coverDeposit(alice, brokerKeylet.key, usd(100).value()));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usdIssue)));
+
+            Number const destBefore = env.balance(alice, usd.raw()).number();
+            Number const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+            Number const withdrawAmt{50};
+
+            env(coverWithdraw(alice, brokerKeylet.key, usd(50).value()), Ter(selfExpected));
+            env.close();
+
+            Number const destAfter = env.balance(alice, usd.raw()).number();
+            Number const coverAfter = env.le(brokerKeylet)->at(sfCoverAvailable);
+            if (isTesSuccess(selfExpected))
+            {
+                BEAST_EXPECT(destAfter == destBefore + withdrawAmt);
+                BEAST_EXPECT(coverAfter == coverBefore - withdrawAmt);
+            }
+            else
+            {
+                BEAST_EXPECT(destAfter == destBefore);
+                BEAST_EXPECT(coverAfter == coverBefore);
+            }
+        };
+
+        auto runDeletedCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+            using namespace loan_broker;
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(600)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = alice, .asset = usd, .subscriptionOffset = std::chrono::seconds{60}});
+            (void)subscriptionDate;
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+            env(coverDeposit(alice, brokerKeylet.key, usd(100).value()));
+            env.close();
+
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usdIssue)));
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            env(coverWithdraw(alice, brokerKeylet.key, usd(50).value()), Ter(selfExpected));
+            env.close();
+        };
+
+        auto runPrivateVault = [this](FeatureBitset features, TER selfExpected) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const pdOwner{"pdOwner"};
+            Account const credIssuer{"credIssuer"};
+            std::string const credType = "credential";
+
+            env.fund(XRP(10'000), issuer, alice, pdOwner, credIssuer);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] =
+                vault.create({.owner = alice, .asset = usd, .flags = tfVaultPrivate});
+            env(vaultTx);
+            env.close();
+
+            pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+            env(pdomain::setTx(pdOwner, credentials));
+            auto const domainId = pdomain::getNewDomain(env.meta());
+            {
+                auto domainTx = vault.set({.owner = alice, .id = vaultKeylet.key});
+                domainTx[sfDomainID] = to_string(domainId);
+                env(domainTx);
+                env.close();
+            }
+
+            env(credentials::create(alice, credIssuer, credType));
+            env(credentials::accept(alice, credIssuer, credType));
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+        };
+
+        testcase(
+            "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
+            "clears asfDefaultRipple even though the trust line exists "
+            "(pre-fixCleanup3_4_0)");
+        runExistingLine(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: VaultWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
+        runExistingLine(all_, tesSUCCESS);
+
+        testcase(
+            "bug: VaultWithdraw to self with an existing line still gets "
+            "tecFROZEN under asfGlobalFreeze (post-fixCleanup3_4_0)");
+        runExistingLine(all_, tecFROZEN, true);
+
+        testcase(
+            "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
+            "clears asfDefaultRipple and the trust line was deleted "
+            "(pre-fixCleanup3_4_0)");
+        runDeletedLine(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: VaultWithdraw to self fails with terNO_RIPPLE after issuer "
+            "clears asfDefaultRipple and the trust line was deleted "
+            "(post-fixCleanup3_4_0)");
+        runDeletedLine(all_, terNO_RIPPLE);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
+            "issuer clears asfDefaultRipple even though the trust line exists "
+            "(pre-fixCleanup3_4_0)");
+        runCoverWithdraw(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
+        runCoverWithdraw(all_, tesSUCCESS);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
+            "issuer clears asfDefaultRipple and the trust line was deleted "
+            "(pre-fixCleanup3_4_0)");
+        runDeletedCoverWithdraw(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self fails with terNO_RIPPLE after "
+            "issuer clears asfDefaultRipple and the trust line was deleted "
+            "(post-fixCleanup3_4_0)");
+        runDeletedCoverWithdraw(all_, terNO_RIPPLE);
+
+        testcase(
+            "bug: private VaultWithdraw to self fails with tecINTERNAL after "
+            "issuer clears asfDefaultRipple even though the trust line exists "
+            "(pre-fixCleanup3_4_0)");
+        runPrivateVault(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: private VaultWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
+        runPrivateVault(all_, tesSUCCESS);
+    }
+
     // Bug 1: a sponsored XRP VaultWithdraw to a distinct destination is
     // rejected because the vault invariant treats the holder's touched
     // but economically unchanged AccountRoot as a second payout
@@ -2468,34 +2821,369 @@ private:
     }
 
 public:
-    void
-    run() override
-    {
-        testVaultWithdrawEqualityEnforced();
-        testBugIssuerVaultDepositAtEdge();
-        testBugMakeDeltaPosteriorScale();
-        testBugMakeDeltaAnteriorScale();
-        testVaultDepositCanonicalizeToZero();
-        testBugDepositShareTruncationSubUlp();
-        testVaultWithdrawCanonicalizeToZero();
-        testBugVaultDustDebitCanonicalizesToNoOp();
-        testBugVaultDepositOvercreditsAcrossScaleBoundary();
-        testBugVaultLockedByPartialWithdraw();
-        testVaultDepositNegativeBalanceFromOppositeLimit();
-        testCredentialPinsPseudoAccount();
-        testCredentialPinOverflow();
-        testBug6LimitBypassWithShares();
-        testBugClawbackRoundTripOvershoot();
-        testBugWithdrawRoundTripOvershoot();
-        testBugClawbackAfterLoanImpair();
-        testBugMptZeroWithdrawMissingHolding();
-        testBugIouZeroWithdrawMissingTrustLine();
-        testBugXrpZeroWithdrawSponsoredFee();
-        testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
-        testBugSponsorAsDestinationFeeMisappliedToPayout();
-        testPrefundedFeeWithdraw();
-        testUnsponsoredWithdrawToDistinctDestinationPreAmendment();
-    }
+}
+
+// Bug 1: a sponsored XRP VaultWithdraw to a distinct destination is
+// rejected because the vault invariant treats the holder's touched
+// but economically unchanged AccountRoot as a second payout
+// recipient. Sequence/ticket processing still touches the holder
+// while the sponsor pays the fee, so the holder's XRP delta is
+// present-zero and is not normalized away. If this happens on the
+// last Subscription ledger of a closed-ended vault, the holder
+// cannot retry until Redemption (tecTOO_SOON during Investment).
+//
+// Fixed by ValidVault::deltaAssetsForParty always collapsing an
+// economically-zero XRP delta to absence, regardless of who paid the
+// fee.
+void
+testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient()
+{
+    using namespace test::jtx;
+
+    auto runScenario = [this](FeatureBitset features, TER expected) {
+        Env env{*this, features};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const destination{"destination"};
+        Account const sponsor{"sponsor"};
+        env.fund(XRP(10'000), owner, holder, destination, sponsor);
+        env.close();
+
+        constexpr std::uint32_t investmentPeriod = 14u * 24u * 60u * 60u;
+        auto const [vault, vaultKeylet, subscriptionDate, redemptionDate] =
+            makeClosedEndedVault(env, owner, xrpIssue(), 120u, investmentPeriod);
+        BEAST_EXPECT(redemptionDate - subscriptionDate == investmentPeriod);
+
+        env(vault.deposit(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+        env.close();
+
+        // Inclusive SubscriptionDate boundary: still Subscription, so an
+        // ordinary withdrawal is allowed.
+        closeToTime(env, tp{d{subscriptionDate}});
+
+        auto const vaultBefore = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+        auto const holderBalanceBefore = env.balance(holder);
+        auto const destinationBalanceBefore = env.balance(destination);
+        auto const sponsorBalanceBefore = env.balance(sponsor);
+        auto const fee = env.current()->fees().base;
+
+        auto withdraw = vault.withdraw(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+        withdraw[sfDestination] = destination.human();
+        env(withdraw,
+            Fee(fee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(expected));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
+
+        if (expected == tesSUCCESS)
+        {
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+            BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
+            BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
+            return;
+        }
+
+        // Invariant rollback: the payout and share burn are undone, but
+        // sequence processing and the sponsored fee charge remain.
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+        BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
+        BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore);
+
+        // Once the ledger advances into Investment, the same holder
+        // cannot retry until Redemption.
+        auto retry = vault.withdraw(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+        retry[sfDestination] = destination.human();
+        env(retry, Ter(tecTOO_SOON));
+    };
+
+    testcase(
+        "bug: sponsored XRP withdrawal to a distinct destination misreads a "
+        "touched-but-zero sender delta as a second recipient "
+        "(pre-fixCleanup3_4_0)");
+    runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+
+    testcase(
+        "bug: sponsored XRP withdrawal to a distinct destination succeeds "
+        "(post-fixCleanup3_4_0)");
+    runScenario(all_, tesSUCCESS);
+}
+
+// Bug 2: a co-signed fee sponsor named as the withdrawal's own
+// destination pays its fee from the same AccountRoot it is paid into,
+// so its net XRP delta is (payout - fee). The invariant never fee-
+// corrected the destination side at all, so this always failed the
+// equal-amount check against the vault's outflow (payout).
+//
+// Fixed by ValidVault::deltaAssetsForParty adding the fee back onto
+// whichever inspected party's AccountRoot actually paid it -- the
+// sender, or a distinct destination -- not just the sender.
+void
+testBugSponsorAsDestinationFeeMisappliedToPayout()
+{
+    using namespace test::jtx;
+
+    auto runScenario = [this](FeatureBitset features, TER expected) {
+        Env env{*this, features};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const sponsor{"sponsor"};
+        env.fund(XRP(10'000), owner, holder, sponsor);
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+        env.close();
+
+        auto const vaultBefore = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+        auto const sponsorBalanceBefore = env.balance(sponsor);
+        auto const fee = env.current()->fees().base;
+
+        // The sponsor both receives the withdrawal (as sfDestination)
+        // and pays its own fee (co-signed) from the same AccountRoot.
+        auto withdraw = vault.withdraw(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+        withdraw[sfDestination] = sponsor.human();
+        env(withdraw,
+            Fee(fee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(expected));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+
+        if (expected == tesSUCCESS)
+        {
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+            // Paid the withdrawal, then separately debited for the fee
+            // it chose to cover; net effect is payout minus fee.
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore + XRP(100) - fee);
+            return;
+        }
+
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+        BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
+    };
+
+    testcase(
+        "bug: co-signed sponsor named as withdrawal destination has its "
+        "own fee debit misread as breaking the payout equality "
+        "(pre-fixCleanup3_4_0)");
+    runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+
+    testcase(
+        "bug: co-signed sponsor named as withdrawal destination succeeds "
+        "(post-fixCleanup3_4_0)");
+    runScenario(all_, tesSUCCESS);
+}
+
+// Pre-funded fee sponsorship draws the fee from ltSponsorship.sfFeeAmount,
+// so feePayerAccountRoot must return nullopt rather than the sponsor's
+// AccountRoot. A bystander sponsor leaves that branch unexercised: the
+// result is only consulted by deltaAssetsForParty via `payer && *payer ==
+// id`. Naming the sponsor as sfDestination makes the early return
+// load-bearing -- returning the sponsor's id instead of nullopt would add
+// the fee back onto a balance that never paid it, and the equal-amount
+// check against the vault outflow would fail.
+//
+// Contrast testBugSponsorAsDestinationFeeMisappliedToPayout, where the
+// sponsor co-signs and so really does pay from its own AccountRoot.
+void
+testPrefundedFeeWithdraw()
+{
+    using namespace test::jtx;
+
+    auto runScenario = [this](
+                           FeatureBitset features, TER expected, bool const sponsorIsDestination) {
+        Env env{*this, features};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        Account const destination{"destination"};
+        Account const sponsor{"sponsor"};
+        env.fund(XRP(10'000), owner, holder, destination, sponsor);
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+        env.close();
+
+        auto const fee = env.current()->fees().base;
+        env(sponsor::set_fee(sponsor, 0, fee), sponsor::SponseeAcc(holder));
+        env.close();
+
+        auto const vaultBefore = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+        auto const holderBalanceBefore = env.balance(holder);
+        auto const destinationBalanceBefore = env.balance(destination);
+        auto const sponsorBalanceBefore = env.balance(sponsor);
+
+        Account const& recipient = sponsorIsDestination ? sponsor : destination;
+        auto withdraw = vault.withdraw(
+            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+        withdraw[sfDestination] = recipient.human();
+        env(withdraw, Fee(fee), sponsor::As(sponsor, spfSponsorFee), Ter(expected));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        // Holder is economically unchanged (sequence only); the fee is
+        // taken from the sponsorship object, not any AccountRoot.
+        BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
+
+        if (expected == tesSUCCESS)
+        {
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+            if (sponsorIsDestination)
+            {
+                // The sponsor receives the payout and is not debited for
+                // the fee. The sponsor has to BE the destination for
+                // FeePayerType::SponsorPreFunded to matter.
+                BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore + XRP(100));
+            }
+            else
+            {
+                BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
+                BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore);
+            }
+            auto const sponsorship = env.le(keylet::sponsorship(sponsor, holder));
+            if (!BEAST_EXPECT(sponsorship))
+                return;
+            BEAST_EXPECT(!sponsorship->isFieldPresent(sfFeeAmount));
+            return;
+        }
+
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+        BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore);
+        if (!sponsorIsDestination)
+            BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore);
+    };
+
+    testcase(
+        "pre-funded fee XRP withdrawal to a distinct destination succeeds "
+        "(post-fixCleanup3_4_0)");
+    runScenario(all_, tesSUCCESS, false);
+
+    testcase(
+        "bug: pre-funded sponsor named as withdrawal destination misreads "
+        "the sender's touched-but-zero delta as a second recipient "
+        "(pre-fixCleanup3_4_0)");
+    runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED, true);
+
+    testcase(
+        "bug: pre-funded sponsor named as withdrawal destination receives "
+        "the full payout (post-fixCleanup3_4_0)");
+    runScenario(all_, tesSUCCESS, true);
+}
+
+// Unsponsored third-party XRP withdrawal: the sender's AccountRoot moves
+// by exactly -fee. Pre-amendment, the sender-only fee correction then
+// collapses that to absence so the dual-recipient guard does not fire.
+void
+testUnsponsoredWithdrawToDistinctDestinationPreAmendment()
+{
+    using namespace test::jtx;
+
+    testcase(
+        "unsponsored XRP withdrawal to a distinct destination succeeds "
+        "(pre-fixCleanup3_4_0)");
+
+    Env env{*this, all_ - fixCleanup3_4_0};
+    Account const owner{"owner"};
+    Account const holder{"holder"};
+    Account const destination{"destination"};
+    env.fund(XRP(10'000), owner, holder, destination);
+    env.close();
+
+    Vault const vault{env};
+    auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+    env(vaultTx);
+    env.close();
+
+    env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+    env.close();
+
+    auto const vaultBefore = env.le(vaultKeylet);
+    if (!BEAST_EXPECT(vaultBefore))
+        return;
+    auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+    auto const holderBalanceBefore = env.balance(holder);
+    auto const destinationBalanceBefore = env.balance(destination);
+    auto const fee = env.current()->fees().base;
+
+    auto withdraw =
+        vault.withdraw({.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
+    withdraw[sfDestination] = destination.human();
+    env(withdraw, Fee(fee), Ter(tesSUCCESS));
+    env.close();
+
+    auto const vaultAfter = env.le(vaultKeylet);
+    if (!BEAST_EXPECT(vaultAfter))
+        return;
+    BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
+    BEAST_EXPECT(env.balance(holder) == holderBalanceBefore - fee);
+    BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
+}
+
+public:
+void
+run() override
+{
+    testVaultWithdrawEqualityEnforced();
+    testBugIssuerVaultDepositAtEdge();
+    testBugMakeDeltaPosteriorScale();
+    testBugMakeDeltaAnteriorScale();
+    testVaultDepositCanonicalizeToZero();
+    testBugDepositShareTruncationSubUlp();
+    testVaultWithdrawCanonicalizeToZero();
+    testBugVaultDustDebitCanonicalizesToNoOp();
+    testBugVaultDepositOvercreditsAcrossScaleBoundary();
+    testBugVaultLockedByPartialWithdraw();
+    testVaultDepositNegativeBalanceFromOppositeLimit();
+    testCredentialPinsPseudoAccount();
+    testCredentialPinOverflow();
+    testBug6LimitBypassWithShares();
+    testBugClawbackRoundTripOvershoot();
+    testBugWithdrawRoundTripOvershoot();
+    testBugClawbackAfterLoanImpair();
+    testBugMptZeroWithdrawMissingHolding();
+    testBugIouZeroWithdrawMissingTrustLine();
+    testBugXrpZeroWithdrawSponsoredFee();
+    testBugSelfWithdrawAfterIssuerClearsDefaultRipple();
+    testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
+    testBugSponsorAsDestinationFeeMisappliedToPayout();
+    testPrefundedFeeWithdraw();
+    testUnsponsoredWithdrawToDistinctDestinationPreAmendment();
+}
 };
 
 BEAST_DEFINE_TESTSUITE(VaultBugs, app, xrpl);

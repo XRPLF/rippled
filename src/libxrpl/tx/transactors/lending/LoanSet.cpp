@@ -965,6 +965,19 @@ LoanSet::preclaim(PreclaimContext const& ctx)
             ctx.view, asset, vaultPseudo, brokerPseudo, borrower, brokerOwner, ctx.j))
         return ter;
 
+    // canAddHolding does not look at existing lines. After
+    // fixCleanup3_4_0, addEmptyHolding is a no-op when the destination
+    // already holds the asset, so skip this gate unless a holding would
+    // actually be created (borrower always; broker owner if there is an
+    // origination fee).
+    auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
+    if (!ctx.view.rules().enabled(fixCleanup3_4_0) || !holdingExists(ctx.view, borrower, asset) ||
+        (originationFee != beast::kZero && !holdingExists(ctx.view, brokerOwner, asset)))
+    {
+        if (auto const ter = canAddHolding(ctx.view, asset))
+            return ter;
+    }
+
     if (twoStepFlow)
     {
         // Reject a pending loan up front if the borrower or broker owner (the
