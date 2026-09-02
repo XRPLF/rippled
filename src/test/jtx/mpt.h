@@ -820,7 +820,7 @@ private:
         T const& arg,
         json::Value& jv,
         Account const& account,
-        std::uint64_t amt) const;
+        std::uint64_t const amount) const;
 };
 
 }  // namespace xrpl::test::jtx

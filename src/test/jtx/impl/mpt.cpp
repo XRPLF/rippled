@@ -1099,35 +1099,23 @@ MPTTester::fillConversionCiphertexts(
     T const& arg,
     json::Value& jv,
     Account const& account,
-    std::uint64_t amt) const
+    std::uint64_t const amount) const
 {
     Buffer const blindingFactor =
         arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
     jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
 
     // Handle Holder
-    Buffer holderCiphertext;
-    if (arg.holderEncryptedAmt)
-    {
-        holderCiphertext = *arg.holderEncryptedAmt;
-    }
-    else
-    {
-        holderCiphertext = encryptAmount(account, amt, blindingFactor);
-    }
+    Buffer const holderCiphertext = arg.holderEncryptedAmt
+        ? *arg.holderEncryptedAmt
+        : encryptAmount(account, amount, blindingFactor);
 
     jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
 
     // Handle Issuer
-    Buffer issuerCiphertext;
-    if (arg.issuerEncryptedAmt)
-    {
-        issuerCiphertext = *arg.issuerEncryptedAmt;
-    }
-    else
-    {
-        issuerCiphertext = encryptAmount(issuer_, amt, blindingFactor);
-    }
+    Buffer const issuerCiphertext = arg.issuerEncryptedAmt
+        ? *arg.issuerEncryptedAmt
+        : encryptAmount(issuer_, amount, blindingFactor);
 
     jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
 
@@ -1139,7 +1127,8 @@ MPTTester::fillConversionCiphertexts(
     }
     else if (auditor_.has_value() && arg.fillAuditorEncryptedAmt.value_or(false))
     {
-        auditorCiphertext = encryptAmount(requireValue(auditor_, "auditor"), amt, blindingFactor);
+        auditorCiphertext =
+            encryptAmount(requireValue(auditor_, "auditor"), amount, blindingFactor);
     }
 
     // Update auditor JSON only if ciphertext exists
