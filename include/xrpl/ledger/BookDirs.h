@@ -49,12 +49,6 @@ public:
     bool
     operator==(const_iterator const& other) const;
 
-    bool
-    operator!=(const_iterator const& other) const
-    {
-        return !(*this == other);
-    }
-
     reference
     operator*() const;
 

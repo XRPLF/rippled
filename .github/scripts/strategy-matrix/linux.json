@@ -1,5 +1,5 @@
 {
-  "image_tag": "sha-fecfc0c",
+  "image_tag": "sha-473fe44",
   "configs": {
     "ubuntu": [
       {
@@ -14,7 +14,8 @@
         "compiler": ["clang"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": true
+        "minimal": true,
+        "benchmark": true
       },
 
       {
@@ -69,27 +70,12 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false
-      }
-    ],
-
-    "rhel": [
-      {
-        "compiler": ["gcc"],
-        "build_type": ["Release"],
-        "arch": ["amd64"],
-        "minimal": false
-      }
-    ]
-  },
-  "package_configs": {
-    "debian": [
-      {
-        "compiler": ["gcc"],
-        "build_type": ["Release"],
-        "arch": ["amd64"],
         "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-577d745"
+        "extra_cmake_args": "-Dvalidator_keys=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-b6a8995"
+        }
       }
     ],
 
@@ -99,7 +85,11 @@
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": false,
-        "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-577d745"
+        "extra_cmake_args": "-Dvalidator_keys=ON",
+        "package": {
+          "type": "rpm",
+          "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-b6a8995"
+        }
       }
     ]
   }

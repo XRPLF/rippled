@@ -89,6 +89,13 @@ private:
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
+    // Used to prevent ledger gaps from forming during online deletion. Keeps
+    // track of the last validated ledger that was processed without gaps. There
+    // are no guarantees about gaps while online delete is not running. For
+    // that, use advisory_delete and check for gaps externally.
+    LedgerIndex lastGoodValidatedLedger_ = 0;
+    // Used to prevent the circuit breaker from tripping too quickly.
+    LedgerIndex lastSuccessfulHealthCheck_ = 0;
     mutable std::condition_variable cond_;
     mutable std::condition_variable rendezvous_;
     mutable std::mutex mutex_;
@@ -111,12 +118,18 @@ private:
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
     /**
-     * If  the node is out of sync during an online_delete healthWait()
-     * call, sleep the thread for this time, and continue checking until
-     * recovery.
+     * If the node is out of sync, or any recent ledgers are not
+     * available during an online_delete healthWait() call, sleep
+     * the thread for this time, and continue checking until recovery.
      * See also: "recovery_wait_seconds" in xrpld-example.cfg
      */
-    std::chrono::seconds recoveryWaitTime_{5};
+    std::chrono::seconds recoveryWaitTime_{2};
+    /**
+     * If the rotation stays "unhealthy" for a very long time, the process is aborted, and tried
+     * again later. This value represents the number of ledgers that must be validated without
+     * making rotation progress before the process is aborted.
+     */
+    std::uint32_t maxWaitingLedgers_ = deleteBatch_;
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before
@@ -172,8 +185,9 @@ public:
     void
     onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) override;
 
-    void
-    rendezvous() const override;
+    [[nodiscard]]
+    bool
+    rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const override;
     int
     fdRequired() const override;
 
@@ -201,7 +215,7 @@ private:
         for (auto const& key : cache.getKeys())
         {
             dbRotating_->fetchNodeObject(key, 0, node_store::FetchType::Synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::Stopping)
+            if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
                 return true;
         }
 
@@ -229,11 +243,11 @@ private:
     /**
      * This is a health check for online deletion that waits until xrpld is
      * stable before returning. It returns an indication of whether the server
-     * is stopping.
+     * is stopping, or if this attempt should be abandoned.
      *
      * @return Whether the server is stopping.
      */
-    enum class HealthResult { Stopping, KeepGoing };
+    enum class HealthResult { Stopping, Expired, KeepGoing };
     [[nodiscard]] HealthResult
     healthWait();
 

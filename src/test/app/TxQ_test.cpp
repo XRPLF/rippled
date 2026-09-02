@@ -2889,7 +2889,7 @@ public:
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id());
-            SeqProxy seq = SeqProxy::sequence(aliceSeq);
+            SeqProxy seq = SeqProxy::rawSequence(aliceSeq);
             BEAST_EXPECT(aliceStat.size() == 5);
             for (auto const& tx : aliceStat)
             {
@@ -3754,7 +3754,7 @@ public:
             checkMetrics(*this, env, 2, 24, 16, 12);
             auto const aliceQueue = env.app().getTxQ().getAccountTxs(alice.id());
             BEAST_EXPECT(aliceQueue.size() == 2);
-            SeqProxy seq = SeqProxy::sequence(aliceSeq);
+            SeqProxy seq = SeqProxy::rawSequence(aliceSeq);
             for (auto const& tx : aliceQueue)
             {
                 BEAST_EXPECT(tx.seqProxy == seq);

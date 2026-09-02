@@ -4,8 +4,6 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem.hpp>
-
 #include <string>
 #include <vector>
 
@@ -28,8 +26,8 @@ struct SavedState
 
     // The online_delete generation ring, ordered oldest -> newest. New nodes are
     // written to generations.back() (the writable generation); reads probe
-    // newest -> oldest. Persisted as a newline-delimited list so a variable number
-    // of generations round-trips through the single-row state table.
+    // newest -> oldest. Persisted one row per generation in the DbGenerations
+    // table, ordered by position, so a variable number of generations round-trips.
     std::vector<std::string> generations;
 };
 

@@ -297,6 +297,14 @@ accountFunds(
 /**
  * Returns the transfer fee as Rate based on the type of token
  * @param view The ledger view
+ * @param asset The asset being transferred
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, Asset const& asset);
+
+/**
+ * Returns the transfer fee as Rate based on the type of token
+ * @param view The ledger view
  * @param amount The amount to transfer
  */
 [[nodiscard]] Rate
@@ -310,6 +318,12 @@ transferRate(ReadView const& view, STAmount const& amount);
 
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Asset const& asset);
+
+/**
+ * True if the account already holds this asset (or is the issuer / XRP).
+ */
+[[nodiscard]] bool
+holdingExists(ReadView const& view, AccountID const& account, Asset const& asset);
 
 [[nodiscard]] TER
 addEmptyHolding(

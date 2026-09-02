@@ -40,6 +40,7 @@ jobs:
       fail-fast: ${{ github.event_name == 'merge_group' }}
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     with:
+      benchmark: ${{ matrix.benchmark }}
       build_only: ${{ matrix.build_only }}
       build_type: ${{ matrix.build_type }}
       ccache_enabled: ${{ inputs.ccache_enabled }}
@@ -50,5 +51,6 @@ jobs:
       config_name: ${{ matrix.config_name }}
       sanitizers: ${{ matrix.sanitizers }}
       compiler: ${{ matrix.compiler || '' }}
+      toolchain: ${{ matrix.toolchain || '' }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
