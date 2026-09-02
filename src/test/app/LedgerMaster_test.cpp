@@ -169,7 +169,15 @@ class LedgerMaster_test : public beast::unit_test::Suite
         // ledgers therefore wins is a timing detail; all this test needs is
         // that it is one of them. Everything below derives from the observed
         // value rather than assuming a particular one.
-        BEAST_EXPECTS(lastRotated >= minSeq && lastRotated <= maxSeq, to_string(lastRotated));
+        //
+        // This one is fatal rather than merely reported, because it is the only
+        // place a value from the store enters minSeq. A lastRotated of 0 -- the
+        // value getLastRotated() reports until the store has been handed a
+        // validated ledger -- makes minSeq 0 below, and the minSeq - 1 and
+        // minSeq - 2 ranges then underflow to first > last, which aborts a
+        // Debug build inside missingFromCompleteLedgerRange().
+        if (!BEAST_EXPECTS(lastRotated >= minSeq && lastRotated <= maxSeq, to_string(lastRotated)))
+            return;
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
         BEAST_EXPECT(minSeq + 1 > maxSeq - 1);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);

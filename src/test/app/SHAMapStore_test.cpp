@@ -1239,8 +1239,17 @@ public:
         // busy are coalesced away. Which of the existing complete ledgers wins
         // is therefore a timing detail. Spinning until it equals a hard-coded
         // value never terminates when a different one legitimately wins.
+        //
+        // The range check is fatal rather than merely reported, because this is
+        // the only place a value from the store enters minSeq. A lastRotated of
+        // 0 -- the value getLastRotated() reports until the store has been
+        // handed a validated ledger -- makes minSeq 0 below, and the minSeq - 1
+        // and minSeq - 2 ranges then underflow to first > last, which aborts a
+        // Debug build inside missingFromCompleteLedgerRange().
         LedgerIndex lastRotated = store.getLastRotated();
-        BEAST_EXPECTS(lastRotated >= minSeq && lastRotated <= maxSeq, std::to_string(lastRotated));
+        if (!BEAST_EXPECTS(
+                lastRotated >= minSeq && lastRotated <= maxSeq, std::to_string(lastRotated)))
+            return;
         BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
