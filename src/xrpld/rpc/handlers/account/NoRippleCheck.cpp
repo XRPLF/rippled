@@ -51,7 +51,7 @@ fillTransaction(
 json::Value
 doNoRippleCheck(RPC::JsonContext& context)
 {
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     auto const& params(context.params);
     if (!params.isMember(jss::account))
