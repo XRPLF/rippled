@@ -151,12 +151,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 return tecINSUFFICIENT_PAYMENT;
 
             // Check if broker is allowed to receive the fee with these IOUs.
-            // fixCleanup3_4_0 only adds the LPToken pool-asset check inside
+            // fixCleanup3_5_0 only adds the LPToken pool-asset check inside
             // checkTrustlineAuthorized; everything else in these helpers
             // stays gated on its own amendment internally.
             if (!brokerFee->native() &&
                 (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-                 ctx.view.rules().enabled(fixCleanup3_4_0)))
+                 ctx.view.rules().enabled(fixCleanup3_5_0)))
             {
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
@@ -217,7 +217,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // authorized. But we need to exclude the case when the transaction is
         // created by the broker.
         if ((ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-             ctx.view.rules().enabled(fixCleanup3_4_0)) &&
+             ctx.view.rules().enabled(fixCleanup3_5_0)) &&
             !needed.native())
         {
             auto res = nft::checkTrustlineAuthorized(
@@ -296,7 +296,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if (!needed.native())
         {
             if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-                ctx.view.rules().enabled(fixCleanup3_4_0))
+                ctx.view.rules().enabled(fixCleanup3_5_0))
             {
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
@@ -345,7 +345,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
         // Check that the issuer is allowed to receive IOUs.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-            ctx.view.rules().enabled(fixCleanup3_4_0))
+            ctx.view.rules().enabled(fixCleanup3_5_0))
         {
             auto res = nft::checkTrustlineAuthorized(
                 ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());

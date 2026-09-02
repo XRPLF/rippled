@@ -327,7 +327,7 @@ OfferCreate::checkAcceptAsset(
             // AMM's pool assets, so the taker must be authorized for both
             // (see checkLPTokenAuthorization); the lsfRequireAuth check
             // above cannot cover this.
-            if (view.rules().enabled(fixCleanup3_4_0) && issuerAccount->isFieldPresent(sfAMMID))
+            if (view.rules().enabled(fixCleanup3_5_0) && issuerAccount->isFieldPresent(sfAMMID))
             {
                 if (auto const ter = checkLPTokenAuthorization(view, id, issuer);
                     !isTesSuccess(ter))

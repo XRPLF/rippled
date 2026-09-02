@@ -433,14 +433,14 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 
         if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField))
         {
-            // Post fixCleanup3_4_0 an unauthorized line may not receive at
+            // Post fixCleanup3_5_0 an unauthorized line may not receive at
             // all: the zero-balance condition below was the historical
             // grandfather clause letting a line that already carried a
             // balance keep receiving, which is how an unauthorized position
             // could grow (see XRPLF/rippled issue #5450). The
             // ValidTrustLineAuth invariant remains the backstop for flows
             // that bypass the payment engine.
-            if (ctx.view.rules().enabled(fixCleanup3_4_0))
+            if (ctx.view.rules().enabled(fixCleanup3_5_0))
             {
                 JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
                                  << " src: " << src_;
@@ -463,12 +463,15 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
         // or converts it, which only a redemption or a Clawback may do. The
         // ValidTrustLineAuth invariant remains the backstop for paths that
         // bypass the payment engine.
-        if (!ctx.isLast && ctx.view.rules().enabled(fixCleanup3_4_0))
+        if (!ctx.isLast && ctx.view.rules().enabled(fixCleanup3_5_0))
         {
             // src_ holds dst_'s IOU exactly when the balance favors src_.
+            // A pseudo-account src_ is exempt: it cannot submit a TrustSet
+            // to become authorized, mirroring the fixCleanup3_4_0 carve-out
+            // inside requireAuth without depending on that amendment.
             int const sign = (*sleLine)[sfBalance].signum();
             bool const srcHoldsDstIou = src_ < dst_ ? sign > 0 : sign < 0;
-            if (srcHoldsDstIou &&
+            if (srcHoldsDstIou && !isPseudoAccount(ctx.view, src_) &&
                 !isTesSuccess(
                     requireAuth(ctx.view, Issue{currency_, dst_}, src_, AuthType::StrongAuth)))
             {
@@ -483,7 +486,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
         // dst_ must be authorized for both; see checkLPTokenAuthorization.
         // The reverse direction (dst_ is the AMM) is a return to the issuer
         // and stays legal, letting an unauthorized holder divest.
-        if (ctx.view.rules().enabled(fixCleanup3_4_0) && sleSrc->isFieldPresent(sfAMMID))
+        if (ctx.view.rules().enabled(fixCleanup3_5_0) && sleSrc->isFieldPresent(sfAMMID))
         {
             if (auto const ter = checkLPTokenAuthorization(ctx.view, dst_, src_);
                 !isTesSuccess(ter))

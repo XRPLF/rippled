@@ -138,9 +138,9 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 
     // Holding the auction slot entails being refunded LPTokens when outbid,
     // and an LPToken carries exposure to both of the AMM's pool assets; see
-    // checkLPTokenAuthorization. So post fixCleanup3_4_0 the slot may only
+    // checkLPTokenAuthorization. So post fixCleanup3_5_0 the slot may only
     // be held by an account authorized for both.
-    if (ctx.view.rules().enabled(fixCleanup3_4_0))
+    if (ctx.view.rules().enabled(fixCleanup3_5_0))
     {
         if (auto const ter = checkLPTokenAuthorization(
                 ctx.view, ctx.tx[sfAccount], ammSle->getAccountID(sfAccount));
@@ -366,10 +366,10 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
 
         // The refund is an LPToken delivery, so the previous owner must
         // still be authorized for both pool assets (a slot acquired before
-        // fixCleanup3_4_0 predates the preclaim check above). Reject the
+        // fixCleanup3_5_0 predates the preclaim check above). Reject the
         // bid cleanly rather than trip the ValidTrustLineAuth invariant;
         // the slot then simply runs out its remaining time.
-        if (sb.rules().enabled(fixCleanup3_4_0))
+        if (sb.rules().enabled(fixCleanup3_5_0))
         {
             if (auto const ter = checkLPTokenAuthorization(
                     sb, auctionSlot[sfAccount], ammSle->getAccountID(sfAccount));

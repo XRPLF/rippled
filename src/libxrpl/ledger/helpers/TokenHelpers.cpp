@@ -391,15 +391,18 @@ accountHolds(
 
     // An unauthorized line's balance cannot be spent except back to the
     // issuer, so funding-style queries treat it as zero. Gated on
-    // fixCleanup3_4_0, which also enforces the ValidTrustLineAuth invariant
-    // and adds the pseudo-account carve-out inside requireAuth, so all
-    // three activate together. Unauthorized balances exist in ledger
-    // history: see XRPLF/rippled issue #5450. The AuthType cannot matter
-    // here -- the modes only differ for a missing trust line and this runs
-    // only when the line exists -- but StrongAuth states the situation and
-    // stays fail-closed should the guard ever change.
+    // fixCleanup3_5_0, which also enforces the ValidTrustLineAuth
+    // invariant. A pseudo-account (e.g. an AMM) cannot submit a TrustSet
+    // to become authorized and only stores assets for the object that
+    // owns it, so it is exempt here, mirroring the fixCleanup3_4_0
+    // carve-out inside requireAuth without depending on that amendment.
+    // Unauthorized balances exist in ledger history: see XRPLF/rippled
+    // issue #5450. The AuthType cannot matter here -- the modes only
+    // differ for a missing trust line and this runs only when the line
+    // exists -- but StrongAuth states the situation and stays fail-closed
+    // should the guard ever change.
     if (sle && zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized &&
-        view.rules().enabled(fixCleanup3_4_0) &&
+        view.rules().enabled(fixCleanup3_5_0) && !isPseudoAccount(view, account) &&
         !isTesSuccess(requireAuth(view, Issue{currency, issuer}, account, AuthType::StrongAuth)))
     {
         sle = nullptr;

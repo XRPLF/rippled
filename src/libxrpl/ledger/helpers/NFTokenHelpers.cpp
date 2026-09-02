@@ -914,11 +914,11 @@ tokenOfferCreatePreclaim(
             return tecNO_PERMISSION;
     }
 
-    // fixCleanup3_4_0 only adds the LPToken pool-asset check inside
+    // fixCleanup3_5_0 only adds the LPToken pool-asset check inside
     // checkTrustlineAuthorized; the trust line checks proper stay gated on
     // fixEnforceNFTokenTrustlineV2 internally.
     if ((view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-         view.rules().enabled(fixCleanup3_4_0)) &&
+         view.rules().enabled(fixCleanup3_5_0)) &&
         !amount.native())
     {
         // If this is a sell offer, check that the account is allowed to
@@ -1059,7 +1059,7 @@ checkTrustlineAuthorized(
     // authorized for both of the AMM's pool assets (see
     // checkLPTokenAuthorization); the lsfRequireAuth check above cannot
     // cover this.
-    if (view.rules().enabled(fixCleanup3_4_0))
+    if (view.rules().enabled(fixCleanup3_5_0))
     {
         if (auto const ter = checkLPTokenAuthorization(view, id, issue.account); !isTesSuccess(ter))
         {

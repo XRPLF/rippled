@@ -283,7 +283,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         };
 
         // test: an unauthorized line must not gain funds (post
-        // fixCleanup3_4_0 the invariant enforces).
+        // fixCleanup3_5_0 the invariant enforces).
         doInvariantCheck(
             {{"an unauthorized trust line gained funds"}},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
@@ -294,11 +294,11 @@ class InvariantsTrustLine_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             unauthorizedLine);
 
-        // test: pre fixCleanup3_4_0 the same violation is logged but the
+        // test: pre fixCleanup3_5_0 the same violation is logged but the
         // transaction is not failed, preserving legacy behavior on ledgers
         // without the amendment.
         doInvariantCheck(
-            makeEnv(testableAmendments() - fixCleanup3_4_0),
+            makeEnv(testableAmendments() - fixCleanup3_5_0),
             {{"an unauthorized trust line gained funds"}},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return setHolderBalance(a1, ac, 100);
@@ -491,7 +491,7 @@ class InvariantsTrustLine_test : public InvariantsBase
 
         // test: a legacy unauthorized balance must not be spent to a third
         // party, not even an authorized one; only draining back to the
-        // issuer is permitted (post fixCleanup3_4_0 the invariant enforces).
+        // issuer is permitted (post fixCleanup3_5_0 the invariant enforces).
         {
             Account const a1{"A1"};
             Account const a2{"A2"};
@@ -510,13 +510,13 @@ class InvariantsTrustLine_test : public InvariantsBase
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
         }
 
-        // test: pre fixCleanup3_4_0 the same spend is logged but the
+        // test: pre fixCleanup3_5_0 the same spend is logged but the
         // transaction is not failed -- legacy behavior let an unauthorized
         // balance be spent to any party.
         {
             Account const a1{"A1"};
             Account const a2{"A2"};
-            Env env = makeEnv(testableAmendments() - fixCleanup3_4_0);
+            Env env = makeEnv(testableAmendments() - fixCleanup3_5_0);
             seedLegacyBalance(env, a1, a2);
             doInvariantCheck(
                 std::move(env),
@@ -532,7 +532,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         }
 
         // test: cashing out a legacy unauthorized balance on the DEX is the
-        // same spend, just initiated by the taker. Post fixCleanup3_4_0 the
+        // same spend, just initiated by the taker. Post fixCleanup3_5_0 the
         // unauthorized balance reads as zero in accountFunds, so the offer
         // cannot even be placed and the book stays clean of landmines; pre
         // amendment the offer places and the taker's crossing succeeds.
@@ -541,7 +541,7 @@ class InvariantsTrustLine_test : public InvariantsBase
             Account const a1{"A1"};
             Account const a2{"A2"};
             Env env = makeEnv(
-                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_4_0);
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
             seedLegacyBalance(env, a1, a2);
 
             // a1 offers the unauthorized USD for XRP.
@@ -568,13 +568,13 @@ class InvariantsTrustLine_test : public InvariantsBase
         // transactor's auth gate (DirectIPaymentStep::check) only fired on
         // an exactly-zero balance, waving the payment through on the
         // strength of the pre-existing opposite-direction balance. Both
-        // behaviors documented: post fixCleanup3_4_0 the engine rejects the
+        // behaviors documented: post fixCleanup3_5_0 the engine rejects the
         // crossing outright; pre amendment it succeeds and mints an
         // unauthorized balance.
         for (bool const withCleanup : {true, false})
         {
             Env env = makeEnv(
-                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_4_0);
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
             Account const a1{"A1"};
             env.fund(XRP(1000), a1, g1);
             env(fset(g1, asfRequireAuth));
@@ -710,7 +710,7 @@ class InvariantsTrustLine_test : public InvariantsBase
             return true;
         };
 
-        // test: post fixCleanup3_4_0 an LPToken gain by a receiver not
+        // test: post fixCleanup3_5_0 an LPToken gain by a receiver not
         // authorized for both pool assets is rejected.
         doInvariantCheck(
             {{"an account gained LPTokens without authorization for the AMM's assets"}},
@@ -723,7 +723,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         // test: pre-amendment the same gain is logged but not failed.
         lpIssue.reset();
         doInvariantCheck(
-            makeEnv(testableAmendments() - fixCleanup3_4_0),
+            makeEnv(testableAmendments() - fixCleanup3_5_0),
             {{"an account gained LPTokens without authorization for the AMM's assets"}},
             gainLPTokens,
             XRPAmount{},
@@ -745,7 +745,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         for (bool const withCleanup : {true, false})
         {
             Env env = makeEnv(
-                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_4_0);
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
             env.fund(XRP(1000), a1, a2, g1);
             env(fset(g1, asfRequireAuth));
             env.close();
@@ -777,7 +777,7 @@ class InvariantsTrustLine_test : public InvariantsBase
                 g1["USD"](100));
 
             // ZeroIfUnauthorized hides the unauthorized balance, but only
-            // once fixCleanup3_4_0 is enabled.
+            // once fixCleanup3_5_0 is enabled.
             BEAST_EXPECT(
                 accountHolds(
                     view,
@@ -812,7 +812,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         // Start pre-amendment, with the NFT authorization gap still open:
         // this is the very flow that created the unauthorized balances of
         // XRPLF/rippled issue #5450.
-        Env env = makeEnv(testableAmendments() - fixEnforceNFTokenTrustlineV2 - fixCleanup3_4_0);
+        Env env = makeEnv(testableAmendments() - fixEnforceNFTokenTrustlineV2 - fixCleanup3_5_0);
         env.fund(XRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
@@ -842,7 +842,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         BEAST_EXPECT(env.le(staleOffer));
 
         // The amendment activates with the stale state in place.
-        env.enableFeature(fixCleanup3_4_0);
+        env.enableFeature(fixCleanup3_5_0);
         env.close();
 
         // The raw balance is untouched, but funding-style reads see zero.
@@ -880,7 +880,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         env.close();
 
         // Receiving more is rejected by the payment engine as well: post
-        // fixCleanup3_4_0 the grandfather clause no longer lets a nonzero
+        // fixCleanup3_5_0 the grandfather clause no longer lets a nonzero
         // unauthorized line receive.
         env(pay(a1, a2, g1["USD"](5)), Ter(tecNO_AUTH));
         env.close();
@@ -924,7 +924,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         for (bool const withCleanup : {true, false})
         {
             Env env = makeEnv(
-                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_4_0);
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
             env.fund(XRP(1000), a1, a2, g1);
             env(fset(g1, asfRequireAuth));
             env.close();
@@ -950,7 +950,7 @@ class InvariantsTrustLine_test : public InvariantsBase
             uint256 const toG1 = keylet::check(a1.id(), SeqProxy::rawSequence(env.seq(a1))).key;
             env(check::create(a1, g1, g1["USD"](4)));
 
-            // Post fixCleanup3_4_0 the writer's unauthorized balance reads
+            // Post fixCleanup3_5_0 the writer's unauthorized balance reads
             // as zero for a third-party casher; pre amendment the legacy
             // balance is spendable.
             if (withCleanup)
@@ -984,7 +984,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         for (bool const withCleanup : {true, false})
         {
             Env env = makeEnv(
-                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_4_0);
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
             env.fund(XRP(1000), a1, g1);
             env(fset(g1, asfRequireAuth));
             env.close();
@@ -992,7 +992,7 @@ class InvariantsTrustLine_test : public InvariantsBase
             env.trust(g1["USD"](10000), a1);
             env.close();
 
-            // Post fixCleanup3_4_0 the engine answers a final tecNO_AUTH;
+            // Post fixCleanup3_5_0 the engine answers a final tecNO_AUTH;
             // before it, the retriable terNO_AUTH left a dry path.
             env(pay(g1, a1, g1["USD"](5)), Ter(withCleanup ? TER{tecNO_AUTH} : TER{tecPATH_DRY}));
             env.close();

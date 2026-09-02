@@ -908,10 +908,10 @@ private:
 
             // Post-fixCleanup3_3_0 the deposit requires authorization for both
             // pool assets, so the unauthorized MPT blocks the XRP deposit too.
-            // fixCleanup3_4_0 added the same rejection because the LPToken
+            // fixCleanup3_5_0 added the same rejection because the LPToken
             // gained by the deposit is a claim on both pool assets.
             if (!features[featureAMMClawback] && !features[fixCleanup3_3_0] &&
-                !features[fixCleanup3_4_0])
+                !features[fixCleanup3_5_0])
             {
                 amm.deposit(carol, XRP(10), std::nullopt, std::nullopt, std::nullopt);
             }

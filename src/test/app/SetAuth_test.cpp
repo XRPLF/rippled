@@ -47,10 +47,10 @@ struct SetAuth_test : public beast::unit_test::Suite
 
         Env env(*this, features);
 
-        // Post fixCleanup3_4_0 paying an unauthorized line fails cleanly
+        // Post fixCleanup3_5_0 paying an unauthorized line fails cleanly
         // with tecNO_AUTH; before it, the retriable terNO_AUTH left a dry
         // path.
-        TER const noAuth = features[fixCleanup3_4_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
+        TER const noAuth = features[fixCleanup3_5_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
 
         env.fund(XRP(100000), "alice", "bob", gw);
         env(fset(gw, asfRequireAuth));
@@ -69,7 +69,7 @@ struct SetAuth_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         auto const sa = testableAmendments();
-        testAuth(sa - fixCleanup3_4_0);
+        testAuth(sa - fixCleanup3_5_0);
         testAuth(sa - featurePermissionedDEX);
         testAuth(sa);
     }

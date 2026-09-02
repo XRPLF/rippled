@@ -571,7 +571,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
     // Common fixture for the RequireAuth tests: gw2 issues eur2 under
     // lsfRequireAuth while gw_'s USD needs no authorization; alice_ is
     // authorized for eur2 and creates a USD/eur2 pool. An LPToken of that
-    // pool is a claim on both assets, so post fixCleanup3_4_0 acquiring one
+    // pool is a claim on both assets, so post fixCleanup3_5_0 acquiring one
     // requires authorization for both (see checkLPTokenAuthorization) --
     // otherwise transferability sidesteps the checks AMMDeposit enforces,
     // and an AMMClawback of USD against the holder would then deliver the
@@ -609,7 +609,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.trust(STAmount{lpIssue, 1'000'000}, bob_);
         env.close();
 
-        if (features[fixCleanup3_4_0])
+        if (features[fixCleanup3_5_0])
         {
             // bob_ has no eur2 trust line at all.
             env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_LINE));
@@ -663,7 +663,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.trust(eur2(100), bob_);
         env.close();
 
-        if (features[fixCleanup3_4_0])
+        if (features[fixCleanup3_5_0])
         {
             // An offer to buy the LPToken is an offer to take on the pool
             // assets' exposure, so it is rejected up front.
@@ -681,7 +681,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // Once the amendment activates, filling such an offer would
             // hand bob_ the exposure, so the book step removes it during
             // crossing instead of leaving it to poison the book.
-            env.enableFeature(fixCleanup3_4_0);
+            env.enableFeature(fixCleanup3_5_0);
             env.close();
 
             env(offer(alice_, XRP(100), STAmount{lpIssue, 100}));
@@ -713,7 +713,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(token::mint(carol_, 0), Txflags(tfTransferable));
         env.close();
 
-        if (features[fixCleanup3_4_0])
+        if (features[fixCleanup3_5_0])
         {
             // The sell offer cannot even be created.
             env(token::createOffer(carol_, nftID, STAmount{lpIssue, 10}),
@@ -741,7 +741,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
             // Once the amendment activates, the resting offer cannot be
             // accepted while carol_ is unauthorized.
-            env.enableFeature(fixCleanup3_4_0);
+            env.enableFeature(fixCleanup3_5_0);
             env.close();
             env(token::acceptSellOffer(alice_, sellOfferIndex), Ter(tecNO_LINE));
             env.close();
@@ -782,7 +782,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
         BEAST_EXPECT(!env.le(keylet::trustLine(alice_.id(), eur2)));
 
-        if (features[fixCleanup3_4_0])
+        if (features[fixCleanup3_5_0])
         {
             // Outbidding would refund LPTokens to alice_, exposure she is
             // no longer authorized for, so bob_'s bid is rejected cleanly.
@@ -889,7 +889,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
         BEAST_EXPECT(expectHolding(env, alice_, eur2(1'000)));
 
-        if (features[fixCleanup3_4_0])
+        if (features[fixCleanup3_5_0])
         {
             // The recreated balance is constrained like any other
             // unauthorized balance: it cannot reach a third party...
@@ -940,7 +940,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.trust(STAmount{lpIssue, 1'000'000}, bob_);
         env.close();
 
-        if (features[fixCleanup3_4_0])
+        if (features[fixCleanup3_5_0])
         {
             env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_AUTH));
             env.close();
@@ -978,7 +978,7 @@ public:
             testMPTCanTransferOffer(features);
         }
 
-        for (auto const features : {all, all - fixCleanup3_4_0, all - fixEnforceNFTokenTrustlineV2})
+        for (auto const features : {all, all - fixCleanup3_5_0, all - fixEnforceNFTokenTrustlineV2})
         {
             testRequireAuthPayment(features);
             testRequireAuthOffer(features);

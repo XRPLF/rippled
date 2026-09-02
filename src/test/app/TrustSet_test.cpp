@@ -371,7 +371,7 @@ public:
 
         for (bool const withCleanup : {true, false})
         {
-            Env env = withCleanup ? Env{*this} : Env{*this, testableAmendments() - fixCleanup3_4_0};
+            Env env = withCleanup ? Env{*this} : Env{*this, testableAmendments() - fixCleanup3_5_0};
 
             auto const bob = Account{"bob"};
             auto const alice = Account{"alice"};
@@ -388,7 +388,7 @@ public:
             env.close();
 
             // send a payment from alice to bob, validate that the payment fails.
-            // Post fixCleanup3_4_0 the engine answers tecNO_AUTH; before it, the
+            // Post fixCleanup3_5_0 the engine answers tecNO_AUTH; before it, the
             // retriable terNO_AUTH left a dry path.
             env(pay(alice, bob, alice["USD"](10)),
                 Ter(withCleanup ? TER{tecNO_AUTH} : TER{tecPATH_DRY}));

@@ -781,7 +781,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         // as above, rather than leave it to fail the ValidTrustLineAuth
         // invariant on every crossing -- e.g. an offer resting since before
         // the amendment activated.
-        if (applyView.rules().enabled(fixCleanup3_4_0) && !isAssetInMPT && !isXRP(assetIn) &&
+        if (applyView.rules().enabled(fixCleanup3_5_0) && !isAssetInMPT && !isXRP(assetIn) &&
             !isTesSuccess(
                 checkLPTokenAuthorization(applyView, owner, assetIn.get<Issue>().account)))
         {

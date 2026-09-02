@@ -312,9 +312,9 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
             return ter;
     }
-    else if (ctx.view.rules().enabled(fixCleanup3_4_0))
+    else if (ctx.view.rules().enabled(fixCleanup3_5_0))
     {
-        // fixCleanup3_4_0 forbids gaining LPTokens without authorization for
+        // fixCleanup3_5_0 forbids gaining LPTokens without authorization for
         // both pool assets (the ValidTrustLineAuth invariant enforces it), so
         // reject the deposit cleanly even on a ledger where neither
         // fixCleanup3_3_0 nor featureAMMClawback has activated the checks

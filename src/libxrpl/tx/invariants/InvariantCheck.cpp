@@ -829,7 +829,7 @@ ValidTrustLineAuth::finalize(
     if (tx.getTxnType() == ttAMM_CLAWBACK)
         return true;
 
-    bool const enforce = view.rules().enabled(fixCleanup3_4_0);
+    bool const enforce = view.rules().enabled(fixCleanup3_5_0);
 
     // Pseudo-accounts hold assets on behalf of the object that owns them and
     // are implicitly authorized, mirroring requireAuth. The marker must
