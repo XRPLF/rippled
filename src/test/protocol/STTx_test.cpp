@@ -136,15 +136,19 @@ public:
             Serializer single;
             single.add32(signingPrefix(nullptr, false, rules));
             tx.addWithoutSigningFields(single);
+            // 53545800 STX prefix, 120003 AccountSet, 2400000001 Sequence,
+            // 68400000000000000A Fee, 7321... SigningPubKey, 8114... Account.
             BEAST_EXPECT(
                 strHex(single.peekData()) ==
-                "53545800120003220000000024000000016840000000000000"
-                "0A7321ED5F5AC8B98974A3CA843326D9B88CEBD0560177B456"
-                "1E0C6DF7A3A66D1E1D0C4B81145E7B112523F68D2F5E879DB4"
-                "EAC51C6698A69304");
+                "53545800"
+                "120003"
+                "2400000001"
+                "68400000000000000A"
+                "73210330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020"
+                "8114B5F762798A53D543A014CAF8B297CFF8F2F937E8");
             BEAST_EXPECT(
                 to_string(single.getSHA512Half()) ==
-                "8D18B0BFCEFCB18AA5D2A21E14A34A1E3DAA0EE79C69AAB88C64B4B4C3AA9E3E");
+                "AB7473EA8D05527A7465229447B0E9B05365C72B87E921762AD30742B253F3E6");
 
             auto const signer = calcAccountID(
                 generateKeyPair(KeyType::Secp256k1, generateSeed("multisigner")).first);

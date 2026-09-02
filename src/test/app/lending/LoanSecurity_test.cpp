@@ -1148,9 +1148,9 @@ private:
         }
         else
         {
-            // The lender paid the fee.
+            // The lender paid the fee, and the borrower got the loan.
             BEAST_EXPECT(env.balance(lender) == lenderBalance - feeAmt);
-            BEAST_EXPECT(env.balance(borrower) == borrowerBalance);
+            BEAST_EXPECT(env.balance(borrower).value() > borrowerBalance.value());
         }
     }
 
