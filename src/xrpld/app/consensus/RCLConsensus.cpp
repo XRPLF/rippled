@@ -635,7 +635,8 @@ RCLConsensus::Adaptor::doAccept(
         : telemetry::SpanGuard::childSpan(cs::acceptApply, roundSpanContext_);
     doAcceptSpan.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq()) + 1);
     doAcceptSpan.setAttribute(
-        cs::attr::closeTime, static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
+        cs::attr::closeTimeRippleEpochS,
+        static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
     doAcceptSpan.setAttribute(cs::attr::closeTimeCorrect, closeTimeCorrect);
     doAcceptSpan.setAttribute(
         cs::attr::closeResolutionMs,
@@ -648,10 +649,10 @@ RCLConsensus::Adaptor::doAccept(
     doAcceptSpan.setAttribute(
         cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
     doAcceptSpan.setAttribute(
-        cs::attr::parentCloseTime,
+        cs::attr::parentCloseTimeRippleEpochS,
         static_cast<int64_t>(prevLedger.closeTime().time_since_epoch().count()));
     doAcceptSpan.setAttribute(
-        cs::attr::closeTimeSelf,
+        cs::attr::closeTimeSelfRippleEpochS,
         static_cast<int64_t>(rawCloseTimes.self.time_since_epoch().count()));
     doAcceptSpan.setAttribute(
         cs::attr::closeTimeVoteBins, static_cast<int64_t>(rawCloseTimes.peers.size()));
