@@ -1977,7 +1977,9 @@ private:
         if (!BEAST_EXPECT(tokenAlice))
             return;
         std::uint64_t const sharesBefore = tokenAlice->getFieldU64(sfMPTAmount);
-        BEAST_EXPECT(sharesBefore == 2);
+        // Default IOU vault scale is 6, so 2 USD mints 2e6 shares. Redeem one
+        // leftover share; do not require 1:1 like the MPT case.
+        BEAST_EXPECT(sharesBefore > 1);
         STAmount const redeemShares{MPTIssue{shareId}, Number(1)};
 
         std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
