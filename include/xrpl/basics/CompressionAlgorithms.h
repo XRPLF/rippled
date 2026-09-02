@@ -134,8 +134,15 @@ lz4Decompress(
     }
 
     // Put back unused bytes
-    if (in.ByteCount() > (currentBytes + copiedInSize))
-        in.BackUp(in.ByteCount() - currentBytes - copiedInSize);
+    auto const copiedInByteCount =
+        static_cast<decltype(currentBytes)>(copiedInSize);
+
+    if (in.ByteCount() > currentBytes + copiedInByteCount)
+    {
+        auto const unusedBytes =
+            in.ByteCount() - currentBytes - copiedInByteCount;
+        in.BackUp(static_cast<int>(unusedBytes));
+    }
 
     if (copiedInSize != inSize)
         Throw<std::runtime_error>("lz4 decompress: insufficient input size");
