@@ -372,28 +372,30 @@ See the "Verification Queries" section below.
 
 ## Expected Span Catalog
 
-All 16 production span names:
+A smoke-test subset: the spans a short local run reliably produces, and how to trigger each. This is not the full catalog — the authoritative span list, with the attributes each span carries, is [docs/telemetry-runbook.md § Span Reference](../../docs/telemetry-runbook.md#span-reference).
 
-| Span Name                   | Source File       | Key Attributes                                                                           | How to Trigger            |
-| --------------------------- | ----------------- | ---------------------------------------------------------------------------------------- | ------------------------- |
-| `rpc.http_request`          | ServerHandler.cpp | --                                                                                       | Any HTTP RPC call         |
-| `rpc.ws_upgrade`            | ServerHandler.cpp | --                                                                                       | WebSocket upgrade         |
-| `rpc.ws_message`            | ServerHandler.cpp | --                                                                                       | WebSocket RPC message     |
-| `rpc.process`               | ServerHandler.cpp | --                                                                                       | RPC processing            |
-| `rpc.command.<name>`        | RPCHandler.cpp    | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
-| `tx.process`                | NetworkOPs.cpp    | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
-| `tx.receive`                | PeerImp.cpp       | `xrpl.peer.id`                                                                           | Peer relays transaction   |
-| `consensus.proposal.send`   | RCLConsensus.cpp  | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
-| `consensus.ledger_close`    | RCLConsensus.cpp  | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
-| `consensus.accept`          | RCLConsensus.cpp  | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                               | Ledger accepted           |
-| `consensus.validation.send` | RCLConsensus.cpp  | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                  | Validation sent           |
-| `consensus.accept.apply`    | RCLConsensus.cpp  | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`        | Ledger apply + close time |
-| `tx.apply`                  | BuildLedger.cpp   | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`                                          | Ledger close (tx set)     |
-| `ledger.build`              | BuildLedger.cpp   | `xrpl.ledger.seq`, `xrpl.ledger.close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build              |
-| `ledger.validate`           | LedgerMaster.cpp  | `xrpl.ledger.seq`, `xrpl.ledger.validations`                                             | Ledger validated          |
-| `ledger.store`              | LedgerMaster.cpp  | `xrpl.ledger.seq`                                                                        | Ledger stored             |
-| `peer.proposal.receive`     | PeerImp.cpp       | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`                                             | Peer sends proposal       |
-| `peer.validation.receive`   | PeerImp.cpp       | `xrpl.peer.id`, `xrpl.peer.validation.trusted`                                           | Peer sends validation     |
+Attributes are deliberately not repeated here. Keeping a second copy is how this table came to list attribute keys that no longer exist anywhere in the code.
+
+| Span Name                   | Source File       | How to Trigger            |
+| --------------------------- | ----------------- | ------------------------- |
+| `rpc.http_request`          | ServerHandler.cpp | Any HTTP RPC call         |
+| `rpc.ws_upgrade`            | ServerHandler.cpp | WebSocket upgrade         |
+| `rpc.ws_message`            | ServerHandler.cpp | WebSocket RPC message     |
+| `rpc.process`               | ServerHandler.cpp | RPC processing            |
+| `rpc.command.<name>`        | RPCHandler.cpp    | Any RPC command           |
+| `tx.process`                | NetworkOPs.cpp    | Submit transaction        |
+| `tx.receive`                | PeerImp.cpp       | Peer relays transaction   |
+| `consensus.proposal.send`   | RCLConsensus.cpp  | Consensus proposing phase |
+| `consensus.ledger_close`    | RCLConsensus.cpp  | Ledger close event        |
+| `consensus.accept`          | RCLConsensus.cpp  | Ledger accepted           |
+| `consensus.validation.send` | RCLConsensus.cpp  | Validation sent           |
+| `consensus.accept.apply`    | RCLConsensus.cpp  | Ledger apply + close time |
+| `tx.apply`                  | BuildLedger.cpp   | Ledger close (tx set)     |
+| `ledger.build`              | BuildLedger.cpp   | Ledger build              |
+| `ledger.validate`           | LedgerMaster.cpp  | Ledger validated          |
+| `ledger.store`              | LedgerMaster.cpp  | Ledger stored             |
+| `peer.proposal.receive`     | PeerImp.cpp       | Peer sends proposal       |
+| `peer.validation.receive`   | PeerImp.cpp       | Peer sends validation     |
 
 ---
 
@@ -443,7 +445,7 @@ curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_coun
 
 # RPC calls by command
 curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" |
-    jq '.data.result[] | {command: .metric["xrpl.rpc.command"], count: .value[1]}'
+    jq '.data.result[] | {command: .metric.command, count: .value[1]}'
 
 # Deployment-tier labels present on metrics (set by the collector's
 # resource/tier processor and promoted via resource_to_telemetry_conversion).
