@@ -22,11 +22,9 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
-## Unreleased
-
-This section contains changes targeting a future version.
-
 ## XRP Ledger server version 3.4.0
+
+Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.
 
 ### Additions in 3.4.0
 
