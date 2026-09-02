@@ -1045,11 +1045,10 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     lastTrustedTally_.store(static_cast<std::int64_t>(tvc), std::memory_order_relaxed);
 
     // ValidatorList disables quorum by returning SIZE_MAX, which getNeededValidations
-    // passes straight through. Casting that to int64_t would wrap to -1 and make the
-    // tally look like it exceeds the target on a node that can never validate, so
-    // report the disabled state as int64 max instead: the target then reads far above
-    // any tally, which is the truthful signal. Mirrors the same fix in the unl_quorum
-    // gauge (MetricsRegistry::registerUnlQuorumGauge).
+    // passes straight through. That value must not be cast to int64_t: it would wrap
+    // to -1 and make the tally look like it exceeds the target on a node that can
+    // never validate. The disabled state is published as int64 max instead, so the
+    // target reads far above any tally.
     lastQuorumTarget_.store(
         minVal == std::numeric_limits<std::size_t>::max() ? std::numeric_limits<std::int64_t>::max()
                                                           : static_cast<std::int64_t>(minVal),
@@ -1060,9 +1059,11 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         JLOG(journal_.trace()) << "Only " << tvc << " validations for " << ledger->header().hash;
 
         // Trusted validations did not reach quorum, so this ledger will not be
-        // declared validated. Previously trace-only, which made a node that
-        // peers and receives validations yet never validates indistinguishable
-        // from an idle one. One macro call at the gate, never in a loop.
+        // declared validated. The trace line above is the only other record
+        // of this gate, and trace level is off on an ordinary node, which
+        // leaves a node that peers and receives validations yet never
+        // validates indistinguishable from an idle one. One macro call at the
+        // gate, never in a loop.
         //
         // Emitted while mutex_ is held. That is unavoidable here (the gate and
         // its early return are inside the locked section) and consistent with

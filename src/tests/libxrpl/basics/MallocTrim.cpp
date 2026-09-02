@@ -121,11 +121,11 @@ TEST(parseStatmRSSkB, standard_format)
 }
 #endif
 
-// The measurement must NOT depend on the journal's severity. It used to sit
-// inside `if (journal.debug())`, so an ordinary node -- which does not run at
-// debug level -- measured nothing and the caller had no duration to record.
-// This is the regression test for that: with a null sink (nothing is even
-// loggable) every field must still be populated.
+// The measurement must NOT depend on the journal's severity. An ordinary node
+// does not run at debug level, so gating the measurement on severity would
+// leave the caller with no duration to record on the one kind of node where
+// the trim cost matters. This is the guard for that: with a null sink
+// (nothing is even loggable) every field must still be populated.
 TEST(mallocTrim, measures_without_debug_logging)
 {
     beast::Journal const journal{beast::Journal::getNullSink()};
@@ -213,7 +213,7 @@ TEST(mallocTrim, with_debug_logging)
 
     // Same fields as the null-sink case above: raising the severity adds the
     // log line and changes nothing about what is measured. The two tests
-    // together are what prove the severity no longer gates the measurement.
+    // together are what prove the severity does not gate the measurement.
     EXPECT_GT(report.rssBeforeKB, 0);
     EXPECT_GT(report.rssAfterKB, 0);
 #else

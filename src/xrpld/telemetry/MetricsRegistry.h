@@ -318,11 +318,11 @@ public:
      * phase. Mostly ObservableGauges, plus the ObservableCounters whose
      * source value is already cumulative.
      *
-     * Split from `start()` because the two halves have different
-     * prerequisites. `start()` needs only config strings; these callbacks
-     * read live Application services, so this half must run later.
+     * A separate entry point from `start()` because the two halves have
+     * different prerequisites. `start()` needs only config strings; these
+     * callbacks read live Application services, so this half must run later.
      * Registering an observable also arms the reader thread to invoke its
-     * callback on the next tick, which is why the split is about ordering
+     * callback on the next tick, which is why the separation is about ordering
      * and not just tidiness.
      *
      * @pre `start()` has already run (the meter exists). If it has not,
@@ -1203,7 +1203,7 @@ private:
      *
      * One instrument fanning out four series under the `metric` attribute,
      * each answering a different "why is this node not FULL yet?" question
-     * that previously existed only in a log line or in server_info JSON:
+     * that is otherwise visible only in a log line or in server_info JSON:
      *
      *   `initial_full_duration_us` — microseconds from process start to the
      *     first FULL transition (NetworkOPs::getInitialSyncDurationUs()).

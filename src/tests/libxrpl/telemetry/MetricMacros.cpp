@@ -1027,7 +1027,7 @@ TEST(MetricMacros, sync_diagnostics_metrics_emit_nothing_when_registry_disabled)
 }
 
 // -----------------------------------------------------------------
-// Sync-state diagnostics (WP-A2).
+// Sync-state diagnostics.
 //
 // Asserts the EXACT values and label shapes of the five sync-state signals:
 //   state_changes_total{from,to}    NetworkOPsImp::setMode
@@ -1239,7 +1239,8 @@ TEST(MetricMacros, stall_events_counter_observes_exact_cumulative_count)
         5);
 }
 
-// RUNTIME-DISABLED no-op proof for the counter half of WP-A2: with the registry
+// RUNTIME-DISABLED no-op proof for the counter half of the sync-state
+// diagnostics: with the registry
 // disabled, the setMode call site emits NOTHING -- no series for
 // state_changes_total, and meter() is never consulted, so not even an
 // instrument was created.
@@ -1268,7 +1269,7 @@ TEST(MetricMacros, state_changes_total_emits_nothing_when_registry_disabled)
 }
 
 // -----------------------------------------------------------------
-// Acquire + SHAMap sync diagnostics (WP-A3).
+// Acquire + SHAMap sync diagnostics.
 //
 // Asserts the EXACT values and label shapes of the five acquire signals:
 //   sync_acquire_source_total{source}      InboundLedger::init
@@ -1579,7 +1580,8 @@ TEST(MetricMacros, shamap_cache_hit_rate_gauge_normalizes_to_unit_fraction)
     EXPECT_NEAR(opentelemetry::nostd::get<double>(fullLast.value_), 1.0, 1e-6);
 }
 
-// RUNTIME-DISABLED no-op proof for the counter half of WP-A3: with the registry
+// RUNTIME-DISABLED no-op proof for the counter half of the acquire
+// diagnostics: with the registry
 // disabled, all three acquire counters emit NOTHING -- no series at all, and
 // meter() is never consulted, so not even an instrument was created.
 TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
@@ -1618,7 +1620,7 @@ TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
 }
 
 // -----------------------------------------------------------------
-// JobQueue saturation diagnostics (WP-A4).
+// JobQueue saturation diagnostics.
 //
 // Asserts the EXACT values and label shapes of the pool-wide gauge:
 //   jobq_saturation{metric}         MetricsRegistry::registerJobQueueSaturationGauge
@@ -1703,7 +1705,7 @@ TEST(MetricMacros, jobq_saturation_gauge_observes_exact_pool_exhaustion_values)
 }
 
 // -----------------------------------------------------------------
-// Peer-supply, slot-census and amendment-countdown diagnostics (WP-A7).
+// Peer-supply, slot-census and amendment-countdown diagnostics.
 //
 // Asserts the EXACT values and label shapes of the three gauges and the four
 // counters:
@@ -1808,7 +1810,7 @@ TEST(MetricMacros, peer_ledger_supply_gauge_names_a_gap_no_peer_can_fill)
 
 // The complementary reading to the gap above: a healthy peer set where every
 // reporting peer covers the next needed sequence, so waiting WILL finish the
-// sync. Split from the gap test to keep each under the length limit.
+// sync. Kept separate from the gap test so each stays under the length limit.
 TEST(MetricMacros, peer_ledger_supply_gauge_reads_zero_window_as_unknown)
 {
     CollectingProvider const provider;
@@ -2132,7 +2134,7 @@ TEST(MetricMacros, amendment_block_gauge_observes_exact_countdown_and_sentinel)
 }
 
 // The clamp at the bottom of the countdown, and the deliberate absence of an
-// amendment-id label. Split out of the test above to keep each function inside
+// amendment-id label. Kept separate from the test above so each function stays inside
 // the length limit; it re-establishes the same callback shape.
 TEST(MetricMacros, amendment_block_gauge_clamps_past_due_and_carries_no_amendment_id)
 {
@@ -2293,7 +2295,7 @@ TEST(MetricMacros, peer_disconnect_total_keys_series_on_reason_and_direction_pai
 
 // The `direction` label must genuinely participate in the series key, not just
 // ride along: the SAME reason seen on both directions has to produce two series
-// of 1 rather than one series of 2. Split out of the test above to keep each
+// of 1 rather than one series of 2. Kept separate from the test above so each
 // function inside the length limit.
 TEST(MetricMacros, peer_disconnect_total_does_not_merge_directions_for_one_reason)
 {
@@ -2551,7 +2553,8 @@ TEST(MetricMacros, ledger_jump_total_accumulates_on_one_unlabelled_series)
     EXPECT_EQ(counterValue(fourth, "ledger_jump_total", otel_sdk::PointAttributes{}), 4);
 }
 
-// RUNTIME-DISABLED no-op proof for all four WP-A7 counters: with the registry
+// RUNTIME-DISABLED no-op proof for all four peer and amendment counters: with
+// the registry
 // disabled, every one emits NOTHING -- no series at all, and meter() is never
 // consulted, so not even an instrument was created. Proves the isEnabled() gate
 // short-circuits BEFORE any SDK work, which is what makes these emits free on a
@@ -2599,7 +2602,7 @@ TEST(MetricMacros, sync_supply_counters_emit_nothing_when_registry_disabled)
 }
 
 // -----------------------------------------------------------------
-// WP-A6: back-fill and persistence sync diagnostics
+// Back-fill and persistence sync diagnostics
 // -----------------------------------------------------------------
 
 // Replay falling back to a full ledger acquire silently defeats the replay
@@ -2685,7 +2688,7 @@ TEST(MetricMacros, ledger_replay_outcome_counter_records_each_terminal_state_exa
     // the four above are real label values and not a catch-all.
     EXPECT_EQ(data.at("ledger_replay_outcome_total").count(attrs("outcome", "cancelled")), 0u);
 
-    // The two WP-A6 replay counters are separate instruments, so a fallback
+    // The two replay counters are separate instruments, so a fallback
     // never inflates an outcome total.
     EXPECT_EQ(data.count("ledger_replay_fallback_total"), 0u);
 }
@@ -2942,7 +2945,7 @@ TEST(MetricMacros, consensus_round_duration_emits_nothing_when_registry_disabled
 }
 
 // -----------------------------------------------------------------
-// WP-B5: per-sweep malloc_trim, and online_delete rotation writes
+// Per-sweep malloc_trim, and online_delete rotation writes
 //
 // Suspect 3. malloc_trim runs after EVERY cache sweep and its cost scales with
 // the resident heap, so a node with a large existing database pays a per-sweep
@@ -3270,7 +3273,7 @@ TEST(MetricMacros, rotation_copy_node_restore_accumulates_on_one_unlabelled_seri
     EXPECT_EQ(data.size(), 1u);
 }
 
-// RUNTIME-DISABLED no-op proof for all four WP-B5 push instruments. With the
+// RUNTIME-DISABLED no-op proof for all four push instruments. With the
 // registry disabled nothing is emitted -- total absence, not zero-valued series
 // -- and no macro ever asks for a meter.
 TEST(MetricMacros, sweep_and_rotation_metrics_emit_nothing_when_registry_disabled)

@@ -1884,15 +1884,14 @@ MetricsRegistry::registerUnlQuorumGauge()
 
                 // Validations required for a ledger to be fully validated.
                 // ValidatorList disables quorum by returning SIZE_MAX when too
-                // many publishers are unavailable. Casting that straight to
-                // int64_t would wrap to -1 and make the headroom
+                // many publishers are unavailable, so the raw value must not be
+                // cast to int64_t: it would wrap to -1 and make the headroom
                 // (trusted_keys - quorum) read positive on a node that can
-                // never validate, so report the disabled state as int64 max
-                // instead: headroom then goes strongly negative, which is the
-                // truthful signal.
+                // never validate.
                 auto const quorum = validators.quorum();
-                // A disabled quorum omits the series rather than publishing a
-                // sentinel. Both consumers of this gauge are timeseries panels
+                // A disabled quorum therefore omits the series rather than
+                // publishing a sentinel. Both consumers of this gauge are
+                // timeseries panels
                 // sharing one axis with trusted_keys, so a huge value would
                 // flatten the key line to the baseline and hide the outage it
                 // was meant to signal. The boolean below carries the state, and
@@ -1952,7 +1951,7 @@ void
 MetricsRegistry::registerSyncStateGauge()
 {
     // --- Sync diagnostics: why a fresh node is not FULL yet ---
-    // Four values that previously lived only in a log line or in server_info
+    // Four values otherwise visible only in a log line or in server_info
     // JSON. All four are cheap reads pulled on the ~10 s reader tick.
     syncStateGauge_ =
         meter_->CreateInt64ObservableGauge(metric::syncState, "Sync-pipeline health signals");
@@ -2334,10 +2333,11 @@ void
 MetricsRegistry::registerLedgerQuorumPublishGauge()
 {
     // --- Sync diagnostics: the quorum gate and the publish pipeline ---
-    // The last two stages of a fresh sync, and the two whose failures were
-    // invisible: a node can hold every ledger it needs and still never declare
-    // one validated (quorum short), or validate correctly and never publish
-    // (pipeline behind). Both used to be trace-log-only or not derivable at all.
+    // The last two stages of a fresh sync, and the two whose failures are
+    // hardest to see: a node can hold every ledger it needs and still never
+    // declare one validated (quorum short), or validate correctly and never
+    // publish (pipeline behind). The quorum shortfall is otherwise only a
+    // trace log line; the publish lag is not derivable from any other signal.
     ledgerQuorumPublishGauge_ = meter_->CreateInt64ObservableGauge(
         metric::ledgerQuorumPublish,
         "Pre-accept quorum gate and publish lag (tally vs quorum, first-validated, lag)");

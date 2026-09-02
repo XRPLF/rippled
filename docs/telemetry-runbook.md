@@ -3806,11 +3806,8 @@ correlated by node and time. Detail:
 
 ---
 
-Signal definitions:
+Signal definitions, and the index of instrument, emit site and panel:
 [telemetry-glossary.md](./telemetry-glossary.md) "Fresh-node sync diagnostics".
-Signal index (instrument, emit site, panel):
-[09-data-collection-reference.md](../OpenTelemetryPlan/09-data-collection-reference.md)
-"Fresh-node sync diagnostics".
 
 Note: rows 1-8 are native metrics, which are never sampled — unlike the
 span-derived (spanmetrics) series in row 9, they are always complete. An absent

@@ -31,7 +31,7 @@
  *  - Compile-time-disabled proof for the sync-diagnostics gauges: the whole
  *    async-gauge registration surface is compiled away, and a full disabled
  *    lifecycle never touches any ServiceRegistry service -- including the
- *    Overlay and AmendmentTable the WP-A7 gauges would read.
+ *    Overlay and AmendmentTable the peer and amendment gauges would read.
  *
  *  NOTE: These tests only exercise the no-op path (telemetry disabled).
  *  When XRPL_ENABLE_TELEMETRY is defined, MetricsRegistry.cpp pulls in
@@ -973,29 +973,29 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // could mean the mock is permissive rather than that no callback ran.
     EXPECT_THROW(mockApp_.getValidators(), std::logic_error);
     EXPECT_THROW(mockApp_.getTimeKeeper(), std::logic_error);
-    // The two services the WP-A2 sync-state signals read. sync_state needs both
+    // The two services the sync-state signals read. sync_state needs both
     // (NetworkOPs for the gate/duration/ledgers-behind, LoadManager for stall
     // seconds) and server_stall_events_total needs the second, so either one
     // firing would have thrown above.
     EXPECT_THROW(mockApp_.getOPs(), std::logic_error);
     EXPECT_THROW(mockApp_.getLoadManager(), std::logic_error);
-    // The two services the WP-A3 acquire signals read: sync_acquire polls the
+    // The two services the acquire signals read: sync_acquire polls the
     // in-flight acquire collection, shamap_cache_hit_rate polls the node
     // Family's tree-node cache. Neither was consulted above.
     EXPECT_THROW(mockApp_.getInboundLedgers(), std::logic_error);
     EXPECT_THROW(mockApp_.getNodeFamily(), std::logic_error);
-    // The service the WP-A4 job-queue gauge reads: jobq_saturation polls
+    // The service the job-queue gauge reads: jobq_saturation polls
     // getWorkerSaturation() on the JobQueue. Not consulted above, so the
     // gauge never took the JobQueue mutex on a telemetry-off build.
     EXPECT_THROW(mockApp_.getJobQueue(), std::logic_error);
-    // The service both WP-A7 peer gauges read: peer_ledger_supply polls
+    // The service both peer gauges read: peer_ledger_supply polls
     // getPeerLedgerSupply(), which walks the active-peer list, and
     // peerfinder_slot_census polls getSlotCensus(), which takes the PeerFinder
     // lock. Both go through the Overlay, so a single throw here proves neither
     // gauge walked the peer list nor took the PeerFinder lock on a
     // telemetry-off build.
     EXPECT_THROW(mockApp_.getOverlay(), std::logic_error);
-    // The service the WP-A7 amendment countdown reads: amendment_block polls
+    // The service the amendment countdown reads: amendment_block polls
     // firstUnsupportedExpected() on the AmendmentTable, which takes that
     // table's mutex. Not consulted above, so the countdown never ran. (Its
     // `warned` half reads NetworkOPs, already covered by the getOPs() check.)
@@ -1042,10 +1042,10 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     EXPECT_FALSE(disabledRequest.isEnabled());
 }
 
-// The `state_changes_total` counter no longer has a registry-owned wrapper
-// method: WP-A2 moved it to a labelled call-site macro in
-// NetworkOPsImp::setMode so it can carry {from,to}. This compile-time
-// assertion is the regression guard -- if someone reintroduces
+// The `state_changes_total` counter has no registry-owned wrapper method by
+// design: it is emitted from a labelled call-site macro in
+// NetworkOPsImp::setMode, which is the only place that knows {from,to}. This
+// compile-time assertion is the guard -- if someone adds
 // incrementStateChanges(), the unlabelled instrument would coexist with the
 // labelled one and Prometheus would carry two conflicting versions of the same
 // metric name.
