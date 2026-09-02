@@ -94,7 +94,7 @@ ln -s %{_bindir}/%{name} %{buildroot}/usr/local/bin/rippled
 %systemd_postun xrpld.service
 
 %files
-%dir %{_docdir}/%{name}
+%attr(0755,root,root) %dir %{_docdir}/%{name}
 %license %{_docdir}/%{name}/LICENSE.md
 %license %{_docdir}/%{name}/validator-keys-LICENSE
 %doc %{_docdir}/%{name}/README.md
