@@ -14,6 +14,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <boost/container/flat_set.hpp>
@@ -107,24 +108,35 @@ public:
     getJson(JsonOptions options, bool binary) const;
 
     /**
-     * Sign the transaction.
+     * Sign the transaction as its account.
+     *
      * @param publicKey The public key for signing.
      * @param secretKey The secret key for signing.
-     * @param signatureTarget Field in which to store the signature. If not
-     *     specified, the signature goes into the top level sfTxnSignature.
-     * @param prefix Prefix to insert before the serialized transaction when
-     *     hashing. Use signingPrefix to get the prefix that matches
-     *     signatureTarget.
+     */
+    void
+    sign(PublicKey const& publicKey, SecretKey const& secretKey);
+
+    /**
+     * Sign the transaction in one of its signature fields.
+     *
+     * The signature is bound to the role that made it, so it cannot be moved
+     * into another role.
+     *
+     * @param publicKey The public key for signing.
+     * @param secretKey The secret key for signing.
+     * @param role The role signing the transaction.
+     * @param rules The current ledger rules.
      */
     void
     sign(
         PublicKey const& publicKey,
         SecretKey const& secretKey,
-        std::optional<std::reference_wrapper<SField const>> signatureTarget = {},
-        HashPrefix prefix = HashPrefix::TxSign);
+        SignatureRole role,
+        Rules const& rules);
 
     /**
      * Check the signature.
+     *
      * @param rules The current ledger rules.
      * @return `true` if valid signature. If invalid, the error message string.
      */
@@ -174,17 +186,16 @@ public:
 private:
     /**
      * Check the signature.
+     *
      * @param rules The current ledger rules.
      * @param sigObject Reference to object that contains the signature fields.
      *     Will be *this more often than not.
-     * @param sigField Field that holds sigObject: nullptr when sigObject is
-     *     *this, otherwise the field of the alternate signature, such as
-     *     sfSponsorSignature. Determines the signing prefix, which binds the
-     *     signature to the role that made it.
+     * @param role The role that made the signature in sigObject. Determines
+     *     the signing prefix, which binds the signature to that role.
      * @return `true` if valid signature. If invalid, the error message string.
      */
     [[nodiscard]] std::expected<void, std::string>
-    checkSign(Rules const& rules, STObject const& sigObject, SField const* sigField) const;
+    checkSign(Rules const& rules, STObject const& sigObject, SignatureRole role) const;
 
     [[nodiscard]] std::expected<void, std::string>
     checkSingleSign(STObject const& sigObject, HashPrefix prefix) const;

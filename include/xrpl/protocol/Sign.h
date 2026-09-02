@@ -16,26 +16,53 @@
 namespace xrpl {
 
 /**
- * The hash prefix that binds a transaction signature to the role that made it:
- * the transaction itself, its counterparty, or its sponsor.
+ * The signature slots on a transaction.
  *
- * @param sigField Field holding the signature: nullptr (or an unseated
- * optional) for the top level signature, otherwise sfCounterpartySignature or
- * sfSponsorSignature.
+ * Each role signs different bytes, so a signature cannot be moved from the
+ * role that made it into another role. See signingPrefix.
+ */
+enum class SignatureRole {
+    /**
+     * The transaction's own signature, in sfTxnSignature or sfSigners.
+     */
+    Transaction,
+    /**
+     * The counterparty's signature, in sfCounterpartySignature.
+     */
+    Counterparty,
+    /**
+     * The sponsor's signature, in sfSponsorSignature.
+     */
+    Sponsor
+};
+
+/**
+ * The field that holds this role's signature.
+ *
+ * @return The signature field, or nullptr for SignatureRole::Transaction,
+ * whose signature lives at the top level of the transaction.
+ */
+[[nodiscard]] SField const*
+signatureField(SignatureRole role);
+
+/**
+ * The role that signs into the given field.
+ *
+ * @return The role, or an unseated optional if the field does not hold a
+ * transaction signature.
+ */
+[[nodiscard]] std::optional<SignatureRole>
+signatureRole(SField const& sigField);
+
+/**
+ * The hash prefix that binds a transaction signature to the role that made it.
+ *
+ * @param role The role making the signature.
  * @param multiSigning Whether the signature is a multi-signature.
  * @param rules The current ledger rules.
  */
 [[nodiscard]] HashPrefix
-signingPrefix(SField const* sigField, bool multiSigning, Rules const& rules);
-
-[[nodiscard]] inline HashPrefix
-signingPrefix(
-    std::optional<std::reference_wrapper<SField const>> sigField,
-    bool multiSigning,
-    Rules const& rules)
-{
-    return signingPrefix(sigField ? &sigField->get() : nullptr, multiSigning, rules);
-}
+signingPrefix(SignatureRole role, bool multiSigning, Rules const& rules);
 
 /**
  * Sign an STObject
@@ -76,15 +103,11 @@ verify(
 /**
  * Return a Serializer suitable for computing a multisigning TxnSignature.
  *
- * @param prefix Prefix to insert before the serialized object. Use
- * signingPrefix to get the prefix for a signature that goes into an
- * alternate field, such as sfSponsorSignature.
+ * @param prefix Prefix to insert before the serialized object. Get it from
+ * signingPrefix, so that the signature is bound to the role making it.
  */
 Serializer
-buildMultiSigningData(
-    STObject const& obj,
-    AccountID const& signingID,
-    HashPrefix prefix = HashPrefix::TxMultiSign);
+buildMultiSigningData(STObject const& obj, AccountID const& signingID, HashPrefix prefix);
 
 /**
  * Break the multi-signing hash computation into 2 parts for optimization.
@@ -100,7 +123,7 @@ buildMultiSigningData(
  *     signer's unique data.
  */
 Serializer
-startMultiSigningData(STObject const& obj, HashPrefix prefix = HashPrefix::TxMultiSign);
+startMultiSigningData(STObject const& obj, HashPrefix prefix);
 
 inline void
 finishMultiSigningData(AccountID const& signingID, Serializer& s)

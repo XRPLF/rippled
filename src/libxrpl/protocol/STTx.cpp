@@ -213,30 +213,35 @@ STTx::getSeqProxy() const
 }
 
 void
+STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
+{
+    auto const data = getSigningData(*this);
+
+    setFieldVL(sfTxnSignature, xrpl::sign(publicKey, secretKey, makeSlice(data)));
+    tid_ = getHash(HashPrefix::TransactionId);
+}
+
+void
 STTx::sign(
     PublicKey const& publicKey,
     SecretKey const& secretKey,
-    std::optional<std::reference_wrapper<SField const>> signatureTarget,
-    HashPrefix prefix)
+    SignatureRole role,
+    Rules const& rules)
 {
-    auto const data = getSigningData(*this, prefix);
+    auto const data = getSigningData(*this, signingPrefix(role, false, rules));
 
     auto const sig = xrpl::sign(publicKey, secretKey, makeSlice(data));
 
-    if (signatureTarget)
-    {
-        auto& target = peekFieldObject(*signatureTarget);
-        target.setFieldVL(sfTxnSignature, sig);
-    }
+    if (auto const target = signatureField(role))
+        peekFieldObject(*target).setFieldVL(sfTxnSignature, sig);
     else
-    {
         setFieldVL(sfTxnSignature, sig);
-    }
+
     tid_ = getHash(HashPrefix::TransactionId);
 }
 
 std::expected<void, std::string>
-STTx::checkSign(Rules const& rules, STObject const& sigObject, SField const* sigField) const
+STTx::checkSign(Rules const& rules, STObject const& sigObject, SignatureRole role) const
 {
     try
     {
@@ -246,7 +251,7 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject, SField const* sig
 
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
         bool const multiSigning = signingPubKey.empty();
-        auto const prefix = signingPrefix(sigField, multiSigning, rules);
+        auto const prefix = signingPrefix(role, multiSigning, rules);
         return multiSigning ? checkMultiSign(rules, sigObject, prefix)
                             : checkSingleSign(sigObject, prefix);
     }
@@ -259,20 +264,20 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject, SField const* sig
 std::expected<void, std::string>
 STTx::checkSign(Rules const& rules) const
 {
-    if (auto const ret = checkSign(rules, *this, nullptr); !ret)
+    if (auto const ret = checkSign(rules, *this, SignatureRole::Transaction); !ret)
         return ret;
 
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
-        if (auto const ret = checkSign(rules, counterSig, &sfCounterpartySignature); !ret)
+        if (auto const ret = checkSign(rules, counterSig, SignatureRole::Counterparty); !ret)
             return std::unexpected("Counterparty: " + ret.error());
     }
 
     if (isFieldPresent(sfSponsorSignature))
     {
         auto const sponsorSignatureObj = getFieldObject(sfSponsorSignature);
-        if (auto const ret = checkSign(rules, sponsorSignatureObj, &sfSponsorSignature); !ret)
+        if (auto const ret = checkSign(rules, sponsorSignatureObj, SignatureRole::Sponsor); !ret)
             return std::unexpected("Sponsor: " + ret.error());
     }
 

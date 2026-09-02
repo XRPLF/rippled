@@ -25,7 +25,10 @@ Sig::operator()(Env&, JTx& jt) const
             auto& sigObject = subField ? jtx[*subField] : jtx.jv;
 
             jtx::sign(
-                jtx.jv, account, sigObject, signingPrefix(subField, false, env.current()->rules()));
+                jtx.jv,
+                account,
+                sigObject,
+                signingPrefix(jtx::signatureRole(subField), false, env.current()->rules()));
         };
         if (subField_ == nullptr)
         {

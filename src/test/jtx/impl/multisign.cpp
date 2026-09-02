@@ -64,7 +64,8 @@ Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
-        auto const prefix = signingPrefix(subField, true, env.current()->rules());
+        auto const prefix =
+            signingPrefix(jtx::signatureRole(subField), true, env.current()->rules());
         // Where to put the signature. Supports sfCounterPartySignature and
         // sfSponsorSignature.
         auto& sigObject = subField ? jtx[*subField] : jtx.jv;

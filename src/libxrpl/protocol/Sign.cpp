@@ -1,6 +1,5 @@
 #include <xrpl/protocol/Sign.h>
 
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -12,27 +11,59 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <optional>
+
 namespace xrpl {
 
+SField const*
+signatureField(SignatureRole role)
+{
+    switch (role)
+    {
+        case SignatureRole::Counterparty:
+            return &sfCounterpartySignature;
+        case SignatureRole::Sponsor:
+            return &sfSponsorSignature;
+        case SignatureRole::Transaction:
+            break;
+    }
+    return nullptr;
+}
+
+std::optional<SignatureRole>
+signatureRole(SField const& sigField)
+{
+    if (sigField == sfCounterpartySignature)
+        return SignatureRole::Counterparty;
+    if (sigField == sfSponsorSignature)
+        return SignatureRole::Sponsor;
+    return std::nullopt;
+}
+
+// Signature validity depends on fixCleanup3_4_0, while checkValidity caches
+// its result by transaction ID alone (see kSfSiggood in tx/apply.cpp, held for
+// 300 seconds). Only a transaction that carries sfCounterpartySignature or
+// sfSponsorSignature is affected, and such a transaction is temDISABLED until
+// featureLendingProtocol or featureSponsor activates (Transactor::preflight1),
+// which must happen after this amendment. If that order ever changes, the
+// cached flags must record which prefixes verified the signature.
 HashPrefix
-signingPrefix(SField const* sigField, bool multiSigning, Rules const& rules)
+signingPrefix(SignatureRole role, bool multiSigning, Rules const& rules)
 {
     // Before fixCleanup3_4_0 every signature on a transaction covered the same
     // bytes, so a signature could be moved from one role to another.
-    if (sigField != nullptr && rules.enabled(fixCleanup3_4_0))
+    if (rules.enabled(fixCleanup3_4_0))
     {
-        if (*sigField == sfCounterpartySignature)
+        switch (role)
         {
-            return multiSigning ? HashPrefix::CounterpartyTxMultiSign
-                                : HashPrefix::CounterpartyTxSign;
+            case SignatureRole::Counterparty:
+                return multiSigning ? HashPrefix::CounterpartyTxMultiSign
+                                    : HashPrefix::CounterpartyTxSign;
+            case SignatureRole::Sponsor:
+                return multiSigning ? HashPrefix::SponsorTxMultiSign : HashPrefix::SponsorTxSign;
+            case SignatureRole::Transaction:
+                break;
         }
-        if (*sigField == sfSponsorSignature)
-            return multiSigning ? HashPrefix::SponsorTxMultiSign : HashPrefix::SponsorTxSign;
-
-        // LCOV_EXCL_START
-        if (*sigField != sfTransaction)
-            UNREACHABLE("xrpl::signingPrefix : unknown signature field");
-        // LCOV_EXCL_STOP
     }
 
     return multiSigning ? HashPrefix::TxMultiSign : HashPrefix::TxSign;

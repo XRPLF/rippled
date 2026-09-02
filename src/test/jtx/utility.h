@@ -6,7 +6,9 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Sign.h>
 
 #include <stdexcept>
 #include <string>
@@ -35,7 +37,17 @@ STObject
 parse(json::Value const& jv);
 
 /**
+ * The role that signs into an optional signature subfield.
+ *
+ * @param subField The signature field, or nullptr for the transaction's own
+ * signature. Throws if the field does not hold a transaction signature.
+ */
+SignatureRole
+signatureRole(SField const* subField);
+
+/**
  * Sign automatically into a specific Json field of the jv object.
+ *
  * @param prefix Prefix to insert before the serialized transaction when
  * hashing. Use signingPrefix to get the prefix that matches the field that
  * holds sigObject.

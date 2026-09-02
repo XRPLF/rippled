@@ -36,6 +36,16 @@ parse(json::Value const& jv)
     return std::move(*p.object);
 }
 
+SignatureRole
+signatureRole(SField const* subField)
+{
+    if (subField == nullptr)
+        return SignatureRole::Transaction;
+    if (auto const role = xrpl::signatureRole(*subField))
+        return *role;
+    Throw<std::runtime_error>(subField->getName() + " does not hold a transaction signature.");
+}
+
 void
 sign(json::Value& jv, Account const& account, json::Value& sigObject, HashPrefix prefix)
 {

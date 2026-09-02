@@ -96,36 +96,47 @@ public:
 
         // The prefixes are protocol constants. Spell them out so that a typo
         // in a prefix character fails here, and not in a downstream library.
-        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::TxSign) == 0x53545800);
-        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::TxMultiSign) == 0x534D5400);
-        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::CounterpartyTxSign) == 0x43505400);
-        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::CounterpartyTxMultiSign) == 0x43504D00);
-        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::SponsorTxSign) == 0x53504E00);
-        BEAST_EXPECT(safeCast<std::uint32_t>(HashPrefix::SponsorTxMultiSign) == 0x53504D00);
+        static_assert(safeCast<std::uint32_t>(HashPrefix::TxSign) == 0x53545800);
+        static_assert(safeCast<std::uint32_t>(HashPrefix::TxMultiSign) == 0x534D5400);
+        static_assert(safeCast<std::uint32_t>(HashPrefix::CounterpartyTxSign) == 0x43505400);
+        static_assert(safeCast<std::uint32_t>(HashPrefix::CounterpartyTxMultiSign) == 0x43504D00);
+        static_assert(safeCast<std::uint32_t>(HashPrefix::SponsorTxSign) == 0x53504E00);
+        static_assert(safeCast<std::uint32_t>(HashPrefix::SponsorTxMultiSign) == 0x53504D00);
 
         RulesFixture const r;
 
         // Every role gets its own prefix once the fix is enabled.
-        BEAST_EXPECT(signingPrefix(nullptr, false, r.fixed) == HashPrefix::TxSign);
-        BEAST_EXPECT(signingPrefix(nullptr, true, r.fixed) == HashPrefix::TxMultiSign);
         BEAST_EXPECT(
-            signingPrefix(&sfCounterpartySignature, false, r.fixed) ==
+            signingPrefix(SignatureRole::Transaction, false, r.fixed) == HashPrefix::TxSign);
+        BEAST_EXPECT(
+            signingPrefix(SignatureRole::Transaction, true, r.fixed) == HashPrefix::TxMultiSign);
+        BEAST_EXPECT(
+            signingPrefix(SignatureRole::Counterparty, false, r.fixed) ==
             HashPrefix::CounterpartyTxSign);
         BEAST_EXPECT(
-            signingPrefix(&sfCounterpartySignature, true, r.fixed) ==
+            signingPrefix(SignatureRole::Counterparty, true, r.fixed) ==
             HashPrefix::CounterpartyTxMultiSign);
         BEAST_EXPECT(
-            signingPrefix(&sfSponsorSignature, false, r.fixed) == HashPrefix::SponsorTxSign);
+            signingPrefix(SignatureRole::Sponsor, false, r.fixed) == HashPrefix::SponsorTxSign);
         BEAST_EXPECT(
-            signingPrefix(&sfSponsorSignature, true, r.fixed) == HashPrefix::SponsorTxMultiSign);
+            signingPrefix(SignatureRole::Sponsor, true, r.fixed) == HashPrefix::SponsorTxMultiSign);
 
         // Before the fix, every role signs the same bytes.
-        for (SField const* sigField :
-             {static_cast<SField const*>(nullptr), &sfCounterpartySignature, &sfSponsorSignature})
+        for (auto const role :
+             {SignatureRole::Transaction, SignatureRole::Counterparty, SignatureRole::Sponsor})
         {
-            BEAST_EXPECT(signingPrefix(sigField, false, r.legacy) == HashPrefix::TxSign);
-            BEAST_EXPECT(signingPrefix(sigField, true, r.legacy) == HashPrefix::TxMultiSign);
+            BEAST_EXPECT(signingPrefix(role, false, r.legacy) == HashPrefix::TxSign);
+            BEAST_EXPECT(signingPrefix(role, true, r.legacy) == HashPrefix::TxMultiSign);
         }
+
+        // Each role's field, and each signature field's role, agree.
+        BEAST_EXPECT(signatureField(SignatureRole::Transaction) == nullptr);
+        BEAST_EXPECT(*signatureField(SignatureRole::Counterparty) == sfCounterpartySignature);
+        BEAST_EXPECT(*signatureField(SignatureRole::Sponsor) == sfSponsorSignature);
+        BEAST_EXPECT(signatureRole(sfCounterpartySignature) == SignatureRole::Counterparty);
+        BEAST_EXPECT(signatureRole(sfSponsorSignature) == SignatureRole::Sponsor);
+        BEAST_EXPECT(!signatureRole(sfBook));
+        BEAST_EXPECT(!signatureRole(sfSigner));
 
         // The bytes signed by an ordinary transaction must not move. Both the
         // single- and the multi-signing data are pinned, and neither depends
@@ -134,7 +145,7 @@ public:
         for (Rules const& rules : {r.legacy, r.fixed})
         {
             Serializer single;
-            single.add32(signingPrefix(nullptr, false, rules));
+            single.add32(signingPrefix(SignatureRole::Transaction, false, rules));
             tx.addWithoutSigningFields(single);
             // 53545800 STX prefix, 120003 AccountSet, 2400000001 Sequence,
             // 68400000000000000A Fee, 7321... SigningPubKey, 8114... Account.
@@ -152,8 +163,8 @@ public:
 
             auto const signer = calcAccountID(
                 generateKeyPair(KeyType::Secp256k1, generateSeed("multisigner")).first);
-            Serializer const multi =
-                buildMultiSigningData(tx, signer, signingPrefix(nullptr, true, rules));
+            Serializer const multi = buildMultiSigningData(
+                tx, signer, signingPrefix(SignatureRole::Transaction, true, rules));
 
             // The multi-signing data is the single-signing data with a
             // different prefix and the signer's account appended.
@@ -1722,7 +1733,7 @@ public:
         auto const id2 = calcAccountID(kp2.first);
 
         // Get the stream of the transaction for use in multi-signing.
-        Serializer const s = buildMultiSigningData(txn, id2);
+        Serializer const s = buildMultiSigningData(txn, id2, HashPrefix::TxMultiSign);
 
         auto const saMultiSignature = sign(kp2.first, kp2.second, s.slice());
 
