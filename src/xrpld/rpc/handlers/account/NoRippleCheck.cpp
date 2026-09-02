@@ -52,8 +52,6 @@ fillTransaction(
 json::Value
 doNoRippleCheck(RPC::JsonContext& context)
 {
-    context.loadType = Resource::kFeeMediumBurdenRpc;
-
     auto const& params(context.params);
     if (!params.isMember(jss::account))
         return RPC::missingFieldError("account");
@@ -185,6 +183,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         return false;
     });
 
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 
