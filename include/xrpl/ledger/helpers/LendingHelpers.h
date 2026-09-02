@@ -702,15 +702,14 @@ loanMakePayment(
 //------------------------------------------------------------------------------
 
 /**
- * Verify the loan asset can be held and that none of the accounts involved in
- * disbursing the loan are frozen in a way that would block the fund flows.
- * This function Implements items 8-12 of XLS-66 spec, section 3.8.5.2.
+ * Verify that none of the accounts involved in disbursing the loan are frozen
+ * in a way that would block the fund flows.
  *
- * Checks, in order: that a holding for the asset can be created, that the vault
- * pseudo-account (the sender) is not frozen, that the broker pseudo-account (a
- * fallback fee recipient) is not deep frozen, that the borrower (a future payer
- * and fund recipient) is not frozen, and that the broker owner (a fee
- * recipient) is not deep frozen.
+ * Checks, in order: global freeze, the vault pseudo-account (the sender), the
+ * broker pseudo-account (a fallback fee recipient), the borrower (a future
+ * payer and fund recipient), and the broker owner (a fee recipient). Holding
+ * creation checks remain in the callers because existing holdings are a no-op
+ * after fixCleanup3_4_0.
  */
 [[nodiscard]] TER
 checkLoanFreeze(

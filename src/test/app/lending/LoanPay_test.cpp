@@ -1447,9 +1447,9 @@ private:
             env.close();
 
             PrettyAsset const usd{issuer["USD"]};
-            env(trust(alice, usd(100'000)));
+            env(trust(alice, usd(10'000'000)));
             env.close();
-            env(pay(issuer, alice, usd(50'000)));
+            env(pay(issuer, alice, usd(2'000'000)));
             env.close();
 
             auto const broker = createVaultAndBroker(env, usd, alice);

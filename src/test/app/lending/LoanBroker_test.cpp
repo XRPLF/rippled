@@ -478,7 +478,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             }
 
             // no-op
-            env(set(alice), kLoanBrokerId(keylet.key));
+            env(set(alice, vault.vaultID), kLoanBrokerId(keylet.key));
             env.close();
 
             // Make modifications to the broker
@@ -495,7 +495,10 @@ class LoanBroker_test : public beast::unit_test::Suite
             // Verify that fields get removed when set to default values
             // Debt maximum: explicit 0
             // Data: explicit empty
-            env(set(alice), kLoanBrokerId(broker->key()), kDebtMaximum(Number(0)), kData(""));
+            env(set(alice, vault.vaultID),
+                kLoanBrokerId(broker->key()),
+                kDebtMaximum(Number(0)),
+                kData(""));
             env.close();
 
             // Check the updated fields
@@ -754,25 +757,26 @@ class LoanBroker_test : public beast::unit_test::Suite
                         keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
 
                     // fields that can't be changed
-
                     // LoanBrokerID
-                    env(set(alice), kLoanBrokerId(nextKeylet.key), Ter(tecNO_ENTRY));
-                    // VaultID (rejected in preflight when amendment is active)
-                    env(set(alice, nextKeylet.key), kLoanBrokerId(broker->key()), Ter(temINVALID));
+                    env(set(alice, vault.vaultID), kLoanBrokerId(nextKeylet.key), Ter(tecNO_ENTRY));
+                    // VaultID
+                    env(set(alice, nextKeylet.key), kLoanBrokerId(broker->key()), Ter(tecNO_ENTRY));
                     // Owner
-                    env(set(evan), kLoanBrokerId(broker->key()), Ter(tecNO_PERMISSION));
+                    env(set(evan, vault.vaultID),
+                        kLoanBrokerId(broker->key()),
+                        Ter(tecNO_PERMISSION));
                     // ManagementFeeRate
-                    env(set(alice),
+                    env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kManagementFeeRate(kMaxManagementFeeRate),
                         Ter(temINVALID));
                     // CoverRateMinimum
-                    env(set(alice),
+                    env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kCoverRateMinimum(kMaxManagementFeeRate),
                         Ter(temINVALID));
                     // CoverRateLiquidation
-                    env(set(alice),
+                    env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kCoverRateLiquidation(kMaxManagementFeeRate),
                         Ter(temINVALID));
@@ -780,20 +784,20 @@ class LoanBroker_test : public beast::unit_test::Suite
                     // fields that can be changed
                     testData = "Test Data 1234";
                     // Bad data: too long
-                    env(set(alice),
+                    env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kData(std::string(kMaxDataPayloadLength + 1, 'W')),
                         Ter(temINVALID));
 
                     // Bad debt maximum
-                    env(set(alice),
+                    env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kDebtMaximum(Number(-175, -1)),
                         Ter(temINVALID));
                     Number debtMax{175, -1};
                     if (vault.asset.integral())
                     {
-                        env(set(alice),
+                        env(set(alice, vault.vaultID),
                             kLoanBrokerId(broker->key()),
                             kData(testData),
                             kDebtMaximum(debtMax),
@@ -801,7 +805,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                         roundToAsset(vault.asset, debtMax);
                     }
                     // Data & Debt maximum
-                    env(set(alice),
+                    env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kData(testData),
                         kDebtMaximum(debtMax));
@@ -847,7 +851,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 },
                 [&](SLE::const_ref broker) {
                     // Reset Data & Debt maximum to default values
-                    env(set(alice),
+                    env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kData(""),
                         kDebtMaximum(Number(0)));
@@ -922,6 +926,17 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(jv, Ter(temINVALID));
             // zero broker ID
             jv[sfLoanBrokerID] = to_string(uint256{});
+            // needs a flag to distinguish the parsed STTx from the prior
+            // test
+            env(jv, Txflags(tfFullyCanonicalSig), Ter(temINVALID));
+        };
+        auto testZeroVaultID = [&](auto&& getTxJv) {
+            auto jv = getTxJv();
+            // empty broker ID
+            jv[sfVaultID] = "";
+            env(jv, Ter(temINVALID));
+            // zero broker ID
+            jv[sfVaultID] = to_string(uint256{});
             // needs a flag to distinguish the parsed STTx from the prior
             // test
             env(jv, Txflags(tfFullyCanonicalSig), Ter(temINVALID));
@@ -1059,8 +1074,13 @@ class LoanBroker_test : public beast::unit_test::Suite
         if (brokerTest == LoanBrokerTest::Set)
         {
             // preflight: temINVALID (empty/zero broker id)
-            testZeroBrokerID(
-                [&]() { return env.json(set(alice), kLoanBrokerId(brokerKeylet.key)); });
+            testZeroBrokerID([&]() {
+                return env.json(set(alice, vaultInfo.vaultID), kLoanBrokerId(brokerKeylet.key));
+            });
+            // preflight: temINVALID (empty/zero vault id)
+            testZeroVaultID([&]() {
+                return env.json(set(alice, vaultInfo.vaultID), kLoanBrokerId(brokerKeylet.key));
+            });
 
             if (asset.holds<Issue>())
             {
@@ -1414,7 +1434,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         BEAST_EXPECT(broker->at(sfDebtTotal) == 50);
         auto debtTotal = broker->at(sfDebtTotal);
 
-        auto tx2 = set(alice);
+        auto tx2 = set(alice, vaultInfo.vaultID);
         tx2[sfLoanBrokerID] = to_string(brokerKeylet.key);
         tx2[sfDebtMaximum] = debtTotal - 1;
         env(tx2, Ter(tecLIMIT_EXCEEDED));
@@ -3090,8 +3110,19 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(pay(issuer, alice, asset(100'000)));
             env.close();
 
-            auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
-            env(tx);
+            auto const vaultKeylet = [&]() {
+                if (env.enabled(featureLendingProtocolV1_1))
+                {
+                    auto [tx, keylet, subscriptionDate] =
+                        vault.createClosedEnded({.owner = alice, .asset = asset});
+                    env(tx);
+                    return keylet;
+                }
+
+                auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+                env(tx);
+                return keylet;
+            }();
             env.close();
 
             env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));

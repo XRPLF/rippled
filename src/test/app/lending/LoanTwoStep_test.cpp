@@ -508,7 +508,18 @@ private:
                 BEAST_EXPECT(loan->at(sfPaymentRemaining) == payTotal);
             }
 
-            // LoanManage: impair then unimpair.
+            // A regular periodic payment succeeds after StartDate.
+            env.close(NetClock::time_point{NetClock::duration{startDate}} + 30s);
+            env(pay(borrower, loanKeylet.key, broker.asset(30)));
+            env.close();
+            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                BEAST_EXPECT(loan->at(sfPaymentRemaining) < payTotal);
+
+            // LoanManage: once the next payment is late, impair then unimpair.
+            auto const nextPaymentDueDate = env.le(loanKeylet)->at(sfNextPaymentDueDate);
+            env.close(
+                NetClock::time_point{NetClock::duration{nextPaymentDueDate}} +
+                std::chrono::seconds{1});
             env(manage(lender, loanKeylet.key, tfLoanImpair));
             env.close();
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
@@ -519,16 +530,9 @@ private:
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
                 BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
 
-            // LoanPay: a regular periodic payment succeeds, then the borrower
-            // clears the remainder with tfLoanFullPayment. Advance just past
-            // StartDate but well within the first payment interval
-            // (payInterval = 200 s), otherwise the pay would be late and
-            // require tfLoanLatePayment.
-            env.close(NetClock::time_point{NetClock::duration{startDate}} + 30s);
-            env(pay(borrower, loanKeylet.key, broker.asset(30)));
+            // Catch up the payment that made the loan eligible for impairment.
+            env(pay(borrower, loanKeylet.key, broker.asset(400), tfLoanLatePayment));
             env.close();
-            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                BEAST_EXPECT(loan->at(sfPaymentRemaining) < payTotal);
 
             // A generous upper bound (2x principal) clears principal + interest.
             env(pay(borrower, loanKeylet.key, broker.asset(400), tfLoanFullPayment));
@@ -1333,8 +1337,17 @@ private:
             env(fclear(issuer, asfDefaultRipple));
             env.close();
 
-            env(accept(borrower, loanKeylet.key), Ter(terNO_RIPPLE));
-            expectStillPending(env, loanKeylet);
+            TER const expected = features[fixCleanup3_4_0] ? TER{tesSUCCESS} : TER{terNO_RIPPLE};
+            env(accept(borrower, loanKeylet.key), Ter(expected));
+            if (isTesSuccess(expected))
+            {
+                if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                    BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+            }
+            else
+            {
+                expectStillPending(env, loanKeylet);
+            }
         }
 
         {
@@ -1677,7 +1690,7 @@ private:
             Number const debtAfterL1 = brokerL1->at(sfDebtTotal);
 
             // Tighten DebtMaximum to exactly L1's DebtTotal.
-            env(jtx::loan_broker::set(lender, broker.vaultID),
+            env(jtx::loan_broker::set(lender),
                 jtx::loan_broker::kLoanBrokerId(broker.brokerID),
                 jtx::loan_broker::kDebtMaximum(debtAfterL1));
             env.close();

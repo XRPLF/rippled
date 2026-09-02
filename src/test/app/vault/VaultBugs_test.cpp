@@ -1918,8 +1918,9 @@ private:
         env.close();
 
         Vault const vault{env};
-        auto const [createTx, vaultKeylet, subscriptionDate] =
+        auto [createTx, vaultKeylet, subscriptionDate] =
             vault.createClosedEnded({.owner = owner, .asset = asset, .subscriptionOffset = 60s});
+        createTx[sfScale] = 0;
         env(createTx);
         env.close();
 
@@ -2821,369 +2822,35 @@ private:
     }
 
 public:
-}
-
-// Bug 1: a sponsored XRP VaultWithdraw to a distinct destination is
-// rejected because the vault invariant treats the holder's touched
-// but economically unchanged AccountRoot as a second payout
-// recipient. Sequence/ticket processing still touches the holder
-// while the sponsor pays the fee, so the holder's XRP delta is
-// present-zero and is not normalized away. If this happens on the
-// last Subscription ledger of a closed-ended vault, the holder
-// cannot retry until Redemption (tecTOO_SOON during Investment).
-//
-// Fixed by ValidVault::deltaAssetsForParty always collapsing an
-// economically-zero XRP delta to absence, regardless of who paid the
-// fee.
-void
-testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient()
-{
-    using namespace test::jtx;
-
-    auto runScenario = [this](FeatureBitset features, TER expected) {
-        Env env{*this, features};
-        Account const owner{"owner"};
-        Account const holder{"holder"};
-        Account const destination{"destination"};
-        Account const sponsor{"sponsor"};
-        env.fund(XRP(10'000), owner, holder, destination, sponsor);
-        env.close();
-
-        constexpr std::uint32_t investmentPeriod = 14u * 24u * 60u * 60u;
-        auto const [vault, vaultKeylet, subscriptionDate, redemptionDate] =
-            makeClosedEndedVault(env, owner, xrpIssue(), 120u, investmentPeriod);
-        BEAST_EXPECT(redemptionDate - subscriptionDate == investmentPeriod);
-
-        env(vault.deposit(
-            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
-        env.close();
-
-        // Inclusive SubscriptionDate boundary: still Subscription, so an
-        // ordinary withdrawal is allowed.
-        closeToTime(env, tp{d{subscriptionDate}});
-
-        auto const vaultBefore = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(vaultBefore))
-            return;
-        auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
-        auto const holderBalanceBefore = env.balance(holder);
-        auto const destinationBalanceBefore = env.balance(destination);
-        auto const sponsorBalanceBefore = env.balance(sponsor);
-        auto const fee = env.current()->fees().base;
-
-        auto withdraw = vault.withdraw(
-            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
-        withdraw[sfDestination] = destination.human();
-        env(withdraw,
-            Fee(fee),
-            sponsor::As(sponsor, spfSponsorFee),
-            Sig(sfSponsorSignature, sponsor),
-            Ter(expected));
-        env.close();
-
-        auto const vaultAfter = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(vaultAfter))
-            return;
-        BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
-
-        if (expected == tesSUCCESS)
-        {
-            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
-            BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
-            BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
-            return;
-        }
-
-        // Invariant rollback: the payout and share burn are undone, but
-        // sequence processing and the sponsored fee charge remain.
-        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
-        BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
-        BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore);
-
-        // Once the ledger advances into Investment, the same holder
-        // cannot retry until Redemption.
-        auto retry = vault.withdraw(
-            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
-        retry[sfDestination] = destination.human();
-        env(retry, Ter(tecTOO_SOON));
-    };
-
-    testcase(
-        "bug: sponsored XRP withdrawal to a distinct destination misreads a "
-        "touched-but-zero sender delta as a second recipient "
-        "(pre-fixCleanup3_4_0)");
-    runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
-
-    testcase(
-        "bug: sponsored XRP withdrawal to a distinct destination succeeds "
-        "(post-fixCleanup3_4_0)");
-    runScenario(all_, tesSUCCESS);
-}
-
-// Bug 2: a co-signed fee sponsor named as the withdrawal's own
-// destination pays its fee from the same AccountRoot it is paid into,
-// so its net XRP delta is (payout - fee). The invariant never fee-
-// corrected the destination side at all, so this always failed the
-// equal-amount check against the vault's outflow (payout).
-//
-// Fixed by ValidVault::deltaAssetsForParty adding the fee back onto
-// whichever inspected party's AccountRoot actually paid it -- the
-// sender, or a distinct destination -- not just the sender.
-void
-testBugSponsorAsDestinationFeeMisappliedToPayout()
-{
-    using namespace test::jtx;
-
-    auto runScenario = [this](FeatureBitset features, TER expected) {
-        Env env{*this, features};
-        Account const owner{"owner"};
-        Account const holder{"holder"};
-        Account const sponsor{"sponsor"};
-        env.fund(XRP(10'000), owner, holder, sponsor);
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit(
-            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
-        env.close();
-
-        auto const vaultBefore = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(vaultBefore))
-            return;
-        auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
-        auto const sponsorBalanceBefore = env.balance(sponsor);
-        auto const fee = env.current()->fees().base;
-
-        // The sponsor both receives the withdrawal (as sfDestination)
-        // and pays its own fee (co-signed) from the same AccountRoot.
-        auto withdraw = vault.withdraw(
-            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
-        withdraw[sfDestination] = sponsor.human();
-        env(withdraw,
-            Fee(fee),
-            sponsor::As(sponsor, spfSponsorFee),
-            Sig(sfSponsorSignature, sponsor),
-            Ter(expected));
-        env.close();
-
-        auto const vaultAfter = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(vaultAfter))
-            return;
-
-        if (expected == tesSUCCESS)
-        {
-            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
-            // Paid the withdrawal, then separately debited for the fee
-            // it chose to cover; net effect is payout minus fee.
-            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore + XRP(100) - fee);
-            return;
-        }
-
-        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
-        BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
-    };
-
-    testcase(
-        "bug: co-signed sponsor named as withdrawal destination has its "
-        "own fee debit misread as breaking the payout equality "
-        "(pre-fixCleanup3_4_0)");
-    runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
-
-    testcase(
-        "bug: co-signed sponsor named as withdrawal destination succeeds "
-        "(post-fixCleanup3_4_0)");
-    runScenario(all_, tesSUCCESS);
-}
-
-// Pre-funded fee sponsorship draws the fee from ltSponsorship.sfFeeAmount,
-// so feePayerAccountRoot must return nullopt rather than the sponsor's
-// AccountRoot. A bystander sponsor leaves that branch unexercised: the
-// result is only consulted by deltaAssetsForParty via `payer && *payer ==
-// id`. Naming the sponsor as sfDestination makes the early return
-// load-bearing -- returning the sponsor's id instead of nullopt would add
-// the fee back onto a balance that never paid it, and the equal-amount
-// check against the vault outflow would fail.
-//
-// Contrast testBugSponsorAsDestinationFeeMisappliedToPayout, where the
-// sponsor co-signs and so really does pay from its own AccountRoot.
-void
-testPrefundedFeeWithdraw()
-{
-    using namespace test::jtx;
-
-    auto runScenario = [this](
-                           FeatureBitset features, TER expected, bool const sponsorIsDestination) {
-        Env env{*this, features};
-        Account const owner{"owner"};
-        Account const holder{"holder"};
-        Account const destination{"destination"};
-        Account const sponsor{"sponsor"};
-        env.fund(XRP(10'000), owner, holder, destination, sponsor);
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit(
-            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
-        env.close();
-
-        auto const fee = env.current()->fees().base;
-        env(sponsor::set_fee(sponsor, 0, fee), sponsor::SponseeAcc(holder));
-        env.close();
-
-        auto const vaultBefore = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(vaultBefore))
-            return;
-        auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
-        auto const holderBalanceBefore = env.balance(holder);
-        auto const destinationBalanceBefore = env.balance(destination);
-        auto const sponsorBalanceBefore = env.balance(sponsor);
-
-        Account const& recipient = sponsorIsDestination ? sponsor : destination;
-        auto withdraw = vault.withdraw(
-            {.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
-        withdraw[sfDestination] = recipient.human();
-        env(withdraw, Fee(fee), sponsor::As(sponsor, spfSponsorFee), Ter(expected));
-        env.close();
-
-        auto const vaultAfter = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(vaultAfter))
-            return;
-        // Holder is economically unchanged (sequence only); the fee is
-        // taken from the sponsorship object, not any AccountRoot.
-        BEAST_EXPECT(env.balance(holder) == holderBalanceBefore);
-
-        if (expected == tesSUCCESS)
-        {
-            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
-            if (sponsorIsDestination)
-            {
-                // The sponsor receives the payout and is not debited for
-                // the fee. The sponsor has to BE the destination for
-                // FeePayerType::SponsorPreFunded to matter.
-                BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore + XRP(100));
-            }
-            else
-            {
-                BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
-                BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore);
-            }
-            auto const sponsorship = env.le(keylet::sponsorship(sponsor, holder));
-            if (!BEAST_EXPECT(sponsorship))
-                return;
-            BEAST_EXPECT(!sponsorship->isFieldPresent(sfFeeAmount));
-            return;
-        }
-
-        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
-        BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore);
-        if (!sponsorIsDestination)
-            BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore);
-    };
-
-    testcase(
-        "pre-funded fee XRP withdrawal to a distinct destination succeeds "
-        "(post-fixCleanup3_4_0)");
-    runScenario(all_, tesSUCCESS, false);
-
-    testcase(
-        "bug: pre-funded sponsor named as withdrawal destination misreads "
-        "the sender's touched-but-zero delta as a second recipient "
-        "(pre-fixCleanup3_4_0)");
-    runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED, true);
-
-    testcase(
-        "bug: pre-funded sponsor named as withdrawal destination receives "
-        "the full payout (post-fixCleanup3_4_0)");
-    runScenario(all_, tesSUCCESS, true);
-}
-
-// Unsponsored third-party XRP withdrawal: the sender's AccountRoot moves
-// by exactly -fee. Pre-amendment, the sender-only fee correction then
-// collapses that to absence so the dual-recipient guard does not fire.
-void
-testUnsponsoredWithdrawToDistinctDestinationPreAmendment()
-{
-    using namespace test::jtx;
-
-    testcase(
-        "unsponsored XRP withdrawal to a distinct destination succeeds "
-        "(pre-fixCleanup3_4_0)");
-
-    Env env{*this, all_ - fixCleanup3_4_0};
-    Account const owner{"owner"};
-    Account const holder{"holder"};
-    Account const destination{"destination"};
-    env.fund(XRP(10'000), owner, holder, destination);
-    env.close();
-
-    Vault const vault{env};
-    auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-    env(vaultTx);
-    env.close();
-
-    env(vault.deposit({.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()}));
-    env.close();
-
-    auto const vaultBefore = env.le(vaultKeylet);
-    if (!BEAST_EXPECT(vaultBefore))
-        return;
-    auto const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
-    auto const holderBalanceBefore = env.balance(holder);
-    auto const destinationBalanceBefore = env.balance(destination);
-    auto const fee = env.current()->fees().base;
-
-    auto withdraw =
-        vault.withdraw({.depositor = holder, .id = vaultKeylet.key, .amount = XRP(100).value()});
-    withdraw[sfDestination] = destination.human();
-    env(withdraw, Fee(fee), Ter(tesSUCCESS));
-    env.close();
-
-    auto const vaultAfter = env.le(vaultKeylet);
-    if (!BEAST_EXPECT(vaultAfter))
-        return;
-    BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - XRP(100).value());
-    BEAST_EXPECT(env.balance(holder) == holderBalanceBefore - fee);
-    BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
-}
-
-public:
-void
-run() override
-{
-    testVaultWithdrawEqualityEnforced();
-    testBugIssuerVaultDepositAtEdge();
-    testBugMakeDeltaPosteriorScale();
-    testBugMakeDeltaAnteriorScale();
-    testVaultDepositCanonicalizeToZero();
-    testBugDepositShareTruncationSubUlp();
-    testVaultWithdrawCanonicalizeToZero();
-    testBugVaultDustDebitCanonicalizesToNoOp();
-    testBugVaultDepositOvercreditsAcrossScaleBoundary();
-    testBugVaultLockedByPartialWithdraw();
-    testVaultDepositNegativeBalanceFromOppositeLimit();
-    testCredentialPinsPseudoAccount();
-    testCredentialPinOverflow();
-    testBug6LimitBypassWithShares();
-    testBugClawbackRoundTripOvershoot();
-    testBugWithdrawRoundTripOvershoot();
-    testBugClawbackAfterLoanImpair();
-    testBugMptZeroWithdrawMissingHolding();
-    testBugIouZeroWithdrawMissingTrustLine();
-    testBugXrpZeroWithdrawSponsoredFee();
-    testBugSelfWithdrawAfterIssuerClearsDefaultRipple();
-    testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
-    testBugSponsorAsDestinationFeeMisappliedToPayout();
-    testPrefundedFeeWithdraw();
-    testUnsponsoredWithdrawToDistinctDestinationPreAmendment();
-}
+    void
+    run() override
+    {
+        testVaultWithdrawEqualityEnforced();
+        testBugIssuerVaultDepositAtEdge();
+        testBugMakeDeltaPosteriorScale();
+        testBugMakeDeltaAnteriorScale();
+        testVaultDepositCanonicalizeToZero();
+        testBugDepositShareTruncationSubUlp();
+        testVaultWithdrawCanonicalizeToZero();
+        testBugVaultDustDebitCanonicalizesToNoOp();
+        testBugVaultDepositOvercreditsAcrossScaleBoundary();
+        testBugVaultLockedByPartialWithdraw();
+        testVaultDepositNegativeBalanceFromOppositeLimit();
+        testCredentialPinsPseudoAccount();
+        testCredentialPinOverflow();
+        testBug6LimitBypassWithShares();
+        testBugClawbackRoundTripOvershoot();
+        testBugWithdrawRoundTripOvershoot();
+        testBugClawbackAfterLoanImpair();
+        testBugMptZeroWithdrawMissingHolding();
+        testBugIouZeroWithdrawMissingTrustLine();
+        testBugXrpZeroWithdrawSponsoredFee();
+        testBugSelfWithdrawAfterIssuerClearsDefaultRipple();
+        testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
+        testBugSponsorAsDestinationFeeMisappliedToPayout();
+        testPrefundedFeeWithdraw();
+        testUnsponsoredWithdrawToDistinctDestinationPreAmendment();
+    }
 };
 
 BEAST_DEFINE_TESTSUITE(VaultBugs, app, xrpl);

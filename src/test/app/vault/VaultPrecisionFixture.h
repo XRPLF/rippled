@@ -185,7 +185,7 @@ protected:
         auto const brokerKeylet =
             keylet::loanBroker(f.lender.id(), SeqProxy::rawSequence(env.seq(f.lender)));
 
-        env(set(f.lender, vaultKeylet.key, brokerParams.flags),
+        env(loan_broker::set(f.lender, vaultKeylet.key, brokerParams.flags),
             kManagementFeeRate(brokerParams.managementFeeRate),
             kDebtMaximum(asset(brokerParams.debtMax).value()),
             kCoverRateMinimum(brokerParams.coverRateMin),

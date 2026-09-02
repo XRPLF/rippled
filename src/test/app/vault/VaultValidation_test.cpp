@@ -338,6 +338,19 @@ private:
 
         testCase(
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
+                testcase("invalid set immutable flag");
+
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+
+                {
+                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
+                    env(tx, Ter(temINVALID_FLAG));
+                }
+            });
+
+        testCase(
+            [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
                 testcase("create with Scale");
 
                 {
@@ -478,19 +491,6 @@ private:
                     auto tx =
                         vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(0)});
                     env(tx, Ter(temBAD_AMOUNT));
-                }
-            });
-
-        testCase(
-            [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
-                testcase("invalid set immutable flag");
-
-                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-
-                {
-                    auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfFlags] = tfVaultPrivate;
-                    env(tx, Ter(temINVALID_FLAG));
                 }
             });
 

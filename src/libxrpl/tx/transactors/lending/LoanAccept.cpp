@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -129,6 +130,17 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkLoanFreeze(
             ctx.view, asset, vaultPseudo, brokerPseudo, account, brokerOwner, ctx.j))
         return ter;
+
+    // canAddHolding does not look at existing lines. After fixCleanup3_4_0,
+    // addEmptyHolding is a no-op when the destination already holds the
+    // asset, so only run the creation gate for a holding that is absent.
+    Number const originationFee = loanSle->at(sfLoanOriginationFee);
+    if (!ctx.view.rules().enabled(fixCleanup3_4_0) || !holdingExists(ctx.view, account, asset) ||
+        (originationFee != beast::kZero && !holdingExists(ctx.view, brokerOwner, asset)))
+    {
+        if (auto const ter = canAddHolding(ctx.view, asset))
+            return ter;
+    }
 
     // Re-verify that the borrower and broker owner (the two accounts that
     // receive funds at disbursement) are authorised to hold the vault asset.

@@ -2328,9 +2328,6 @@ checkLoanFreeze(
     AccountID const& brokerOwner,
     beast::Journal j)
 {
-    if (auto const ter = canAddHolding(view, asset))
-        return ter;
-
     // A global freeze on the asset blocks every leg of the loan regardless of
     // which account is involved, so check it once up front.
     if (auto const ret = checkGlobalFrozen(view, asset))

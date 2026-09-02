@@ -243,7 +243,8 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
 
     [[maybe_unused]] auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
     XRPL_ASSERT_PARTS(
-        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
+        getVaultVersion(vaultSle) == VaultVersion::CashBasis || vaultMaximum == 0 ||
+            vaultMaximum > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "Vault is below maximum limit");
 
@@ -937,7 +938,12 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
+    // Accrual origination credits interestDue into AssetsTotal, so a vault
+    // already at AssetsMaximum cannot take another loan. Cash-basis origination
+    // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
+    // this leftover accrual gate must not apply there.
+    if (getVaultVersion(vault) != VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
+        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
         JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
         return tecLIMIT_EXCEEDED;
