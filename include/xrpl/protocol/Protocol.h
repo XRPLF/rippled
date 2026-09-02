@@ -349,12 +349,23 @@ enum class VaultPhase : std::uint8_t {
 };
 
 /**
+ * Minimum gap between a closed-ended loan's final scheduled payment and the
+ * vault's RedemptionDate. LoanSet rejects a schedule whose final payment is
+ * fewer than this many seconds before RedemptionDate.
+ */
+constexpr std::uint32_t kLoanRedemptionBuffer = std::chrono::seconds{60}.count();
+
+/**
  * Bounds on the length of a closed-ended vault's Investment phase
  * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
  * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod.
+ *
+ * 180s is enough to originate a loan that uses the minimum payment interval
+ * and kLoanRedemptionBuffer after StartDate, which is strictly after
+ * SubscriptionDate. The interval and buffer need not be equal; only their
+ * sum plus one second must fit in this floor.
  */
-constexpr std::uint32_t kMinInvestmentPeriod =
-    std::chrono::seconds{std::chrono::minutes{1}}.count();
+constexpr std::uint32_t kMinInvestmentPeriod = std::chrono::seconds{180}.count();
 // This is 946708560 seconds which 30 x 365.2425 days (the average length of a Gregorian year).
 constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono::years{30}}.count();
 
@@ -395,6 +406,16 @@ using TxID = uint256;
  * deletion cleanup.
  */
 constexpr std::uint16_t kMaxDeletableAmmTrustLines = 512;
+
+/**
+ * The maximum number of owner-directory entries to walk when clearing
+ * credentials pinned to a pseudo-account, in a single transaction.
+ *
+ * The walk stops after this many entries whether or not each one turns out to
+ * be a credential, so a directory that also holds other objects yields fewer
+ * deletions per transaction.
+ */
+constexpr std::uint16_t kMaxDeletablePseudoAccountCredentials = 512;
 
 /**
  * The maximum length of a URI inside an Oracle

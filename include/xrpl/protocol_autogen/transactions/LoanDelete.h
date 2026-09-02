@@ -21,7 +21,7 @@ class LoanDeleteBuilder;
  * Type: ttLOAN_DELETE (81)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: MayModifyVault
+ * Privileges: Privilege::MayModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanDeleteBuilder to construct new transactions.

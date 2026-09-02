@@ -952,6 +952,7 @@ private:
         env.close();
 
         // Impair the loan so LossUnrealized > 0.
+        advancePastDueDate(env, loanKeylet);
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
 
@@ -1021,6 +1022,7 @@ private:
                 Ter(tesSUCCESS));
             env.close();
 
+            advancePastDueDate(env, iouLoanKeylet);
             env(manage(iouLender, iouLoanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
 

@@ -5,10 +5,12 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
@@ -1152,6 +1154,113 @@ private:
         BEAST_EXPECT(env.le(keylet) != nullptr);
     }
 
+    // A pseudo-account belongs to a ledger object, so it must never be the
+    // destination of a withdrawal. The payout is refused either way, by the
+    // deposit authorization every pseudo-account carries, so the only change
+    // is a misleading tecNO_PERMISSION becoming tecPSEUDO_ACCOUNT. The check
+    // runs ahead of the private-vault domain check, which would otherwise
+    // report a domain problem against an account that can never join one.
+    void
+    testVaultWithdrawPseudoAccountDestination(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_4_0];
+        testcase(
+            std::string{"VaultWithdraw pseudo-account destination"} +
+            (withFix ? " (fixCleanup3_4_0)" : " (pre-fix)"));
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const pdOwner{"pdOwner"};
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "credential";
+
+        Env env{*this, features};
+        Vault const vault{env};
+
+        env.fund(XRP(100'000), issuer, owner, depositor, pdOwner, credIssuer);
+        // Rippling plays no part in what is being tested here, and would
+        // otherwise stop the payout before it reaches the check under test.
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        for (auto const& account : {owner, depositor})
+        {
+            env.trust(asset(1'000'000), account);
+            env(pay(issuer, account, asset(10'000)));
+        }
+        env.close();
+
+        // Another vault over the same asset supplies the destination. Its
+        // pseudo-account holds a trust line for the asset from creation, so
+        // the payout is refused for being a pseudo-account and nothing else.
+        auto const pseudoDestination = [&]() {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+            return Account("otherVault", env.le(keylet)->at(sfAccount));
+        }();
+
+        TER const expected = withFix ? TER(tecPSEUDO_ACCOUNT) : TER(tecNO_PERMISSION);
+
+        auto const withdrawToPseudo = [&](uint256 const& vaultId) {
+            auto tx = vault.withdraw({.depositor = depositor, .id = vaultId, .amount = asset(1)});
+            tx[sfDestination] = pseudoDestination.human();
+            return tx;
+        };
+
+        {
+            auto [createTx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1'000)}));
+            env.close();
+
+            env(withdrawToPseudo(keylet.key), Ter(expected));
+            env.close();
+
+            // Withdrawing to self out of the same vault stays unaffected.
+            env(vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(1)}));
+            env.close();
+        }
+
+        {
+            auto const domainId = [&]() {
+                pdomain::Credentials const credentials{
+                    {.issuer = credIssuer, .credType = credType}};
+                env(pdomain::setTx(pdOwner, credentials));
+                env.close();
+                return pdomain::getNewDomain(env.meta());
+            }();
+
+            env(credentials::create(depositor, credIssuer, credType));
+            env(credentials::accept(depositor, credIssuer, credType));
+            env.close();
+
+            auto [createTx, keylet] =
+                vault.create({.owner = owner, .asset = asset, .flags = tfVaultPrivate});
+            env(createTx);
+            env.close();
+
+            auto setTx = vault.set({.owner = owner, .id = keylet.key});
+            setTx[sfDomainID] = to_string(domainId);
+            env(setTx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1'000)}));
+            env.close();
+
+            // The domain check never gets a say: the destination is rejected
+            // for what it is, not for the domain it is missing.
+            env(withdrawToPseudo(keylet.key), Ter(expected));
+            env.close();
+        }
+    }
+
 public:
     void
     run() override
@@ -1163,6 +1272,9 @@ public:
         testVaultDeleteMemoData();
         testVaultDeleteAssetsReservedBlocks();
         testVaultCreateLEVersion();
+
+        testVaultWithdrawPseudoAccountDestination(all_ - fixCleanup3_4_0);
+        testVaultWithdrawPseudoAccountDestination(all_);
     }
 };
 

@@ -25,6 +25,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
@@ -40,12 +41,15 @@
 
 namespace xrpl {
 
+#pragma push_macro("UNWRAP")
+#undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegable, amendment, privileges, ...) \
-    case tag: {                                                              \
-        return (privileges) & priv;                                          \
+#define UNWRAP(...) __VA_ARGS__
+#define TRANSACTION(tag, value, name, settings, ...)                                  \
+    case tag: {                                                                       \
+        return ((TxSettings UNWRAP settings).privileges & priv) != Privilege::NoPriv; \
     }
 
 bool
@@ -63,6 +67,8 @@ hasPrivilege(STTx const& tx, Privilege priv)
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+#undef UNWRAP
+#pragma pop_macro("UNWRAP")
 
 // Returns the human-readable name of a ledger entry's type, falling back to
 // the numeric type if the format is somehow unknown.
@@ -436,7 +442,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if (hasPrivilege(tx, MustDeleteAcct) && isTesSuccess(result))
+    if (hasPrivilege(tx, Privilege::MustDeleteAcct) && isTesSuccess(result))
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -457,7 +463,7 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (hasPrivilege(tx, MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
+    if (hasPrivilege(tx, Privilege::MayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -760,14 +766,15 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (hasPrivilege(tx, CreateAcct | CreatePseudoAcct) && isTesSuccess(result))
+    if (hasPrivilege(tx, Privilege::CreateAcct | Privilege::CreatePseudoAcct) &&
+        isTesSuccess(result))
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&
              (view.rules().enabled(featureSingleAssetVault) ||
               view.rules().enabled(featureLendingProtocol)));
 
-        if (pseudoAccount && !hasPrivilege(tx, CreatePseudoAcct))
+        if (pseudoAccount && !hasPrivilege(tx, Privilege::CreatePseudoAcct))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";
@@ -1116,10 +1123,17 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    static auto const kFieldChanged = [](auto const& before, auto const& after, auto const& field) {
+    auto const kFieldChanged = [&j, &tx](auto const& before, auto const& after, auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
-        return beforeField != afterField || (afterField && before->at(field) != after->at(field));
+        bool const changed =
+            beforeField != afterField || (afterField && before->at(field) != after->at(field));
+        if (changed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << field.getName()
+                            << " changed on immutable ledger entry in " << tx.getTransactionID();
+        }
+        return changed;
     };
     for (auto const& slePair : changedEntries_)
     {
@@ -1164,23 +1178,67 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
+
+                // lsfLoanOverpayment must never toggle. lsfLoanDefault may only
+                // transition from unset to set, which combined with ValidLoan's rule that
+                // only LoanManage may change it makes the flag write-once.
+                if (view.rules().enabled(featureLendingProtocolV1_1))
+                {
+                    std::uint32_t const beforeFlags = before->getFlags();
+                    std::uint32_t const afterFlags = after->getFlags();
+                    bool const overpaymentChanged =
+                        (beforeFlags & lsfLoanOverpayment) != (afterFlags & lsfLoanOverpayment);
+                    if (overpaymentChanged)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: lsfLoanOverpayment flag "
+                                           "toggled on immutable ledger entry in "
+                                        << tx.getTransactionID();
+                    }
+                    bad = bad || overpaymentChanged;
+
+                    bool const defaultCleared =
+                        (beforeFlags & lsfLoanDefault) != 0 && (afterFlags & lsfLoanDefault) == 0;
+                    if (defaultCleared)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: lsfLoanDefault flag "
+                                           "cleared on immutable ledger entry in "
+                                        << tx.getTransactionID();
+                    }
+                    bad = bad || defaultCleared;
+
+                    // V1.1 introduces the two-step flow: a pending loan is created without
+                    // sfOwnerNode and LoanAccept adds it when the borrower accepts. Any other tx
+                    // modifying sfOwnerNode is a bug.
+                    if (tx.getTxnType() == ttLOAN_ACCEPT)
+                    {
+                        bool const ownerNodeCleared = before->isFieldPresent(sfOwnerNode) &&
+                            !after->isFieldPresent(sfOwnerNode);
+                        if (ownerNodeCleared)
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: sfOwnerNode cleared on immutable "
+                                               "ledger entry in "
+                                            << tx.getTransactionID();
+                        }
+                        bad = bad || ownerNodeCleared;
+                    }
+                    else
+                    {
+                        bad = bad || kFieldChanged(before, after, sfOwnerNode);
+                    }
+                }
                 // Pre-V1.1, sfOwnerNode is set at loan creation and immutable
-                // thereafter. V1.1 introduces the two-step flow: a pending
-                // loan is created without sfOwnerNode and LoanAccept adds it
-                // when the borrower accepts. Allow only that specific
-                // transition; any other tx modifying sfOwnerNode is a bug.
-                if (!view.rules().enabled(featureLendingProtocolV1_1) ||
-                    tx.getTxnType() != ttLOAN_ACCEPT)
+                // thereafter.
+                else
                 {
                     bad = bad || kFieldChanged(before, after, sfOwnerNode);
                 }
                 break;
             case ltVAULT:
                 /*
-                 * sfAccount, sfAsset and sfShareMPTID are already
-                 * captured by VaultInvariant. The additional fields
-                 * below are introduced by featureLendingProtocolV1_1
-                 * and only exist on V1_1 vaults.
+                 * All the fields below are only immutable from
+                 * featureLendingProtocolV1_1 onwards; some of them only exist on
+                 * V1_1 vaults. Before that amendment, sfAsset, sfAccount and
+                 * sfShareMPTID are checked by VaultInvariant instead.
                  */
                 if (view.rules().enabled(featureLendingProtocolV1_1))
                 {
@@ -1192,7 +1250,10 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfOwner) ||
                         kFieldChanged(before, after, sfWithdrawalPolicy) ||
                         kFieldChanged(before, after, sfScale) ||
-                        kFieldChanged(before, after, sfLEVersion);
+                        kFieldChanged(before, after, sfLEVersion) ||
+                        kFieldChanged(before, after, sfAsset) ||
+                        kFieldChanged(before, after, sfAccount) ||
+                        kFieldChanged(before, after, sfShareMPTID);
                 }
                 break;
             default:
