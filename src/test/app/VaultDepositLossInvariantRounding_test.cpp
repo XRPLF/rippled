@@ -1,4 +1,6 @@
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -6,12 +8,13 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
@@ -84,7 +87,7 @@ class VaultDepositLossInvariantRounding_test : public beast::unit_test::Suite
 
         // Seed so the vault has outstanding shares (a donation needs them), then force the
         // lawful loss pre-state.
-        Vault vault{env};
+        Vault const vault{env};
         auto const [tx, keylet] = vault.create({.owner = owner, .asset = asset.raw()});
         env(tx);
         env.close();

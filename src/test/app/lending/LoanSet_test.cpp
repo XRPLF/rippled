@@ -1152,9 +1152,13 @@ private:
 
             Number const destAfter = env.balance(borrower, usd.raw()).number();
             if (isTesSuccess(expected))
+            {
                 BEAST_EXPECT(destAfter == destBefore + Number{100});
+            }
             else
+            {
                 BEAST_EXPECT(destAfter == destBefore);
+            }
         };
 
         run(all_ - fixCleanup3_4_0, terNO_RIPPLE);

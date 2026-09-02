@@ -4,12 +4,11 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>

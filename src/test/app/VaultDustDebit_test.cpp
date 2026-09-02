@@ -1,5 +1,5 @@
 #include <test/jtx/Env.h>
-#include <test/jtx/fee.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
@@ -13,7 +13,8 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 #include <cstdint>
 #include <string>
@@ -34,8 +35,8 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         Number assetsTotal;
         Number assetsAvailable;
         Number pseudoLine;  // vault pseudo-account trust line
-        std::uint64_t sharesTotal;
-        std::uint64_t holderShares;
+        std::uint64_t sharesTotal{};
+        std::uint64_t holderShares{};
     };
 
     static VaultData
@@ -96,7 +97,7 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         env(pay(issuer, owner, asset(donation)));
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto const [tx, keylet] = vault.create({.owner = owner, .asset = asset.raw()});
         env(tx);
         env.close();
