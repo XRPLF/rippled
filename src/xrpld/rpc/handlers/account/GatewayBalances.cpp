@@ -152,7 +152,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 return;
                 // LCOV_EXCL_STOP
             }
-	    if (sle->getType() == ltESCROW)
+            if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
                 // Gateway Balance should not include MPTs
