@@ -281,9 +281,6 @@ public:
     floatDivide(Slice const& x, Slice const& y, int32_t mode) const override;
 
     std::expected<Bytes, HostFunctionError>
-    floatRoot(Slice const& x, int32_t n, int32_t mode) const override;
-
-    std::expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) const override;
 };
 

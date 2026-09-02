@@ -140,7 +140,9 @@ public:
             return Bytes{s.begin(), s.end()};
         }
 
-        return std::unexpected(HostFunctionError::Unimplemented);
+        // FieldNotFound is a guest-returnable code (the contract handles a negative result);
+        // Unimplemented now maps to a fatal Fault::Internal (tecINTERNAL) that stops the run.
+        return std::unexpected(HostFunctionError::FieldNotFound);
     }
 
     [[nodiscard]] std::expected<Bytes, HostFunctionError>
@@ -456,12 +458,6 @@ public:
     floatDivide(Slice const& x, Slice const& y, int32_t mode) const override
     {
         return wasm_float::floatDivideImpl(x, y, mode);
-    }
-
-    [[nodiscard]] std::expected<Bytes, HostFunctionError>
-    floatRoot(Slice const& x, int32_t n, int32_t mode) const override
-    {
-        return wasm_float::floatRootImpl(x, n, mode);
     }
 
     [[nodiscard]] std::expected<Bytes, HostFunctionError>
