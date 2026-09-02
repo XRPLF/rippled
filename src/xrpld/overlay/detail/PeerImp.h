@@ -8,6 +8,7 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/overlay/detail/PeerSendQueue.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
 #include <xrpl/basics/Log.h>
@@ -51,7 +52,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <queue>
 #include <shared_mutex>
 #include <string>
 #include <type_traits>
@@ -193,7 +193,10 @@ private:
     http_request_type request_;
     http_response_type response_;
     boost::beast::http::fields const& headers_;
-    std::queue<std::shared_ptr<Message>> sendQueue_;
+    PeerSendQueue sendQueue_;
+    // The message whose async_write is in flight. Popped from sendQueue_ when
+    // the write starts so a priority message pushed meanwhile is written next.
+    std::shared_ptr<Message> writing_;
     bool gracefulClose_ = false;
     int largeSendq_ = 0;
     std::unique_ptr<LoadEvent> loadEvent_;
@@ -538,6 +541,10 @@ private:
     onReadMessage(error_code ec, std::size_t bytesTransferred);
 
     // Called when protocol messages bytes are sent
+    // Pop the next message and start its async_write. Strand only, no write in flight.
+    void
+    writeNext();
+
     void
     onWriteMessage(error_code ec, std::size_t bytesTransferred);
 

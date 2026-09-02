@@ -23,6 +23,7 @@ Message::Message(
     protocol::MessageType type,
     std::optional<PublicKey> const& validator)
     : category_(static_cast<std::size_t>(TrafficCount::categorize(message, type, false)))
+    , priority_(type == protocol::mtPROPOSE_LEDGER || type == protocol::mtVALIDATION)
     , validatorKey_(validator)
 {
     using namespace xrpl::compression;

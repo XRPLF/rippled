@@ -481,6 +481,7 @@ JSS(ports);                       // out: NetworkOPs
 JSS(previous);                    // out: Reservations
 JSS(previous_ledger);             // out: LedgerPropose
 JSS(price);                       // out: amm_info, AuctionSlot
+JSS(priority_send_queue);         // out: PeerImp
 JSS(proof);                       // in: BookOffers
 JSS(propose_seq);                 // out: LedgerPropose
 JSS(proposers);                   // out: NetworkOPs, LedgerConsensus
@@ -536,6 +537,7 @@ JSS(seed);                        //
 JSS(seed_hex);                    // in: WalletPropose, TransactionSign
 JSS(send_currencies);             // out: AccountCurrencies
 JSS(send_max);                    // in: PathRequest, RipplePathFind
+JSS(send_queue);                  // out: PeerImp
 JSS(seq);                         // in: LedgerEntry
                                   // out: NetworkOPs, RPCSub, AccountOffers, ValidatorList,
                                   //      ValidatorInfo, Manifest
