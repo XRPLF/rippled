@@ -408,9 +408,9 @@ class TelemetryImpl : public Telemetry
         meterProvider_->AddMetricReader(std::move(reader));
 
         // One histogram view per unit. The unit is the selector, so an
-        // instrument gets the ladder that fits what it measures -- a byte
-        // count no longer inherits a latency ladder. Edges come from
-        // HistogramBuckets.h, which owns every ladder.
+        // instrument gets the ladder that fits what it measures: a byte count
+        // is bucketed on the byte ladder and never on a latency one. Edges
+        // come from HistogramBuckets.h, which owns every ladder.
         //
         // Both views keep the "*" name pattern and an EMPTY view name: a
         // non-empty view name would rename every matching histogram to it and
