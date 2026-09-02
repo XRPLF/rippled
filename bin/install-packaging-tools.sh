@@ -26,6 +26,8 @@ esac
 # archive rather than from nixpkgs:
 #
 #   - debhelper and dpkg-dev build the DEB, and lintian checks it
+#   - binutils gives debian/rules the readelf its glibc-floor check runs; it
+#     already arrives via dpkg-dev, but that tool is called directly
 #   - rpm-build builds the RPM, with systemd-rpm-macros and redhat-rpm-config
 #     supplying the systemd and find-debuginfo macros the spec uses
 #   - rpm-sign and gnupg2 sign the built RPM
@@ -37,6 +39,7 @@ function install() {
         debian | ubuntu)
             apt-get update -y
             apt-get install -y --no-install-recommends \
+                binutils \
                 ca-certificates \
                 debhelper \
                 debhelper-compat \
