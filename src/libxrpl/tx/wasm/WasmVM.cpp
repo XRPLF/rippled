@@ -104,7 +104,7 @@ verdict(CheckStatus status)
         case CheckStatus::EntryPoint:
         case CheckStatus::Memory:
         case CheckStatus::Table:
-            return temBAD_WASM;
+            return temINVALID_BYTECODE;
 
         // The engine panicked: a defect in the engine, reported rather than fatal to
         // the node, and not the transaction's fault.
