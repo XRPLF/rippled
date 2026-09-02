@@ -12,9 +12,9 @@ namespace xrpl::telemetry::buckets {
  * @brief Explicit histogram bucket edges for xrpld's OTel instruments.
  *
  * One header owns every ladder so a reviewer sees all of them at once and a
- * test can assert their invariants. Before this existed the edges lived as
- * file-local `namespace {}` constants, unreachable from any test, and they
- * drifted apart.
+ * test can assert their invariants. The alternative -- file-local
+ * `namespace {}` constants at each registration site -- is unreachable from
+ * any test and lets the ladders drift apart.
  *
  * Why a ladder is worth this much care: when a quantile falls in the `+Inf`
  * bucket, Prometheus returns the *second-highest* edge, not `+Inf`. A
@@ -68,11 +68,11 @@ namespace xrpl::telemetry::buckets {
  * **This list must contain every representable edge of the collector's
  * spanmetrics ladder, and may extend above it.** Agreement over the shared
  * range is deliberate: it lets a span-derived latency panel and a native
- * histogram panel be read on the same scale. It was specified that way
- * originally, then silently broken when the collector ladder alone was
- * extended, which left this side capped at 5 s while spans reached 30 s and
- * censored every quantile above 5 s. `check_bucket_parity.py` now enforces
- * the containment -- add a collector edge, add it here too.
+ * histogram panel be read on the same scale. `check_bucket_parity.py`
+ * machine-checks the containment, because a ladder that agrees only by
+ * convention drifts the first time one side is extended alone, and a top edge
+ * below the collector's censors every quantile above it. Add a collector edge,
+ * add it here too.
  *
  * The sub-millisecond edges the collector carries (0.01 to 0.5 ms) are
  * deliberately absent. `beast::insight::Event` rounds every duration up to
@@ -86,8 +86,9 @@ namespace xrpl::telemetry::buckets {
  * as 5 s censors them today. All these Events share one ladder, so its
  * ceiling has to cover the slowest member rather than the typical one.
  *
- * The 2, 3 and 4 s edges resolve second-scale work that previously had to
- * interpolate across a single four-second-wide bucket.
+ * The 2, 3 and 4 s edges subdivide the 1 s to 5 s span, so second-scale work
+ * resolves to about a second rather than being interpolated across a single
+ * four-second-wide bucket.
  */
 inline constexpr std::array kMillisecondBuckets{
     1.0,

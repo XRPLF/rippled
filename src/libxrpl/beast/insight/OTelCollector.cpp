@@ -5,7 +5,7 @@
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
  * telemetry=ON). Maps beast::insight instruments to OTel SDK instruments
  * created on the GLOBAL Meter published by the telemetry module. This class
- * is a legacy shim: it no longer owns an export pipeline. The MeterProvider,
+ * is an adapter only: it owns no export pipeline. The MeterProvider,
  * PeriodicExportingMetricReader, OTLP exporter and histogram view all live in
  * xrpl::telemetry::Telemetry.
  *
@@ -380,7 +380,7 @@ private:
 //------------------------------------------------------------------------------
 
 /**
- * @brief Main OTel Collector implementation (legacy shim).
+ * @brief Main OTel Collector implementation (adapter over the global Meter).
  *
  * Obtains its Meter from the GLOBAL MeterProvider owned and published by the
  * telemetry module (xrpl::telemetry::Telemetry), rather than building its own
@@ -445,8 +445,8 @@ public:
      *
      * @param endpoint    OTLP/HTTP metrics endpoint URL. Informational only:
      *                    the global telemetry pipeline is authoritative for
-     *                    the actual export endpoint. Retained for logging and
-     *                    back-compat with the New() signature.
+     *                    the actual export endpoint. Used only in the startup
+     *                    log line.
      * @param prefix      Legacy metric-name prefix. Not applied to metric
      *                    names; used only in the startup log line.
      * @param instanceId  Value for the service.instance.id resource attribute.

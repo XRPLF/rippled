@@ -21,7 +21,7 @@ namespace beast::insight {
  *     makeEvent("size", Unit::Bytes)  --> OTel unit "By" --> byte ladder
  *
  * The StatsD backend deliberately ignores this and keeps emitting `|ms` for
- * every Event. That path is retired here -- its UDP port is commented out of
+ * every Event. That path is out of service -- its UDP port is commented out of
  * the compose file and the integration test fails if anything is listening on
  * 8125 -- so changing its wire format would alter a legacy contract for no
  * local benefit and with no way to verify it.

@@ -409,7 +409,7 @@ class TelemetryImpl : public Telemetry
 
         // One histogram view per unit. The unit is the selector, so an
         // instrument gets the ladder that fits what it measures -- a byte
-        // count no longer inherits a latency ladder. Edges come from
+        // count gets the byte ladder instead of a latency one. Edges come from
         // HistogramBuckets.h, which owns every ladder.
         //
         // Both views keep the "*" name pattern and an EMPTY view name: a
