@@ -136,7 +136,7 @@ TEST_F(WasmVMTest, ModuleThatWillNotInstantiateIsChargedToTheContract)
     EXPECT_TRUE(outcome.error().cost.has_value());
 }
 
-// Preflight is meant to refuse these with `temBAD_WASM`; reaching apply means the screening
+// Preflight is meant to refuse these with `temINVALID_BYTECODE`; reaching apply means the screening
 // did not happen, which is the node's fault and not the transaction's.
 TEST_F(WasmVMTest, UnrunnableModuleIsNodeSideFault)
 {

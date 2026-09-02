@@ -498,7 +498,7 @@ struct Wasm_test : public beast::unit_test::Suite
         auto const codecovWasm = hexToBytes(kCodecovTestsWasmHex);
         TestHostFunctions hfs(env);
 
-        auto const allowance = 129'986;
+        auto const allowance = 124'173;
         auto re = runEscrowWasm(codecovWasm, hfs, allowance, escrowFunctionName);
 
         checkResult(re, 1, allowance);

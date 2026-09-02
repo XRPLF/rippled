@@ -4,7 +4,7 @@
 extern crate std;
 
 use core::panic;
-use xrpl_escrow::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
+use xrpl_escrow::current_tx::escrow_finish::{get_current_escrow_finish, EscrowFinish};
 use xrpl_std::current_tx::traits::TransactionCommonFields;
 use xrpl_std::fields::locator::Locator;
 use xrpl_std::host;
@@ -975,22 +975,6 @@ pub extern "C" fn escrow_finish() -> i32 {
             },
             error_codes::POINTER_OUT_OF_BOUNDS,
             "float_div_oob_slice2",
-        )
-    });
-    with_buffer::<2, _, _>(|ptr, len| {
-        check_result(
-            unsafe {
-                host::float_root(
-                    float.as_ptr().wrapping_add(1_000_000_000),
-                    float.len(),
-                    3,
-                    ptr,
-                    len,
-                    FLOAT_ROUNDING_MODES_TO_NEAREST,
-                )
-            },
-            error_codes::POINTER_OUT_OF_BOUNDS,
-            "float_root_oob_slice",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
