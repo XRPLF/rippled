@@ -74,7 +74,7 @@ jobs:
       contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
     container: ${{ matrix.image }}
-    timeout-minutes: 30
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -185,7 +185,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     container: ${{ matrix.image }}
-    timeout-minutes: 20
+    timeout-minutes: 5
 
     steps:
       # Both formats land in one directory; the step below picks its own by
