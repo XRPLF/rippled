@@ -100,7 +100,7 @@ TEST(SHAMapNodeIDTest, child_of_leaf_depth_id_throws)
     EXPECT_THROW((void)leafDepthID.getChildNodeID(0), std::logic_error);
 }
 
-TEST(SHAMapNodeIDTest, out_of_range_depth_is_clamped)
+TEST(SHAMapNodeIDDeathTest, out_of_range_depth_is_clamped)
 {
     // A depth past kLeafDepth has no mask in depthMask's 65-entry table, so both the constructor
     // and createID clamp it. createID needs its own clamp: it picks the mask while evaluating the
@@ -137,7 +137,7 @@ TEST(SHAMapNodeIDTest, out_of_range_depth_is_clamped)
 #endif
 }
 
-TEST(SHAMapNodeIDTest, select_branch_clamps_leaf_depth)
+TEST(SHAMapNodeIDDeathTest, select_branch_clamps_leaf_depth)
 {
     // selectBranch's own precondition is depth < kLeafDepth: a depth-64 ID has no nibble left
     // to select. That makes it unlike the guards above, which have a throw/return reachable
