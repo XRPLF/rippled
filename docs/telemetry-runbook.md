@@ -3739,23 +3739,23 @@ Key properties:
   the limiting ladder step for each, and the edges that would fix them.
 - **A baseline refresh can silently move sensitivity in either direction.** The
   trip point is derived from the baseline, so a refresh that lands at the low end
-  of a metric's range tightens the gate and one that lands high loosens it. The
-  2026-08-26 refresh took `job.acceptLedger.running.p95` from a 5.74x floor to
-  16.28x — it does not fire on any observed run, so it stays gated, but the weak
-  floor is recorded rather than left to surprise someone. The same refresh put
-  three `p50` keys below the spread they need, and they are now excluded (below).
-  `baselines/README.md` carries the measurements.
+  of a metric's range tightens the gate and one that lands high loosens it.
+  `job.acceptLedger.running.p95` has been measured with a 5.74x detection floor
+  on one baseline and 16.28x on another — it does not fire on any observed run,
+  so it stays gated, but the weak floor is recorded rather than left to surprise
+  someone. The same effect puts three `p50` keys below the spread they need, and
+  those are excluded (below). `baselines/README.md` carries the measurements.
 - **The bound covers quantization noise only, so a key whose run-to-run variance
   exceeds it cannot be gated. Five keys are excluded for that reason**, leaving
   20 gated. `span.ledger.validate.p95` and `.p99` came first — spreads of 5.9x
   and 66.8x across four CI runs, both reaching past their trip points on healthy
   runs, because the span's duration follows peer-validation arrival timing rather
-  than code speed. The 2026-08-26 refresh added `span.tx.apply.p50`,
-  `span.ledger.build.p50` and `span.consensus.ledger_close.p50`, whose observed
-  maxima sit 46.76x, 4.77x and 2.38x above their new trip points. That is the
-  same rule applied, not a new exception: the decisive evidence is that
-  `span.tx.apply.p50` read 0.7917 ms in the previous baseline and 0.00597 ms in
-  this one — 132x apart on the same workload — so whether the gate worked was
+  than code speed. `span.tx.apply.p50`, `span.ledger.build.p50` and
+  `span.consensus.ledger_close.p50` join them on this baseline, with observed
+  maxima 46.76x, 4.77x and 2.38x above their trip points. That is the same rule
+  applied, not a new exception: the decisive evidence is that
+  `span.tx.apply.p50` has read 0.7917 ms and 0.00597 ms on the same workload
+  — 132x apart — so whether the gate worked was
   decided by where in its own distribution the captured run fell, not by the
   code. All five share one shape: the observed maximum exceeds
   `baseline + bound`, four of them because a low-bucket baseline yields a tiny

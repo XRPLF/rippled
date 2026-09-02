@@ -298,19 +298,19 @@ Per-run tuning:
   variance is larger than it cannot be gated at all. **Five keys are excluded**
   for that reason: `span.ledger.validate.p95` and `.p99`, plus
   `span.tx.apply.p50`, `span.ledger.build.p50` and
-  `span.consensus.ledger_close.p50` as of the 2026-08-26 refresh. Each carries
+  `span.consensus.ledger_close.p50`. Each carries
   its measurements in `excluded_keys` in `regression-metrics.json`. Check a key's
   observed maximum across runs against `baseline + bound` before gating it;
   widening the bound is not the fix, and neither is re-baselining until a run
   lands favourably. See `baselines/README.md`.
 - A refresh moves sensitivity in **both** directions, because the trip point is
   derived from the baseline, and a single run carries no information about
-  spread. The 2026-08-26 refresh loosened `job.acceptLedger.running.p95` from a
-  5.74x detection floor to 16.28x (it does not fire, so it stays gated) and cut
-  the three `p50` keys above from a bound that had absorbed their spread to one
-  that could not — `span.tx.apply.p50` read 0.7917 ms in the previous baseline
-  and 0.00597 ms in this one, a 132x move on the same workload, taking its bound
-  from 4.21 ms to 0.0440 ms. Gating those keys again needs a **multi-run
+  spread. `job.acceptLedger.running.p95` has been measured with a 5.74x
+  detection floor on one baseline and 16.28x on another (it does not fire, so it
+  stays gated), and the three `p50` keys above have been measured both inside and
+  outside a bound that absorbs their spread — `span.tx.apply.p50` has read
+  0.7917 ms and 0.00597 ms on the same workload, 132x apart, which moves its
+  bound between 4.21 ms and 0.0440 ms. Gating those keys needs a **multi-run
   baseline** (or a spread measurement captured beside it), not a new threshold.
   All of it is measured in `baselines/README.md`; re-check after every refresh.
 
