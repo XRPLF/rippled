@@ -63,7 +63,7 @@ outcome(rs::wasm_vm::RunResult const& run)
             return std::unexpected{WasmTER{.ter = tecFAILED_PROCESSING, .cost = cost}};
 
         // A module that will not compile, or does not expose the entry point, should have
-        // been refused at preflight with `temBAD_WASM`: screening decides both from the
+        // been refused at preflight with `temINVALID_BYTECODE`: screening decides both from the
         // same bytes and the same engine, so agreeing here is not a matter of degree.
         // Reaching apply means the screening did not happen, which is a node-side fault
         // rather than the transaction's.
@@ -82,7 +82,7 @@ outcome(rs::wasm_vm::RunResult const& run)
 
 // A screening verdict as a TER.
 //
-// `temBAD_WASM` says the transaction carries something this engine cannot run: a
+// `temINVALID_BYTECODE` says the transaction carries something this engine cannot run: a
 // malformed transaction, refused before it can reach the ledger. A panic inside the
 // engine is different in kind - nothing was learned about the module - so the answer is
 // node-local rather than a claim about the transaction.
@@ -104,7 +104,7 @@ verdict(CheckStatus status)
         case CheckStatus::EntryPoint:
         case CheckStatus::Memory:
         case CheckStatus::Table:
-            return temBAD_WASM;
+            return temINVALID_BYTECODE;
 
         // The engine panicked: a defect in the engine, reported rather than fatal to
         // the node, and not the transaction's fault.

@@ -58,9 +58,6 @@ std::expected<Bytes, HostFunctionError>
 floatDivideImpl(Slice const& x, Slice const& y, int32_t mode);
 
 std::expected<Bytes, HostFunctionError>
-floatRootImpl(Slice const& x, int32_t n, int32_t mode);
-
-std::expected<Bytes, HostFunctionError>
 floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
 
 }  // namespace wasm_float
@@ -450,12 +447,6 @@ public:
 
     [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
     floatDivide(Slice const& x, Slice const& y, int32_t mode) const
-    {
-        return std::unexpected(HostFunctionError::Unimplemented);
-    }
-
-    [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
-    floatRoot(Slice const& x, int32_t n, int32_t mode) const
     {
         return std::unexpected(HostFunctionError::Unimplemented);
     }

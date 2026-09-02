@@ -153,24 +153,24 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "xrpl-common-stdlib"
-version = "0.8.0"
-source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=error-and-trace#b008b097237ce0d1a2dffc72ba39dd9fc50020a9"
+version = "0.9.0"
+source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git#e88dc32a48fac9d0eb6e7239c8a38693221657f6"
 dependencies = [
  "xrpl-macros",
 ]
 
 [[package]]
 name = "xrpl-escrow-stdlib"
-version = "0.1.0"
-source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=error-and-trace#b008b097237ce0d1a2dffc72ba39dd9fc50020a9"
+version = "0.9.0"
+source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git#e88dc32a48fac9d0eb6e7239c8a38693221657f6"
 dependencies = [
  "xrpl-common-stdlib",
 ]
 
 [[package]]
 name = "xrpl-macros"
-version = "0.1.0"
-source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=error-and-trace#b008b097237ce0d1a2dffc72ba39dd9fc50020a9"
+version = "0.9.0"
+source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git#e88dc32a48fac9d0eb6e7239c8a38693221657f6"
 dependencies = [
  "bs58",
  "proc-macro2",

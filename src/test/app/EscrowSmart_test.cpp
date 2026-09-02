@@ -232,7 +232,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         // ledgerSqn.c, which imports `ldgr_index` from the `env` module. The Rust
         // engine serves host functions from `host_lib` only (HOST_MODULE in
         // crates/xrpl-wasm-vm/src/register.rs), so the module is refused at import
-        // screening and every case below gets temBAD_WASM instead of tesSUCCESS.
+        // screening and every case below gets temINVALID_BYTECODE instead of tesSUCCESS.
         // The failure cases that follow still pass, because they are refused for a
         // reason preflight reaches before it looks at the bytecode.
         //
@@ -321,7 +321,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             env.close();
         }
         // TODO: re-enable with kLedgerSqnWasmHex (see above). The bytecode is
-        // refused before the fee is weighed, so this reports temBAD_WASM rather
+        // refused before the fee is weighed, so this reports temINVALID_BYTECODE rather
         // than telINSUF_FEE_P.
         // {
         //     // Not enough fees
@@ -352,7 +352,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 escrow::Bytecode(badWasmHex),
                 escrow::kCancelTime(env.now() + 100s),
                 Fee(txnFees),
-                Ter(temBAD_WASM));
+                Ter(temINVALID_BYTECODE));
             env.close();
         }
     }
@@ -1087,7 +1087,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
     //
     // kAllKeyletsWasmHex was built against the old trace ABI, where the trace_*
     // host functions returned i32 rather than void, so the module is rejected
-    // with temBAD_WASM and the escrow below is never created.
+    // with temINVALID_BYTECODE and the escrow below is never created.
     //
     // Regenerating it is not just a rebuild: all_keylets/ is still pinned to
     // xrpl-wasm-stdlib @ "renames" and uses modules that moved on
@@ -1320,7 +1320,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         // `host_lib` import module. ledgerSqn.c and updateData.c both import from
         // `env`, which the old engine accepted (WasmVM.h declared wEnv alongside
         // wHostLib) but the Rust engine does not: it serves `host_lib` only, so
-        // these modules are refused at import screening with temBAD_WASM. Each of
+        // these modules are refused at import screening with temINVALID_BYTECODE. Each of
         // these tests creates its escrow from one of those fixtures, so the
         // creation fails and every later assertion cascades off it. The same
         // regeneration would revive the blocks commented out in Wasm_test.cpp.

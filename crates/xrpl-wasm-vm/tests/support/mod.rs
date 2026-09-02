@@ -122,8 +122,7 @@ pub type PaychannelKey = (Vec<u8>, Vec<u8>, i32);
 /// `float_multiply`, `float_divide` — as `(operator, x, y, mode)`.
 pub type FloatBinaryCall = (&'static str, Vec<u8>, Vec<u8>, i32);
 
-/// One call to a float operator over a float and an integer — `float_root`,
-/// `float_power` — as `(operator, x, n, mode)`.
+/// One call to a float operator over a float and an integer — `float_power` — as `(operator, x, n, mode)`.
 pub type FloatUnaryCall = (&'static str, Vec<u8>, i32, i32);
 
 /// A `HostFunctions` implementation that answers from what the test put in it and
@@ -371,8 +370,7 @@ pub struct FakeHost {
     /// Every `(x, y, mode)` the four binary float operators were asked for, tagged by
     /// operator name.
     pub float_binary_ops_asked: RefCell<Vec<FloatBinaryCall>>,
-    /// Every `(x, n, mode)` `float_root` and `float_power` were asked for, tagged by
-    /// operator name.
+    /// Every `(x, n, mode)` `float_power` was asked for, tagged by operator name.
     pub float_unary_ops_asked: RefCell<Vec<FloatUnaryCall>>,
 }
 
@@ -1389,13 +1387,6 @@ impl HostFunctions for FakeHost {
         self.float_answer.fill(out)
     }
 
-    fn float_root(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
-        self.float_unary_ops_asked
-            .borrow_mut()
-            .push(("root", x.to_vec(), n, mode));
-        self.float_answer.fill(out)
-    }
-
     fn float_power(&self, x: &[u8], n: i32, mode: i32, out: &mut [u8]) -> HostResult<usize> {
         self.float_unary_ops_asked
             .borrow_mut()
@@ -1488,7 +1479,6 @@ pub mod import {
     pub const FLOAT_SUB: &str = r#"(import "host_lib" "float_sub" (func $float_sub (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const FLOAT_MULT: &str = r#"(import "host_lib" "float_mult" (func $float_mult (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const FLOAT_DIV: &str = r#"(import "host_lib" "float_div" (func $float_div (param i32 i32 i32 i32 i32 i32 i32) (result i32)))"#;
-    pub const FLOAT_ROOT: &str = r#"(import "host_lib" "float_root" (func $float_root (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
     pub const FLOAT_POW: &str = r#"(import "host_lib" "float_pow" (func $float_pow (param i32 i32 i32 i32 i32 i32) (result i32)))"#;
 }
 
