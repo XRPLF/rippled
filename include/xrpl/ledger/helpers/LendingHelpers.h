@@ -19,6 +19,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <expected>
@@ -27,6 +28,16 @@
 #include <utility>
 
 namespace xrpl {
+
+/**
+ * The flow requested by a LoanSet transaction, determined from its fields.
+ *
+ * OneStep is the immediate flow, where the loan is created and disbursed in
+ * a single transaction. TwoStep is the pending (Borrower) flow, where the
+ * LoanBroker owner proposes a loan that the named Borrower must later accept.
+ * Invalid indicates that the fields do not match either flow shape.
+ */
+enum class LoanFlow { Invalid, OneStep, TwoStep };
 
 /**
  * Broker cover preclaim precision guard (fixCleanup3_2_0).
@@ -306,6 +317,17 @@ constructLoanState(
 // rather than taking them as separate Number arguments.
 LoanState
 constructLoanState(SLE::const_ref loan);
+
+/**
+ * Returns true if the loan is a pending loan created by the two-step
+ * (Borrower) flow, i.e. it carries the lsfLoanPending flag and has not yet
+ * been accepted by the borrower.
+ */
+inline bool
+isLoanPending(SLE::const_ref loan)
+{
+    return loan->isFlag(lsfLoanPending);
+}
 
 Number
 computeManagementFee(
@@ -671,6 +693,64 @@ loanMakePayment(
     SLE::const_ref brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
+    beast::Journal j);
+
+//------------------------------------------------------------------------------
+//
+// Loan application helpers (shared by LoanSet and LoanAccept)
+//
+//------------------------------------------------------------------------------
+
+/**
+ * Verify the loan asset can be held and that none of the accounts involved in
+ * disbursing the loan are frozen in a way that would block the fund flows.
+ * This function Implements items 8-12 of XLS-66 spec, section 3.8.5.2.
+ *
+ * Checks, in order: that a holding for the asset can be created, that the vault
+ * pseudo-account (the sender) is not frozen, that the broker pseudo-account (a
+ * fallback fee recipient) is not deep frozen, that the borrower (a future payer
+ * and fund recipient) is not frozen, and that the broker owner (a fee
+ * recipient) is not deep frozen.
+ */
+[[nodiscard]] TER
+checkLoanFreeze(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& vaultPseudo,
+    AccountID const& brokerPseudo,
+    AccountID const& borrower,
+    AccountID const& brokerOwner,
+    beast::Journal j);
+
+/**
+ * Increment the borrower's owner count for the new loan object and verify the
+ * borrower still meets its reserve requirement.
+ */
+[[nodiscard]] TER
+reserveLoanOwner(
+    ApplyView& view,
+    AccountID const& borrower,
+    SLE::ref loanOwnerSle,
+    AccountID const& signingAccount,
+    XRPAmount preFeeBalance,
+    beast::Journal j);
+
+/**
+ * Transfer the loan principal to the borrower and the origination fee, if any,
+ * to the LoanBroker owner. Creates holdings as necessary.
+ * This function implements items 3-5 of XLS-66 spec, section 3.8.6.
+ */
+[[nodiscard]] TER
+disburseLoan(
+    ApplyViewContext& viewContext,
+    SLE::ref borrowerSle,
+    SLE::ref brokerOwnerSle,
+    AccountID const& vaultPseudo,
+    Asset const& vaultAsset,
+    Number const& loanAssetsToBorrower,
+    Number const& originationFee,
+    AccountID const& signingAccount,
+    AccountID const& authorizedCounterparty,
     beast::Journal j);
 
 }  // namespace xrpl

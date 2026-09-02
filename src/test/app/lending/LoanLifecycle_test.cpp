@@ -9,8 +9,12 @@
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 #include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 
@@ -20,6 +24,8 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
@@ -32,6 +38,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/lending/LoanSet.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
 #include <algorithm>
@@ -117,7 +125,19 @@ private:
                 Number const loanAmount{1, amountExponent};
                 for (int interestExponent = 0; interestExponent >= 0; --interestExponent)
                 {
-                    testCaseWrapper(env, mptt, assets, broker, loanAmount, interestExponent);
+                    testCaseWrapper(
+                        env, mptt, assets, broker, loanAmount, interestExponent, LoanFlow::OneStep);
+                    if (features[featureLendingProtocolV1_1])
+                    {
+                        testCaseWrapper(
+                            env,
+                            mptt,
+                            assets,
+                            broker,
+                            loanAmount,
+                            interestExponent,
+                            LoanFlow::TwoStep);
+                    }
                 }
             }
 
@@ -283,35 +303,61 @@ private:
 
         using namespace jtx;
         using namespace loan;
+        using namespace std::chrono_literals;
         Account const issuer("issuer");
         Account const borrower = issuer;
         Account const lender("lender");
-        Env env(*this);
 
-        env.fund(XRP(1'000), issuer, lender);
+        // Exercise both creation flows where supported. In the two-step flow
+        // the broker owner (lender) proposes the loan naming the issuer as the
+        // borrower, who then accepts it.
+        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
+        {
+            bool const twoStep = flow == LoanFlow::TwoStep;
 
-        static constexpr std::int64_t kIssuerBalance = 10'000'000;
-        MPTTester const asset(
-            {.env = env, .issuer = issuer, .holders = {lender}, .pay = kIssuerBalance});
+            Env env(*this);
+            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
 
-        BrokerParameters const brokerParams{
-            .debtMax = 200,
-        };
-        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
-        auto const loanSetFee = Fee(env.current()->fees().base * 2);
-        // Create Loan
-        env(set(borrower, broker.brokerID, 200), Sig(sfCounterpartySignature, lender), loanSetFee);
-        env.close();
-        // Issuer should not create MPToken
-        BEAST_EXPECT(!env.le(keylet::mptoken(asset.issuanceID(), issuer)));
-        // Issuer "borrowed" 200, OutstandingAmount decreased by 200
-        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance + 200));
-        // Pay Loan
-        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
-        env(pay(borrower, loanKeylet.key, asset(200)));
-        env.close();
-        // Issuer "re-payed" 200, OutstandingAmount increased by 200
-        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance));
+            env.fund(XRP(1'000), issuer, lender);
+
+            static constexpr std::int64_t kIssuerBalance = 10'000'000;
+            MPTTester const asset(
+                {.env = env, .issuer = issuer, .holders = {lender}, .pay = kIssuerBalance});
+
+            BrokerParameters const brokerParams{
+                .debtMax = 200,
+            };
+            auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+            auto const loanSetFee = Fee(env.current()->fees().base * 2);
+            auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
+            // Create Loan
+            if (twoStep)
+            {
+                env(set(lender, broker.brokerID, 200),
+                    kBorrower(borrower),
+                    kStartDate((env.now() + 1h).time_since_epoch().count()),
+                    loanSetFee);
+                env.close();
+                env(accept(borrower, loanKeylet.key));
+                env.close();
+            }
+            else
+            {
+                env(set(borrower, broker.brokerID, 200),
+                    Sig(sfCounterpartySignature, lender),
+                    loanSetFee);
+                env.close();
+            }
+            // Issuer should not create MPToken
+            BEAST_EXPECT(!env.le(keylet::mptoken(asset.issuanceID(), issuer)));
+            // Issuer "borrowed" 200, OutstandingAmount decreased by 200
+            BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance + 200));
+            // Pay Loan
+            env(pay(borrower, loanKeylet.key, asset(200)));
+            env.close();
+            // Issuer "re-payed" 200, OutstandingAmount increased by 200
+            BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance));
+        }
     }
 
     void
@@ -550,6 +596,92 @@ private:
             auto const objects = res[jss::result][jss::account_objects];
             BEAST_EXPECT(objects.size() == 0);
         }
+
+        // XLS-66 spec 3.8.5.2.1 (Batch-inner refinement): a Batch inner
+        // LoanSet with no Counterparty and no Borrower is rejected with
+        // temBAD_SIGNER in preflight. Inside a Batch, the immediate flow
+        // still applies but the inner transaction cannot carry a
+        // CounterpartySignature, so the Counterparty must be named
+        // explicitly on the inner transaction.
+        {
+            auto const jtx =
+                env.jt(set(lender, broker.brokerID, principalRequest), Txflags(tfInnerBatchTxn));
+            if (BEAST_EXPECT(jtx.stx))
+            {
+                PreflightContext const pfCtx(
+                    env.app(), *jtx.stx, uint256{1}, env.current()->rules(), TapBatch, env.journal);
+                BEAST_EXPECT(Transactor::invokePreflight<LoanSet>(pfCtx) == temBAD_SIGNER);
+            }
+        }
+
+        // XLS-66 flow (Batch + V1.1): a Batch inner LoanSet may name a
+        // Borrower (with a StartDate) instead of a Counterparty: the
+        // borrower is identified explicitly on the inner tx and no
+        // CounterpartySignature is required. Preflight must accept it.
+        if (features[featureLendingProtocolV1_1])
+        {
+            auto const jtx = env.jt(
+                set(lender, broker.brokerID, principalRequest),
+                Txflags(tfInnerBatchTxn),
+                kBorrower(borrower),
+                kStartDate((env.now() + 1h).time_since_epoch().count()));
+            if (BEAST_EXPECT(jtx.stx))
+            {
+                PreflightContext const pfCtx(
+                    env.app(), *jtx.stx, uint256{1}, env.current()->rules(), TapBatch, env.journal);
+                BEAST_EXPECT(Transactor::invokePreflight<LoanSet>(pfCtx) == tesSUCCESS);
+            }
+
+            // XLS-66 flow (Batch + V1.1): a Batch inner LoanSet with
+            // Borrower but no StartDate is not a valid two-step proposal
+            // and no longer masquerades as a missing-Counterparty error:
+            // it is rejected as temINVALID by getLoanFlow, past the
+            // Batch-specific check.
+            auto const jtxNoStart = env.jt(
+                set(lender, broker.brokerID, principalRequest),
+                Txflags(tfInnerBatchTxn),
+                kBorrower(borrower));
+            if (BEAST_EXPECT(jtxNoStart.stx))
+            {
+                PreflightContext const pfCtx(
+                    env.app(),
+                    *jtxNoStart.stx,
+                    uint256{1},
+                    env.current()->rules(),
+                    TapBatch,
+                    env.journal);
+                BEAST_EXPECT(Transactor::invokePreflight<LoanSet>(pfCtx) == temINVALID);
+            }
+        }
+
+        // XLS-66 flow (Batch + V1.1) success: a Batch containing an inner
+        // LoanSet that names a Counterparty (but carries no
+        // CounterpartySignature) is accepted when the counterparty signs
+        // the outer Batch. The immediate flow's counterparty consent is
+        // satisfied by the batch signature rather than an inner
+        // CounterpartySignature. Requires both the Batch and
+        // LendingProtocolV1_1 amendments.
+        if (features[featureLendingProtocolV1_1] && lendingBatchEnabled)
+        {
+            auto const lenderSeq = env.seq(lender);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
+
+            env(batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                batch::Inner(
+                    env.json(
+                        set(lender, broker.brokerID, principalRequest),
+                        kCounterparty(borrower.id()),
+                        Sig(kNone),
+                        Fee(kNone),
+                        Seq(kNone)),
+                    lenderSeq + 1),
+                batch::Inner(pay(lender, borrower, XRP(1)), lenderSeq + 2),
+                batch::Sig(borrower));
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
     }
 
     // Integration test: full lifecycle of a $1B loan in the bug regime.
@@ -690,6 +822,8 @@ public:
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
+        testBatchBypassCounterparty(all_ | featureLendingProtocolV1_1);
+        testLifecycle(all_ | featureLendingProtocolV1_1);
     }
 };
 
