@@ -1686,8 +1686,9 @@ private:
     // so this is not the vault's final outstanding share.
     //
     // Post-fixCleanup3_4_0, doWithdraw skips addEmptyHolding on a zero
-    // payout. ValidVault also treats a one-sided zero destination delta as
-    // valid when zeroDeltaIsLegitimate.
+    // payout. ValidVault accepts a missing recipient delta when
+    // zeroDeltaIsLegitimate; a present destination delta of zero is still
+    // rejected.
     void
     testBugMptZeroWithdrawMissingHolding()
     {
@@ -2010,8 +2011,7 @@ private:
     // sponsored-withdraw fee-payer fix, deltaAssetsForParty collapses that
     // economically-zero XRP delta to absence, so tesSUCCESS takes the
     // missing-recipient-delta arm gated by zeroDeltaIsLegitimate. This test
-    // covers that live SUCCESS path; it does not execute the present-delta
-    // zeroDeltaIsLegitimate disjunct. Pre-fixCleanup3_4_0 still fails the
+    // covers that live SUCCESS path. Pre-fixCleanup3_4_0 still fails the
     // invariant.
     void
     testBugXrpZeroWithdrawSponsoredFee()
