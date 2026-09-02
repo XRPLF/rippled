@@ -715,6 +715,7 @@ loanMakePayment(
 [[nodiscard]] TER
 checkLoanFreeze(
     ReadView const& view,
+    STTx const& tx,
     Asset const& asset,
     AccountID const& vaultPseudo,
     AccountID const& brokerPseudo,

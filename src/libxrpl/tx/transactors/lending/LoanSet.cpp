@@ -970,7 +970,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     }
 
     if (auto const ter = checkLoanFreeze(
-            ctx.view, asset, vaultPseudo, brokerPseudo, borrower, brokerOwner, ctx.j))
+            ctx.view, tx, asset, vaultPseudo, brokerPseudo, borrower, brokerOwner, ctx.j))
         return ter;
 
     if (twoStepFlow)

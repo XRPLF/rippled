@@ -2321,6 +2321,7 @@ loanMakePayment(
 TER
 checkLoanFreeze(
     ReadView const& view,
+    STTx const& tx,
     Asset const& asset,
     AccountID const& vaultPseudo,
     AccountID const& brokerPseudo,
@@ -2328,8 +2329,24 @@ checkLoanFreeze(
     AccountID const& brokerOwner,
     beast::Journal j)
 {
-    if (auto const ter = canAddHolding(view, asset))
-        return ter;
+    // canAddHolding is an issuer-level check (DefaultRipple for IOU,
+    // lsfMPTCanTransfer for MPT); neither overload looks at the
+    // destination, so the holdingExists() clauses only decide whether a
+    // create path is reachable at all. It always runs before
+    // fixCleanup3_4_0: IOU addEmptyHolding checks DefaultRipple ahead of
+    // the existing-line case, so only preclaim can turn an existing line
+    // under a cleared DefaultRipple into terNO_RIPPLE rather than
+    // tecINTERNAL. After the amendment an existing line short-circuits to
+    // tecDUPLICATE, which doApply ignores, so run the check only when the
+    // borrower lacks a holding, or the origination fee is nonzero and the
+    // broker owner lacks one.
+    auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
+    if (!view.rules().enabled(fixCleanup3_4_0) || !holdingExists(view, borrower, asset) ||
+        (originationFee != beast::kZero && !holdingExists(view, brokerOwner, asset)))
+    {
+        if (auto const ter = canAddHolding(view, asset))
+            return ter;
+    }
 
     // A global freeze on the asset blocks every leg of the loan regardless of
     // which account is involved, so check it once up front.

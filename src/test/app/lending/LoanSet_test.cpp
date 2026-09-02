@@ -33,6 +33,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -1101,6 +1102,69 @@ private:
         });
     }
 
+    // LoanSet used to call canAddHolding unconditionally, so an existing
+    // borrower line still failed with terNO_RIPPLE after the issuer cleared
+    // DefaultRipple. After fixCleanup3_4_0, skip that gate when the holding
+    // already exists.
+    void
+    testLoanSetExistingLineAfterIssuerClearsDefaultRipple()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        auto run = [this](FeatureBitset features, TER expected) {
+            testcase(
+                std::string(
+                    "LoanSet existing borrower line after issuer "
+                    "clears asfDefaultRipple (") +
+                (features[fixCleanup3_4_0] ? "post" : "pre") + "-fixCleanup3_4_0)");
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(10'000), issuer, lender, borrower);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(lender, usd(10'000'000)));
+            env(trust(borrower, usd(10'000'000)));
+            env.close();
+            env(pay(issuer, lender, usd(2'000'000)));
+            env(pay(issuer, borrower, usd(1'000)));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::trustLine(borrower.id(), usd.raw().get<Issue>())));
+
+            auto const broker = createVaultAndBroker(env, usd, lender);
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            Number const destBefore = env.balance(borrower, usd.raw()).number();
+            env(set(borrower, broker.brokerID, usd(100).value()),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 2),
+                Ter(expected));
+            env.close();
+
+            Number const destAfter = env.balance(borrower, usd.raw()).number();
+            if (isTesSuccess(expected))
+            {
+                BEAST_EXPECT(destAfter == destBefore + Number{100});
+            }
+            else
+            {
+                BEAST_EXPECT(destAfter == destBefore);
+            }
+        };
+
+        run(all_ - fixCleanup3_4_0, terNO_RIPPLE);
+        run(all_, tesSUCCESS);
+    }
+
 public:
     void
     run() override
@@ -1111,6 +1175,7 @@ public:
 
         testTwoStepLoanSet();
         testLoanSetClosedEnded();
+        testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
     }
 };
 
