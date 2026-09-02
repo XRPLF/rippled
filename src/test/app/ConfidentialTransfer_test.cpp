@@ -5319,11 +5319,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Test 3: Proof generated with wrong balance value.
         // The sigma proof claims balance=20 but the pedersen commitment and
         // encrypted spending balance were built for the actual balance (40).
-        // mpt_get_convert_back_proof refuses to build a proof with a claimed
-        // balance below the amount being converted, so we forge the sigma
-        // proof directly against the real commitment/ciphertext (mirroring
-        // testConvertBackOverdraftBulletproofImpl) to exercise the ledger's
-        // balance-linkage check instead of that client-side guard.
+        // we cannot call mpt_get_convert_back_proof because it has client-side
+        // verification.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
@@ -5913,11 +5910,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Test 1: Proof generated with wrong balance value.
         // The sigma proof claims balance=20 but the pedersen commitment and
         // encrypted spending balance were built for the actual balance (40).
-        // mpt_get_convert_back_proof refuses to build a proof with a claimed
-        // balance below the amount being converted, so we forge the sigma
-        // proof directly against the real commitment/ciphertext (mirroring
-        // testConvertBackOverdraftBulletproofImpl) to exercise the ledger's
-        // balance-linkage check instead of that client-side guard.
+        // we cannot call mpt_get_convert_back_proof because it has client-side
+        // verification.
         {
             uint256 const contextHash =
                 getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
