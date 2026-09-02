@@ -3182,7 +3182,7 @@ Then read the answer off the pair:
 | Expensive | Depth over ~1.2 | **Both paths queueing.** Rarer, and neither fix on its own will be enough. Treat the larger of the two costs as the lead.                                                                                                                                     |
 
 **Why the rule is shaped this way.** Three points about the thresholds, each
-learned from a dataset that an earlier version of this table got wrong:
+grounded in a measured dataset rather than a round number:
 
 - **Read cost is a relative judgement, so the band has a floor and a ceiling, not
   one cut.** A cold read on our box measured 31.8 µs mean; a cold read on the
