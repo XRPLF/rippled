@@ -1677,18 +1677,37 @@ private:
     }
 
     // Bug: a fully impaired vault may pay zero assets for a share burn.
-    // doWithdraw used to call addEmptyHolding for a self-destination even
-    // when the payout was zero, so a missing asset MPToken was created at
-    // amount 0. ValidVault then saw a one-sided zero destination delta and
-    // fired for integral assets; redeeming Alice's last share in the same tx
-    // also created that token while deleting Alice's share MPToken, which
-    // ValidMPTIssuance rejects (created + deleted > 1). Bob still owns shares,
-    // so this is not the vault's final outstanding share.
+    // Sending zero MPT is a no-op, so the vault pseudo-account's asset
+    // MPToken is never written and ValidVault, which only records deltas for
+    // created, modified or deleted entries, sees no vault delta at all.
+    //
+    // Pre-fixCleanup3_4_0 that alone makes the withdrawal impossible:
+    // zeroDeltaIsLegitimate is gated on the amendment, so the absent vault
+    // delta fails "withdrawal must change vault balance". Every pre-amendment
+    // arm below dies there, before any destination-side check runs.
+    //
+    // The destination side differs per arm, and only the vault-delta return
+    // hides that pre-amendment. With Alice's asset MPToken already present
+    // nothing touches it, so she has no delta either. With it missing,
+    // doWithdraw still called addEmptyHolding for a self-destination on a
+    // zero payout and created her MPToken at amount 0; a created MPToken is
+    // recorded even at zero, so she arrives with a present-and-zero delta,
+    // which for an integral MPT asset the destination check would reject if
+    // it were reached.
+    //
+    // ValidMPTIssuance is a separate checker and still runs. It only trips on
+    // the one arm that both creates and deletes an MPToken: Alice's last
+    // share with the asset MPToken missing, where addEmptyHolding creates the
+    // asset token while her share token is deleted (created + deleted > 1).
+    // Leftover shares with the token missing is create-only, and a last share
+    // with the token present is delete-only; neither exceeds one. Bob still
+    // owns shares throughout, so this is never the vault's final outstanding
+    // share.
     //
     // Post-fixCleanup3_4_0, doWithdraw skips addEmptyHolding on a zero
-    // payout. ValidVault accepts a missing recipient delta when
-    // zeroDeltaIsLegitimate; a present destination delta of zero is still
-    // rejected.
+    // payout and zeroDeltaIsLegitimate lets the vault-delta and
+    // missing-recipient-delta checks accept the transfer. A present
+    // destination delta of zero is still rejected.
     void
     testBugMptZeroWithdrawMissingHolding()
     {
@@ -1704,7 +1723,7 @@ private:
                                TER expected) {
             testcase(
                 std::string{"bug: MPT vault zero-value withdraw "} +
-                (removeAssetToken ? "without asset MPToken" : "with asset MPToken (control)") +
+                (removeAssetToken ? "without asset MPToken" : "with asset MPToken") +
                 (withdrawAllAliceShares ? ", Alice's last share" : ", Alice has leftover shares") +
                 (features[fixCleanup3_4_0] ? " (post-fixCleanup3_4_0)" : " (pre-fixCleanup3_4_0)"));
 
@@ -1868,6 +1887,11 @@ private:
             all_, true /* removeAssetToken */, true /* withdrawAllAliceShares */, tesSUCCESS);
         runScenario(
             all_ - fixCleanup3_4_0,
+            false /* removeAssetToken */,
+            false /* withdrawAllAliceShares */,
+            tecINVARIANT_FAILED);
+        runScenario(
+            all_ - fixCleanup3_4_0,
             true /* removeAssetToken */,
             false /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
@@ -1879,10 +1903,11 @@ private:
     }
 
     // IOU analogue of the missing-MPToken case above. Alice removes her
-    // zero-balance trust line after depositing, then burns one of her two
-    // shares after the vault is fully impaired. Bob's eight shares keep this
-    // out of the sole-shareholder loss-waiver and final-outstanding-share
-    // paths. A zero payout must not recreate Alice's unsolicited trust line.
+    // zero-balance trust line after depositing, then burns one unit from her
+    // scaled share balance after the vault is fully impaired. Bob's share
+    // balance keeps this out of the sole-shareholder loss-waiver and
+    // final-outstanding-share paths. A zero payout must not recreate Alice's
+    // unsolicited trust line.
     void
     testBugIouZeroWithdrawMissingTrustLine()
     {
