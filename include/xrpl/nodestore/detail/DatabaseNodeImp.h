@@ -5,14 +5,18 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/jss.h>
 
 #include <chrono>
 #include <cstdint>
@@ -20,6 +24,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace xrpl::node_store {
@@ -58,12 +63,32 @@ public:
 
         if (cacheSize.has_value() || cacheAge.has_value())
         {
-            cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
+            using Cache = TaggedCache<uint256, NodeObject>;
+
+            // Serialized sizes are exact, so bound this cache by bytes when
+            // cache_bytes is set; the count target remains advisory.
+            std::optional<Cache::ByteBudget> byteBudget;
+            if (auto const bytes = config.exists(Keys::kCacheBytes)
+                    ? get<std::uint64_t>(config, Keys::kCacheBytes)
+                    : 0)
+            {
+                // Charge the blob plus per-entry overhead (map node, weak
+                // tracking, control block).
+                byteBudget = Cache::ByteBudget{
+                    .bytes = bytes, .cost = [](std::shared_ptr<NodeObject> const& obj) {
+                        return (obj ? obj->getData().size() : 0) + 160;
+                    }};
+            }
+
+            cache_ = std::make_shared<Cache>(
                 "DatabaseNodeImp",
                 cacheSize.value_or(0),
                 std::chrono::minutes(cacheAge.value_or(0)),
                 stopwatch(),
-                j);
+                j,
+                beast::insight::NullCollector::make(),
+                0,
+                std::move(byteBudget));
         }
 
         XRPL_ASSERT(
@@ -119,6 +144,17 @@ public:
 
     void
     sweep() override;
+
+    void
+    getCountsJson(json::Value& obj) override
+    {
+        Database::getCountsJson(obj);
+        if (cache_)
+        {
+            obj[jss::node_cache_size] = static_cast<json::UInt>(cache_->getCacheSize());
+            obj[jss::node_cache_bytes] = std::to_string(cache_->getCacheBytes());
+        }
+    }
 
 private:
     // Cache for database objects. This cache is not always initialized. Check

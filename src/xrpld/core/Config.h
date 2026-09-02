@@ -39,6 +39,7 @@ enum class SizedItem : std::size_t {
     LgrDbCache,
     BurstSize,
     AccountIdCacheSize,
+    SleCacheSize,
 };
 
 /**

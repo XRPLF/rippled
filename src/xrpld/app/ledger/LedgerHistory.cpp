@@ -10,6 +10,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -42,7 +43,13 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
           app_.config().getValueFor(SizedItem::LedgerSize),
           std::chrono::seconds{app_.config().getValueFor(SizedItem::LedgerAge)},
           stopwatch(),
-          app_.getJournal("TaggedCache"))
+          app_.getJournal("TaggedCache"),
+          beast::insight::NullCollector::make(),
+          // A ledger byte size is ill-posed (nodes are shared copy-on-write
+          // across ledgers), so bound this cache by count. 0 = cap off when
+          // enforcement is disabled.
+          app_.config().cacheMemoryBudget() != 0 ? app_.config().getValueFor(SizedItem::LedgerSize)
+                                                 : 0)
     , consensusValidated_(
           "ConsensusValidated",
           64,

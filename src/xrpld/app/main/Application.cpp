@@ -51,6 +51,7 @@
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/insight/Event.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -259,6 +260,10 @@ public:
     std::unique_ptr<TxQ> txQ_;
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer sweepTimer_;
+
+    // Set by doSweep when post-trim RSS exceeds 150% of the memory budget;
+    // accelerates the sweep cadence until RSS retreats below 130%.
+    std::atomic<bool> memoryPressure_{false};
     boost::asio::steady_timer entropyTimer_;
 
     std::optional<SQLiteDatabase> relationalDatabase_;
@@ -366,10 +371,12 @@ public:
               logs_->journal("TaggedCache"))
         , cachedSLEs_(
               "Cached SLEs",
-              0,
+              config_->getValueFor(SizedItem::SleCacheSize),
               std::chrono::minutes(1),
               stopwatch(),
-              logs_->journal("CachedSLEs"))
+              logs_->journal("CachedSLEs"),
+              beast::insight::NullCollector::make(),
+              config_->getValueFor(SizedItem::SleCacheSize))
         , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->networkId))
         , validatorKeys_(*config_, journal_)
         , resourceManager_(
@@ -923,9 +930,11 @@ public:
                 }))
         {
             using namespace std::chrono;
-            sweepTimer_.expires_after(
-                seconds{config_->sweepInterval.value_or(
-                    config_->getValueFor(SizedItem::SweepInterval))});
+            auto interval = seconds{
+                config_->sweepInterval.value_or(config_->getValueFor(SizedItem::SweepInterval))};
+            if (memoryPressure_)
+                interval = std::min(interval, seconds{10});
+            sweepTimer_.expires_after(interval);
             sweepTimer_.async_wait(std::move(*optionalCountedHandler));
         }
     }
@@ -1094,7 +1103,30 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
-        mallocTrim("doSweep", journal_);
+        auto const trim = mallocTrim("doSweep", journal_);
+
+        // Circuit breaker, not a control loop: byte-charged caps do the real
+        // bounding, and RSS legitimately lags eviction (allocator retention),
+        // so pressure only accelerates sweeps and warns. Hysteresis: trip at
+        // 150% of the budget, reset below 130%.
+        if (auto const budget = config_->cacheMemoryBudget(); budget != 0 && trim.rssAfterKB > 0)
+        {
+            auto const rss = static_cast<std::uint64_t>(trim.rssAfterKB) * 1024;
+            if (rss > budget + (budget / 2))
+            {
+                if (!memoryPressure_)
+                {
+                    JLOG(journal_.warn())
+                        << "memory pressure: RSS " << (rss >> 20) << " MB exceeds 150% of the "
+                        << (budget >> 20) << " MB memory_limit; sweeping every 10s";
+                }
+                memoryPressure_ = true;
+            }
+            else if (rss < budget + (budget * 3 / 10))
+            {
+                memoryPressure_ = false;
+            }
+        }
 
         // Set timer to do another sweep later.
         setSweepTimer();

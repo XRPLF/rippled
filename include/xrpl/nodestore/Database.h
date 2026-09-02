@@ -197,7 +197,7 @@ public:
         return fetchSz_;
     }
 
-    void
+    virtual void
     getCountsJson(json::Value& obj);
 
     /**

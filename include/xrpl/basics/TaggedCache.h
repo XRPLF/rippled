@@ -18,6 +18,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <type_traits>
@@ -75,10 +76,24 @@ public:
 
 public:
     /**
+     * A byte budget for the strongly-cached entries. Each entry is charged
+     * `cost(ptr)` bytes when it becomes strong; growth past `bytes` evicts
+     * like the entry cap. The cost should include the value's heap payload
+     * plus per-entry overhead.
+     */
+    struct ByteBudget
+    {
+        std::size_t bytes = 0;
+        std::function<std::size_t(SharedPointerType const&)> cost;
+    };
+
+    /**
      * @param cacheHardCap When positive, a hard upper bound on the number of
      *     strongly-cached entries, enforced by demoting the approximately
      *     oldest entry whenever growth would exceed it. 0 disables the cap
      *     (the periodic sweep alone bounds the cache).
+     * @param byteBudget When set, a hard upper bound on the charged bytes of
+     *     strongly-cached entries, enforced the same way.
      */
     TaggedCache(
         std::string const& name,
@@ -87,7 +102,8 @@ public:
         clock_type& clock,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
-        int cacheHardCap = 0);
+        int cacheHardCap = 0,
+        std::optional<ByteBudget> byteBudget = std::nullopt);
 
 public:
     /**
@@ -107,6 +123,13 @@ public:
 
     int
     getTrackSize() const;
+
+    /**
+     * Returns the charged bytes of strongly-cached entries; 0 unless a
+     * byte budget with a cost function is configured.
+     */
+    std::size_t
+    getCacheBytes() const;
 
     float
     getHitRate();
@@ -322,6 +345,10 @@ private:
         shared_weak_combo_pointer_type ptr;
         clock_type::time_point lastAccess;
 
+        // Bytes charged against the byte budget while strong; 0 when weak
+        // or when no budget is configured.
+        std::uint32_t costBytes{0};
+
         ValueEntry(clock_type::time_point const& lastAccess, shared_pointer_type const& ptr)
             : ptr(ptr), lastAccess(lastAccess)
         {
@@ -378,6 +405,7 @@ private:
         KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
+        std::atomic<std::uint64_t>& allBytesRemoved,
         std::scoped_lock<std::recursive_mutex> const&);
 
     [[nodiscard]] std::thread
@@ -387,6 +415,7 @@ private:
         KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
+        std::atomic<std::uint64_t>& allBytesRemoved,
         std::scoped_lock<std::recursive_mutex> const&);
 
     beast::Journal journal_;
@@ -409,12 +438,30 @@ private:
     // weak-to-strong revivals). 0 disables it (sweep-only sizing).
     int const cacheHardCap_;
 
+    // Byte-denominated bound on strongly-cached entries, enforced the same
+    // way; each entry is charged by the budget's cost function while strong.
+    std::optional<ByteBudget> const byteBudget_;
+
+    // Charged bytes of strongly-cached entries (under mutex_).
+    std::size_t cacheBytes_{0};
+
     // Total hard-cap evictions (under mutex_); the first marks saturation
     // onset for logging.
     std::uint64_t hardCapEvictions_{0};
 
     // Number of items cached
     int cacheCount_{0};
+
+    // Charge or release an entry's bytes against the byte budget. No-ops
+    // without a configured budget; callers hold mutex_.
+    void
+    chargeEntry(ValueEntry& entry, SharedPointerType const& ptr);
+    void
+    dischargeEntry(ValueEntry& entry);
+
+    // True when either the entry cap or the byte budget is exceeded.
+    [[nodiscard]] bool
+    overHardCap() const;
 
     // Rotating bucket cursor for evictForHardCap so successive over-cap
     // evictions sweep the whole partition (CLOCK hand) instead of repeatedly

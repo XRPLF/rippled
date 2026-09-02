@@ -1382,6 +1382,10 @@ Config::getValueFor(SizedItem item) const
             // Fixed regardless of budget: ~22 MB at 72 bytes per slot, and
             // the value stays prime for hash distribution.
             return 300007;
+        case SizedItem::SleCacheSize:
+            // Closed-ledger SLEs pulled by RPC and pathfinding, a few KB
+            // each; previously unbounded.
+            return std::clamp(gb * 1024, 4096, 262144);
     }
 
     UNREACHABLE("xrpl::Config::getValueFor : invalid item");
