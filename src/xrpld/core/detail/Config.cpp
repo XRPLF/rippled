@@ -679,13 +679,15 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    // A budget beyond physical memory cannot be honored and recreates the
-    // oversized-preset OOM this setting exists to prevent.
+    // A budget beyond the detected memory (physical RAM, or the cgroup limit
+    // when one is set) cannot be honored and recreates the oversized-preset
+    // OOM this setting exists to prevent.
     if (memoryLimit && ramSize_ != 0 && *memoryLimit > (ramSize_ << 30) && !quiet_)
     {
         std::cerr << "WARNING: the configured memory budget (" << (*memoryLimit >> 30)
-                  << " GB) exceeds detected RAM (" << ramSize_ << " GB); set [memory_limit] to "
-                  << ramSize_ << " or less.\n";
+                  << " GB) exceeds detected memory (" << ramSize_
+                  << " GB, RAM or cgroup limit); set [memory_limit] to " << ramSize_
+                  << " or less.\n";
     }
 
     if (getSingleSection(secConfig, Sections::kSigningSupport, strTemp, j_))
