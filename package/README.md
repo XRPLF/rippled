@@ -51,13 +51,19 @@ To print the full packaging matrix (artifact names and images) for the current
 ### Via CI
 
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
-`reusable-package.yml`. That workflow generates its own packaging matrix from
-the configs that carry a `package` map (via `generate.py --packaging`) and fans
-out one job per distro. Each job downloads the pre-built `xrpld` and
-`validator-keys` binary artifacts and runs in that distro's container, building
-the format `package.type` declares. The packaging script derives the package
-version from the downloaded binary's `xrpld --version` output; no CMake
-configure or build step is needed inside the packaging job.
+`reusable-package.yml`, which runs in three stages:
+
+1. `package` fans out one job per config carrying a `package` map, building and
+   signing in that config's container, and uploading `<config>-pkg` alongside
+   `<config>-pkg-debug` for the much larger debug symbols.
+2. `test-install` installs `<config>-pkg` in the container of every distro the
+   packages target and runs the binaries there, so one that cannot be installed
+   never reaches Nexus.
+3. `publish` uploads both artifacts, or lists what it would upload.
+
+The packaging script derives the package version from the downloaded binary's
+`xrpld --version` output; no CMake configure or build step is needed inside the
+packaging job.
 
 The binaries come from the `debian` and `rhel` build configs themselves — the
 ones carrying the `package` map — which pass `-Dvalidator_keys=ON` so that the
@@ -154,9 +160,9 @@ the last, and the date and hash say which commit a package on
 `packages.xrplf.org` came from. Both reach the packaging scripts as arguments,
 so neither script derives anything itself.
 
-Publishing is the last step of each packaging job, uploading from the container
-that built the packages with the `publish_pkg.py` shipped in the image — the
-same copy other repositories run. Without `publish: true` the step is a
+Publishing is its own job, gated behind `test-install`, uploading from the same
+image that built the packages with the `publish_pkg.py` shipped in it — the
+same copy other repositories run. Without `publish: true` the job is a
 `--dry-run`, listing the uploads it would make without needing credentials, so
 any run that builds packages also exercises the upload routing. `on-trigger.yml`
 passes `publish: true` for develop pushes in `XRPLF/rippled` and `on-tag.yml`
