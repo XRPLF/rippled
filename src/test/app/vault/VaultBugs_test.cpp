@@ -1683,13 +1683,17 @@ private:
     // self-destination payout and only tolerates tecDUPLICATE, so
     // tecINTERNAL from a missing DefaultRipple flag aborted the
     // withdrawal. fixCleanup3_4_0 checks existence first and maps the
-    // create-path DefaultRipple miss to terNO_RIPPLE.
+    // create-path DefaultRipple miss to terNO_RIPPLE. Global freeze on an
+    // existing line is still rejected later by checkWithdrawFreeze.
     void
     testBugSelfWithdrawAfterIssuerClearsDefaultRipple()
     {
         using namespace test::jtx;
 
-        auto runExistingLine = [this](FeatureBitset features, TER selfExpected) {
+        auto runExistingLine = [this](
+                                   FeatureBitset features,
+                                   TER selfExpected,
+                                   bool issuerGlobalFreeze = false) {
             Env env(*this, features);
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -1721,22 +1725,51 @@ private:
 
             env(fclear(issuer, asfDefaultRipple));
             env.close();
+            if (issuerGlobalFreeze)
+            {
+                env(fset(issuer, asfGlobalFreeze));
+                env.close();
+            }
 
             BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usdIssue)));
 
-            // Alice's USD line is unchanged; a later deposit still succeeds.
-            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(10)}));
-            env.close();
+            // Alice's USD line is unchanged; a later deposit still succeeds
+            // unless the issuer is globally frozen.
+            if (!issuerGlobalFreeze)
+            {
+                env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(10)}));
+                env.close();
+            }
+
+            Number const destBefore = env.balance(alice, usd.raw()).number();
+            Number const vaultBefore = env.le(vaultKeylet)->at(sfAssetsTotal);
+            Number const withdrawAmt{50};
 
             env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
                 Ter(selfExpected));
             env.close();
 
-            auto destTx =
-                vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)});
-            destTx[sfDestination] = bob.human();
-            env(destTx);
-            env.close();
+            Number const destAfter = env.balance(alice, usd.raw()).number();
+            Number const vaultAfter = env.le(vaultKeylet)->at(sfAssetsTotal);
+            if (isTesSuccess(selfExpected))
+            {
+                BEAST_EXPECT(destAfter == destBefore + withdrawAmt);
+                BEAST_EXPECT(vaultAfter == vaultBefore - withdrawAmt);
+            }
+            else
+            {
+                BEAST_EXPECT(destAfter == destBefore);
+                BEAST_EXPECT(vaultAfter == vaultBefore);
+            }
+
+            if (!issuerGlobalFreeze)
+            {
+                auto destTx =
+                    vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)});
+                destTx[sfDestination] = bob.human();
+                env(destTx);
+                env.close();
+            }
         };
 
         auto runDeletedLine = [this](FeatureBitset features, TER selfExpected) {
@@ -1815,8 +1848,25 @@ private:
             env.close();
             BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usdIssue)));
 
+            Number const destBefore = env.balance(alice, usd.raw()).number();
+            Number const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+            Number const withdrawAmt{50};
+
             env(coverWithdraw(alice, brokerKeylet.key, usd(50).value()), Ter(selfExpected));
             env.close();
+
+            Number const destAfter = env.balance(alice, usd.raw()).number();
+            Number const coverAfter = env.le(brokerKeylet)->at(sfCoverAvailable);
+            if (isTesSuccess(selfExpected))
+            {
+                BEAST_EXPECT(destAfter == destBefore + withdrawAmt);
+                BEAST_EXPECT(coverAfter == coverBefore - withdrawAmt);
+            }
+            else
+            {
+                BEAST_EXPECT(destAfter == destBefore);
+                BEAST_EXPECT(coverAfter == coverBefore);
+            }
         };
 
         auto runPrivateVault = [this](FeatureBitset features, TER selfExpected, TER destExpected) {
@@ -1889,6 +1939,11 @@ private:
             "bug: VaultWithdraw to self succeeds after issuer clears "
             "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
         runExistingLine(all_, tesSUCCESS);
+
+        testcase(
+            "bug: VaultWithdraw to self with an existing line still gets "
+            "tecFROZEN under asfGlobalFreeze (post-fixCleanup3_4_0)");
+        runExistingLine(all_, tecFROZEN, true);
 
         testcase(
             "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
