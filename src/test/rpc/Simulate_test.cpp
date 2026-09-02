@@ -14,7 +14,6 @@
 #include <test/jtx/token.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/RPCHandler.h>
 
 #include <xrpl/basics/Slice.h>
@@ -37,15 +36,12 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/serialize.h>
 #include <xrpl/resource/Fees.h>
 
 #include <chrono>
-#include <condition_variable>
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <string>
 
@@ -1393,32 +1389,7 @@ class Simulate_test : public beast::unit_test::Suite
             {}};
 
         json::Value result;
-
-        class gate
-        {
-            std::mutex mutex_;
-            std::condition_variable cv_;
-            bool signaled_ = false;
-
-        public:
-            void
-            signal()
-            {
-                std::lock_guard lock(mutex_);
-                signaled_ = true;
-                cv_.notify_all();
-            }
-
-            template <class Rep, class Period>
-            bool
-            wait_for(std::chrono::duration<Rep, Period> const& rel_time)
-            {
-                std::unique_lock lock(mutex_);
-                return cv_.wait_for(lock, rel_time, [&] { return signaled_; });
-            }
-        };
-
-        gate g;
+        Gate g;
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = params;
             context.coro = coro;
@@ -1427,7 +1398,7 @@ class Simulate_test : public beast::unit_test::Suite
         });
 
         using namespace std::chrono_literals;
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
 
         // The handler must have set loadType to kFeeHeavyBurdenRpc
         BEAST_EXPECT(loadType == resource::kFeeHeavyBurdenRpc);
