@@ -25,8 +25,6 @@
 #   An additional list of validation public keys to always accept as
 #   validators. Entries use the same format as [validators] and are merged
 #   with it at startup; this section exists mainly for backward compatibility.
-#   Providing [validators], [validator_keys], or [validator_list_keys]
-#   satisfies the requirement to configure at least one source of validators.
 #
 #   Examples:
 #    n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
