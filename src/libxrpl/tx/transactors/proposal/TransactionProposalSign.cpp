@@ -146,6 +146,16 @@ TransactionProposalSign::preclaim(PreclaimContext const& ctx)
     }
 
     auto proposedTx = sleProposal->getFieldObject(sfProposedTransaction);
+
+    // Terminal proposals are cleaned up in doApply regardless of signer or
+    // signature validity, so short-circuit before doing any signing-data or
+    // authorization work (On-Chain Cosigner spec §6.3.2.2).
+    if (proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx))
+    {
+        JLOG(ctx.j.debug()) << "TransactionProposalSign: proposal is terminal.";
+        return tesSUCCESS;
+    }
+
     auto const proposalSignature = ctx.tx.getFieldObject(sfProposalSignature);
     auto const signingFor = ctx.tx.getAccountID(sfSigningFor);
     auto const signerAccount = proposalSignature.getAccountID(sfAccount);
@@ -166,15 +176,6 @@ TransactionProposalSign::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "TransactionProposalSign: invalid signature "
                                "over the proposed transaction.";
         return temBAD_SIGNATURE;
-    }
-
-    // Terminal is checked before authorization: a late Sign both fails and
-    // cleans up, regardless of whether this signer would have been allowed
-    // to contribute (On-Chain Cosigner spec §6.3.2.2).
-    if (proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx))
-    {
-        JLOG(ctx.j.debug()) << "TransactionProposalSign: proposal is terminal.";
-        return tesSUCCESS;
     }
 
     if (!proposal::isRequiredSigningFor(proposedTx, signingFor))

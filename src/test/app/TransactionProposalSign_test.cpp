@@ -338,6 +338,52 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
     }
 
     void
+    testExpiredWithBadSignature(FeatureBitset features)
+    {
+        testcase("bad signature against a terminal proposal still deletes it");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const target{"target"};
+        Account const dest{"dest"};
+        Account const ceo{"ceo"};
+        env.fund(XRP(10000), target, dest, ceo);
+        env.close();
+
+        env(signers(target, 1, {{ceo, 1}}));
+        env.close();
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        std::uint32_t const ownersBefore = ownerCount(env, target);
+
+        env(proposal::create(
+            target,
+            proposal::unsignedPayload(env, pay(target, dest, XRP(1)), ticketSeq),
+            proposal::expiration(env, 1s)));
+        env.close();
+        BEAST_EXPECT(proposal::entry(env, target, ticketSeq));
+
+        // The proposal expired one second after creation and default close
+        // interval is 5s, so it is now terminal. Preclaim must short-circuit
+        // before signature verification, so a garbage TxnSignature that would
+        // otherwise be rejected with temBAD_SIGNATURE still triggers cleanup
+        // and returns tecEXPIRED (On-Chain Cosigner spec §6.3.2.2).
+        {
+            json::Value jv = proposal::sign(env, ceo, target, ticketSeq, target, ceo);
+            jv[sfProposalSignature.jsonName][jss::TxnSignature] = std::string(128, 'A');
+            env(jv, Ter(tecEXPIRED));
+            env.close();
+        }
+
+        BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+        BEAST_EXPECT(env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+        BEAST_EXPECT(ownerCount(env, target) == ownersBefore);
+    }
+
+    void
     testWrongSign(FeatureBitset features)
     {
         testcase("wrong sign");
@@ -500,6 +546,7 @@ struct TransactionProposalSign_test : public beast::unit_test::Suite
         testOrdinarySingleSign(all);
         testOrdinaryDelegate(all);
         testExpired(all);
+        testExpiredWithBadSignature(all);
         testWrongSign(all);
         testDuplicateAndModeConflict(all);
         testBatch(all);
