@@ -140,6 +140,16 @@ protected:
         Buffer const& pcBlindingFactor,
         uint256 const& contextHash)
     {
+        if (pedersenCommitment.size() != kCompressedEcPointLength)
+            Throw<std::runtime_error>("getForgedConvertBackProof: bad pedersenCommitment length");
+        if (encryptedSpendingBalance.size() != kEcGamalEncryptedTotalLength)
+        {
+            Throw<std::runtime_error>(
+                "getForgedConvertBackProof: bad encryptedSpendingBalance length");
+        }
+        if (amt > claimedBalance)
+            Throw<std::runtime_error>("getForgedConvertBackProof: amt exceeds claimedBalance");
+
         auto* const ctx = mpt_secp256k1_context();
         auto const holderPubKey = requireOptional(mpt.getPubKey(holder), "Missing holder pubkey");
         auto const holderPrivKey =
