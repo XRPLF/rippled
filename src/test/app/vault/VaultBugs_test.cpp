@@ -1892,6 +1892,11 @@ private:
             tecINVARIANT_FAILED);
         runScenario(
             all_ - fixCleanup3_4_0,
+            false /* removeAssetToken */,
+            true /* withdrawAllAliceShares */,
+            tecINVARIANT_FAILED);
+        runScenario(
+            all_ - fixCleanup3_4_0,
             true /* removeAssetToken */,
             false /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
