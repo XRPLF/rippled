@@ -120,10 +120,9 @@ lz4Decompress(
             }
             compressed.resize(inSize);
         }
-	
-        auto const bytesToCopy = std::min(chunkSizeAsSizeT, inSize - copiedInSize);
-        
-	std::copy(chunk, chunk + bytesToCopy, compressed.data() + copiedInSize);
+        auto const bytesToCopy =
+            std::min(chunkSizeAsSizeT, inSize - copiedInSize);
+        std::copy(chunk, chunk + bytesToCopy, compressed.data() + copiedInSize);
 
         copiedInSize += bytesToCopy;
 
