@@ -2,6 +2,12 @@
 
 export DH_VERBOSE = 1
 
+# The glibc the Nix toolchain builds against, and so the real floor for the
+# binaries. dpkg-shlibdeps would instead derive libc6 (>= 2.34) from the build
+# host's symbols file, where sysconf carries that minver, locking out distros
+# the binaries actually run on.
+LIBC_MIN = 2.31
+
 %:
 	dh $@
 
@@ -11,6 +17,8 @@ override_dh_auto_configure override_dh_auto_build override_dh_auto_test:
 override_dh_installsystemd:
 	dh_installsystemd --no-stop-on-upgrade xrpld.service
 
+# The tmpfiles snippet sets ownership to the xrpld user, so the sysusers snippet
+# has to be emitted first: run it early and make its own sequence slot a no-op.
 execute_before_dh_installtmpfiles:
 	dh_installsysusers
 
@@ -21,6 +29,20 @@ override_dh_install:
 	install -D -m 0755 validator-keys   debian/xrpld/usr/bin/validator-keys
 	install -D -m 0644 xrpld.cfg        debian/xrpld/etc/xrpld/xrpld.cfg
 	install -D -m 0644 validators.txt   debian/xrpld/etc/xrpld/validators.txt
+
+override_dh_shlibdeps:
+	dh_shlibdeps
+	# Guards against the toolchain moving past LIBC_MIN and the packages then
+	# claiming a floor they do not meet.
+	for binary in xrpld validator-keys; do \
+		needed=$$(readelf --dyn-syms --wide $$binary \
+			| grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -uV | tail -1); \
+		if dpkg --compare-versions "$$needed" gt "$(LIBC_MIN)"; then \
+			echo "$$binary needs glibc $$needed, above LIBC_MIN $(LIBC_MIN)" >&2; \
+			exit 1; \
+		fi; \
+	done
+	sed -i 's/libc6 (>= [0-9.]*)/libc6 (>= $(LIBC_MIN))/' debian/xrpld.substvars
 
 override_dh_dwz:
 	@:
