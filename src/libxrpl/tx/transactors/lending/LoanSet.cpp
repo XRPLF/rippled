@@ -372,11 +372,17 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // canAddHolding does not look at existing lines. After
-    // fixCleanup3_4_0, addEmptyHolding is a no-op when the destination
-    // already holds the asset, so skip this gate unless a holding would
-    // actually be created (borrower always; broker owner if there is an
-    // origination fee).
+    // canAddHolding is an issuer-level check (DefaultRipple for IOU,
+    // lsfMPTCanTransfer for MPT); neither overload looks at the
+    // destination, so the holdingExists() clauses only decide whether a
+    // create path is reachable at all. It always runs before
+    // fixCleanup3_4_0: IOU addEmptyHolding checks DefaultRipple ahead of
+    // the existing-line case, so only preclaim can turn an existing line
+    // under a cleared DefaultRipple into terNO_RIPPLE rather than
+    // tecINTERNAL. After the amendment an existing line short-circuits to
+    // tecDUPLICATE, which doApply ignores, so run the check only when the
+    // borrower lacks a holding, or the origination fee is nonzero and the
+    // broker owner lacks one.
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
     if (!ctx.view.rules().enabled(fixCleanup3_4_0) || !holdingExists(ctx.view, borrower, asset) ||
         (originationFee != beast::kZero && !holdingExists(ctx.view, brokerOwner, asset)))

@@ -239,14 +239,13 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 //------------------------------------------------------------------------------
 
 /**
- * After fixCleanup3_4_0, if the destination already holds this IOU, returns
- * tecDUPLICATE and does not consult issuer freeze or DefaultRipple. Freeze
- * and DefaultRipple still apply on the create path (DefaultRipple off is
- * terNO_RIPPLE). Transactors that may create a new holding in doApply must
- * call canAddHolding() in preclaim only when that destination does not
- * already hold the asset. Do not call canAddHolding() merely because
- * addEmptyHolding() is invoked: that helper does not check whether a
- * holding already exists.
+ * XRP and the issuer itself are always tesSUCCESS. Otherwise, after
+ * fixCleanup3_4_0, an existing trust line returns tecDUPLICATE without
+ * consulting issuer freeze or DefaultRipple; both still apply on the create
+ * path (DefaultRipple off is terNO_RIPPLE). canAddHolding() ignores existing
+ * holdings, so transactors that may create a holding in doApply should gate
+ * their preclaim call on it: after the amendment only when no holding
+ * exists, before it always.
  */
 [[nodiscard]] TER
 addEmptyHolding(
