@@ -25,6 +25,7 @@
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -32,6 +33,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -81,7 +83,7 @@ namespace xrpl::detail {
 static std::string
 toString(TableType type)
 {
-    static_assert(kTableTypeCount == 3, "Need to modify switch statement if enum is modified");
+    static_assert(kTableTypeCount == 4, "Need to modify switch statement if enum is modified");
 
     switch (type)
     {
@@ -91,6 +93,8 @@ toString(TableType type)
             return "Transactions";
         case TableType::AccountTransactions:
             return "AccountTransactions";
+        case TableType::BatchInnerResults:
+            return "BatchInnerResults";
         // LCOV_EXCL_START
         default:
             UNREACHABLE("xrpl::detail::toString : invalid TableType");
@@ -183,6 +187,43 @@ void
 deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
     session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq < " << ledgerSeq << ";";
+}
+
+std::vector<BatchInnerResult>
+getBatchInnerResults(soci::session& session, uint256 const& parentBatchId)
+{
+    std::vector<BatchInnerResult> results;
+
+    std::string const parentHex = to_string(parentBatchId);
+    std::string innerHex;
+    int index = 0;
+    int ter = 0;
+    int applied = 0;
+
+    soci::statement st =
+        (session.prepare << "SELECT InnerTxnID, TxnIndex, TERResult, Applied "
+                            "FROM BatchInnerResults WHERE ParentBatchID = :parent "
+                            "ORDER BY TxnIndex ASC;",
+         soci::use(parentHex),
+         soci::into(innerHex),
+         soci::into(index),
+         soci::into(ter),
+         soci::into(applied));
+    st.execute();
+
+    while (st.fetch())
+    {
+        BatchInnerResult r;
+        r.parentBatchId = parentBatchId;
+        if (!r.innerTxId.parseHex(innerHex))
+            continue;
+        r.index = static_cast<std::uint32_t>(index);
+        r.ter = TER::fromInt(ter);
+        r.applied = applied != 0;
+        results.push_back(r);
+    }
+
+    return results;
 }
 
 std::size_t
@@ -285,6 +326,12 @@ saveValidatedLedger(
             "DELETE FROM AccountTransactions WHERE LedgerSeq = {};";
         static constexpr char const* kDeleteAcctTrans =
             "DELETE FROM AccountTransactions WHERE TransID = '{}';";
+        static constexpr char const* kDeleteBatchInner =
+            "DELETE FROM BatchInnerResults WHERE LedgerSeq = {};";
+        static constexpr char const* kAddBatchInner =
+            "INSERT OR REPLACE INTO BatchInnerResults "
+            "(ParentBatchID, InnerTxnID, TxnIndex, LedgerSeq, TERResult, Applied) "
+            "VALUES (:parent, :inner, :idx, :seq, :ter, :applied);";
 
         {
             auto db = ldgDB.checkoutDb();
@@ -307,6 +354,7 @@ saveValidatedLedger(
 
             *db << std::format(kDeleteTranS1, seq);
             *db << std::format(kDeleteTranS2, seq);
+            *db << std::format(kDeleteBatchInner, seq);
 
             std::string const ledgerSeq(std::to_string(seq));
 
@@ -377,6 +425,19 @@ saveValidatedLedger(
                     seq,
                     acceptedLedgerTx->getTxnSeq(),
                     app.getNetworkIDService().getNetworkID());
+            }
+
+            // Only a ledger this node built carries these; one acquired from the network
+            // has none and writes nothing.
+            for (auto const& r : ledger->batchInnerResults())
+            {
+                std::string const parent = to_string(r.parentBatchId);
+                std::string const inner = to_string(r.innerTxId);
+                int const idx = static_cast<int>(r.index);
+                int const ter = TERtoInt(r.ter);
+                int const applied = r.applied ? 1 : 0;
+                *db << kAddBatchInner, soci::use(parent), soci::use(inner), soci::use(idx),
+                    soci::use(seq), soci::use(ter), soci::use(applied);
             }
 
             tr.commit();

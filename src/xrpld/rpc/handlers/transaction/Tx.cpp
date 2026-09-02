@@ -18,10 +18,13 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
@@ -34,6 +37,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -58,6 +62,7 @@ struct TxResult
     std::optional<NetClock::time_point> closeTime;
     std::optional<uint256> ledgerHash;
     TxSearched searchedAll = TxSearched::Unknown;
+    std::vector<BatchInnerResult> innerResults;
 };
 
 struct TxArgs
@@ -159,7 +164,14 @@ doTxHelp(rpc::Context& context, TxArgs args)
         result.validated =
             isValidated(context.ledgerMaster, ledger->header().seq, ledger->header().hash);
         if (result.validated)
+        {
             result.closeTime = context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
+            if (txn->getSTransaction()->getTxnType() == ttBATCH)
+            {
+                result.innerResults =
+                    context.app.getRelationalDatabase().getBatchInnerResults(txn->getID());
+            }
+        }
 
         // compute outgoing CTID
         if (meta->getAsObject().isFieldPresent(sfTransactionIndex))
@@ -260,6 +272,20 @@ populateJsonResponse(
 
         if (result.ctid)
             response[jss::ctid] = *(result.ctid);
+
+        // Present only for a validated Batch whose inner outcomes this node recorded while
+        // building the ledger. In RawTransactions order.
+        if (!result.innerResults.empty())
+        {
+            auto& inner = response[jss::inner_results] = json::ValueType::Array;
+            for (auto const& r : result.innerResults)
+            {
+                json::Value& entry = inner.append(json::ValueType::Object);
+                entry[jss::hash] = to_string(r.innerTxId);
+                entry[jss::result] = transToken(r.ter);
+                entry[jss::applied] = r.applied;
+            }
+        }
     }
     return response;
 }

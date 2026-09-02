@@ -299,6 +299,7 @@ JSS(in);                             // out: OverlayImpl
 JSS(inLedger);                       // out: tx/Transaction
 JSS(inbound);                        // out: PeerImp
 JSS(index);                          // in: LedgerEntry
+JSS(inner_results);                  // out: Tx
                                      // out: STLedgerEntry, LedgerEntry, TxHistory, LedgerData
 JSS(info);                           // out: ServerInfo, ConsensusInfo, FetchInfo
 JSS(initial_sync_duration_us);       //

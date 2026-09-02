@@ -3,6 +3,7 @@
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -150,6 +151,9 @@ public:
      */
     void
     deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq) override;
+
+    std::vector<BatchInnerResult>
+    getBatchInnerResults(uint256 const& parentBatchId) override;
 
     /**
      * @brief deleteAccountTransactionsBeforeLedgerSeq Deletes all account
