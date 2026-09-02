@@ -8,6 +8,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
@@ -30,6 +31,31 @@ constexpr HashRouterFlags kSfSiggood = HashRouterFlags::PRIVATE2;    // Signatur
 constexpr HashRouterFlags kSfLocalbad = HashRouterFlags::PRIVATE3;   // Local checks failed
 constexpr HashRouterFlags kSfLocalgood = HashRouterFlags::PRIVATE4;  // Local checks passed
 
+// Before fixCleanup3_4_0, a signature in an alternate role field, such as
+// sfSponsorSignature, covered the same bytes as the top level signature. Which
+// bytes a role signature must cover therefore depends on whether the fix is
+// enabled, but the four flags above record only the verdict, not the rules that
+// produced it. A verdict reached under one prefix would otherwise be reused
+// under the other.
+//
+// The two flags below hold the verdict for the pre-fix prefixes, so the pre-fix
+// and post-fix verdicts occupy separate slots and neither is ever read in the
+// other's era. Nothing is cleared when the amendment activates: setFlags only
+// sets bits, so a stale pre-fix verdict simply stops being read and ages out
+// with the rest of the routing table.
+//
+// This is not one switchover at a single instant. The era is chosen per call
+// from the rules passed in, and callers do not agree on the rules: relay and
+// submit verify against the validated rules, which lag the open ledger rules
+// that preflight2 verifies against. At the amendment's flag ledger the same
+// transaction can therefore be checked under both prefixes, on the same node,
+// at the same time.
+//
+// Remove these two flags, and oldPrefixSig below, when Cleanup3_4_0 is retired
+// in features.macro.
+constexpr HashRouterFlags kSfSigbadOldPrefix = HashRouterFlags::PRIVATE7;
+constexpr HashRouterFlags kSfSiggoodOldPrefix = HashRouterFlags::PRIVATE8;
+
 //------------------------------------------------------------------------------
 
 std::pair<Validity, std::string>
@@ -48,21 +74,41 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
         return {Validity::SigBad, "Batch inner transactions are never considered validly signed."};
     }
 
-    if (any(flags & kSfSigbad))
+    // Pick the cache slot for this call's era; see kSfSiggoodOldPrefix above.
+    // Only a transaction that carries a role signature, and only while the fix
+    // is disabled, uses the separate slot. Every other transaction, and every
+    // transaction once the fix is enabled, uses the ordinary flags and verifies
+    // exactly once, so there is no steady state cost.
+    //
+    // Both directions matter. A good verdict from before the fix must not let a
+    // signature moved between roles survive the amendment, and a bad verdict
+    // from before the fix must not condemn a transaction that the new prefixes
+    // accept.
+    //
+    // Whether a transaction carries a role signature is fixed for its ID: the
+    // fields are kNotSigning, so they are excluded from the signed bytes, but
+    // they are still covered by the transaction ID. Repeat calls for one ID
+    // therefore always agree on which slot pair to use.
+    bool const oldPrefixSig = !rules.enabled(fixCleanup3_4_0) &&
+        (tx.isFieldPresent(sfSponsorSignature) || tx.isFieldPresent(sfCounterpartySignature));
+    auto const sigbadFlag = oldPrefixSig ? kSfSigbadOldPrefix : kSfSigbad;
+    auto const siggoodFlag = oldPrefixSig ? kSfSiggoodOldPrefix : kSfSiggood;
+
+    if (any(flags & sigbadFlag))
     {
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
     }
 
-    if (!any(flags & kSfSiggood))
+    if (!any(flags & siggoodFlag))
     {
         auto const sigVerify = tx.checkSign(rules);
         if (!sigVerify)
         {
-            router.setFlags(id, kSfSigbad);
+            router.setFlags(id, sigbadFlag);
             return {Validity::SigBad, sigVerify.error()};
         }
-        router.setFlags(id, kSfSiggood);
+        router.setFlags(id, siggoodFlag);
     }
 
     // Signature is now known good
@@ -94,6 +140,10 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
 void
 forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
 {
+    // Callers reach here when they deliberately skip signature verification,
+    // such as a cluster peer that trusts its neighbor's checks. No signature
+    // was verified, so there is no prefix era to record, and this writes the
+    // ordinary flags whether or not fixCleanup3_4_0 is enabled.
     HashRouterFlags flags = HashRouterFlags::UNDEFINED;
     switch (validity)
     {

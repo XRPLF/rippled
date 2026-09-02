@@ -1,10 +1,17 @@
 // Copyright (c) 2020 Dev Null Productions
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/tx/apply.h>
@@ -22,6 +29,51 @@ public:
     {
         testcase("Require Fully Canonical Signature");
         testFullyCanonicalSigs();
+        testRoleSignatureCacheIsEraSpecific();
+    }
+
+    // A signature verdict reached before fixCleanup3_4_0 must not be honored
+    // after it, because the two eras require the sponsor signature to cover
+    // different bytes. The two calls below use one HashRouter and differ only in
+    // the rules, which is what the flag ledger looks like in practice: relay and
+    // submit verify against the validated rules, which lag the open ledger rules
+    // that preflight2 verifies against, so one transaction gets checked under
+    // both prefixes at the same time.
+    void
+    testRoleSignatureCacheIsEraSpecific()
+    {
+        testcase("Role signature cache is era specific");
+
+        using namespace test::jtx;
+
+        Env preFix{*this, testableAmendments() - fixCleanup3_4_0};
+        Env postFix{*this, testableAmendments()};
+        auto const postFixRules = postFix.current()->rules();
+
+        Account const alice{"alice"};
+        Account const sponsor{"sponsor"};
+        preFix.fund(XRP(10'000), alice, sponsor);
+        preFix.close();
+
+        // Signed while the fix is disabled, so the sponsor signature carries
+        // the old prefix, which is shared with the top level signature.
+        auto const jt = preFix.jt(
+            noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor));
+        BEAST_EXPECT(jt.stx);
+        if (!jt.stx)
+            return;
+
+        auto& router = preFix.app().getHashRouter();
+        BEAST_EXPECT(
+            checkValidity(router, *jt.stx, preFix.current()->rules()).first == Validity::Valid);
+
+        // Same router, asked again under the post-fix rules. The verdict above
+        // was reached under the old prefix and must not be reused, or a
+        // signature moved between roles would survive the amendment.
+        BEAST_EXPECT(checkValidity(router, *jt.stx, postFixRules).first == Validity::SigBad);
     }
 
     void
