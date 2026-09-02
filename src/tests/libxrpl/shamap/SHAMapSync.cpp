@@ -193,6 +193,10 @@ TEST_F(SHAMapSyncTest, sync)
 
 // Node hashes are computed on demand, and `visitDifferences` returns early while the root hash is
 // still zero, so a map has to be hashed before it can be compared against another.
+//
+// The ASSERT_ below aborts only this helper, not the calling test, so every call site wraps it in
+// ASSERT_NO_FATAL_FAILURE. Without that the test would carry on with an unhashed map and fail again
+// further down, burying the real cause.
 static void
 finalize(SHAMap& map)
 {
@@ -221,7 +225,7 @@ TEST_F(SHAMapSyncTest, visit_differences_reports_only_what_is_missing)
     {
         ASSERT_TRUE(have.addItem(SHAMapNodeType::TnAccountState, item));
     }
-    finalize(have);
+    ASSERT_NO_FATAL_FAILURE(finalize(have));
 
     SHAMap want{SHAMapType::FREE, f};
     for (auto const& item : shared)
@@ -229,7 +233,7 @@ TEST_F(SHAMapSyncTest, visit_differences_reports_only_what_is_missing)
         ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, item));
     }
     ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, extra));
-    finalize(want);
+    ASSERT_NO_FATAL_FAILURE(finalize(want));
 
     std::vector<uint256> leaves;
     std::size_t inners = 0;
@@ -270,11 +274,11 @@ TEST_F(SHAMapSyncTest, visit_differences_against_identical_map_reports_nothing)
 
     SHAMap have{SHAMapType::FREE, f};
     ASSERT_TRUE(have.addItem(SHAMapNodeType::TnAccountState, item));
-    finalize(have);
+    ASSERT_NO_FATAL_FAILURE(finalize(have));
 
     SHAMap want{SHAMapType::FREE, f};
     ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, item));
-    finalize(want);
+    ASSERT_NO_FATAL_FAILURE(finalize(want));
     ASSERT_EQ(want.getHash(), have.getHash());
 
     std::size_t visited = 0;
@@ -295,7 +299,7 @@ TEST_F(SHAMapSyncTest, visit_differences_against_no_map_reports_every_node)
     {
         ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, makeRandomAS()));
     }
-    finalize(want);
+    ASSERT_NO_FATAL_FAILURE(finalize(want));
 
     // A null `have` means the far side holds nothing, so every node counts as missing. Compared
     // against visitNodes, which walks the same tree with no such filtering.
@@ -324,7 +328,7 @@ TEST_F(SHAMapSyncTest, visit_differences_stops_when_callback_returns_false)
     {
         ASSERT_TRUE(want.addItem(SHAMapNodeType::TnAccountState, makeRandomAS()));
     }
-    finalize(want);
+    ASSERT_NO_FATAL_FAILURE(finalize(want));
 
     // Returning false is how populateFetchPack stops once the pack is full, so the walk must
     // honour it rather than visiting the rest of the tree.
