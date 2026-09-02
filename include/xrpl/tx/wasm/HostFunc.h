@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -12,9 +11,6 @@
 
 #include <cstdint>
 #include <expected>
-#include <functional>
-#include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -62,9 +58,6 @@ std::expected<Bytes, HostFunctionError>
 floatDivideImpl(Slice const& x, Slice const& y, int32_t mode);
 
 std::expected<Bytes, HostFunctionError>
-floatRootImpl(Slice const& x, int32_t n, int32_t mode);
-
-std::expected<Bytes, HostFunctionError>
 floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
 
 }  // namespace wasm_float
@@ -73,32 +66,11 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
 class HostFunctions
 {
 protected:
-    RTOptRef rt_;
     beast::Journal j_;
 
 public:
     HostFunctions(beast::Journal j = beast::Journal{beast::Journal::getNullSink()}) : j_(j)
     {
-    }
-
-    void
-    setRT(WasmRuntimeWrapper& rt)
-    {
-        rt_ = rt;
-    }
-
-    void
-    resetRT()
-    {
-        rt_ = std::nullopt;
-    }
-
-    [[nodiscard]] WasmRuntimeWrapper&
-    getRT() const
-    {
-        if (!rt_)
-            Throw<std::logic_error>("Wasm runtime not set");
-        return rt_->get();
     }
 
     [[nodiscard]] beast::Journal
@@ -480,12 +452,6 @@ public:
     }
 
     [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
-    floatRoot(Slice const& x, int32_t n, int32_t mode) const
-    {
-        return std::unexpected(HostFunctionError::Unimplemented);
-    }
-
-    [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) const
     {
         return std::unexpected(HostFunctionError::Unimplemented);
@@ -494,7 +460,5 @@ public:
     virtual ~HostFunctions() = default;
     // LCOV_EXCL_STOP
 };
-
-using HFRef = std::reference_wrapper<HostFunctions>;
 
 }  // namespace xrpl
