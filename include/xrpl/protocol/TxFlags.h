@@ -198,6 +198,10 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfVaultShareNonTransferable, 0x00020000),                                                                                                      \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
+    TRANSACTION(VaultDeposit,                                                                                                                                  \
+        TF_FLAG(tfVaultDonate, 0x00010000),                                                                                                                    \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
     TRANSACTION(Batch,                                                                                                                                         \
         TF_FLAG(tfAllOrNothing, 0x00010000)                                                                                                                    \
         TF_FLAG(tfOnlyOne, 0x00020000)                                                                                                                         \

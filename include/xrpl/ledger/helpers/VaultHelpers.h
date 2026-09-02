@@ -7,6 +7,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
@@ -184,6 +185,9 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
  */
 [[nodiscard]] VaultVersion
 getVaultVersion(SLE::const_ref vault);
+
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx);
 
 /**
  * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when

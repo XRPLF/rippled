@@ -23,13 +23,24 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
 #include <optional>
 #include <stdexcept>
 
 namespace xrpl {
+
+std::uint32_t
+VaultDeposit::getFlagsMask(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(featureLendingProtocolV1_1))
+        return tfVaultDepositMask;
+
+    return tfVaultDepositMask | tfVaultDonate;
+}
 
 [[nodiscard]]
 static STAmount
@@ -150,6 +161,22 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
+    if (isVaultDonate(ctx.view.rules(), ctx.tx))
+    {
+        if (account != vault->at(sfOwner))
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: only owner can donate to vault.";
+            return tecNO_PERMISSION;
+        }
+
+        // Cannot donate to a vault with no shares
+        if (sleIssuance->at(sfOutstandingAmount) == 0)
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: empty vault cannot receive donations.";
+            return tecNO_PERMISSION;
+        }
+    }
+
     if (sleIssuance->isFlag(lsfMPTLocked))
     {
         // LCOV_EXCL_START
@@ -262,6 +289,8 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
+    auto const isDonate = isVaultDonate(ctx_.view().rules(), ctx_.tx);
+
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
@@ -305,73 +334,81 @@ VaultDeposit::doApply()
                 return err;
         }
     }
-
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
-
-    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
-    try
+    if (isDonate)
     {
-        // Compute exchange before transferring any amounts.
-        {
-            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
-            if (!maybeShares)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            sharesCreated = *maybeShares;
-        }
-
-        if (sharesCreated == beast::kZero)
-            return tecPRECISION_LOSS;
-
-        // Convert shares back to assets so the depositor is debited for the amount actually minted.
-        // The truncated share count is worth <= amount; without this the difference would be
-        // credited to the vault for free.
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
-        if (!maybeAssets)
-        {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
-        // The round-trip must never return more than the original amount. If it does, a conversion
-        // helper is broken. Reject rather than overcharge the depositor.
-        if (*maybeAssets > amount)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-        assetsDeposited = *maybeAssets;
-
-        // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
-        // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
-        // representable delta.
-        if (fix340Enabled)
-        {
-            // Round down at the posterior sfAssetsTotal scale so the vault is credited by no more
-            // than the depositor paid. Keep the share count from the first round trip: the clamp
-            // only drops a last digit of the new total. Converting the clamped amount back to
-            // shares would mint fewer shares while still charging the N-share debit.
-            auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
-            if (!maybeClamped)
-                return maybeClamped.error();
-            assetsDeposited = *maybeClamped;
-
-            // The actual deposit amount is truncated to whole shares, converted back to assets,
-            // and clamped to the sfAssetsTotal scale (post-fixCleanup3_4_0). Check the depositor's
-            // balance here—after clamping—before making any state changes.
-            if (roundsToZeroForDepositor(view(), accountID_, assetsDeposited, j_))
-                return tecPRECISION_LOSS;
-        }
+        XRPL_ASSERT(
+            accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
+        assetsDeposited = amount;
     }
-    catch (std::overflow_error const&)
+    else
     {
-        // It's easy to hit this exception from Number with large enough Scale
-        // so we avoid spamming the log and only use debug here.
-        JLOG(j_.debug())  //
-            << "VaultDeposit: overflow error with"
-            << " scale=" << (int)vault->at(sfScale).value()  //
-            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount) << ", amount=" << amount;
-        return tecPATH_DRY;
+        // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
+        try
+        {
+            // Compute exchange before transferring any amounts.
+            {
+                auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
+                if (!maybeShares)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                sharesCreated = *maybeShares;
+            }
+
+            if (sharesCreated == beast::kZero)
+                return tecPRECISION_LOSS;
+
+            // Convert shares back to assets so the depositor is debited for the amount actually
+            // minted. The truncated share count is worth <= amount; without this the difference
+            // would be credited to the vault for free.
+            auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+            if (!maybeAssets)
+            {
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            }
+            // The round-trip must never return more than the original amount. If it does, a
+            // conversion helper is broken. Reject rather than overcharge the depositor.
+            if (*maybeAssets > amount)
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
+            assetsDeposited = *maybeAssets;
+
+            // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
+            // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
+            // representable delta.
+            if (fix340Enabled)
+            {
+                // Round down at the posterior sfAssetsTotal scale so the vault is credited by no
+                // more than the depositor paid. Keep the share count from the first round trip: the
+                // clamp only drops a last digit of the new total. Converting the clamped amount
+                // back to shares would mint fewer shares while still charging the N-share debit.
+                auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
+                if (!maybeClamped)
+                    return maybeClamped.error();
+                assetsDeposited = *maybeClamped;
+
+                // The actual deposit amount is truncated to whole shares, converted back to assets,
+                // and clamped to the sfAssetsTotal scale (post-fixCleanup3_4_0). Check the
+                // depositor's balance here—after clamping—before making any state changes.
+                if (roundsToZeroForDepositor(view(), accountID_, assetsDeposited, j_))
+                    return tecPRECISION_LOSS;
+            }
+        }
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultDeposit: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount;
+            return tecPATH_DRY;
+        }
     }
 
     XRPL_ASSERT(
@@ -415,11 +452,19 @@ VaultDeposit::doApply()
         }
     }
 
-    // Transfer shares from vault to depositor.
-    if (auto const ter = accountSend(
-            view(), vaultAccount, accountID_, sharesCreated, j_, {}, WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
+    if (isDonate)
+    {
+        XRPL_ASSERT(
+            sharesCreated == beast::kZero, "xrpl::VaultDeposit::doApply : donation issued shares");
+    }
+    else
+    {
+        // Transfer shares from vault to depositor.
+        if (auto const ter = accountSend(
+                view(), vaultAccount, accountID_, sharesCreated, j_, {}, WaiveTransferFee::Yes);
+            !isTesSuccess(ter))
+            return ter;
+    }
 
     associateAsset(*vault, vaultAsset);
 

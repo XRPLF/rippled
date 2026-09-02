@@ -2235,6 +2235,45 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        doInvariantCheck(
+            {"donation must not change depositor shares"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
+                                   sample.accountShares->amount = 10;
+                               }));
+            },
+            XRPAmount{},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfFlags] = tfVaultDonate;
+                }},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"donation must not change vault shares"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
+                                   sample.sharesTotal = 10;
+                                   sample.accountShares = std::nullopt;
+                               }));
+            },
+            XRPAmount{},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfFlags] = tfVaultDonate;
+                }},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
         testcase << "Vault withdrawal";
         doInvariantCheck(
             {"withdrawal must change vault balance"},

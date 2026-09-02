@@ -8,6 +8,7 @@ ignorePaths:
   - LICENSE.md
   - .clang-tidy
   - nix/check-tools/*.txt # generated, and full of Nix store hashes
+  - merged-prs.md
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true

@@ -7,6 +7,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
@@ -16,6 +17,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 #include <cstdint>
 #include <expected>
@@ -195,6 +197,12 @@ sharesToAssetsWithdraw(
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
+}
+
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx)
+{
+    return rules.enabled(featureLendingProtocolV1_1) && tx.isFlag(tfVaultDonate);
 }
 
 [[nodiscard]] bool
