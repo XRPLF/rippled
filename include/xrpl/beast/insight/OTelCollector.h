@@ -45,8 +45,9 @@ namespace beast::insight {
 /**
  * @brief A Collector that exports metrics via OpenTelemetry OTLP/HTTP.
  *
- * Replaces StatsD-based metric collection with native OTel Metrics SDK
- * instruments. Each beast::insight instrument maps to an OTel equivalent:
+ * Selected by `[insight] server=otel`, as an alternative to StatsDCollector:
+ * it exports through the native OTel Metrics SDK rather than the StatsD wire
+ * format. Each beast::insight instrument maps to an OTel equivalent:
  *
  *   - Counter  -> OTel Counter<uint64_t>
  *   - Gauge    -> OTel ObservableGauge<int64_t> (async callback)

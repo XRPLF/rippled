@@ -175,11 +175,10 @@ private:
  * The instrument's declared unit is what selects its bucket ladder: the
  * histogram views registered in Telemetry.cpp match on unit, so a `ms`
  * instrument gets the millisecond ladder and a `By` instrument the byte
- * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h --
- * do not restate them here. An earlier version of this comment listed
- * `[1, 5, ..., 1000, 5000] ms` as "matching the SpanMetrics connector"; that
- * was true when written and silently became false when the connector's
- * ladder was extended, which is why the edges now have one owner.
+ * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h,
+ * which is their single owner -- do not restate them here. An edge list copied
+ * into a comment reads as authoritative and goes stale the moment the
+ * collector's SpanMetrics ladder is extended, with nothing to flag the drift.
  *
  * Thread safety: OTel Histogram::Record() is thread-safe by specification.
  */

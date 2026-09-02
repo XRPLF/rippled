@@ -7,18 +7,18 @@ namespace beast::insight {
 /**
  * @brief What an Event's samples measure.
  *
- * `Event` documents itself as carrying "a millisecond time, or other integral
- * value", but both backends used to assume the first case: the OTel bridge
- * declared every instrument with unit `ms`, and StatsD tagged every sample
- * `|ms`. A size metric therefore exported under a `_milliseconds` name and
- * inherited a latency bucket ladder, which censored a quarter of its samples
- * and pinned its p95 to a constant.
- *
- * Naming the unit at creation time is what lets the OTel bridge pick both the
- * instrument unit and the matching bucket ladder:
+ * `Event` carries "a millisecond time, or other integral value", so the unit
+ * cannot be inferred from the sample. Naming it at creation time is what lets
+ * the OTel bridge pick both the instrument unit and the matching bucket
+ * ladder:
  *
  *     makeEvent("time", Unit::Millis) --> OTel unit "ms" --> millisecond ladder
  *     makeEvent("size", Unit::Bytes)  --> OTel unit "By" --> byte ladder
+ *
+ * Without an explicit unit every instrument declares `ms`, so a size metric
+ * exports under a `_milliseconds` name and inherits a latency bucket ladder.
+ * For RPC response sizes that ladder censors about a quarter of the samples
+ * and pins the p95 to a constant.
  *
  * The StatsD backend deliberately ignores this and emits `|ms` for every
  * Event. That path is out of service -- its UDP port is commented out of the

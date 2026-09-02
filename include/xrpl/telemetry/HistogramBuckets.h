@@ -79,9 +79,9 @@ namespace xrpl::telemetry::buckets {
  *
  * The 60 s and 120 s edges exceed the collector's 30 s top on purpose,
  * because jobs outlive spans: the updatepaths job type was measured
- * averaging about 60 s, so a 30 s ceiling would censor its quantiles just
- * as 5 s censors them today. All these Events share one ladder, so its
- * ceiling has to cover the slowest member rather than the typical one.
+ * averaging about 60 s, so a 30 s ceiling would censor its quantiles. All
+ * these Events share one ladder, so its ceiling has to cover the slowest
+ * member rather than the typical one.
  *
  * The 2, 3 and 4 s edges resolve second-scale work, which a single
  * four-second-wide bucket can only interpolate across.
