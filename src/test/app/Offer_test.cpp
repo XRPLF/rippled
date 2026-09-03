@@ -5181,7 +5181,7 @@ public:
             BEAST_EXPECT(expectOffers(env, taker, 0));
         }
 
-        // tfSell, TakerGets must be filled
+        // tfFillOrKill + tfSell, TakerGets must be filled
         {
             env(offer(maker, XRP(101), usd(101)));
             env.close();
