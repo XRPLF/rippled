@@ -41,6 +41,8 @@ This section contains changes targeting a future version.
 
 ### Bugfixes
 
+- `sign`, `sign_for`, `submit`: `signature_target` now returns `invalidParams` unless it names `CounterpartySignature` or `SponsorSignature`. It previously accepted any inner object field, such as `Book` or `NFToken`, and signed into it.
+- `sign`, `sign_for`, `submit`, `submit_multisigned`: With `fixCleanup3_4_0` enabled, a signature in `CounterpartySignature` or `SponsorSignature` covers a different prefix than the transaction's own signature, so a signature can no longer be moved from one of those roles into another. Clients that build these signatures themselves must use the new prefixes: `CPT` and `CPM` (single- and multi-signing) for `CounterpartySignature`, and `SPN` and `SPM` for `SponsorSignature`.
 - `get_aggregate_price`: Duplicate entries in the `oracles` request array are now ignored. [#6586](https://github.com/XRPLF/rippled/pull/6586)
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 - `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)
