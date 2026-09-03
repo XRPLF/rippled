@@ -74,6 +74,10 @@
 #include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/HistogramBuckets.h>
 #include <xrpl/telemetry/SpanNames.h>
+// For networkTypeFromId(), the one xrpl.network.type mapping both export
+// paths use. Adds no levelization edge: xrpld.telemetry > xrpl.telemetry
+// already holds via SpanNames.h above.
+#include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -252,17 +256,20 @@ MetricsRegistry::~MetricsRegistry()
 }
 
 void
-MetricsRegistry::start(
-    [[maybe_unused]] std::string const& endpoint,
-    [[maybe_unused]] std::string const& instanceId,
-    [[maybe_unused]] std::string const& nodeId)
+MetricsRegistry::start([[maybe_unused]] StartOptions const& options)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_)
         return;
 
-    JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << endpoint
-                          << ", instanceId=" << instanceId << ", nodeId=" << nodeId;
+    // useTls is logged because a collector that requires TLS rejects a
+    // plaintext exporter with no local error. The paths are left out.
+    JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << options.endpoint
+                          << ", serviceName=" << options.serviceName
+                          << ", serviceVersion=" << options.serviceVersion
+                          << ", instanceId=" << options.serviceInstanceId
+                          << ", nodeId=" << options.nodeId << ", networkId=" << options.networkId
+                          << ", useTls=" << options.useTls;
 
     // Rule for anything added below: this phase may create only instruments
     // whose recording is PUSHED from app code -- counters and histograms. An
@@ -272,7 +279,7 @@ MetricsRegistry::start(
     // belongs in startAsyncGauges(), not here. That includes observable
     // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
     // its callback read getOverlay(), which asserts overlay_ is non-null.
-    initExporterAndProvider(endpoint, instanceId, nodeId);
+    initExporterAndProvider(options);
     initSyncInstruments();
 
     JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
@@ -303,14 +310,20 @@ MetricsRegistry::startAsyncGauges()
 
 #ifdef XRPL_ENABLE_TELEMETRY
 void
-MetricsRegistry::initExporterAndProvider(
-    std::string const& endpoint,
-    std::string const& instanceId,
-    std::string const& nodeId)
+MetricsRegistry::initExporterAndProvider(StartOptions const& options)
 {
-    // Configure OTLP/HTTP metric exporter.
+    // Configure OTLP/HTTP metric exporter. The TLS settings come from the one
+    // [telemetry] block that also drives the trace exporter in Telemetry.cpp,
+    // so both exporters reach the collector on the same terms.
     otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
-    exporterOpts.url = endpoint;
+    exporterOpts.url = options.endpoint;
+    if (options.useTls)
+    {
+        exporterOpts.ssl_ca_cert_path = options.tlsCaCertPath;
+        exporterOpts.ssl_client_cert_path = options.tlsClientCertPath;
+        exporterOpts.ssl_client_key_path = options.tlsClientKeyPath;
+    }
+
     auto exporter = otlp_http::OtlpHttpMetricExporterFactory::Create(exporterOpts);
 
     // Configure periodic reader with 10-second export interval.
@@ -320,21 +333,33 @@ MetricsRegistry::initExporterAndProvider(
     auto reader =
         metric_sdk::PeriodicExportingMetricReaderFactory::Create(std::move(exporter), readerOpts);
 
-    // Configure resource attributes so Prometheus service_instance_id labels
-    // distinguish metrics from different nodes (matches OTelCollector setup).
-    otel_resource::ResourceAttributes attrs;
-    // Use std::string, not a string literal: ResourceAttributes stores an
+    // Stamp the same resource Telemetry::makeMetricsResource() builds for the
+    // trace pipeline. Both must agree: a node whose service.name or
+    // xrpl.network.type differs between the two pipelines splits its own
+    // series, and a dashboard filtering on either label shows only half.
+    //
+    // Use std::string, never a string literal: ResourceAttributes stores an
     // OTel AttributeValue variant whose char-const* overload binds to bool,
-    // so "xrpld" would be recorded as the boolean true. std::string selects
-    // the string alternative and the value round-trips as service.name=xrpld.
-    attrs[opentelemetry::semconv::service::kServiceName] = std::string("xrpld");
-    if (!instanceId.empty())
-        attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
+    // so a literal would be recorded as the boolean true.
+    otel_resource::ResourceAttributes attrs;
+    attrs[opentelemetry::semconv::service::kServiceName] = options.serviceName;
+    // int64_t, matching the trace resource. The same key with two types would
+    // give the two pipelines incompatible attribute values.
+    attrs[std::string(attr::networkId)] = static_cast<int64_t>(options.networkId);
+    // Derived here rather than passed in, so the id and the type label cannot
+    // disagree. Same helper the trace path uses.
+    attrs[std::string(attr::networkType)] = networkTypeFromId(options.networkId);
+
+    // The three below are left off when empty rather than stamped blank. An
+    // absent label reads as "not reported"; an empty one looks like a value.
+    if (!options.serviceVersion.empty())
+        attrs[opentelemetry::semconv::service::kServiceVersion] = options.serviceVersion;
+    if (!options.serviceInstanceId.empty())
+        attrs[opentelemetry::semconv::service::kServiceInstanceId] = options.serviceInstanceId;
     // xrpl.node.id: the same per-node key the trace resource carries, so
-    // metrics and traces resolve to one node. std::string for the same
-    // variant reason as service.name above.
-    if (!nodeId.empty())
-        attrs[std::string(attr::nodeId)] = nodeId;
+    // metrics and traces resolve to one node.
+    if (!options.nodeId.empty())
+        attrs[std::string(attr::nodeId)] = options.nodeId;
     auto resourceAttrs = otel_resource::Resource::Create(attrs);
 
     // Build a view registry with explicit buckets for the duration

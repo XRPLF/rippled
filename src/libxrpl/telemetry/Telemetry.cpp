@@ -83,13 +83,6 @@ namespace xrpl::telemetry {
 static_assert(kMeterName == beast::insight::kOTelMeterName);
 static_assert(kMeterVersion == beast::insight::kOTelMeterVersion);
 
-/**
- * Metric export cadence. The interval matches the 1 s scrape the dashboards
- * assume; the timeout bounds a stalled collector.
- */
-constexpr auto kMetricExportInterval = std::chrono::milliseconds{1000};
-constexpr auto kMetricExportTimeout = std::chrono::milliseconds{500};
-
 namespace {
 
 namespace trace_api = opentelemetry::trace;
@@ -353,6 +346,11 @@ public:
         }
         catch (std::exception const& e)
         {
+            // Drop the half-built provider. initMetrics() publishes globally as
+            // its last step, so a throw leaves the global noop; keeping our own
+            // pointer would send getMeter() callers to a provider that nothing
+            // else can reach.
+            meterProvider_.reset();
             JLOG(journal_.error()) << "Telemetry metrics pipeline failed to initialise, "
                                       "continuing without metrics: "
                                    << e.what();
@@ -543,9 +541,11 @@ public:
 
         auto metricExporter = otlp_http::OtlpHttpMetricExporterFactory::Create(metricExporterOpts);
 
+        // Both come from [telemetry], which has already checked that they are
+        // positive and that the timeout is below the interval.
         metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
-        readerOpts.export_interval_millis = kMetricExportInterval;
-        readerOpts.export_timeout_millis = kMetricExportTimeout;
+        readerOpts.export_interval_millis = setup_.metricExportInterval;
+        readerOpts.export_timeout_millis = setup_.metricExportTimeout;
 
         auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
             std::move(metricExporter), readerOpts);

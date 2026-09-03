@@ -818,7 +818,7 @@ flowchart TB
   `ObservableGauge` async callbacks for NodeStore I/O, cache, TxQ, CountedObjects
   and load factors, plus synchronous counters/histograms for PerfLog RPC and job
   data. Polled at 10s intervals by `PeriodicMetricReader`
-  (`MetricsRegistry.cpp:289`, `export_interval_millis = 10000`).
+  (`MetricsRegistry::initExporterAndProvider`, `export_interval_millis = 10000`).
 - **NodeStore I/O is _not_ a beast::insight extension.** The original plan
   routed it through `Database.cpp` insight registrations; the shipped code
   registers a `nodestore_state` observable gauge instead
