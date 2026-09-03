@@ -4,10 +4,13 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/pay.h>
 #include <test/jtx/token.h>
+#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -43,6 +46,7 @@
 #include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <memory>
@@ -757,7 +761,255 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
-        // TODO: Loan Object
+        // Loan flag immutability lives in NoModifiedUnmodifiableFields's
+        // ltLOAN case: lsfLoanOverpayment must never toggle in either
+        // direction, and lsfLoanDefault (gated on featureLendingProtocolV1_1)
+        // may only transition from unset to set. Each case needs a loan that
+        // already exists in the base ledger, so that the apply-view modification
+        // is seen as a before/after change rather than an insertion.
+        {
+            struct Case
+            {
+                std::uint32_t before;
+                std::uint32_t after;
+                std::string expected;
+            };
+            auto const cases = std::to_array<Case>({
+                {.before = lsfLoanOverpayment,
+                 .after = 0,
+                 .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry"},
+                {.before = 0,
+                 .after = lsfLoanOverpayment,
+                 .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry"},
+                {.before = lsfLoanDefault,
+                 .after = 0,
+                 .expected = "lsfLoanDefault flag cleared on immutable ledger entry"},
+            });
+
+            for (auto const& c : cases)
+            {
+                Env env{*this, all_};
+                Account const a1{"A1"};
+                env.fund(XRP(1000), a1);
+                env.close();
+
+                OpenView ov{*env.current()};
+
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                {
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    sleLoan->setFieldU32(sfFlags, c.before);
+                    ov.rawInsert(sleLoan);
+                }
+
+                STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    continue;
+                sleLoan->setFieldU32(sfFlags, c.after);
+                ac.view().update(sleLoan);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    continue;
+                TER const result = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                BEAST_EXPECT(sink.messages().str().contains(c.expected));
+            }
+        }
+
+        // Pre-featureLendingProtocolV1_1 sibling of the lsfLoanOverpayment
+        // cases above: the same set-once immutability was originally enforced
+        // by ValidLoan::finalize, so with V1_1 disabled toggling the flag
+        // must trip that legacy check instead. lsfLoanDefault immutability
+        // did not exist pre-V1_1 and is not tested here.
+        {
+            auto const cases = std::to_array<std::pair<std::uint32_t, std::uint32_t>>({
+                {lsfLoanOverpayment, 0},
+                {0, lsfLoanOverpayment},
+            });
+
+            for (auto const& [before, after] : cases)
+            {
+                Env env{*this, all_ - featureLendingProtocolV1_1};
+                Account const a1{"A1"};
+                env.fund(XRP(1000), a1);
+                env.close();
+
+                OpenView ov{*env.current()};
+
+                auto const brokerKeylet =
+                    keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                {
+                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                    sleLoan->setFieldU32(sfFlags, before);
+                    ov.rawInsert(sleLoan);
+                }
+
+                STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    continue;
+                sleLoan->setFieldU32(sfFlags, after);
+                ac.view().update(sleLoan);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    continue;
+                TER const result = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                BEAST_EXPECT(sink.messages().str().contains("Loan Overpayment flag changed"));
+            }
+        }
+
+        // Under featureLendingProtocolV1_1, ValidLoan::finalize requires
+        // interest due (total value minus principal and management fee) to be
+        // non-negative after each value is rounded to sfLoanScale. Test zero,
+        // each way to produce a one-unit deficit, and a two-unit deficit. At
+        // scale 0, an XRP-backed broker rejects any deficit, while an
+        // IOU-backed one permits one unit of rounding tolerance.
+        {
+            struct Case
+            {
+                Number totalValue;
+                Number principal;
+                Number managementFee;
+                bool expectFireIntegral;
+                bool expectFireTolerant;
+            };
+            // The first case sits exactly at the boundary, the middle three
+            // perturb one component so that interest due is -1, which is within
+            // the tolerance, and the last overshoots it at -2.
+            auto const cases = std::to_array<Case>({
+                {.totalValue = Number(100),
+                 .principal = Number(100),
+                 .managementFee = Number(0),
+                 .expectFireIntegral = false,
+                 .expectFireTolerant = false},
+                {.totalValue = Number(99),
+                 .principal = Number(100),
+                 .managementFee = Number(0),
+                 .expectFireIntegral = true,
+                 .expectFireTolerant = false},
+                {.totalValue = Number(100),
+                 .principal = Number(101),
+                 .managementFee = Number(0),
+                 .expectFireIntegral = true,
+                 .expectFireTolerant = false},
+                {.totalValue = Number(100),
+                 .principal = Number(100),
+                 .managementFee = Number(1),
+                 .expectFireIntegral = true,
+                 .expectFireTolerant = false},
+                {.totalValue = Number(98),
+                 .principal = Number(100),
+                 .managementFee = Number(0),
+                 .expectFireIntegral = true,
+                 .expectFireTolerant = true},
+            });
+
+            for (bool const integralAsset : {true, false})
+            {
+                for (auto const& c : cases)
+                {
+                    Env env{*this, all_};
+                    Account const a1{"A1"};
+                    Account const issuer{"issuer"};
+                    env.fund(XRP(1000), a1, issuer);
+                    env.close();
+
+                    // The check reads the broker's vault asset to decide
+                    // whether the rounding tolerance applies, so both
+                    // branches need a real broker over the relevant asset.
+                    auto const asset = [&]() -> PrettyAsset {
+                        if (integralAsset)
+                            return PrettyAsset{xrpIssue(), 1'000'000};
+                        PrettyAsset const iouAsset = issuer["IOU"];
+                        env(trust(a1, iouAsset(1000)));
+                        env(pay(issuer, a1, iouAsset(1000)));
+                        env.close();
+                        return iouAsset;
+                    }();
+
+                    auto const brokerKeylet = this->createLoanBroker(a1, env, asset);
+                    if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                        continue;
+                    env.close();
+
+                    OpenView ov{*env.current()};
+
+                    auto const loanKeylet =
+                        keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+                    // Seed a loan whose interest due sits at the boundary. The
+                    // apply-view update below moves it.
+                    {
+                        auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                        sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(100);
+                        sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                        sleLoan->at(sfLoanScale) = 0;
+                        sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                        ov.rawInsert(sleLoan);
+                    }
+
+                    STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+                    test::StreamSink sink{beast::Severity::Warning};
+                    beast::Journal const jlog{sink};
+                    ApplyContext ac{
+                        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                    auto sleLoan = ac.view().peek(loanKeylet);
+                    if (!BEAST_EXPECT(sleLoan))
+                        continue;
+                    sleLoan->at(sfTotalValueOutstanding) = c.totalValue;
+                    sleLoan->at(sfPrincipalOutstanding) = c.principal;
+                    sleLoan->at(sfManagementFeeOutstanding) = c.managementFee;
+                    ac.view().update(sleLoan);
+
+                    auto transactor = makeTransactor(ac);
+                    if (!BEAST_EXPECT(transactor))
+                        continue;
+                    TER const result = transactor->checkInvariants(
+                        tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+                    auto const messages = sink.messages().str();
+                    if (integralAsset ? c.expectFireIntegral : c.expectFireTolerant)
+                    {
+                        BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                        BEAST_EXPECT(messages.contains("Loan interest due is negative"));
+                    }
+                    else
+                    {
+                        // Other invariants may still fire on this raw-inserted
+                        // loan, so only assert the specific message is absent.
+                        BEAST_EXPECT(!messages.contains("Loan interest due is negative"));
+                    }
+                }
+            }
+        }
 
         // VaultKind, SubscriptionDate and RedemptionDate are immutable once set at creation.
         // Enforced by NoModifiedUnmodifiableFields on ltVAULT via kFieldChanged.
