@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
@@ -12,12 +13,17 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -30,6 +36,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
+#include <string>
 #include <type_traits>
 
 namespace xrpl::test {
@@ -730,6 +738,200 @@ private:
         }
     }
 
+    // Which pseudo-account is left holding an unauthorized trust line when the
+    // repayment lands.
+    enum class UnauthorizedPayee {
+        // The vault's own line, as VaultCreate leaves it.
+        Vault,
+        // Same vault, but the issuer authorized the line by hand first.
+        VaultAuthorized,
+        // Vault line authorized, broker owner unable to take the fee, so the
+        // fee goes to the loan broker's pseudo-account instead.
+        Broker,
+    };
+
+    // A vault holding an IOU whose issuer requires authorization ends up with
+    // its own trust line unauthorized: VaultCreate opens the line without the
+    // auth flag, and the pseudo-account has no key to sign a TrustSet for
+    // itself. Neither deposits nor loan origination look at that line, so the
+    // vault appears to work right up to the first repayment, which is the only
+    // step that has to credit the vault back.
+    //
+    // The loan broker's pseudo-account has the same defect for the same reason,
+    // and LoanPay reaches it whenever the broker owner cannot take the fee.
+    //
+    // The issuer can still repair either line by hand, because TrustSet accepts
+    // a line that already exists even when its owner is a pseudo-account.
+    void
+    testRepayIntoUnauthorizedVault()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        auto runTestCases = [&](FeatureBitset features, UnauthorizedPayee payee) {
+            bool const pseudoExempt = features[fixCleanup3_4_0];
+            // With the vault's line repaired by the issuer, the only remaining
+            // unauthorized payee is the broker's pseudo-account.
+            bool const expectSuccess = pseudoExempt || payee == UnauthorizedPayee::VaultAuthorized;
+
+            auto const payeeLabel = [payee]() -> char const* {
+                switch (payee)
+                {
+                    case UnauthorizedPayee::Vault:
+                        return "vault";
+                    case UnauthorizedPayee::VaultAuthorized:
+                        return "vault authorized by the issuer";
+                    case UnauthorizedPayee::Broker:
+                        return "loan broker";
+                }
+                return "";  // LCOV_EXCL_LINE
+            }();
+
+            testcase << "LoanPay crediting an unauthorized " << payeeLabel << ": pseudo-account "
+                     << (pseudoExempt ? "exempt" : "not exempt");
+
+            Env env{*this, features};
+
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env.close();
+
+            env(fset(issuer, asfRequireAuth));
+            env.close();
+
+            PrettyAsset const asset = issuer[iouCurrency_];
+            env(trust(lender, asset(100'000'000)));
+            env(trust(borrower, asset(100'000'000)));
+            env.close();
+
+            // Authorize the two participants. Nothing asks the issuer to also
+            // authorize the vault, which is the whole point of this test.
+            env(trust(issuer, asset(0), lender, tfSetfAuth));
+            env(trust(issuer, asset(0), borrower, tfSetfAuth));
+            env.close();
+
+            env(pay(issuer, lender, asset(10'000'000)));
+            env(pay(issuer, borrower, asset(10'000)));
+            env.close();
+
+            // Creating the vault and funding it with deposits succeeds even
+            // though the vault cannot be authorized to hold the asset.
+            BrokerInfo const broker{createVaultAndBroker(env, asset, lender)};
+
+            auto const vaultSle = env.le(broker.vaultKeylet());
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            if (!BEAST_EXPECT(vaultSle && brokerSle))
+                return;
+
+            Account const vaultPseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
+            Account const brokerPseudo{"broker pseudo-account", brokerSle->at(sfAccount)};
+
+            auto const lineIsAuthorized = [&](Account const& holder) -> bool {
+                auto const line = env.le(keylet::trustLine(holder, asset.raw().get<Issue>()));
+                if (!BEAST_EXPECT(line))
+                    return false;
+                return line->isFlag(holder.id() > issuer.id() ? lsfLowAuth : lsfHighAuth);
+            };
+
+            BEAST_EXPECT(!lineIsAuthorized(vaultPseudo));
+            BEAST_EXPECT(!lineIsAuthorized(brokerPseudo));
+
+            if (payee != UnauthorizedPayee::Vault)
+            {
+                env(trust(issuer, asset(0), vaultPseudo, tfSetfAuth));
+                env.close();
+                BEAST_EXPECT(lineIsAuthorized(vaultPseudo));
+            }
+
+            using namespace loan;
+
+            // The service fee guarantees the broker is owed something on the
+            // first payment, so the broker leg of the transfer is exercised.
+            Number const serviceFee = asset(2).value();
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            env(set(borrower, broker.brokerID, asset(1'000).value()),
+                Sig(sfCounterpartySignature, lender),
+                kLoanServiceFee(serviceFee),
+                kInterestRate(percentageToTenthBips(12)),
+                kPaymentTotal(12),
+                kPaymentInterval(600),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+
+            // Paying the principal out of the vault never needed authorization.
+            BEAST_EXPECT(env.le(loanKeylet));
+
+            if (payee == UnauthorizedPayee::Broker)
+            {
+                // A deep-frozen owner cannot take the fee, so LoanPay pays it
+                // into the broker's pseudo-account instead.
+                env(trust(issuer, asset(0), lender, tfSetFreeze | tfSetDeepFreeze));
+                env.close();
+            }
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            STAmount const payment{
+                broker.asset,
+                roundPeriodicPayment(
+                    broker.asset, state.periodicPayment + serviceFee, state.loanScale)};
+
+            // Repayment turns an outstanding loan back into cash the vault can
+            // lend again, so AssetsAvailable is what moves. AssetsTotal already
+            // counted the loan.
+            auto const assetsAvailable = [&]() -> Number {
+                auto const sle = env.le(broker.vaultKeylet());
+                if (!BEAST_EXPECT(sle))
+                    return Number{};
+                return sle->at(sfAssetsAvailable);
+            };
+
+            auto const borrowerBefore = env.balance(borrower, asset).number();
+            auto const vaultBefore = env.balance(vaultPseudo, asset).number();
+            auto const brokerBefore = env.balance(brokerPseudo, asset).number();
+            auto const assetsAvailableBefore = assetsAvailable();
+
+            env(pay(borrower, loanKeylet.key, payment),
+                Ter(expectSuccess ? TER{tesSUCCESS} : TER{tecNO_AUTH}));
+            env.close();
+
+            if (expectSuccess)
+            {
+                BEAST_EXPECT(env.balance(borrower, asset).number() < borrowerBefore);
+                BEAST_EXPECT(env.balance(vaultPseudo, asset).number() > vaultBefore);
+                BEAST_EXPECT(assetsAvailable() > assetsAvailableBefore);
+                // Confirms the broker variant really did route the fee to the
+                // pseudo-account rather than to the owner.
+                BEAST_EXPECT(
+                    (env.balance(brokerPseudo, asset).number() > brokerBefore) ==
+                    (payee == UnauthorizedPayee::Broker));
+
+                // The payee is skipped by the check, not authorized by it: the line that just
+                // took the credit is still missing its auth flag.
+                if (payee == UnauthorizedPayee::Vault)
+                    BEAST_EXPECT(!lineIsAuthorized(vaultPseudo));
+                if (payee == UnauthorizedPayee::Broker)
+                    BEAST_EXPECT(!lineIsAuthorized(brokerPseudo));
+            }
+            else
+            {
+                // A rejected repayment must leave every balance untouched.
+                BEAST_EXPECT(env.balance(borrower, asset).number() == borrowerBefore);
+                BEAST_EXPECT(env.balance(vaultPseudo, asset).number() == vaultBefore);
+                BEAST_EXPECT(env.balance(brokerPseudo, asset).number() == brokerBefore);
+                BEAST_EXPECT(assetsAvailable() == assetsAvailableBefore);
+            }
+        };
+
+        for (auto const& features : {all_, all_ - fixCleanup3_4_0})
+        {
+            runTestCases(features, UnauthorizedPayee::Vault);
+            runTestCases(features, UnauthorizedPayee::VaultAuthorized);
+            runTestCases(features, UnauthorizedPayee::Broker);
+        }
+    }
+
     void
     testLoanPayFundsConservedPayeeBelowReserve(FeatureBitset features)
     {
@@ -834,10 +1036,464 @@ private:
             borrowerAfter + vaultAfter + lenderAfter);
     }
 
+    // Env::close() cannot land the ledger's parentCloseTime on an arbitrary
+    // instant: it always rounds the requested time forward to the next
+    // close-time-resolution boundary (see Env::close() and
+    // roundCloseTime()/effCloseTime() in LedgerTiming.h), so it can only be
+    // used to reach times strictly *after* a given due date, never exactly
+    // on it. To pin the exact-boundary behavior of isPaymentLate(), directly
+    // overwrite the loan's NextPaymentDueDate so that it matches the
+    // *current* (already fixed) parentCloseTime of the open ledger, without
+    // closing again. This exercises the same comparison
+    // (parentCloseTime vs. NextPaymentDueDate) at the exact boundary that
+    // env.close() cannot reliably reach.
+    void
+    setLoanNextPaymentDueDate(jtx::Env& env, Keylet const& loanKeylet, std::uint32_t dueDate)
+    {
+        using namespace jtx;
+        bool const ok = env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            auto const sle = view.read(loanKeylet);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle);
+            (*replacement)[sfNextPaymentDueDate] = dueDate;
+            view.rawReplace(replacement);
+            return true;
+        });
+        BEAST_EXPECT(ok);
+    }
+
+    // With fixCleanup3_4_0, isPaymentLate() uses a strict (Exclusive)
+    // comparison: a payment due exactly "now" is not yet late. A plain
+    // (non-late) LoanPay submitted at the exact NextPaymentDueDate instant
+    // must therefore succeed, advance the due date by exactly one
+    // PaymentInterval, and charge only the regular periodic payment amount
+    // (no late interest / late fee).
+    void
+    testLoanPayAtExactDueDateSucceedsPostAmendment()
+    {
+        testcase("LoanPay at exact due date succeeds with fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        // Set a large, non-zero late interest rate and late fee so that if
+        // the late-payment path were incorrectly taken, the extra charge
+        // would be large and easy to detect (far more than any rounding
+        // slack in the regular periodic payment amount).
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            kLateInterestRate(TenthBips32(percentageToTenthBips(24))),
+            kLatePaymentFee(asset(50).value()),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 12);
+
+        STAmount const roundedPeriodicPayment{
+            asset, roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale)};
+
+        // Set NextPaymentDueDate to exactly the current parentCloseTime,
+        // without closing the ledger again.
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        STAmount const payFee{env.current()->fees().base};
+        auto const borrowerBefore = env.balance(borrower, asset).number();
+
+        // A plain payment (no tfLoanLatePayment) for exactly the regular
+        // periodic amount must succeed: at this instant the payment is not
+        // yet late.
+        //
+        // Note: deliberately not calling env.close() after this: closing
+        // the ledger re-derives the resulting state from the last validated
+        // ledger plus the recorded transaction set, which would discard the
+        // direct NextPaymentDueDate override made above via rawReplace().
+        // Reading state from the still-open ledger (as env.le()/env.balance()
+        // do) reflects the transaction as it was actually applied.
+        env(pay(borrower, loanKeylet.key, roundedPeriodicPayment), Fee(payFee), Ter(tesSUCCESS));
+
+        auto const borrowerAfter = env.balance(borrower, asset).number();
+
+        // No more than the regular periodic amount (plus the transaction
+        // fee) was charged: if the late-payment path had wrongly been
+        // taken, the (large, non-zero) late interest and late fee set above
+        // would have pushed the charge well past this bound.
+        Number const charged = borrowerBefore - borrowerAfter - Number{payFee};
+        BEAST_EXPECT(charged > Number{});
+        BEAST_EXPECT(charged <= Number{roundedPeriodicPayment});
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining - 1);
+        BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate + stateBefore.paymentInterval);
+    }
+
+    // Pins the amendment gate itself (as opposed to
+    // testLoanPayAtExactDueDateSucceedsPostAmendment, which pins the
+    // comparison operator): without fixCleanup3_4_0, isPaymentLate() keeps
+    // using the pre-amendment Inclusive comparison, so a payment due exactly
+    // "now" is already considered late, and a plain (non-late) LoanPay is
+    // rejected.
+    void
+    testLoanPayAtExactDueDateFailsPreAmendment()
+    {
+        testcase("LoanPay at exact due date fails without fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_ - fixCleanup3_4_0);
+        BEAST_EXPECT(!env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 12);
+
+        STAmount const roundedPeriodicPayment{
+            asset, roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale)};
+
+        // Set NextPaymentDueDate to exactly the current parentCloseTime,
+        // without closing the ledger again.
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        // Without the amendment, the due date is already considered late at
+        // this exact instant, so a plain payment must be rejected.
+        //
+        // Note: deliberately not calling env.close() after this: closing
+        // the ledger re-derives the resulting state from the last validated
+        // ledger plus the recorded transaction set, which would discard the
+        // direct NextPaymentDueDate override made above via rawReplace().
+        // Reading state from the still-open ledger (as env.le() does)
+        // reflects the transaction as it was actually applied.
+        env(pay(borrower, loanKeylet.key, roundedPeriodicPayment), Ter(tecEXPIRED));
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining);
+        BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
+    }
+
+    // computeLatePayment() must agree with isPaymentLate() at the exact
+    // due-date boundary: once fixCleanup3_4_0 is enabled, a payment due
+    // exactly "now" is not yet late, so a tfLoanLatePayment submitted at
+    // that same instant must be rejected with tecTOO_SOON rather than being
+    // admitted and charged the late interest/fee.
+    void
+    testLoanLatePaymentAtExactDueDateRejectedPostAmendment()
+    {
+        testcase("LoanPay(tfLoanLatePayment) at exact due date rejected with fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            kLateInterestRate(TenthBips32(percentageToTenthBips(24))),
+            kLatePaymentFee(asset(50).value()),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 12);
+
+        // Overpay generously so that, if the late-payment path were
+        // incorrectly admitted, funds would not be the limiting factor;
+        // we want to isolate the timing check itself.
+        STAmount const generousAmount{
+            asset,
+            roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale) * 2};
+
+        // Set NextPaymentDueDate to exactly the current parentCloseTime,
+        // without closing the ledger again.
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        // At this exact instant the loan is not yet late (Exclusive
+        // comparison), so even an explicit late payment must be rejected
+        // as premature, matching the plain-payment path.
+        //
+        // Note: deliberately not calling env.close() after this, for the
+        // same reason given in testLoanPayAtExactDueDateSucceedsPostAmendment
+        // above: closing would discard the direct NextPaymentDueDate
+        // override made via rawReplace().
+        env(pay(borrower, loanKeylet.key, generousAmount, tfLoanLatePayment), Ter(tecTOO_SOON));
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining);
+        BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
+    }
+
+    // calculateBaseFee must use isPaymentLate(), not a raw inclusive
+    // hasExpired(): once fixCleanup3_4_0 is enabled, a plain catch-up at
+    // exactly NextPaymentDueDate succeeds and can process many payments, so
+    // the fee has to scale with that work. Charging a single base fee here
+    // would disagree with apply (and with the fixCleanup3_1_3 cap).
+    void
+    testLoanPayCatchUpFeeAtExactDueDatePostAmendment()
+    {
+        testcase("LoanPay catch-up fee at exact due date with fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace lending;
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, asset(10'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(50),
+            kPaymentInterval(600),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 50);
+        BEAST_EXPECT(stateBefore.paymentRemaining > kLoanPaymentsPerFeeIncrement);
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        Number const regularPayment =
+            roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale) +
+            loanSle->at(sfLoanServiceFee);
+        int const payCount = kLoanPaymentsPerFeeIncrement * 4;
+        STAmount const catchUp{asset, regularPayment * payCount};
+        XRPAmount const baseFee = env.current()->fees().base;
+        XRPAmount const escalatedFee{baseFee * (payCount / kLoanPaymentsPerFeeIncrement)};
+
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        // Under-fee: apply would process `payCount` payments, so a single
+        // base fee is not enough.
+        env(pay(borrower, loanKeylet.key, catchUp), Fee(baseFee), Ter(telINSUF_FEE_P));
+
+        // Same catch-up with the scaled fee must succeed at this instant.
+        // Do not env.close() after the SLE override (see
+        // testLoanPayAtExactDueDateSucceedsPostAmendment).
+        env(pay(borrower, loanKeylet.key, catchUp), Fee(escalatedFee), Ter(tesSUCCESS));
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining - payCount);
+    }
+
+    // Without the amendment, inclusive hasExpired still treats the exact
+    // due-date instant as late, so calculateBaseFee correctly charges a
+    // single base fee and apply rejects a plain LoanPay with tecEXPIRED.
+    void
+    testLoanPayCatchUpFeeAtExactDueDatePreAmendment()
+    {
+        testcase("LoanPay catch-up fee at exact due date without fixCleanup3_4_0");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace lending;
+
+        Env env(*this, all_ - fixCleanup3_4_0);
+        BEAST_EXPECT(!env.enabled(fixCleanup3_4_0));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, asset(10'000).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(50),
+            kPaymentInterval(600),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const stateBefore = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateBefore.paymentRemaining == 50);
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        Number const regularPayment =
+            roundPeriodicPayment(asset, stateBefore.periodicPayment, stateBefore.loanScale) +
+            loanSle->at(sfLoanServiceFee);
+        int const payCount = kLoanPaymentsPerFeeIncrement * 4;
+        STAmount const catchUp{asset, regularPayment * payCount};
+        XRPAmount const baseFee = env.current()->fees().base;
+
+        std::uint32_t const exactDueDate =
+            env.current()->parentCloseTime().time_since_epoch().count();
+        setLoanNextPaymentDueDate(env, loanKeylet, exactDueDate);
+
+        env(pay(borrower, loanKeylet.key, catchUp), Fee(baseFee), Ter(tecEXPIRED));
+
+        auto const stateAfter = getCurrentState(env, broker, loanKeylet);
+        BEAST_EXPECT(stateAfter.paymentRemaining == stateBefore.paymentRemaining);
+        BEAST_EXPECT(stateAfter.nextPaymentDate == exactDueDate);
+    }
+
+    // LoanPay does not call canAddHolding. addEmptyHolding recreates the
+    // broker-owner holding when the borrower is also the broker owner. After
+    // fixCleanup3_4_0 an existing line is a no-op even if DefaultRipple is
+    // off; pre-fix that path dies with tecINTERNAL.
+    void
+    testLoanPaySelfBrokerExistingLineDefaultRipple()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        auto run = [this](FeatureBitset features, TER expected) {
+            testcase(
+                std::string(
+                    "LoanPay broker-owner borrower existing line after "
+                    "issuer clears asfDefaultRipple (") +
+                (features[fixCleanup3_4_0] ? "post" : "pre") + "-fixCleanup3_4_0)");
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(alice, usd(10'000'000)));
+            env.close();
+            env(pay(issuer, alice, usd(2'000'000)));
+            env.close();
+
+            auto const broker = createVaultAndBroker(env, usd, alice);
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+            if (!BEAST_EXPECT(brokerSle))
+                return;
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+            Number const serviceFee = usd(2).value();
+            env(set(alice, broker.brokerID, usd(1'000).value()),
+                Sig(sfCounterpartySignature, alice),
+                kLoanServiceFee(serviceFee),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usd.raw().get<Issue>())));
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            STAmount const payment{
+                usd,
+                roundPeriodicPayment(usd, state.periodicPayment + serviceFee, state.loanScale)};
+
+            env(pay(alice, loanKeylet.key, payment), Ter(expected));
+            env.close();
+        };
+
+        run(all_ - fixCleanup3_4_0, tecINTERNAL);
+        run(all_, tesSUCCESS);
+    }
+
     void
     runAmendmentIndependent()
     {
         testLoanSetNearZeroInterestRateSucceeds();
+        testLoanPayAtExactDueDateSucceedsPostAmendment();
+        testLoanPayAtExactDueDateFailsPreAmendment();
+        testLoanLatePaymentAtExactDueDateRejectedPostAmendment();
+        testLoanPayCatchUpFeeAtExactDueDatePostAmendment();
+        testLoanPayCatchUpFeeAtExactDueDatePreAmendment();
+        testRepayIntoUnauthorizedVault();
+        testLoanPaySelfBrokerExistingLineDefaultRipple();
     }
 
     // Tests run under each entry in amendmentCombinations().

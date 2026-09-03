@@ -1500,6 +1500,13 @@ template <class TIn, class TOut, class TDerived>
 bool
 BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const& owner) const
 {
+    // Offer-owner locks on book_.in and book_.out are handled by the
+    // liquidity sources before an offer reaches this point. OfferStream
+    // filters CLOB offers through the assetIn deep-freeze check and the
+    // assetOut owner-funds check using FreezeHandling::ZeroIfFrozen, while
+    // AMMLiquidity gets pool balances through ammAccountHolds(), which zeroes
+    // locked holdings. This method only enforces MPT trade and transfer
+    // permissions.
     if (!isTesSuccess(canTrade(view, book_.in)) || !isTesSuccess(canTrade(view, book_.out)))
         return false;
 
@@ -1513,14 +1520,8 @@ BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const
             // Offer's owner is an issuer
             if (asset.getIssuer() == owner)
                 return true;
-            // The previous step could be MPTEndpointStep with non issuer account or
-            // BookStep. Fail both if in asset is locked. In the former case it is holder
-            // to locked holder transfer. In the latter case it is not possible to tell if
-            // it is issuer to holder or holder to holder transfer.
-            if (isFrozen(view, owner, book_.in.get<MPTIssue>()))
-                return false;
-            // Previous step is BookStep. BookStep only sends if CanTransfer is
-            // set and not locked or the offer is owned by an issuer
+            // Previous BookStep already enforced transferability for the asset
+            // it sends to this offer.
             if (prevStep_->bookStepBook())
                 return true;
             // Previous step is MPTEndpointStep and offer's owner is not an
