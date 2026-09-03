@@ -123,10 +123,4 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     return std::nullopt;
 }
 
-bool
-ammEnabled(Rules const& /*rules*/)
-{
-    return true;
-}
-
 }  // namespace xrpl
