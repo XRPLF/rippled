@@ -159,6 +159,14 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
             .flags = tfHolderKeyRecovery,
             .err = temMALFORMED,
         });
+
+        // Correct length, but not a well-formed compressed secp256k1 point.
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = gMakeZeroBuffer(kEcPubKeyLength),
+            .flags = tfHolderKeyRecovery,
+            .err = temMALFORMED,
+        });
     }
 
     void
@@ -235,7 +243,7 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
     void
     testPreflightProof(FeatureBitset features)
     {
-        testcase("HolderKeyUpdate preflight: ZKProof length");
+        testcase("HolderKeyUpdate preflight: Rotation/Recovery require ZKProof");
         using namespace test::jtx;
 
         Env env{*this, features};
@@ -249,7 +257,7 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
         mptAlice.holderKeyUpdate({
             .account = bob,
             .holderPubKey = mptAlice.getPubKey(bobNewKey),
-            .proof = gMakeZeroBuffer(kEcHolderKeyRecoveryProofLength - 1),
+            .omitProof = true,
             .flags = tfHolderKeyRecovery,
             .err = temMALFORMED,
         });
@@ -289,7 +297,7 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
         // ZKProof present.
         mptAlice.holderKeyUpdate({
             .account = bob,
-            .proof = gMakeZeroBuffer(kEcHolderKeyRecoveryProofLength),
+            .proof = gMakeZeroBuffer(1),
             .flags = tfCancelRecovery,
             .err = temMALFORMED,
         });
@@ -586,12 +594,25 @@ class ConfidentialMPTHolderKeyUpdate_test : public ConfidentialTransferTestBase
         testRotationSucceeds(features);
         testRecoverySucceeds(features);
         testCancelSucceeds(features);
+    }
 
-        // Not yet coverable: preclaim's Schnorr PoK / Compact Pedersen
-        // equality proof failures both return tecBAD_PROOF, but
-        // verifyHolderKeyUpdateProof is currently a placeholder that always
-        // returns tesSUCCESS (see ConfidentialTransfer.cpp). Tests for those
-        // two cases should be added once real crypto-side verification lands.
+    void
+    testDisabled(FeatureBitset features)
+    {
+        testcase("HolderKeyUpdate: disabled when a required amendment is off");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = gMakeZeroBuffer(kEcPubKeyLength),
+            .flags = tfHolderKeyRecovery,
+            .err = temDISABLED,
+        });
     }
 
 public:
@@ -601,6 +622,8 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
+        testDisabled(all - featureConfidentialMPTKeyRotation);
+        testDisabled(all - featureConfidentialTransfer);
     }
 };
 

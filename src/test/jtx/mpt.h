@@ -363,6 +363,8 @@ struct MPTHolderKeyUpdate
     // mode, to exercise the "missing ciphertext" malformed-transaction path.
     std::optional<bool> omitCiphertexts = std::nullopt;
     std::optional<Buffer> proof = std::nullopt;
+    // Testing-only: skip auto-filling ZKProof in Rotation/Recovery mode.
+    std::optional<bool> omitProof = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;

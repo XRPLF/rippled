@@ -2079,15 +2079,12 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg)
     {
         jv[sfZKProof.jsonName] = strHex(*arg.proof);
     }
-    else if (!cancel)
+    else if (!cancel && !arg.omitProof.value_or(false))
     {
-        // Real proof verification is not wired up yet (see
-        // verifyHolderKeyUpdateProof); a correctly-sized filler buffer is
-        // enough to pass preflight's length check. Cancel mode carries no
-        // proof at all, so nothing is auto-filled here.
-        auto const proofLength =
-            rotation ? kEcHolderKeyRotationProofLength : kEcHolderKeyRecoveryProofLength;
-        jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(proofLength));
+        // TODO: Proof verification lands in a follow-up. Rotation/Recovery still
+        // require the field to be present; any blob satisfies that check.
+        // Cancel mode carries no proof.
+        jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(1));
     }
 
     submit(arg, jv);

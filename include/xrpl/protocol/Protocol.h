@@ -529,25 +529,6 @@ constexpr std::size_t kEcConvertBackProofLength =
 constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
 
 /**
- * Length of the ZKProof for ConfidentialMPTHolderKeyUpdate in Recovery mode
- * (tfHolderKeyRecovery)
- */
-constexpr std::size_t kEcHolderKeyRecoveryProofLength = kEcSchnorrProofLength;
-
-/**
- * Length of the ZKProof for ConfidentialMPTHolderKeyUpdate in Rotation mode
- * (tfHolderKeyRotation)
- *
- * TODO: the Pedersen equality proof format does not exist in the
- * mpt-crypto library yet. This placeholder reserves a Schnorr-proof-sized
- * component for it and MUST be revised once that proof format is finalized
- * on the crypto side.
- */
-constexpr std::size_t kEcHolderKeyRotationEqualityProofLength = kEcSchnorrProofLength;
-constexpr std::size_t kEcHolderKeyRotationProofLength =
-    kEcSchnorrProofLength + kEcHolderKeyRotationEqualityProofLength;
-
-/**
  * Extra base fee multiplier charged to confidential MPT transactions.
  */
 constexpr std::uint32_t kConfidentialFeeMultiplier = 9;

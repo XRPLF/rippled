@@ -550,33 +550,4 @@ verifyConvertBackProof(
     return tesSUCCESS;
 }
 
-TER
-verifyHolderKeyUpdateProof(
-    HolderKeyUpdateMode mode,
-    Slice const& proof,
-    Slice const& newPubKey,
-    std::optional<Slice> const& oldSpendingCiphertext,
-    std::optional<Slice> const& oldInboxCiphertext,
-    std::optional<Slice> const& newSpendingCiphertext,
-    std::optional<Slice> const& newInboxCiphertext,
-    uint256 const& contextHash)
-{
-    // TODO: the mpt-crypto library does not yet expose verification for the
-    // Schnorr proof of knowledge of the new private key (bound to a
-    // holder-key-update context hash) or the Compact Pedersen equality
-    // proof used in Rotation mode. Until that crypto-side work lands, this
-    // always succeeds; callers already enforce fixed proof lengths per mode
-    // in preflight (see kEcHolderKeyRotationProofLength /
-    // kEcHolderKeyRecoveryProofLength).
-    (void)mode;
-    (void)proof;
-    (void)newPubKey;
-    (void)oldSpendingCiphertext;
-    (void)oldInboxCiphertext;
-    (void)newSpendingCiphertext;
-    (void)newInboxCiphertext;
-    (void)contextHash;
-    return tesSUCCESS;
-}
-
 }  // namespace xrpl
