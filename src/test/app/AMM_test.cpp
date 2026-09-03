@@ -6304,7 +6304,7 @@ private:
                 // to 99.99999999999994227040383754105 which gets
                 // internally rounded to 100, due to representation
                 // error.
-                BEAST_EXPECT((sqrtPoolProduct + Number{1, -14} >= input.lpTokenBalance));
+                BEAST_EXPECT((sqrtPoolProduct + Number{1, -14} >= lpTokenBalance));
             }
         }
     }
