@@ -287,6 +287,14 @@ inline constexpr auto disputesCount = makeStr("disputes_count");
  */
 inline constexpr auto proposalTrusted = makeStr("proposal_trusted");
 inline constexpr auto validationTrusted = makeStr("validation_trusted");
+
+/**
+ * "validation_status" — which exit the inbound validation took. Set once per
+ * exit, so a dropped validation (microseconds) is separable from a queued one
+ * (job wait plus checkValidation). Without it the span name reports two
+ * unrelated latency distributions and every quantile over it is meaningless.
+ */
+inline constexpr auto validationStatus = makeStr("validation_status");
 }  // namespace attr
 
 // ===== Event names ===========================================================
@@ -352,6 +360,10 @@ inline constexpr auto closeAnomaly = makeStr("anomaly");
 inline constexpr auto closeOthersClosed = makeStr("others_closed");
 inline constexpr auto closeIdle = makeStr("idle");
 inline constexpr auto closeNormal = makeStr("normal");
+// validation_status values, one per exit of the inbound validation path.
+inline constexpr auto validationQueued = makeStr("queued");
+inline constexpr auto validationDroppedDiverged = makeStr("dropped_diverged");
+inline constexpr auto validationDroppedLoad = makeStr("dropped_load");
 }  // namespace val
 
 }  // namespace xrpl::telemetry::consensus::span
