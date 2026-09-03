@@ -3,6 +3,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/shamapstore.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
@@ -44,7 +45,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -341,96 +341,6 @@ class SHAMapStore_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.app().getRelationalDatabase().getAccountTransactionCount() == rows);
     }
 
-    // Wait until the SHAMapStore has finished processing the ledger that the
-    // preceding env.close() produced.
-    //
-    // env.close() returns as soon as the ledger_accept RPC returns, but the
-    // validated ledger path -- LedgerMaster::setValidLedger() ->
-    // SHAMapStore::onLedgerClosed() -- runs on a job queue thread. Without
-    // draining the job queue first, the store may not have been handed the
-    // ledger at all, in which case rendezvous() observes working_ == false and
-    // returns immediately, before any work has been done.
-    [[nodiscard]] static bool
-    syncStore(jtx::Env& env)
-    {
-        // Drain the job queue first, so that onLedgerClosed() has run and
-        // working_ is set. Then use the store's timeout overload, so a store
-        // that never finishes fails this test instead of blocking on it.
-        //
-        // Only the second wait is bounded: JobQueue::rendezvous() has no
-        // timeout overload, so a job that never completes hangs here. That is
-        // pre-existing -- ~AppBundle waits on it the same way for every jtx
-        // test -- but it does mean this helper is not hang-proof end to end.
-        env.app().getJobQueue().rendezvous();
-        return env.app().getSHAMapStore().rendezvous(std::chrono::seconds{60});
-    }
-
-    // Bring the SHAMapStore to the point where it has been handed a validated
-    // ledger and initialized lastRotated, and report how many extra ledgers had
-    // to be closed to get it there (normally none). Returns std::nullopt if
-    // syncStore() itself failed.
-    //
-    // syncStore() alone does not guarantee that, because
-    // SHAMapStoreImp::run()'s loop does not use the notification and the
-    // working_ flag safely:
-    //
-    //   * onLedgerClosed() notifies cond_ whether or not run()'s thread is
-    //     parked on it, and run() waits on cond_ without a predicate, so a
-    //     notification that lands while the thread is still starting up --
-    //     before it first reaches that wait -- is lost.
-    //   * run() clears working_ at the top of its loop without checking
-    //     whether newLedger_ is still set, so rendezvous() can report the
-    //     store idle with a validated ledger queued.
-    //
-    // Either way the store ends up parked with work pending, and only another
-    // notification gets it moving again. In a standalone test nothing else
-    // closes ledgers, so that has to come from here: this closes a ledger
-    // rather than polling getLastRotated(), because polling would just time
-    // out. onLedgerClosed() keeps only the most recent ledger in newLedger_,
-    // so the ledger the store picks up -- and therefore lastRotated -- is a
-    // timing detail, which is why the callers derive their expectations from
-    // the value they observe instead of assuming one.
-    //
-    // run() is deliberately left as it is. In production the only effect is
-    // latency: the trigger is validatedSeq >= lastRotated + deleteInterval, so
-    // a lost notification delays rotation to the next validated ledger and
-    // nothing is skipped or accumulated -- starting at 513 instead of 512 does
-    // not matter. Two consequences do follow from leaving it in place, and both
-    // hold today: nothing in production decides anything from working_ or
-    // rendezvous() (rendezvous() has no production callers at all), and a node
-    // whose ledgers only advance on demand -- standalone, driven by
-    // ledger_accept -- can sit on a queued ledger until something closes the
-    // next one, which is exactly the situation this helper is working around.
-    //
-    // So this helper is permanent rather than a stopgap. Working around the
-    // race must not make it invisible, so every extra close is logged. That
-    // keeps how often it is actually hit observable in the unit test output --
-    // which is the only signal left once these testcases stop flaking on it.
-    [[nodiscard]] std::optional<int>
-    initializeStore(jtx::Env& env, int const maxExtraCloses = 3)
-    {
-        auto& store = env.app().getSHAMapStore();
-
-        for (int extraCloses = 0;; ++extraCloses)
-        {
-            if (!syncStore(env))
-                return std::nullopt;
-            if (store.getLastRotated() != 0 || extraCloses == maxExtraCloses)
-            {
-                if (extraCloses != 0)
-                {
-                    log << "initializeStore: the store needed " << extraCloses
-                        << " extra ledger close(s) to pick up a validated ledger. "
-                           "SHAMapStoreImp::run() dropped the notification for the "
-                           "first one; see the comment on initializeStore()."
-                        << std::endl;
-                }
-                return extraCloses;
-            }
-            env.close();
-        }
-    }
-
     int
     waitForReady(jtx::Env& env)
     {
@@ -622,7 +532,8 @@ class SHAMapStore_test : public beast::unit_test::Suite
         // the store. Without this, working_ may still be false from the
         // previous cycle and rendezvous() would report "done" before the store
         // has even looked at this ledger.
-        env.app().getJobQueue().rendezvous();
+        if (!BEAST_EXPECT(env.app().getJobQueue().rendezvous(jtx::kRendezvousTimeout)))
+            return std::nullopt;
 
         if (!BEAST_EXPECT(!store.rendezvous(1s)))
             return std::nullopt;
@@ -748,7 +659,8 @@ class SHAMapStore_test : public beast::unit_test::Suite
         //
         // This waits only for the job queue, not for the store, whose thread is
         // its own and is the thing being interrupted here.
-        env.app().getJobQueue().rendezvous();
+        if (!BEAST_EXPECT(env.app().getJobQueue().rendezvous(jtx::kRendezvousTimeout)))
+            return std::nullopt;
 
         // Publishing the ledger is what advances pubLedger_, so this is the
         // observable confirmation that the window above has closed. Asserting it

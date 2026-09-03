@@ -29,6 +29,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <string>
 #include <type_traits>
@@ -237,9 +238,15 @@ public:
 
     /**
      * Block until no jobs running.
+     *
+     * Without a timeout this waits indefinitely and always returns true, which
+     * is what shutdown paths want: there is nowhere useful to report a timeout
+     * from a destructor. With one it returns false if jobs were still running
+     * when the timeout expired, so a caller that must not hang -- a test, say
+     * -- can report a failure instead.
      */
-    void
-    rendezvous();
+    bool
+    rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {});
 
     void
     stop();
