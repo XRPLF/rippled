@@ -120,7 +120,7 @@ public:
      * Get the global Telemetry instance.
      * @return Pointer to the active instance, or nullptr if not started.
      */
-    static Telemetry*
+    [[nodiscard]] static Telemetry*
     getInstance()
     {
         return instance.load(std::memory_order_acquire);
@@ -322,7 +322,7 @@ public:
      * @param name  Tracer name used to identify the instrumentation library.
      * @return A shared pointer to the Tracer.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view name = kTracerName) = 0;
 
     /**
@@ -340,7 +340,7 @@ public:
      * - kConsumer: async message receive
      * @return A shared pointer to the new Span.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(
         std::string_view name,
         opentelemetry::trace::SpanKind kind = opentelemetry::trace::SpanKind::kInternal) = 0;
@@ -356,7 +356,7 @@ public:
      * @param kind           The span kind (defaults to kInternal).
      * @return A shared pointer to the new Span.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(
         std::string_view name,
         opentelemetry::context::Context const& parentContext,
