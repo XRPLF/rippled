@@ -1037,7 +1037,7 @@ class InvariantsMPT_test : public InvariantsBase
         // regular lock/unlock tests exercise its clear path under the same
         // amendments.
         {
-            MPTID id;
+            MPTID id{};
             doInvariantCheck(
                 {{"immutable MPTokenIssuance flag cleared"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
