@@ -1,6 +1,107 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 
+#include <cstdint>
 #include <string>
+#include <vector>
+
+namespace wasm_constants {
+
+namespace {
+
+void
+appendU32Leb(std::vector<uint8_t>& out, uint32_t value)
+{
+    do
+    {
+        auto byte = static_cast<uint8_t>(value & 0x7f);
+        value >>= 7;
+        if (value != 0u)
+            byte |= 0x80;
+        out.push_back(byte);
+    } while (value != 0u);
+}
+
+void
+appendSection(std::vector<uint8_t>& out, uint8_t section, std::vector<uint8_t> const& payload)
+{
+    out.push_back(section);
+    appendU32Leb(out, payload.size());
+    out.insert(out.end(), payload.begin(), payload.end());
+}
+
+void
+appendBytes(std::vector<uint8_t>& out, auto const& bytes)
+{
+    for (auto byte : bytes)
+        out.push_back(byte);
+}
+
+std::vector<uint8_t>
+baseModule()
+{
+    std::vector<uint8_t> out;
+    appendBytes(out, kWasmHeader);
+    appendBytes(out, kTypeEmptyFunc);
+    appendBytes(out, kFuncTypE0);
+    appendBytes(out, kExportFinish);
+    return out;
+}
+
+}  // namespace
+
+std::vector<uint8_t>
+generateCodeBlob(uint32_t numInstructions)
+{
+    auto out = baseModule();
+
+    std::vector<uint8_t> body;
+    body.push_back(0x00);
+    body.insert(body.end(), numInstructions, kInstrNop);
+    body.push_back(kInstrEnd);
+
+    std::vector<uint8_t> codePayload;
+    codePayload.push_back(0x01);
+    appendU32Leb(codePayload, body.size());
+    codePayload.insert(codePayload.end(), body.begin(), body.end());
+
+    appendSection(out, kSectionCode, codePayload);
+    return out;
+}
+
+std::vector<uint8_t>
+generateDataBlob(uint32_t dataSize)
+{
+    std::vector<uint8_t> out;
+    appendBytes(out, kWasmHeader);
+    appendBytes(out, kTypeEmptyFunc);
+    appendBytes(out, kFuncTypE0);
+
+    std::vector<uint8_t> memoryPayload;
+    memoryPayload.push_back(0x01);
+    memoryPayload.push_back(0x00);
+    appendU32Leb(memoryPayload, (dataSize + 65'535) / 65'536);
+    appendSection(out, kSectionMemory, memoryPayload);
+
+    appendBytes(out, kExportFinish);
+
+    std::vector<uint8_t> codePayload;
+    codePayload.push_back(0x01);
+    appendU32Leb(codePayload, sizeof(kEmptyBody));
+    appendBytes(codePayload, kEmptyBody);
+    appendSection(out, kSectionCode, codePayload);
+
+    std::vector<uint8_t> dataPayload;
+    dataPayload.push_back(0x01);
+    dataPayload.push_back(0x00);
+    appendBytes(dataPayload, kDataOffsetZero);
+    appendU32Leb(dataPayload, dataSize);
+    dataPayload.insert(dataPayload.end(), dataSize, kDataFillByte);
+    appendSection(out, kSectionData, dataPayload);
+
+    return out;
+}
+
+}  // namespace wasm_constants
 
 extern std::string const kFibWasmHex =
     "0061736d0100000001090260000060017f017f030302000105030100020638097f004180080b7f004180080b7f0041"
@@ -1389,3 +1490,18 @@ extern std::string const kImpExpHex =
     "6e000003656e76166765745f706172656e745f6c65646765725f686173680000030403010201050301000107310406"
     "6d656d6f72790200096578705f66756e63310002096578705f66756e633200030c746573745f696d706f7274730004"
     "0a2b03040041010b0700200041026c0b1c01027f4120410410001a41202802002100410041201001210120000b";
+
+extern std::string const kUpdateDataWasmHex =
+    "0061736d01000000010e0360027f7f017f6000006000017f02100103656e76087365745f6461746100000303020102"
+    "0503010002063f0a7f01419088040b7f004180080b7f004185080b7f004190080b7f00419088040b7f004180080b7f"
+    "00419088040b7f00418080080b7f0041000b7f0041010b07b1010c066d656d6f72790200115f5f7761736d5f63616c"
+    "6c5f63746f727300010d657363726f775f66696e69736800020c5f5f64736f5f68616e646c6503010a5f5f64617461"
+    "5f656e6403020b5f5f737461636b5f6c6f7703030c5f5f737461636b5f6869676803040d5f5f676c6f62616c5f6261"
+    "736503050b5f5f686561705f6261736503060a5f5f686561705f656e6403070d5f5f6d656d6f72795f626173650308"
+    "0c5f5f7461626c655f6261736503090a3f0202000b3a01017f230041106b220024002000410c6a4184082d00003a00"
+    "002000418008280000360208200041086a410410001a200041106a240041807e0b0b0b01004180080b044461746100"
+    "7f0970726f647563657273010c70726f6365737365642d62790105636c616e675f31392e312e352d776173692d7364"
+    "6b202868747470733a2f2f6769746875622e636f6d2f6c6c766d2f6c6c766d2d70726f6a6563742061623462356132"
+    "6462353832393538616631656533303861373930636664623432626432343732302900490f7461726765745f666561"
+    "7475726573042b0f6d757461626c652d676c6f62616c732b087369676e2d6578742b0f7265666572656e63652d7479"
+    "7065732b0a6d756c746976616c7565";

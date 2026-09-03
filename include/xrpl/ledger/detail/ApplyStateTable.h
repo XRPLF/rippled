@@ -16,6 +16,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <optional>
@@ -62,6 +63,8 @@ public:
         TER ter,
         std::optional<STAmount> const& deliver,
         std::optional<uint256 const> const& parentBatchId,
+        std::optional<std::uint32_t> const& gasUsed,
+        std::optional<std::int32_t> const& vmReturnCode,
         bool isDryRun,
         beast::Journal j);
 

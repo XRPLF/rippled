@@ -1,6 +1,79 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
+#include <vector>
+
+// WASM binary format constants and helpers for building test modules
+namespace wasm_constants {
+
+// Magic + version header
+uint8_t const kWasmHeader[] = {
+    0x00,
+    0x61,
+    0x73,
+    0x6d,  // magic: \0asm
+    0x01,
+    0x00,
+    0x00,
+    0x00  // version: 1
+};
+
+// Type section: () -> ()
+uint8_t const kTypeEmptyFunc[] = {0x01, 0x04, 0x01, 0x60, 0x00, 0x00};
+
+// Function section: one function using type 0
+uint8_t const kFuncTypE0[] = {0x03, 0x02, 0x01, 0x00};
+
+// Export section: export func 0 as "escrow_finish"
+uint8_t const kExportFinish[] = {
+    0x07,
+    0x11,
+    0x01,
+    0x0d,
+    'e',
+    's',
+    'c',
+    'r',
+    'o',
+    'w',
+    '_',
+    'f',
+    'i',
+    'n',
+    'i',
+    's',
+    'h',
+    0x00,
+    0x00};
+
+// Empty function body: 0 locals, end
+uint8_t const kEmptyBody[] = {0x00, 0x0b};
+
+// Data segment offset: i32.const 0, end
+uint8_t const kDataOffsetZero[] = {0x41, 0x00, 0x0b};
+
+// Section IDs
+uint8_t const kSectionMemory = 0x05;
+uint8_t const kSectionCode = 0x0a;
+uint8_t const kSectionData = 0x0b;
+
+// Instructions
+uint8_t const kInstrNop = 0x01;
+uint8_t const kInstrEnd = 0x0b;
+
+// Fill byte for data section bloat
+uint8_t const kDataFillByte = 0xEE;
+
+// Generator for WASM module with large code section (many NOPs)
+std::vector<uint8_t>
+generateCodeBlob(uint32_t numInstructions);
+
+// Generator for WASM module with large data section
+std::vector<uint8_t>
+generateDataBlob(uint32_t dataSize);
+
+}  // namespace wasm_constants
 
 extern std::string const kLedgerSqnWasmHex;
 extern std::string const kAllHostFunctionsWasmHex;
@@ -79,3 +152,4 @@ extern std::string const kFunctions5kHex;
 extern std::string const kOpcReservedHex;
 
 extern std::string const kImpExpHex;
+extern std::string const kUpdateDataWasmHex;

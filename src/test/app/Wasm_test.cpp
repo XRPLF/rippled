@@ -119,7 +119,7 @@ getSection(Bytes const& module, std::uint8_t n)
 */
 
 static std::optional<int32_t>
-runFinishFunction(std::string const& code)
+runFinish(std::string const& code)
 {
     auto const wasm = hexToBytes(code);
     HostFunctions hfs;
@@ -135,7 +135,7 @@ runFinishFunction(std::string const& code)
 static bool
 finishFunctionReturns(std::string const& code, int32_t expected)
 {
-    auto const result = runFinishFunction(code);
+    auto const result = runFinish(code);
     return result.has_value() && *result == expected;
 }
 
@@ -183,7 +183,7 @@ struct Wasm_test : public beast::unit_test::Suite
         }
 
         {
-            // FinishFunction wrong function name
+            // Bytecode wrong function name
             // pub fn bad() -> bool {
             //     unsafe { host_lib::getLedgerSqn() >= 5 }
             // }
@@ -541,18 +541,18 @@ struct Wasm_test : public beast::unit_test::Suite
     {
         testcase("Wasm additional memory limit tests");
         BEAST_EXPECT(finishFunctionReturns(kMemoryPointerAtLimitHex, 1));
-        BEAST_EXPECT(!runFinishFunction(kMemoryPointerOverLimitHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kMemoryOffsetOverLimitHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kMemoryEndOfWordOverLimitHex).has_value());
+        BEAST_EXPECT(!runFinish(kMemoryPointerOverLimitHex).has_value());
+        BEAST_EXPECT(!runFinish(kMemoryOffsetOverLimitHex).has_value());
+        BEAST_EXPECT(!runFinish(kMemoryEndOfWordOverLimitHex).has_value());
         BEAST_EXPECT(finishFunctionReturns(kMemoryGrow0To1PageHex, 1));
         BEAST_EXPECT(finishFunctionReturns(kMemoryGrow1To0PageHex, -1));
         BEAST_EXPECT(finishFunctionReturns(kMemoryLastByteOf8MbHex, 1));
         // Growing past the 8 MiB cap now traps ("growth operation limited") instead of
         // letting memory.grow answer -1, so the run fails rather than returning.
-        BEAST_EXPECT(!runFinishFunction(kMemoryGrow1MoreThan8MbHex).has_value());
+        BEAST_EXPECT(!runFinish(kMemoryGrow1MoreThan8MbHex).has_value());
         BEAST_EXPECT(finishFunctionReturns(kMemoryGrow0MoreThan8MbHex, 1));
-        BEAST_EXPECT(!runFinishFunction(kMemoryInit1MoreThan8MbHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kMemoryNegativeAddressHex).has_value());
+        BEAST_EXPECT(!runFinish(kMemoryInit1MoreThan8MbHex).has_value());
+        BEAST_EXPECT(!runFinish(kMemoryNegativeAddressHex).has_value());
     }
 
     void
@@ -564,63 +564,63 @@ struct Wasm_test : public beast::unit_test::Suite
         // boundary itself is covered by the engine's own test, since there is no
         // 1025-element fixture here.
         BEAST_EXPECT(finishFunctionReturns(kTable65ElementsHex, 1));
-        BEAST_EXPECT(!runFinishFunction(kTable2TablesHex).has_value());
+        BEAST_EXPECT(!runFinish(kTable2TablesHex).has_value());
         BEAST_EXPECT(finishFunctionReturns(kTable0ElementsHex, 1));
-        BEAST_EXPECT(!runFinishFunction(kTableUintMaxHex).has_value());
+        BEAST_EXPECT(!runFinish(kTableUintMaxHex).has_value());
     }
 
     void
     testWasmProposal()
     {
         testcase("Wasm disabled proposal tests");
-        BEAST_EXPECT(!runFinishFunction(kProposalMutableGlobalHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalGcStructNewHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalMultiValueHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalSignExtHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalFloatToIntHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalBulkMemoryHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalRefTypesHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalTailCallHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalExtendedConstHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalMultiMemoryHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalCustomPageSizesHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalMemory64Hex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kProposalWideArithmeticHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalMutableGlobalHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalGcStructNewHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalMultiValueHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalSignExtHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalFloatToIntHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalBulkMemoryHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalRefTypesHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalTailCallHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalExtendedConstHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalMultiMemoryHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalCustomPageSizesHex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalMemory64Hex).has_value());
+        BEAST_EXPECT(!runFinish(kProposalWideArithmeticHex).has_value());
     }
 
     void
     testWasmTrap()
     {
         testcase("Wasm trap tests");
-        BEAST_EXPECT(!runFinishFunction(kTrapDivideBy0Hex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kTrapIntOverflowHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kTrapUnreachableHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kTrapNullCallHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kTrapFuncSigMismatchHex).has_value());
+        BEAST_EXPECT(!runFinish(kTrapDivideBy0Hex).has_value());
+        BEAST_EXPECT(!runFinish(kTrapIntOverflowHex).has_value());
+        BEAST_EXPECT(!runFinish(kTrapUnreachableHex).has_value());
+        BEAST_EXPECT(!runFinish(kTrapNullCallHex).has_value());
+        BEAST_EXPECT(!runFinish(kTrapFuncSigMismatchHex).has_value());
     }
 
     void
     testWasmWasi()
     {
         testcase("Wasm Wasi tests");
-        BEAST_EXPECT(!runFinishFunction(kWasiGetTimeHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kWasiPrintHex).has_value());
+        BEAST_EXPECT(!runFinish(kWasiGetTimeHex).has_value());
+        BEAST_EXPECT(!runFinish(kWasiPrintHex).has_value());
     }
 
     void
     testWasmSectionCorruption()
     {
         testcase("Wasm Section Corruption tests");
-        BEAST_EXPECT(!runFinishFunction(kBadMagicNumberHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kBadVersionNumberHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kLyingHeaderHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kNeverEndingNumberHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kVectorLieHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kSectionOrderingHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kGhostPayloadHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kJunkAfterSectionHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kInvalidSectionIdHex).has_value());
-        BEAST_EXPECT(!runFinishFunction(kLocalVariableBombHex).has_value());
+        BEAST_EXPECT(!runFinish(kBadMagicNumberHex).has_value());
+        BEAST_EXPECT(!runFinish(kBadVersionNumberHex).has_value());
+        BEAST_EXPECT(!runFinish(kLyingHeaderHex).has_value());
+        BEAST_EXPECT(!runFinish(kNeverEndingNumberHex).has_value());
+        BEAST_EXPECT(!runFinish(kVectorLieHex).has_value());
+        BEAST_EXPECT(!runFinish(kSectionOrderingHex).has_value());
+        BEAST_EXPECT(!runFinish(kGhostPayloadHex).has_value());
+        BEAST_EXPECT(!runFinish(kJunkAfterSectionHex).has_value());
+        BEAST_EXPECT(!runFinish(kInvalidSectionIdHex).has_value());
+        BEAST_EXPECT(!runFinish(kLocalVariableBombHex).has_value());
     }
 
     // TODO: broken, fix after Rust re-arch. Needs WasmEngine::check, whose replacement

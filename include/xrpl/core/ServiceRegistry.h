@@ -6,6 +6,7 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Fees.h>
 
 #include <boost/asio.hpp>
 
@@ -245,6 +246,9 @@ public:
      */
     virtual DatabaseCon&
     getWalletDB() = 0;
+
+    [[nodiscard]] virtual Fees
+    getFees() const = 0;
 
     // Temporary: Get the underlying Application for functions that haven't
     // been migrated yet. This should be removed once all code is migrated.

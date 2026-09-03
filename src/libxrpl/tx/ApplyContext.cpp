@@ -50,6 +50,18 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
+    // tecINTERNAL reports an xrpld bug, not a result: nothing the VM recorded
+    // before we hit it belongs in the metadata.
+    if (ter != tecINTERNAL)
+    {
+        if (vmReturnCode_.has_value())
+        {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
+            view_->setVMReturnCode(*vmReturnCode_);
+        }
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
+        view_->setGasUsed(gasUsed_);
+    }
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }

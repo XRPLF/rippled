@@ -2,8 +2,11 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/TestHelpers.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rate.h>
@@ -11,7 +14,10 @@
 #include <xrpl/protocol/STAmount.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
+#include <string>
+#include <utility>
 
 /**
  * Escrow operations.
@@ -85,5 +91,74 @@ auto const kCancelTime = JTxFieldWrapper<TimePointField>(sfCancelAfter);
 auto const kCondition = JTxFieldWrapper<BlobField>(sfCondition);
 
 auto const kFulfillment = JTxFieldWrapper<BlobField>(sfFulfillment);
+
+struct Bytecode
+{
+private:
+    std::string value_;
+
+public:
+    explicit Bytecode(std::string func) : value_(std::move(func))
+    {
+    }
+
+    explicit Bytecode(Slice const& func) : value_(strHex(func))
+    {
+    }
+
+    template <size_t N>
+    explicit Bytecode(std::array<std::uint8_t, N> const& f) : Bytecode(makeSlice(f))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfBytecode.jsonName] = value_;
+    }
+};
+
+struct Data
+{
+private:
+    std::string value_;
+
+public:
+    explicit Data(std::string func) : value_(std::move(func))
+    {
+    }
+
+    explicit Data(Slice const& func) : value_(strHex(func))
+    {
+    }
+
+    template <size_t N>
+    explicit Data(std::array<std::uint8_t, N> const& f) : Data(makeSlice(f))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfData.jsonName] = value_;
+    }
+};
+
+struct Gas
+{
+private:
+    std::uint32_t value_;
+
+public:
+    explicit Gas(std::uint32_t const& value) : value_(value)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfGas.jsonName] = value_;
+    }
+};
 
 }  // namespace xrpl::test::jtx::escrow
