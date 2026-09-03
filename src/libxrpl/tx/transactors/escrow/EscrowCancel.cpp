@@ -218,8 +218,6 @@ EscrowCancel::doApply()
         }
     }
 
-    ctx_.view().update(sle);
-
     if (!recycleReserve)
         decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
 
