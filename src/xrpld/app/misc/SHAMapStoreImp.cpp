@@ -331,13 +331,26 @@ SHAMapStoreImp::run()
 
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            working_ = false;
-            rendezvous_.notify_all();
+            // Only report idle when nothing is actually pending. Clearing
+            // working_ unconditionally would overwrite the value that
+            // onLedgerClosed() published while this thread was busy -- or
+            // before it first reached the wait below -- so rendezvous() would
+            // report "caught up" with a validated ledger still queued.
+            // Stopping always publishes, so that an untimed rendezvous() can
+            // never outlive this thread.
+            if (stop_ || !newLedger_)
+            {
+                working_ = false;
+                rendezvous_.notify_all();
+            }
             if (stop_)
             {
                 return;
             }
-            cond_.wait(lock);
+            // Wait on a predicate: onLedgerClosed() notifies whether or not
+            // this thread is parked here, so a notification sent while it was
+            // working, or before it first got this far, is otherwise lost.
+            cond_.wait(lock, [this] { return stop_ || newLedger_ != nullptr; });
             if (newLedger_)
             {
                 validatedLedger = std::move(newLedger_);
