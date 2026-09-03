@@ -408,9 +408,9 @@ class SHAMapStore_test : public beast::unit_test::Suite
         {
             if (!syncStore(env))
                 return std::nullopt;
-            if (store.getLastRotated() || extraCloses == maxExtraCloses)
+            if (store.getLastRotated() != 0 || extraCloses == maxExtraCloses)
             {
-                if (extraCloses)
+                if (extraCloses != 0)
                 {
                     log << "initializeStore: the store needed " << extraCloses
                         << " extra ledger close(s) to pick up a validated ledger. "
@@ -1350,6 +1350,9 @@ public:
         if (!BEAST_EXPECTS(
                 lastRotated >= minSeq && lastRotated <= maxSeq, std::to_string(lastRotated)))
             return;
+        // The BEAST_EXPECT above already returned if this is nullopt, but that
+        // is invisible to clang-tidy's optional model.
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECTS(maxSeq == 3 + *extraCloses, std::to_string(maxSeq));
         std::stringstream initialRange;
         initialRange << minSeq << "-" << maxSeq;
