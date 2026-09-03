@@ -10,11 +10,13 @@
 #include <xrpl/nodestore/Scheduler.h>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 namespace xrpl::node_store {
 
@@ -26,11 +28,11 @@ public:
     DatabaseRotatingImp&
     operator=(DatabaseRotatingImp const&) = delete;
 
+    // Generations are ordered oldest -> newest; the last is the writable backend.
     DatabaseRotatingImp(
         Scheduler& scheduler,
         int readThreads,
-        std::shared_ptr<Backend> writableBackend,
-        std::shared_ptr<Backend> archiveBackend,
+        std::vector<std::shared_ptr<Backend>> generations,
         Section const& config,
         beast::Journal j);
 
@@ -40,10 +42,22 @@ public:
     }
 
     void
-    rotate(
-        std::unique_ptr<node_store::Backend>&& newBackend,
-        std::function<void(std::string const& writableName, std::string const& archiveName)> const&
-            f) override;
+    advance(std::unique_ptr<Backend>&& newWritable, RingPersist const& persist) override;
+
+    std::size_t
+    generationCount() const override;
+
+    std::uint64_t
+    copyForwardCount() const override;
+
+    void
+    beginRetire() override;
+
+    void
+    endRetire() override;
+
+    void
+    retireOldest(RingPersist const& persist) override;
 
     std::string
     getName() const override;
@@ -70,20 +84,22 @@ public:
     void
     sweep() override;
 
-    void
-    setRotationInFlight(bool inFlight) override;
-
 private:
-    std::shared_ptr<Backend> writableBackend_;
-    std::shared_ptr<Backend> archiveBackend_;
+    // Immutable snapshot of the generation ring, ordered oldest (front) -> newest (back);
+    // back() is the writable backend. Replaced copy-on-write under mutex_ by advance() /
+    // retireOldest(); fetchNodeObject takes a shared_ptr copy and iterates it lock-free,
+    // so the hot read path never allocates and never blocks writers.
+    std::shared_ptr<std::vector<std::shared_ptr<Backend>>> ring_;
+    // The oldest generation while it is being retired (evacuated then dropped), else
+    // null. A read served by this generation is copied forward into the writable
+    // backend so its survivors are preserved before it is dropped; copy-forward is
+    // scoped to this generation only (reads from other sealed generations are not
+    // copied), which keeps evacuation O(churn) instead of O(total state).
+    std::shared_ptr<Backend> retiring_;
     mutable std::mutex mutex_;
 
-    // True between SHAMapStore starting the cache-freshen phase and the
-    // completion of rotate(). While true, archive hits on ordinary
-    // (duplicate == false) fetches are copied forward into the writable
-    // backend; copyForwardCount_ tallies them per rotation for the
-    // summary line logged at swap.
-    std::atomic<bool> rotationInFlight_{false};
+    // Tally of nodes copied forward out of the retiring generation, for the summary
+    // line logged when the generation is dropped.
     std::atomic<std::uint64_t> copyForwardCount_{0};
 
     std::shared_ptr<NodeObject>

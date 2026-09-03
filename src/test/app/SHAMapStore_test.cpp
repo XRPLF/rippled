@@ -2,6 +2,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
@@ -10,6 +11,7 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -17,7 +19,11 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -25,15 +31,25 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/server/State.h>
+#include <xrpl/shamap/Family.h>
+
+#include <soci/session.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <exception>
 #include <filesystem>
 #include <limits>
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
+#include <random>
+#include <ratio>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -44,6 +60,7 @@ namespace xrpl::test {
 
 class SHAMapStore_test : public beast::unit_test::Suite
 {
+protected:
     static auto const kDeleteInterval = 8;
 
     static auto
@@ -60,6 +77,54 @@ class SHAMapStore_test : public beast::unit_test::Suite
         cfg = onlineDelete(std::move(cfg));
         cfg->section(Sections::kNodeDatabase).set(Keys::kAdvisoryDelete, "1");
         return cfg;
+    }
+
+    static auto
+    generationalDelete(std::unique_ptr<Config> cfg)
+    {
+        // The smallest budget: retirement runs on every rotation.
+        cfg = onlineDelete(std::move(cfg));
+        cfg->section(Sections::kNodeDatabase).set(Keys::kOnlineDeleteGenerations, "2");
+        return cfg;
+    }
+
+    // On-disk NuDB config rooted at fixed paths, so the ring and state survive an Env
+    // restart within a test.
+    static std::unique_ptr<Config>
+    diskConfig(std::string const& nodeDb, std::string const& stateDir, std::string const& budget)
+    {
+        return jtx::envconfig([&](std::unique_ptr<Config> cfg) {
+            cfg = onlineDelete(std::move(cfg));
+            auto& section = cfg->section(Sections::kNodeDatabase);
+            section.set(Keys::kType, "NuDB");
+            section.set(Keys::kPath, nodeDb);
+            section.set(Keys::kOnlineDeleteGenerations, budget);
+            cfg->legacy(Sections::kDatabasePath, stateDir);
+            return cfg;
+        });
+    }
+
+    // std::filesystem has no unique_path; derive a fresh directory name per call.
+    static std::filesystem::path
+    uniqueTempDir(std::string const& prefix)
+    {
+        return std::filesystem::temp_directory_path() /
+            (prefix + std::to_string(std::random_device{}()));
+    }
+
+    // Close ledgers until the next rotation fires, asserting it landed where expected.
+    void
+    rotateOnce(jtx::Env& env, int& ledgerSeq)
+    {
+        auto& store = env.app().getSHAMapStore();
+        auto const target = store.getLastRotated() + kDeleteInterval;
+        while (ledgerSeq <= static_cast<int>(target))
+        {
+            env.close();
+            ++ledgerSeq;
+            BEAST_EXPECT(store.rendezvous());
+        }
+        BEAST_EXPECT(store.getLastRotated() == target);
     }
 
     static bool
@@ -548,17 +613,16 @@ public:
 
         NodeStoreScheduler scheduler(env.app().getJobQueue());
 
-        std::string const writableDb = "write";
-        std::string const archiveDb = "archive";
-        auto writableBackend = makeBackendRotating(env, scheduler, writableDb);
-        auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
+        // Open a two-generation ring, oldest -> newest: {"archive", "write"}.
+        std::vector<std::shared_ptr<node_store::Backend>> generations;
+        generations.emplace_back(makeBackendRotating(env, scheduler, "archive"));
+        generations.emplace_back(makeBackendRotating(env, scheduler, "write"));
 
         static constexpr int kReadThreads = 4;
         auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
             scheduler,
             kReadThreads,
-            std::move(writableBackend),
-            std::move(archiveBackend),
+            std::move(generations),
             nscfg,
             env.app().getJournal("NodeStoreTest"));
 
@@ -567,48 +631,771 @@ public:
         using namespace std::chrono_literals;
         std::atomic<int> threadNum = 0;
 
+        BEAST_EXPECT(dbr->getName() == "write");
+        BEAST_EXPECT(dbr->generationCount() == 2);
+
+        // advance: append a fresh writable generation "1". The prior writable stays in
+        // the ring; the persist callback receives the whole ring, oldest -> newest.
         {
             auto newBackend = makeBackendRotating(env, scheduler, std::to_string(++threadNum));
-
-            auto const cb = [&](std::string const& writableName, std::string const& archiveName) {
-                BEAST_EXPECT(writableName == "1");
-                BEAST_EXPECT(archiveName == "write");
-                // Ensure that dbr functions can be called from within the
-                // callback
+            std::vector<std::string> persisted;
+            dbr->advance(std::move(newBackend), [&](std::vector<std::string> const& generations) {
+                persisted = generations;
+                // Ensure that dbr functions can be called from within the callback
                 BEAST_EXPECT(dbr->getName() == "1");
-            };
-
-            dbr->rotate(std::move(newBackend), cb);
+            });
+            BEAST_EXPECT((persisted == std::vector<std::string>{"archive", "write", "1"}));
         }
         BEAST_EXPECT(threadNum == 1);
         BEAST_EXPECT(dbr->getName() == "1");
+        BEAST_EXPECT(dbr->generationCount() == 3);
 
-        /////////////////////////////////////////////////////////////
-        // Do something stupid. Try to re-enter rotate from inside the callback.
+        // retire the oldest generation ("archive"); the ring shrinks and the persist
+        // callback receives the shortened ring.
         {
-            auto const cb = [&](std::string const& writableName, std::string const& archiveName) {
-                BEAST_EXPECT(writableName == "3");
-                BEAST_EXPECT(archiveName == "2");
-                // Ensure that dbr functions can be called from within the
-                // callback
-                BEAST_EXPECT(dbr->getName() == "3");
-            };
-            auto const cbReentrant = [&](std::string const& writableName,
-                                         std::string const& archiveName) {
-                BEAST_EXPECT(writableName == "2");
-                BEAST_EXPECT(archiveName == "1");
-                auto newBackend = makeBackendRotating(env, scheduler, std::to_string(++threadNum));
-                // Reminder: doing this is stupid and should never happen
-                dbr->rotate(std::move(newBackend), cb);
-            };
-            auto newBackend = makeBackendRotating(env, scheduler, std::to_string(++threadNum));
-            dbr->rotate(std::move(newBackend), cbReentrant);
+            dbr->beginRetire();
+            std::vector<std::string> persisted;
+            dbr->retireOldest([&](std::vector<std::string> const& generations) {
+                persisted = generations;
+                BEAST_EXPECT(dbr->getName() == "1");
+            });
+            dbr->endRetire();
+            BEAST_EXPECT((persisted == std::vector<std::string>{"write", "1"}));
+        }
+        BEAST_EXPECT(dbr->getName() == "1");
+        BEAST_EXPECT(dbr->generationCount() == 2);
+
+        // retireOldest never drops the sole writable generation.
+        {
+            dbr->retireOldest([&](std::vector<std::string> const& generations) {
+                BEAST_EXPECT((generations == std::vector<std::string>{"1"}));
+            });
+            BEAST_EXPECT(dbr->generationCount() == 1);
+
+            bool retiredWritable = false;
+            dbr->retireOldest([&](std::vector<std::string> const&) { retiredWritable = true; });
+            BEAST_EXPECT(!retiredWritable);
+            BEAST_EXPECT(dbr->generationCount() == 1);
+            BEAST_EXPECT(dbr->getName() == "1");
         }
 
+        /////////////////////////////////////////////////////////////
+        // Do something stupid. Re-enter advance from inside the persist callback.
+        {
+            auto const cbInner = [&](std::vector<std::string> const& generations) {
+                BEAST_EXPECT((generations == std::vector<std::string>{"1", "2", "3"}));
+                BEAST_EXPECT(dbr->getName() == "3");
+            };
+            auto const cbReentrant = [&](std::vector<std::string> const& generations) {
+                BEAST_EXPECT((generations == std::vector<std::string>{"1", "2"}));
+                auto newBackend = makeBackendRotating(env, scheduler, std::to_string(++threadNum));
+                // Reminder: doing this is stupid and should never happen
+                dbr->advance(std::move(newBackend), cbInner);
+            };
+            auto newBackend = makeBackendRotating(env, scheduler, std::to_string(++threadNum));
+            dbr->advance(std::move(newBackend), cbReentrant);
+        }
         BEAST_EXPECT(threadNum == 3);
         BEAST_EXPECT(dbr->getName() == "3");
+        BEAST_EXPECT(dbr->generationCount() == 3);
+
+        // Equally stupid: re-enter retireOldest from inside its persist callback.
+        {
+            bool innerRan = false;
+            dbr->beginRetire();
+            dbr->retireOldest([&](std::vector<std::string> const& generations) {
+                BEAST_EXPECT((generations == std::vector<std::string>{"2", "3"}));
+                dbr->retireOldest([&](std::vector<std::string> const& inner) {
+                    BEAST_EXPECT((inner == std::vector<std::string>{"3"}));
+                    innerRan = true;
+                });
+            });
+            dbr->endRetire();
+            BEAST_EXPECT(innerRan);
+            BEAST_EXPECT(dbr->generationCount() == 1);
+            BEAST_EXPECT(dbr->getName() == "3");
+        }
     }
 
+    // Store a node into the writable generation and return its hash. A distinct tag byte
+    // gives each node a distinct key and payload.
+    static uint256
+    storeNode(node_store::DatabaseRotating& dbr, std::uint8_t tag)
+    {
+        uint256 hash;
+        hash.begin()[0] = tag;
+        Blob blob{tag, tag, tag};
+        dbr.store(NodeObjectType::AccountNode, std::move(blob), hash, 1);
+        return hash;
+    }
+
+    static bool
+    hasNode(node_store::DatabaseRotating& dbr, uint256 const& hash)
+    {
+        return dbr.fetchNodeObject(hash, 0, node_store::FetchType::Synchronous, false) != nullptr;
+    }
+
+    void
+    testRetention()
+    {
+        // Prove the generational invariant the whole feature rests on: retiring the oldest
+        // generation preserves its still-live nodes (evacuated forward) and reclaims only
+        // its dead ones, and evacuation is scoped to the retiring generation so nodes in
+        // other sealed generations are never needlessly copied. This is also the recovery
+        // guarantee — a node retained across a rotation is still fetchable afterwards.
+        testcase("generational retention and evacuation");
+
+        using namespace jtx;
+        Env env(*this, envconfig(onlineDelete));
+        NodeStoreScheduler scheduler(env.app().getJobQueue());
+        auto nscfg = env.app().config().section(Sections::kNodeDatabase);
+
+        auto const noop = [](std::vector<std::string> const&) {};
+
+        // Start with one generation (g0, writable) and grow the ring to three:
+        // g0 (oldest) -> g1 (middle) -> g2 (writable).
+        std::vector<std::shared_ptr<node_store::Backend>> generations;
+        generations.emplace_back(makeBackendRotating(env, scheduler, "g0"));
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
+            scheduler, 4, std::move(generations), nscfg, env.app().getJournal("NodeStoreTest"));
+
+        // Into g0: a live node (X, will be evacuated) and a dead node (Z, never touched
+        // during the retire window, so it must be reclaimed with the generation).
+        auto const x = storeNode(*dbr, 0x11);
+        auto const z = storeNode(*dbr, 0x22);
+
+        dbr->advance(makeBackendRotating(env, scheduler, "g1"), noop);
+        // Into g1: a live node (Y) in a generation that will NOT be retired.
+        auto const y = storeNode(*dbr, 0x33);
+
+        dbr->advance(makeBackendRotating(env, scheduler, "g2"), noop);
+        BEAST_EXPECT(dbr->generationCount() == 3);
+        BEAST_EXPECT(dbr->getName() == "g2");
+
+        // Retire the oldest generation (g0). During the window, evacuate live nodes by
+        // fetching them — exactly what SHAMapStore does via visitNodes(copyNode).
+        dbr->beginRetire();
+
+        // X is served by the retiring generation, so it is copied forward into the
+        // writable backend.
+        BEAST_EXPECT(hasNode(*dbr, x));
+        BEAST_EXPECT(dbr->copyForwardCount() == 1);
+
+        // Y is served by a sealed but non-retiring generation: found, but NOT copied — the
+        // property that keeps evacuation O(churn) rather than O(total state).
+        BEAST_EXPECT(hasNode(*dbr, y));
+        BEAST_EXPECT(dbr->copyForwardCount() == 1);
+
+        // Fetching X again now hits the writable copy first, so it is not copied twice.
+        BEAST_EXPECT(hasNode(*dbr, x));
+        BEAST_EXPECT(dbr->copyForwardCount() == 1);
+
+        dbr->endRetire();
+        dbr->retireOldest(noop);
+        BEAST_EXPECT(dbr->generationCount() == 2);
+
+        // X lived only in g0; its survival proves it was evacuated to the writable backend.
+        BEAST_EXPECT(hasNode(*dbr, x));
+        // Z lived only in g0 and was never evacuated: reclaimed with the dropped generation.
+        BEAST_EXPECT(!hasNode(*dbr, z));
+        // Y lives in g1, which was not dropped: it survives without ever being copied.
+        BEAST_EXPECT(hasNode(*dbr, y));
+
+        // The rescue mechanism copyNode relies on: re-storing a lost node's in-memory
+        // body into the writable generation makes it fetchable again.
+        {
+            Blob blob{0x22, 0x22, 0x22};
+            dbr->store(NodeObjectType::AccountNode, std::move(blob), z, 0);
+            BEAST_EXPECT(hasNode(*dbr, z));
+        }
+
+        // Single-generation edge: with only the writable left, a retire window copies
+        // nothing forward (a writable hit is not an evacuation) and retireOldest
+        // refuses to drop the sole generation.
+        {
+            dbr->retireOldest(noop);
+            BEAST_EXPECT(dbr->generationCount() == 1);
+
+            dbr->beginRetire();
+            auto const w = storeNode(*dbr, 0x44);
+            BEAST_EXPECT(hasNode(*dbr, w));
+            BEAST_EXPECT(dbr->copyForwardCount() == 0);
+            dbr->retireOldest(noop);
+            BEAST_EXPECT(dbr->generationCount() == 1);
+            BEAST_EXPECT(hasNode(*dbr, w));
+            dbr->endRetire();
+        }
+    }
+
+    void
+    testConcurrentAccess()
+    {
+        // Race readers against the ring lifecycle: fetches snapshot the ring lock-free
+        // while the maintenance path advances, opens retire windows, and drops
+        // generations. Every node fetched during each retire window must survive.
+        testcase("concurrent fetch during advance and retire");
+
+        using namespace jtx;
+        Env env(*this, envconfig(onlineDelete));
+        NodeStoreScheduler scheduler(env.app().getJobQueue());
+        auto nscfg = env.app().config().section(Sections::kNodeDatabase);
+        auto const noop = [](std::vector<std::string> const&) {};
+
+        std::vector<std::shared_ptr<node_store::Backend>> generations;
+        generations.emplace_back(makeBackendRotating(env, scheduler, "c0"));
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
+            scheduler, 4, std::move(generations), nscfg, env.app().getJournal("NodeStoreTest"));
+
+        std::vector<uint256> hashes;
+        for (std::uint8_t tag = 1; tag <= 16; ++tag)
+            hashes.push_back(storeNode(*dbr, tag));
+
+        std::atomic<bool> done{false};
+        std::vector<std::thread> readers;
+        readers.reserve(4);
+        for (int t = 0; t < 4; ++t)
+        {
+            readers.emplace_back([&] {
+                while (!done.load(std::memory_order_relaxed))
+                {
+                    for (auto const& h : hashes)
+                        hasNode(*dbr, h);
+                }
+            });
+        }
+        // A writer racing advance/retire: store() snapshots the writable outside the
+        // ring lock, the exact window the lifecycle mutates.
+        readers.emplace_back([&] {
+            std::uint8_t tag = 0;
+            while (!done.load(std::memory_order_relaxed))
+                storeNode(*dbr, 100 + (tag++ % 100));
+        });
+
+        for (int cycle = 1; cycle <= 20; ++cycle)
+        {
+            dbr->advance(makeBackendRotating(env, scheduler, "c" + std::to_string(cycle)), noop);
+            dbr->beginRetire();
+            // Evacuate by fetching, as SHAMapStore does.
+            for (auto const& h : hashes)
+                hasNode(*dbr, h);
+            dbr->retireOldest(noop);
+            dbr->endRetire();
+        }
+        done = true;
+        for (auto& r : readers)
+            r.join();
+
+        BEAST_EXPECT(dbr->generationCount() == 1);
+        for (auto const& h : hashes)
+            BEAST_EXPECT(hasNode(*dbr, h));
+    }
+
+    void
+    testStateMigration()
+    {
+        // The saved-state ring round-trips, reconstructs from a legacy two-backend
+        // state, and detects rows left stale by a downgraded build's rotation.
+        testcase("saved state ring migration");
+
+        using namespace jtx;
+        Env env(*this, envconfig(onlineDelete));
+
+        soci::session session;
+        initStateDB(session, env.app().config(), "state_migration_test");
+
+        // Legacy pair only (pre-ring build): the ring is reconstructed oldest -> newest.
+        session << "UPDATE DbState SET WritableDb = 'write', ArchiveDb = 'archive',"
+                   " LastRotatedLedger = 42 WHERE Key = 1;";
+        auto state = getSavedState(session);
+        BEAST_EXPECT((state.generations == std::vector<std::string>{"archive", "write"}));
+        BEAST_EXPECT(state.writableDb == "write");
+        BEAST_EXPECT(state.archiveDb == "archive");
+        BEAST_EXPECT(state.lastRotated == 42);
+
+        // A ring round-trips, with the legacy pair mirroring the ring ends.
+        SavedState ring;
+        ring.generations = {"g0", "g1", "g2"};
+        ring.archiveDb = "g0";
+        ring.writableDb = "g2";
+        ring.lastRotated = 43;
+        setSavedState(session, ring);
+        state = getSavedState(session);
+        BEAST_EXPECT((state.generations == std::vector<std::string>{"g0", "g1", "g2"}));
+        BEAST_EXPECT(state.archiveDb == "g0");
+        BEAST_EXPECT(state.writableDb == "g2");
+        BEAST_EXPECT(state.lastRotated == 43);
+
+        // Downgrade simulation: an old build's rotation rewrites the pair but leaves
+        // DbGenerations untouched. The stale ring is discarded in favor of the pair.
+        session << "UPDATE DbState SET WritableDb = 'new', ArchiveDb = 'g2' WHERE Key = 1;";
+        state = getSavedState(session);
+        BEAST_EXPECT((state.generations == std::vector<std::string>{"g2", "new"}));
+        BEAST_EXPECT(state.archiveDb == "g2");
+        BEAST_EXPECT(state.writableDb == "new");
+    }
+
+    void
+    testGenerationalHistory()
+    {
+        // End-to-end retirement through the SHAMapStore run loop with the smallest
+        // generation budget (2), with churn every ledger so superseded node versions
+        // exist. After several retirements, the full state of the oldest retained
+        // ledgers must still resolve — the retained-history guarantee.
+        testcase("retirement preserves retained history");
+
+        using namespace jtx;
+        Env env(*this, envconfig(generationalDelete));
+        auto& store = env.app().getSHAMapStore();
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), noripple(alice));
+
+        auto ledgerSeq = waitForReady(env);
+        LedgerIndex prevRotated = 0;
+
+        for (int cycle = 0; cycle < 3; ++cycle)
+        {
+            prevRotated = store.getLastRotated();
+            auto const target = prevRotated + kDeleteInterval;
+            while (ledgerSeq <= static_cast<int>(target))
+            {
+                env(pay(env.master, alice, XRP(1)));
+                env.close();
+
+                auto const ledger = env.rpc("ledger", "validated");
+                BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++)));
+                store.rendezvous();
+            }
+            BEAST_EXPECT(store.getLastRotated() == target);
+        }
+
+        // prevRotated is now the oldest retained ledger; versions its state references
+        // that were superseded during the last interval sat in the generation retired
+        // at the final rotation and survive only via boundary-root evacuation.
+        for (auto const seq : {prevRotated, store.getLastRotated()})
+        {
+            json::Value params;
+            params[jss::ledger_index] = seq;
+            params[jss::limit] = 4096;
+            auto const res = env.rpc("json", "ledger_data", params.toStyledString());
+            BEAST_EXPECT(res.isMember(jss::result) && !rpc::containsError(res[jss::result]));
+            BEAST_EXPECT(res[jss::result][jss::state].size() > 0);
+            // No marker: the whole state tree resolved in one page.
+            BEAST_EXPECT(!res[jss::result].isMember(jss::marker));
+        }
+    }
+
+    void
+    testTwoRootEvacuation()
+    {
+        // Deterministic proof of boundary-root evacuation. Emptying the TreeNodeCache
+        // right before each rotation-triggering close leaves cache freshening nothing
+        // to rescue, so the walk of the oldest retained ledger's root is the ONLY
+        // mechanism that can preserve node versions that ledger references but the
+        // current state no longer does (they live in the generation being retired).
+        testcase("boundary-root evacuation preserves superseded versions");
+
+        using namespace jtx;
+        Env env(*this, envconfig(generationalDelete));
+        auto& store = env.app().getSHAMapStore();
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), noripple(alice));
+
+        auto ledgerSeq = waitForReady(env);
+        LedgerIndex prevRotated = 0;
+
+        for (int cycle = 0; cycle < 2; ++cycle)
+        {
+            prevRotated = store.getLastRotated();
+            auto const target = prevRotated + kDeleteInterval;
+            while (ledgerSeq <= static_cast<int>(target))
+            {
+                // Churn every ledger: alice's account root (and the inner nodes above
+                // it) is superseded on every close.
+                env(pay(env.master, alice, XRP(1)));
+                if (ledgerSeq == static_cast<int>(target))
+                    env.app().getNodeFamily().getTreeNodeCache()->clear();
+                env.close();
+
+                auto const ledger = env.rpc("ledger", "validated");
+                BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++)));
+                store.rendezvous();
+            }
+            BEAST_EXPECT(store.getLastRotated() == target);
+        }
+
+        // The boundary ledger's state references versions written before the previous
+        // rotation and superseded since -- exactly the contents of the generation just
+        // retired. A complete walk proves they were evacuated via the boundary root.
+        json::Value params;
+        params[jss::ledger_index] = prevRotated;
+        params[jss::limit] = 4096;
+        auto const res = env.rpc("json", "ledger_data", params.toStyledString());
+        BEAST_EXPECT(res.isMember(jss::result) && !rpc::containsError(res[jss::result]));
+        BEAST_EXPECT(res[jss::result][jss::state].size() > 0);
+        BEAST_EXPECT(!res[jss::result].isMember(jss::marker));
+    }
+
+    void
+    testRingConvergence()
+    {
+        // A ring persisted over budget -- rotations interrupted between advance and
+        // retire, or a lowered online_delete_generations -- must converge back to
+        // budget on the next rotation instead of staying inflated forever. Phase 1
+        // grows a 4-generation ring under a budget of 4 (no retirement) on real disk
+        // backends; phase 2 reboots the same data with a budget of 2 and expects the
+        // first rotation to retire all the way back down.
+        testcase("ring converges to budget after over-budget boot");
+
+        using namespace jtx;
+        namespace bfs = std::filesystem;
+
+        auto const root = uniqueTempDir("shamapstore_conv_");
+        auto const nodeDb = (root / "nudb").string();
+        auto const stateDir = (root / "state").string();
+        bfs::create_directories(nodeDb);
+        bfs::create_directories(stateDir);
+
+        {
+            Env env(*this, diskConfig(nodeDb, stateDir, "4"));
+            auto ledgerSeq = waitForReady(env);
+
+            // Two rotations grow the ring 2 -> 3 -> 4, never exceeding the budget,
+            // so no generation is ever retired.
+            rotateOnce(env, ledgerSeq);
+            rotateOnce(env, ledgerSeq);
+
+            auto const& dbr = dynamic_cast<node_store::DatabaseRotating&>(env.app().getNodeStore());
+            BEAST_EXPECT(dbr.generationCount() == 4);
+        }
+
+        {
+            Env env(*this, diskConfig(nodeDb, stateDir, "2"));
+            auto& store = env.app().getSHAMapStore();
+            auto const& dbr = dynamic_cast<node_store::DatabaseRotating&>(env.app().getNodeStore());
+
+            // The persisted 4-generation ring reopened, now over a budget of 2.
+            BEAST_EXPECT(dbr.generationCount() == 4);
+            auto const bootRotated = store.getLastRotated();
+            BEAST_EXPECT(bootRotated != 0);
+
+            // The fresh genesis chain must catch up to bootRotated + interval before
+            // the next rotation fires.
+            for (int i = 0; i < static_cast<int>(bootRotated) + (2 * kDeleteInterval) &&
+                 store.getLastRotated() == bootRotated;
+                 ++i)
+            {
+                env.close();
+                store.rendezvous();
+            }
+            BEAST_EXPECT(store.getLastRotated() != bootRotated);
+
+            // One rotation: advance made it 5; the retire loop must shed 3, not 1.
+            BEAST_EXPECT(dbr.generationCount() == 2);
+        }
+
+        bfs::remove_all(root);
+    }
+
+    void
+    testMinGenerationsClamp()
+    {
+        // online_delete_generations below the floor is clamped to 2, preserving the
+        // writable + one archive invariant: a budget of 1 would drop the only sealed
+        // generation immediately after every rotation.
+        testcase("online_delete_generations clamps to the minimum");
+
+        using namespace jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = onlineDelete(std::move(cfg));
+            cfg->section(Sections::kNodeDatabase).set(Keys::kOnlineDeleteGenerations, "1");
+            return cfg;
+        }));
+        auto const& dbr = dynamic_cast<node_store::DatabaseRotating&>(env.app().getNodeStore());
+
+        auto ledgerSeq = waitForReady(env);
+        rotateOnce(env, ledgerSeq);
+
+        // Clamped to 2: the rotation retired down to two generations, not one.
+        BEAST_EXPECT(dbr.generationCount() == 2);
+    }
+
+    void
+    testCorruptedStateRefusal()
+    {
+        // A generation named in the persisted ring but missing on disk means the data
+        // is unusable; the server must refuse to start rather than silently open a
+        // ring with a hole in it.
+        testcase("boot refuses a ring with a missing generation");
+
+        using namespace jtx;
+        namespace bfs = std::filesystem;
+
+        auto const root = uniqueTempDir("shamapstore_miss_");
+        auto const nodeDb = (root / "nudb").string();
+        auto const stateDir = (root / "state").string();
+        bfs::create_directories(nodeDb);
+        bfs::create_directories(stateDir);
+
+        {
+            Env env(*this, diskConfig(nodeDb, stateDir, "4"));
+            auto ledgerSeq = waitForReady(env);
+            rotateOnce(env, ledgerSeq);
+            auto const& dbr = dynamic_cast<node_store::DatabaseRotating&>(env.app().getNodeStore());
+            BEAST_EXPECT(dbr.generationCount() == 3);
+        }
+
+        std::vector<bfs::path> generations;
+        for (bfs::directory_iterator it(nodeDb); it != bfs::directory_iterator(); ++it)
+            generations.push_back(it->path());
+        BEAST_EXPECT(generations.size() == 3);
+        bfs::remove_all(generations.front());
+
+        bool threw = false;
+        try
+        {
+            Env const env(*this, diskConfig(nodeDb, stateDir, "4"));
+        }
+        catch (std::exception const&)
+        {
+            threw = true;
+        }
+        BEAST_EXPECT(threw);
+
+        bfs::remove_all(root);
+    }
+
+    void
+    testOrphanCleanup()
+    {
+        // A directory with the backend prefix that is not in the persisted ring is an
+        // orphan (created but never persisted before a crash) and is removed at boot;
+        // unrelated directories are left alone.
+        testcase("orphan generation directories are removed at boot");
+
+        using namespace jtx;
+        namespace bfs = std::filesystem;
+
+        auto const root = uniqueTempDir("shamapstore_orph_");
+        auto const nodeDb = (root / "nudb").string();
+        auto const stateDir = (root / "state").string();
+        bfs::create_directories(nodeDb);
+        bfs::create_directories(stateDir);
+
+        {
+            Env env(*this, diskConfig(nodeDb, stateDir, "4"));
+            auto ledgerSeq = waitForReady(env);
+            rotateOnce(env, ledgerSeq);
+        }
+
+        auto const orphan = bfs::path(nodeDb) / "rippledb.orphan";  // cspell: disable-line
+        auto const unrelated = bfs::path(nodeDb) / "unrelated";
+        bfs::create_directories(orphan);
+        bfs::create_directories(unrelated);
+
+        {
+            Env env(*this, diskConfig(nodeDb, stateDir, "4"));
+            auto const& dbr = dynamic_cast<node_store::DatabaseRotating&>(env.app().getNodeStore());
+            BEAST_EXPECT(dbr.generationCount() == 3);
+            BEAST_EXPECT(!bfs::exists(orphan));
+            BEAST_EXPECT(bfs::exists(unrelated));
+        }
+
+        bfs::remove_all(root);
+    }
+
+    void
+    testPathRelocation()
+    {
+        // When the configured node_db path changes, every stored generation name is
+        // rewritten to the new directory (keeping filenames) and the ring reopens.
+        testcase("ring survives a node_db path change");
+
+        using namespace jtx;
+        namespace bfs = std::filesystem;
+
+        auto const root = uniqueTempDir("shamapstore_relo_");
+        auto const nodeDbA = (root / "nudb_a").string();
+        auto const nodeDbB = (root / "nudb_b").string();
+        auto const stateDir = (root / "state").string();
+        bfs::create_directories(nodeDbA);
+        bfs::create_directories(nodeDbB);
+        bfs::create_directories(stateDir);
+
+        {
+            Env env(*this, diskConfig(nodeDbA, stateDir, "4"));
+            auto ledgerSeq = waitForReady(env);
+            rotateOnce(env, ledgerSeq);
+            auto const& dbr = dynamic_cast<node_store::DatabaseRotating&>(env.app().getNodeStore());
+            BEAST_EXPECT(dbr.generationCount() == 3);
+        }
+
+        // The operator moves the data and repoints the config.
+        for (bfs::directory_iterator it(nodeDbA); it != bfs::directory_iterator(); ++it)
+            bfs::rename(it->path(), bfs::path(nodeDbB) / it->path().filename());
+
+        {
+            Env env(*this, diskConfig(nodeDbB, stateDir, "4"));
+            auto& store = env.app().getSHAMapStore();
+            auto const& dbr = dynamic_cast<node_store::DatabaseRotating&>(env.app().getNodeStore());
+            BEAST_EXPECT(dbr.generationCount() == 3);
+
+            // Still operational: the relocated ring rotates normally.
+            auto const bootRotated = store.getLastRotated();
+            for (int i = 0; i < static_cast<int>(bootRotated) + (2 * kDeleteInterval) &&
+                 store.getLastRotated() == bootRotated;
+                 ++i)
+            {
+                env.close();
+                store.rendezvous();
+            }
+            BEAST_EXPECT(store.getLastRotated() != bootRotated);
+            BEAST_EXPECT(dbr.generationCount() == 4);
+        }
+
+        bfs::remove_all(root);
+    }
+
+protected:
+    static uint256
+    benchHash(std::uint32_t id)
+    {
+        uint256 h;
+        std::memcpy(h.begin(), &id, sizeof(id));
+        return h;
+    }
+
+    struct EvacStats
+    {
+        // Nodes copied forward out of retiring generations (the write cost the
+        // generational design exists to reduce).
+        std::uint64_t evacuated = 0;
+        std::uint64_t retirements = 0;
+        double millis = 0;
+    };
+
+    // Drive the exact production evacuation pattern against a ring with the given
+    // budget: a cold working set written once, fresh churn every interval, and during
+    // each retire window a fetch of every live node (what visitNodes(copyNode) does).
+    // Copy-forwards happen only for nodes served by the retiring generation, so the
+    // returned volume is the design's real re-store cost.
+    EvacStats
+    runEvacuationModel(
+        jtx::Env& env,
+        std::string const& prefix,
+        std::size_t budget,
+        std::size_t rotations,
+        std::uint32_t coldCount,
+        std::uint32_t churnPerRotation)
+    {
+        NodeStoreScheduler scheduler(env.app().getJobQueue());
+        auto nscfg = env.app().config().section(Sections::kNodeDatabase);
+        auto const noop = [](std::vector<std::string> const&) {};
+
+        std::vector<std::shared_ptr<node_store::Backend>> generations;
+        generations.emplace_back(makeBackendRotating(env, scheduler, prefix + "_g0"));
+        auto dbr = std::make_unique<node_store::DatabaseRotatingImp>(
+            scheduler, 4, std::move(generations), nscfg, env.app().getJournal("NodeStoreTest"));
+        node_store::Database& db = *dbr;
+
+        auto const storeId = [&](std::uint32_t id) {
+            Blob blob(8, static_cast<std::uint8_t>(id));
+            db.store(NodeObjectType::AccountNode, std::move(blob), benchHash(id), 0);
+        };
+        auto const fetchId = [&](std::uint32_t id) {
+            return db.fetchNodeObject(
+                       benchHash(id), 0, node_store::FetchType::Synchronous, false) != nullptr;
+        };
+
+        // The cold working set: written once, never modified, must survive forever.
+        for (std::uint32_t i = 0; i < coldCount; ++i)
+            storeId(i);
+
+        EvacStats stats;
+        auto const start = std::chrono::steady_clock::now();
+        std::uint32_t churnId = 1u << 24;
+        std::size_t gen = 1;
+        for (std::size_t r = 0; r < rotations; ++r)
+        {
+            // This interval's churn: new versions that supersede last interval's.
+            std::vector<std::uint32_t> churn;
+            churn.reserve(churnPerRotation);
+            for (std::uint32_t c = 0; c < churnPerRotation; ++c)
+            {
+                storeId(churnId);
+                churn.push_back(churnId++);
+            }
+
+            dbr->advance(
+                makeBackendRotating(env, scheduler, prefix + "_g" + std::to_string(gen++)), noop);
+
+            while (dbr->generationCount() > budget)
+            {
+                dbr->beginRetire();
+                // Evacuation walk: every live node (cold set + current churn).
+                for (std::uint32_t i = 0; i < coldCount; ++i)
+                    fetchId(i);
+                for (auto const id : churn)
+                    fetchId(id);
+                stats.evacuated += dbr->copyForwardCount();
+                ++stats.retirements;
+                dbr->retireOldest(noop);
+                dbr->endRetire();
+            }
+        }
+        stats.millis =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start)
+                .count();
+
+        // Retention: the entire cold set is still fetchable after every retirement.
+        std::uint32_t missing = 0;
+        for (std::uint32_t i = 0; i < coldCount; ++i)
+        {
+            if (!fetchId(i))
+                ++missing;
+        }
+        BEAST_EXPECT(missing == 0);
+
+        return stats;
+    }
+
+    void
+    testEvacuationScaling()
+    {
+        // The quantitative claim the feature rests on: an evacuated cold node is
+        // copied into the NEWEST generation, which then ages across the whole ring, so
+        // a cold node is re-stored once per `budget` rotations. The legacy two-backend
+        // design re-stored every live node on EVERY rotation (rotations x cold here);
+        // even the minimal ring halves that, and the default ring divides it by 8.
+        testcase("evacuation volume is O(churn), not O(total state)");
+
+        using namespace jtx;
+        Env env(*this, envconfig(onlineDelete));
+
+        constexpr std::uint32_t kCold = 1000;
+        constexpr std::uint32_t kChurn = 32;
+        constexpr std::size_t kRotations = 16;
+        constexpr std::uint64_t kSlack = kRotations * kChurn;
+
+        auto const b2 = runEvacuationModel(env, "esc_b2", 2, kRotations, kCold, kChurn);
+        auto const b8 = runEvacuationModel(env, "esc_b8", 8, kRotations, kCold, kChurn);
+
+        // Cold set re-stored once per `budget` rotations: ~rotations/2 passes vs
+        // ~rotations/8 passes over the same workload.
+        BEAST_EXPECT(b2.evacuated >= (kRotations / 2 - 1) * kCold);
+        BEAST_EXPECT(b2.evacuated <= ((kRotations / 2 + 1) * kCold) + kSlack);
+        BEAST_EXPECT(b8.evacuated >= (kRotations / 8 - 1) * kCold);
+        BEAST_EXPECT(b8.evacuated <= ((kRotations / 8 + 1) * kCold) + kSlack);
+        BEAST_EXPECT(b8.evacuated * 3 <= b2.evacuated);
+
+        log << "evacuation volume over " << kRotations << " rotations (cold=" << kCold
+            << ", churn/rot=" << kChurn << "): legacy full-copy (analytic) -> "
+            << kRotations * kCold << ", budget=2 -> " << b2.evacuated << ", budget=8 -> "
+            << b8.evacuated << " nodes re-stored" << std::endl;
+    }
+
+private:
     void
     testLedgerGaps()
     {
@@ -912,11 +1699,59 @@ public:
         testAutomatic();
         testCanDelete();
         testRotate();
+        testRetention();
+        testConcurrentAccess();
+        testStateMigration();
+        testGenerationalHistory();
+        testTwoRootEvacuation();
+        testRingConvergence();
+        testMinGenerationsClamp();
+        testCorruptedStateRefusal();
+        testOrphanCleanup();
+        testPathRelocation();
+        testEvacuationScaling();
         testLedgerGaps();
     }
 };
 
 // VFALCO This test fails because of thread asynchronous issues
 BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
+
+// Benchmark matrix over cold-set size and generation budget. Run manually:
+//   xrpld --unittest=xrpl.app.SHAMapStoreBench
+class SHAMapStoreBench_test : public SHAMapStore_test
+{
+    void
+    run() override
+    {
+        testcase("evacuation volume/latency matrix");
+        using namespace jtx;
+        Env env(*this, envconfig(onlineDelete));
+
+        constexpr std::uint32_t kChurn = 32;
+        constexpr std::size_t kRotations = 16;
+
+        log << "cold,budget,rotations,churn_per_rotation,retirements,"
+               "evacuated_nodes,evacuated_per_retirement,millis"
+            << std::endl;
+        for (std::uint32_t const cold : {1000u, 4000u, 16000u})
+        {
+            for (std::size_t const budget : {2u, 4u, 8u, 16u})
+            {
+                auto const prefix =
+                    "bench_c" + std::to_string(cold) + "_b" + std::to_string(budget);
+                auto const stats =
+                    runEvacuationModel(env, prefix, budget, kRotations, cold, kChurn);
+                log << cold << "," << budget << "," << kRotations << "," << kChurn << ","
+                    << stats.retirements << "," << stats.evacuated << ","
+                    << ((stats.retirements != 0u) ? stats.evacuated / stats.retirements : 0) << ","
+                    << stats.millis << std::endl;
+            }
+        }
+        pass();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(SHAMapStoreBench, app, xrpl);
 
 }  // namespace xrpl::test
