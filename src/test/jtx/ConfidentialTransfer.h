@@ -124,9 +124,11 @@ protected:
         return proof;
     }
 
-    // Forges a ConvertBack proof (compact sigma + single bulletproof) that
-    // claims claimedBalance while binding to the real pedersen commitment and
-    // encrypted spending balance ciphertext already on the ledger.
+    // Forges a ConvertBack proof (compact sigma + single bulletproof) whose
+    // sigma component claims claimedBalance (which may be wrong) while binding
+    // to the real pedersen commitment and encrypted spending balance
+    // ciphertext already on the ledger. The bulletproof component is built
+    // from realBalance so it stays honest.
     // mpt_get_convert_back_proof does not allow to build a proof whose amount
     // exceeds the holder's claimed balance.
     static Buffer
@@ -134,6 +136,7 @@ protected:
         test::jtx::MPTTester& mpt,
         test::jtx::Account const& holder,
         uint64_t claimedBalance,
+        uint64_t realBalance,
         uint64_t amt,
         Buffer const& pedersenCommitment,
         Buffer const& encryptedSpendingBalance,
@@ -147,8 +150,8 @@ protected:
             Throw<std::runtime_error>(
                 "getForgedConvertBackProof: bad encryptedSpendingBalance length");
         }
-        if (amt > claimedBalance)
-            Throw<std::runtime_error>("getForgedConvertBackProof: amt exceeds claimedBalance");
+        if (amt > realBalance)
+            Throw<std::runtime_error>("getForgedConvertBackProof: amt exceeds realBalance");
 
         auto* const ctx = mpt_secp256k1_context();
         auto const holderPubKey = requireOptional(mpt.getPubKey(holder), "Missing holder pubkey");
@@ -190,7 +193,7 @@ protected:
             Throw<std::runtime_error>("Failed to generate convertback sigma proof");
 
         auto const forgedBulletproof =
-            getForgedSingleBulletproof(claimedBalance - amt, pcBlindingFactor, contextHash);
+            getForgedSingleBulletproof(realBalance - amt, pcBlindingFactor, contextHash);
 
         Buffer proof(kEcConvertBackProofLength);
         std::memcpy(proof.data(), sigmaProof.data(), SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE);
