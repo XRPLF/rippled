@@ -615,9 +615,9 @@ name and maps `.` and space to `_`, and the only place the class reads `prefix_`
 is its startup log line. Exported names are therefore the lowercased raw names
 (`jobq_job_count`, `rpc_requests_total`) and the service is identified by the OTel
 resource `service.name`, not by a name prefix. `endpoint` is read from this section
-but likewise reaches only that log line — the real exporter URL is derived inside
-`Telemetry::initMetrics()` from `[telemetry] endpoint`, by swapping the trailing
-`/v1/traces` for `/v1/metrics`.
+but likewise reaches only that log line — the exporter URL comes from
+`[telemetry] metrics_endpoint`, which `Telemetry::initMetrics()` uses verbatim. No
+endpoint is derived from another.
 
 Fallback (StatsD). `StatsDCollector` is still selected by this value, but the
 stack in `docker/telemetry/` no longer receives it: using this path also requires
