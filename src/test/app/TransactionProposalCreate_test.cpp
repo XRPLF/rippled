@@ -707,7 +707,8 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
     // An on-ledger ltSIGNER_LIST that cannot be read as signer entries is
     // unexpected ledger state, not a malformed transaction. preclaim must
-    // surface tefINTERNAL (not temMALFORMED, and not the tefEXCEPTION that
+    // surface tefBAD_LEDGER (not temMALFORMED, not tefINTERNAL which is
+    // reserved for truly unreachable paths, and not the tefEXCEPTION that
     // applySteps would wrap an uncaught throw with).
     //
     // ltSIGNER_LIST's SOTemplate makes sfSignerEntries required and each
@@ -718,7 +719,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
     void
     testCorruptSignerList(FeatureBitset features)
     {
-        testcase("unparseable on-ledger SignerList is tefINTERNAL");
+        testcase("unparseable on-ledger SignerList is tefBAD_LEDGER");
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -739,7 +740,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                         signer,
                         proposal::unsignedPayload(env, pay(target, signer, XRP(1)), ticketSeq),
                         proposal::expiration(env, 100s)),
-                    Ter(tefINTERNAL),
+                    Ter(tefBAD_LEDGER),
                     proposal::verify::create());
                 BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
             };

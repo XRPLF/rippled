@@ -395,7 +395,9 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
  * check SignerList or signing keys.
  *
  * An unknown transaction type (should not occur after a successful preflight)
- * fails closed as terNO_DELEGATE_PERMISSION.
+ * is treated as an internal invariant violation: UNREACHABLE is fired and the
+ * type-erased fallback return is temUNKNOWN, mirroring the sibling
+ * invokePreflight/invokePreclaim/invokeApply overloads in this header.
  */
 NotTEC
 invokeCheckPermission(ReadView const& view, STTx const& tx);

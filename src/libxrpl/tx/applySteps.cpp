@@ -384,10 +384,14 @@ invokeCheckPermission(ReadView const& view, STTx const& tx)
             return Transactor::invokeCheckPermission<T>(view, tx);
         });
     }
-    catch (UnknownTxnType const&)
+    catch (UnknownTxnType const& e)
     {
+        // Should never happen
         // LCOV_EXCL_START
-        return terNO_DELEGATE_PERMISSION;
+        JLOG(debugLog().fatal()) << "Unknown transaction type in invokeCheckPermission: "
+                                 << e.txnType;
+        UNREACHABLE("xrpl::invokeCheckPermission : unknown transaction type");
+        return temUNKNOWN;
         // LCOV_EXCL_STOP
     }
 }

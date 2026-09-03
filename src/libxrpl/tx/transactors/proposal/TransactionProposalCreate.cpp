@@ -193,7 +193,9 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             // is SoeRequired; each element is an sfSignerEntry). A corrupt SLE
             // therefore typically throws from the field accessors rather than
             // returning temMALFORMED. Either way this is unexpected ledger
-            // state, not a malformed TransactionProposalCreate.
+            // state, not a malformed TransactionProposalCreate, so tefBAD_LEDGER
+            // (rather than tefINTERNAL, which is reserved for truly unreachable
+            // code paths) is the right code.
             try
             {
                 auto const accountSigners =
@@ -202,7 +204,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
                 {
                     JLOG(ctx.j.fatal()) << "TransactionProposalCreate: unparseable SignerList: "
                                         << transToken(accountSigners.error());
-                    return std::unexpected(tefINTERNAL);
+                    return std::unexpected(tefBAD_LEDGER);
                 }
 
                 return std::ranges::any_of(
@@ -212,7 +214,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
             {
                 JLOG(ctx.j.fatal())
                     << "TransactionProposalCreate: unparseable SignerList: " << e.what();
-                return std::unexpected(tefINTERNAL);
+                return std::unexpected(tefBAD_LEDGER);
             }
         };
 
