@@ -115,7 +115,7 @@ TEST(TelemetryConfig, setup_defaults)
     EXPECT_EQ(s.serviceName, "xrpld");
     EXPECT_TRUE(s.serviceVersion.empty());
     EXPECT_TRUE(s.serviceInstanceId.empty());
-    EXPECT_EQ(s.exporterEndpoint, "http://localhost:4318/v1/traces");
+    EXPECT_EQ(s.tracesEndpoint, "http://localhost:4318/v1/traces");
     EXPECT_FALSE(s.useTls);
     EXPECT_TRUE(s.tlsCertPath.empty());
     EXPECT_DOUBLE_EQ(s.samplingRatio, 1.0);
@@ -159,7 +159,7 @@ TEST(TelemetryConfig, parse_full_section)
     section.set("service_name", "my-rippled");
     section.set("service_instance_id", "custom-id");
     section.set("exporter", "otlp_http");
-    section.set("endpoint", "http://collector:4318/v1/traces");
+    section.set("traces_endpoint", "http://collector:4318/v1/traces");
     section.set("use_tls", "1");
     section.set("tls_ca_cert", caCert);
     section.set("batch_size", "256");
@@ -176,7 +176,7 @@ TEST(TelemetryConfig, parse_full_section)
     EXPECT_TRUE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "my-rippled");
     EXPECT_EQ(setup.serviceInstanceId, "custom-id");
-    EXPECT_EQ(setup.exporterEndpoint, "http://collector:4318/v1/traces");
+    EXPECT_EQ(setup.tracesEndpoint, "http://collector:4318/v1/traces");
     EXPECT_TRUE(setup.useTls);
     EXPECT_EQ(setup.tlsCertPath, caCert);
     EXPECT_EQ(setup.batchSize, 256u);

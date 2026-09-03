@@ -985,7 +985,7 @@ endpoint=http://localhost:4318/v1/metrics
 ```ini
 [telemetry]
 enabled=1
-endpoint=http://otel-collector:4318/v1/traces
+traces_endpoint=http://otel-collector:4318/v1/traces
 trace_peer=0
 batch_size=1024
 max_queue_size=4096

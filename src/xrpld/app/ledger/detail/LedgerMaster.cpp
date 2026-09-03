@@ -455,8 +455,9 @@ bool
 LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::store);
-    span.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
+    auto storeSpan = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::store);
+    storeSpan.setAttribute(
+        ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
 
     bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
@@ -978,55 +979,65 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         return;
     }
 
-    using namespace telemetry;
-    auto valSpan = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::validate);
-    valSpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
-    valSpan.setAttribute(ledger_span::attr::validations, static_cast<int64_t>(tvc));
-
-    JLOG(journal_.info()) << "Advancing accepted ledger to " << ledger->header().seq
-                          << " with >= " << minVal << " validations";
-
-    ledger->setValidated();
-    ledger->setFull();
-    setValidLedger(ledger);
-    if (!pubLedger_)
+    // Scoped so ledger.validate measures only the promotion itself. The
+    // flag-ledger upgrade-warning check below runs on one ledger in 256 and
+    // reads every trusted validation of the parent, so leaving it inside would
+    // make every 256th span a duration outlier for work that is not part of
+    // promoting a ledger. tryAdvance() stays inside: it only sets a flag and
+    // posts a job, so it adds no measurable time.
     {
-        pendSaveValidated(app_, ledger, true, true);
-        setPubLedger(ledger);
-        app_.getOrderBookDB().setup(ledger);
-    }
+        using namespace telemetry;
+        auto validateSpan =
+            SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::validate);
+        validateSpan.setAttribute(
+            ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
+        validateSpan.setAttribute(ledger_span::attr::validations, static_cast<int64_t>(tvc));
 
-    std::uint32_t const base = app_.getFeeTrack().getLoadBase();
-    auto fees = app_.getValidations().fees(ledger->header().hash, base);
-    {
-        auto fees2 = app_.getValidations().fees(ledger->header().parentHash, base);
-        fees.reserve(fees.size() + fees2.size());
-        std::ranges::copy(fees2, std::back_inserter(fees));
-    }
-    std::uint32_t fee = 0;
-    if (!fees.empty())
-    {
-        std::ranges::sort(fees);
-        if (auto stream = journal_.debug())
+        JLOG(journal_.info()) << "Advancing accepted ledger to " << ledger->header().seq
+                              << " with >= " << minVal << " validations";
+
+        ledger->setValidated();
+        ledger->setFull();
+        setValidLedger(ledger);
+        if (!pubLedger_)
         {
-            std::stringstream s;
-            s << "Received fees from validations: (" << fees.size() << ") ";
-            for (auto const fee1 : fees)
-            {
-                s << " " << fee1;
-            }
-            stream << s.str();
+            pendSaveValidated(app_, ledger, true, true);
+            setPubLedger(ledger);
+            app_.getOrderBookDB().setup(ledger);
         }
-        fee = fees[fees.size() / 2];  // median
-    }
-    else
-    {
-        fee = base;
-    }
 
-    app_.getFeeTrack().setRemoteFee(fee);
+        std::uint32_t const base = app_.getFeeTrack().getLoadBase();
+        auto fees = app_.getValidations().fees(ledger->header().hash, base);
+        {
+            auto fees2 = app_.getValidations().fees(ledger->header().parentHash, base);
+            fees.reserve(fees.size() + fees2.size());
+            std::ranges::copy(fees2, std::back_inserter(fees));
+        }
+        std::uint32_t fee = 0;
+        if (!fees.empty())
+        {
+            std::ranges::sort(fees);
+            if (auto stream = journal_.debug())
+            {
+                std::stringstream s;
+                s << "Received fees from validations: (" << fees.size() << ") ";
+                for (auto const fee1 : fees)
+                {
+                    s << " " << fee1;
+                }
+                stream << s.str();
+            }
+            fee = fees[fees.size() / 2];  // median
+        }
+        else
+        {
+            fee = base;
+        }
 
-    tryAdvance();
+        app_.getFeeTrack().setRemoteFee(fee);
+
+        tryAdvance();
+    }
 
     if (ledger->seq() % 256 == 0)
     {

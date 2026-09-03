@@ -15,7 +15,7 @@
 # Configure xrpld to export traces by adding to xrpld.cfg:
 #   [telemetry]
 #   enabled=1
-#   endpoint=http://localhost:4318/v1/traces
+#   traces_endpoint=http://localhost:4318/v1/traces
 
 services:
   # OpenTelemetry Collector: receives spans from xrpld via OTLP protocol,

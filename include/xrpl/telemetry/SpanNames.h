@@ -133,8 +133,19 @@ inline constexpr auto ledgerSeq = makeStr("ledger_seq");
 
 /**
  * Shared close-time attrs — bare names, reused by consensus and ledger.
+ *
+ * `closeTimeRippleEpochS` carries a NetClock reading: whole seconds since the
+ * XRP Ledger epoch (2000-01-01T00:00:00Z), never the Unix epoch. The key names
+ * both the unit and the epoch because neither is recoverable from the value.
+ * A consumer rendering it as wall-clock time must first add kEpochOffset
+ * (946684800 seconds, see basics/chrono.h); read as a Unix timestamp instead,
+ * it lands roughly 30 years early.
+ *
+ * `closeResolutionMs` is a duration, not an instant — the granularity the
+ * close time is rounded to. NetClock resolution is whole seconds, so this
+ * value is always a multiple of 1000.
  */
-inline constexpr auto closeTime = makeStr("close_time");
+inline constexpr auto closeTimeRippleEpochS = makeStr("close_time_ripple_epoch_s");
 inline constexpr auto closeTimeCorrect = makeStr("close_time_correct");
 inline constexpr auto closeResolutionMs = makeStr("close_resolution_ms");
 /**
