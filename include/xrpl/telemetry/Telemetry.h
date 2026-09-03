@@ -211,6 +211,14 @@ public:
         std::string tracesEndpoint = "http://localhost:4318/v1/traces";
 
         /**
+         * Full OTLP/HTTP URL where metrics are sent, including the signal path.
+         * Used verbatim and independent of tracesEndpoint, so an operator can
+         * point the two signals at different collectors, or at one whose OTLP
+         * paths are not the defaults.
+         */
+        std::string metricsEndpoint = "http://localhost:4318/v1/metrics";
+
+        /**
          * Whether to use TLS for the exporter connection.
          */
         bool useTls = false;

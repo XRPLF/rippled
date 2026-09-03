@@ -113,13 +113,10 @@ the corresponding subsystems are instrumented:
 | `trace_validator` | Future        | Validator list / manifest update tracing |
 | `trace_amendment` | Future        | Amendment voting tracing                 |
 
-> **`exporter` is not read, so do not set it.** Both shipped sample configs
-> (`docker/telemetry/xrpld-telemetry.cfg`,
-> `docker/telemetry/xrpld-telemetry-mainnet.cfg`) used to carry
-> `exporter=otlp_http`; the line had no effect and has since been replaced with
-> a comment saying so. OTLP/HTTP is the only transport that exists (§2.2.1), and
-> `endpoint` / `metrics_endpoint` are the only transport knobs, until the §2.2.2
-> gRPC work lands.
+> **`exporter` is not read, so do not set it.** No shipped sample config
+> carries it. OTLP/HTTP is the only transport that exists (§2.2.1), so
+> `traces_endpoint` and `metrics_endpoint` are the only transport knobs until
+> the §2.2.2 gRPC work lands.
 
 ---
 
