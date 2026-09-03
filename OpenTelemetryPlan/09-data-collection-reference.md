@@ -585,19 +585,19 @@ prefix=xrpld
 | `peer_finder_active_outbound_peers`         | PeerfinderManager.cpp | Active outbound peer connections              | 10–21                           |
 | `overlay_peer_disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count           | Low growth                      |
 | `overlay_peer_disconnects_charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges     | Low growth (subset of above)    |
-| `job_count`                                 | JobQueue.cpp          | Current job queue depth                       | 0–100 (healthy)                 |
+| `jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (group `jobq`)        | 0–100 (healthy)                 |
 
 **Grafana dashboard**: _Node Health_ (`node-health`)
 
 ### 2.2 Counters
 
-| Prometheus Metric         | Source File        | Description                                   |
-| ------------------------- | ------------------ | --------------------------------------------- |
-| `rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
-| `ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
-| `ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
-| `warn`                    | Logic.h            | Resource manager warnings issued              |
-| `drop`                    | Logic.h            | Resource manager drops (connections rejected) |
+| Prometheus Metric               | Source File        | Description                                   |
+| ------------------------------- | ------------------ | --------------------------------------------- |
+| `rpc_requests_total`            | ServerHandler.cpp  | Total RPC requests received                   |
+| `ledger_fetches_total`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
+| `ledger_history_mismatch_total` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
+| `warn_total`                    | Logic.h            | Resource manager warnings issued              |
+| `drop_total`                    | Logic.h            | Resource manager drops (connections rejected) |
 
 **Note**: With `server=otel`, `warn` and `drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
 
@@ -945,8 +945,8 @@ state_accounting_full_duration
 | Issue                                                              | Impact                                           | Status                                                               |
 | ------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
-| `job_count` may not emit in standalone mode                        | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
-| `rpc_requests` depends on `[insight]` config                       | Zero series if `[insight]` is absent or unset    | Requires `[insight] server=otel` in xrpld.cfg                        |
+| `jobq_job_count` may not emit in standalone mode                   | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
+| `rpc_requests_total` depends on `[insight]` config                 | Zero series if `[insight]` is absent or unset    | Requires `[insight] server=otel` in xrpld.cfg                        |
 | Peer tracing enabled by default                                    | `peer.*` spans emit unless `trace_peer=0`        | High volume — set `trace_peer=0` to opt out on busy mainnet nodes    |
 
 ---

@@ -130,6 +130,21 @@ inline constexpr std::string_view kMeterName{"xrpld"};
 inline constexpr std::string_view kMeterVersion{"1.0.0"};
 #endif
 
+/**
+ * Default gap between two metric exports.
+ *
+ * Matches the 1 s scrape the dashboards assume. Declared here, outside the
+ * telemetry #ifdef, because the config parser reads it in every build.
+ */
+inline constexpr auto kDefaultMetricExportInterval = std::chrono::milliseconds{1000};
+
+/**
+ * Default limit on how long one metric export may run.
+ *
+ * Bounds a stalled collector. Must stay below kDefaultMetricExportInterval.
+ */
+inline constexpr auto kDefaultMetricExportTimeout = std::chrono::milliseconds{500};
+
 class Telemetry
 {
     /**
@@ -258,6 +273,20 @@ public:
          * Maximum number of spans queued before dropping.
          */
         std::uint32_t maxQueueSize = 2048;
+
+        /**
+         * Gap between two metric exports, in milliseconds.
+         * Default kDefaultMetricExportInterval (1000 ms). Must be positive.
+         */
+        std::chrono::milliseconds metricExportInterval = kDefaultMetricExportInterval;
+
+        /**
+         * Limit on how long one metric export may run, in milliseconds.
+         * Default kDefaultMetricExportTimeout (500 ms). Must be positive and
+         * below metricExportInterval, or the SDK discards both values and
+         * exports on its own 60 s cadence instead.
+         */
+        std::chrono::milliseconds metricExportTimeout = kDefaultMetricExportTimeout;
 
         /**
          * Network identifier, added as an OTel resource attribute.
@@ -472,11 +501,13 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
  * `enabled` and `use_tls` are both set and a non-empty `tls_ca_cert`,
  * `tls_client_cert` or `tls_client_key` cannot be read; an empty path is skipped,
  * so an empty `tls_ca_cert` still means "use the system CA store". All three
- * checks are skipped when `enabled` is 0.
- * @throws boost::bad_lexical_cast  If any numeric key (`enabled`, `use_tls`,
- * `batch_size`, the trace switches, ...) holds a value Section::valueOr cannot
- * convert. None of the numeric reads sit inside the `enabled` branch, so this
- * escapes whether telemetry is on or off.
+ * checks are skipped when `enabled` is 0. Also if `metric_export_interval_ms`
+ * or `metric_export_timeout_ms` is unreadable, is not positive, or the timeout
+ * is not below the interval. Those three run whether telemetry is on or off.
+ * @throws boost::bad_lexical_cast  If any other numeric key (`enabled`,
+ * `use_tls`, `batch_size`, the trace switches, ...) holds a value
+ * Section::valueOr cannot convert. None of the numeric reads sit inside the
+ * `enabled` branch, so this escapes whether telemetry is on or off.
  */
 Telemetry::Setup
 makeTelemetrySetup(

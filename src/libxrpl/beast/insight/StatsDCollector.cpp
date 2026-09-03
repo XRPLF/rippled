@@ -470,9 +470,12 @@ public:
 
             for (auto& m : metrics_)
                 m.doProcess();
-
-            sendBuffers();
         }
+
+        // The gate above holds back hook handlers, not socket I/O. Events reach
+        // data_ without passing through metrics_, so the drain must run on every
+        // tick or they sit unsent before startup and are lost at shutdown.
+        sendBuffers();
 
         setTimer();
     }
