@@ -1459,11 +1459,17 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 
     // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
-    // If so, only cost is looking up HashRouter flags.
-    auto const [validity, reason] =
-        checkValidity(registry_.get().getHashRouter(), sttx, view->rules());
-    XRPL_ASSERT(
-        validity == Validity::Valid, "xrpl::NetworkOPsImp::processTransaction : valid validity");
+    //
+    // For an ordinary transaction it is: the relay and submit paths have
+    // already run checkValidity, so this costs a HashRouter lookup. It is not
+    // redundant for a role-signature transaction while fixCleanup3_4_0 is
+    // activating. Those paths verify against the validated rules, which lag
+    // the open ledger rules used here, and checkValidity scopes a cached
+    // verdict to the rules that reached it, so this call can verify the
+    // signature again and come to a different answer. SigBad is therefore
+    // reachable, and the handler below is the correct response to it.
+    auto const& viewRules = view->rules();
+    auto const [validity, reason] = checkValidity(registry_.get().getHashRouter(), sttx, viewRules);
 
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
@@ -1471,7 +1477,15 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         JLOG(journal_.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        // See the matching guard in PeerImp::checkTransaction: only cache
+        // BAD for a role-signature transaction once fixCleanup3_4_0 is
+        // enabled on this node. Remove together with the amendment.
+        if (viewRules.enabled(fixCleanup3_4_0) ||
+            (!sttx.isFieldPresent(sfSponsorSignature) &&
+             !sttx.isFieldPresent(sfCounterpartySignature)))
+        {
+            registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        }
         return false;
     }
 
