@@ -33,23 +33,23 @@ namespace xrpl {
 
 namespace detail {
 
+template <typename ValueType>
 class VotableValue
 {
 private:
-    using value_type = XRPAmount;
-    value_type const current_;  // The current setting
-    value_type const target_;   // The setting we want
-    std::map<value_type, int> voteMap_;
+    ValueType const current_;  // The current setting
+    ValueType const target_;   // The setting we want
+    std::map<ValueType, int> voteMap_;
 
 public:
-    VotableValue(value_type current, value_type target) : current_(current), target_(target)
+    VotableValue(ValueType current, ValueType target) : current_(current), target_(target)
     {
         // Add our vote
         ++voteMap_[target_];
     }
 
     void
-    addVote(value_type vote)
+    addVote(ValueType vote)
     {
         ++voteMap_[vote];
     }
@@ -60,20 +60,21 @@ public:
         addVote(current_);
     }
 
-    [[nodiscard]] value_type
+    [[nodiscard]] ValueType
     current() const
     {
         return current_;
     }
 
-    [[nodiscard]] std::pair<value_type, bool>
+    [[nodiscard]] std::pair<ValueType, bool>
     getVotes() const;
 };
 
-auto
-VotableValue::getVotes() const -> std::pair<value_type, bool>
+template <typename ValueType>
+std::pair<ValueType, bool>
+VotableValue<ValueType>::getVotes() const
 {
-    value_type ourVote = current_;
+    ValueType ourVote = current_;
     int weight = 0;
     for (auto const& [key, val] : voteMap_)
     {
@@ -125,17 +126,16 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     // Values should always be in a valid range (because the voting process
     // will ignore out-of-range values) but if we detect such a case, we do
     // not send a value.
+    auto vote = [&v, this](auto const current, auto target, char const* name, auto const& sfield) {
+        if (current != target)
+        {
+            JLOG(journal_.info()) << "Voting for " << name << " of " << target;
+
+            v[sfield] = target;
+        }
+    };
     if (rules.enabled(featureXRPFees))
     {
-        auto vote =
-            [&v, this](auto const current, XRPAmount target, char const* name, auto const& sfield) {
-                if (current != target)
-                {
-                    JLOG(journal_.info()) << "Voting for " << name << " of " << target;
-
-                    v[sfield] = target;
-                }
-            };
         vote(lastFees.base, target_.referenceFee, "base fee", sfBaseFeeDrops);
         vote(lastFees.reserve, target_.accountReserve, "base reserve", sfReserveBaseDrops);
         vote(
@@ -145,12 +145,12 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     {
         auto to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
         auto to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
-        auto vote = [&v, this](
-                        auto const current,
-                        XRPAmount target,
-                        auto const& convertCallback,
-                        char const* name,
-                        auto const& sfield) {
+        auto voteAndConvert = [&v, this](
+                                  auto const current,
+                                  XRPAmount target,
+                                  auto const& convertCallback,
+                                  char const* name,
+                                  auto const& sfield) {
             if (current != target)
             {
                 JLOG(journal_.info()) << "Voting for " << name << " of " << target;
@@ -160,14 +160,31 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             }
         };
 
-        vote(lastFees.base, target_.referenceFee, to64, "base fee", sfBaseFee);
-        vote(lastFees.reserve, target_.accountReserve, to32, "base reserve", sfReserveBase);
-        vote(
+        voteAndConvert(lastFees.base, target_.referenceFee, to64, "base fee", sfBaseFee);
+        voteAndConvert(
+            lastFees.reserve, target_.accountReserve, to32, "base reserve", sfReserveBase);
+        voteAndConvert(
             lastFees.increment,
             target_.ownerReserve,
             to32,
             "reserve increment",
             sfReserveIncrement);
+    }
+    if (rules.enabled(featureSmartEscrow))
+    {
+        if (target_.gasLimit <= kMaxGasLimit)
+        {
+            vote(lastFees.gasLimit, target_.gasLimit, "gas limit", sfGasLimit);
+        }
+        if (target_.bytecodeSizeLimit <= kMaxBytecodeSizeLimit)
+        {
+            vote(
+                lastFees.bytecodeSizeLimit,
+                target_.bytecodeSizeLimit,
+                "bytecode size limit",
+                sfBytecodeSizeLimit);
+        }
+        vote(lastFees.gasPrice, target_.gasPrice, "gas price", sfGasPrice);
     }
 }
 
@@ -188,11 +205,28 @@ FeeVoteImpl::doVoting(
 
     detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.ownerReserve);
 
+    auto validOrCurrent = [](std::uint32_t target, std::uint32_t max, std::uint32_t current) {
+        return target <= max ? target : current;
+    };
+
+    detail::VotableValue gasLimitVote(
+        lastClosedLedger->fees().gasLimit,
+        validOrCurrent(target_.gasLimit, kMaxGasLimit, lastClosedLedger->fees().gasLimit));
+
+    detail::VotableValue bytecodeSizeLimitVote(
+        lastClosedLedger->fees().bytecodeSizeLimit,
+        validOrCurrent(
+            target_.bytecodeSizeLimit,
+            kMaxBytecodeSizeLimit,
+            lastClosedLedger->fees().bytecodeSizeLimit));
+
+    detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gasPrice);
+
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
     {
         auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue& value,
+                         detail::VotableValue<XRPAmount>& value,
                          SF_AMOUNT const& xrpField) {
             if (auto const field = ~val->at(~xrpField); field && field->native())
             {
@@ -224,7 +258,7 @@ FeeVoteImpl::doVoting(
     else
     {
         auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue& value,
+                         detail::VotableValue<XRPAmount>& value,
                          auto const& valueField) {
             if (auto const field = val->at(~valueField))
             {
@@ -258,16 +292,52 @@ FeeVoteImpl::doVoting(
             doVote(val, incReserveVote, sfReserveIncrement);
         }
     }
+    if (rules.enabled(featureSmartEscrow))
+    {
+        auto doVote = [](std::shared_ptr<STValidation> const& val,
+                         detail::VotableValue<std::uint32_t>& value,
+                         SF_UINT32 const& sfield,
+                         std::uint32_t maxValue) {
+            if (auto const field = ~val->at(~sfield); field)
+            {
+                if (field.value() <= maxValue)
+                {
+                    value.addVote(field.value());
+                }
+                else
+                {
+                    value.noVote();
+                }
+            }
+            else
+            {
+                value.noVote();
+            }
+        };
+
+        for (auto const& val : set)
+        {
+            if (!val->isTrusted())
+                continue;
+            doVote(val, gasLimitVote, sfGasLimit, kMaxGasLimit);
+            doVote(val, bytecodeSizeLimitVote, sfBytecodeSizeLimit, kMaxBytecodeSizeLimit);
+            doVote(val, gasPriceVote, sfGasPrice, std::numeric_limits<std::uint32_t>::max());
+        }
+    }
 
     // choose our positions
     auto const [baseFee, baseFeeChanged] = baseFeeVote.getVotes();
     auto const [baseReserve, baseReserveChanged] = baseReserveVote.getVotes();
     auto const [incReserve, incReserveChanged] = incReserveVote.getVotes();
+    auto const [gasLimit, gasLimitChanged] = gasLimitVote.getVotes();
+    auto const [bytecodeSizeLimit, bytecodeSizeLimitChanged] = bytecodeSizeLimitVote.getVotes();
+    auto const [gasPrice, gasPriceChanged] = gasPriceVote.getVotes();
 
     auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
-    if (baseFeeChanged || baseReserveChanged || incReserveChanged)
+    if (baseFeeChanged || baseReserveChanged || incReserveChanged || gasLimitChanged ||
+        bytecodeSizeLimitChanged || gasPriceChanged)
     {
         JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee << "/" << baseReserve
                               << "/" << incReserve;
@@ -290,6 +360,12 @@ FeeVoteImpl::doVoting(
                 obj[sfReserveIncrement] =
                     incReserve.dropsAs<std::uint32_t>(incReserveVote.current());
                 obj[sfReferenceFeeUnits] = kFeeUnitsDeprecated;
+            }
+            if (rules.enabled(featureSmartEscrow))
+            {
+                obj[sfGasLimit] = gasLimit;
+                obj[sfBytecodeSizeLimit] = bytecodeSizeLimit;
+                obj[sfGasPrice] = gasPrice;
             }
         });
 

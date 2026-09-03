@@ -66,6 +66,21 @@ struct FeeSetup
      */
     XRPAmount ownerReserve{2 * kDropsPerXrp};
 
+    /**
+     * The gas limit for Feature Extensions.
+     */
+    std::uint32_t gasLimit{1'000'000};
+
+    /**
+     * The bytecode size limit for Feature Extensions.
+     */
+    std::uint32_t bytecodeSizeLimit{100'000};
+
+    /**
+     * The price of 1 WASM gas, in micro-drops.
+     */
+    std::uint32_t gasPrice{1'000'000};
+
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
 
