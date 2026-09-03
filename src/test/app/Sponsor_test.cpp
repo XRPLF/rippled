@@ -376,11 +376,11 @@ public:
     }
 
     void
-    testSingleSigning()
+    testSingleSigning(FeatureBitset features)
     {
         testcase("Single signing");
         using namespace test::jtx;
-        Env env{*this, testableAmendments()};
+        Env env{*this, features};
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const invalid("invalid");
@@ -415,11 +415,11 @@ public:
     }
 
     void
-    testMultiSigning()
+    testMultiSigning(FeatureBitset features)
     {
         testcase("Multi signing");
         using namespace test::jtx;
-        Env env{*this, testableAmendments()};
+        Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
@@ -5675,8 +5675,12 @@ protected:
         testInvalidSponsorshipSet();
         testPseudoAccountSponsorship();
 
-        testSingleSigning();
-        testMultiSigning();
+        // The signing prefix of an alternate signature field changes with
+        // fixCleanup3_4_0, so sign and verify under both rule sets.
+        testSingleSigning(jtx::testableAmendments());
+        testSingleSigning(jtx::testableAmendments() - fixCleanup3_4_0);
+        testMultiSigning(jtx::testableAmendments());
+        testMultiSigning(jtx::testableAmendments() - fixCleanup3_4_0);
 
         testInvalidSponsorField();
 
