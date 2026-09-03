@@ -11,6 +11,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -112,6 +113,7 @@ SQLiteDatabase::deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq)
     {
         auto db = checkoutTransaction();
         detail::deleteByLedgerSeq(*db, detail::TableType::Transactions, ledgerSeq);
+        detail::deleteByLedgerSeq(*db, detail::TableType::BatchInnerResults, ledgerSeq);
         return;
     }
 }
@@ -137,6 +139,7 @@ SQLiteDatabase::deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
     {
         auto db = checkoutTransaction();
         detail::deleteBeforeLedgerSeq(*db, detail::TableType::Transactions, ledgerSeq);
+        detail::deleteBeforeLedgerSeq(*db, detail::TableType::BatchInnerResults, ledgerSeq);
         return;
     }
 }
@@ -153,6 +156,21 @@ SQLiteDatabase::deleteAccountTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
         detail::deleteBeforeLedgerSeq(*db, detail::TableType::AccountTransactions, ledgerSeq);
         return;
     }
+}
+
+std::vector<BatchInnerResult>
+SQLiteDatabase::getBatchInnerResults(uint256 const& parentBatchId)
+{
+    if (!useTxTables_)
+        return {};
+
+    if (existsTransaction())
+    {
+        auto db = checkoutTransaction();
+        return detail::getBatchInnerResults(*db, parentBatchId);
+    }
+
+    return {};
 }
 
 std::size_t

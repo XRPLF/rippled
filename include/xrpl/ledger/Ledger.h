@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/CachedView.h>
 #include <xrpl/ledger/RawView.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -325,6 +326,24 @@ public:
     bool
     addSLE(SLE const& sle);
 
+    /**
+     * @brief Inner Batch outcomes observed while this node built the ledger.
+     *
+     * Empty for a ledger acquired from the network or loaded from the database. Not part of
+     * the ledger hash; persisted to the transaction tables when the ledger is saved.
+     */
+    void
+    setBatchInnerResults(std::vector<BatchInnerResult> results)
+    {
+        batchInnerResults_ = std::move(results);
+    }
+
+    std::vector<BatchInnerResult> const&
+    batchInnerResults() const
+    {
+        return batchInnerResults_;
+    }
+
     //--------------------------------------------------------------------------
 
     void
@@ -433,6 +452,7 @@ private:
     Rules rules_;
     LedgerHeader header_;
     beast::Journal j_;
+    std::vector<BatchInnerResult> batchInnerResults_;
 };
 
 /**

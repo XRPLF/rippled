@@ -9,6 +9,7 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/BatchInnerResult.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -32,8 +33,8 @@
 namespace xrpl::detail {
 
 /* Need to change TableTypeCount if TableType is modified. */
-enum class TableType { Ledgers, Transactions, AccountTransactions };
-constexpr int kTableTypeCount = 3;
+enum class TableType { Ledgers, Transactions, AccountTransactions, BatchInnerResults };
+constexpr int kTableTypeCount = 4;
 
 struct DatabasePairValid
 {
@@ -95,6 +96,15 @@ deleteByLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
  */
 void
 deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq);
+
+/**
+ * @brief getBatchInnerResults Returns the recorded inner-transaction outcomes of a Batch.
+ * @param session Session with the database.
+ * @param parentBatchId Hash of the outer Batch transaction.
+ * @return Outcomes in RawTransactions order; empty if none were recorded.
+ */
+std::vector<BatchInnerResult>
+getBatchInnerResults(soci::session& session, uint256 const& parentBatchId);
 
 /**
  * @brief getRows Returns number of rows in given table.

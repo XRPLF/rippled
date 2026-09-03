@@ -5897,6 +5897,97 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testInnerResults(FeatureBitset features)
+    {
+        // `tx` on a validated Batch reports each inner transaction's outcome from the
+        // BatchInnerResults table, including inner transactions that never reached the
+        // ledger.
+        testcase("inner results");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // tfAllOrNothing with a future-sequence inner: the first inner applies to the batch
+        // view and is then rolled back, the second fails with terPRE_SEQ. Neither is in the
+        // ledger; both are recorded, both applied == false.
+        {
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                batch::Inner(pay(alice, bob, XRP(5)), aliceSeq + 10));
+            env.close();
+
+            auto const jrr = env.rpc("tx", batchID)[jss::result];
+            BEAST_EXPECT(jrr[jss::validated] == true);
+            if (BEAST_EXPECT(jrr.isMember(jss::inner_results)))
+            {
+                auto const& inner = jrr[jss::inner_results];
+                BEAST_EXPECT(inner.isArray());
+                if (BEAST_EXPECT(inner.size() == 2))
+                {
+                    BEAST_EXPECT(inner[0u][jss::hash] == txIDs[0]);
+                    BEAST_EXPECT(inner[0u][jss::result] == "tesSUCCESS");
+                    BEAST_EXPECT(inner[0u][jss::applied] == false);
+                    BEAST_EXPECT(inner[1u][jss::hash] == txIDs[1]);
+                    BEAST_EXPECT(inner[1u][jss::result] == "terPRE_SEQ");
+                    BEAST_EXPECT(inner[1u][jss::applied] == false);
+                }
+            }
+            // The rolled-back inner transaction is not in the ledger.
+            BEAST_EXPECT(env.rpc("tx", txIDs[0])[jss::result][jss::error] == "txnNotFound");
+        }
+
+        // tfIndependent, both succeed: both applied, in RawTransactions order.
+        {
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, aliceSeq, batchFee, tfIndependent),
+                batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                batch::Inner(pay(alice, bob, XRP(5)), aliceSeq + 2));
+            env.close();
+
+            auto const jrr = env.rpc("tx", batchID)[jss::result];
+            if (BEAST_EXPECT(jrr.isMember(jss::inner_results)))
+            {
+                auto const& inner = jrr[jss::inner_results];
+                if (BEAST_EXPECT(inner.size() == 2))
+                {
+                    for (unsigned i = 0; i < 2; ++i)
+                    {
+                        BEAST_EXPECT(inner[i][jss::hash] == txIDs[i]);
+                        BEAST_EXPECT(inner[i][jss::result] == "tesSUCCESS");
+                        BEAST_EXPECT(inner[i][jss::applied] == true);
+                    }
+                }
+            }
+            // The inner transactions themselves carry no inner_results.
+            BEAST_EXPECT(!env.rpc("tx", txIDs[0])[jss::result].isMember(jss::inner_results));
+        }
+
+        // A non-Batch transaction never has the field.
+        {
+            auto const jt = env.jt(pay(alice, bob, XRP(1)));
+            env(jt);
+            env.close();
+            auto const jrr = env.rpc("tx", strHex(jt.stx->getTransactionID()))[jss::result];
+            BEAST_EXPECT(jrr[jss::validated] == true);
+            BEAST_EXPECT(!jrr.isMember(jss::inner_results));
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -5931,6 +6022,7 @@ class Batch_test : public beast::unit_test::Suite
         testBatchDelegateConsent(features);
         testValidateRPCResponse(features);
         testBatchCalculateBaseFee(features);
+        testInnerResults(features);
         testStandaloneInnerBatchFlag(features);
         testOuterBinding(features);
         testUnsortedBatchSigners(features);
