@@ -543,11 +543,9 @@ public:
 
         auto metricExporter = otlp_http::OtlpHttpMetricExporterFactory::Create(metricExporterOpts);
 
-        // Configure periodic metric reader (1-second export interval,
-        // matching the beast OTelCollector path).
         metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
-        readerOpts.export_interval_millis = std::chrono::milliseconds(1000);
-        readerOpts.export_timeout_millis = std::chrono::milliseconds(500);
+        readerOpts.export_interval_millis = kMetricExportInterval;
+        readerOpts.export_timeout_millis = kMetricExportTimeout;
 
         auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
             std::move(metricExporter), readerOpts);
