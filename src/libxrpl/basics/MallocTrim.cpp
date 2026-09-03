@@ -77,7 +77,7 @@ parseStatmRSSkB(std::string const& statm)
  * @param path Absolute path of the pseudo-file.
  * @return The file contents, or an empty string if it could not be opened.
  */
-std::string
+[[nodiscard]] std::string
 readProcFile(std::string const& path)
 {
     std::ifstream ifs(path, std::ios::in | std::ios::binary);
@@ -103,7 +103,7 @@ readProcFile(std::string const& path)
  * @return A fully populated report. Fields whose source syscall failed keep
  *         their -1 "not measured" sentinel.
  */
-MallocTrimReport
+[[nodiscard]] MallocTrimReport
 measuredTrim(std::size_t padBytes)
 {
     MallocTrimReport report;

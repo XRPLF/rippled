@@ -252,12 +252,10 @@ public:
      * @param value  The value to remember.
      */
     void
-    store(T const& value) noexcept
+    store([[maybe_unused]] T const& value) noexcept
     {
 #ifdef XRPL_ENABLE_TELEMETRY
         value_ = value;
-#else
-        (void)value;
 #endif
     }
 
@@ -270,14 +268,13 @@ public:
      *  False when compiled out, so a caller's reporting branch never runs.
      */
     [[nodiscard]] bool
-    changedTo(T const& value) noexcept
+    changedTo([[maybe_unused]] T const& value) noexcept
     {
 #ifdef XRPL_ENABLE_TELEMETRY
         bool const changed = value_ != value;
         value_ = value;
         return changed;
 #else
-        (void)value;
         return false;
 #endif
     }
