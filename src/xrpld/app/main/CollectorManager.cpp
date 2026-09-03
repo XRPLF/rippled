@@ -52,15 +52,16 @@ public:
                 endpoint = "http://localhost:4318/v1/metrics";
             std::string const& prefix(get(params, "prefix"));
 
-            // Read service_instance_id, same key as the [telemetry]
-            // section uses, so multi-node deployments can distinguish
-            // metric sources via the service_instance_id Prometheus label.
+            // Read for signature uniformity only. OTelCollector ignores it:
+            // the service.instance.id resource attribute comes from
+            // [telemetry], and the otel-collector promotes that attribute to
+            // the service_instance_id Prometheus label.
             std::string const instanceId = get(params, "service_instance_id");
 
-            // service.name from [insight] (falls back to the value the
-            // caller derived from [telemetry]); network type derived from
-            // [network_id]. Both mirror the trace exporter so metrics and
-            // traces carry the same service and network identity.
+            // Also ignored by OTelCollector. The telemetry module owns the
+            // service.name and xrpl.network.type resource attributes, so
+            // metrics and traces already share one service and network
+            // identity without these values.
             std::string serviceNameCfg = get(params, "service_name");
             if (serviceNameCfg.empty())
                 serviceNameCfg = serviceName;

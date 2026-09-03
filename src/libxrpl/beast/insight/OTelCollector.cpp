@@ -455,12 +455,12 @@ public:
      *                    log line.
      * @param prefix      Metric-name prefix. Not applied to metric names;
      *                    used only in the startup log line.
-     * @param instanceId  Value for the service.instance.id resource attribute.
-     *                    When empty, the attribute is omitted.
-     * @param serviceName Value for the service.name resource attribute.
-     *                    When empty, defaults to "xrpld".
-     * @param networkType Value for the xrpl.network.type resource attribute.
-     *                    When empty, the attribute is omitted.
+     * @param instanceId  Accepted but not read. The telemetry module owns the
+     *                    service.instance.id resource attribute.
+     * @param serviceName Accepted but not read. The telemetry module owns the
+     *                    service.name resource attribute.
+     * @param networkType Accepted but not read. The telemetry module owns the
+     *                    xrpl.network.type resource attribute.
      * @param journal     Journal for logging.
      */
     OTelCollectorImp(
@@ -609,12 +609,19 @@ private:
     std::vector<OTelGaugeImpl*> gauges_;
 
     /**
+     * @brief Shortest gap between two hook invocations.
+     *
+     * Many gauge callbacks fire during one collection cycle. Only the first
+     * one past this window runs the hooks; the rest read the values it just
+     * refreshed. Unrelated to the OTLP export timeout, which shares the value.
+     */
+    static constexpr std::chrono::milliseconds kHookDebounceInterval{500};
+
+    /**
      * @brief Debounce timestamp for callHooks().
      *
-     * Multiple gauge callbacks fire during the same collection cycle.
-     * This atomic tracks the last time hooks were invoked (ms since epoch).
-     * Hooks are called at most once per 500ms window to avoid redundant
-     * invocations while still ensuring fresh values each collection cycle.
+     * Milliseconds since the steady-clock epoch when hooks last ran. Updated
+     * with a compare-exchange rather than under mutex_.
      */
     std::atomic<int64_t> lastHookCallMs_{0};
 };
@@ -895,15 +902,11 @@ OTelCollectorImp::removeHook(OTelHookImpl* hook)
 void
 OTelCollectorImp::callHooks()
 {
-    // Debounce: hooks run at most once per 500ms. Multiple gauge callbacks
-    // fire during the same collection cycle — only the first one triggers
-    // hooks. Subsequent callbacks within the window read already-updated
-    // gauge values.
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                    std::chrono::steady_clock::now().time_since_epoch())
                    .count();
     auto last = lastHookCallMs_.load(std::memory_order_acquire);
-    if (now - last < 500)
+    if (now - last < kHookDebounceInterval.count())
         return;
     if (!lastHookCallMs_.compare_exchange_strong(last, now, std::memory_order_acq_rel))
         return;  // Another thread won the race.

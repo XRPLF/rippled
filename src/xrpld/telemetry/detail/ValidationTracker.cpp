@@ -185,22 +185,27 @@ ValidationTracker::evictOldPending(TimePoint now)
     });
 
     // Hard trim if still over limit. The pass above already removed every
-    // reconciled entry older than the late-repair window, so here we drop
-    // any remaining reconciled entry as a last resort.
-    if (pending_.size() > kMaxPendingEvents)
+    // reconciled entry older than the late-repair window, so every candidate
+    // here is still repairable. Drop the oldest first: it has the least repair
+    // time left, so it loses the least. pending_ is unordered, so the oldest
+    // has to be searched for rather than found at an end.
+    while (pending_.size() > kMaxPendingEvents)
     {
-        for (auto it = pending_.begin();
-             it != pending_.end() && pending_.size() > kMaxPendingEvents;)
+        auto oldest = pending_.end();
+        for (auto it = pending_.begin(); it != pending_.end(); ++it)
         {
-            if (it->second.reconciled)
-            {
-                it = pending_.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
+            if (!it->second.reconciled)
+                continue;
+            if (oldest == pending_.end() || it->second.recordTime < oldest->second.recordTime)
+                oldest = it;
         }
+
+        // Only unreconciled entries left. Dropping one would lose its ledger
+        // from the totals entirely, so the bound gives way instead.
+        if (oldest == pending_.end())
+            break;
+
+        pending_.erase(oldest);
     }
 }
 

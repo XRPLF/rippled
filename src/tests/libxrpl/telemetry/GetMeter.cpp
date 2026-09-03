@@ -18,6 +18,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/Telemetry.h>
 
@@ -80,8 +81,12 @@ TEST(GetMeter, disabled_path_returns_usable_noop_meter)
 TEST(GetMeter, global_provider_meter_accepts_updown_counter)
 {
     // Preserve and later restore the process-wide provider so this test does
-    // not leak state into other telemetry tests in the same binary.
+    // not leak state into other telemetry tests in the same binary. The restore
+    // must be a scope guard: a failing ASSERT_* returns from the body, so a
+    // restore written as the last statement would be skipped.
     auto const previous = metrics_api::Provider::GetMeterProvider();
+    xrpl::ScopeExit const restoreProvider(
+        [&previous]() { metrics_api::Provider::SetMeterProvider(previous); });
 
     // A views-less SDK MeterProvider with no reader is sufficient to prove the
     // API contract: it hands out a real (non-noop) Meter that creates working
@@ -104,9 +109,6 @@ TEST(GetMeter, global_provider_meter_accepts_updown_counter)
     upDown->Add(static_cast<int64_t>(1));
     // Negative path: UpDownCounter permits decrement (unlike a plain Counter).
     upDown->Add(static_cast<int64_t>(-1));
-
-    // Restore the previous global provider.
-    metrics_api::Provider::SetMeterProvider(previous);
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY
