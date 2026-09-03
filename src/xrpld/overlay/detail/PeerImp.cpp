@@ -2706,7 +2706,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
         }
 
-        // validation_status is set once on each exit below, not as a default
+        // validation_receive_status is set once on each exit below, not as a default
         // here, to avoid OTel SDK attribute duplication. It is what separates
         // the microsecond drop paths from the queued path, which also covers
         // job wait and checkValidation.
@@ -2715,7 +2715,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             if (span && *span)
             {
                 span->setAttribute(
-                    telemetry::consensus::span::attr::validationStatus,
+                    telemetry::consensus::span::attr::validationReceiveStatus,
                     telemetry::consensus::span::val::validationDroppedDiverged);
             }
             JLOG(pJournal_.debug()) << "Dropping untrusted validation from diverged peer";
@@ -2726,7 +2726,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             if (span && *span)
             {
                 span->setAttribute(
-                    telemetry::consensus::span::attr::validationStatus,
+                    telemetry::consensus::span::attr::validationReceiveStatus,
                     telemetry::consensus::span::val::validationQueued);
             }
             std::string const name = isTrusted ? "ChkTrust" : "ChkUntrust";
@@ -2745,7 +2745,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             if (span && *span)
             {
                 span->setAttribute(
-                    telemetry::consensus::span::attr::validationStatus,
+                    telemetry::consensus::span::attr::validationReceiveStatus,
                     telemetry::consensus::span::val::validationDroppedLoad);
             }
             JLOG(pJournal_.debug()) << "Dropping untrusted validation for load";
