@@ -168,9 +168,10 @@ public:
         std::string serviceInstanceId;
 
         /**
-         * OTLP/HTTP endpoint URL where spans are sent.
+         * Full OTLP/HTTP URL where spans are sent, including the signal path.
+         * Used verbatim: no other endpoint is derived from it.
          */
-        std::string exporterEndpoint = "http://localhost:4318/v1/traces";
+        std::string tracesEndpoint = "http://localhost:4318/v1/traces";
 
         /**
          * Whether to use TLS for the exporter connection.

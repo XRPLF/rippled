@@ -286,12 +286,12 @@ public:
     void
     start() override
     {
-        JLOG(journal_.info()) << "Telemetry starting: endpoint=" << setup_.exporterEndpoint
+        JLOG(journal_.info()) << "Telemetry starting: traces_endpoint=" << setup_.tracesEndpoint
                               << " sampling=" << setup_.samplingRatio;
 
         // Configure OTLP HTTP exporter
         otlp_http::OtlpHttpExporterOptions exporterOpts;
-        exporterOpts.url = setup_.exporterEndpoint;
+        exporterOpts.url = setup_.tracesEndpoint;
         if (setup_.useTls)
         {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
