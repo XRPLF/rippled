@@ -26,6 +26,10 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 This section contains changes targeting a future version.
 
+### Breaking changes
+
+- `feature`: In admin-mode responses, the `vetoed` field is now always a boolean. Disabled obsolete amendments now have `"vetoed": true` and a new `"obsolete": true` field, instead of the previous `"vetoed": "Obsolete"` string value. This change improves type safety for API clients. Both `vetoed` and `obsolete` fields are only present in admin-mode responses for disabled amendments.
+
 ### Additions
 
 - `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`.

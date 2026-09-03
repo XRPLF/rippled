@@ -969,14 +969,8 @@ AmendmentTableImpl::injectJson(
     v[jss::supported] = fs.supported;
     if (!fs.enabled && isAdmin)
     {
-        if (fs.vote == AmendmentVote::Obsolete)
-        {
-            v[jss::vetoed] = "Obsolete";
-        }
-        else
-        {
-            v[jss::vetoed] = fs.vote == AmendmentVote::Down;
-        }
+        v[jss::vetoed] = fs.vote == AmendmentVote::Down || fs.vote == AmendmentVote::Obsolete;
+        v[jss::obsolete] = fs.vote == AmendmentVote::Obsolete;
     }
     v[jss::enabled] = fs.enabled;
 
