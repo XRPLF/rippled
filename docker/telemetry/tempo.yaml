@@ -122,7 +122,7 @@ storage:
       # they are used for; do not add an event-scoped column to the list below.
       #
       # The ledger_hash column below carries a second job as of the per-ledger
-      # trace join (WP-B3), which is why it stays the highest-value column here.
+      # trace join, which is why it stays the highest-value column here.
       # Every span for one ledger -- ledger.acquire, consensus.validation.accept,
       # ledger.validate, ledger.store -- now derives its TRACE ID from that same
       # ledger hash, so the whole story of one slow ledger is one trace:

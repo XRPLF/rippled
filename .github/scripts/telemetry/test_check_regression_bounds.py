@@ -93,8 +93,7 @@ class CheckerCase(unittest.TestCase):
 
         Read from the scratch copies of the real inputs rather than written as
         literals, because a literal here is a copy of one particular baseline:
-        two of these tests previously hard-coded values from the 2026-08-24
-        capture and both broke the moment the baseline was refreshed, which is
+        a hard-coded figure breaks the moment the baseline is refreshed, which is
         the very drift check_regression_bounds.py exists to catch. Deriving the
         figure keeps the assertion pinned to the rule instead of to a snapshot.
         """

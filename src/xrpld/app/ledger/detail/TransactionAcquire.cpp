@@ -451,8 +451,9 @@ TransactionAcquire::init(int numPeers)
     using namespace telemetry;
 
     // Span the acquisition so a proposed tx set that never arrives is
-    // traceable. TransactionAcquire had no telemetry at all before this, so a
-    // consensus round stalled waiting on a set looked identical to an idle one.
+    // traceable. This span is the only telemetry TransactionAcquire emits;
+    // without it a consensus round stalled waiting on a set looks identical to
+    // an idle one.
     // Finalized by finalizeAcquireSpan() on whichever exit this object takes.
     //
     // acquireSpan_ is emplaced here but may be reset on a JtTxnData worker

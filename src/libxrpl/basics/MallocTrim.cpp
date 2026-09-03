@@ -77,7 +77,7 @@ parseStatmRSSkB(std::string const& statm)
  * @param path Absolute path of the pseudo-file.
  * @return The file contents, or an empty string if it could not be opened.
  */
-std::string
+[[nodiscard]] std::string
 readProcFile(std::string const& path)
 {
     std::ifstream ifs(path, std::ios::in | std::ios::binary);
@@ -92,8 +92,8 @@ readProcFile(std::string const& path)
 /**
  * Run malloc_trim and measure what it cost.
  *
- * Split out of mallocTrim() so the always-on measurement is one testable unit
- * and the caller is left with only the logging decision.
+ * Kept separate from mallocTrim() so the always-on measurement is one testable
+ * unit and the caller is left with only the logging decision.
  *
  * Measurement order brackets the trim as tightly as possible: the two RSS
  * samples are outermost, the two fault samples inside them, and the clock pair
@@ -103,7 +103,7 @@ readProcFile(std::string const& path)
  * @return A fully populated report. Fields whose source syscall failed keep
  *         their -1 "not measured" sentinel.
  */
-MallocTrimReport
+[[nodiscard]] MallocTrimReport
 measuredTrim(std::size_t padBytes)
 {
     MallocTrimReport report;
@@ -154,10 +154,10 @@ mallocTrim(std::string_view tag, beast::Journal journal)
     // of RSS reduction and trim-latency stability without adding a tuning surface.
     static constexpr std::size_t kTrimPad = 0;
 
-    // The measurement is unconditional. It used to sit inside
-    // `if (journal.debug())`, which meant an ordinary node -- which does not run
-    // at debug level -- measured nothing, so the caller had no duration to
-    // record and the per-sweep trim cost was invisible in production, the one
+    // The measurement is unconditional, and deliberately not gated on
+    // `journal.debug()`. An ordinary node does not run at debug level, so a
+    // severity-gated measurement would leave the caller with no duration to
+    // record and the per-sweep trim cost invisible in production, the one
     // place it matters.
     //
     // Cost of measuring on every sweep, measured on this platform: two
@@ -167,8 +167,7 @@ mallocTrim(std::string_view tag, beast::Journal journal)
     // per SizedItem::SweepInterval (10 s at the fastest, tiny-node setting).
     // That is a duty cycle under 1e-6 percent, and under 1 percent of the
     // measured operation, so nothing here is worth making conditional -- a
-    // debug-only RSS read would only reintroduce the blind spot it costs
-    // nothing to remove.
+    // debug-only RSS read would buy that blind spot back for no saving.
     report = detail::measuredTrim(kTrimPad);
 
     // Only the LOG stays gated: the string formatting is what an ordinary node

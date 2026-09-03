@@ -225,7 +225,7 @@ connectors:
       # tempo.yaml), which gives per-ledger lookup with no metric series.
       - name: outcome
       - name: acquire_reason
-      # Sync-diagnostic span dimensions (WP-B2). Each is a small, closed value
+      # Sync-diagnostic span dimensions. Each is a small, closed value
       # set, so each adds a bounded number of series per span name:
       #   timed_out    - 2 values, on the ledger.acquire.* phase spans. Split
       #                  by it and a phase-duration panel separates "slow but
@@ -257,10 +257,10 @@ connectors:
       # peer or per distinct integer. They stay span-only and are searchable in
       # Tempo instead (see parquet_dedicated_columns in tempo.yaml); the
       # aggregate view of the same quantities comes from the spanmetrics
-      # duration histogram and from the WP-A3 native gauges.
+      # duration histogram and from the native acquire gauges.
       - name: timed_out
       - name: object_type
-      # Trace-causality span dimensions (WP-B3), on
+      # Trace-causality span dimensions, on
       # consensus.validation.accept. Both are closed value sets:
       #   validation_status - 6 values (the 5 ValStatus outcomes plus an
       #                       unknown sentinel). Only `current` reaches the

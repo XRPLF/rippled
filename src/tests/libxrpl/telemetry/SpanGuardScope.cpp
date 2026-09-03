@@ -734,7 +734,7 @@ TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_store
 }
 
 // ===========================================================================
-// Per-ledger trace join (WP-B3)
+// Per-ledger trace join
 // ===========================================================================
 //
 // One ledger's spans are produced on threads that share no context:
@@ -742,8 +742,9 @@ TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_store
 // enters LedgerMaster::checkAccept (a peer thread via handleNewValidation, the
 // acquire-completion job, or the consensus thread via switchLCL),
 // consensus.validation.accept from a validation worker, ledger.store from a
-// fourth. No ambient context reaches across those boundaries, so each used to be
-// its own single-span trace and a slow ledger could not be read as one unit.
+// fourth. No ambient context reaches across those boundaries, so without an
+// explicit join each would be its own single-span trace and a slow ledger could
+// not be read as one unit.
 //
 // The join derives the trace id from the ledger hash, which every one of those
 // sites already holds. The whole contract is therefore: spans built from the

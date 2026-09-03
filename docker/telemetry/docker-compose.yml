@@ -24,7 +24,7 @@
 # Configure xrpld to export traces by adding to xrpld.cfg:
 #   [telemetry]
 #   enabled=1
-#   endpoint=http://localhost:4318/v1/traces
+#   traces_endpoint=http://localhost:4318/v1/traces
 
 services:
   # One-shot init for the collector's offset store. Docker creates a fresh

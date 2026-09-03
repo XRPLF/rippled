@@ -35,7 +35,7 @@ at `6a82fc6f37` that predated two workload changes — the removal of the refuse
 load (`59a0595a6e`) and everything after it — so its numbers described a workload the harness no
 longer runs. The entries before that, captured on 2026-06-05, were voided into a placeholder: they
 predated the
-spanmetrics ladder re-cut of 2026-08-04 (`3860c93db2`), which made every sub-millisecond quantile
+spanmetrics ladder's 1 ms floor, which made every sub-millisecond quantile
 in that capture bucket-edge arithmetic rather than a latency (a p95 of `0.95` ms is `0.95 × 1 ms`).
 Because the comparator only flags a metric when the current value _exceeds_ the baseline, a
 stale-high baseline passes everything silently, so the entries had to be dropped rather than left
@@ -206,7 +206,7 @@ proves nothing; it is spread **relative to the trip point** that decides. And be
 point is derived from the baseline, a baseline that lands at the **low end** of a metric's own
 range shrinks that trip point without anything about the metric having changed.
 
-That is what the 2026-08-26 refresh did to three `p50` keys, and **all three are now excluded** —
+That is what happened to three `p50` keys on this baseline, and **all three are excluded** —
 this rule being applied, not a new exception. Measured across the three CI runs `32862589645`,
 `32867433073` and `32964262700` (the last of which is this baseline):
 

@@ -1,7 +1,7 @@
 /**
  * GTest unit tests for MetricsRegistry.
  *
- *  Three independent groups, split by what they can link:
+ *  Four independent groups, split by what they can link:
  *
  *  1. sanitiseHandler() — the `handler` label sanitiser. Runs in **both**
  *     builds. sanitiseHandler() is a public static constexpr defined inline
@@ -14,7 +14,13 @@
  *     on the nodestore_state gauge. Also a public static constexpr inline,
  *     so it runs in both builds for the same reason.
  *
- *  3. The no-op / telemetry-disabled path — construction, the two-phase
+ *  3. parseLedgerRange() — reads one segment of the complete-ledger range
+ *     string the complete_ledgers gauge publishes. A public static inline, so
+ *     it runs in both builds for the same reason. The last case drives the
+ *     real producer, xrpl::to_string(RangeSet), rather than restating its
+ *     format.
+ *
+ *  4. The no-op / telemetry-disabled path — construction, the two-phase
  *     start() / startAsyncGauges() / stop() lifecycle, and the synchronous
  *     record*() methods. Guarded, because
  *     when XRPL_ENABLE_TELEMETRY is defined MetricsRegistry.cpp is not
@@ -31,7 +37,7 @@
  *  - Compile-time-disabled proof for the sync-diagnostics gauges: the whole
  *    async-gauge registration surface is compiled away, and a full disabled
  *    lifecycle never touches any ServiceRegistry service -- including the
- *    Overlay and AmendmentTable the WP-A7 gauges would read.
+ *    Overlay and AmendmentTable the peer and amendment gauges would read.
  *
  *  NOTE: These tests only exercise the no-op path (telemetry disabled).
  *  When XRPL_ENABLE_TELEMETRY is defined, MetricsRegistry.cpp pulls in
@@ -60,6 +66,8 @@
 
 #include <xrpld/telemetry/MetricsRegistry.h>
 
+#include <xrpl/basics/RangeSet.h>
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -69,7 +77,10 @@
 #include <limits>
 #include <optional>
 #include <set>
+#include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -240,9 +251,9 @@ allFoldToOther()
 static_assert(allPassThroughUnchanged());
 static_assert(allFoldToOther());
 
-// The verified size of the pass-through set as of this branch: 43 all-letter
-// job-name literals. Pinned so that adding or removing a job name without
-// revisiting the label-cardinality budget fails the build here.
+// The pass-through set is every all-letter job-name literal in the tree: 43
+// of them. Pinned so that adding or removing a job name without revisiting
+// the label-cardinality budget fails the build here.
 static_assert(kPassThroughHandlers.size() == 43);
 
 /**
@@ -451,6 +462,155 @@ TEST(MetricsRegistryScaledMean, default_scale_is_one)
     // 360/8 is 45 by hand -- an independent literal, not a restatement of the
     // implementation. A default of 100 would read 4500 here.
     EXPECT_EQ(Registry::scaledMean(360, 8), 45);
+}
+
+namespace {
+
+/**
+ * Segments the producer can emit, paired with the range each denotes.
+ *
+ * Both shapes come from xrpl::to_string(ClosedInterval): `first-last`, and a
+ * bare number when first equals last.
+ */
+constexpr std::array<std::pair<std::string_view, std::pair<std::uint32_t, std::uint32_t>>, 6>
+    kProducibleSegments{{
+        {"32570-50000", {32570, 50000}},
+        {"50005-75891421", {50005, 75891421}},
+        {"0-1", {0, 1}},
+        {"5000", {5000, 5000}},
+        {"0", {0, 0}},
+        {"1-1", {1, 1}},
+    }};
+
+/**
+ * Segments no producer emits and the parser must refuse.
+ *
+ * `5-6 ` and `0x10` are the two that pin the consumed-everything check: they
+ * start with digits from_chars can read, so only the `ptr != end` test rejects
+ * them. from_chars refuses the other ten on its own. Keep those two.
+ */
+constexpr std::array<std::string_view, 12> kUnreadableSegments{
+    "",
+    "-",
+    "-5",
+    "5-",
+    "abc",
+    "5-a",
+    "a-5",
+    "5--6",
+    " 5-6",
+    "5-6 ",
+    "+5",
+    "0x10",
+};
+
+}  // namespace
+
+TEST(MetricsRegistryParseLedgerRange, dashed_segment_yields_both_bounds)
+{
+    // The ordinary shape. Both bounds must survive, because the gauge publishes
+    // them as separate `start` and `end` series and a dashboard subtracts them.
+    EXPECT_EQ(
+        Registry::parseLedgerRange("32570-50000"),
+        (std::pair<std::uint32_t, std::uint32_t>{32570, 50000}));
+    EXPECT_EQ(
+        Registry::parseLedgerRange("50005-75891421"),
+        (std::pair<std::uint32_t, std::uint32_t>{50005, 75891421}));
+}
+
+TEST(MetricsRegistryParseLedgerRange, single_ledger_segment_is_a_range_not_a_reject)
+{
+    // A node holding exactly one complete ledger renders as a bare number, so
+    // treating a dashless segment as malformed reports nothing at all for that
+    // node -- the reading an operator most needs while a node is catching up.
+    auto const one = Registry::parseLedgerRange("5000");
+    ASSERT_TRUE(one.has_value());
+    EXPECT_EQ(one->first, 5000u);
+    EXPECT_EQ(one->second, 5000u);
+
+    // Cause, not just state: acceptance is specific to an all-digit segment.
+    // These two prove the dashless branch is not simply accepting everything,
+    // so the test above would still fail if the guard were removed outright.
+    EXPECT_FALSE(Registry::parseLedgerRange("abc").has_value());
+    EXPECT_FALSE(Registry::parseLedgerRange("5-").has_value());
+}
+
+TEST(MetricsRegistryParseLedgerRange, every_producible_segment_parses_exactly)
+{
+    for (auto const& [segment, expected] : kProducibleSegments)
+    {
+        auto const parsed = Registry::parseLedgerRange(segment);
+        ASSERT_TRUE(parsed.has_value()) << "rejected a producible segment: " << segment;
+        EXPECT_EQ(*parsed, expected) << "wrong bounds for segment: " << segment;
+    }
+}
+
+TEST(MetricsRegistryParseLedgerRange, unreadable_segments_are_refused)
+{
+    for (auto const segment : kUnreadableSegments)
+    {
+        EXPECT_FALSE(Registry::parseLedgerRange(segment).has_value())
+            << "accepted an unreadable segment: [" << segment << "]";
+    }
+}
+
+TEST(MetricsRegistryParseLedgerRange, bounds_are_exact_at_the_sequence_limits)
+{
+    // The width comes from the function's own return type, so widening the
+    // sequence cannot leave this asserting against a stale boundary.
+    using Seq = decltype(Registry::parseLedgerRange("0"))::value_type::first_type;
+    constexpr auto kMaxSeq = std::numeric_limits<Seq>::max();
+    auto const maxText = std::to_string(kMaxSeq);
+
+    auto const atLimit = Registry::parseLedgerRange(maxText);
+    ASSERT_TRUE(atLimit.has_value()) << "rejected the largest representable sequence";
+    EXPECT_EQ(atLimit->first, kMaxSeq);
+    EXPECT_EQ(atLimit->second, kMaxSeq);
+
+    // One past the limit does not wrap to a small, believable sequence.
+    auto const pastLimit = std::to_string(static_cast<std::uint64_t>(kMaxSeq) + 1);
+    EXPECT_FALSE(Registry::parseLedgerRange(pastLimit).has_value())
+        << "overflowed instead of refusing: " << pastLimit;
+}
+
+TEST(MetricsRegistryParseLedgerRange, reads_back_what_the_real_producer_wrote)
+{
+    // Drives the actual producer rather than a restatement of its format, so a
+    // change to to_string() fails here instead of silently changing what the
+    // gauge reports. The middle interval is one ledger wide on purpose: that is
+    // the shape that renders without a dash.
+    xrpl::RangeSet<std::uint32_t> ledgers;
+    ledgers.insert(xrpl::range<std::uint32_t>(32570, 50000));
+    ledgers.insert(xrpl::range<std::uint32_t>(60000, 60000));
+    ledgers.insert(xrpl::range<std::uint32_t>(70000, 75891421));
+
+    auto const rendered = xrpl::to_string(ledgers);
+
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> recovered;
+    std::string_view rest{rendered};
+    while (!rest.empty())
+    {
+        auto const comma = rest.find(',');
+        auto const segment = rest.substr(0, comma);
+
+        auto const parsed = Registry::parseLedgerRange(segment);
+        ASSERT_TRUE(parsed.has_value()) << "producer emitted a segment the parser refuses: ["
+                                        << segment << "] from " << rendered;
+        recovered.push_back(*parsed);
+
+        rest = (comma == std::string_view::npos) ? std::string_view{} : rest.substr(comma + 1);
+    }
+
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> const expected{
+        {32570, 50000},
+        {60000, 60000},
+        {70000, 75891421},
+    };
+    EXPECT_EQ(recovered, expected) << "rendered as: " << rendered;
+
+    // Cause, not just state: every interval survived the round trip, so none
+    // was dropped and no later index shifted down to fill a gap.
+    EXPECT_EQ(recovered.size(), ledgers.iterative_size());
 }
 
 // When telemetry is globally enabled, MetricsRegistry.cpp requires xrpld
@@ -973,29 +1133,29 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // could mean the mock is permissive rather than that no callback ran.
     EXPECT_THROW(mockApp_.getValidators(), std::logic_error);
     EXPECT_THROW(mockApp_.getTimeKeeper(), std::logic_error);
-    // The two services the WP-A2 sync-state signals read. sync_state needs both
+    // The two services the sync-state signals read. sync_state needs both
     // (NetworkOPs for the gate/duration/ledgers-behind, LoadManager for stall
     // seconds) and server_stall_events_total needs the second, so either one
     // firing would have thrown above.
     EXPECT_THROW(mockApp_.getOPs(), std::logic_error);
     EXPECT_THROW(mockApp_.getLoadManager(), std::logic_error);
-    // The two services the WP-A3 acquire signals read: sync_acquire polls the
+    // The two services the acquire signals read: sync_acquire polls the
     // in-flight acquire collection, shamap_cache_hit_rate polls the node
     // Family's tree-node cache. Neither was consulted above.
     EXPECT_THROW(mockApp_.getInboundLedgers(), std::logic_error);
     EXPECT_THROW(mockApp_.getNodeFamily(), std::logic_error);
-    // The service the WP-A4 job-queue gauge reads: jobq_saturation polls
+    // The service the job-queue gauge reads: jobq_saturation polls
     // getWorkerSaturation() on the JobQueue. Not consulted above, so the
     // gauge never took the JobQueue mutex on a telemetry-off build.
     EXPECT_THROW(mockApp_.getJobQueue(), std::logic_error);
-    // The service both WP-A7 peer gauges read: peer_ledger_supply polls
+    // The service both peer gauges read: peer_ledger_supply polls
     // getPeerLedgerSupply(), which walks the active-peer list, and
     // peerfinder_slot_census polls getSlotCensus(), which takes the PeerFinder
     // lock. Both go through the Overlay, so a single throw here proves neither
     // gauge walked the peer list nor took the PeerFinder lock on a
     // telemetry-off build.
     EXPECT_THROW(mockApp_.getOverlay(), std::logic_error);
-    // The service the WP-A7 amendment countdown reads: amendment_block polls
+    // The service the amendment countdown reads: amendment_block polls
     // firstUnsupportedExpected() on the AmendmentTable, which takes that
     // table's mutex. Not consulted above, so the countdown never ran. (Its
     // `warned` half reads NetworkOPs, already covered by the getOPs() check.)
@@ -1042,10 +1202,10 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     EXPECT_FALSE(disabledRequest.isEnabled());
 }
 
-// The `state_changes_total` counter no longer has a registry-owned wrapper
-// method: WP-A2 moved it to a labelled call-site macro in
-// NetworkOPsImp::setMode so it can carry {from,to}. This compile-time
-// assertion is the regression guard -- if someone reintroduces
+// The `state_changes_total` counter has no registry-owned wrapper method by
+// design: it is emitted from a labelled call-site macro in
+// NetworkOPsImp::setMode, which is the only place that knows {from,to}. This
+// compile-time assertion is the guard -- if someone adds
 // incrementStateChanges(), the unlabelled instrument would coexist with the
 // labelled one and Prometheus would carry two conflicting versions of the same
 // metric name.

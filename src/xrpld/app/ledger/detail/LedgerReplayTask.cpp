@@ -221,8 +221,9 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
         failed_ = true;
 
         // A delta failed to build on top of its parent, so the replayed range
-        // cannot be reconstructed. Previously not logged at all here, only
-        // reflected in failed_.
+        // cannot be reconstructed. This counter is the only external record
+        // of that exit: `failed_` above is internal state and there is no log
+        // line on this path.
         recordOutcome(telemetry::lval::replay_outcome::buildFailed);
     }
 }

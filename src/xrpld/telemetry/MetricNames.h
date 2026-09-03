@@ -527,10 +527,10 @@ inline constexpr char parseError[] = "parse_error";
 namespace unl_quorum {
 inline constexpr char trustedKeys[] = "trusted_keys";
 inline constexpr char quorum[] = "quorum";
-// 1 while the validator list has disabled quorum, 0 otherwise. Carries the
-// state that used to be encoded by publishing a sentinel value on `quorum`
-// itself: a number that large plotted on a shared axis flattens the
-// trusted-key line to the baseline, hiding the very failure it marked.
+// 1 while the validator list has disabled quorum, 0 otherwise. A separate
+// boolean rather than a sentinel value on `quorum` itself: a number that large
+// plotted on a shared axis flattens the trusted-key line to the baseline,
+// hiding the very failure it would mark.
 inline constexpr char quorumDisabled[] = "quorum_disabled";
 }  // namespace unl_quorum
 

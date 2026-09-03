@@ -460,9 +460,8 @@ private:
     /**
      * Spans the acquire lifecycle: started in init(), ended by
      * finalizeAcquireSpan() with the outcome (complete/failed/abandoned),
-     * timeout count, and peer count. Gives operators visibility into
-     * back-fill / fork-recovery cost, which previously emitted no span or
-     * metric.
+     * timeout count, and peer count. This span is the only signal for
+     * back-fill / fork-recovery cost; no other span or metric covers it.
      * Held for the object's whole lifetime so the destructor can still stamp
      * an outcome on a fetch that never reached done().
      * Thread-free: emplaced by the acquiring thread, reset on a JtLedgerData

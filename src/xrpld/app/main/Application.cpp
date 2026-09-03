@@ -1212,14 +1212,15 @@ public:
      * Return free heap pages to the OS at the end of a sweep, and record what
      * that cost.
      *
-     * Split out of doSweep() so the metric emit site is one small unit rather
-     * than a further three statements on an already-long function.
+     * Kept separate from doSweep() so the metric emit site is one small unit
+     * rather than a further three statements on an already-long function.
      *
      * Why this is instrumented: `malloc_trim` runs after EVERY cache sweep, and
      * its cost scales with the resident heap, so a node with a large existing
      * database pays a per-sweep penalty a fresh one does not -- the leading
      * explanation for "an existing database syncs slower than an empty one" on
-     * glibc. The report used to be discarded here, so none of it was visible.
+     * glibc. This is the only site that reads mallocTrim()'s report, so it is
+     * the only place that cost can be made visible.
      *
      *      doSweep()  ->  trimHeapAndRecord()  ->  mallocTrim()
      *                            |                      |
