@@ -29,7 +29,7 @@ Add to your `xrpld.cfg`:
 ```ini
 [telemetry]
 enabled=1
-endpoint=http://localhost:4318/v1/traces
+traces_endpoint=http://localhost:4318/v1/traces
 ```
 
 ### 3. Build with telemetry support
@@ -45,7 +45,7 @@ cmake --build --preset default
 | Option                     | Default                           | Description                                               |
 | -------------------------- | --------------------------------- | --------------------------------------------------------- |
 | `enabled`                  | `0`                               | Master switch for telemetry                               |
-| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                        |
+| `traces_endpoint`          | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim               |
 | `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute             |
 | `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute      |
 | `trace_rpc`                | `1`                               | Enable RPC request tracing                                |
