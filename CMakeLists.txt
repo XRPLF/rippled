@@ -114,7 +114,6 @@ find_package(OpenSSL REQUIRED)
 find_package(secp256k1 REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(wasmi REQUIRED)
 find_package(xxHash REQUIRED)
 
 target_link_libraries(
@@ -161,11 +160,8 @@ endif()
 
 add_custom_target(tidy_prerequisites)
 
-if(rust)
-    add_subdirectory(crates)
-endif()
+add_subdirectory(crates)
 include(XrplCore)
-
 include(XrplProtocolAutogen)
 include(XrplInstall)
 include(XrplValidatorKeys)
