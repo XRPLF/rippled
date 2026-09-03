@@ -336,10 +336,9 @@ public:
      * @param id  The node's base58-encoded public key.
      */
     virtual void
-    setNodeId(std::string const& id)
+    setNodeId([[maybe_unused]] std::string const& id)
     {
         // Default no-op for NullTelemetry implementations.
-        (void)id;
     }
 
     /**

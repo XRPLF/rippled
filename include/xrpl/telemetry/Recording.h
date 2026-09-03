@@ -174,12 +174,10 @@ public:
      * @param n  How much to add; defaults to 1.
      */
     void
-    add(T const n = 1) noexcept
+    add([[maybe_unused]] T const n = 1) noexcept
     {
 #ifdef XRPL_ENABLE_TELEMETRY
         value_.fetch_add(n, std::memory_order_relaxed);
-#else
-        (void)n;
 #endif
     }
 

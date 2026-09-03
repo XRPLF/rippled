@@ -226,7 +226,7 @@ public:
      * counter validation_agreements_total. See the counting-semantics
      * note in detail/ValidationTracker.cpp.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     totalAgreementsEver() const;
 
     /**
@@ -238,7 +238,7 @@ public:
      * counter validation_missed_total. See the counting-semantics note
      * in detail/ValidationTracker.cpp.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     totalMissedEver() const;
 
     /**
