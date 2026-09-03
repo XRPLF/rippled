@@ -39,8 +39,20 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace beast::insight {
+
+/**
+ * Instrumentation scope this collector fetches its Meter under.
+ *
+ * Must equal xrpl::telemetry::kMeterName and kMeterVersion, or instruments land
+ * on a different scope than the views. Duplicated because beast sits below the
+ * telemetry module and cannot include its header; Telemetry.cpp static_asserts
+ * the two agree.
+ */
+inline constexpr std::string_view kOTelMeterName{"xrpld"};
+inline constexpr std::string_view kOTelMeterVersion{"1.0.0"};
 
 /**
  * @brief A Collector that exports metrics via OpenTelemetry OTLP/HTTP.
@@ -125,7 +137,7 @@ public:
      * @param journal     Journal for logging.
      * @return Shared pointer to the created Collector.
      */
-    static std::shared_ptr<Collector>
+    [[nodiscard]] static std::shared_ptr<Collector>
     // NOLINTNEXTLINE(readability-identifier-naming)
     New(std::string const& endpoint,
         std::string const& prefix,

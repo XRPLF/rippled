@@ -19,6 +19,7 @@
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/insight/OTelCollector.h>
 #include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/CoroAwareContextStorage.h>
@@ -76,6 +77,24 @@
 #include <vector>
 
 namespace xrpl::telemetry {
+
+// beast cannot include this header, so it duplicates the meter scope. Fail the
+// build if the copies drift: instruments would land off the views' scope.
+static_assert(kMeterName == beast::insight::kOTelMeterName);
+static_assert(kMeterVersion == beast::insight::kOTelMeterVersion);
+
+/**
+ * OTLP/HTTP path per signal, appended by signalEndpoint().
+ */
+constexpr std::string_view kTracesPath{"/v1/traces"};
+constexpr std::string_view kMetricsPath{"/v1/metrics"};
+
+/**
+ * Metric export cadence. The interval matches the 1 s scrape the dashboards
+ * assume; the timeout bounds a stalled collector.
+ */
+constexpr auto kMetricExportInterval = std::chrono::milliseconds{1000};
+constexpr auto kMetricExportTimeout = std::chrono::milliseconds{500};
 
 namespace {
 
@@ -366,73 +385,101 @@ class TelemetryImpl : public Telemetry
      *
      * @note Throws whatever the SDK factories throw; the constructor catches.
      */
+    /**
+     * @brief Full OTLP/HTTP URL for one signal.
+     *
+     * `[telemetry] endpoint` is one setting but OTLP/HTTP has a path per
+     * signal, so both are derived from it by the same rule: drop a trailing
+     * slash, drop a signal path if one is already there, then append the path
+     * asked for. A bare host, a traces URL and a metrics URL therefore all
+     * yield the right endpoint for either signal.
+     *
+     * @param configured The `[telemetry] endpoint` value.
+     * @param signalPath Path to append, e.g. kTracesPath.
+     * @return Endpoint URL for that signal.
+     */
+    [[nodiscard]] static std::string
+    signalEndpoint(std::string_view configured, std::string_view signalPath)
+    {
+        while (configured.ends_with('/'))
+            configured.remove_suffix(1);
+
+        for (auto const known : {kTracesPath, kMetricsPath})
+        {
+            if (configured.ends_with(known))
+            {
+                configured.remove_suffix(known.size());
+                break;
+            }
+        }
+        return std::string{configured} + std::string{signalPath};
+    }
+
+    /**
+     * @brief Build the OTLP/HTTP metric exporter.
+     *
+     * @return Exporter pointed at the metrics endpoint, with the same TLS
+     *         options the trace exporter uses.
+     */
+    [[nodiscard]] auto
+    makeMetricExporter() const
+    {
+        otlp_http::OtlpHttpMetricExporterOptions opts;
+        opts.url = signalEndpoint(setup_.exporterEndpoint, kMetricsPath);
+        if (setup_.useTls)
+        {
+            opts.ssl_ca_cert_path = setup_.tlsCertPath;
+            opts.ssl_client_cert_path = setup_.tlsClientCertPath;
+            opts.ssl_client_key_path = setup_.tlsClientKeyPath;
+        }
+        return otlp_http::OtlpHttpMetricExporterFactory::Create(opts);
+    }
+
+    /**
+     * @brief Register one histogram view, selected by instrument unit.
+     *
+     * The unit is the selector, so an instrument gets the ladder matching what
+     * it measures and a byte count is never bucketed on a latency ladder.
+     *
+     * The view name stays EMPTY: a non-empty one renames every matching
+     * histogram to it and collapses them into a single series. The meter
+     * selector must match kMeterName, or the view never applies and
+     * instruments fall back to the SDK default ladder (ceiling 10,000).
+     *
+     * @param unitCode    OTel unit code to select on, e.g. "ms".
+     * @param boundaries  Bucket upper bounds, from HistogramBuckets.h.
+     * @param description Description recorded on the view.
+     */
+    void
+    addUnitView(
+        std::string const& unitCode,
+        std::vector<double> boundaries,
+        std::string const& description)
+    {
+        auto selector = metrics_sdk::InstrumentSelectorFactory::Create(
+            metrics_sdk::InstrumentType::kHistogram, "*", unitCode);
+        auto meterSelector =
+            metrics_sdk::MeterSelectorFactory::Create(std::string(kMeterName), "", "");
+        auto config = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
+        config->boundaries_ = std::move(boundaries);
+        auto view = metrics_sdk::ViewFactory::Create(
+            "", description, metrics_sdk::AggregationType::kHistogram, std::move(config));
+        meterProvider_->AddView(std::move(selector), std::move(meterSelector), std::move(view));
+    }
+
     void
     initMetrics()
     {
-        // Derive the metrics endpoint from the trace endpoint by swapping
-        // the trailing "/v1/traces" path for "/v1/metrics". Any other URL
-        // shape is used as-is.
-        std::string metricsEndpoint = setup_.exporterEndpoint;
-        constexpr std::string_view tracesPath{"/v1/traces"};
-        if (metricsEndpoint.ends_with(tracesPath))
-        {
-            metricsEndpoint.replace(
-                metricsEndpoint.size() - tracesPath.size(), tracesPath.size(), "/v1/metrics");
-        }
-
-        // Configure OTLP HTTP metric exporter, honoring the same TLS
-        // options as the trace exporter.
-        otlp_http::OtlpHttpMetricExporterOptions metricExporterOpts;
-        metricExporterOpts.url = metricsEndpoint;
-        if (setup_.useTls)
-        {
-            metricExporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
-            metricExporterOpts.ssl_client_cert_path = setup_.tlsClientCertPath;
-            metricExporterOpts.ssl_client_key_path = setup_.tlsClientKeyPath;
-        }
-
-        auto metricExporter = otlp_http::OtlpHttpMetricExporterFactory::Create(metricExporterOpts);
-
-        // Configure periodic metric reader (1-second export interval,
-        // matching the beast OTelCollector path).
         metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
-        readerOpts.export_interval_millis = std::chrono::milliseconds(1000);
-        readerOpts.export_timeout_millis = std::chrono::milliseconds(500);
+        readerOpts.export_interval_millis = kMetricExportInterval;
+        readerOpts.export_timeout_millis = kMetricExportTimeout;
 
         auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
-            std::move(metricExporter), readerOpts);
+            makeMetricExporter(), readerOpts);
 
-        // Create MeterProvider with the shared resource, then attach reader.
         meterProvider_ = metrics_sdk::MeterProviderFactory::Create(
             std::make_unique<metrics_sdk::ViewRegistry>(), makeResource());
         meterProvider_->AddMetricReader(std::move(reader));
-
-        // One histogram view per unit. The unit is the selector, so an
-        // instrument gets the ladder that fits what it measures: a byte count
-        // is bucketed on the byte ladder and never on a latency one. Edges
-        // come from HistogramBuckets.h, which owns every ladder.
-        //
-        // Both views keep the "*" name pattern and an EMPTY view name: a
-        // non-empty view name would rename every matching histogram to it and
-        // collapse them into a single series.
-        //
-        // The meter selector MUST match the meter name used by getMeter() and
-        // the beast OTelCollector, or a view never applies and instruments
-        // fall back to the SDK default ladder (ceiling 10,000).
-        auto const addUnitView = [this](
-                                     std::string const& unitCode,
-                                     std::vector<double> boundaries,
-                                     std::string const& description) {
-            auto selector = metrics_sdk::InstrumentSelectorFactory::Create(
-                metrics_sdk::InstrumentType::kHistogram, "*", unitCode);
-            auto meterSelector =
-                metrics_sdk::MeterSelectorFactory::Create(std::string(kMeterName), "", "");
-            auto config = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
-            config->boundaries_ = std::move(boundaries);
-            auto view = metrics_sdk::ViewFactory::Create(
-                "", description, metrics_sdk::AggregationType::kHistogram, std::move(config));
-            meterProvider_->AddView(std::move(selector), std::move(meterSelector), std::move(view));
-        };
 
         addUnitView(
             beast::insight::otelUnitCode(beast::insight::Unit::Millis),
@@ -443,8 +490,8 @@ class TelemetryImpl : public Telemetry
             buckets::toVector(buckets::kByteBuckets),
             "Size buckets, 512 B to 1 MiB");
 
-        // Publish as the global meter provider so developers (and the beast
-        // OTelCollector shim) reach the same pipeline.
+        // Publish globally so both direct-API and beast-sourced metrics ride
+        // one pipeline.
         metrics_api::Provider::SetMeterProvider(
             opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(meterProvider_));
     }
@@ -493,7 +540,7 @@ public:
 
         // Configure OTLP HTTP exporter
         otlp_http::OtlpHttpExporterOptions exporterOpts;
-        exporterOpts.url = setup_.exporterEndpoint;
+        exporterOpts.url = signalEndpoint(setup_.exporterEndpoint, kTracesPath);
         if (setup_.useTls)
         {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;

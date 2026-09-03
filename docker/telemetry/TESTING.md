@@ -433,22 +433,24 @@ Base URL: `http://localhost:9090`
 ```bash
 PROM="http://localhost:9090"
 
-# Span call counts (from spanmetrics connector)
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+# Span call counts (from the spanmetrics connector). The span_ prefix is the
+# connector's `namespace: "span"` in otel-collector-config.yaml; drop that
+# setting and these become traces_span_metrics_*.
+curl -s "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # Latency histogram
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+curl -s "$PROM/api/v1/query?query=span_duration_milliseconds_count" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # RPC calls by command
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" |
+curl -s "$PROM/api/v1/query?query=span_calls_total{span_name=~\"rpc.command.*\"}" |
     jq '.data.result[] | {command: .metric["xrpl.rpc.command"], count: .value[1]}'
 
 # Deployment-tier labels present on metrics (set by the collector's
 # resource/tier processor and promoted via resource_to_telemetry_conversion).
 # Expect deployment_environment and xrpl_network_type on each series.
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+curl -s "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result[0].metric | {deployment_environment, xrpl_network_type, service_name}'
 ```
 
