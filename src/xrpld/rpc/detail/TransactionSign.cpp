@@ -461,7 +461,8 @@ transactionPreProcessImpl(
     Role role,
     SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
-    Application& app)
+    Application& app,
+    Rules const& rules)
 {
     auto j = app.getJournal("RPCHandler");
 
@@ -483,13 +484,16 @@ transactionPreProcessImpl(
     }();
 
     // Make sure the signature target field is valid, if specified, and save the
-    // template for use later
+    // template for use later. Only a field that holds a transaction signature
+    // is a valid target; the signature is bound to that field's role.
     auto const signatureTemplate = signatureTarget
         ? InnerObjectFormats::getInstance().findSOTemplateBySField(*signatureTarget)
         : nullptr;
+    auto const signatureRoleOpt =
+        signatureTarget ? signatureRole(signatureTarget->get()) : SignatureRole::Transaction;
     if (signatureTarget)
     {
-        if (signatureTemplate == nullptr)
+        if (!signatureRoleOpt || signatureTemplate == nullptr)
         {  // Invalid target field
             return rpc::makeError(RpcInvalidParams, signatureTarget->get().getName());
         }
@@ -688,7 +692,8 @@ transactionPreProcessImpl(
     // If multisign then return multiSignature, else set TxnSignature field.
     if (signingArgs.isMultiSigning())
     {
-        Serializer const s = buildMultiSigningData(*stTx, signingArgs.getSigner());
+        Serializer const s = buildMultiSigningData(
+            *stTx, signingArgs.getSigner(), signingPrefix(*signatureRoleOpt, true, rules));
 
         auto multisig = xrpl::sign(pk, sk, s.slice());
 
@@ -696,7 +701,7 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning())
     {
-        stTx->sign(pk, sk, signatureTarget);
+        stTx->sign(pk, sk, *signatureRoleOpt, rules);
     }
 
     return TransactionPreProcessResult{std::move(stTx)};
@@ -1037,18 +1042,20 @@ transactionSign(
 {
     using namespace detail;
 
+    // Sign and verify against the same ruleset: a ledger close in between
+    // could change the signing prefix of an alternate signature field.
+    std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSign: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    TransactionPreProcessResult const preprocResult =
-        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
+    TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
+        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
     std::pair<json::Value, Transaction::pointer> const txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
@@ -1080,8 +1087,8 @@ transactionSubmit(
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    TransactionPreProcessResult const preprocResult =
-        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
+    TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
+        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -1248,8 +1255,8 @@ transactionSignFor(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams(*signerAccountID);
 
-    TransactionPreProcessResult const preprocResult =
-        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
+    TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
+        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
