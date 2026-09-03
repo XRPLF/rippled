@@ -65,7 +65,7 @@ constexpr std::uint32_t maxQueueSize = 2048u;
  * @param networkId  The network identifier from [network_id] config.
  * @return "mainnet", "testnet", "devnet", or "unknown" for other values.
  */
-std::string
+[[nodiscard]] std::string
 networkTypeFromId(std::uint32_t networkId)
 {
     switch (networkId)
