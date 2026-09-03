@@ -1,4 +1,4 @@
-use crate::region::Region;
+use crate::args::OutBytes;
 use crate::vm::{MAX_FIELD_BYTES, VmState};
 use core::ops::Range;
 use wasmi::{Caller, Memory};
@@ -151,25 +151,15 @@ fn memory(caller: &Caller<'_, VmState<'_>>) -> CallResult<Memory> {
         .ok_or(CallError::Fatal(Fault::NoMemory))
 }
 
-/// [`Region::read`] of the guest's memory, for a call that reads and writes nothing
-/// back (`trace`).
-pub(crate) fn read_borrowed<'a>(
-    caller: &'a Caller<'_, VmState<'_>>,
-    input: Region,
-) -> CallResult<&'a [u8]> {
-    let mem = memory(caller)?;
-    Ok(input.read(mem.data(caller))?)
-}
-
-/// Decode a guest `u32` argument — a keylet's sequence number or document id — from
-/// its four little-endian bytes.
+/// The guest's memory, for a call that reads its inputs and writes nothing back.
 ///
-/// A declared `u32` is a 4-byte region rather than a wasm scalar (the guest SDK passes
-/// `seq.to_le_bytes()`), so the region must be exactly four bytes; `InvalidParams`
-/// otherwise.
-pub(crate) fn read_u32_arg(bytes: &[u8]) -> HostResult<u32> {
-    let arr: [u8; 4] = bytes.try_into().map_err(|_| HostError::InvalidParams)?;
-    Ok(u32::from_le_bytes(arr))
+/// The slice aliases guest memory, so an argument read out of it is borrowed
+/// rather than copied. [`write_buffered`] and [`write_mant_exp`] hand over the
+/// same slice themselves, since a call that also writes has to take both borrows
+/// at once.
+pub(crate) fn guest_memory<'a>(caller: &'a Caller<'_, VmState<'_>>) -> CallResult<&'a [u8]> {
+    let mem = memory(caller)?;
+    Ok(mem.data(caller))
 }
 
 /// Service a call whose answer is bytes, written straight into the guest's output
@@ -181,7 +171,7 @@ pub(crate) fn read_u32_arg(bytes: &[u8]) -> HostResult<u32> {
 /// cap, nor the budget, and all three checks below are reachable.
 pub(crate) fn write_into(
     caller: &mut Caller<'_, VmState<'_>>,
-    out: Region,
+    out: OutBytes,
     fill: impl FnOnce(&dyn HostFunctions, &mut [u8]) -> HostResult<usize>,
 ) -> CallResult<i32> {
     let range = out.range()?;
@@ -217,10 +207,10 @@ pub(crate) fn write_into(
 /// fills the run's output buffer, which is copied to the guest once every rule has
 /// passed.
 ///
-/// `call` gets the guest's whole memory, so it can borrow any number of input
-/// regions with [`Region::read`] — which a `&mut` view of that memory would forbid.
-/// That is why the answer goes through a buffer instead of straight into the guest
-/// as [`write_into`]'s does.
+/// `call` gets the guest's whole memory, so it can read any number of input
+/// arguments out of it — which a `&mut` view of that memory would forbid. That is
+/// why the answer goes through a buffer instead of straight into the guest as
+/// [`write_into`]'s does.
 ///
 /// **The host is never told the guest's capacity**: it is offered the whole buffer
 /// and reports the value's true length, so the fit is decided here, with nothing yet
@@ -231,7 +221,7 @@ pub(crate) fn write_into(
 /// region against.
 pub(crate) fn write_buffered(
     caller: &mut Caller<'_, VmState<'_>>,
-    out: Region,
+    out: OutBytes,
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8]) -> HostResult<usize>,
 ) -> CallResult<i32> {
     let mem = memory(caller)?;
@@ -297,8 +287,8 @@ fn check_fits(data: &[u8], range: &Range<usize>, width: usize) -> HostResult<()>
 /// wrong.
 pub(crate) fn write_mant_exp(
     caller: &mut Caller<'_, VmState<'_>>,
-    mantissa_out: Region,
-    exponent_out: Region,
+    mantissa_out: OutBytes,
+    exponent_out: OutBytes,
     call: impl FnOnce(&dyn HostFunctions, &[u8], &mut [u8], &mut [u8]) -> HostResult<usize>,
 ) -> CallResult<i32> {
     let mem = memory(caller)?;
@@ -820,25 +810,5 @@ mod tests {
             (MAX_FIELD_BYTES as u64) * 64 <= TRANSFER_LIMIT_BYTES,
             "one {MAX_FIELD_BYTES}-byte value against a {TRANSFER_LIMIT_BYTES}-byte budget"
         );
-    }
-
-    #[test]
-    fn read_u32_arg_success() {
-        let number: u32 = 0x12345678;
-        let le_array: [u8; 4] = number.to_le_bytes();
-        assert_eq!(le_array, [0x78, 0x56, 0x34, 0x12]);
-
-        let result = read_u32_arg(&le_array);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), number.try_into().unwrap());
-    }
-
-    #[test]
-    fn read_u32_arg_invalid_length() {
-        let le_array = [0x56, 0x34, 0x12];
-
-        let result = read_u32_arg(&le_array);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), HostError::InvalidParams);
     }
 }

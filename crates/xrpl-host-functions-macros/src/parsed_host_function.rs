@@ -18,6 +18,17 @@ const DOC: &str = "doc";
 /// The alias every declaration returns its success type through.
 const HOST_RESULT: &str = "HostResult";
 
+/// One declared parameter: the name it states its purpose with, and the type
+/// that decides its wire form.
+///
+/// The name is carried because the generated glue spells it — as the body's
+/// parameter, and as `{name}_ptr`/`{name}_len` for a region — so a reader of the
+/// registration is reading the declaration's own words.
+pub(crate) struct Param {
+    pub(crate) name: Ident,
+    pub(crate) ty: ParamType,
+}
+
 /// One entry of a `host_functions!` block: its ABI metadata and its signature.
 pub(crate) struct ParsedHostFunction {
     pub(crate) gas: u64,
@@ -31,15 +42,21 @@ pub(crate) struct ParsedHostFunction {
     pub(crate) signature: Signature,
     /// The declared parameters, in order, with the receiver dropped: `&self` is
     /// not part of the wasm ABI.
-    ///
-    /// Private, as is `result`: the wasm signature leaves this module only as
-    /// the tokens `spec_arm` emits.
-    params: Vec<ParamType>,
+    params: Vec<Param>,
     /// What the declaration's `HostResult<T>` answers with.
     result: ResultType,
 }
 
 impl ParsedHostFunction {
+    /// The declared parameters, in declaration order, which is wire order.
+    pub(crate) fn params(&self) -> &[Param] {
+        &self.params
+    }
+
+    /// What this declaration answers with.
+    pub(crate) fn result(&self) -> ResultType {
+        self.result
+    }
     /// `#[doc …] fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;`
     pub(crate) fn trait_method(&self) -> TokenStream {
         let docs = &self.docs;
@@ -95,7 +112,7 @@ impl ParsedHostFunction {
     fn wasm_params(&self) -> impl Iterator<Item = WasmValType> {
         self.params
             .iter()
-            .flat_map(|param| param.as_wasm_params())
+            .flat_map(|param| param.ty.as_wasm_params())
             .copied()
     }
 
@@ -232,7 +249,7 @@ fn check_receiver(signature: &Signature) -> syn::Result<()> {
 ///
 /// Every parameter is reported against its own span, so a declaration surfaces
 /// all of its parameter mistakes in one build rather than one per rebuild.
-fn parse_params(signature: &Signature) -> syn::Result<Vec<ParamType>> {
+fn parse_params(signature: &Signature) -> syn::Result<Vec<Param>> {
     let mut params = Vec::new();
     let mut errors = Vec::new();
 
@@ -242,32 +259,33 @@ fn parse_params(signature: &Signature) -> syn::Result<Vec<ParamType>> {
         let FnArg::Typed(PatType { pat, ty, .. }) = input else {
             continue;
         };
-        errors.extend(check_parameter_name(pat).err());
-        match ParamType::parse(ty) {
-            Ok(param) => params.push(param),
-            Err(error) => errors.push(error),
+        // Both halves are recorded, so a parameter that is both badly named and
+        // badly typed answers for each rather than one standing in for the other.
+        let name = errors::record(parameter_name(pat), &mut errors);
+        let ty = errors::record(ParamType::parse(ty), &mut errors);
+        if let (Some(name), Some(ty)) = (name, ty) {
+            params.push(Param { name, ty });
         }
     }
 
     errors::into_result(params, errors)
 }
 
-/// A parameter is named, and by a plain identifier.
+/// The parameter's name, which must be a plain identifier.
 ///
 /// The name is how the declaration states what the parameter is for — the wasm
 /// signature it lowers to is all `i32`s and says nothing — so `_`, `mut bytes`
 /// and destructuring patterns are refused rather than carried into the trait.
-fn check_parameter_name(pat: &Pat) -> syn::Result<()> {
-    if matches!(
-        pat,
-        Pat::Ident(PatIdent {
-            by_ref: None,
-            mutability: None,
-            subpat: None,
-            ..
-        })
-    ) {
-        return Ok(());
+fn parameter_name(pat: &Pat) -> syn::Result<Ident> {
+    if let Pat::Ident(PatIdent {
+        by_ref: None,
+        mutability: None,
+        subpat: None,
+        ident,
+        ..
+    }) = pat
+    {
+        return Ok(ident.clone());
     }
 
     Err(syn::Error::new_spanned(
@@ -284,10 +302,10 @@ fn check_parameter_name(pat: &Pat) -> syn::Result<()> {
 /// to this, and how a value reaches the guest is chosen by it.
 fn check_result_matches_regions(
     signature: &Signature,
-    params: &[ParamType],
+    params: &[Param],
     result: ResultType,
 ) -> syn::Result<()> {
-    let writes_a_region = params.iter().any(|param| param.is_out_region());
+    let writes_a_region = params.iter().any(|param| param.ty.is_out_region());
 
     match (result.is_buffer_length(), writes_a_region) {
         (true, false) => Err(syn::Error::new_spanned(
@@ -736,8 +754,8 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            keylet.params,
-            [ParamType::InBytes, ParamType::InU32, ParamType::OutBytes]
+            declared(&keylet),
+            ["account: InBytes", "seq: InU32", "out: OutBytes"]
         );
         assert_eq!(
             keylet.wasm_params().collect::<Vec<_>>(),
@@ -780,8 +798,18 @@ mod tests {
         })
         .unwrap();
 
-        assert_eq!(array_len.params, [ParamType::I32]);
+        assert_eq!(declared(&array_len), ["field: I32"]);
         assert_eq!(array_len.result, ResultType::Value);
+    }
+
+    /// The declared parameters as `name: Type`, which is what the glue spells:
+    /// the name reaches the generated body and the type decides its wire form.
+    fn declared(function: &ParsedHostFunction) -> Vec<String> {
+        function
+            .params()
+            .iter()
+            .map(|param| format!("{}: {:?}", param.name, param.ty))
+            .collect()
     }
 
     /// One diagnostic per parameter, each on its own span, so a declaration's

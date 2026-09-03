@@ -1,1190 +1,678 @@
+//! What this engine does with each host call, once the ABI's own machinery has
+//! taken the call apart.
+//!
+//! `wasmi_glue!()` expands to the [`HostFunctionBodies`] trait and
+//! [`register_host_functions`], both generated from the declarations in
+//! `xrpl-host-functions` — so the wasm signature every closure is registered at is
+//! the one [`crate::check`] screens an import by, rather than a second statement of
+//! it. What is left here is one body per declaration, and the compiler will not
+//! accept the `impl` without all of them.
+//!
+//! **A body charges no gas and touches no wire encoding.** The generated closure
+//! does both, around the call: it charges before the body runs and turns the
+//! answer into the `i32` the guest reads, so a body says only what the call *is*.
+//!
+//! Four shapes cover 59 of the 60, and which one a declaration takes is decided by
+//! its own types:
+//!
+//! - a value the host answers directly — read the arguments, call the host;
+//! - [`write_into`], for a value written straight to the guest's output region:
+//!   the call reads no guest memory, so the host can be handed a `&mut` view of it;
+//! - [`write_buffered`], for one that also reads: the host fills the run's scratch
+//!   buffer, and it is copied out once every rule has passed, which is what lets
+//!   the inputs stay borrowed rather than copied;
+//! - [`write_mant_exp`], for the one call that writes two regions.
+//!
+//! `trace` is the sixtieth: it answers nothing, so its body returns
+//! `CallResult<()>` and the glue charges it through `charged_unreported`. That
+//! comes from its declared `HostResult<()>` and not from a special case here.
+
 use crate::abi::{
-    charged, charged_unreported, read_borrowed, read_u32_arg, write_buffered, write_into,
+    CallResult, charged, charged_unreported, guest_memory, write_buffered, write_into,
     write_mant_exp,
 };
-use crate::region::Region;
+use crate::args::{InBytes, InStr, InU32, OutBytes, TraceCode};
 use crate::vm::VmState;
-use wasmi::{Caller, Linker};
-use xrpl_host_functions::{HostError, HostFunctionSpec, TraceDataType};
+use wasmi::Caller;
 
 /// The module name the guest imports under (`(import "host_lib" "ldgr_index" …)`),
 /// as the guest SDK and this fork's fixtures spell it.
 pub(crate) const HOST_MODULE: &str = "host_lib";
 
-/// Register the host functions on `linker`, one per [`HostFunctionSpec`] variant.
+xrpl_host_functions::wasmi_glue!();
+
+/// The bodies this engine registers, named as one type so
+/// [`register_host_functions`] can be given them.
 ///
-/// The `match` is exhaustive over [`HostFunctionSpec::ALL`], so a variant added to
-/// the ABI will not compile until it has an arm here — the "cannot forget to
-/// register" guarantee. Every arm goes through [`charged`], which is what makes the
-/// gas charge and the wire encoding unforgettable too.
-pub(crate) fn register_host_functions(
-    linker: &mut Linker<VmState<'_>>,
-) -> Result<(), wasmi::errors::LinkerError> {
-    // The arms are hand-written and repetitive by decision, not by neglect:
-    // generating them needs the typed `link_*` shims, deferred until the C header
-    // is generated from the same table.
-    for &op in HostFunctionSpec::ALL {
-        match op {
-            HostFunctionSpec::GetLedgerSqn => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetLedgerSqn, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| host.get_ledger_sqn(out))
-                    })
-                },
-            ),
-            HostFunctionSpec::GetParentLedgerTime => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetParentLedgerTime, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| host.get_parent_ledger_time(out))
-                    })
-                },
-            ),
-            HostFunctionSpec::GetParentLedgerHash => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetParentLedgerHash, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| host.get_parent_ledger_hash(out))
-                    })
-                },
-            ),
-            HostFunctionSpec::GetBaseFee => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetBaseFee, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| host.get_base_fee(out))
-                    })
-                },
-            ),
-            HostFunctionSpec::IsAmendmentEnabled => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 ptr: i32,
-                 len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::IsAmendmentEnabled, |c| {
-                        let host = c.data().host;
-                        let amendment = read_borrowed(c, Region::new(ptr, len))?;
-                        Ok(host.is_amendment_enabled(amendment)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::CacheLedgerObj => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 id_ptr: i32,
-                 id_len: i32,
-                 cache_idx: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::CacheLedgerObj, |c| {
-                        let host = c.data().host;
-                        let obj_id = read_borrowed(c, Region::new(id_ptr, id_len))?;
-                        Ok(host.cache_ledger_obj(obj_id, cache_idx)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::GetTxField => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 field: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetTxField, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| host.get_tx_field(field, out))
-                    })
-                },
-            ),
-            HostFunctionSpec::GetCurrentLedgerObjField => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 field: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(
-                        &mut caller,
-                        HostFunctionSpec::GetCurrentLedgerObjField,
-                        |c| {
-                            let out = Region::new(out_ptr, out_len);
-                            write_into(c, out, |host, out| {
-                                host.get_current_ledger_obj_field(field, out)
-                            })
-                        },
-                    )
-                },
-            ),
-            HostFunctionSpec::GetLedgerObjField => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 cache_idx: i32,
-                 field: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetLedgerObjField, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| {
-                            host.get_ledger_obj_field(cache_idx, field, out)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::GetTxNestedField => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 loc_ptr: i32,
-                 loc_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetTxNestedField, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let locator = Region::new(loc_ptr, loc_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.get_tx_nested_field(locator.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::GetCurrentLedgerObjNestedField => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 loc_ptr: i32,
-                 loc_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(
-                        &mut caller,
-                        HostFunctionSpec::GetCurrentLedgerObjNestedField,
-                        |c| {
-                            let out = Region::new(out_ptr, out_len);
-                            let locator = Region::new(loc_ptr, loc_len);
-                            write_buffered(c, out, |host, data, buf| {
-                                host.get_current_ledger_obj_nested_field(locator.read(data)?, buf)
-                            })
-                        },
-                    )
-                },
-            ),
-            HostFunctionSpec::GetLedgerObjNestedField => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 cache_idx: i32,
-                 loc_ptr: i32,
-                 loc_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(
-                        &mut caller,
-                        HostFunctionSpec::GetLedgerObjNestedField,
-                        |c| {
-                            let out = Region::new(out_ptr, out_len);
-                            let locator = Region::new(loc_ptr, loc_len);
-                            write_buffered(c, out, |host, data, buf| {
-                                host.get_ledger_obj_nested_field(
-                                    cache_idx,
-                                    locator.read(data)?,
-                                    buf,
-                                )
-                            })
-                        },
-                    )
-                },
-            ),
-            HostFunctionSpec::GetTxArrayLen => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>, field: i32| -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetTxArrayLen, |c| {
-                        Ok(c.data().host.get_tx_array_len(field)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::GetCurrentLedgerObjArrayLen => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>, field: i32| -> Result<i32, wasmi::Error> {
-                    charged(
-                        &mut caller,
-                        HostFunctionSpec::GetCurrentLedgerObjArrayLen,
-                        |c| Ok(c.data().host.get_current_ledger_obj_array_len(field)?),
-                    )
-                },
-            ),
-            HostFunctionSpec::GetLedgerObjArrayLen => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 cache_idx: i32,
-                 field: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetLedgerObjArrayLen, |c| {
-                        Ok(c.data().host.get_ledger_obj_array_len(cache_idx, field)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::GetTxNestedArrayLen => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 loc_ptr: i32,
-                 loc_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetTxNestedArrayLen, |c| {
-                        let host = c.data().host;
-                        let locator = read_borrowed(c, Region::new(loc_ptr, loc_len))?;
-                        Ok(host.get_tx_nested_array_len(locator)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::GetCurrentLedgerObjNestedArrayLen => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 loc_ptr: i32,
-                 loc_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(
-                        &mut caller,
-                        HostFunctionSpec::GetCurrentLedgerObjNestedArrayLen,
-                        |c| {
-                            let host = c.data().host;
-                            let locator = read_borrowed(c, Region::new(loc_ptr, loc_len))?;
-                            Ok(host.get_current_ledger_obj_nested_array_len(locator)?)
-                        },
-                    )
-                },
-            ),
-            HostFunctionSpec::GetLedgerObjNestedArrayLen => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 cache_idx: i32,
-                 loc_ptr: i32,
-                 loc_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(
-                        &mut caller,
-                        HostFunctionSpec::GetLedgerObjNestedArrayLen,
-                        |c| {
-                            let host = c.data().host;
-                            let locator = read_borrowed(c, Region::new(loc_ptr, loc_len))?;
-                            Ok(host.get_ledger_obj_nested_array_len(cache_idx, locator)?)
-                        },
-                    )
-                },
-            ),
-            HostFunctionSpec::CheckSignature => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 msg_ptr: i32,
-                 msg_len: i32,
-                 sig_ptr: i32,
-                 sig_len: i32,
-                 pk_ptr: i32,
-                 pk_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::CheckSignature, |c| {
-                        let host = c.data().host;
-                        let message = read_borrowed(c, Region::new(msg_ptr, msg_len))?;
-                        let signature = read_borrowed(c, Region::new(sig_ptr, sig_len))?;
-                        let pubkey = read_borrowed(c, Region::new(pk_ptr, pk_len))?;
-                        Ok(host.check_signature(message, signature, pubkey)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::AccountKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::AccountKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.account_keylet(account.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::AmmKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 a1_ptr: i32,
-                 a1_len: i32,
-                 a2_ptr: i32,
-                 a2_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::AmmKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let asset1 = Region::new(a1_ptr, a1_len);
-                        let asset2 = Region::new(a2_ptr, a2_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.amm_keylet(asset1.read(data)?, asset2.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::CheckKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::CheckKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let seq = Region::new(seq_ptr, seq_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            let account = account.read(data)?;
-                            let seq = read_u32_arg(seq.read(data)?)?;
-                            host.check_keylet(account, seq, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::CredentialKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 subj_ptr: i32,
-                 subj_len: i32,
-                 iss_ptr: i32,
-                 iss_len: i32,
-                 ct_ptr: i32,
-                 ct_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::CredentialKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let subject = Region::new(subj_ptr, subj_len);
-                        let issuer = Region::new(iss_ptr, iss_len);
-                        let cred_type = Region::new(ct_ptr, ct_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.credential_keylet(
-                                subject.read(data)?,
-                                issuer.read(data)?,
-                                cred_type.read(data)?,
-                                buf,
-                            )
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::DelegateKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 auth_ptr: i32,
-                 auth_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::DelegateKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let authorize = Region::new(auth_ptr, auth_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.delegate_keylet(account.read(data)?, authorize.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::DepositPreauthKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 auth_ptr: i32,
-                 auth_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::DepositPreauthKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let authorize = Region::new(auth_ptr, auth_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.deposit_preauth_keylet(
-                                account.read(data)?,
-                                authorize.read(data)?,
-                                buf,
-                            )
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::DidKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::DidKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.did_keylet(account.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::EscrowKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::EscrowKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let seq = Region::new(seq_ptr, seq_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            let account = account.read(data)?;
-                            let seq = read_u32_arg(seq.read(data)?)?;
-                            host.escrow_keylet(account, seq, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::TrustLineKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 a1_ptr: i32,
-                 a1_len: i32,
-                 a2_ptr: i32,
-                 a2_len: i32,
-                 cur_ptr: i32,
-                 cur_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::TrustLineKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account1 = Region::new(a1_ptr, a1_len);
-                        let account2 = Region::new(a2_ptr, a2_len);
-                        let currency = Region::new(cur_ptr, cur_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.trust_line_keylet(
-                                account1.read(data)?,
-                                account2.read(data)?,
-                                currency.read(data)?,
-                                buf,
-                            )
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::MptokenIssuanceKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::MptokenIssuanceKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let issuer = Region::new(acc_ptr, acc_len);
-                        let seq = Region::new(seq_ptr, seq_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            let issuer = issuer.read(data)?;
-                            let seq = read_u32_arg(seq.read(data)?)?;
-                            host.mptoken_issuance_keylet(issuer, seq, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::MptokenKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 mpt_ptr: i32,
-                 mpt_len: i32,
-                 holder_ptr: i32,
-                 holder_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::MptokenKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let mptid = Region::new(mpt_ptr, mpt_len);
-                        let holder = Region::new(holder_ptr, holder_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.mptoken_keylet(mptid.read(data)?, holder.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::NftokenOfferKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::NftokenOfferKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let seq = Region::new(seq_ptr, seq_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            let account = account.read(data)?;
-                            let seq = read_u32_arg(seq.read(data)?)?;
-                            host.nftoken_offer_keylet(account, seq, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::OfferKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::OfferKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let seq = Region::new(seq_ptr, seq_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            let account = account.read(data)?;
-                            let seq = read_u32_arg(seq.read(data)?)?;
-                            host.offer_keylet(account, seq, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::OracleKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 doc_ptr: i32,
-                 doc_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::OracleKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let doc_id = Region::new(doc_ptr, doc_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            let account = account.read(data)?;
-                            let doc_id = read_u32_arg(doc_id.read(data)?)?;
-                            host.oracle_keylet(account, doc_id, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::PaychannelKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 dst_ptr: i32,
-                 dst_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::PaychannelKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let destination = Region::new(dst_ptr, dst_len);
-                        let seq = Region::new(seq_ptr, seq_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.paychannel_keylet(
-                                account.read(data)?,
-                                destination.read(data)?,
-                                read_u32_arg(seq.read(data)?)?,
-                                buf,
-                            )
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::PermissionedDomainKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(
-                        &mut caller,
-                        HostFunctionSpec::PermissionedDomainKeylet,
-                        |c| {
-                            let out = Region::new(out_ptr, out_len);
-                            let account = Region::new(acc_ptr, acc_len);
-                            let seq = Region::new(seq_ptr, seq_len);
-                            write_buffered(c, out, |host, data, buf| {
-                                let account = account.read(data)?;
-                                let seq = read_u32_arg(seq.read(data)?)?;
-                                host.permissioned_domain_keylet(account, seq, buf)
-                            })
-                        },
-                    )
-                },
-            ),
-            HostFunctionSpec::SignerListKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::SignerListKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.signer_list_keylet(account.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::TicketKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::TicketKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let seq = Region::new(seq_ptr, seq_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            let account = account.read(data)?;
-                            let seq = read_u32_arg(seq.read(data)?)?;
-                            host.ticket_keylet(account, seq, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::VaultKeylet => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 seq_ptr: i32,
-                 seq_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::VaultKeylet, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let seq = Region::new(seq_ptr, seq_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            let account = account.read(data)?;
-                            let seq = read_u32_arg(seq.read(data)?)?;
-                            host.vault_keylet(account, seq, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::Sha512Half => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 data_ptr: i32,
-                 data_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::Sha512Half, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let input = Region::new(data_ptr, data_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.sha512_half(input.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            // The one arm with no result: the wasm function is `(param i32 i32 i32 i32
-            // i32)` and nothing more, so a malformed call is dropped rather than
-            // answered — an unreadable region, a `msg` that is not UTF-8 and a
-            // `data_type` naming no rendering all leave the guest none the wiser, and
-            // the host uncalled.
-            HostFunctionSpec::Trace => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 msg_ptr: i32,
-                 msg_len: i32,
-                 data_type: i32,
-                 data_ptr: i32,
-                 data_len: i32|
-                 -> Result<(), wasmi::Error> {
-                    charged_unreported(&mut caller, HostFunctionSpec::Trace, |c| {
-                        let host = c.data().host;
-                        let msg = read_borrowed(c, Region::new(msg_ptr, msg_len))?;
-                        let msg =
-                            core::str::from_utf8(msg).map_err(|_| HostError::InvalidParams)?;
-                        let data_type =
-                            TraceDataType::from_code(data_type).ok_or(HostError::InvalidParams)?;
-                        let data = read_borrowed(c, Region::new(data_ptr, data_len))?;
-                        Ok(host.trace(msg, data_type, data)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::UpdateData => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 ptr: i32,
-                 len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::UpdateData, |c| {
-                        let host = c.data().host;
-                        let data = read_borrowed(c, Region::new(ptr, len))?;
-                        Ok(host.update_data(data)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::GetNft => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 acc_ptr: i32,
-                 acc_len: i32,
-                 nft_ptr: i32,
-                 nft_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetNft, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let account = Region::new(acc_ptr, acc_len);
-                        let nft_id = Region::new(nft_ptr, nft_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.get_nft(account.read(data)?, nft_id.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::GetNftIssuer => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 nft_ptr: i32,
-                 nft_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetNftIssuer, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let nft_id = Region::new(nft_ptr, nft_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.get_nft_issuer(nft_id.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::GetNftTaxon => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 nft_ptr: i32,
-                 nft_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetNftTaxon, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let nft_id = Region::new(nft_ptr, nft_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.get_nft_taxon(nft_id.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::GetNftFlags => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 nft_ptr: i32,
-                 nft_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetNftFlags, |c| {
-                        let host = c.data().host;
-                        let nft_id = read_borrowed(c, Region::new(nft_ptr, nft_len))?;
-                        Ok(host.get_nft_flags(nft_id)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::GetNftTransferFee => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 nft_ptr: i32,
-                 nft_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetNftTransferFee, |c| {
-                        let host = c.data().host;
-                        let nft_id = read_borrowed(c, Region::new(nft_ptr, nft_len))?;
-                        Ok(host.get_nft_transfer_fee(nft_id)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::GetNftSequence => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 nft_ptr: i32,
-                 nft_len: i32,
-                 out_ptr: i32,
-                 out_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::GetNftSequence, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let nft_id = Region::new(nft_ptr, nft_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.get_nft_sequence(nft_id.read(data)?, buf)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatFromInt => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 x: i64,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatFromInt, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| host.float_from_int(x, out, mode))
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatFromUint => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 in_ptr: i32,
-                 in_len: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatFromUint, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let x = Region::new(in_ptr, in_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_from_uint(x.read(data)?, buf, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatFromStamount => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 in_ptr: i32,
-                 in_len: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatFromStamount, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let amount = Region::new(in_ptr, in_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_from_stamount(amount.read(data)?, buf, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatFromStnumber => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 in_ptr: i32,
-                 in_len: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatFromStnumber, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let number = Region::new(in_ptr, in_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_from_stnumber(number.read(data)?, buf, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatToInt => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 in_ptr: i32,
-                 in_len: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatToInt, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let x = Region::new(in_ptr, in_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_to_int(x.read(data)?, buf, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatToMantExp => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 in_ptr: i32,
-                 in_len: i32,
-                 mant_ptr: i32,
-                 mant_len: i32,
-                 exp_ptr: i32,
-                 exp_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatToMantExp, |c| {
-                        let mantissa = Region::new(mant_ptr, mant_len);
-                        let exponent = Region::new(exp_ptr, exp_len);
-                        let x = Region::new(in_ptr, in_len);
-                        write_mant_exp(c, mantissa, exponent, |host, data, mant, exp| {
-                            host.float_to_mant_exp(x.read(data)?, mant, exp)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatFromMantExp => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 mantissa: i64,
-                 exponent: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatFromMantExp, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        write_into(c, out, |host, out| {
-                            host.float_from_mant_exp(mantissa, exponent, out, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatCompare => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 x_ptr: i32,
-                 x_len: i32,
-                 y_ptr: i32,
-                 y_len: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatCompare, |c| {
-                        let host = c.data().host;
-                        let x = read_borrowed(c, Region::new(x_ptr, x_len))?;
-                        let y = read_borrowed(c, Region::new(y_ptr, y_len))?;
-                        Ok(host.float_compare(x, y)?)
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatAdd => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 x_ptr: i32,
-                 x_len: i32,
-                 y_ptr: i32,
-                 y_len: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatAdd, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let x = Region::new(x_ptr, x_len);
-                        let y = Region::new(y_ptr, y_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_add(x.read(data)?, y.read(data)?, buf, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatSubtract => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 x_ptr: i32,
-                 x_len: i32,
-                 y_ptr: i32,
-                 y_len: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatSubtract, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let x = Region::new(x_ptr, x_len);
-                        let y = Region::new(y_ptr, y_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_subtract(x.read(data)?, y.read(data)?, buf, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatMultiply => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 x_ptr: i32,
-                 x_len: i32,
-                 y_ptr: i32,
-                 y_len: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatMultiply, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let x = Region::new(x_ptr, x_len);
-                        let y = Region::new(y_ptr, y_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_multiply(x.read(data)?, y.read(data)?, buf, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatDivide => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 x_ptr: i32,
-                 x_len: i32,
-                 y_ptr: i32,
-                 y_len: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatDivide, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let x = Region::new(x_ptr, x_len);
-                        let y = Region::new(y_ptr, y_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_divide(x.read(data)?, y.read(data)?, buf, mode)
-                        })
-                    })
-                },
-            ),
-            HostFunctionSpec::FloatPower => linker.func_wrap(
-                HOST_MODULE,
-                op.wasm_name(),
-                |mut caller: Caller<'_, VmState<'_>>,
-                 in_ptr: i32,
-                 in_len: i32,
-                 n: i32,
-                 out_ptr: i32,
-                 out_len: i32,
-                 mode: i32|
-                 -> Result<i32, wasmi::Error> {
-                    charged(&mut caller, HostFunctionSpec::FloatPower, |c| {
-                        let out = Region::new(out_ptr, out_len);
-                        let x = Region::new(in_ptr, in_len);
-                        write_buffered(c, out, |host, data, buf| {
-                            host.float_power(x.read(data)?, n, buf, mode)
-                        })
-                    })
-                },
-            ),
-        }?;
+/// Uninhabited: it carries no state and is never built, since every body is an
+/// associated function and the host it calls comes from the store.
+pub(crate) struct Bodies {}
+
+impl HostFunctionBodies for Bodies {
+    fn get_ledger_sqn(caller: &mut Caller<'_, VmState<'_>>, out: OutBytes) -> CallResult<i32> {
+        write_into(caller, out, |host, out| host.get_ledger_sqn(out))
     }
-    Ok(())
+
+    fn get_parent_ledger_time(
+        caller: &mut Caller<'_, VmState<'_>>,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| host.get_parent_ledger_time(out))
+    }
+
+    fn get_parent_ledger_hash(
+        caller: &mut Caller<'_, VmState<'_>>,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| host.get_parent_ledger_hash(out))
+    }
+
+    fn get_base_fee(caller: &mut Caller<'_, VmState<'_>>, out: OutBytes) -> CallResult<i32> {
+        write_into(caller, out, |host, out| host.get_base_fee(out))
+    }
+
+    fn is_amendment_enabled(
+        caller: &mut Caller<'_, VmState<'_>>,
+        amendment: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.is_amendment_enabled(amendment.read(memory)?)?)
+    }
+
+    fn cache_ledger_obj(
+        caller: &mut Caller<'_, VmState<'_>>,
+        obj_id: InBytes,
+        cache_idx: i32,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.cache_ledger_obj(obj_id.read(memory)?, cache_idx)?)
+    }
+
+    fn get_tx_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        field: i32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| host.get_tx_field(field, out))
+    }
+
+    fn get_current_ledger_obj_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        field: i32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| {
+            host.get_current_ledger_obj_field(field, out)
+        })
+    }
+
+    fn get_ledger_obj_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        cache_idx: i32,
+        field: i32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| {
+            host.get_ledger_obj_field(cache_idx, field, out)
+        })
+    }
+
+    fn get_tx_nested_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        locator: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_tx_nested_field(locator.read(memory)?, buf)
+        })
+    }
+
+    fn get_current_ledger_obj_nested_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        locator: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_current_ledger_obj_nested_field(locator.read(memory)?, buf)
+        })
+    }
+
+    fn get_ledger_obj_nested_field(
+        caller: &mut Caller<'_, VmState<'_>>,
+        cache_idx: i32,
+        locator: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_ledger_obj_nested_field(cache_idx, locator.read(memory)?, buf)
+        })
+    }
+
+    fn get_tx_array_len(caller: &mut Caller<'_, VmState<'_>>, field: i32) -> CallResult<i32> {
+        Ok(caller.data().host.get_tx_array_len(field)?)
+    }
+
+    fn get_current_ledger_obj_array_len(
+        caller: &mut Caller<'_, VmState<'_>>,
+        field: i32,
+    ) -> CallResult<i32> {
+        Ok(caller.data().host.get_current_ledger_obj_array_len(field)?)
+    }
+
+    fn get_ledger_obj_array_len(
+        caller: &mut Caller<'_, VmState<'_>>,
+        cache_idx: i32,
+        field: i32,
+    ) -> CallResult<i32> {
+        Ok(caller
+            .data()
+            .host
+            .get_ledger_obj_array_len(cache_idx, field)?)
+    }
+
+    fn get_tx_nested_array_len(
+        caller: &mut Caller<'_, VmState<'_>>,
+        locator: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.get_tx_nested_array_len(locator.read(memory)?)?)
+    }
+
+    fn get_current_ledger_obj_nested_array_len(
+        caller: &mut Caller<'_, VmState<'_>>,
+        locator: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.get_current_ledger_obj_nested_array_len(locator.read(memory)?)?)
+    }
+
+    fn get_ledger_obj_nested_array_len(
+        caller: &mut Caller<'_, VmState<'_>>,
+        cache_idx: i32,
+        locator: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.get_ledger_obj_nested_array_len(cache_idx, locator.read(memory)?)?)
+    }
+
+    fn check_signature(
+        caller: &mut Caller<'_, VmState<'_>>,
+        message: InBytes,
+        signature: InBytes,
+        pubkey: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.check_signature(
+            message.read(memory)?,
+            signature.read(memory)?,
+            pubkey.read(memory)?,
+        )?)
+    }
+
+    fn account_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.account_keylet(account.read(memory)?, buf)
+        })
+    }
+
+    fn amm_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        asset1: InBytes,
+        asset2: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.amm_keylet(asset1.read(memory)?, asset2.read(memory)?, buf)
+        })
+    }
+
+    fn check_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.check_keylet(account.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn credential_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        subject: InBytes,
+        issuer: InBytes,
+        credential_type: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.credential_keylet(
+                subject.read(memory)?,
+                issuer.read(memory)?,
+                credential_type.read(memory)?,
+                buf,
+            )
+        })
+    }
+
+    fn delegate_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        authorize: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.delegate_keylet(account.read(memory)?, authorize.read(memory)?, buf)
+        })
+    }
+
+    fn deposit_preauth_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        authorize: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.deposit_preauth_keylet(account.read(memory)?, authorize.read(memory)?, buf)
+        })
+    }
+
+    fn did_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.did_keylet(account.read(memory)?, buf)
+        })
+    }
+
+    fn escrow_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.escrow_keylet(account.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn trust_line_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account1: InBytes,
+        account2: InBytes,
+        currency: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.trust_line_keylet(
+                account1.read(memory)?,
+                account2.read(memory)?,
+                currency.read(memory)?,
+                buf,
+            )
+        })
+    }
+
+    fn mptoken_issuance_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        issuer: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.mptoken_issuance_keylet(issuer.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn mptoken_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        mptid: InBytes,
+        holder: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.mptoken_keylet(mptid.read(memory)?, holder.read(memory)?, buf)
+        })
+    }
+
+    fn nftoken_offer_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.nftoken_offer_keylet(account.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn offer_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.offer_keylet(account.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn oracle_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        doc_id: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.oracle_keylet(account.read(memory)?, doc_id.read(memory)?, buf)
+        })
+    }
+
+    fn paychannel_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        destination: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.paychannel_keylet(
+                account.read(memory)?,
+                destination.read(memory)?,
+                seq.read(memory)?,
+                buf,
+            )
+        })
+    }
+
+    fn permissioned_domain_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.permissioned_domain_keylet(account.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn signer_list_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.signer_list_keylet(account.read(memory)?, buf)
+        })
+    }
+
+    fn ticket_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.ticket_keylet(account.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn vault_keylet(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        seq: InU32,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.vault_keylet(account.read(memory)?, seq.read(memory)?, buf)
+        })
+    }
+
+    fn sha512_half(
+        caller: &mut Caller<'_, VmState<'_>>,
+        data: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.sha512_half(data.read(memory)?, buf)
+        })
+    }
+
+    /// The one body with nothing to answer: every way its arguments can be
+    /// malformed leaves the guest none the wiser and the host uncalled, since the
+    /// wasm function has no result to carry a code.
+    fn trace(
+        caller: &mut Caller<'_, VmState<'_>>,
+        msg: InStr,
+        data_type: TraceCode,
+        data: InBytes,
+    ) -> CallResult<()> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.trace(msg.read(memory)?, data_type.read()?, data.read(memory)?)?)
+    }
+
+    fn update_data(caller: &mut Caller<'_, VmState<'_>>, data: InBytes) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.update_data(data.read(memory)?)?)
+    }
+
+    fn get_nft(
+        caller: &mut Caller<'_, VmState<'_>>,
+        account: InBytes,
+        nft_id: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_nft(account.read(memory)?, nft_id.read(memory)?, buf)
+        })
+    }
+
+    fn get_nft_issuer(
+        caller: &mut Caller<'_, VmState<'_>>,
+        nft_id: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_nft_issuer(nft_id.read(memory)?, buf)
+        })
+    }
+
+    fn get_nft_taxon(
+        caller: &mut Caller<'_, VmState<'_>>,
+        nft_id: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_nft_taxon(nft_id.read(memory)?, buf)
+        })
+    }
+
+    fn get_nft_flags(caller: &mut Caller<'_, VmState<'_>>, nft_id: InBytes) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.get_nft_flags(nft_id.read(memory)?)?)
+    }
+
+    fn get_nft_transfer_fee(
+        caller: &mut Caller<'_, VmState<'_>>,
+        nft_id: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.get_nft_transfer_fee(nft_id.read(memory)?)?)
+    }
+
+    fn get_nft_sequence(
+        caller: &mut Caller<'_, VmState<'_>>,
+        nft_id: InBytes,
+        out: OutBytes,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.get_nft_sequence(nft_id.read(memory)?, buf)
+        })
+    }
+
+    fn float_from_int(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: i64,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| host.float_from_int(x, out, mode))
+    }
+
+    fn float_from_uint(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_from_uint(x.read(memory)?, buf, mode)
+        })
+    }
+
+    fn float_from_stamount(
+        caller: &mut Caller<'_, VmState<'_>>,
+        amount: InBytes,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_from_stamount(amount.read(memory)?, buf, mode)
+        })
+    }
+
+    fn float_from_stnumber(
+        caller: &mut Caller<'_, VmState<'_>>,
+        number: InBytes,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_from_stnumber(number.read(memory)?, buf, mode)
+        })
+    }
+
+    fn float_to_int(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_to_int(x.read(memory)?, buf, mode)
+        })
+    }
+
+    fn float_to_mant_exp(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        mantissa_out: OutBytes,
+        exponent_out: OutBytes,
+    ) -> CallResult<i32> {
+        write_mant_exp(
+            caller,
+            mantissa_out,
+            exponent_out,
+            |host, memory, mantissa, exponent| {
+                host.float_to_mant_exp(x.read(memory)?, mantissa, exponent)
+            },
+        )
+    }
+
+    fn float_from_mant_exp(
+        caller: &mut Caller<'_, VmState<'_>>,
+        mantissa: i64,
+        exponent: i32,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_into(caller, out, |host, out| {
+            host.float_from_mant_exp(mantissa, exponent, out, mode)
+        })
+    }
+
+    fn float_compare(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        y: InBytes,
+    ) -> CallResult<i32> {
+        let memory = guest_memory(caller)?;
+        let host = caller.data().host;
+        Ok(host.float_compare(x.read(memory)?, y.read(memory)?)?)
+    }
+
+    fn float_add(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        y: InBytes,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_add(x.read(memory)?, y.read(memory)?, buf, mode)
+        })
+    }
+
+    fn float_subtract(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        y: InBytes,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_subtract(x.read(memory)?, y.read(memory)?, buf, mode)
+        })
+    }
+
+    fn float_multiply(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        y: InBytes,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_multiply(x.read(memory)?, y.read(memory)?, buf, mode)
+        })
+    }
+
+    fn float_divide(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        y: InBytes,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_divide(x.read(memory)?, y.read(memory)?, buf, mode)
+        })
+    }
+
+    fn float_power(
+        caller: &mut Caller<'_, VmState<'_>>,
+        x: InBytes,
+        n: i32,
+        out: OutBytes,
+        mode: i32,
+    ) -> CallResult<i32> {
+        write_buffered(caller, out, |host, memory, buf| {
+            host.float_power(x.read(memory)?, n, buf, mode)
+        })
+    }
 }

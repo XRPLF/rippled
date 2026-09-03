@@ -1,4 +1,5 @@
 mod errors;
+mod glue;
 mod lowering;
 mod parsed_host_function;
 
@@ -26,7 +27,7 @@ use parsed_host_function::ParsedHostFunction;
 ///
 /// # What it generates
 ///
-/// Three items, in the scope the block is written in:
+/// Four items, in the scope the block is written in:
 ///
 /// - `pub trait HostFunctions`: one method per declaration, emitted verbatim —
 ///   receiver, parameters, return type and doc comment exactly as written. An
@@ -41,16 +42,21 @@ use parsed_host_function::ParsedHostFunction;
 /// - `struct HostFnSpec`: private, one row of that metadata table. It exists only
 ///   so those accessors read from a single `match` over the declarations, and
 ///   never appears in a signature a caller can name.
+/// - `macro_rules! wasmi_glue`: the registration for a wasmi engine, emitted as a
+///   macro rather than as code because it names an engine this crate must not
+///   depend on. Inert until expanded — see its own documentation.
 ///
 /// The wasm signature is derived from the declared types rather than stated a
 /// second time: `i32` and `i64` are the wasm scalars spelled as themselves, every
 /// other parameter type is marshalled through a `(ptr, len)` pair or an `i32`
-/// code, and the result comes from the `HostResult<T>` success type.
+/// code, and the result comes from the `HostResult<T>` success type. The glue is
+/// generated from that same derivation, so the closure a guest links against and
+/// the signature it is screened by are one statement.
 ///
-/// The expansion introduces no other name and reaches for two: `Self::Variant`,
-/// and `WasmValType`, which the ABI crate hand-writes beside its declarations. So
-/// the block compiles wherever the types it names — `HostResult` and
-/// `WasmValType` — resolve.
+/// Outside the glue's body, the expansion introduces no other name and reaches
+/// for two: `Self::Variant`, and `WasmValType`, which the ABI crate hand-writes
+/// beside its declarations. So the block compiles wherever the types it names —
+/// `HostResult` and `WasmValType` — resolve.
 ///
 /// ```
 /// use xrpl_host_functions::{HostResult, WasmValType};
@@ -119,6 +125,19 @@ pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 }
 
 fn expand(input: TokenStream) -> syn::Result<TokenStream> {
+    let functions = parse_block(input)?;
+    let abi = abi_items(&functions);
+    let glue = glue::wasmi_glue(&functions);
+
+    Ok(quote! {
+        #abi
+        #glue
+    })
+}
+
+/// Every declaration in the block, parsed and checked against each other, or
+/// every mistake in it.
+fn parse_block(input: TokenStream) -> syn::Result<Vec<ParsedHostFunction>> {
     let HostFunctionsInput { functions } = parse2(input)?;
 
     let mut parsed = Vec::with_capacity(functions.len());
@@ -136,7 +155,7 @@ fn expand(input: TokenStream) -> syn::Result<TokenStream> {
         return Err(error);
     }
 
-    Ok(generate(&parsed))
+    Ok(parsed)
 }
 
 /// Names two declarations may not share, because the generated code would then
@@ -170,7 +189,9 @@ fn collisions(functions: &[ParsedHostFunction]) -> Vec<syn::Error> {
     errors
 }
 
-fn generate(functions: &[ParsedHostFunction]) -> TokenStream {
+/// The ABI itself: the trait a host implements and the table everything else
+/// reads. `glue::wasmi_glue` is the other half of the expansion.
+fn abi_items(functions: &[ParsedHostFunction]) -> TokenStream {
     let trait_methods = functions.iter().map(ParsedHostFunction::trait_method);
     let variants = functions
         .iter()
@@ -346,6 +367,13 @@ mod tests {
         error.into_iter().map(|error| error.to_string()).collect()
     }
 
+    /// The ABI half of the expansion alone. What the glue emits is a `macro_rules!`
+    /// whose body is written against another crate entirely, so the tests below
+    /// about what the expansion may name have it as their subject and not that.
+    fn abi_expansion(input: TokenStream) -> String {
+        abi_items(&parse_block(input).expect("the block should parse")).to_string()
+    }
+
     #[test]
     fn generates_the_trait_the_enum_and_the_table() {
         let generated = expand(quote! {
@@ -382,23 +410,28 @@ mod tests {
             "pub const fn gas (self) -> u64",
             "pub const fn wasm_params (self) -> & 'static [WasmValType]",
             "pub const fn wasm_result (self) -> Option < WasmValType >",
+            // The fourth item, whose contents are `glue`'s own tests.
+            "macro_rules ! wasmi_glue",
         ] {
             assert!(generated.contains(expected), "missing {expected:?}");
         }
     }
 
-    /// The expansion reaches for nothing outside the crate it lands in: every
-    /// name in it is generated here, spelled by a declaration, or `WasmValType`,
-    /// which that crate hand-writes.
+    /// The ABI reaches for nothing outside the crate it lands in: every name in it
+    /// is generated here, spelled by a declaration, or `WasmValType`, which that
+    /// crate hand-writes. That is what lets the crate stay zero-dependency and
+    /// link into the guest.
+    ///
+    /// The glue is deliberately not held to this and is not covered here: its body
+    /// names one engine throughout, and `glue`'s own tests pin that instead. It
+    /// costs the crate nothing, being tokens nobody in it expands.
     #[test]
     fn names_no_crate_of_its_own() {
-        let generated = expand(quote! {
+        let generated = abi_expansion(quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
             fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
-        })
-        .unwrap()
-        .to_string();
+        });
 
         assert!(!generated.contains("xrpl_host_functions"), "{generated}");
 
@@ -420,13 +453,11 @@ mod tests {
     /// become part of the ABI crate's public surface.
     #[test]
     fn keeps_the_table_row_private() {
-        let generated = expand(quote! {
+        let generated = abi_expansion(quote! {
             #[gas = 60]
             #[wasm_name = "ldgr_index"]
             fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;
-        })
-        .unwrap()
-        .to_string();
+        });
 
         assert!(!generated.contains("pub struct HostFnSpec"), "{generated}");
         assert!(!generated.contains("pub const fn spec"), "{generated}");

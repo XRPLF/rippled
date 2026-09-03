@@ -132,6 +132,20 @@ impl ParamType {
         }
     }
 
+    /// Whether this parameter is marshalled as a region rather than passed as a
+    /// wasm scalar.
+    ///
+    /// Exactly the types [`Self::as_wasm_params`] answers a pair for, which
+    /// `lowers_every_declared_parameter_type` pins row by row: the glue names a
+    /// region's two wasm parameters `{name}_ptr` and `{name}_len`, so the two
+    /// answers falling out of step would name a parameter the arity does not have.
+    pub(crate) fn is_region(self) -> bool {
+        match self {
+            Self::I32 | Self::I64 | Self::TraceDataType => false,
+            Self::InBytes | Self::InStr | Self::InU32 | Self::OutBytes => true,
+        }
+    }
+
     /// Whether this parameter is a region the host writes to.
     ///
     /// What [`ResultType::BufferLength`] is the length *of*.
@@ -227,6 +241,10 @@ mod tests {
 
     /// Every declared parameter type, and what it costs on the wire. The whole
     /// mapping, so nothing reaches the wire through a row nobody wrote down.
+    ///
+    /// [`ParamType::is_region`] is asserted against the same rows rather than
+    /// against a list of its own: it must answer for exactly the types that lower
+    /// to a pair, and the glue names that pair from it.
     #[test]
     fn lowers_every_declared_parameter_type() {
         let mapping: [(Type, &[WasmValType]); 7] = [
@@ -243,6 +261,12 @@ mod tests {
             let param = ParamType::parse(&declared)
                 .unwrap_or_else(|_| panic!("`{}` should be a parameter type", quoted(&declared)));
             assert_eq!(param.as_wasm_params(), expected, "`{}`", quoted(&declared));
+            assert_eq!(
+                param.is_region(),
+                expected.len() == 2,
+                "a region is exactly what lowers to a pair: `{}`",
+                quoted(&declared)
+            );
         }
     }
 

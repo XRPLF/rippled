@@ -1,6 +1,11 @@
 //! `host_functions!` must work outside the crate that declares the ABI: the only
 //! names its expansion needs are `WasmValType` and the ones the declarations
 //! themselves spell.
+//!
+//! That this crate compiles is also what shows the emitted `wasmi_glue!` costs
+//! nothing to carry. Its body names an engine throughout, and there is no engine
+//! here — a `macro_rules!` is inert tokens until someone expands it, and nobody
+//! here does.
 
 use xrpl_host_functions::{HostResult, WasmValType};
 use xrpl_host_functions_macros::host_functions;

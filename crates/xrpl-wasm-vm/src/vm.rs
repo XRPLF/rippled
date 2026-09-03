@@ -9,7 +9,7 @@ use xrpl_host_functions::HostFunctions;
 
 use crate::abi::{FatalHostError, Fault};
 use crate::preflight::entry_point_fault;
-use crate::register::register_host_functions;
+use crate::register::{Bodies, register_host_functions};
 
 /// wasm linear-memory page size, fixed by the wasm spec (64 KiB).
 const WASM_PAGE_BYTES: u32 = 64 * 1024;
@@ -330,7 +330,7 @@ pub fn run<'h>(
     store.limiter(|state| &mut state.mem_limits);
 
     let mut linker = Linker::<VmState<'h>>::new(engine);
-    register_host_functions(&mut linker)
+    register_host_functions::<Bodies>(&mut linker)
         .map_err(|_| RunFailure::owing_nothing(RunError::Internal))?;
 
     let instance = match linker.instantiate_and_start(&mut store, &module) {

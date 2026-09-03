@@ -460,11 +460,14 @@ fn screening_and_a_run_agree() {
 /// `HostFunctionSpec` derives must instantiate.
 ///
 /// What this has that [`ALL_IMPORTS`] does not is that the other side of it is *live
-/// code*. Both [`ALL_IMPORTS`] and the 60 literals in `xrpl-host-functions`'s
-/// `generated_abi.rs` are frozen text — an independent statement of the wire, which
-/// is what makes them worth having, but text that says nothing about a `func_wrap`
-/// closure changed after they were written. This links against the closures as they
-/// are, so it is the test a changed registration has to answer to.
+/// code*: it links against the registration as it is rather than against a
+/// description of it, so it is what a changed engine has to answer to.
+///
+/// **What it cannot see is the table and the linker being wrong the same way**,
+/// since the closures are generated from this very table. That is what
+/// [`ALL_IMPORTS`] and the 60 literals in `xrpl-host-functions`'s
+/// `generated_abi.rs` are for: frozen text, written by hand, and the only statement
+/// of the wire in the workspace that no derivation produced.
 #[test]
 fn the_derived_signatures_are_what_the_linker_registers() {
     let declarations: Vec<String> = HostFunctionSpec::ALL
