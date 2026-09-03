@@ -1689,8 +1689,9 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
     // Child of the establish span via its captured context (establishSpan_ is
-    // a thread-free SpanGuard, so parent explicitly via its context). Null
-    // context (establish not started) yields a null guard, same as before.
+    // a thread-free SpanGuard, so parent explicitly via its context). A null
+    // context — the establish phase has not started — yields a null guard, so
+    // the setAttribute calls below are no-ops.
     auto span = SpanGuard::childSpan(consensus::span::updatePositions, establishSpanContext_);
     span.setAttribute(
         consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));

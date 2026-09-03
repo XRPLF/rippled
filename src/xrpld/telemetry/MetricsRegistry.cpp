@@ -30,11 +30,12 @@
 
 // The app and overlay includes below are why
 // .github/scripts/levelization/results/loops.txt records
-// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry`, where
-// ordering.txt previously had telemetry strictly below both. The observable
-// gauges are pull-model: their callbacks sample live state when the reader
-// thread fires, so they need the concrete types to call getJqTransOverflow(),
-// size(), getPeerDisconnectCharges(), foreach() and txMetrics().
+// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry` as
+// cycles, rather than an acyclic ordering.txt entry placing telemetry strictly
+// below both. The observable gauges are pull-model: their callbacks sample live
+// state when the reader thread fires, so they need the concrete types to call
+// getJqTransOverflow(), size(), getPeerDisconnectCharges(), foreach() and
+// txMetrics().
 //
 // The cycle is confined to this translation unit. No telemetry header includes
 // app or overlay (MetricsRegistry.h forward-declares what it needs and takes a
@@ -198,9 +199,9 @@ MetricsRegistry::~MetricsRegistry()
 
 void
 MetricsRegistry::start(
-    std::string const& endpoint,
-    std::string const& instanceId,
-    std::string const& nodeId)
+    [[maybe_unused]] std::string const& endpoint,
+    [[maybe_unused]] std::string const& instanceId,
+    [[maybe_unused]] std::string const& nodeId)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_)
@@ -221,11 +222,6 @@ MetricsRegistry::start(
     initSyncInstruments();
 
     JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
-#else
-    (void)endpoint;
-    (void)instanceId;
-    (void)nodeId;
-    (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
 
@@ -248,8 +244,6 @@ MetricsRegistry::startAsyncGauges()
     registerAsyncGauges();
 
     JLOG(journal_.info()) << "MetricsRegistry: started successfully";
-#else
-    (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
 
@@ -409,20 +403,19 @@ MetricsRegistry::stop()
 // -----------------------------------------------------------------
 
 void
-MetricsRegistry::recordRpcStarted(std::string_view method)
+MetricsRegistry::recordRpcStarted([[maybe_unused]] std::string_view method)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !rpcStartedCounter_)
         return;
     rpcStartedCounter_->Add(1, {{"method", std::string(method)}});
-#else
-    (void)method;
-    (void)enabled_;
 #endif
 }
 
 void
-MetricsRegistry::recordRpcFinished(std::string_view method, std::int64_t durationUs)
+MetricsRegistry::recordRpcFinished(
+    [[maybe_unused]] std::string_view method,
+    [[maybe_unused]] std::int64_t durationUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !rpcFinishedCounter_)
@@ -435,15 +428,13 @@ MetricsRegistry::recordRpcFinished(std::string_view method, std::int64_t duratio
             {{"method", std::string(method)}},
             opentelemetry::context::Context{});
     }
-#else
-    (void)method;
-    (void)durationUs;
-    (void)enabled_;
 #endif
 }
 
 void
-MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t durationUs)
+MetricsRegistry::recordRpcErrored(
+    [[maybe_unused]] std::string_view method,
+    [[maybe_unused]] std::int64_t durationUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !rpcErroredCounter_)
@@ -456,10 +447,6 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
             {{"method", std::string(method)}},
             opentelemetry::context::Context{});
     }
-#else
-    (void)method;
-    (void)durationUs;
-    (void)enabled_;
 #endif
 }
 
@@ -468,7 +455,9 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
 // -----------------------------------------------------------------
 
 void
-MetricsRegistry::recordJobQueued(std::string_view jobType, std::string_view jobName)
+MetricsRegistry::recordJobQueued(
+    [[maybe_unused]] std::string_view jobType,
+    [[maybe_unused]] std::string_view jobName)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobQueuedCounter_)
@@ -477,18 +466,14 @@ MetricsRegistry::recordJobQueued(std::string_view jobType, std::string_view jobN
         1,
         {{kJobTypeLabel, std::string(jobType)},
          {kHandlerLabel, std::string(sanitiseHandler(jobName))}});
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)enabled_;
 #endif
 }
 
 void
 MetricsRegistry::recordJobStarted(
-    std::string_view jobType,
-    std::string_view jobName,
-    std::int64_t queuedDurUs)
+    [[maybe_unused]] std::string_view jobType,
+    [[maybe_unused]] std::string_view jobName,
+    [[maybe_unused]] std::int64_t queuedDurUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobStartedCounter_)
@@ -508,19 +493,14 @@ MetricsRegistry::recordJobStarted(
             {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
             opentelemetry::context::Context{});
     }
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)queuedDurUs;
-    (void)enabled_;
 #endif
 }
 
 void
 MetricsRegistry::recordJobFinished(
-    std::string_view jobType,
-    std::string_view jobName,
-    std::int64_t runningDurUs)
+    [[maybe_unused]] std::string_view jobType,
+    [[maybe_unused]] std::string_view jobName,
+    [[maybe_unused]] std::int64_t runningDurUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobFinishedCounter_)
@@ -534,11 +514,6 @@ MetricsRegistry::recordJobFinished(
             {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
             opentelemetry::context::Context{});
     }
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)runningDurUs;
-    (void)enabled_;
 #endif
 }
 
@@ -1095,32 +1070,30 @@ MetricsRegistry::registerCompleteLedgersGauge()
                     return;
 
                 // Parse comma-separated ranges like
-                // "32570-50000,50005-75891421".
+                // "32570-50000,50005-75891421". A range of one ledger arrives
+                // as a bare sequence number, so parseLedgerRange() decides what
+                // a segment is; only genuinely unreadable ones are skipped.
                 std::size_t rangeIndex = 0;
                 std::istringstream stream(rangeStr);
                 std::string segment;
                 while (std::getline(stream, segment, ','))
                 {
-                    auto const dashPos = segment.find('-');
-                    if (dashPos == std::string::npos || dashPos == 0 ||
-                        dashPos == segment.size() - 1)
+                    auto const range = MetricsRegistry::parseLedgerRange(segment);
+                    if (!range)
                         continue;
-
-                    auto const startStr = segment.substr(0, dashPos);
-                    auto const endStr = segment.substr(dashPos + 1);
 
                     auto const idxStr = std::to_string(rangeIndex);
 
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                         ->Observe(
-                            static_cast<int64_t>(std::stoll(startStr)),
+                            static_cast<int64_t>(range->first),
                             {{"bound", "start"}, {"index", idxStr}});
 
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                         ->Observe(
-                            static_cast<int64_t>(std::stoll(endStr)),
+                            static_cast<int64_t>(range->second),
                             {{"bound", "end"}, {"index", idxStr}});
 
                     ++rangeIndex;
@@ -1462,7 +1435,7 @@ MetricsRegistry::registerStateTrackingGauge()
 
                 // State value: 0-4 from OperatingMode, 5=validating, 6=proposing.
                 auto const mode = app.getOPs().getOperatingMode();
-                auto stateValue = static_cast<double>(mode);
+                auto stateValue = static_cast<double>(std::to_underlying(mode));
 
                 // If FULL, refine using consensus info for validating/proposing.
                 if (mode == OperatingMode::FULL)

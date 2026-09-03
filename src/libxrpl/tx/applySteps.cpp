@@ -314,6 +314,10 @@ invokePreclaim(PreclaimContext const& ctx)
         {
             span.setAttribute(
                 telemetry::tx_apply_span::attr::terResult, transToken(preclaimTer).c_str());
+            // Mark the span as errored when preclaim rejects the transaction so
+            // failed stages surface in span-status error counts.
+            if (!isTesSuccess(preclaimTer))
+                span.setError(transToken(preclaimTer));
         }
         return preclaimTer;
     }

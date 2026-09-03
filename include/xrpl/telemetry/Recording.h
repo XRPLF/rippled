@@ -6,12 +6,12 @@
  *  Each type below holds real state when telemetry is compiled in and is an
  *  empty type with no-op methods when it is not. The member is declared in
  *  both configurations, so a class's member set and public API never differ
- *  between builds -- a difference that has previously made a test mock
- *  abstract. The compiled-out forms are empty types, so such a member costs a
- *  byte of padding rather than nothing. `[[no_unique_address]]` would remove
- *  even that, but MSVC ignores the standard spelling for ABI compatibility, so
- *  it is deliberately not used. What these types buy is work not being done,
- *  not a smaller struct.
+ *  between builds -- a difference that leaves a test mock complete in one
+ *  configuration and abstract in the other, where it then fails to compile.
+ *  The compiled-out forms are empty types, so such a member costs a byte of
+ *  padding rather than nothing. `[[no_unique_address]]` would remove even that, but MSVC ignores
+ *  the standard spelling for ABI compatibility, so it is deliberately not
+ *  used. What these types buy is work not being done, not a smaller struct.
  *
  *      kEnabled ---- if constexpr ---- telemetry-only blocks
  *          |
@@ -174,12 +174,10 @@ public:
      * @param n  How much to add; defaults to 1.
      */
     void
-    add(T const n = 1) noexcept
+    add([[maybe_unused]] T const n = 1) noexcept
     {
 #ifdef XRPL_ENABLE_TELEMETRY
         value_.fetch_add(n, std::memory_order_relaxed);
-#else
-        (void)n;
 #endif
     }
 

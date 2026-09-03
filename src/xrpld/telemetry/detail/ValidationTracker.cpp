@@ -180,19 +180,11 @@ void
 ValidationTracker::evictOldPending(TimePoint now)
 {
     auto const cutoff = now - kLateRepairWindow;
-    for (auto it = pending_.begin(); it != pending_.end();)
-    {
-        if (it->second.reconciled && it->second.recordTime < cutoff)
-        {
-            it = pending_.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
+    std::erase_if(pending_, [cutoff](auto const& entry) {
+        return entry.second.reconciled && entry.second.recordTime < cutoff;
+    });
 
-    // Hard trim if still over limit. The loop above already removed every
+    // Hard trim if still over limit. The pass above already removed every
     // reconciled entry older than the late-repair window, so here we drop
     // any remaining reconciled entry as a last resort.
     if (pending_.size() > kMaxPendingEvents)
@@ -219,7 +211,7 @@ ValidationTracker::agreementPct1h() const
     if (window1h_.empty())
         return 0.0;
     auto const agreed = static_cast<double>(
-        std::count_if(window1h_.begin(), window1h_.end(), [](auto const& e) { return e.agreed; }));
+        std::ranges::count_if(window1h_, [](auto const& e) { return e.agreed; }));
     return (agreed / static_cast<double>(window1h_.size())) * 100.0;
 }
 
@@ -229,8 +221,8 @@ ValidationTracker::agreementPct24h() const
     std::scoped_lock const lock(mutex_);
     if (window24h_.empty())
         return 0.0;
-    auto const agreed = static_cast<double>(std::count_if(
-        window24h_.begin(), window24h_.end(), [](auto const& e) { return e.agreed; }));
+    auto const agreed = static_cast<double>(
+        std::ranges::count_if(window24h_, [](auto const& e) { return e.agreed; }));
     return (agreed / static_cast<double>(window24h_.size())) * 100.0;
 }
 
@@ -239,7 +231,7 @@ ValidationTracker::agreements1h() const
 {
     std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(
-        std::count_if(window1h_.begin(), window1h_.end(), [](auto const& e) { return e.agreed; }));
+        std::ranges::count_if(window1h_, [](auto const& e) { return e.agreed; }));
 }
 
 uint64_t
@@ -247,23 +239,23 @@ ValidationTracker::missed1h() const
 {
     std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(
-        std::count_if(window1h_.begin(), window1h_.end(), [](auto const& e) { return !e.agreed; }));
+        std::ranges::count_if(window1h_, [](auto const& e) { return !e.agreed; }));
 }
 
 uint64_t
 ValidationTracker::agreements24h() const
 {
     std::scoped_lock const lock(mutex_);
-    return static_cast<uint64_t>(std::count_if(
-        window24h_.begin(), window24h_.end(), [](auto const& e) { return e.agreed; }));
+    return static_cast<uint64_t>(
+        std::ranges::count_if(window24h_, [](auto const& e) { return e.agreed; }));
 }
 
 uint64_t
 ValidationTracker::missed24h() const
 {
     std::scoped_lock const lock(mutex_);
-    return static_cast<uint64_t>(std::count_if(
-        window24h_.begin(), window24h_.end(), [](auto const& e) { return !e.agreed; }));
+    return static_cast<uint64_t>(
+        std::ranges::count_if(window24h_, [](auto const& e) { return !e.agreed; }));
 }
 
 double
@@ -273,7 +265,7 @@ ValidationTracker::agreementPct7d() const
     if (window7d_.empty())
         return 0.0;
     auto const agreed = static_cast<double>(
-        std::count_if(window7d_.begin(), window7d_.end(), [](auto const& e) { return e.agreed; }));
+        std::ranges::count_if(window7d_, [](auto const& e) { return e.agreed; }));
     return (agreed / static_cast<double>(window7d_.size())) * 100.0;
 }
 
@@ -282,7 +274,7 @@ ValidationTracker::agreements7d() const
 {
     std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(
-        std::count_if(window7d_.begin(), window7d_.end(), [](auto const& e) { return e.agreed; }));
+        std::ranges::count_if(window7d_, [](auto const& e) { return e.agreed; }));
 }
 
 uint64_t
@@ -290,7 +282,7 @@ ValidationTracker::missed7d() const
 {
     std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(
-        std::count_if(window7d_.begin(), window7d_.end(), [](auto const& e) { return !e.agreed; }));
+        std::ranges::count_if(window7d_, [](auto const& e) { return !e.agreed; }));
 }
 
 uint64_t

@@ -723,9 +723,9 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
      * One pricing case: inputs, the derived expectation, and the literal.
      *
      * Both expectations are kept. `derived` is written from the Tuning
-     * constants so a deliberate re-pricing needs one edit; `literal` is the
-     * number as of this branch so a re-pricing cannot pass unnoticed by
-     * being self-consistently wrong.
+     * constants so a deliberate re-pricing needs one edit; `literal` pins the
+     * number those constants currently produce, so a re-pricing cannot pass
+     * unnoticed by being self-consistently wrong.
      */
     struct FeeCase
     {

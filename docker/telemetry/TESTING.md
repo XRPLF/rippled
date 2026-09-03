@@ -38,8 +38,10 @@ The binary is at `.build/xrpld`.
 
 ## Test 1: Single-Node Standalone (Quick Verification)
 
-This test verifies RPC and transaction spans in standalone mode. Consensus
-spans will not fire because standalone mode does not run consensus.
+This test verifies RPC and transaction spans in standalone mode, plus the
+consensus spans that a simulated round still produces. The proposal, voting
+and peer-facing consensus spans do not fire — see the expected-spans table at
+the end of this test for which do and which do not.
 
 ### Step 1: Start the observability stack
 
@@ -125,32 +127,7 @@ curl -s http://localhost:5005 -d '{"method":"ledger_accept"}'
 
 ### Step 5: Verify traces in Tempo
 
-Wait 5 seconds for the batch export, then:
-
-```bash
-TEMPO="http://localhost:3200"
-
-# Check xrpld service is registered
-curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues[].value'
-
-# Check RPC spans
-curl -s "$TEMPO/api/search" \
-    --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.http_request"}' \
-    --data-urlencode 'limit=5' | jq '.traces | length'
-
-curl -s "$TEMPO/api/search" \
-    --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.process"}' \
-    --data-urlencode 'limit=5' | jq '.traces | length'
-
-curl -s "$TEMPO/api/search" \
-    --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.command.server_info"}' \
-    --data-urlencode 'limit=5' | jq '.traces | length'
-
-# Check transaction spans
-curl -s "$TEMPO/api/search" \
-    --data-urlencode 'q={resource.service.name="xrpld" && name="tx.process"}' \
-    --data-urlencode 'limit=5' | jq '.traces | length'
-```
+Wait 5 seconds for the batch export, then see the "Verification Queries" section below. Its span loop is a superset of what standalone mode produces, so compare its output against the "Expected spans (standalone mode)" table above rather than running a second, narrower set of queries here.
 
 Or open Grafana Explore with Tempo datasource: http://localhost:3000
 
@@ -164,23 +141,24 @@ kill $(pgrep -f 'xrpld.*xrpld-telemetry')
 docker compose -f docker/telemetry/docker-compose.yml down
 
 # Clean xrpld data
-rm -rf data/
+rm -rf docker/telemetry/data/
 ```
 
 ### Expected spans (standalone mode)
 
-| Span Name                   | Expected | Notes                         |
-| --------------------------- | -------- | ----------------------------- |
-| `rpc.http_request`          | Yes      | Every HTTP RPC call           |
-| `rpc.process`               | Yes      | Every RPC processing          |
-| `rpc.command.server_info`   | Yes      | server_info RPC               |
-| `rpc.command.server_state`  | Yes      | server_state RPC              |
-| `rpc.command.ledger`        | Yes      | ledger RPC                    |
-| `rpc.command.submit`        | Yes      | submit RPC                    |
-| `rpc.command.ledger_accept` | Yes      | ledger_accept RPC             |
-| `tx.process`                | Yes      | Transaction submission        |
-| `tx.receive`                | No       | No peers in standalone        |
-| `consensus.*`               | No       | Consensus disabled standalone |
+| Span Name                                                                                                  | Expected | Notes                                             |
+| ---------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------- |
+| `rpc.http_request`                                                                                         | Yes      | Every HTTP RPC call                               |
+| `rpc.process`                                                                                              | Yes      | Every RPC processing                              |
+| `rpc.command.server_info`                                                                                  | Yes      | server_info RPC                                   |
+| `rpc.command.server_state`                                                                                 | Yes      | server_state RPC                                  |
+| `rpc.command.ledger`                                                                                       | Yes      | ledger RPC                                        |
+| `rpc.command.submit`                                                                                       | Yes      | submit RPC                                        |
+| `rpc.command.ledger_accept`                                                                                | Yes      | ledger_accept RPC                                 |
+| `tx.process`                                                                                               | Yes      | Transaction submission                            |
+| `tx.receive`                                                                                               | No       | No peers in standalone                            |
+| `consensus.round`, `.phase.open`, `.ledger_close`, `.accept`, `.accept.apply`                              | Yes      | `ledger_accept` drives a simulated round          |
+| `consensus.establish`, `.update_positions`, `.check`, `.proposal.*`, `.validation.receive`, `.mode_change` | No       | `simulate` jumps straight to `Accepted`; no peers |
 
 ---
 
@@ -197,17 +175,11 @@ Run the integration test script:
 bash docker/telemetry/integration-test.sh
 ```
 
-The script will:
+It checks prerequisites, clears the previous run, brings up the observability stack, generates six validator key pairs and their node configs, starts the nodes, waits for consensus and then for a validated ledger, exercises RPC and submits a transaction, verifies traces in Tempo and both the spanmetrics and the StatsD-derived metrics in Prometheus, then prints a summary and leaves the stack running.
 
-1. Start the observability stack
-2. Generate 6 validator key pairs
-3. Create config files for each node
-4. Start all 6 nodes
-5. Wait for consensus ("proposing" state)
-6. Exercise RPC, submit transactions
-7. Verify all span categories in Tempo
-8. Verify spanmetrics in Prometheus
-9. Print results and leave the stack running
+The script announces each step as it runs, so read its `Step N:` headers for the authoritative sequence — they are not restated here, because a numbered copy of them drifts as soon as a step is added.
+
+Its Tempo checks cover the RPC, transaction, consensus, ledger and peer span categories from a fixed list, which is narrower than the loop in the "Verification Queries" section below.
 
 ### Manual
 
@@ -243,7 +215,7 @@ Kill the temporary node:
 
 ```bash
 kill $TEMP_PID
-rm -rf data/
+rm -rf docker/telemetry/data/
 ```
 
 #### Step 3: Create node configs
@@ -296,7 +268,7 @@ online_delete=256
 
 [telemetry]
 enabled=1
-endpoint=http://localhost:4318/v1/traces
+traces_endpoint=http://localhost:4318/v1/traces
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
@@ -371,8 +343,10 @@ curl -s http://localhost:5005 -d '{
       "Amount": "10000000"
     }
   }]
-}'
+}' | jq .result.engine_result
 ```
+
+Expected result: `"tesSUCCESS"`, the same as Test 1 Step 4.
 
 Wait 15 seconds for consensus and batch export.
 
