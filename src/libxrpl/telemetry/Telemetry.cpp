@@ -84,12 +84,6 @@ static_assert(kMeterName == beast::insight::kOTelMeterName);
 static_assert(kMeterVersion == beast::insight::kOTelMeterVersion);
 
 /**
- * OTLP/HTTP path per signal, appended by signalEndpoint().
- */
-constexpr std::string_view kTracesPath{"/v1/traces"};
-constexpr std::string_view kMetricsPath{"/v1/metrics"};
-
-/**
  * Metric export cadence. The interval matches the 1 s scrape the dashboards
  * assume; the timeout bounds a stalled collector.
  */
@@ -390,11 +384,12 @@ public:
     start() override
     {
         JLOG(journal_.info()) << "Telemetry starting: traces_endpoint=" << setup_.tracesEndpoint
+                              << " metrics_endpoint=" << setup_.metricsEndpoint
                               << " sampling=" << setup_.samplingRatio;
 
         // Configure OTLP HTTP exporter
         otlp_http::OtlpHttpExporterOptions exporterOpts;
-        exporterOpts.url = signalEndpoint(setup_.tracesEndpoint, kTracesPath);
+        exporterOpts.url = setup_.tracesEndpoint;
         if (setup_.useTls)
         {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
@@ -534,21 +529,11 @@ public:
     void
     initMetrics()
     {
-        // Derive the metrics endpoint from the trace endpoint by swapping
-        // the trailing "/v1/traces" path for "/v1/metrics". Any other URL
-        // shape is used as-is.
-        std::string metricsEndpoint = setup_.tracesEndpoint;
-        constexpr std::string_view tracesPath{"/v1/traces"};
-        if (metricsEndpoint.ends_with(tracesPath))
-        {
-            metricsEndpoint.replace(
-                metricsEndpoint.size() - tracesPath.size(), tracesPath.size(), "/v1/metrics");
-        }
-
         // Configure OTLP HTTP metric exporter, honoring the same TLS
-        // options as the trace exporter.
+        // options as the trace exporter. The URL is used verbatim: metrics
+        // have their own config key and are not derived from traces.
         otlp_http::OtlpHttpMetricExporterOptions metricExporterOpts;
-        metricExporterOpts.url = metricsEndpoint;
+        metricExporterOpts.url = setup_.metricsEndpoint;
         if (setup_.useTls)
         {
             metricExporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
