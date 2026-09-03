@@ -41,6 +41,7 @@ This section contains changes targeting a future version.
 
 ### Bugfixes
 
+- `server_info`, `server_state`: Non-boolean `counters` values no longer cause an `internal` error; they are treated as `false` (counters omitted). [#6844](https://github.com/XRPLF/rippled/pull/6844)
 - `get_aggregate_price`: Duplicate entries in the `oracles` request array are now ignored. [#6586](https://github.com/XRPLF/rippled/pull/6586)
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 - `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)

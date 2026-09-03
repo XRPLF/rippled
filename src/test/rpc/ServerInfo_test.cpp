@@ -6,6 +6,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
@@ -154,9 +155,67 @@ admin = 127.0.0.1
     }
 
     void
+    testCountersTypeValidation()
+    {
+        // Regression test for issue #6793:
+        // Non-boolean `counters` values must not throw Json::LogicError
+        // (previously caught as rpcINTERNAL). They should be treated as
+        // false (counters disabled) rather than erroring.
+        testcase("counters type validation");
+        using namespace jtx;
+
+        Env env(*this);
+
+        // String value — previously threw Json::LogicError
+        {
+            Json::Value params;
+            params[jss::counters] = "true";
+            auto const r = env.rpc("json", "server_info", to_string(params));
+            BEAST_EXPECT(!RPC::contains_error(r[jss::result]));
+            BEAST_EXPECT(r[jss::result].isMember(jss::info));
+        }
+        {
+            Json::Value params;
+            params[jss::counters] = "true";
+            auto const r = env.rpc("json", "server_state", to_string(params));
+            BEAST_EXPECT(!RPC::contains_error(r[jss::result]));
+            BEAST_EXPECT(r[jss::result].isMember(jss::state));
+        }
+
+        // Array value
+        {
+            Json::Value params;
+            params[jss::counters] = Json::arrayValue;
+            auto const r = env.rpc("json", "server_info", to_string(params));
+            BEAST_EXPECT(!RPC::contains_error(r[jss::result]));
+        }
+        {
+            Json::Value params;
+            params[jss::counters] = Json::arrayValue;
+            auto const r = env.rpc("json", "server_state", to_string(params));
+            BEAST_EXPECT(!RPC::contains_error(r[jss::result]));
+        }
+
+        // Integer value
+        {
+            Json::Value params;
+            params[jss::counters] = 1;
+            auto const r = env.rpc("json", "server_info", to_string(params));
+            BEAST_EXPECT(!RPC::contains_error(r[jss::result]));
+        }
+        {
+            Json::Value params;
+            params[jss::counters] = 1;
+            auto const r = env.rpc("json", "server_state", to_string(params));
+            BEAST_EXPECT(!RPC::contains_error(r[jss::result]));
+        }
+    }
+
+    void
     run() override
     {
         testServerInfo();
+        testCountersTypeValidation();
     }
 };
 
