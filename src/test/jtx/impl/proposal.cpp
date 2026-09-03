@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -43,6 +44,16 @@ create(Account const& proposer, json::Value const& proposedTx, std::uint32_t exp
     jv[jss::Account] = proposer.human();
     jv[sfProposedTransaction.jsonName] = proposedTx;
     jv[sfExpiration.jsonName] = expiration;
+    return jv;
+}
+
+json::Value
+cancel(Account const& account, uint256 const& proposalID)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::TransactionProposalCancel;
+    jv[jss::Account] = account.human();
+    jv[sfProposalID.jsonName] = to_string(proposalID);
     return jv;
 }
 

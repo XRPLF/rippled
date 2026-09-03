@@ -18,18 +18,23 @@
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>  // IWYU pragma: keep
@@ -37,6 +42,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -156,7 +162,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Proposals do not nest. This payload also isn't a valid instance of
         // TransactionProposalCreate's own template (it lacks Expiration and
         // ProposedTransaction), so it fails STTx construction before ever
-        // reaching our own isProposalTx check.
+        // reaching our own nesting check.
         {
             json::Value tx = payload();
             tx[jss::TransactionType] = "TransactionProposalCreate";
@@ -178,6 +184,47 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 {proposal::innerTx(nestedProposal, env.seq(target)),
                  proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1)});
             reject(tx, temINVALID);
+        }
+
+        // A Batch inner lacking TransactionType cannot be constructed as an
+        // STTx, so Create rejects the payload as temMALFORMED before the
+        // nesting walk runs at all. That inner would otherwise make the walk
+        // report temINVALID, so this pins the ordering.
+        {
+            json::Value missingType;
+            missingType[jss::Account] = target.human();
+            missingType[jss::Flags] = tfInnerBatchTxn;
+            missingType[jss::Sequence] = env.seq(target);
+            missingType[jss::Fee] = "10";
+            missingType[jss::SigningPubKey] = "";
+
+            reject(
+                proposal::unsignedBatch(
+                    env,
+                    target,
+                    targetTicketSeq,
+                    tfAllOrNothing,
+                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                     missingType}),
+                temMALFORMED);
+        }
+
+        // The walk rejects such an inner in its own right. Nothing submitted
+        // through Create can reach that guard — the case above shows STTx
+        // construction throwing first — so it is checked directly here, which
+        // also pins it for a caller that does not build an STTx beforehand.
+        {
+            STObject inner(sfRawTransaction);
+            inner.setAccountID(sfAccount, target.id());
+
+            STArray rawTxns(sfRawTransactions);
+            rawTxns.push_back(std::move(inner));
+
+            STObject batch(sfGeneric);
+            batch.setFieldU16(sfTransactionType, ttBATCH);
+            batch.setFieldArray(sfRawTransactions, rawTxns);
+
+            BEAST_EXPECT(!xrpl::proposal::isValidProposalTxnType(batch));
         }
 
         // The proposed transaction must be ticket-based: a missing
