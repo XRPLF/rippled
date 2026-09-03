@@ -380,6 +380,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - ungated
   - unheld
   - unimpair
   - unroutable
@@ -403,7 +404,6 @@ words:
   - venv
   - vfalco
   - vinnie
-  - vkeylet
   - wasmi
   - werror
   - wextra
