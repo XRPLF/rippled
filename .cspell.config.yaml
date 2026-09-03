@@ -368,6 +368,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - ungated
   - unimpair
   - unroutable
   - unscalable
@@ -388,7 +389,6 @@ words:
   - venv
   - vfalco
   - vinnie
-  - vkeylet
   - wasmi
   - wextra
   - wptr

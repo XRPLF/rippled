@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Publish built DEB and RPM packages to the XRPLF repositories on Nexus.
 
-Takes packages and a channel, and nothing else, so it publishes whatever built
-them; see package/README.md, "Publishing from other repositories".
+Knows nothing about what it uploads beyond the channel, so it publishes whatever
+built the packages; see package/README.md, "Publishing from other repositories".
 
 RPMs are uploaded to the hosted repository, but yum clients install from the
 'rpm-<channel>' group repository in front of it, which serves signed metadata.
@@ -29,6 +29,9 @@ STALL_TIMEOUT = 300
 ATTEMPTS = 4
 RETRY_DELAY = 5
 
+# 429 is Nexus asking to slow down, not a rejection, so it retries like a 5xx.
+RETRYABLE_STATUSES = (429,)
+
 
 def build_opener() -> urllib.request.OpenerDirector:
     """An opener with no redirect handler, so a 3xx raises instead of being followed.
@@ -47,9 +50,9 @@ def build_opener() -> urllib.request.OpenerDirector:
 def upload(url: str, method: str, headers: dict[str, str], package: Path) -> None:
     """Send one package, retrying only what is worth retrying.
 
-    A 4xx is a deterministic rejection, so it is reported at once rather than
-    re-sending the whole body three more times. Nexus explains what it rejected
-    in the response body, so that body is always surfaced.
+    A 4xx other than 429 is a deterministic rejection, so it is reported at once
+    rather than re-sending the whole body three more times. Nexus explains what
+    it rejected in the response body, so that body is always surfaced.
     """
     opener = build_opener()
 
@@ -67,7 +70,7 @@ def upload(url: str, method: str, headers: dict[str, str], package: Path) -> Non
         except urllib.error.HTTPError as error:
             detail = error.read().decode(errors="replace").strip()
             reason = f"HTTP {error.code}: {detail}"
-            retryable = error.code >= 500
+            retryable = error.code >= 500 or error.code in RETRYABLE_STATUSES
         except (urllib.error.URLError, OSError) as error:
             reason = str(error)
             retryable = True
@@ -121,6 +124,8 @@ def main() -> None:
         token = base64.b64encode(f"{username}:{password}".encode()).decode()
         auth = {"Authorization": f"Basic {token}"}
 
+    # Deliberately not shared with sign_rpm.py: this script ships standalone in
+    # the packaging image for other repositories to run.
     packages = sorted(
         path
         for path in package_dir.rglob("*")
