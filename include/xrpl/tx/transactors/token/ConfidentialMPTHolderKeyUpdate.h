@@ -22,30 +22,26 @@ namespace xrpl {
  * the transaction flags:
  *
  * - Rotation (tfHolderKeyRotation): the holder still has their current
- *   ElGamal private key. They provide a new public key, along with their
- *   current spending/inbox balances re-encrypted under that new key, a
- *   Compact Pedersen proof that the re-encryption preserves the
- *   encrypted amounts, and a Schnorr proof of knowledge of the new private
- *   key. The holder's encryption key and confidential balances are updated
+ *   ElGamal private key. They provide a new public key along with their
+ *   current spending/inbox balances re-encrypted under that new key. The
+ *   holder's encryption key and confidential balances are updated
  *   immediately.
  *
  * - Recovery (tfHolderKeyRecovery): the holder has lost their current
- *   private key. They provide a new public key and a Schnorr proof of
- *   knowledge of the corresponding new private key, but cannot provide
+ *   private key. They provide a new public key but cannot provide
  *   re-encrypted balances. The new key is recorded as a pending
  *   sfRecoveryKey; the confidential balances are left untouched. Completing
  *   the recovery (rewriting the balances) is done separately by the issuer
  *   via ConfidentialMPTRecoverBalance.
  *
  * - Cancel (tfCancelRecovery): the holder revokes a pending recovery
- *   authorization created by a prior Recovery-mode transaction. No key
- *   balances, or proof are carried; authorization is via the
- *   holder's ordinary XRPL signature. sfRecoveryKey is removed and
- *   everything else is left untouched. Fails if no recovery is pending.
+ *   authorization created by a prior Recovery-mode transaction. No key,
+ *   balances, or proof are carried; authorization is via the holder's
+ *   ordinary XRPL signature. sfRecoveryKey is removed and everything else
+ *   is left untouched. Fails if no recovery is pending.
  *
- * @note The zero-knowledge proof verification itself
- * (verifyHolderKeyUpdateProof) is currently a placeholder pending crypto-side
- * work; see ConfidentialTransfer.h.
+ * @note Zero-knowledge proof verification for Rotation and Recovery is
+ * deferred to a follow-up once the mpt-crypto constructions are finalized.
  */
 class ConfidentialMPTHolderKeyUpdate : public Transactor
 {
@@ -55,6 +51,9 @@ public:
     explicit ConfidentialMPTHolderKeyUpdate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
 
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);

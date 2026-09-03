@@ -1,11 +1,11 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -18,9 +18,15 @@
 
 #include <cstdint>
 #include <memory>
-#include <optional>
 
 namespace xrpl {
+
+bool
+ConfidentialMPTHolderKeyUpdate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    // Holder key update is only meaningful when confidential transfers are enabled.
+    return ctx.rules.enabled(featureConfidentialTransfer);
+}
 
 std::uint32_t
 ConfidentialMPTHolderKeyUpdate::getFlagsMask(PreflightContext const& ctx)
@@ -63,7 +69,7 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
         return tesSUCCESS;
     }
 
-    if (!hasHolderKey || ctx.tx[sfHolderEncryptionKey].length() != kEcPubKeyLength)
+    if (!hasHolderKey || !isValidCompressedECPoint(ctx.tx[sfHolderEncryptionKey]))
         return temMALFORMED;
 
     // Rotation mode requires re-encrypted balances; Recovery mode must not
@@ -74,7 +80,6 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
     if (recovery && (hasSpending || hasInbox))
         return temMALFORMED;
 
-    // Check length of fields
     if (hasSpending)
     {
         auto const spending = ctx.tx[sfConfidentialBalanceSpending];
@@ -89,12 +94,9 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
             return temBAD_CIPHERTEXT;
     }
 
+    // TODO: Rotation and Recovery require a proof field. Length and cryptographic
+    // verification are deferred until the mpt-crypto constructions land.
     if (!hasProof)
-        return temMALFORMED;
-
-    auto const expectedProofLength =
-        rotation ? kEcHolderKeyRotationProofLength : kEcHolderKeyRecoveryProofLength;
-    if (ctx.tx[sfZKProof].length() != expectedProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -103,7 +105,6 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
 XRPAmount
 ConfidentialMPTHolderKeyUpdate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // TODO: Discussion of higher fee than kConfidentialFeeMultiplier
     return Transactor::calculateBaseFee(view, tx, kConfidentialFeeMultiplier);
 }
 
@@ -149,25 +150,6 @@ ConfidentialMPTHolderKeyUpdate::preclaim(PreclaimContext const& ctx)
     // Recovery mode: reject if a recovery is already pending
     if (!rotation && sleMptoken->isFieldPresent(sfRecoveryKey))
         return tecNO_PERMISSION;
-
-    // TODO: replace with a real holder-key-update context hash once the
-    // crypto side lands (mirrors getSendContextHash / getConvertContextHash
-    // used by the other confidential transactors).
-    uint256 const contextHash{};
-
-    auto const res = verifyHolderKeyUpdateProof(
-        rotation ? HolderKeyUpdateMode::Rotation : HolderKeyUpdateMode::Recovery,
-        ctx.tx[sfZKProof],
-        newPubKey,
-        rotation ? std::optional<Slice>{(*sleMptoken)[sfConfidentialBalanceSpending]}
-                 : std::nullopt,
-        rotation ? std::optional<Slice>{(*sleMptoken)[sfConfidentialBalanceInbox]} : std::nullopt,
-        rotation ? std::optional<Slice>{ctx.tx[sfConfidentialBalanceSpending]} : std::nullopt,
-        rotation ? std::optional<Slice>{ctx.tx[sfConfidentialBalanceInbox]} : std::nullopt,
-        contextHash);
-
-    if (!isTesSuccess(res))
-        return res;
 
     return tesSUCCESS;
 }
