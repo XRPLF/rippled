@@ -49,3 +49,4 @@ jobs:
     secrets:
       remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
       remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
+      signing_key: ${{ secrets.NEXUS_PACKAGES_PRIVATE_KEY }}

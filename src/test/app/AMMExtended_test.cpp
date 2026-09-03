@@ -1303,6 +1303,78 @@ private:
         BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
     }
 
+    // Same shape as testRequireAuth, except the issuer never authorizes the AMM's own trust line.
+    // An AMM holds the asset for its liquidity providers and cannot sign a TrustSet for itself, so
+    // once pseudo-accounts are implicitly authorized the pool keeps trading. Before that the offer
+    // stream drops it and the taker's offer stays on the book.
+    void
+    testPseudoAccountRequireAuth(FeatureBitset features)
+    {
+        testcase("lsfRequireAuth, unauthorized AMM pseudo-account");
+
+        using namespace jtx;
+
+        bool const pseudoExempt = features[fixCleanup3_4_0];
+
+        Env env{*this, features};
+
+        auto const aliceUSD = alice_["USD"];
+        auto const bobUSD = bob_["USD"];
+
+        env.fund(XRP(400'000), gw_, alice_, bob_);
+        env.close();
+
+        env(fset(gw_, asfRequireAuth));
+        env.close();
+
+        env(trust(gw_, bobUSD(100)), Txflags(tfSetfAuth));
+        env(trust(bob_, USD(100)));
+        env(trust(gw_, aliceUSD(100)), Txflags(tfSetfAuth));
+        env(trust(alice_, USD(2'000)));
+        env(pay(gw_, alice_, USD(1'000)));
+        env.close();
+
+        AMM const ammAlice(env, alice_, USD(1'000), XRP(1'050));
+
+        // The pool's own line stays unauthorized: AMMCreate opens it without the flag, and the
+        // pseudo-account has no key to ask for one.
+        auto const ammLineAuthorized = [&]() -> bool {
+            auto const line =
+                env.le(keylet::trustLine(ammAlice.ammAccount(), USD.issue().account, USD.currency));
+            if (!BEAST_EXPECT(line))
+                return false;
+            return line->isFlag(
+                ammAlice.ammAccount() > USD.issue().account ? lsfLowAuth : lsfHighAuth);
+        };
+        BEAST_EXPECT(!ammLineAuthorized());
+
+        env(pay(gw_, bob_, USD(50)));
+        env.close();
+        BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
+
+        // Bob sells USD into the pool, so the pool is the side that has to be authorized to hold
+        // the asset.
+        env(offer(bob_, XRP(50), USD(50)));
+        env.close();
+
+        if (pseudoExempt)
+        {
+            BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), XRP(1'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, bob_, 0));
+            BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
+        }
+        else
+        {
+            // The pool is skipped, so nothing crosses and the offer rests on the book.
+            BEAST_EXPECT(ammAlice.expectBalances(USD(1'000), XRP(1'050), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, bob_, 1));
+            BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
+        }
+
+        // Either way the exemption skips the check rather than setting the flag.
+        BEAST_EXPECT(!ammLineAuthorized());
+    }
+
     void
     testMissingAuth(FeatureBitset features)
     {
@@ -1400,6 +1472,8 @@ private:
         testDirectToDirectPath(all_);
         testDirectToDirectPath(all_ - fixAMMv1_1 - fixAMMv1_3);
         testRequireAuth(all_);
+        testPseudoAccountRequireAuth(all_);
+        testPseudoAccountRequireAuth(all_ - fixCleanup3_4_0);
         testMissingAuth(all_);
     }
 

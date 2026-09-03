@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <optional>
 #include <set>
+#include <vector>
 
 namespace xrpl {
 
@@ -467,7 +468,8 @@ canWithdraw(
     AccountID const& to,
     SLE::const_ref toSle,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<uint256>> const& credentialIDs)
 {
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
         return ret;
@@ -478,7 +480,28 @@ canWithdraw(
     if (toSle->isFlag(lsfDepositAuth))
     {
         if (!view.exists(keylet::depositPreauth(to, from)))
-            return tecNO_PERMISSION;
+        {
+            if (credentialIDs.has_value())
+            {
+                STVector256 const credIDs{*credentialIDs};
+
+                // Callers must have validated these in preclaim, so a missing
+                // credential here is an invariant violation.
+                for (auto const& h : credIDs)
+                {
+                    if (!view.exists(keylet::credential(h)))
+                        return tecINTERNAL;  // LCOV_EXCL_LINE
+                }
+
+                if (auto const ret = credentials::authorizedDepositPreauth(view, credIDs, to);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
+            else
+            {
+                return tecNO_PERMISSION;
+            }
+        }
     }
 
     return withdrawToDestExceedsLimit(view, from, to, amount);
@@ -490,11 +513,12 @@ canWithdraw(
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<uint256>> const& credentialIDs)
 {
     auto const toSle = view.read(keylet::account(to));
 
-    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag);
+    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag, credentialIDs);
 }
 
 [[nodiscard]] TER
@@ -503,7 +527,8 @@ canWithdraw(ReadView const& view, STTx const& tx)
     auto const from = tx[sfAccount];
     auto const to = tx[~sfDestination].value_or(from);
 
-    return canWithdraw(view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag));
+    return canWithdraw(
+        view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag), tx[~sfCredentialIDs]);
 }
 
 TER
@@ -518,12 +543,19 @@ doWithdraw(
 {
     auto const dstSle = ctx.view.read(keylet::account(dstAcct));
 
-    // Create trust line or MPToken for the receiving account
+    // Create a trust line or MPToken for a self-destination only when there
+    // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
+    // (e.g. share redemption from a fully impaired vault) must not insert
+    // an empty holding: that records a one-sided zero delta and can also
+    // create+delete MPTokens in the same transaction.
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
+        if (amount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
+                !isTesSuccess(ter) && ter != tecDUPLICATE)
+                return ter;
+        }
     }
     else
     {
