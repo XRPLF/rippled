@@ -15,6 +15,7 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <tuple>
 #include <utility>
@@ -239,11 +240,18 @@ JobQueue::getJson(int c)
     return ret;
 }
 
-void
-JobQueue::rendezvous()
+bool
+JobQueue::rendezvous(std::optional<std::chrono::milliseconds> const& timeout)
 {
+    auto const idle = [this] { return processCount_ == 0 && jobSet_.empty(); };
+
     std::unique_lock<std::mutex> lock(mutex_);
-    cv_.wait(lock, [this] { return processCount_ == 0 && jobSet_.empty(); });
+    if (!timeout)
+    {
+        cv_.wait(lock, idle);
+        return true;
+    }
+    return cv_.wait_for(lock, *timeout, idle);
 }
 
 JobTypeData&
