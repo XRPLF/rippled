@@ -74,7 +74,7 @@ Add to your `xrpld.cfg`:
 ```ini
 [telemetry]
 enabled=1
-endpoint=http://localhost:4318/v1/traces
+traces_endpoint=http://localhost:4318/v1/traces
 ```
 
 ### 3. Build with telemetry support
@@ -127,7 +127,7 @@ curl -s http://localhost:5015 -d '{"method":"server_info"}' |
 | Option                     | Default                           | Description                                                  |
 | -------------------------- | --------------------------------- | ------------------------------------------------------------ |
 | `enabled`                  | `0`                               | Master switch for telemetry                                  |
-| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                           |
+| `traces_endpoint`          | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                           |
 | `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute                |
 | `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute         |
 | `trace_rpc`                | `1`                               | Enable RPC request tracing                                   |
@@ -1559,12 +1559,27 @@ The OTel Collector's spanmetrics connector automatically derives RED (Rate, Erro
 
 ### Generated Metric Names
 
+These names are deliberately generic: the connector emits **one** metric family covering every span, not a metric per span. Which span a series belongs to comes from the `span_name` label, and the rest of the breakdown from the `dimensions` list in `otel-collector-config.yaml`. So a query always names the span in a label selector rather than in the metric name — `span_calls_total{span_name="ledger.build"}`, never a `ledger_build_calls_total`.
+
 | Prometheus Metric                   | Type      | Description                  |
 | ----------------------------------- | --------- | ---------------------------- |
 | `span_calls_total`                  | Counter   | Total span invocations       |
 | `span_duration_milliseconds_bucket` | Histogram | Latency distribution buckets |
 | `span_duration_milliseconds_count`  | Histogram | Latency observation count    |
 | `span_duration_milliseconds_sum`    | Histogram | Cumulative latency           |
+
+Only one part of those names is ours to choose. Reading a name left to right:
+
+| Part                                  | Set by                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------ |
+| `span_`                               | the connector's `namespace: "span"` in `otel-collector-config.yaml` — **our choice** |
+| `calls`, `duration`                   | the spanmetrics connector's own metric names                                         |
+| `_milliseconds`                       | the Prometheus exporter, expanding the metric's declared unit                        |
+| `_total`, `_bucket`, `_count`, `_sum` | Prometheus conventions for counters and histograms                                   |
+
+`_milliseconds` rather than `_ms` is therefore not a style decision taken here. The config declares the histogram in milliseconds (`buckets: [1ms, 5ms, ...]`) and never contains the string `milliseconds`; the exporter writes the unit out in full when it translates OTLP to Prometheus. Shortening it would mean renaming the series after export, which would break every dashboard and leave the exported name and the queried name disagreeing.
+
+Drop the `namespace` setting and these become `traces_span_metrics_*` instead — the connector's default. Any query, dashboard panel or test that names one of these metrics has to move with that setting.
 
 ### Metric Labels
 

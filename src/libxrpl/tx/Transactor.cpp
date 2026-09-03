@@ -49,6 +49,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <map>
 #include <optional>
@@ -1624,126 +1625,140 @@ Transactor::operator()()
         trapTransaction(*trap);
     }
 
-    auto result = ctx_.preclaimResult;
-    if (isTesSuccess(result))
-        result = apply();
-
-    // No transaction can return temUNKNOWN from apply,
-    // and it can't be passed in from a preclaim.
-    XRPL_ASSERT(result != temUNKNOWN, "xrpl::Transactor::operator() : result is not temUNKNOWN");
-
-    if (auto stream = j_.trace())
-        stream << "preclaim result: " << transToken(result);
-
-    auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
-    bool const canApply = std::invoke([&result, &fee, this] {
-        bool canApplyTmp = isTesSuccess(result);
-
-        if (ctx_.size() > kOversizeMetaDataCap)
-            result = tecOVERSIZE;
-
-        if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
-        {
-            // If the TapFailHard flag is set, a tec result
-            // must not do anything
-            ctx_.discard();
-            canApplyTmp = false;
-        }
-        else if (
-            (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-            (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
-        {
-            // This is and must remain the only place where `canApplyTmp` can change from false to
-            // true. Changing from true to false is no problem.
-            std::tie(result, fee, canApplyTmp) = processPersistentChanges(result, fee);
-        }
-        return canApplyTmp;
-    });
-
-    // Every exit from this function funnels through here, so this is also where
-    // the apply span records its outcome: each return path reports the engine
-    // result and whether the transaction was applied.
-    auto const logger = [this, &span](
-                            TER result,
-                            bool canApply,
-                            std::optional<TxMeta>&& metadata = std::nullopt) -> ApplyResult {
-        JLOG(j_.trace()) << (canApply ? "applied " : "not applied ") << transToken(result);
-
-        // Also guarded: transToken() is a lookup returning a string, and this
-        // funnel runs on every exit path.
-        if (span)
-        {
-            span.setAttribute(
-                telemetry::tx_apply_span::attr::terResult, transToken(result).c_str());
-            span.setAttribute(telemetry::tx_apply_span::attr::applied, canApply);
-            // Mark the span as errored when the transaction was not applied or
-            // the engine result is not a success, so failed applies surface in
-            // span-status error counts alongside preflight and preclaim.
-            if (!canApply || !isTesSuccess(result))
-                span.setError(transToken(result));
-        }
-
-        return {result, canApply, std::move(metadata)};
-    };
-
-    if (!canApply)
-        return logger(result, canApply);
-
-    // First invariant pass: both protocol and transaction-specific
-    // checks run against the transaction's tentative outcome. If it
-    // does not return tecINVARIANT_FAILED, we can proceed to apply the
-    // tx.
-    result = checkInvariants(result, fee, InvariantScope::Full);
-    if (result == tecINVARIANT_FAILED)
+    try
     {
-        // Fee-claim reset: roll the transaction's effects back so that
-        // only the fee deduction remains. This is the reset referenced
-        // by InvariantScope::ProtocolOnly.
-        auto const resetResult = reset(fee);
-        if (!isTesSuccess(resetResult.first))
-            result = resetResult.first;
+        auto result = ctx_.preclaimResult;
+        if (isTesSuccess(result))
+            result = apply();
 
-        fee = resetResult.second;
+        // No transaction can return temUNKNOWN from apply,
+        // and it can't be passed in from a preclaim.
+        XRPL_ASSERT(
+            result != temUNKNOWN, "xrpl::Transactor::operator() : result is not temUNKNOWN");
 
-        // Re-check invariants against the post-reset (fee-claim only)
-        // state. The transaction's effects are gone, so the
-        // transaction-specific invariants no longer apply and only the
-        // protocol invariants are re-run. A failure here escalates to
-        // tefINVARIANT_FAILED and excludes the tx from the ledger.
-        if (isTesSuccess(result) || isTecClaim(result))
-            result = checkInvariants(result, fee, InvariantScope::ProtocolOnly);
+        if (auto stream = j_.trace())
+            stream << "preclaim result: " << transToken(result);
+
+        auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
+        bool const canApply = std::invoke([&result, &fee, this] {
+            bool canApplyTmp = isTesSuccess(result);
+
+            if (ctx_.size() > kOversizeMetaDataCap)
+                result = tecOVERSIZE;
+
+            if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
+            {
+                // If the TapFailHard flag is set, a tec result
+                // must not do anything
+                ctx_.discard();
+                canApplyTmp = false;
+            }
+            else if (
+                (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
+                (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+            {
+                // This is and must remain the only place where `canApplyTmp` can change from false
+                // to true. Changing from true to false is no problem.
+                std::tie(result, fee, canApplyTmp) = processPersistentChanges(result, fee);
+            }
+            return canApplyTmp;
+        });
+
+        // Each return path funnels through here, so this is also where the apply
+        // span records its outcome: the engine result and whether the transaction
+        // was applied. A throw bypasses it and ends the span with no outcome.
+        auto const logger = [this, &span](
+                                TER result,
+                                bool canApply,
+                                std::optional<TxMeta>&& metadata = std::nullopt) -> ApplyResult {
+            JLOG(j_.trace()) << (canApply ? "applied " : "not applied ") << transToken(result);
+
+            // Also guarded: transToken() is a lookup returning a string, and this
+            // funnel runs on every return path.
+            if (span)
+            {
+                span.setAttribute(
+                    telemetry::tx_apply_span::attr::terResult, transToken(result).c_str());
+                span.setAttribute(telemetry::tx_apply_span::attr::applied, canApply);
+                // Mark the span as errored when the engine result is not a success,
+                // so failed applies surface alongside preflight and preclaim. Not
+                // keyed on `canApply`: a dry run reports tesSUCCESS with canApply
+                // false, and that is not a failure.
+                if (!isTesSuccess(result))
+                    span.setError(transToken(result));
+            }
+
+            return {result, canApply, std::move(metadata)};
+        };
+
+        if (!canApply)
+            return logger(result, canApply);
+
+        // First invariant pass: both protocol and transaction-specific
+        // checks run against the transaction's tentative outcome. If it
+        // does not return tecINVARIANT_FAILED, we can proceed to apply the
+        // tx.
+        result = checkInvariants(result, fee, InvariantScope::Full);
+        if (result == tecINVARIANT_FAILED)
+        {
+            // Fee-claim reset: roll the transaction's effects back so that
+            // only the fee deduction remains. This is the reset referenced
+            // by InvariantScope::ProtocolOnly.
+            auto const resetResult = reset(fee);
+            if (!isTesSuccess(resetResult.first))
+                result = resetResult.first;
+
+            fee = resetResult.second;
+
+            // Re-check invariants against the post-reset (fee-claim only)
+            // state. The transaction's effects are gone, so the
+            // transaction-specific invariants no longer apply and only the
+            // protocol invariants are re-run. A failure here escalates to
+            // tefINVARIANT_FAILED and excludes the tx from the ledger.
+            if (isTesSuccess(result) || isTecClaim(result))
+                result = checkInvariants(result, fee, InvariantScope::ProtocolOnly);
+        }
+
+        // We ran through the invariant checker, which can, in some cases,
+        // return a tef error code. Don't apply the transaction in that case.
+        if (!isTecClaim(result) && !isTesSuccess(result))
+            return logger(result, false);
+
+        std::optional<TxMeta> metadata;
+
+        // Transaction succeeded fully or (retries are not allowed and the
+        // transaction could claim a fee)
+
+        // The transactor and invariant checkers guarantee that this will
+        // *never* trigger but if it, somehow, happens, don't allow a tx
+        // that charges a negative fee.
+        if (fee < beast::kZero)
+            Throw<std::logic_error>("fee charged is negative!");
+
+        // Charge whatever fee they specified. The fee has already been
+        // deducted from the balance of the account that issued the
+        // transaction. We just need to account for it in the ledger
+        // header.
+        if (!view().open() && fee != beast::kZero)
+            ctx_.destroyXRP(fee);
+
+        // Once we call apply, we will no longer be able to look at view()
+        metadata = ctx_.apply(result);
+
+        if ((ctx_.flags() & TapDryRun) != 0u)
+            return logger(result, false, std::move(metadata));
+
+        return logger(result, canApply, std::move(metadata));
     }
-
-    // We ran through the invariant checker, which can, in some cases,
-    // return a tef error code. Don't apply the transaction in that case.
-    if (!isTecClaim(result) && !isTesSuccess(result))
-        return logger(result, false);
-
-    std::optional<TxMeta> metadata;
-
-    // Transaction succeeded fully or (retries are not allowed and the
-    // transaction could claim a fee)
-
-    // The transactor and invariant checkers guarantee that this will
-    // *never* trigger but if it, somehow, happens, don't allow a tx
-    // that charges a negative fee.
-    if (fee < beast::kZero)
-        Throw<std::logic_error>("fee charged is negative!");
-
-    // Charge whatever fee they specified. The fee has already been
-    // deducted from the balance of the account that issued the
-    // transaction. We just need to account for it in the ledger
-    // header.
-    if (!view().open() && fee != beast::kZero)
-        ctx_.destroyXRP(fee);
-
-    // Once we call apply, we will no longer be able to look at view()
-    metadata = ctx_.apply(result);
-
-    if ((ctx_.flags() & TapDryRun) != 0u)
-        return logger(result, false, std::move(metadata));
-
-    return logger(result, canApply, std::move(metadata));
+    catch (std::exception const& e)
+    {
+        // The caller's doApply() maps this to tefEXCEPTION. Record it on the
+        // span before unwinding so per-stage error counts include exceptions.
+        span.setAttribute(
+            telemetry::tx_apply_span::attr::terResult, transToken(tefEXCEPTION).c_str());
+        span.recordException(e);
+        throw;
+    }
 }
 
 }  // namespace xrpl

@@ -99,7 +99,9 @@
  * // before any metric-emitting code:
  * metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
  * telemetry_->isEnabled(), app, journal);
- * metricsRegistry_->start(setup.exporterEndpoint);
+ * // The endpoint comes from [telemetry] metrics_endpoint, read directly in
+ * // Application::setup() rather than through Telemetry::Setup.
+ * metricsRegistry_->start(endpoint, instanceId, nodeId);
  *
  * // Later in setup(), once overlay_ exists (the last of the services the
  * // callbacks read). Phase 2 registers the observable instruments:

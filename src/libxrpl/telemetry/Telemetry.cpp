@@ -19,6 +19,7 @@
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/insight/OTelCollector.h>
 #include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/CoroAwareContextStorage.h>
@@ -76,6 +77,24 @@
 #include <vector>
 
 namespace xrpl::telemetry {
+
+// beast cannot include this header, so it duplicates the meter scope. Fail the
+// build if the copies drift: instruments would land off the views' scope.
+static_assert(kMeterName == beast::insight::kOTelMeterName);
+static_assert(kMeterVersion == beast::insight::kOTelMeterVersion);
+
+/**
+ * OTLP/HTTP path per signal, appended by signalEndpoint().
+ */
+constexpr std::string_view kTracesPath{"/v1/traces"};
+constexpr std::string_view kMetricsPath{"/v1/metrics"};
+
+/**
+ * Metric export cadence. The interval matches the 1 s scrape the dashboards
+ * assume; the timeout bounds a stalled collector.
+ */
+constexpr auto kMetricExportInterval = std::chrono::milliseconds{1000};
+constexpr auto kMetricExportTimeout = std::chrono::milliseconds{500};
 
 namespace {
 
@@ -244,7 +263,7 @@ public:
         return setup_.consensusTraceStrategy;
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Tracer>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view) override
     {
         static auto noopTracer =
@@ -252,7 +271,7 @@ public:
         return noopTracer;
     }
 
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<metrics_api::Meter>
     getMeter(std::string_view name) override
     {
         // Serve a meter from a process-wide noop provider, mirroring the
@@ -262,13 +281,13 @@ public:
         return noopProvider->GetMeter(std::string(name), std::string(kMeterVersion));
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view, trace_api::SpanKind) override
     {
         return opentelemetry::nostd::shared_ptr<trace_api::Span>(new trace_api::NoopSpan(nullptr));
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view, opentelemetry::context::Context const&, trace_api::SpanKind)
         override
     {
@@ -370,12 +389,12 @@ public:
     void
     start() override
     {
-        JLOG(journal_.info()) << "Telemetry starting: endpoint=" << setup_.exporterEndpoint
+        JLOG(journal_.info()) << "Telemetry starting: traces_endpoint=" << setup_.tracesEndpoint
                               << " sampling=" << setup_.samplingRatio;
 
         // Configure OTLP HTTP exporter
         otlp_http::OtlpHttpExporterOptions exporterOpts;
-        exporterOpts.url = setup_.exporterEndpoint;
+        exporterOpts.url = signalEndpoint(setup_.tracesEndpoint, kTracesPath);
         if (setup_.useTls)
         {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
@@ -518,7 +537,7 @@ public:
         // Derive the metrics endpoint from the trace endpoint by swapping
         // the trailing "/v1/traces" path for "/v1/metrics". Any other URL
         // shape is used as-is.
-        std::string metricsEndpoint = setup_.exporterEndpoint;
+        std::string metricsEndpoint = setup_.tracesEndpoint;
         constexpr std::string_view tracesPath{"/v1/traces"};
         if (metricsEndpoint.ends_with(tracesPath))
         {
@@ -690,7 +709,7 @@ public:
         return setup_.consensusTraceStrategy;
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Tracer>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view name = kTracerName) override
     {
         if (!sdkProvider_)
@@ -700,7 +719,7 @@ public:
         return sdkProvider_->GetTracer(std::string(name));
     }
 
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<metrics_api::Meter>
     getMeter(std::string_view name = kMeterName) override
     {
         if (!meterProvider_)
@@ -711,7 +730,7 @@ public:
         return meterProvider_->GetMeter(std::string(name), std::string(kMeterVersion));
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view name, trace_api::SpanKind kind) override
     {
         auto tracer = getTracer();
@@ -720,7 +739,7 @@ public:
         return tracer->StartSpan(std::string(name), opts);
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(
         std::string_view name,
         opentelemetry::context::Context const& parentContext,
