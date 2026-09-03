@@ -36,6 +36,7 @@ constexpr char const* enabled = "enabled";
 constexpr char const* serviceName = "service_name";
 constexpr char const* serviceInstanceId = "service_instance_id";
 constexpr char const* tracesEndpoint = "traces_endpoint";
+constexpr char const* metricsEndpoint = "metrics_endpoint";
 constexpr char const* useTls = "use_tls";
 constexpr char const* tlsCaCert = "tls_ca_cert";
 constexpr char const* tlsClientCert = "tls_client_cert";
@@ -61,6 +62,7 @@ constexpr char const* traceLedger = "trace_ledger";
 namespace dflt {
 constexpr char const* serviceName = "xrpld";
 constexpr char const* tracesEndpoint = "http://localhost:4318/v1/traces";
+constexpr char const* metricsEndpoint = "http://localhost:4318/v1/metrics";
 constexpr std::uint32_t batchSize = 512u;
 constexpr std::uint32_t batchDelayMs = 5000u;
 constexpr std::uint32_t maxQueueSize = 2048u;
@@ -137,6 +139,8 @@ makeTelemetrySetup(
     setup.serviceInstanceId = section.valueOr<std::string>(key::serviceInstanceId, nodePublicKey);
 
     setup.tracesEndpoint = section.valueOr<std::string>(key::tracesEndpoint, dflt::tracesEndpoint);
+    setup.metricsEndpoint =
+        section.valueOr<std::string>(key::metricsEndpoint, dflt::metricsEndpoint);
 
     setup.useTls = section.valueOr<int>(key::useTls, 0) != 0;
     setup.tlsCertPath = section.valueOr<std::string>(key::tlsCaCert, "");

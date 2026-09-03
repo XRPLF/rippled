@@ -84,12 +84,6 @@ static_assert(kMeterName == beast::insight::kOTelMeterName);
 static_assert(kMeterVersion == beast::insight::kOTelMeterVersion);
 
 /**
- * OTLP/HTTP path per signal, appended by signalEndpoint().
- */
-constexpr std::string_view kTracesPath{"/v1/traces"};
-constexpr std::string_view kMetricsPath{"/v1/metrics"};
-
-/**
  * Metric export cadence. The interval matches the 1 s scrape the dashboards
  * assume; the timeout bounds a stalled collector.
  */
@@ -390,11 +384,12 @@ public:
     start() override
     {
         JLOG(journal_.info()) << "Telemetry starting: traces_endpoint=" << setup_.tracesEndpoint
+                              << " metrics_endpoint=" << setup_.metricsEndpoint
                               << " sampling=" << setup_.samplingRatio;
 
         // Configure OTLP HTTP exporter
         otlp_http::OtlpHttpExporterOptions exporterOpts;
-        exporterOpts.url = signalEndpoint(setup_.tracesEndpoint, kTracesPath);
+        exporterOpts.url = setup_.tracesEndpoint;
         if (setup_.useTls)
         {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
