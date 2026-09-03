@@ -206,7 +206,7 @@ NFTokenCountTracking::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
-    if (!hasPrivilege(tx, ChangeNftCounts))
+    if (!hasPrivilege(tx, Privilege::ChangeNftCounts))
     {
         if (beforeMintedTotal_ != afterMintedTotal_)
         {
