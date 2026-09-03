@@ -289,12 +289,18 @@ inline constexpr auto proposalTrusted = makeStr("proposal_trusted");
 inline constexpr auto validationTrusted = makeStr("validation_trusted");
 
 /**
- * "validation_status" — which exit the inbound validation took. Set once per
- * exit, so a dropped validation (microseconds) is separable from a queued one
- * (job wait plus checkValidation). Without it the span name reports two
- * unrelated latency distributions and every quantile over it is meaningless.
+ * "validation_receive_status" — which exit the inbound validation took on
+ * consensus.validation.receive. Set once per exit, so a dropped validation
+ * (microseconds) is separable from a queued one (job wait plus
+ * checkValidation); without it the span reports two unrelated latency
+ * distributions and every quantile over it is meaningless.
+ *
+ * Deliberately NOT `validation_status`: that key belongs to
+ * consensus.validation.accept and carries what the validation store did
+ * (`ValStatus`). One key with two value domains would make any aggregation
+ * that does not also filter on span name meaningless.
  */
-inline constexpr auto validationStatus = makeStr("validation_status");
+inline constexpr auto validationReceiveStatus = makeStr("validation_receive_status");
 }  // namespace attr
 
 // ===== Event names ===========================================================
@@ -360,7 +366,7 @@ inline constexpr auto closeAnomaly = makeStr("anomaly");
 inline constexpr auto closeOthersClosed = makeStr("others_closed");
 inline constexpr auto closeIdle = makeStr("idle");
 inline constexpr auto closeNormal = makeStr("normal");
-// validation_status values, one per exit of the inbound validation path.
+// validation_receive_status values, one per exit of the receive path.
 inline constexpr auto validationQueued = makeStr("queued");
 inline constexpr auto validationDroppedDiverged = makeStr("dropped_diverged");
 inline constexpr auto validationDroppedLoad = makeStr("dropped_load");
