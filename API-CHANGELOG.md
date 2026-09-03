@@ -44,7 +44,7 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 
 ### Breaking changes in 3.4.0
 
-- `subscribe` (`ledger` stream): The deprecated `fee_ref` field has been removed unconditionally from both the `subscribe` response and the `ledgerClosed` stream messages. It was previously only omitted when the `XRPFees` amendment was enabled; that amendment has now been retired, so the field is never returned. This applies to all API versions, since these are server-initiated stream messages that are not versioned.
+- `subscribe` (`ledger` stream): The deprecated `fee_ref` field has been removed unconditionally from both the `subscribe` response and the `ledgerClosed` stream messages. It was previously only omitted when the `XRPFees` amendment was enabled; that amendment has now been retired, so the field is never returned. This applies to all API versions.
 
 ## XRP Ledger server version 3.3.0
 
