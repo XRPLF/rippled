@@ -44,6 +44,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -364,6 +365,65 @@ class SHAMapStore_test : public beast::unit_test::Suite
         return env.app().getSHAMapStore().rendezvous(std::chrono::seconds{60});
     }
 
+    // Bring the SHAMapStore to the point where it has been handed a validated
+    // ledger and initialized lastRotated, and report how many extra ledgers had
+    // to be closed to get it there (normally none). Returns std::nullopt if
+    // syncStore() itself failed.
+    //
+    // syncStore() alone does not guarantee that, because
+    // SHAMapStoreImp::run()'s loop does not use the notification and the
+    // working_ flag safely:
+    //
+    //   * onLedgerClosed() notifies cond_ whether or not run()'s thread is
+    //     parked on it, and run() waits on cond_ without a predicate, so a
+    //     notification that lands while the thread is still starting up --
+    //     before it first reaches that wait -- is lost.
+    //   * run() clears working_ at the top of its loop without checking
+    //     whether newLedger_ is still set, so rendezvous() can report the
+    //     store idle with a validated ledger queued.
+    //
+    // Either way the store ends up parked with work pending, and only another
+    // notification gets it moving again. In a standalone test nothing else
+    // closes ledgers, so that has to come from here: this closes a ledger
+    // rather than polling getLastRotated(), because polling would just time
+    // out. onLedgerClosed() keeps only the most recent ledger in newLedger_,
+    // so the ledger the store picks up -- and therefore lastRotated -- is a
+    // timing detail, which is why the callers derive their expectations from
+    // the value they observe instead of assuming one.
+    //
+    // Fixing run() is a production change, out of scope for this test-only
+    // change; it is tracked as a follow-up to #5531 / #8137. Once that lands,
+    // syncStore() is sufficient on its own and this helper can go away.
+    //
+    // Working around the defect here must not make it invisible, so every extra
+    // close is logged. That keeps how often the race is actually hit
+    // observable in the unit test output -- which is the only signal left once
+    // these testcases stop flaking on it.
+    [[nodiscard]] std::optional<int>
+    initializeStore(jtx::Env& env, int const maxExtraCloses = 3)
+    {
+        auto& store = env.app().getSHAMapStore();
+
+        for (int extraCloses = 0;; ++extraCloses)
+        {
+            if (!syncStore(env))
+                return std::nullopt;
+            if (store.getLastRotated() || extraCloses == maxExtraCloses)
+            {
+                if (extraCloses)
+                {
+                    log << "initializeStore: the store needed " << extraCloses
+                        << " extra ledger close(s) to pick up a validated ledger. "
+                           "SHAMapStoreImp::run() dropped the notification for the "
+                           "first one; see the follow-up to #5531 / #8137."
+                        << std::endl;
+                }
+                return extraCloses;
+            }
+            env.close();
+        }
+    }
+
     int
     waitForReady(jtx::Env& env)
     {
@@ -485,7 +545,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
 
         env.fund(XRP(1000), Account("alice"));
         env.close();
-        if (!BEAST_EXPECT(syncStore(env)))
+        if (!BEAST_EXPECT(initializeStore(env).has_value()))
             return std::nullopt;
 
         Parked parked;
@@ -611,7 +671,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
         env.close();
-        if (!BEAST_EXPECT(syncStore(env)))
+        if (!BEAST_EXPECT(initializeStore(env).has_value()))
             return std::nullopt;
 
         LedgerIndex maxSeq = env.closed()->header().seq;
@@ -1267,33 +1327,42 @@ public:
 
         auto& lm = env.app().getLedgerMaster();
         LedgerIndex minSeq = 2;
-        LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
         auto& netOPs = env.app().getOPs();
-        if (!BEAST_EXPECT(syncStore(env)))
-            return;
-        // The store initializes lastRotated from the first validated ledger it
-        // observes, and onLedgerClosed() keeps only the most recent ledger in
-        // newLedger_, so validated ledgers arriving while the store thread is
-        // busy are coalesced away. Which of the existing complete ledgers wins
-        // is therefore a timing detail. Spinning until it equals a hard-coded
-        // value never terminates when a different one legitimately wins.
+        // Which of the existing complete ledgers the store initializes
+        // lastRotated from is a timing detail, so everything below derives from
+        // the observed value rather than assuming a particular one. Spinning
+        // until it equals a hard-coded value never terminates when a different
+        // one legitimately wins.
         //
-        // The range check and the syncStore() one above both end the testcase
+        // The range check and the initializeStore() one both end the testcase
         // rather than merely reporting, because lastRotated is the only value
         // from the store that enters minSeq. A lastRotated of 0 -- the value
         // getLastRotated() reports until the store has been handed a validated
         // ledger -- makes minSeq 0 below, and the minSeq - 1 and minSeq - 2
         // ranges then underflow to first > last, which aborts a Debug build
         // inside missingFromCompleteLedgerRange().
+        auto const extraCloses = initializeStore(env);
+        if (!BEAST_EXPECT(extraCloses.has_value()))
+            return;
+        LedgerIndex maxSeq = env.closed()->header().seq;
         LedgerIndex lastRotated = store.getLastRotated();
         if (!BEAST_EXPECTS(
                 lastRotated >= minSeq && lastRotated <= maxSeq, std::to_string(lastRotated)))
             return;
-        BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
-        BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
+        BEAST_EXPECTS(maxSeq == 3 + *extraCloses, std::to_string(maxSeq));
+        std::stringstream initialRange;
+        initialRange << minSeq << "-" << maxSeq;
+        BEAST_EXPECTS(lm.getCompleteLedgers() == initialRange.str(), lm.getCompleteLedgers());
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
-        BEAST_EXPECT(minSeq + 1 > maxSeq - 1);
+        // The inner range is empty unless initializeStore() had to close extra
+        // ledgers, and missingFromCompleteLedgerRange() treats first > last as a
+        // precondition violation that aborts a Debug build via UNREACHABLE, so
+        // only check it when it is well formed.
+        if (minSeq + 1 <= maxSeq - 1)
+        {
+            BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
+        }
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 2, maxSeq - 2) == 2);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
