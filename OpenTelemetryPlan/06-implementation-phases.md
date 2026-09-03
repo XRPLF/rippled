@@ -512,13 +512,14 @@ graph LR
 server=otel              # NEW: uses OTel OTLP metrics exporter
 # No prefix: it applies on the StatsD path only, not this one.
 
-# Endpoint and auth inherited from [telemetry] section:
+# Endpoints and auth come from the [telemetry] section:
 [telemetry]
 enabled=1
-endpoint=http://localhost:4318/v1/traces
+traces_endpoint=http://localhost:4318/v1/traces
+metrics_endpoint=http://localhost:4318/v1/metrics
 ```
 
-The `OTelCollector` reads the OTLP endpoint from `[telemetry]` config (replacing `/v1/traces` with `/v1/metrics` for the metrics exporter). No additional config keys needed.
+Each signal has its own key and each URL is used verbatim, so an operator can send traces and metrics to different collectors, or to one whose OTLP paths are not the defaults.
 
 **Backward compatibility**: `server=statsd` continues to work exactly as before.
 

@@ -84,12 +84,6 @@ static_assert(kMeterName == beast::insight::kOTelMeterName);
 static_assert(kMeterVersion == beast::insight::kOTelMeterVersion);
 
 /**
- * OTLP/HTTP path per signal, appended by signalEndpoint().
- */
-constexpr std::string_view kTracesPath{"/v1/traces"};
-constexpr std::string_view kMetricsPath{"/v1/metrics"};
-
-/**
  * Metric export cadence. The interval matches the 1 s scrape the dashboards
  * assume; the timeout bounds a stalled collector.
  */
@@ -385,35 +379,6 @@ class TelemetryImpl : public Telemetry
      *
      * @note Throws whatever the SDK factories throw; the constructor catches.
      */
-    /**
-     * @brief Full OTLP/HTTP URL for one signal.
-     *
-     * `[telemetry] endpoint` is one setting but OTLP/HTTP has a path per
-     * signal, so both are derived from it by the same rule: drop a trailing
-     * slash, drop a signal path if one is already there, then append the path
-     * asked for. A bare host, a traces URL and a metrics URL therefore all
-     * yield the right endpoint for either signal.
-     *
-     * @param configured The `[telemetry] endpoint` value.
-     * @param signalPath Path to append, e.g. kTracesPath.
-     * @return Endpoint URL for that signal.
-     */
-    [[nodiscard]] static std::string
-    signalEndpoint(std::string_view configured, std::string_view signalPath)
-    {
-        while (configured.ends_with('/'))
-            configured.remove_suffix(1);
-
-        for (auto const known : {kTracesPath, kMetricsPath})
-        {
-            if (configured.ends_with(known))
-            {
-                configured.remove_suffix(known.size());
-                break;
-            }
-        }
-        return std::string{configured} + std::string{signalPath};
-    }
 
     /**
      * @brief Build the OTLP/HTTP metric exporter.
@@ -425,7 +390,7 @@ class TelemetryImpl : public Telemetry
     makeMetricExporter() const
     {
         otlp_http::OtlpHttpMetricExporterOptions opts;
-        opts.url = signalEndpoint(setup_.tracesEndpoint, kMetricsPath);
+        opts.url = setup_.metricsEndpoint;
         if (setup_.useTls)
         {
             opts.ssl_ca_cert_path = setup_.tlsCertPath;
@@ -536,11 +501,12 @@ public:
     start() override
     {
         JLOG(journal_.info()) << "Telemetry starting: traces_endpoint=" << setup_.tracesEndpoint
+                              << " metrics_endpoint=" << setup_.metricsEndpoint
                               << " sampling=" << setup_.samplingRatio;
 
         // Configure OTLP HTTP exporter
         otlp_http::OtlpHttpExporterOptions exporterOpts;
-        exporterOpts.url = signalEndpoint(setup_.tracesEndpoint, kTracesPath);
+        exporterOpts.url = setup_.tracesEndpoint;
         if (setup_.useTls)
         {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
