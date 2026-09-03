@@ -260,10 +260,9 @@ public:
      * @param id  The node's base58-encoded public key or custom identifier.
      */
     virtual void
-    setServiceInstanceId(std::string const& id)
+    setServiceInstanceId([[maybe_unused]] std::string const& id)
     {
         // Default no-op for NullTelemetry implementations.
-        (void)id;
     }
 
     /**
