@@ -119,7 +119,15 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (hasHolder && (hasIssuerElGamalKey || hasAuditorElGamalKey))
         return temMALFORMED;
 
-    if (hasAuditorElGamalKey && !hasIssuerElGamalKey)
+    // Pre-ConfidentialMPTKeyRotation amendment, the auditor key could not be
+    // registered independently of the issuer key. The issuer could either:
+    // - Register only the issuer key (in which case an auditor key could not be added later), or
+    // - Register both the issuer and auditor keys simultaneously.
+    //
+    // Post-ConfidentialMPTKeyRotation amendment, the auditor key can be
+    // registered after the issuer key has already been registered.
+    if (hasAuditorElGamalKey && !hasIssuerElGamalKey &&
+        !ctx.rules.enabled(featureConfidentialMPTKeyRotation))
         return temMALFORMED;
 
     if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerEncryptionKey]))
@@ -219,18 +227,45 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    // cannot update issuer public key
-    if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
-        sleMptIssuance->isFieldPresent(sfIssuerEncryptionKey))
-    {
-        return tecNO_PERMISSION;
-    }
+    // Updating an existing encryption key requires the
+    // ConfidentialMPTKeyRotation amendment.
+    bool const canRotateKey = ctx.view.rules().enabled(featureConfidentialMPTKeyRotation);
 
-    // cannot update auditor public key
-    if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
-        sleMptIssuance->isFieldPresent(sfAuditorEncryptionKey))
+    bool const txHasIssuerKey = ctx.tx.isFieldPresent(sfIssuerEncryptionKey);
+    bool const txHasAuditorKey = ctx.tx.isFieldPresent(sfAuditorEncryptionKey);
+    bool const sleHasIssuerKey = sleMptIssuance->isFieldPresent(sfIssuerEncryptionKey);
+    bool const sleHasAuditorKey = sleMptIssuance->isFieldPresent(sfAuditorEncryptionKey);
+
+    if (canRotateKey)
     {
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+        // Post-ConfidentialMPTKeyRotation amendment, the encryption keys can be updated.
+        // A first-time auditor key registration requires an issuer key,
+        // either already on the issuance or set by the same transaction.
+        bool const registersAuditorKey = txHasAuditorKey && !sleHasAuditorKey;
+        bool const issuerKeyExists = sleHasIssuerKey || txHasIssuerKey;
+        if (registersAuditorKey && !issuerKeyExists)
+            return tecNO_PERMISSION;
+
+        // Rotating a key to its current value is not permitted: a key epoch
+        // increment must always correspond to an actual key change.
+        if (txHasIssuerKey && sleHasIssuerKey &&
+            ctx.tx[sfIssuerEncryptionKey] == (*sleMptIssuance)[sfIssuerEncryptionKey])
+            return tecDUPLICATE;
+
+        if (txHasAuditorKey && sleHasAuditorKey &&
+            ctx.tx[sfAuditorEncryptionKey] == (*sleMptIssuance)[sfAuditorEncryptionKey])
+            return tecDUPLICATE;
+    }
+    else
+    {
+        // Pre-ConfidentialMPTKeyRotation amendment, the encryption keys can not be updated.
+        // cannot update issuer public key
+        if (txHasIssuerKey && sleHasIssuerKey)
+            return tecNO_PERMISSION;
+
+        // cannot update auditor public key
+        if (txHasAuditorKey && sleHasAuditorKey)
+            return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }
 
     auto const enablesConfidentialBalance =
@@ -241,25 +276,30 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it
-    if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) && !enablesConfidentialBalance)
+    if (txHasIssuerKey && !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) &&
+        !enablesConfidentialBalance)
     {
         return tecNO_PERMISSION;
     }
 
-    if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) && !enablesConfidentialBalance)
+    if (txHasAuditorKey && !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) &&
+        !enablesConfidentialBalance)
     {
         return tecNO_PERMISSION;
     }
 
-    // cannot upload key if there's circulating supply of COA
-    if ((ctx.tx.isFieldPresent(sfIssuerEncryptionKey) ||
-         ctx.tx.isFieldPresent(sfAuditorEncryptionKey) || enablesConfidentialBalance) &&
-        (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
-    {
+    bool const hasConfidentialOA =
+        (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0;
+
+    // Pre-ConfidentialMPTKeyRotation amendment, keys cannot be uploaded while
+    // COA > 0. Post-amendment they can be uploaded even if COA > 0.
+    if (!canRotateKey && (txHasIssuerKey || txHasAuditorKey) && hasConfidentialOA)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
-    }
+
+    // Enabling confidential balances when COA > 0 is not permitted, regardless of
+    // ConfidentialMPTKeyRotation.
+    if (enablesConfidentialBalance && hasConfidentialOA)
+        return tecNO_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -377,25 +417,32 @@ MPTokenIssuanceSet::doApply()
         }
     }
 
-    if (auto const pubKey = ctx_.tx[~sfIssuerEncryptionKey])
-    {
+    // Sets an encryption key on the issuance. Overwriting an existing key
+    // (a rotation) increments the corresponding key epoch; a first-time
+    // registration leaves the epoch absent (epoch 0), matching issuances
+    // whose keys were registered before the ConfidentialMPTKeyRotation
+    // amendment.
+    auto const setEncryptionKey = [&](SF_VL const& keyField, SF_UINT32 const& epochField) {
+        auto const pubKey = ctx_.tx[~keyField];
+        if (!pubKey)
+            return;
+
         // This is enforced in preflight.
         XRPL_ASSERT(
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
-        sle->setFieldVL(sfIssuerEncryptionKey, *pubKey);
-    }
+        // NOTE: presence must be checked before the key is overwritten below.
+        bool const isRotation = sle->isFieldPresent(keyField);
 
-    if (auto const pubKey = ctx_.tx[~sfAuditorEncryptionKey])
-    {
-        // This is enforced in preflight.
-        XRPL_ASSERT(
-            sle->getType() == ltMPTOKEN_ISSUANCE,
-            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        sle->setFieldVL(keyField, *pubKey);
 
-        sle->setFieldVL(sfAuditorEncryptionKey, *pubKey);
-    }
+        if (isRotation)
+            (*sle)[epochField] = (*sle)[~epochField].valueOr(0) + 1;
+    };
+
+    setEncryptionKey(sfIssuerEncryptionKey, sfIssuerKeyEpoch);
+    setEncryptionKey(sfAuditorEncryptionKey, sfAuditorKeyEpoch);
 
     view().update(sle);
 
