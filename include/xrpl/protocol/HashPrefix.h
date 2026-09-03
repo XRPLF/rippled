@@ -89,9 +89,14 @@ enum class HashPrefix : std::uint32_t {
     PaymentChannelClaim = detail::makeHashPrefix('C', 'L', 'M'),
 
     /**
-     * Batch
+     * Batch to sign
      */
     Batch = detail::makeHashPrefix('B', 'C', 'H'),
+
+    /**
+     * Batch to multi-sign
+     */
+    BatchMultiSign = detail::makeHashPrefix('B', 'C', 'M'),
 };
 
 template <class Hasher>
