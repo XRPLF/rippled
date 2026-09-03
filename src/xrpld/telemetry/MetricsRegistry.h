@@ -109,9 +109,10 @@
  * // before any metric-emitting code:
  * metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
  * telemetry_->isEnabled(), app, journal);
- * // The endpoint comes from [telemetry] metrics_endpoint, read directly in
- * // Application::setup() rather than through Telemetry::Setup.
- * metricsRegistry_->start(endpoint, instanceId, nodeId);
+ * // The endpoint, the TLS settings and the resource identity come from
+ * // [telemetry] and [network_id], read directly in Application::setup()
+ * // rather than through Telemetry::Setup.
+ * metricsRegistry_->start(startOptions);
  *
  * // Later in setup(), once overlay_ exists (the last of the services the
  * // callbacks read). Phase 2 registers the observable instruments:
@@ -165,6 +166,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -282,6 +284,106 @@ public:
     operator=(MetricsRegistry const&) = delete;
 
     /**
+     * Everything `start()` needs from config: where to export, how to secure
+     * the connection, and the process identity stamped on the OTel resource.
+     *
+     * The values come from the `[telemetry]` section plus `[network_id]`, read
+     * in `ApplicationImp::startTelemetry()`. They must match what
+     * `makeTelemetrySetup()` gives the trace pipeline, or one node reports two
+     * identities and a dashboard filter shows half its series.
+     *
+     * A struct rather than ten positional parameters: seven of them are
+     * strings, so a swapped pair would compile and silently stamp the wrong
+     * label. Designated initializers name every value at the call site.
+     *
+     * @code
+     * MetricsRegistry::StartOptions opts{
+     *     .endpoint = "http://localhost:4318/v1/metrics",
+     *     .serviceName = "xrpld",
+     *     .serviceVersion = build_info::getVersionString(),
+     *     .serviceInstanceId = nodePublicKey,
+     *     .nodeId = nodePublicKey,
+     *     .networkId = 2};
+     * registry.start(opts);
+     *
+     * // Edge case: mutual TLS to a collector that requires it.
+     * opts.useTls = true;
+     * opts.tlsCaCertPath = "/etc/xrpld/otel-ca.pem";
+     * opts.tlsClientCertPath = "/etc/xrpld/node.pem";
+     * opts.tlsClientKeyPath = "/etc/xrpld/node.key";
+     * registry.start(opts);
+     * @endcode
+     *
+     * @note Plain aggregate, no invariants enforced. `networkType` is not a
+     * field: it is derived from @ref networkId inside `start()` so the
+     * two can never disagree.
+     */
+    struct StartOptions
+    {
+        /**
+         * OTLP/HTTP endpoint URL for metric export, from
+         * `[telemetry] metrics_endpoint`.
+         */
+        std::string endpoint;
+
+        /**
+         * service.name resource attribute, from `[telemetry] service_name`.
+         * Stamped unconditionally, so an empty value here yields an empty
+         * label rather than the SDK's `unknown_service` default. The caller
+         * seeds it with `systemName()`.
+         */
+        std::string serviceName;
+
+        /**
+         * service.version resource attribute — the build's version string.
+         * Left off the resource when empty.
+         */
+        std::string serviceVersion;
+
+        /**
+         * service.instance.id resource attribute, from
+         * `[telemetry] service_instance_id` or the node's base58 public key.
+         * Left off the resource when empty.
+         */
+        std::string serviceInstanceId;
+
+        /**
+         * xrpl.node.id resource attribute — the node's base58 public key,
+         * which config cannot override. Left off the resource when empty.
+         */
+        std::string nodeId;
+
+        /**
+         * Network identifier from `[network_id]`. Stamped as xrpl.network.id,
+         * and mapped to the xrpl.network.type label by `networkTypeFromId()`.
+         */
+        std::uint32_t networkId{0};
+
+        /**
+         * Whether the exporter connects to the collector over TLS. The three
+         * paths below apply only when this is true.
+         */
+        bool useTls{false};
+
+        /**
+         * CA bundle used to verify the collector. Empty selects the system
+         * CA store.
+         */
+        std::string tlsCaCertPath;
+
+        /**
+         * This node's client certificate, presented for mutual TLS. Empty
+         * means one-way TLS.
+         */
+        std::string tlsClientCertPath;
+
+        /**
+         * Private key for @ref tlsClientCertPath.
+         */
+        std::string tlsClientKeyPath;
+    };
+
+    /**
      * Initialize the OTel metrics pipeline and create the SYNCHRONOUS
      * instruments (counters and histograms).
      *
@@ -301,21 +403,11 @@ public:
      * that callback against a half-built Application. This applies
      * to observable COUNTERS as well as gauges.
      *
-     * @param endpoint    OTLP/HTTP endpoint URL for metric export
-     * (e.g. "http://localhost:4318/v1/metrics").
-     * @param instanceId  Value for the service.instance.id resource
-     * attribute. When non-empty, Prometheus metrics
-     * carry a service_instance_id label for per-node
-     * filtering.
-     * @param nodeId      Value for the xrpl.node.id resource attribute (the
-     * node's base58 public key). When non-empty, metrics
-     * carry the same per-node key that traces do.
+     * @param options  Endpoint, TLS settings and resource identity, all read
+     * from config by the caller. See @ref StartOptions.
      */
     void
-    start(
-        std::string const& endpoint,
-        std::string const& instanceId = {},
-        std::string const& nodeId = {});
+    start(StartOptions const& options);
 
     /**
      * Register the pull-model observable instruments — the second startup
@@ -1152,15 +1244,11 @@ private:
      * histogram views, then create the MeterProvider and meter. Extracted
      * from start() to keep each function under the 80-line limit.
      *
-     * @param endpoint OTLP/HTTP metrics endpoint URL.
-     * @param instanceId service.instance.id resource attribute (may be empty).
-     * @param nodeId xrpl.node.id resource attribute (may be empty).
+     * @param options Endpoint, TLS settings and resource identity, forwarded
+     * unchanged from `start()`. See @ref StartOptions.
      */
     void
-    initExporterAndProvider(
-        std::string const& endpoint,
-        std::string const& instanceId,
-        std::string const& nodeId);
+    initExporterAndProvider(StartOptions const& options);
 
     /**
      * Create the synchronous instruments (RPC and job-queue counters and

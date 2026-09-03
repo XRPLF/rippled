@@ -124,16 +124,16 @@ the corresponding subsystems are instrumented:
 
 > **TxQ** = Transaction Queue
 
-The parser `makeTelemetrySetup()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` reads the `[telemetry]` `Section` and populates a `Telemetry::Setup` struct, applying the defaults listed in Section 5.1.2 via `section.valueOr(...)`. It takes `serviceInstanceId` from the `nodePublicKey` argument when the key is absent, applies one unconditional `endpoint` default (`dflt::endpoint`, `TelemetryConfig.cpp:61`, used at `:108`) — the parser has no notion of exporter type — and leaves the sampling ratio at its fixed 1.0 default (a `static constexpr` member, so there is nothing to parse; `TelemetryConfig.cpp:139`, `Telemetry.h:234`). It also rejects two contradictory mTLS configurations outright (`tls_client_cert` without `tls_client_key`, and either without `use_tls=1`) rather than failing open at handshake time.
+The parser `makeTelemetrySetup()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` reads the `[telemetry]` `Section` and populates a `Telemetry::Setup` struct, applying the defaults listed in Section 5.1.2 via `section.valueOr(...)`. It takes `serviceInstanceId` from the `nodePublicKey` argument when the key is absent, applies one unconditional `traces_endpoint` default (`dflt::tracesEndpoint`) — the parser has no notion of exporter type — and leaves the sampling ratio at its fixed 1.0 default (a `static constexpr` member, so there is nothing to parse). It also rejects two contradictory mTLS configurations outright (`tls_client_cert` without `tls_client_key`, and either without `use_tls=1`) rather than failing open at handshake time.
 
-`metrics_endpoint` is deliberately **not** handled here: it is read separately in `ApplicationImp::startTelemetry()` (`Application.cpp:1670`) and passed to `MetricsRegistry::start()`. Note the consequence — the two metric exporters resolve their URL differently:
+`metrics_endpoint` reaches `MetricsRegistry` by a second route: `ApplicationImp::startTelemetry()` reads it from the same `Section` and passes it to `MetricsRegistry::start()`, because `Telemetry` does not expose the `Setup` it parsed. Both metric exporters resolve to that one key:
 
-| Metric source                              | Exporter built by                            | URL comes from                                                            |
-| ------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------- |
-| `beast::insight` (`[insight] server=otel`) | `Telemetry::initMetrics()` (global provider) | `traces_endpoint` with a trailing `/v1/traces` rewritten to `/v1/metrics` |
-| Native `XRPL_METRIC_*` (`MetricsRegistry`) | `MetricsRegistry::initExporterAndProvider()` | `metrics_endpoint`, defaulting to `http://localhost:4318/v1/metrics`      |
+| Metric source                              | Exporter built by                            | URL comes from                                                       |
+| ------------------------------------------ | -------------------------------------------- | -------------------------------------------------------------------- |
+| `beast::insight` (`[insight] server=otel`) | `Telemetry::initMetrics()` (global provider) | `metrics_endpoint`, used verbatim                                    |
+| Native `XRPL_METRIC_*` (`MetricsRegistry`) | `MetricsRegistry::initExporterAndProvider()` | `metrics_endpoint`, defaulting to `http://localhost:4318/v1/metrics` |
 
-Setting a non-default `endpoint` therefore moves the insight metrics with it, but leaves the native metrics on localhost unless `metrics_endpoint` is set too.
+Setting `traces_endpoint` therefore moves traces only; both metric pipelines follow `metrics_endpoint`.
 
 ---
 
