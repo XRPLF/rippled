@@ -1460,12 +1460,15 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 
     // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
-    // If so, only cost is looking up HashRouter flags.
     //
-    // The verdict is not asserted to be Valid: SigBad is reachable during
-    // fixCleanup3_4_0 activation for role-signature transactions whose
-    // earlier checkValidity ran under lagging validated rules, and the
-    // handler below is the correct response.
+    // For an ordinary transaction it is: the relay and submit paths have
+    // already run checkValidity, so this costs a HashRouter lookup. It is not
+    // redundant for a role-signature transaction while fixCleanup3_4_0 is
+    // activating. Those paths verify against the validated rules, which lag
+    // the open ledger rules used here, and checkValidity scopes a cached
+    // verdict to the rules that reached it, so this call can verify the
+    // signature again and come to a different answer. SigBad is therefore
+    // reachable, and the handler below is the correct response to it.
     auto const& viewRules = view->rules();
     auto const [validity, reason] = checkValidity(registry_.get().getHashRouter(), sttx, viewRules);
 
