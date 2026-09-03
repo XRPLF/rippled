@@ -291,6 +291,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfHolderEncryptionKey);
     }
+
+    /**
+     * @brief Get sfRecoveryKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getRecoveryKey() const
+    {
+        if (hasRecoveryKey())
+            return this->sle_->at(sfRecoveryKey);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRecoveryKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRecoveryKey() const
+    {
+        return this->sle_->isFieldPresent(sfRecoveryKey);
+    }
 };
 
 /**
@@ -479,6 +503,17 @@ public:
     setHolderEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfHolderEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRecoveryKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setRecoveryKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfRecoveryKey] = value;
         return *this;
     }
 

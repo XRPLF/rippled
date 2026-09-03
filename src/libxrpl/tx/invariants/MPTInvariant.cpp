@@ -39,6 +39,7 @@ constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
     ttCONFIDENTIAL_MPT_CONVERT_BACK,
     ttCONFIDENTIAL_MPT_MERGE_INBOX,
     ttCONFIDENTIAL_MPT_CLAWBACK,
+    ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE,
 });
 
 // Clamp to the cap (== INT64_MAX) before the signed conversion. Invariant

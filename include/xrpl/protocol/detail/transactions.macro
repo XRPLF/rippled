@@ -1168,6 +1168,25 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     {sfZKProof, SoeRequired},
 }))
 
+/** This transaction rotates or recovers a confidential MPT holder's ElGamal encryption key. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 92, ConfidentialMPTHolderKeyUpdate,
+    Delegation::NotDelegable,
+    featureConfidentialMPTKeyRotation,
+    NoPriv,
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    // HolderEncryptionKey and ZKProof are required in Rotation/Recovery mode
+    // (tfHolderKeyRotation/tfHolderKeyRecovery) and forbidden in Cancel mode
+    // (tfCancelRecovery)
+    {sfHolderEncryptionKey, SoeOptional},
+    {sfConfidentialBalanceSpending, SoeOptional},
+    {sfConfidentialBalanceInbox, SoeOptional},
+    {sfZKProof, SoeOptional},
+}))
+
 /** This transaction transfers sponsorship on an object/account. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
