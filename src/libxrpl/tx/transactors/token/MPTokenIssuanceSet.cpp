@@ -434,20 +434,23 @@ MPTokenIssuanceSet::doApply()
     // registration leaves the epoch absent (epoch 0), matching issuances
     // whose keys were registered before the ConfidentialMPTKeyRotation
     // amendment.
+    bool const canRotateKey = view().rules().enabled(featureConfidentialMPTKeyRotation);
     auto const setEncryptionKey = [&](SF_VL const& keyField, SF_UINT32 const& epochField) -> TER {
         auto const pubKey = ctx_.tx[~keyField];
         if (!pubKey)
             return tesSUCCESS;
 
-        // Preflight rejects a transaction carrying both sfHolder and an
-        // encryption key
-        if (sle->getType() != ltMPTOKEN_ISSUANCE)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : not an MPTokenIssuance");
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+        // This is enforced in preflight, which rejects a transaction carrying
+        // both sfHolder and an encryption key.
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+
+        // Add sanity check under the amendment ConfidentialMPTKeyRotation.
+        // Pre-confidentialMPTKeyRotation did not return tecINTERNAL so
+        // this should be under the amendment guard.
+        if (canRotateKey && sle->getType() != ltMPTOKEN_ISSUANCE)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // NOTE: presence must be checked before the key is overwritten below.
         bool const isRotation = sle->isFieldPresent(keyField);
@@ -457,7 +460,7 @@ MPTokenIssuanceSet::doApply()
         {
             // Preclaim rejects overwriting an existing key unless the amendment is
             // enabled.
-            if (!view().rules().enabled(featureConfidentialMPTKeyRotation))
+            if (!canRotateKey)
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : rotation without amendment");
