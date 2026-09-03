@@ -277,6 +277,16 @@ public:
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'ledger_index', not number.");
         }
 
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = 2147483648u;
+            auto const result =
+                env.rpc("json", "ledger_request", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error_message] == "Ledger index too large");
+        }
+
         // the purpose in this test is to force the ledger expiration/out of
         // date check to trigger
         env.timeKeeper().adjustCloseTime(weeks{3});
