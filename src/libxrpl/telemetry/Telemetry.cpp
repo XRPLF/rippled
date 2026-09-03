@@ -529,21 +529,11 @@ public:
     void
     initMetrics()
     {
-        // Derive the metrics endpoint from the trace endpoint by swapping
-        // the trailing "/v1/traces" path for "/v1/metrics". Any other URL
-        // shape is used as-is.
-        std::string metricsEndpoint = setup_.tracesEndpoint;
-        constexpr std::string_view tracesPath{"/v1/traces"};
-        if (metricsEndpoint.ends_with(tracesPath))
-        {
-            metricsEndpoint.replace(
-                metricsEndpoint.size() - tracesPath.size(), tracesPath.size(), "/v1/metrics");
-        }
-
         // Configure OTLP HTTP metric exporter, honoring the same TLS
-        // options as the trace exporter.
+        // options as the trace exporter. The URL is used verbatim: metrics
+        // have their own config key and are not derived from traces.
         otlp_http::OtlpHttpMetricExporterOptions metricExporterOpts;
-        metricExporterOpts.url = metricsEndpoint;
+        metricExporterOpts.url = setup_.metricsEndpoint;
         if (setup_.useTls)
         {
             metricExporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;

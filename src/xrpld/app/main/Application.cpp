@@ -1720,8 +1720,9 @@ ApplicationImp::startTelemetry() const
     // Start tracing first so subsequent startup/early activity can be traced.
     telemetry_->start();
 
-    // Start the metrics pipeline after telemetry; the endpoint uses the
-    // same base URL but the /v1/metrics path.
+    // Start the metrics pipeline after telemetry. metrics_endpoint is a full
+    // URL of its own, read again here because Telemetry does not expose the
+    // Setup it parsed.
     if (metricsRegistry_)
     {
         auto const& section = config_->section("telemetry");
