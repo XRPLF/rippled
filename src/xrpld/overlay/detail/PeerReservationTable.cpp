@@ -62,14 +62,12 @@ PeerReservationTable::load(DatabaseCon& connection)
 std::optional<PeerReservation>
 PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 {
-    XRPL_ASSERT(
-        connection_ != nullptr,
-	"PeerReservationTable::insertOrAssign: connection must be initialized");
-    
     std::optional<PeerReservation> previous;
 
     std::scoped_lock const lock(mutex_);
 
+    XRPL_ASSERT(connection_ != nullptr, "PeerReservationTable::insertOrAssign: connection must be initialized");
+    
     auto hint = table_.find(reservation);
     if (hint != table_.end())
     {
@@ -100,14 +98,12 @@ PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 std::optional<PeerReservation>
 PeerReservationTable::erase(PublicKey const& nodeId)
 {
-    XRPL_ASSERT(
-        connection_ != nullptr,
-	"PeerReservationTable::erase: connection must be initialized");
- 
     std::optional<PeerReservation> previous;
 
     std::scoped_lock const lock(mutex_);
 
+    XRPL_ASSERT(connection_ != nullptr, "PeerReservationTable::erase: connection must be initialized");
+    
     auto const it = table_.find({.nodeId = nodeId});
     if (it != table_.end())
     {
