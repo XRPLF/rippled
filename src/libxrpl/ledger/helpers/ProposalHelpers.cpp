@@ -89,8 +89,11 @@ isTerminal(
     if (hasExpired(view, expiration))
         return true;
 
+    // Mirror the ordinary transactor's tefMAX_LEDGER rule: view.seq() > bound.
+    // At view.seq() == bound the payload can still be submitted, so the
+    // proposal is still live (On-Chain Cosigner spec §4.5).
     return proposedTx.isFieldPresent(sfLastLedgerSequence) &&
-        view.seq() >= proposedTx.getFieldU32(sfLastLedgerSequence);
+        view.seq() > proposedTx.getFieldU32(sfLastLedgerSequence);
 }
 
 TER

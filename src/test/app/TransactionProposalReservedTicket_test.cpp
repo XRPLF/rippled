@@ -1293,11 +1293,12 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
 
     // Create only rejects a payload whose LastLedgerSequence has *already*
     // passed (tecEXPIRED). A bound that passes afterwards is a different
-    // matter, and the boundary does not line up: the proposal's own terminal
-    // rule triggers at view.seq() >= LastLedgerSequence, while
-    // checkPriorTxAndLastLedger rejects only at view.seq() >
-    // LastLedgerSequence. So there is exactly one ledger in which the proposal
-    // is terminal — anyone may cancel it — and its payload still submits.
+    // matter: at view.seq() == LastLedgerSequence the payload still submits
+    // (the transactor's tefMAX_LEDGER rule is view.seq() > bound), and the
+    // proposal's own terminal rule uses the same boundary, so the proposal
+    // is live in that same ledger. Only once view.seq() has advanced past
+    // the bound does the payload become unsubmittable — as a tef it leaves
+    // the ticket and the proposal in place, and Cancel is the only exit.
     void
     testPayloadLastLedgerSequencePasses(FeatureBitset features)
     {
@@ -1338,9 +1339,10 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         }
 
-        // Exactly at the bound: terminal by the proposal's reckoning, still
-        // submittable by the transactor's, so the payload applies and cleans
-        // up as usual.
+        // Exactly at the bound: still live and still submittable — the
+        // proposal's terminal rule and the transactor's tefMAX_LEDGER rule
+        // both trigger only strictly past the bound, so the payload applies
+        // in this last valid ledger and cleans up as usual.
         {
             Env env{*this, features};
 

@@ -431,10 +431,11 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
     }
 
     // A proposal whose proposed transaction has run out of ledgers — the
-    // ledger has reached its LastLedgerSequence — is just as terminal as an
-    // expired one. The boundary matches the dead-on-arrival rule at
-    // creation: a proposal with LastLedgerSequence at or below the current
-    // ledger sequence cannot be created, and an existing one is terminal.
+    // ledger has moved past its LastLedgerSequence — is just as terminal as
+    // an expired one. The boundary mirrors the ordinary transactor's
+    // tefMAX_LEDGER rule: at view.seq() == LastLedgerSequence the payload can
+    // still be submitted, so the proposal is still live; only at view.seq() >
+    // LastLedgerSequence does it become terminal.
     void
     testLastLedgerSequenceTerminal(FeatureBitset features)
     {
@@ -454,7 +455,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
 
         std::uint32_t const ticketSeq = proposal::createTicket(env, target);
 
-        std::uint32_t const lastLedgerSeq = env.current()->seq() + 2;
+        std::uint32_t const lastLedgerSeq = env.current()->seq() + 3;
         json::Value payload = proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
         payload[sfLastLedgerSequence.getJsonName()] = lastLedgerSeq;
 
@@ -462,17 +463,18 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         env.close();
         uint256 const proposalID = keylet::txProposal(target.id(), ticketSeq).key;
 
-        // Close until the open ledger sits just before the bound: the
-        // proposal is still live there.
-        while (env.current()->seq() < lastLedgerSeq - 1)
+        // Close until the open ledger sits exactly at the bound. The payload
+        // could still be submitted in this ledger, so the proposal is not
+        // yet terminal and a third party still cannot cancel it.
+        while (env.current()->seq() < lastLedgerSeq)
             env.close();
-        BEAST_EXPECT(env.current()->seq() == lastLedgerSeq - 1);
+        BEAST_EXPECT(env.current()->seq() == lastLedgerSeq);
         env(proposal::cancel(bob, proposalID), Ter(tecNO_PERMISSION));
         env.close();
 
-        // In the ledger whose sequence equals the bound, the proposal is
-        // terminal.
-        BEAST_EXPECT(env.current()->seq() == lastLedgerSeq);
+        // One ledger past the bound the payload can never be submitted, so
+        // the proposal is terminal and anyone may cancel it.
+        BEAST_EXPECT(env.current()->seq() == lastLedgerSeq + 1);
         env(proposal::cancel(bob, proposalID));
         env.close();
 

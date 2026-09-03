@@ -88,10 +88,11 @@ hasEmptySigningPubKey(STObject const& proposedTx)
  *
  * A proposal is terminal when either:
  * - its Expiration has passed (the parent ledger closed at or after it), or
- * - the proposed transaction carries a LastLedgerSequence that is at or
- *   below the current ledger sequence. This matches the dead-on-arrival
- *   check in TransactionProposalCreate::preclaim: a proposal whose bound
- *   leaves no future ledger to collect signatures in is already dead.
+ * - the proposed transaction carries a LastLedgerSequence and the current
+ *   ledger sequence is strictly greater than it. This mirrors the ordinary
+ *   transactor's tefMAX_LEDGER rule: at view.seq() == LastLedgerSequence the
+ *   payload can still be submitted in the current ledger, so the proposal is
+ *   still live.
  *
  * @param view The ledger the deciding transaction is being applied to.
  * @param expiration The proposal's Expiration field.
