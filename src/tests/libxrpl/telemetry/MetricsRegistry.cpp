@@ -488,7 +488,8 @@ TEST(MetricsRegistryParseLedgerRange, single_ledger_segment_is_a_range_not_a_rej
     // treating a dashless segment as malformed reports nothing at all for that
     // node -- the reading an operator most needs while a node is catching up.
     auto const one = Registry::parseLedgerRange("5000");
-    ASSERT_TRUE(one.has_value());
+    if (!one.has_value())
+        FAIL() << "a single-ledger segment must parse";
     EXPECT_EQ(one->first, 5000u);
     EXPECT_EQ(one->second, 5000u);
 
@@ -503,9 +504,11 @@ TEST(MetricsRegistryParseLedgerRange, every_producible_segment_parses_exactly)
 {
     for (auto const& [segment, expected] : kProducibleSegments)
     {
-        auto const parsed = Registry::parseLedgerRange(segment);
-        ASSERT_TRUE(parsed.has_value()) << "rejected a producible segment: " << segment;
-        EXPECT_EQ(*parsed, expected) << "wrong bounds for segment: " << segment;
+        // Comparing the whole optional covers both "was it parsed" and "are the
+        // bounds right" in one exact assertion, and keeps the loop going so one
+        // bad row cannot hide the other five.
+        EXPECT_EQ(Registry::parseLedgerRange(segment), std::optional{expected})
+            << "segment: " << segment;
     }
 }
 
@@ -527,7 +530,8 @@ TEST(MetricsRegistryParseLedgerRange, bounds_are_exact_at_the_sequence_limits)
     auto const maxText = std::to_string(kMaxSeq);
 
     auto const atLimit = Registry::parseLedgerRange(maxText);
-    ASSERT_TRUE(atLimit.has_value()) << "rejected the largest representable sequence";
+    if (!atLimit.has_value())
+        FAIL() << "rejected the largest representable sequence: " << maxText;
     EXPECT_EQ(atLimit->first, kMaxSeq);
     EXPECT_EQ(atLimit->second, kMaxSeq);
 
@@ -558,8 +562,11 @@ TEST(MetricsRegistryParseLedgerRange, reads_back_what_the_real_producer_wrote)
         auto const segment = rest.substr(0, comma);
 
         auto const parsed = Registry::parseLedgerRange(segment);
-        ASSERT_TRUE(parsed.has_value()) << "producer emitted a segment the parser refuses: ["
-                                        << segment << "] from " << rendered;
+        if (!parsed.has_value())
+        {
+            FAIL() << "producer emitted a segment the parser refuses: [" << segment << "] from "
+                   << rendered;
+        }
         recovered.push_back(*parsed);
 
         rest = (comma == std::string_view::npos) ? std::string_view{} : rest.substr(comma + 1);
