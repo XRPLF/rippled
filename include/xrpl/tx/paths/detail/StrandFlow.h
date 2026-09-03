@@ -816,7 +816,8 @@ flow(
         }
         if (!partialPayment)
         {
-            // If we're offerCrossing a !partialPayment, then we're handling a FillOrKill.
+            // If partialPayment is false, the caller requires full outReq (payments, or FillOrKill
+            // offers).
             if (offerCrossing != OfferCrossing::Sell)
             {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
