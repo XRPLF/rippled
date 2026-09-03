@@ -42,7 +42,7 @@ namespace xrpl::telemetry {
  * @return An OTel Context with the extracted parent span, or an empty
  * context if the protobuf fields are missing or invalid.
  */
-inline opentelemetry::context::Context
+[[nodiscard]] inline opentelemetry::context::Context
 extractFromProtobuf(protocol::TraceContext const& proto)
 {
     namespace trace = opentelemetry::trace;

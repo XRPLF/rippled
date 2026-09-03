@@ -394,8 +394,10 @@ public:
      * @param name      Full span name (e.g. "tx.receive").
      * @param hashData  Pointer to at least 16 bytes of hash data.
      * @param hashSize  Size of the hash buffer (must be >= 16).
+     * @return An active guard, or a null guard when the category is
+     * disabled or hashSize is under 16.
      */
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     hashSpan(
         TraceCategory const cat,
         std::string_view const name,
@@ -414,8 +416,10 @@ public:
      * @param parentSpanId    Pointer to 8 bytes of parent span ID.
      * @param parentSpanSize  Size of parent span ID buffer (must be 8).
      * @param traceFlags      Trace flags from remote context.
+     * @return An active guard, or a null guard when the category is
+     * disabled, hashSize is under 16, or parentSpanSize is not 8.
      */
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     hashSpan(
         TraceCategory const cat,
         std::string_view const name,

@@ -57,7 +57,7 @@ namespace xrpl::telemetry {
  * @param traceId The raw trace_id bytes from a protobuf TraceContext.
  * @return true if usable as a trace identifier, false otherwise.
  */
-inline bool
+[[nodiscard]] inline bool
 isValidTraceId(std::string const& traceId)
 {
     return traceId.size() == 16 && std::ranges::any_of(traceId, [](char c) { return c != 0; });
@@ -69,7 +69,7 @@ isValidTraceId(std::string const& traceId)
  * @param spanId The raw span_id bytes from a protobuf TraceContext.
  * @return true if usable as a span identifier, false otherwise.
  */
-inline bool
+[[nodiscard]] inline bool
 isValidSpanId(std::string const& spanId)
 {
     return spanId.size() == 8 && std::ranges::any_of(spanId, [](char c) { return c != 0; });
@@ -86,7 +86,7 @@ isValidSpanId(std::string const& spanId)
  * @param tc The protobuf TraceContext received from a peer.
  * @return true if both ids are present and valid, false otherwise.
  */
-inline bool
+[[nodiscard]] inline bool
 isValidTraceContext(protocol::TraceContext const& tc)
 {
     return tc.has_trace_id() && isValidTraceId(tc.trace_id()) && tc.has_span_id() &&
