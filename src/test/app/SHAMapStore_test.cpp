@@ -391,14 +391,21 @@ class SHAMapStore_test : public beast::unit_test::Suite
     // timing detail, which is why the callers derive their expectations from
     // the value they observe instead of assuming one.
     //
-    // Fixing run() is a production change, out of scope for this test-only
-    // change; it is tracked as a follow-up to #5531 / #8137. Once that lands,
-    // syncStore() is sufficient on its own and this helper can go away.
+    // run() is deliberately left as it is. In production the only effect is
+    // latency: the trigger is validatedSeq >= lastRotated + deleteInterval, so
+    // a lost notification delays rotation to the next validated ledger and
+    // nothing is skipped or accumulated -- starting at 513 instead of 512 does
+    // not matter. Two consequences do follow from leaving it in place, and both
+    // hold today: nothing in production decides anything from working_ or
+    // rendezvous() (rendezvous() has no production callers at all), and a node
+    // whose ledgers only advance on demand -- standalone, driven by
+    // ledger_accept -- can sit on a queued ledger until something closes the
+    // next one, which is exactly the situation this helper is working around.
     //
-    // Working around the defect here must not make it invisible, so every extra
-    // close is logged. That keeps how often the race is actually hit
-    // observable in the unit test output -- which is the only signal left once
-    // these testcases stop flaking on it.
+    // So this helper is permanent rather than a stopgap. Working around the
+    // race must not make it invisible, so every extra close is logged. That
+    // keeps how often it is actually hit observable in the unit test output --
+    // which is the only signal left once these testcases stop flaking on it.
     [[nodiscard]] std::optional<int>
     initializeStore(jtx::Env& env, int const maxExtraCloses = 3)
     {
@@ -415,7 +422,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
                     log << "initializeStore: the store needed " << extraCloses
                         << " extra ledger close(s) to pick up a validated ledger. "
                            "SHAMapStoreImp::run() dropped the notification for the "
-                           "first one; see the follow-up to #5531 / #8137."
+                           "first one; see the comment on initializeStore()."
                         << std::endl;
                 }
                 return extraCloses;
