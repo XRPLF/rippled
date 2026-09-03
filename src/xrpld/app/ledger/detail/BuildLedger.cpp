@@ -89,7 +89,8 @@ buildLedgerImpl(
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
     buildSpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(built->header().seq));
     buildSpan.setAttribute(
-        ledger_span::attr::closeTime, static_cast<int64_t>(closeTime.time_since_epoch().count()));
+        ledger_span::attr::closeTimeRippleEpochS,
+        static_cast<int64_t>(closeTime.time_since_epoch().count()));
     buildSpan.setAttribute(ledger_span::attr::closeTimeCorrect, closeTimeCorrect);
     buildSpan.setAttribute(
         ledger_span::attr::closeResolutionMs,

@@ -90,8 +90,8 @@ namespace attr {
  * Canonical shared constants (defined in SpanNames.h).
  */
 using ::xrpl::telemetry::attr::closeResolutionMs;
-using ::xrpl::telemetry::attr::closeTime;
 using ::xrpl::telemetry::attr::closeTimeCorrect;
+using ::xrpl::telemetry::attr::closeTimeRippleEpochS;
 using ::xrpl::telemetry::attr::ledgerHash;
 using ::xrpl::telemetry::attr::ledgerSeq;
 
