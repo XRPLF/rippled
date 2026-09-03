@@ -195,13 +195,6 @@ Calibration::Calibration()
 {
 }
 
-Calibration const&
-Calibration::instance()
-{
-    static Calibration const kValue;
-    return kValue;
-}
-
 double
 declaredGas(std::string_view wasmName)
 {
@@ -217,10 +210,10 @@ report(
     std::string_view wasmName,
     bool throughVm)
 {
-    auto const perGas = Calibration::instance().secondsPerGas();
+    auto calibration = Calibration{};
+    auto const perGas = calibration.secondsPerGas();
     auto const implied = perGas > 0.0 ? secondsPerCall / perGas : 0.0;
-    auto const suggested =
-        throughVm ? implied : implied + Calibration::instance().crossingFloorGas();
+    auto const suggested = throughVm ? implied : implied + calibration.crossingFloorGas();
 
     state.counters["implied_gas"] = implied;
     state.counters["ns_per_call"] = secondsPerCall * 1e9;

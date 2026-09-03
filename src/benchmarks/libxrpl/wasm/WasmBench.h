@@ -94,10 +94,7 @@ timeRun(HostFunctions& host, Bytes const& wasm);
 class Calibration
 {
 public:
-    // The machine's calibration, measured on first use. Measuring runs a few hundred short
-    // contracts, so the first case to ask pays for it and every later case reads this answer.
-    static Calibration const&
-    instance();
+    Calibration();
 
     // Seconds of wall time one unit of gas buys here.
     [[nodiscard]] double
@@ -115,8 +112,6 @@ public:
     }
 
 private:
-    Calibration();
-
     double secondsPerGas_{};
     double crossingFloorGas_{};
 };
