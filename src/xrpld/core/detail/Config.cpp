@@ -35,7 +35,6 @@
 #include <filesystem>
 #include <format>
 #include <iostream>
-#include <iterator>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -43,9 +42,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
-#include <thread>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -69,16 +67,146 @@ getMemorySize()
 
 #if BOOST_OS_LINUX
 #include <sys/sysinfo.h>  // IWYU pragma: keep
+#include <sys/types.h>
+
+#include <unistd.h>
+
+#include <fstream>
 
 namespace xrpl::detail {
+
+// This process's cgroup path from /proc/self/cgroup: the v2 line is
+// "0::<path>"; a v1 line is "<id>:<controllers>:<path>". Empty when absent.
+[[nodiscard]] std::string
+getOwnCgroupPath(std::string_view controller)
+{
+    std::ifstream in("/proc/self/cgroup");
+    std::string line;
+
+    while (std::getline(in, line))
+    {
+        auto const first = line.find(':');
+        auto const second = line.find(':', first + 1);
+        if (first == std::string::npos || second == std::string::npos)
+            continue;
+
+        std::string_view const controllers(line.data() + first + 1, second - first - 1);
+        if (controller.empty())
+        {
+            // The v2 entry is exactly "0::<path>".
+            if (first == 1 && line[0] == '0' && controllers.empty())
+                return line.substr(second + 1);
+        }
+        else if (controllers.contains(controller))
+        {
+            return line.substr(second + 1);
+        }
+    }
+
+    return {};
+}
+
+// The value in a cgroup limit file; 0 when absent or unlimited. "max" (v2)
+// fails the read, and the page-counter maximum (v1) both mean unlimited.
+[[nodiscard]] std::uint64_t
+readCgroupLimit(std::string const& path)
+{
+    std::ifstream in(path);
+    std::uint64_t limit = 0;
+
+    if (in >> limit && limit < (std::uint64_t{1} << 62))
+        return limit;
+
+    return 0;
+}
+
+// Whether the cgroup directory contains this process. /proc/self/cgroup
+// paths are namespace-relative, so a resolved directory can name-collide
+// with a different cgroup when the cgroup mount shows another view; only
+// trust a directory this process is actually in.
+[[nodiscard]] bool
+cgroupContainsSelf(std::string const& dir)
+{
+    std::ifstream in(dir + "/cgroup.procs");
+    pid_t const self = ::getpid();
+    pid_t pid = 0;
+
+    while (in >> pid)
+    {
+        if (pid == self)
+            return true;
+    }
+
+    return false;
+}
+
+// The smallest numeric limit in `file` from the leaf cgroup up through its
+// ancestors (the effective limit is the minimum over the hierarchy); 0 when
+// none is set or the leaf does not belong to this process.
+[[nodiscard]] std::uint64_t
+minCgroupLimit(std::string const& mount, std::string path, char const* file)
+{
+    if (!cgroupContainsSelf(mount + path))
+        return 0;
+
+    std::uint64_t best = 0;
+    auto const consider = [&best](std::uint64_t limit) {
+        if (limit != 0 && (best == 0 || limit < best))
+            best = limit;
+    };
+
+    while (!path.empty() && path != "/")
+    {
+        consider(readCgroupLimit(mount + path + "/" + file));
+
+        auto const slash = path.find_last_of('/');
+        if (slash == std::string::npos)
+            break;
+        path.resize(slash);
+    }
+    consider(readCgroupLimit(mount + "/" + file));
+
+    return best;
+}
+
+// The cgroup (v2, then v1) memory limit in bytes; 0 when absent or
+// unlimited. Checks this process's own cgroup and its ancestors (covering
+// nested limits such as systemd MemoryMax=) before the root-level files
+// containers expose.
+[[nodiscard]] std::uint64_t
+getCgroupMemoryLimit()
+{
+    if (auto const path = getOwnCgroupPath(""); !path.empty() && path != "/")
+    {
+        if (auto const limit = minCgroupLimit("/sys/fs/cgroup", path, "memory.max"))
+            return limit;
+    }
+
+    if (auto const limit = readCgroupLimit("/sys/fs/cgroup/memory.max"))
+        return limit;
+
+    if (auto const path = getOwnCgroupPath("memory"); !path.empty() && path != "/")
+    {
+        if (auto const limit =
+                minCgroupLimit("/sys/fs/cgroup/memory", path, "memory.limit_in_bytes"))
+            return limit;
+    }
+
+    return readCgroupLimit("/sys/fs/cgroup/memory/memory.limit_in_bytes");
+}
 
 [[nodiscard]] std::uint64_t
 getMemorySize()
 {
-    if (struct sysinfo si{}; sysinfo(&si) == 0)
-        return static_cast<std::uint64_t>(si.totalram) * si.mem_unit;
+    std::uint64_t ram = 0;
 
-    return 0;
+    if (struct sysinfo si{}; sysinfo(&si) == 0)
+        ram = static_cast<std::uint64_t>(si.totalram) * si.mem_unit;
+
+    if (auto const limit = getCgroupMemoryLimit(); limit != 0 && (ram == 0 || limit < ram))
+        return limit;
+
+    return ram;
 }
 
 }  // namespace xrpl::detail
@@ -108,50 +236,6 @@ getMemorySize()
 #endif
 
 namespace xrpl {
-
-// clang-format off
-// The configurable node sizes are "tiny", "small", "medium", "large", "huge"
-inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
-kSizedItems
-{{
-    // FIXME: We should document each of these items, explaining exactly
-    //        what they control and whether there exists an explicit
-    //        config option that can be used to override the default.
-
-    //                                   tiny    small   medium    large     huge
-    {SizedItem::SweepInterval,      {{     10,      30,      60,      90,     120 }}},
-    {SizedItem::TreeCacheSize,      {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
-    {SizedItem::TreeCacheAge,       {{     30,      60,      90,     120,     900 }}},
-    {SizedItem::LedgerSize,         {{     32,      32,      64,     256,     384 }}},
-    {SizedItem::LedgerAge,          {{     30,      60,     180,     300,     600 }}},
-    {SizedItem::LedgerFetch,        {{      2,       3,       4,       5,       8 }}},
-    {SizedItem::HashNodeDbCache,    {{      4,      12,      24,      64,     128 }}},
-    {SizedItem::TxnDbCache,         {{      4,      12,      24,      64,     128 }}},
-    {SizedItem::LgrDbCache,         {{      4,       8,      16,      32,     128 }}},
-    {SizedItem::OpenFinalLimit,     {{      8,      16,      32,      64,     128 }}},
-    {SizedItem::BurstSize,          {{      4,       8,      16,      32,      48 }}},
-    {SizedItem::RamSizeGb,          {{      6,       8,      12,      24,       0 }}},
-    {SizedItem::AccountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
-}};
-// clang-format on
-
-// Ensure that the order of entries in the table corresponds to the
-// order of entries in the enum:
-static_assert(
-    []() constexpr -> bool {
-        std::underlying_type_t<SizedItem> idx = 0;
-
-        for (auto const& i : kSizedItems)
-        {
-            if (static_cast<std::underlying_type_t<SizedItem>>(i.first) != idx)
-                return false;
-
-            ++idx;
-        }
-
-        return true;
-    }(),
-    "Mismatch between sized item enum & array indices");
 
 //
 // TODO: Check permissions on config file before using it.
@@ -270,36 +354,9 @@ Config::Config()
 void
 Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 {
-    XRPL_ASSERT(nodeSize == 0, "xrpl::Config::setupControl : node size not set");
-
     quiet_ = bQuiet || bSilent;
     silent_ = bSilent;
     runStandalone_ = bStandalone;
-
-    // We try to autodetect the appropriate node size by checking available
-    // RAM and CPU resources. We default to "tiny" for standalone mode.
-    if (!bStandalone)
-    {
-        // First, check against 'minimum' RAM requirements per node size:
-        auto const& threshold =
-            kSizedItems[std::underlying_type_t<SizedItem>(SizedItem::RamSizeGb)];
-
-        auto ns = std::ranges::find_if(threshold.second, [this](std::size_t limit) {
-            return (limit == 0) || (ramSize_ < limit);
-        });
-
-        XRPL_ASSERT(ns != threshold.second.end(), "xrpl::Config::setupControl : valid node size");
-
-        if (ns != threshold.second.end())
-            nodeSize = std::distance(threshold.second.begin(), ns);
-
-        // Adjust the size based on the number of hardware threads of
-        // execution available to us:
-        if (auto const hc = std::thread::hardware_concurrency(); hc != 0)
-            nodeSize = std::min<std::size_t>(hc / 2, nodeSize);
-    }
-
-    XRPL_ASSERT(nodeSize <= 4, "xrpl::Config::setupControl : node size is set");
 }
 
 void
@@ -582,32 +639,55 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
+    if (getSingleSection(secConfig, Sections::kMemoryLimit, strTemp, j_))
+    {
+        // Gigabytes; 0 disables enforcement.
+        auto const gb = beast::lexicalCastThrow<std::uint64_t>(strTemp);
+        if (gb > 1024)
+        {
+            Throw<std::runtime_error>(
+                "Invalid value '" + strTemp + "' for key '" + Sections::kMemoryLimit +
+                "'; the limit is in gigabytes and may not exceed 1024");
+        }
+        memoryLimit = gb << 30;
+    }
+
     if (getSingleSection(secConfig, Sections::kNodeSize, strTemp, j_))
     {
-        if (boost::iequals(strTemp, "tiny"))
+        // Deprecated: each tier (by name or its legacy 0-4 index) is an
+        // alias for a memory budget. [memory_limit], when present, wins.
+        static constexpr std::array<std::pair<std::string_view, std::uint64_t>, 5> kTiers{
+            {{"tiny", 4}, {"small", 8}, {"medium", 32}, {"large", 64}, {"huge", 128}}};
+
+        auto const tier = std::ranges::find_if(
+            kTiers, [&strTemp](auto const& t) { return boost::iequals(strTemp, t.first); });
+
+        std::uint64_t const budgetGb = tier != kTiers.end()
+            ? tier->second
+            : kTiers[std::min<std::size_t>(4, beast::lexicalCastThrow<std::size_t>(strTemp))]
+                  .second;
+
+        if (!memoryLimit)
+            memoryLimit = budgetGb << 30;
+
+        if (!quiet_)
         {
-            nodeSize = 0;
+            std::cerr << "WARNING: [node_size] is deprecated and will be removed "
+                         "in a future release. Set [memory_limit] instead; thread "
+                         "counts derive from the core count and [workers] / "
+                         "[io_workers].\n";
         }
-        else if (boost::iequals(strTemp, "small"))
-        {
-            nodeSize = 1;
-        }
-        else if (boost::iequals(strTemp, "medium"))
-        {
-            nodeSize = 2;
-        }
-        else if (boost::iequals(strTemp, "large"))
-        {
-            nodeSize = 3;
-        }
-        else if (boost::iequals(strTemp, "huge"))
-        {
-            nodeSize = 4;
-        }
-        else
-        {
-            nodeSize = std::min<std::size_t>(4, beast::lexicalCastThrow<std::size_t>(strTemp));
-        }
+    }
+
+    // A budget beyond the detected memory (physical RAM, or the cgroup limit
+    // when one is set) cannot be honored and recreates the oversized-preset
+    // OOM this setting exists to prevent.
+    if (memoryLimit && ramSize_ != 0 && *memoryLimit > (ramSize_ << 30) && !quiet_)
+    {
+        std::cerr << "WARNING: the configured memory budget (" << (*memoryLimit >> 30)
+                  << " GB) exceeds detected memory (" << ramSize_
+                  << " GB, RAM or cgroup limit); set [memory_limit] to " << ramSize_
+                  << " or less.\n";
     }
 
     if (getSingleSection(secConfig, Sections::kSigningSupport, strTemp, j_))
@@ -746,6 +826,42 @@ Config::loadFromString(std::string const& fileContents)
             Throw<std::runtime_error>(
                 std::string("Invalid ") + Sections::kSweepInterval +
                 ": must be between 10 and 600 inclusive");
+        }
+    }
+
+    if (getSingleSection(secConfig, Sections::kTreeCacheAge, strTemp, j_))
+    {
+        treeCacheAge = beast::lexicalCastThrow<int>(strTemp);
+
+        if (*treeCacheAge < 10 || *treeCacheAge > 3600)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kTreeCacheAge +
+                ": must be between 10 and 3600 inclusive");
+        }
+    }
+
+    if (getSingleSection(secConfig, Sections::kLedgerCacheAge, strTemp, j_))
+    {
+        ledgerCacheAge = beast::lexicalCastThrow<int>(strTemp);
+
+        if (*ledgerCacheAge < 10 || *ledgerCacheAge > 3600)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kLedgerCacheAge +
+                ": must be between 10 and 3600 inclusive");
+        }
+    }
+
+    if (getSingleSection(secConfig, Sections::kLedgerFetchSize, strTemp, j_))
+    {
+        ledgerFetchSize = beast::lexicalCastThrow<int>(strTemp);
+
+        if (*ledgerFetchSize < 1 || *ledgerFetchSize > 16)
+        {
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kLedgerFetchSize +
+                ": must be between 1 and 16 inclusive");
         }
     }
 
@@ -1229,12 +1345,57 @@ Config::getDebugLogFile() const
 }
 
 int
-Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
+Config::getValueFor(SizedItem item) const
 {
-    auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
-    XRPL_ASSERT(index < kSizedItems.size(), "xrpl::Config::getValueFor : valid index input");
-    XRPL_ASSERT(!node || *node <= 4, "xrpl::Config::getValueFor : unset or valid node");
-    return kSizedItems.at(index).second.at(node.value_or(nodeSize));
+    // Memory-shaped items scale linearly with the budget between a floor and
+    // a ceiling; time and policy items are fixed. A budget of 0 (enforcement
+    // disabled) yields the floors. The 1024 bound keeps gb * 65536 within
+    // int range (the config parser enforces it too).
+    auto const gb = static_cast<int>(std::min<std::uint64_t>(cacheMemoryBudget() >> 30, 1024));
+
+    switch (item)
+    {
+        case SizedItem::SweepInterval:
+            return 30;
+        case SizedItem::TreeCacheSize:
+            // Half the budget at an estimated 8 KiB per entry (the node plus
+            // its weak-tracking entry, hash buckets, and control block):
+            // 1 GiB / 2 / 8 KiB = 65536 entries per budget GB.
+            return std::max(16384, gb * 65536);
+        case SizedItem::TreeCacheAge:
+            return treeCacheAge.value_or(300);
+        case SizedItem::LedgerSize:
+            return std::clamp(gb * 6, 32, 384);
+        case SizedItem::LedgerAge:
+            return ledgerCacheAge.value_or(180);
+        case SizedItem::LedgerFetch:
+            return ledgerFetchSize.value_or(4);
+        case SizedItem::HashNodeDbCache:
+        case SizedItem::TxnDbCache:
+        case SizedItem::LgrDbCache:
+            // HashNodeDbCache is consumed in MB (RocksDB cache_mb); the two
+            // SQLite page caches are consumed in KB.
+            return std::clamp(gb * 2, 4, 128);
+        case SizedItem::BurstSize:
+            return std::clamp(gb, 4, 48);
+        case SizedItem::AccountIdCacheSize:
+            // Fixed regardless of budget: ~22 MB at 72 bytes per slot, and
+            // the value stays prime for hash distribution.
+            return 300007;
+    }
+
+    UNREACHABLE("xrpl::Config::getValueFor : invalid item");
+    return 0;
+}
+
+std::uint64_t
+Config::cacheMemoryBudget() const
+{
+    if (memoryLimit)
+        return *memoryLimit;
+
+    // ramSize_ is in GiB; 0 when detection failed, which disables enforcement.
+    return ramSize_ << 30;
 }
 
 FeeSetup

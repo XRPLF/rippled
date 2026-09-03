@@ -37,9 +37,7 @@ enum class SizedItem : std::size_t {
     HashNodeDbCache,
     TxnDbCache,
     LgrDbCache,
-    OpenFinalLimit,
     BurstSize,
-    RamSizeGb,
     AccountIdCacheSize,
 };
 
@@ -137,7 +135,8 @@ private:
      */
     bool signingEnabled_ = false;
 
-    // The amount of RAM, in bytes, that we detected on this system.
+    // The amount of RAM, in GiB, that we detected on this system.
+    // 0 when detection failed.
     std::uint64_t const ramSize_;
 
 public:
@@ -208,10 +207,10 @@ public:
     std::uint32_t ledgerHistory = 256;
     std::uint32_t fetchDepth = 1000000000;
 
-    // Tunable that adjusts various parameters, typically associated
-    // with hardware parameters (RAM size and CPU cores). The default
-    // is 'tiny'.
-    std::size_t nodeSize = 0;
+    // Cache memory budget in bytes, from [memory_limit] (gigabytes). Unset
+    // defaults to detected physical RAM; 0 disables enforcement. The
+    // deprecated [node_size] tiers map onto this budget.
+    std::optional<std::uint64_t> memoryLimit;
 
     bool sslVerify = true;
     std::string sslVerifyFile;
@@ -248,6 +247,11 @@ public:
     // Normally the sweep timer is automatically deduced based on the node
     // size, but we allow admins to explicitly set it in the config.
     std::optional<int> sweepInterval;
+
+    // Optional overrides for the fixed cache policy values.
+    std::optional<int> treeCacheAge;     // [tree_cache_age], seconds
+    std::optional<int> ledgerCacheAge;   // [ledger_cache_age], seconds
+    std::optional<int> ledgerFetchSize;  // [ledger_fetch_size], ledgers per fetch pass
 
     // Reduce-relay - Experimental parameters to control p2p routing algorithms
 
@@ -374,25 +378,22 @@ public:
     }
 
     /**
-     * Retrieve the default value for the item at the specified node size
+     * Retrieve the value for the item, derived from the memory budget.
      *
-     * @param item The item for which the default value is needed
-     * @param node Optional value, used to adjust the result to match the
-     *             size of a node (0: tiny, ..., 4: huge). If unseated,
-     *             uses the configured size (NODE_SIZE).
-     *
-     * @throws This method can throw std::out_of_range if you ask for values
-     *         that it does not recognize or request a non-default node-size.
-     *
+     * @param item The item for which the value is needed
      * @return The value for the requested item.
-     *
-     * @note The defaults are selected so as to be reasonable, but the node
-     *       size is an imprecise metric that combines multiple aspects of
-     *       the underlying system; this means that we can't provide optimal
-     *       defaults in the code for every case.
      */
     [[nodiscard]] int
-    getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt) const;
+    getValueFor(SizedItem item) const;
+
+    /**
+     * The effective cache memory budget in bytes.
+     *
+     * [memory_limit] if set, otherwise detected physical RAM. 0 means
+     * enforcement is disabled (explicit 0, or RAM detection failed).
+     */
+    [[nodiscard]] std::uint64_t
+    cacheMemoryBudget() const;
 
     [[nodiscard]] beast::Journal
     journal() const

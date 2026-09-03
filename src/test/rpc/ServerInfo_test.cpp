@@ -80,6 +80,8 @@ admin = 127.0.0.1
             BEAST_EXPECT(result.isMember(jss::info));
             auto const& info = result[jss::info];
             BEAST_EXPECT(info.isMember(jss::build_version));
+            // Admin request: reports the cache memory budget in GB.
+            BEAST_EXPECT(info.isMember(jss::memory_limit));
             // Git info is not guaranteed to be present
             if (info.isMember(jss::git))
             {

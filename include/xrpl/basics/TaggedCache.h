@@ -74,13 +74,20 @@ public:
     using shared_pointer_type = SharedPointerType;
 
 public:
+    /**
+     * @param cacheHardCap When positive, a hard upper bound on the number of
+     *     strongly-cached entries, enforced by demoting the approximately
+     *     oldest entry whenever growth would exceed it. 0 disables the cap
+     *     (the periodic sweep alone bounds the cache).
+     */
     TaggedCache(
         std::string const& name,
         int size,
         clock_type::duration expiration,
         clock_type& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make());
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
+        int cacheHardCap = 0);
 
 public:
     /**
@@ -357,6 +364,13 @@ private:
 
     using cache_type = hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
 
+    // Bounded approximate-LRU eviction from a single partition. Keeps the
+    // strong-entry count at/below cacheHardCap_ as new entries are inserted, so
+    // a burst can't drive the cache past its RAM budget between timer sweeps.
+    // No-op unless cacheHardCap_ > 0 (opt-in); caller holds mutex_.
+    void
+    evictForHardCap(cache_type::map_type& partition, cache_type::map_type::iterator const& keep);
+
     [[nodiscard]] std::thread
     sweepHelper(
         clock_type::time_point const& whenExpire,
@@ -390,8 +404,23 @@ private:
     // Desired maximum cache age
     clock_type::duration const targetAge_;
 
+    // Hard upper bound on strongly-cached entries, enforced by
+    // evictForHardCap whenever the strong count grows (fresh inserts and
+    // weak-to-strong revivals). 0 disables it (sweep-only sizing).
+    int const cacheHardCap_;
+
+    // Total hard-cap evictions (under mutex_); the first marks saturation
+    // onset for logging.
+    std::uint64_t hardCapEvictions_{0};
+
     // Number of items cached
     int cacheCount_{0};
+
+    // Rotating bucket cursor for evictForHardCap so successive over-cap
+    // evictions sweep the whole partition (CLOCK hand) instead of repeatedly
+    // sampling the head buckets. Advanced under mutex_.
+    std::size_t evictHand_{0};
+
     cache_type cache_;  // Hold strong reference to recent objects
     std::uint64_t hits_{0};
     std::uint64_t misses_{0};

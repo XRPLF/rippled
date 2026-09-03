@@ -4,6 +4,7 @@
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
 
@@ -241,6 +242,59 @@ TEST(TaggedCacheTest, tagged_cache)
         EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
         EXPECT_EQ(intrPtrCache.size(), 0);
     }
+}
+
+TEST(TaggedCacheTest, hard_cap_enforced_on_insert)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // A cap-enabled cache must never let the strong-cache count exceed the
+    // cap, enforced on the insert path alone (no sweep). The large targetSize
+    // and long age make the periodic sweep irrelevant here, so only
+    // evictForHardCap can be bounding it.
+    int const cap = 100;
+    Cache capped(
+        "capped", 1'000'000, 3600s, clock, journal, beast::insight::NullCollector::make(), cap);
+
+    bool everExceeded = false;
+    for (Key k = 1; k <= 1000; ++k)
+    {
+        capped.insert(k, "v");
+        if (capped.getCacheSize() > cap)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_LE(capped.getCacheSize(), cap);
+    EXPECT_GT(capped.getCacheSize(), 0);
+}
+
+TEST(TaggedCacheTest, hard_cap_disabled)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // cacheHardCap = 0: growth is bounded only by the periodic sweep.
+    Cache uncapped(
+        "uncapped", 1'000'000, 3600s, clock, journal, beast::insight::NullCollector::make(), 0);
+
+    for (Key k = 1; k <= 1000; ++k)
+        uncapped.insert(k, "v");
+    EXPECT_EQ(uncapped.getCacheSize(), 1000);
 }
 
 }  // namespace xrpl

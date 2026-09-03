@@ -293,9 +293,8 @@ public:
 
         auto const cores = std::thread::hardware_concurrency();
 
-        // Use a single thread when running on under-provisioned systems
-        // or if we are configured to use minimal resources.
-        if ((cores == 1) || ((config.nodeSize == 0) && (cores == 2)))
+        // Use a single thread on under-provisioned systems.
+        if (cores <= 2)
             return 1;
 
         // Otherwise, prefer six threads.
@@ -337,14 +336,12 @@ public:
 
                       auto count = static_cast<int>(std::thread::hardware_concurrency());
 
-                      // Be more aggressive about the number of threads to use
-                      // for the job queue if the server is configured as
-                      // "large" or "huge" if there are enough cores.
-                      if (config->nodeSize >= 4 && count >= 16)
+                      // Scale the job queue with the available cores.
+                      if (count >= 16)
                       {
                           count = 6 + std::min(count, 8);
                       }
-                      else if (config->nodeSize >= 3 && count >= 8)
+                      else if (count >= 8)
                       {
                           count = 4 + std::min(count, 6);
                       }
@@ -870,7 +867,7 @@ public:
             node_store::DummyScheduler dummyScheduler;
             std::unique_ptr<node_store::Database> source =
                 node_store::Manager::instance().makeDatabase(
-                    megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
+                    megabytes(config_->getValueFor(SizedItem::BurstSize)),
                     dummyScheduler,
                     0,
                     config_->section(Sections::kImportNodeDatabase),
