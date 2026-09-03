@@ -127,7 +127,8 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     // 3.9.3.2.10 Cannot add asset holding for the Vault.Asset (e.g., MPToken or TrustLine issues).
     // (tecNO_PERMISSION)
     if (auto const ter = checkLoanFreeze(
-            ctx.view, asset, vaultPseudo, brokerPseudo, account, brokerOwner, ctx.j))
+            ctx.view, tx, asset, vaultPseudo, brokerPseudo, account, brokerOwner, ctx.j))
+        return ter;
         return ter;
 
     // Re-verify that the borrower and broker owner (the two accounts that
