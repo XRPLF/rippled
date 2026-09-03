@@ -18,7 +18,7 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 | Option                | Type   | Default                           | Description                                          |
 | --------------------- | ------ | --------------------------------- | ---------------------------------------------------- |
 | `enabled`             | bool   | `false`                           | Enable/disable telemetry                             |
-| `endpoint`            | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                         |
+| `traces_endpoint`     | string | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim          |
 | `use_tls`             | bool   | `false`                           | Enable TLS for exporter connection                   |
 | `tls_ca_cert`         | string | `""`                              | Path to CA certificate file                          |
 | `batch_size`          | uint   | `512`                             | Spans per export batch                               |
