@@ -105,6 +105,10 @@ mod ffi {
         /// not a fault in the module — which is why it is a status of its own
         /// rather than one more way a contract can be malformed.
         Panic,
+        /// An import of a host function typed as something other than what the
+        /// engine registers it as. One more malformed module, and last in the enum
+        /// rather than beside `Import` so that no earlier status is renumbered.
+        Signature,
     }
 
     /// A check's verdict. No cost, because nothing was executed.
@@ -1046,6 +1050,7 @@ impl From<&CheckError> for ffi::CheckStatus {
         match error {
             CheckError::Compile(_) => ffi::CheckStatus::Compile,
             CheckError::Import(_) => ffi::CheckStatus::Import,
+            CheckError::Signature(_) => ffi::CheckStatus::Signature,
             CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
             CheckError::Memory(_) => ffi::CheckStatus::Memory,
             CheckError::Table(_) => ffi::CheckStatus::Table,
@@ -1253,6 +1258,7 @@ mod tests {
         vec![
             CheckError::Compile(String::new()),
             CheckError::Import(String::new()),
+            CheckError::Signature(String::new()),
             CheckError::EntryPoint(String::new()),
             CheckError::Memory(String::new()),
             CheckError::Table(String::new()),

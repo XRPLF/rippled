@@ -17,6 +17,12 @@
 //! exported table, larger than the engine grants. Both read the same export list, so
 //! [`check_exported_resources`] is one pass — see it for what stays invisible, and
 //! why the table case leaves much more of it there.
+//!
+//! Every rule is here but one: [`signature`] holds the comparison of an import's
+//! type against the ABI's, which needs the ABI's value-type vocabulary and a
+//! rendering of a function type on top of what the rest of the stage reads.
+
+mod signature;
 
 use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
@@ -24,6 +30,7 @@ use xrpl_host_functions::HostFunctionSpec;
 
 use crate::register::HOST_MODULE;
 use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile};
+use signature::check_signature;
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
 /// stages separately.
@@ -35,6 +42,11 @@ pub enum CheckError {
     /// that is not a host function, or one imported as something other than a
     /// function.
     Import(String),
+    /// An import of a host function typed as something other than what the engine
+    /// registers it as. Apart from [`CheckError::Import`] because the ABI does have
+    /// the function the guest asked for: what is wrong is the signature, not the
+    /// name.
+    Signature(String),
     /// No export named `function_name` with signature `() -> i32`.
     EntryPoint(String),
     /// The module asks for more linear memory than the engine grants.
@@ -48,6 +60,7 @@ impl fmt::Display for CheckError {
         match self {
             CheckError::Compile(detail) => write!(f, "compile: {detail}"),
             CheckError::Import(detail) => write!(f, "import: {detail}"),
+            CheckError::Signature(detail) => write!(f, "signature: {detail}"),
             // The detail says which of the entry point's failures this is, since
             // "no entry point" would be wrong for an export of the wrong type.
             CheckError::EntryPoint(detail) => write!(f, "{detail}"),
@@ -72,41 +85,55 @@ pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
     check_exported_resources(&module)
 }
 
-/// Every import must be one the linker defines. The first that is not ends the
-/// check, so a module with several faults reports the earliest.
+/// Every import must be one the linker defines, with the type it defines it as. The
+/// first that is not ends the check, so a module with several faults reports the
+/// earliest.
 fn check_imports(module: &Module) -> Result<(), CheckError> {
     for import in module.imports() {
-        check_import(import.module(), import.name(), import.ty()).map_err(CheckError::Import)?;
+        check_import(import.module(), import.name(), import.ty())?;
     }
     Ok(())
 }
 
-/// Whether the engine defines this one import.
+/// Whether the engine defines this one import, as the guest declares it.
 ///
-/// The set of names is [`HostFunctionSpec::ALL`], which is also what
-/// [`crate::register::register_host_functions`] iterates — so a check and a run
-/// cannot disagree about which names exist, and adding a host function extends
-/// both at once. The one thing this does not compare is `ty`'s *signature*, which
-/// still parts a module from the engine at instantiation; the kind is compared
-/// because the engine defines these names as functions and as nothing else.
+/// The names are [`HostFunctionSpec::ALL`] and the signatures are derived from the
+/// same declarations, which is also what
+/// [`crate::register::register_host_functions`] registers — so a check and a run
+/// cannot disagree about which imports exist or what they look like, and adding a
+/// host function extends both at once.
 ///
-/// The rules are ordered, not merely alternatives: a guest importing `env::malloc`
-/// is told about the namespace rather than that `malloc` is not a host function,
-/// because the namespace is the one that explains every other import it has too.
-fn check_import(module: &str, name: &str, ty: &ExternType) -> Result<(), String> {
+/// The rules are ordered, and each presumes the ones before it held. A guest
+/// importing `env::malloc` is told about the namespace rather than that `malloc` is
+/// not a host function, because the namespace is the one that explains every other
+/// import it has too; and only an import that names a real host function as a
+/// function has a signature worth comparing, which is why that rule is last.
+fn check_import(module: &str, name: &str, ty: &ExternType) -> Result<(), CheckError> {
+    let function = host_function(module, name).map_err(CheckError::Import)?;
+    let imported = imported_function(name, ty).map_err(CheckError::Import)?;
+    check_signature(function, imported).map_err(CheckError::Signature)
+}
+
+/// Which host function this import names: its namespace must be the engine's, and
+/// its name one the ABI declares.
+fn host_function(module: &str, name: &str) -> Result<HostFunctionSpec, String> {
     if module != HOST_MODULE {
         return Err(format!("'{module}::{name}' is not from '{HOST_MODULE}'"));
     }
-    if !HostFunctionSpec::ALL
+    HostFunctionSpec::ALL
         .iter()
-        .any(|op| op.wasm_name() == name)
-    {
-        return Err(format!("no host function '{name}'"));
+        .find(|function| function.wasm_name() == name)
+        .copied()
+        .ok_or_else(|| format!("no host function '{name}'"))
+}
+
+/// The function type the guest declared. The engine defines these names as functions
+/// and as nothing else, so an import of any other kind does not link.
+fn imported_function<'ty>(name: &str, ty: &'ty ExternType) -> Result<&'ty FuncType, String> {
+    match ty {
+        ExternType::Func(ty) => Ok(ty),
+        _ => Err(format!("'{HOST_MODULE}::{name}' is not a function")),
     }
-    if !matches!(ty, ExternType::Func(_)) {
-        return Err(format!("'{HOST_MODULE}::{name}' is not a function"));
-    }
-    Ok(())
 }
 
 fn check_entry_point(module: &Module, name: &str) -> Result<(), CheckError> {
@@ -197,7 +224,8 @@ pub(crate) fn entry_point_fault(found: Option<ExternType>, name: &str) -> String
 /// The rules, one by one, on inputs built directly rather than parsed out of a
 /// module. `tests/preflight.rs` runs real modules through [`check`]; what is here is
 /// what a module cannot state precisely — which rule fires, in which order, and in
-/// what words the caller logs it.
+/// what words the caller logs it. The signature rule's own derivation is tested
+/// beside it, in [`signature`].
 ///
 /// `wat` is a dev-dependency, so the one test here that does need a module writes it
 /// as text like every other test in the crate. What the library must not gain is a
@@ -205,13 +233,14 @@ pub(crate) fn entry_point_fault(found: Option<ExternType>, name: &str) -> String
 /// cannot give it one.
 #[cfg(test)]
 mod tests {
+    use super::signature::registered_type;
     use super::*;
     use wasmi::{GlobalType, MemoryType, Mutability};
 
-    /// A host function as a guest declares it. Any function type will do: the
-    /// signature is not what [`check_import`] compares.
-    fn a_function() -> ExternType {
-        ExternType::Func(FuncType::new([ValType::I32], [ValType::I32]))
+    /// The type an import of `function` must declare: what the engine registers it
+    /// as.
+    fn registered(function: HostFunctionSpec) -> ExternType {
+        ExternType::Func(registered_type(function))
     }
 
     /// A name every one of these tests can use, taken from the ABI rather than
@@ -224,25 +253,31 @@ mod tests {
     // Imports
     // -----------------------------------------------------------------------
 
-    /// Every name the ABI declares is served. Derived from `ALL` rather than
-    /// listed, so a host function added to the ABI is covered the day it lands.
+    /// Every name the ABI declares is served, at the signature derived from its
+    /// declaration. Derived from `ALL` rather than listed, so a host function added
+    /// to the ABI is covered the day it lands.
+    ///
+    /// Both sides of the comparison come from the table, so what this pins is that
+    /// no declaration is refused — not that the table is right. Comparing it against
+    /// an independent statement of the wire is
+    /// `tests/preflight.rs::every_declared_host_function_may_be_imported`, whose 60
+    /// import declarations are hand-written, and
+    /// `the_derived_signatures_are_what_the_linker_registers` beside it, which puts
+    /// the table through the real linker.
     #[test]
     fn every_declared_host_function_is_served() {
-        for op in HostFunctionSpec::ALL {
-            assert_eq!(
-                check_import(HOST_MODULE, op.wasm_name(), &a_function()),
-                Ok(()),
-                "{}",
-                op.wasm_name()
-            );
+        for &function in HostFunctionSpec::ALL {
+            let name = function.wasm_name();
+            if let Err(refusal) = check_import(HOST_MODULE, name, &registered(function)) {
+                panic!("'{name}' is declared but not served: {refusal}");
+            }
         }
     }
 
     #[test]
     fn an_import_from_another_namespace_is_refused() {
         for namespace in ["env", "host", "host_lib2", ""] {
-            let refusal = check_import(namespace, a_host_function_name(), &a_function())
-                .expect_err(namespace);
+            let refusal = host_function(namespace, a_host_function_name()).expect_err(namespace);
             assert!(
                 refusal.contains("is not from 'host_lib'"),
                 "{namespace}: {refusal}"
@@ -252,8 +287,7 @@ mod tests {
 
     #[test]
     fn an_unknown_name_is_refused() {
-        let refusal =
-            check_import(HOST_MODULE, "no_such_function", &a_function()).expect_err("unknown name");
+        let refusal = host_function(HOST_MODULE, "no_such_function").expect_err("unknown name");
         assert_eq!(refusal, "no host function 'no_such_function'");
     }
 
@@ -266,7 +300,7 @@ mod tests {
             ExternType::Memory(MemoryType::new(1, None)),
         ] {
             let name = a_host_function_name();
-            let refusal = check_import(HOST_MODULE, name, &ty).expect_err("not a function");
+            let refusal = imported_function(name, &ty).expect_err("not a function");
             assert_eq!(refusal, format!("'host_lib::{name}' is not a function"));
         }
     }
@@ -276,13 +310,45 @@ mod tests {
     /// rest of their imports too.
     #[test]
     fn the_namespace_is_reported_before_the_name() {
-        let refusal = check_import("env", "no_such_function", &a_function())
+        let refusal = host_function("env", "no_such_function")
             .expect_err("neither the namespace nor the name is served");
 
         assert!(refusal.contains("is not from 'host_lib'"), "{refusal}");
         assert!(
             !refusal.contains("no host function"),
             "the namespace explains it: {refusal}"
+        );
+    }
+
+    /// The signature is the last rule, so an import wrong about the namespace, the
+    /// name or the kind is not also told about a signature it was never going to
+    /// reach — and the two kinds of fault reach the caller as different stages.
+    #[test]
+    fn the_signature_is_the_last_rule() {
+        let name = a_host_function_name();
+        let mistyped = ExternType::Func(FuncType::new([ValType::F32], []));
+        let not_a_function = ExternType::Global(GlobalType::new(ValType::I32, Mutability::Const));
+
+        for (rule, refusal) in [
+            ("the namespace", check_import("env", name, &mistyped)),
+            (
+                "the name",
+                check_import(HOST_MODULE, "no_such_function", &mistyped),
+            ),
+            ("the kind", check_import(HOST_MODULE, name, &not_a_function)),
+        ] {
+            assert!(
+                matches!(refusal, Err(CheckError::Import(_))),
+                "{rule} explains this import, not its signature: {refusal:?}"
+            );
+        }
+
+        assert!(
+            matches!(
+                check_import(HOST_MODULE, name, &mistyped),
+                Err(CheckError::Signature(_))
+            ),
+            "an import that breaks nothing but the signature is a signature fault"
         );
     }
 
@@ -307,7 +373,13 @@ mod tests {
     #[test]
     fn each_entry_point_fault_is_described_as_itself() {
         assert_eq!(
-            entry_point_fault(Some(a_function()), "finish"),
+            entry_point_fault(
+                Some(ExternType::Func(FuncType::new(
+                    [ValType::I32],
+                    [ValType::I32]
+                ))),
+                "finish"
+            ),
             "entry point 'finish' has the wrong signature, expected '() -> i32'"
         );
         assert_eq!(
@@ -381,6 +453,15 @@ mod tests {
         assert_eq!(
             CheckError::Import("no host function 'x'".to_string()).to_string(),
             "import: no host function 'x'"
+        );
+        // The stage is the prefix and nothing else, so the detail must not say
+        // "signature" a second time.
+        assert_eq!(
+            CheckError::Signature(
+                "'ldgr_index' expected '(i32, i32) -> i32', found '(i64, i64) -> i32'".to_string()
+            )
+            .to_string(),
+            "signature: 'ldgr_index' expected '(i32, i32) -> i32', found '(i64, i64) -> i32'"
         );
         // The entry point's detail already says which of its three faults it is,
         // so a prefix would only repeat it.
