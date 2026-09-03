@@ -55,7 +55,7 @@ phases. They will be added as the corresponding subsystems are instrumented:
 
 > **TxQ** = Transaction Queue
 
-The parser `makeTelemetrySetup()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` reads the `[telemetry]` `Section` and populates a `Telemetry::Setup` struct, applying the defaults listed in Section 5.1.2 via `section.value_or(...)`. It derives `serviceInstanceId` from the node public key when not overridden, selects the exporter endpoint default by exporter type, and leaves the sampling ratio at its fixed 1.0 default (not read from config — see Section 7.4.2).
+The parser `makeTelemetrySetup()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` reads the `[telemetry]` `Section` and populates a `Telemetry::Setup` struct, applying the defaults listed in Section 5.1.2 via `section.valueOr(...)`. It derives `serviceInstanceId` from the node public key when not overridden, selects the exporter endpoint default by exporter type, and leaves the sampling ratio at its fixed 1.0 default (not read from config — see Section 7.4.2).
 
 ---
 
