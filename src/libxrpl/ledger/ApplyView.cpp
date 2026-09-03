@@ -26,6 +26,14 @@ namespace xrpl {
 
 namespace directory {
 
+struct Gap
+{
+    uint64_t const page;
+    SLE::pointer node;
+    uint64_t const nextPage;
+    SLE::pointer next;
+};
+
 std::uint64_t
 createRoot(
     ApplyView& view,
@@ -126,7 +134,9 @@ insertPage(
     if (page == 0)
         return std::nullopt;
     if (!view.rules().enabled(fixDirectoryLimit) && page >= kDirNodeMaxPages)  // Old pages limit
+    {
         return std::nullopt;
+    }
 
     // We are about to create a new node; we'll link it to
     // the chain first:
@@ -147,12 +157,8 @@ insertPage(
     // Save some space by not specifying the value 0 since it's the default.
     if (page != 1)
         node->setFieldU64(sfIndexPrevious, page - 1);
-    XRPL_ASSERT_PARTS(!nextPage, "xrpl::directory::insertPage", "nextPage has default value");
-    /* Reserved for future use when directory pages may be inserted in
-     * between two other pages instead of only at the end of the chain.
     if (nextPage)
         node->setFieldU64(sfIndexNext, nextPage);
-    */
     describe(node);
     view.insert(node);
 
@@ -168,7 +174,7 @@ ApplyView::dirAdd(
     uint256 const& key,
     std::function<void(SLE::ref)> const& describe)
 {
-    auto root = peek(directory);
+    auto const root = peek(directory);
 
     if (!root)
     {
@@ -177,6 +183,43 @@ ApplyView::dirAdd(
     }
 
     auto [page, node, indexes] = directory::findPreviousPage(*this, directory, root);
+
+    if (rules().enabled(featureDefragDirectories))
+    {
+        // If there are more nodes than just the root, and there's no space in
+        // the last one, walk backwards to find one with space, or to find one
+        // missing.
+        std::optional<directory::Gap> gapPages;
+        while (page && indexes.size() >= kDIR_NODE_MAX_PAGES)
+        {
+            // Find a page with space, or a gap in pages.
+            auto [prevPage, prevNode, prevIndexes] =
+                directory::findPreviousPage(*this, directory, node);
+            if (!gapPages && prevPage != page - 1)
+                gapPages.emplace(prevPage, prevNode, page, node);
+            page = prevPage;
+            node = prevNode;
+            indexes = prevIndexes;
+        }
+        // We looped through all the pages back to the root.
+        if (!page)
+        {
+            // If we found a gap, use it.
+            if (gapPages)
+            {
+                return directory::insertPage(
+                    *this,
+                    gapPages->page,
+                    gapPages->node,
+                    gapPages->nextPage,
+                    gapPages->next,
+                    key,
+                    directory,
+                    describe);
+            }
+            std::tie(page, node, indexes) = directory::findPreviousPage(*this, directory, root);
+        }
+    }
 
     // If there's space, we use it:
     if (indexes.size() < kDirNodeMaxEntries)
