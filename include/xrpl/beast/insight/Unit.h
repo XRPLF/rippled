@@ -53,7 +53,7 @@ enum class Unit : std::uint8_t {
  * @param unit The unit to translate.
  * @return A static, null-terminated UCUM code.
  */
-constexpr char const*
+[[nodiscard]] constexpr char const*
 otelUnitCode(Unit unit) noexcept
 {
     switch (unit)
@@ -78,7 +78,7 @@ otelUnitCode(Unit unit) noexcept
  * @param unit The unit to describe.
  * @return A static, null-terminated description.
  */
-constexpr char const*
+[[nodiscard]] constexpr char const*
 otelUnitDescription(Unit unit) noexcept
 {
     switch (unit)

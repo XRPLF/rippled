@@ -144,7 +144,7 @@ inline constexpr std::array kByteBuckets{
  * @return true when the ladder is non-empty, starts at or above zero, and
  *         every later edge is strictly greater than its predecessor.
  */
-constexpr bool
+[[nodiscard]] constexpr bool
 isAscendingNonNegative(std::span<double const> ladder) noexcept
 {
     if (ladder.empty() || ladder.front() < 0.0)
@@ -167,7 +167,7 @@ static_assert(isAscendingNonNegative(kByteBuckets));
  * @param ladder Bucket upper bounds.
  * @return A vector holding the same edges in the same order.
  */
-inline std::vector<double>
+[[nodiscard]] inline std::vector<double>
 toVector(std::span<double const> ladder)
 {
     return std::vector<double>(ladder.begin(), ladder.end());

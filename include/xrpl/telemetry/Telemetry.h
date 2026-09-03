@@ -393,7 +393,7 @@ public:
      * @param name  Meter name used to identify the instrumentation scope.
      * @return A shared pointer to the Meter.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
     getMeter(std::string_view name = kMeterName) = 0;
 
     /**
@@ -486,7 +486,7 @@ makeTelemetrySetup(
  * @param networkId  The network identifier from [network_id] config.
  * @return "mainnet" (0), "testnet" (1), "devnet" (2), or "unknown".
  */
-std::string
+[[nodiscard]] std::string
 networkTypeFromId(std::uint32_t networkId);
 
 }  // namespace xrpl::telemetry
