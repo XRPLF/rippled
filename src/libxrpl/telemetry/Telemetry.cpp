@@ -222,7 +222,7 @@ public:
         return setup_.consensusTraceStrategy;
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Tracer>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view) override
     {
         static auto noopTracer =
@@ -230,13 +230,13 @@ public:
         return noopTracer;
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view, trace_api::SpanKind) override
     {
         return opentelemetry::nostd::shared_ptr<trace_api::Span>(new trace_api::NoopSpan(nullptr));
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view, opentelemetry::context::Context const&, trace_api::SpanKind)
         override
     {
@@ -442,7 +442,7 @@ public:
         return setup_.consensusTraceStrategy;
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Tracer>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view name = kTracerName) override
     {
         if (!sdkProvider_)
@@ -452,7 +452,7 @@ public:
         return sdkProvider_->GetTracer(std::string(name));
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view name, trace_api::SpanKind kind) override
     {
         auto tracer = getTracer();
@@ -461,7 +461,7 @@ public:
         return tracer->StartSpan(std::string(name), opts);
     }
 
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(
         std::string_view name,
         opentelemetry::context::Context const& parentContext,
