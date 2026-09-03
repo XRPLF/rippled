@@ -21,6 +21,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
@@ -741,7 +742,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
                 BEAST_EXPECT(txn.isMember(jss::ctid));
                 auto const expectedCtid = rpc::encodeCTID(
                     jrr[jss::ledger][jss::ledger_index].asUInt(),
-                    txn[jss::meta]["TransactionIndex"].asUInt(),
+                    txn[jss::meta][sfTransactionIndex.jsonName].asUInt(),
                     netID);
                 // NOLINTBEGIN(bugprone-unchecked-optional-access)
                 if (BEAST_EXPECT(expectedCtid.has_value()))
