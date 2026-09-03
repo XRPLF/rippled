@@ -141,9 +141,18 @@ void
 forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
 {
     // Callers reach here when they deliberately skip signature verification,
-    // such as a cluster peer that trusts its neighbor's checks. No signature
-    // was verified, so there is no prefix era to record, and this writes the
-    // ordinary flags whether or not fixCleanup3_4_0 is enabled.
+    // such as a cluster peer that trusts its neighbor's checks, or a
+    // configuration that turns signature checks off. Nothing was verified, so
+    // there is no prefix era to record. Mark both of checkValidity's signature
+    // slots good: otherwise the forced verdict is ignored for a role-signature
+    // transaction until fixCleanup3_4_0 is enabled, and the signature the
+    // caller meant to skip gets verified after all. Marking both cannot leak a
+    // verdict across eras, because no verdict was reached, and this is the only
+    // place the distinction can be recorded: kSfSiggood alone does not say
+    // whether checkValidity verified a post-fix signature or a caller forced
+    // the result. An already cached bad verdict still wins, since checkValidity
+    // tests its bad flag first. Drop kSfSiggoodOldPrefix when Cleanup3_4_0 is
+    // retired.
     HashRouterFlags flags = HashRouterFlags::UNDEFINED;
     switch (validity)
     {
@@ -151,7 +160,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
             flags |= kSfLocalgood;
             [[fallthrough]];
         case Validity::SigGoodOnly:
-            flags |= kSfSiggood;
+            flags |= kSfSiggood | kSfSiggoodOldPrefix;
             [[fallthrough]];
         case Validity::SigBad:
             // would be silly to call directly

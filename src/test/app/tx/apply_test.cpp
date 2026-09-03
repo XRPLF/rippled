@@ -34,6 +34,46 @@ public:
         testcase("Require Fully Canonical Signature");
         testFullyCanonicalSigs();
         testRoleSignatureCacheIsEraSpecific();
+        testForcedValidityIgnoresPrefixEra();
+    }
+
+    // forceValidity means the caller verified nothing and wants the result
+    // trusted, so it has to hold in both prefix eras. If it marked only the
+    // ordinary slot, a role-signature transaction would still be verified
+    // under pre-fix rules, defeating the cluster path and the configurations
+    // that turn signature checks off.
+    void
+    testForcedValidityIgnoresPrefixEra()
+    {
+        testcase("Forced validity ignores the prefix era");
+
+        using namespace test::jtx;
+
+        Env preFix{*this, testableAmendments() - fixCleanup3_4_0};
+        Env postFix{*this, testableAmendments()};
+        auto const preFixRules = preFix.current()->rules();
+
+        Account const alice{"alice"};
+        Account const sponsor{"sponsor"};
+        postFix.fund(XRP(10'000), alice, sponsor);
+        postFix.close();
+
+        // Signed under the post-fix rules, so this signature does not verify
+        // under the pre-fix prefix. Only the forced verdict can make the check
+        // below pass.
+        auto const jt = postFix.jt(
+            noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor));
+        if (!BEAST_EXPECT(jt.stx))
+            return;
+
+        // A router that has never seen this transaction, so the only cached
+        // state is what forceValidity writes.
+        auto& router = preFix.app().getHashRouter();
+        forceValidity(router, jt.stx->getTransactionID(), Validity::SigGoodOnly);
+        BEAST_EXPECT(checkValidity(router, *jt.stx, preFixRules).first != Validity::SigBad);
     }
 
     // A signature verdict reached under one prefix era must not be honored in
