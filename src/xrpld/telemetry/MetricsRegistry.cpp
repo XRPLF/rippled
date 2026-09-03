@@ -582,10 +582,6 @@ MetricsRegistry::recordJobQueued(
         1,
         {{label::jobType, std::string(jobType)},
          {label::handler, std::string(sanitiseHandler(jobName))}});
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)enabled_;
 #endif
 }
 
