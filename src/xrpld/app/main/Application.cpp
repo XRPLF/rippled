@@ -545,6 +545,12 @@ public:
         {
             JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
         }
+        catch (...)
+        {
+            // The callees reach third-party SDK code, which may throw something
+            // outside std::exception. Escaping here would terminate the process.
+            JLOG(journal_.error()) << "Error stopping telemetry: unknown exception";
+        }
     }
 
     //--------------------------------------------------------------------------
