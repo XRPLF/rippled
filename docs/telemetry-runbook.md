@@ -76,7 +76,7 @@ Add to your `xrpld.cfg`:
 ```ini
 [telemetry]
 enabled=1
-endpoint=http://localhost:4318/v1/traces
+traces_endpoint=http://localhost:4318/v1/traces
 ```
 
 ### 3. Build with telemetry support
@@ -129,7 +129,7 @@ curl -s http://localhost:5015 -d '{"method":"server_info"}' |
 | Option                     | Default                           | Description                                                  |
 | -------------------------- | --------------------------------- | ------------------------------------------------------------ |
 | `enabled`                  | `0`                               | Master switch for telemetry                                  |
-| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                           |
+| `traces_endpoint`          | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                           |
 | `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute                |
 | `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute         |
 | `trace_rpc`                | `1`                               | Enable RPC request tracing                                   |
@@ -1569,12 +1569,27 @@ The OTel Collector's spanmetrics connector automatically derives RED (Rate, Erro
 
 ### Generated Metric Names
 
+These names are deliberately generic: the connector emits **one** metric family covering every span, not a metric per span. Which span a series belongs to comes from the `span_name` label, and the rest of the breakdown from the `dimensions` list in `otel-collector-config.yaml`. So a query always names the span in a label selector rather than in the metric name — `span_calls_total{span_name="ledger.build"}`, never a `ledger_build_calls_total`.
+
 | Prometheus Metric                   | Type      | Description                  |
 | ----------------------------------- | --------- | ---------------------------- |
 | `span_calls_total`                  | Counter   | Total span invocations       |
 | `span_duration_milliseconds_bucket` | Histogram | Latency distribution buckets |
 | `span_duration_milliseconds_count`  | Histogram | Latency observation count    |
 | `span_duration_milliseconds_sum`    | Histogram | Cumulative latency           |
+
+Only one part of those names is ours to choose. Reading a name left to right:
+
+| Part                                  | Set by                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------ |
+| `span_`                               | the connector's `namespace: "span"` in `otel-collector-config.yaml` — **our choice** |
+| `calls`, `duration`                   | the spanmetrics connector's own metric names                                         |
+| `_milliseconds`                       | the Prometheus exporter, expanding the metric's declared unit                        |
+| `_total`, `_bucket`, `_count`, `_sum` | Prometheus conventions for counters and histograms                                   |
+
+`_milliseconds` rather than `_ms` is therefore not a style decision taken here. The config declares the histogram in milliseconds (`buckets: [1ms, 5ms, ...]`) and never contains the string `milliseconds`; the exporter writes the unit out in full when it translates OTLP to Prometheus. Shortening it would mean renaming the series after export, which would break every dashboard and leave the exported name and the queried name disagreeing.
+
+Drop the `namespace` setting and these become `traces_span_metrics_*` instead — the connector's default. Any query, dashboard panel or test that names one of these metrics has to move with that setting.
 
 ### Metric Labels
 
@@ -3264,7 +3279,7 @@ Then read the answer off the pair:
 | Expensive | Depth over ~1.2 | **Both paths queueing.** Rarer, and neither fix on its own will be enough. Treat the larger of the two costs as the lead.                                                                                                                                     |
 
 **Why the rule is shaped this way.** Three points about the thresholds, each
-learned from a dataset that an earlier version of this table got wrong:
+grounded in a measured dataset rather than a round number:
 
 - **Read cost is a relative judgement, so the band has a floor and a ceiling, not
   one cut.** A cold read on our box measured 31.8 µs mean; a cold read on the
@@ -4773,23 +4788,23 @@ Key properties:
   the limiting ladder step for each, and the edges that would fix them.
 - **A baseline refresh can silently move sensitivity in either direction.** The
   trip point is derived from the baseline, so a refresh that lands at the low end
-  of a metric's range tightens the gate and one that lands high loosens it. The
-  2026-08-26 refresh took `job.acceptLedger.running.p95` from a 5.74x floor to
-  16.28x — it does not fire on any observed run, so it stays gated, but the weak
-  floor is recorded rather than left to surprise someone. The same refresh put
-  three `p50` keys below the spread they need, and they are now excluded (below).
-  `baselines/README.md` carries the measurements.
+  of a metric's range tightens the gate and one that lands high loosens it.
+  `job.acceptLedger.running.p95` has been measured with a 5.74x detection floor
+  on one baseline and 16.28x on another — it does not fire on any observed run,
+  so it stays gated, but the weak floor is recorded rather than left to surprise
+  someone. The same effect puts three `p50` keys below the spread they need, and
+  those are excluded (below). `baselines/README.md` carries the measurements.
 - **The bound covers quantization noise only, so a key whose run-to-run variance
   exceeds it cannot be gated. Five keys are excluded for that reason**, leaving
   20 gated. `span.ledger.validate.p95` and `.p99` came first — spreads of 5.9x
   and 66.8x across four CI runs, both reaching past their trip points on healthy
   runs, because the span's duration follows peer-validation arrival timing rather
-  than code speed. The 2026-08-26 refresh added `span.tx.apply.p50`,
-  `span.ledger.build.p50` and `span.consensus.ledger_close.p50`, whose observed
-  maxima sit 46.76x, 4.77x and 2.38x above their new trip points. That is the
-  same rule applied, not a new exception: the decisive evidence is that
-  `span.tx.apply.p50` read 0.7917 ms in the previous baseline and 0.00597 ms in
-  this one — 132x apart on the same workload — so whether the gate worked was
+  than code speed. `span.tx.apply.p50`, `span.ledger.build.p50` and
+  `span.consensus.ledger_close.p50` join them on this baseline, with observed
+  maxima 46.76x, 4.77x and 2.38x above their trip points. That is the same rule
+  applied, not a new exception: the decisive evidence is that
+  `span.tx.apply.p50` has read 0.7917 ms and 0.00597 ms on the same workload
+  — 132x apart — so whether the gate worked was
   decided by where in its own distribution the captured run fell, not by the
   code. All five share one shape: the observed maximum exceeds
   `baseline + bound`, four of them because a low-bucket baseline yields a tiny

@@ -69,7 +69,7 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 | Option                     | Type   | Default                            | Description                                                                                                                                                                                                                           |
 | -------------------------- | ------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `enabled`                  | 0 or 1 | `0`                                | Enable/disable telemetry                                                                                                                                                                                                              |
-| `endpoint`                 | string | `http://localhost:4318/v1/traces`  | OTLP/HTTP collector endpoint for **traces**                                                                                                                                                                                           |
+| `traces_endpoint`          | string | `http://localhost:4318/v1/traces`  | OTLP/HTTP collector endpoint for **traces**                                                                                                                                                                                           |
 | `metrics_endpoint`         | string | `http://localhost:4318/v1/metrics` | OTLP/HTTP collector endpoint for the native metrics pipeline (`MetricsRegistry`). Read in `Application.cpp:1670`                                                                                                                      |
 | `use_tls`                  | 0 or 1 | `0`                                | Enable TLS for exporter connection                                                                                                                                                                                                    |
 | `tls_ca_cert`              | string | `""`                               | Path to CA certificate file                                                                                                                                                                                                           |
@@ -131,10 +131,10 @@ The parser `makeTelemetrySetup()` in `src/libxrpl/telemetry/TelemetryConfig.cpp`
 
 `metrics_endpoint` is deliberately **not** handled here: it is read separately in `ApplicationImp::startTelemetry()` (`Application.cpp:1670`) and passed to `MetricsRegistry::start()`. Note the consequence — the two metric exporters resolve their URL differently:
 
-| Metric source                              | Exporter built by                            | URL comes from                                                       |
-| ------------------------------------------ | -------------------------------------------- | -------------------------------------------------------------------- |
-| `beast::insight` (`[insight] server=otel`) | `Telemetry::initMetrics()` (global provider) | `endpoint` with a trailing `/v1/traces` rewritten to `/v1/metrics`   |
-| Native `XRPL_METRIC_*` (`MetricsRegistry`) | `MetricsRegistry::initExporterAndProvider()` | `metrics_endpoint`, defaulting to `http://localhost:4318/v1/metrics` |
+| Metric source                              | Exporter built by                            | URL comes from                                                            |
+| ------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------- |
+| `beast::insight` (`[insight] server=otel`) | `Telemetry::initMetrics()` (global provider) | `traces_endpoint` with a trailing `/v1/traces` rewritten to `/v1/metrics` |
+| Native `XRPL_METRIC_*` (`MetricsRegistry`) | `MetricsRegistry::initExporterAndProvider()` | `metrics_endpoint`, defaulting to `http://localhost:4318/v1/metrics`      |
 
 Setting a non-default `endpoint` therefore moves the insight metrics with it, but leaves the native metrics on localhost unless `metrics_endpoint` is set too.
 

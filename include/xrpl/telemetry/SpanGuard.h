@@ -410,8 +410,10 @@ public:
      *                     follows-from link. Use to stitch sequential
      *                     top-level spans (e.g. consecutive consensus
      *                     rounds). Ignored if nullptr or invalid.
+     * @return An active guard, or a null guard when the category is
+     * disabled or hashSize is under 16.
      */
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     hashSpan(
         TraceCategory const cat,
         std::string_view const name,
@@ -431,8 +433,10 @@ public:
      * @param parentSpanId    Pointer to 8 bytes of parent span ID.
      * @param parentSpanSize  Size of parent span ID buffer (must be 8).
      * @param traceFlags      Trace flags from remote context.
+     * @return An active guard, or a null guard when the category is
+     * disabled, hashSize is under 16, or parentSpanSize is not 8.
      */
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     hashSpan(
         TraceCategory const cat,
         std::string_view const name,

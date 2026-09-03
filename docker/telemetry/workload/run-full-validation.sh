@@ -964,7 +964,7 @@ fold_exit "$VALIDATION_EXIT"
 # were never measured. The messages below say incomplete, never missing.
 #
 # That thin file also says so itself, in the "capture" block capture_timings.py
-# writes into it, so the CAPTURE_EXIT below is no longer the only record of the
+# writes into it, so the CAPTURE_EXIT below is not the only record of the
 # capture's health: both paste-me paths read the flag and withhold the JSON
 # rather than offering an artifact this run has already called unusable.
 #
@@ -972,7 +972,7 @@ fold_exit "$VALIDATION_EXIT"
 # exploration), and with it out of the gate's verdict: a capture failure is
 # reported loudly and shown in the step-status table, but does not fail a run
 # whose caller asked not to be gated. With the gate active, a capture failure is
-# an infrastructure error (exit 2) exactly as before.
+# an infrastructure error (exit 2).
 #
 # When the comparison does run it either prints the paste-me JSON for a
 # placeholder baseline, or enforces thresholds and fails the run on regression.

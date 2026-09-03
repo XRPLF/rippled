@@ -109,7 +109,9 @@
  * // before any metric-emitting code:
  * metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
  * telemetry_->isEnabled(), app, journal);
- * metricsRegistry_->start(setup.exporterEndpoint);
+ * // The endpoint comes from [telemetry] metrics_endpoint, read directly in
+ * // Application::setup() rather than through Telemetry::Setup.
+ * metricsRegistry_->start(endpoint, instanceId, nodeId);
  *
  * // Later in setup(), once overlay_ exists (the last of the services the
  * // callbacks read). Phase 2 registers the observable instruments:
@@ -157,11 +159,13 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <algorithm>
+#include <charconv>
 #include <cstdint>
 #include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/metrics/meter.h>
@@ -568,6 +572,73 @@ public:
     }
 
     /**
+     * Read one comma-separated segment of a complete-ledger range string.
+     *
+     * The producer is xrpl::to_string(RangeSet), documented in
+     * xrpl/basics/RangeSet.h. It renders an interval as `first-last`, and an
+     * interval whose first equals its last as a bare sequence number. A segment
+     * with no dash is therefore a range of one ledger, not a malformed one.
+     *
+     * Defined inline for the same reason as sanitiseHandler(): in a
+     * telemetry-enabled build MetricsRegistry.cpp is not compiled into the
+     * unit-test binary, so an out-of-line definition would be untestable.
+     *
+     * @param segment  One segment, already split on ','. Leading or trailing
+     * whitespace is rejected, because the producer emits none.
+     * @return The inclusive first and last sequence of the range. The two are
+     * equal for a single-ledger range. std::nullopt when @p segment is not
+     * something this producer can emit.
+     *
+     * @note Pure and reentrant: holds no state, performs no I/O, and is safe to
+     * call concurrently from any thread.
+     * @note Reports malformed input instead of throwing, so one unreadable
+     * segment costs its own range and not every range after it.
+     * @note A reversed range such as "9-4" is returned as given. RangeSet
+     * cannot emit one.
+     *
+     * Example:
+     * @code
+     * parseLedgerRange("32570-50000");  // {32570, 50000}
+     * parseLedgerRange("5000");         // {5000, 5000}  -- one ledger
+     * parseLedgerRange("5-");           // nullopt
+     * @endcode
+     */
+    [[nodiscard]] static std::optional<std::pair<std::uint32_t, std::uint32_t>>
+    parseLedgerRange(std::string_view segment) noexcept
+    {
+        auto const parseSeq = [](std::string_view text) -> std::optional<std::uint32_t> {
+            std::uint32_t value = 0;
+            auto const* const begin = text.data();
+            auto const* const end = begin + text.size();
+            auto const [ptr, ec] = std::from_chars(begin, end, value);
+
+            // from_chars stops at the first character it cannot use, so the
+            // whole segment counts as read only when it consumed all of it.
+            if (ec != std::errc{} || ptr != end)
+                return std::nullopt;
+
+            return value;
+        };
+
+        auto const dash = segment.find('-');
+        if (dash == std::string_view::npos)
+        {
+            auto const only = parseSeq(segment);
+            if (!only)
+                return std::nullopt;
+
+            return std::pair{*only, *only};
+        }
+
+        auto const first = parseSeq(segment.substr(0, dash));
+        auto const last = parseSeq(segment.substr(dash + 1));
+        if (!first || !last)
+            return std::nullopt;
+
+        return std::pair{*first, *last};
+    }
+
+    /**
      * Record a job enqueued event.
      * @param jobType  The job type name (e.g. "ledgerData").
      * @param jobName  The addJob name, reduced to a bounded `handler`
@@ -672,7 +743,7 @@ public:
      * into it is not free: each call takes its lock and inserts an entry.
      * @return Reference to the internal ValidationTracker instance.
      */
-    ValidationTracker&
+    [[nodiscard]] ValidationTracker&
     getValidationTracker()
     {
         return validationTracker_;
@@ -686,7 +757,7 @@ public:
      * start() has run or when disabled.
      * @return The shared Meter, or empty if not yet started.
      */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
     meter() const noexcept
     {
         return meter_;

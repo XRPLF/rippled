@@ -596,8 +596,8 @@ PathRequest::findPaths(
     // One `pathfind.discover` span wraps the entire per-source-asset loop so
     // that a single RPC call produces one discover span instead of N (one per
     // candidate source asset). Trade-off: per-asset discovery/ranking timing
-    // is no longer split into individual spans — span count and Tempo storage
-    // are bounded per RPC at the cost of per-asset visibility.
+    // is not measured separately — span count and Tempo storage are bounded
+    // per RPC at the cost of per-asset visibility.
     //
     // This is an unscoped guard: it takes the ambient span as its own parent,
     // but does not itself become the ambient parent. Adding per-asset child

@@ -4,10 +4,9 @@
  *
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
  * telemetry=ON). Maps beast::insight instruments to OTel SDK instruments
- * created on the GLOBAL Meter published by the telemetry module. This class
- * is an adapter only: it owns no export pipeline. The MeterProvider,
- * PeriodicExportingMetricReader, OTLP exporter and histogram view all live in
- * xrpl::telemetry::Telemetry.
+ * created on the GLOBAL Meter published by the telemetry module. It owns no
+ * export pipeline of its own: the MeterProvider, PeriodicExportingMetricReader,
+ * OTLP exporter and histogram view all live in xrpl::telemetry::Telemetry.
  *
  * When XRPL_ENABLE_TELEMETRY is not defined, OTelCollector::New() returns
  * a NullCollector so the build succeeds without OTel dependencies.
@@ -43,6 +42,7 @@
 #include <xrpl/beast/insight/MeterImpl.h>
 #include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <opentelemetry/metrics/async_instruments.h>
 #include <opentelemetry/metrics/meter.h>
@@ -61,9 +61,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -175,11 +178,10 @@ private:
  * The instrument's declared unit is what selects its bucket ladder: the
  * histogram views registered in Telemetry.cpp match on unit, so a `ms`
  * instrument gets the millisecond ladder and a `By` instrument the byte
- * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h --
- * do not restate them here. An earlier version of this comment listed
- * `[1, 5, ..., 1000, 5000] ms` as "matching the SpanMetrics connector"; that
- * was true when written and silently became false when the connector's
- * ladder was extended, which is why the edges now have one owner.
+ * ladder. The edges themselves live in xrpl/telemetry/HistogramBuckets.h,
+ * which is their single owner -- do not restate them here. An edge list copied
+ * into a comment reads as authoritative and goes stale the moment the
+ * collector's SpanMetrics ladder is extended, with nothing to flag the drift.
  *
  * Thread safety: OTel Histogram::Record() is thread-safe by specification.
  */
@@ -271,7 +273,7 @@ public:
      * @brief Return the current gauge value for the OTel callback.
      * @return The most recently set/incremented value.
      */
-    int64_t
+    [[nodiscard]] int64_t
     currentValue() const;
 
     OTelGaugeImpl&
@@ -284,10 +286,13 @@ public:
     gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state);
 
     /**
-     * Create the observable instrument and register the callback, once.
+     * Create the observable instrument and register the callback.
      *
      * Called when the collector is told collection is ready, because the
      * callback reads live application state.
+     *
+     * Idempotent. Arming twice would register the callback twice, so callers
+     * need not check; onCollectionReady() iterates a snapshot and may re-arm.
      */
     void
     arm();
@@ -379,7 +384,7 @@ private:
 //------------------------------------------------------------------------------
 
 /**
- * @brief Main OTel Collector implementation (adapter over the global Meter).
+ * @brief Main OTel Collector implementation.
  *
  * Obtains its Meter from the GLOBAL MeterProvider owned and published by the
  * telemetry module (xrpl::telemetry::Telemetry), rather than building its own
@@ -388,7 +393,7 @@ private:
  *
  * The metrics pipeline (MeterProvider + PeriodicExportingMetricReader + OTLP
  * HTTP exporter + histogram view) lives in the telemetry module. This class is
- * a thin adapter kept for beast::insight callers during deprecation.
+ * the thin adapter that lets beast::insight callers reach it.
  *
  * Class diagram:
  *
@@ -444,14 +449,12 @@ public:
     /**
      * @brief Construct the OTel collector over the global MeterProvider.
      *
-     * @param endpoint    OTLP/HTTP metrics endpoint URL, recorded in the
-     *                    collector's startup log line. Export uses the
-     *                    endpoint configured on the global telemetry
-     *                    pipeline.
-     * @param prefix      Label for the collector's startup log line
-     *                    (e.g. "xrpld"). Exported metric names come from
-     *                    formatName(); the service is identified by the
-     *                    service.name resource attribute.
+     * @param endpoint    OTLP/HTTP metrics endpoint URL. Informational only:
+     *                    the global telemetry pipeline is authoritative for
+     *                    the actual export endpoint. Used only in the startup
+     *                    log line.
+     * @param prefix      Metric-name prefix. Not applied to metric names;
+     *                    used only in the startup log line.
      * @param instanceId  Value for the service.instance.id resource attribute.
      *                    When empty, the attribute is omitted.
      * @param serviceName Value for the service.name resource attribute.
@@ -555,7 +558,7 @@ public:
      * @brief The shared Meter, for gauges creating their instrument in arm().
      * @return The Meter this collector resolved at construction.
      */
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
     otelMeter() const;
 
     /**
@@ -570,8 +573,8 @@ public:
      * @param name  Raw metric name from beast::insight callers.
      * @return Fully-qualified metric name.
      */
-    static std::string
-    formatName(std::string const& name);
+    [[nodiscard]] static std::string
+    formatName(std::string_view name);
 
 private:
     /**
@@ -655,8 +658,10 @@ OTelCounterImpl::OTelCounterImpl(
 void
 OTelCounterImpl::increment(value_type amount)
 {
-    // OTel counters require non-negative values. beast::insight CounterImpl
-    // uses int64_t, so clamp negative values to 0 and cast to uint64_t.
+    // OTel counters take unsigned deltas only. Assert to catch a decrementing
+    // caller; skip the Add so a release build under-counts instead of wrapping.
+    XRPL_ASSERT(
+        amount >= 0, "beast::insight::detail::OTelCounterImpl::increment : non-negative amount");
     if (amount > 0)
         counter_->Add(static_cast<uint64_t>(amount));
 }
@@ -743,20 +748,25 @@ OTelGaugeImpl::~OTelGaugeImpl()
 void
 OTelGaugeImpl::set(value_type value)
 {
-    value_.store(static_cast<int64_t>(value), std::memory_order_relaxed);
+    // value_type is uint64_t, the gauge reports int64_t. Clamp instead of
+    // wrapping to a negative, which increment() would then floor to 0.
+    constexpr auto kMax = static_cast<value_type>(std::numeric_limits<int64_t>::max());
+    value_.store(static_cast<int64_t>(std::min(value, kMax)), std::memory_order_relaxed);
 }
 
 void
 OTelGaugeImpl::increment(difference_type amount)
 {
-    // Use compare-exchange loop to safely clamp to [0, MAX].
+    // Saturate in [0, INT64_MAX]. Signed overflow is UB, so check the headroom
+    // before adding. A negative amount cannot underflow: current is never
+    // negative, so the lowest sum is 0 + INT64_MIN.
+    constexpr auto kMax = std::numeric_limits<int64_t>::max();
     int64_t current = value_.load(std::memory_order_relaxed);
     int64_t desired = 0;
     do
     {
-        desired = current + amount;
-        // Clamp to 0 on underflow.
-        desired = std::max(desired, int64_t{0});
+        desired =
+            (amount > 0 && current > kMax - amount) ? kMax : std::max(current + amount, int64_t{0});
     } while (!value_.compare_exchange_weak(current, desired, std::memory_order_relaxed));
 }
 
@@ -790,23 +800,19 @@ OTelMeterImpl::increment(value_type amount)
 OTelCollectorImp::OTelCollectorImp(
     std::string const& endpoint,
     std::string prefix,
-    std::string const& instanceId,
-    std::string const& serviceName,
-    std::string const& networkType,
+    // instanceId/serviceName/networkType are accepted so the New() signature
+    // stays uniform for callers, but they are not read here: the telemetry
+    // module owns the resource attributes for the shared metrics pipeline.
+    [[maybe_unused]] std::string const& instanceId,
+    [[maybe_unused]] std::string const& serviceName,
+    [[maybe_unused]] std::string const& networkType,
     Journal journal)
     : journal_(journal), prefix_(std::move(prefix))
 {
-    // instanceId/serviceName/networkType are accepted but unused here: the
-    // telemetry module owns the resource attributes for the shared metrics
-    // pipeline, so setting them from this collector would have no effect.
-    (void)instanceId;
-    (void)serviceName;
-    (void)networkType;
-
     if (journal_.info())
     {
-        // endpoint is logged for diagnostics only: the global telemetry
-        // pipeline owns the exporter that actually sends the metrics.
+        // endpoint is informational: the global telemetry pipeline owns the
+        // real exporter. It is logged here purely as a startup diagnostic.
         journal_.info() << "OTelCollector starting: endpoint=" << endpoint << " prefix=" << prefix_;
     }
 
@@ -815,14 +821,10 @@ OTelCollectorImp::OTelCollectorImp(
     // periodic reader, histogram view, resource attributes) and registers it
     // via metrics::Provider::SetMeterProvider() during start(). beast metrics
     // ride that shared pipeline, so both direct-API and beast-sourced metrics
-    // export under one resource identity.
-    //
-    // The name/version literals MUST match the telemetry module's kMeterName
-    // ("xrpld") and kMeterVersion ("1.0.0"). They are written as literals (not
-    // referenced from Telemetry.h) because beast/insight sits below the
-    // telemetry module in the layering and cannot include its header.
+    // export under one resource identity. The scope must match the telemetry
+    // module's; see kOTelMeterName in the header.
     otelMeter_ = metrics_api::Provider::GetMeterProvider()->GetMeter(
-        std::string{"xrpld"}, std::string{"1.0.0"});
+        std::string{kOTelMeterName}, std::string{kOTelMeterVersion});
 
     if (journal_.info())
     {
@@ -832,12 +834,8 @@ OTelCollectorImp::OTelCollectorImp(
 
 OTelCollectorImp::~OTelCollectorImp()
 {
-    if (journal_.info())
-    {
-        journal_.info() << "OTelCollector shutting down";
-    }
-    // No pipeline teardown here: the telemetry module owns the global
-    // MeterProvider lifecycle (ForceFlush/Shutdown happen in Telemetry::stop()).
+    // Nothing to tear down: the telemetry module owns the global MeterProvider,
+    // so ForceFlush and Shutdown happen in Telemetry::stop().
     if (journal_.info())
     {
         journal_.info() << "OTelCollector stopped";
@@ -1003,25 +1001,16 @@ OTelCollectorImp::otelMeter() const
 }
 
 std::string
-OTelCollectorImp::formatName(std::string const& name)
+OTelCollectorImp::formatName(std::string_view name)
 {
-    // Produce a lowercase, Prometheus-compatible metric name: dots and
-    // spaces become underscores. Service identity travels in the
-    // service.name resource attribute, not in the metric name.
-    std::string result;
-    result.reserve(name.size());
-    for (char const c : name)
-    {
-        if (c == '.' || c == ' ')
-        {
-            result += '_';
-        }
-        else
-        {
-            result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        }
-    }
-    return result;
+    // Lowercase, with '.' and ' ' mapped to '_'. No prefix: the service.name
+    // resource attribute identifies the service.
+    return name | std::views::transform([](char c) {
+               return (c == '.' || c == ' ')
+                   ? '_'
+                   : static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+           }) |
+        std::ranges::to<std::string>();
 }
 
 }  // namespace detail

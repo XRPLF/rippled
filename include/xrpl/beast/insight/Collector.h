@@ -116,9 +116,8 @@ public:
      * @param unit What the samples measure.
      */
     virtual Event
-    makeEvent(std::string const& name, Unit unit)
+    makeEvent(std::string const& name, [[maybe_unused]] Unit unit)
     {
-        (void)unit;
         return makeEvent(name);
     }
 
@@ -130,7 +129,7 @@ public:
         return makeEvent(prefix + "." + name);
     }
 
-    Event
+    [[nodiscard]] Event
     makeEvent(std::string const& prefix, std::string const& name, Unit unit)
     {
         if (prefix.empty())

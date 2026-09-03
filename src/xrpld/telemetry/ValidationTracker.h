@@ -138,21 +138,21 @@ public:
      * Agreement percentage over the last 1 hour.
      * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
-    double
+    [[nodiscard]] double
     agreementPct1h() const;
 
     /**
      * Agreement percentage over the last 24 hours.
      * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
-    double
+    [[nodiscard]] double
     agreementPct24h() const;
 
     /**
      * Agreement percentage over the last 7 days.
      * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
-    double
+    [[nodiscard]] double
     agreementPct7d() const;
 
     /** @} */
@@ -165,37 +165,37 @@ public:
     /**
      * Number of agreements in the 1-hour window.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     agreements1h() const;
 
     /**
      * Number of misses in the 1-hour window.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     missed1h() const;
 
     /**
      * Number of agreements in the 24-hour window.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     agreements24h() const;
 
     /**
      * Number of misses in the 24-hour window.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     missed24h() const;
 
     /**
      * Number of agreements in the 7-day window.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     agreements7d() const;
 
     /**
      * Number of misses in the 7-day window.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     missed7d() const;
 
     /** @} */
@@ -208,13 +208,13 @@ public:
     /**
      * Total agreements since process start.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     totalAgreements() const;
 
     /**
      * Total misses since process start.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     totalMissed() const;
 
     /**
@@ -226,7 +226,7 @@ public:
      * counter validation_agreements_total. See the counting-semantics
      * note in detail/ValidationTracker.cpp.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     totalAgreementsEver() const;
 
     /**
@@ -238,19 +238,19 @@ public:
      * counter validation_missed_total. See the counting-semantics note
      * in detail/ValidationTracker.cpp.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     totalMissedEver() const;
 
     /**
      * Total validations this node sent.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     totalValidationsSent() const;
 
     /**
      * Total network validations observed for comparison.
      */
-    uint64_t
+    [[nodiscard]] uint64_t
     totalValidationsChecked() const;
 
     /**

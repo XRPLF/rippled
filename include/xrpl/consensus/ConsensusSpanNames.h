@@ -59,10 +59,10 @@
  *    |   |
  *    |   +-- consensus.accept.apply              [jtACCEPT thread, child of accept]
  *    |         Created: Adaptor::doAccept()
- *    |     Attrs:   ledger_seq, close_time, close_time_correct,
+ *    |     Attrs:   ledger_seq, close_time_ripple_epoch_s, close_time_correct,
  *    |              close_resolution_ms, consensus_state, proposing, round_time_ms,
- *    |              parent_close_time, close_time_self, close_time_vote_bins,
- *    |              resolution_direction, tx_count
+ *    |              parent_close_time_ripple_epoch_s, close_time_self_ripple_epoch_s,
+ *    |              close_time_vote_bins, resolution_direction, tx_count
  *    |     Events:  tx.included (per tx, attrs: tx_id)
  *    |
  *    +~~~ consensus.validation.send              [jtACCEPT thread, linked]
@@ -169,8 +169,8 @@ namespace attr {
  * concept, same key, distinguished by span name (not an emitter prefix).
  */
 using ::xrpl::telemetry::attr::closeResolutionMs;
-using ::xrpl::telemetry::attr::closeTime;
 using ::xrpl::telemetry::attr::closeTimeCorrect;
+using ::xrpl::telemetry::attr::closeTimeRippleEpochS;
 using ::xrpl::telemetry::attr::fullValidation;
 using ::xrpl::telemetry::attr::ledgerHash;
 using ::xrpl::telemetry::attr::ledgerSeq;
@@ -276,8 +276,20 @@ inline constexpr auto positionHashPrefix = makeStr("position_hash_prefix");
  * "consensus_state" — domain-qualified (collides with other domains' state).
  */
 inline constexpr auto consensusState = makeStr("consensus_state");
-inline constexpr auto parentCloseTime = makeStr("parent_close_time");
-inline constexpr auto closeTimeSelf = makeStr("close_time_self");
+/**
+ * Close-time instants, both NetClock readings in whole seconds since the XRP
+ * Ledger epoch (2000-01-01T00:00:00Z) — see `closeTimeRippleEpochS` in
+ * SpanNames.h for why the epoch is spelled into the key.
+ *
+ * `parentCloseTimeRippleEpochS` is the previous ledger's close time;
+ * `closeTimeSelfRippleEpochS` is this node's own close-time vote for the round,
+ * so the pair shows how far the node's position sat from the ledger it built on.
+ *
+ * `closeTimeVoteBins` is not a time: it holds the number of distinct close-time
+ * positions seen from peers this round.
+ */
+inline constexpr auto parentCloseTimeRippleEpochS = makeStr("parent_close_time_ripple_epoch_s");
+inline constexpr auto closeTimeSelfRippleEpochS = makeStr("close_time_self_ripple_epoch_s");
 inline constexpr auto closeTimeVoteBins = makeStr("close_time_vote_bins");
 inline constexpr auto resolutionDirection = makeStr("resolution_direction");
 inline constexpr auto convergePercent = makeStr("converge_percent");
@@ -319,6 +331,14 @@ inline constexpr auto disputesCount = makeStr("disputes_count");
  */
 inline constexpr auto proposalTrusted = makeStr("proposal_trusted");
 inline constexpr auto validationTrusted = makeStr("validation_trusted");
+
+/**
+ * "validation_status" — which exit the inbound validation took. Set once per
+ * exit, so a dropped validation (microseconds) is separable from a queued one
+ * (job wait plus checkValidation). Without it the span name reports two
+ * unrelated latency distributions and every quantile over it is meaningless.
+ */
+inline constexpr auto validationStatus = makeStr("validation_status");
 }  // namespace attr
 
 // ===== Event names ===========================================================
@@ -402,6 +422,10 @@ inline constexpr auto closeAnomaly = makeStr("anomaly");
 inline constexpr auto closeOthersClosed = makeStr("others_closed");
 inline constexpr auto closeIdle = makeStr("idle");
 inline constexpr auto closeNormal = makeStr("normal");
+// validation_status values, one per exit of the inbound validation path.
+inline constexpr auto validationQueued = makeStr("queued");
+inline constexpr auto validationDroppedDiverged = makeStr("dropped_diverged");
+inline constexpr auto validationDroppedLoad = makeStr("dropped_load");
 }  // namespace val
 
 // ===== Value rules ===========================================================
