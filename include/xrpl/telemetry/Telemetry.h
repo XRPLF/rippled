@@ -148,7 +148,7 @@ public:
      * Get the global Telemetry instance.
      * @return Pointer to the active instance, or nullptr if not started.
      */
-    static Telemetry*
+    [[nodiscard]] static Telemetry*
     getInstance()
     {
         return instance.load(std::memory_order_acquire);
@@ -196,9 +196,10 @@ public:
         std::string serviceInstanceId;
 
         /**
-         * OTLP/HTTP endpoint URL where spans are sent.
+         * Full OTLP/HTTP URL where spans are sent, including the signal path.
+         * Used verbatim: no other endpoint is derived from it.
          */
-        std::string exporterEndpoint = "http://localhost:4318/v1/traces";
+        std::string tracesEndpoint = "http://localhost:4318/v1/traces";
 
         /**
          * Whether to use TLS for the exporter connection.
@@ -309,10 +310,9 @@ public:
      * @param id  The node's base58-encoded public key or custom identifier.
      */
     virtual void
-    setServiceInstanceId(std::string const& id)
+    setServiceInstanceId([[maybe_unused]] std::string const& id)
     {
         // Default no-op for NullTelemetry implementations.
-        (void)id;
     }
 
     /**
@@ -378,7 +378,7 @@ public:
      * @param name  Tracer name used to identify the instrumentation library.
      * @return A shared pointer to the Tracer.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view name = kTracerName) = 0;
 
     /**
@@ -393,7 +393,7 @@ public:
      * @param name  Meter name used to identify the instrumentation scope.
      * @return A shared pointer to the Meter.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
     getMeter(std::string_view name = kMeterName) = 0;
 
     /**
@@ -411,7 +411,7 @@ public:
      * - kConsumer: async message receive
      * @return A shared pointer to the new Span.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(
         std::string_view name,
         opentelemetry::trace::SpanKind kind = opentelemetry::trace::SpanKind::kInternal) = 0;
@@ -427,7 +427,7 @@ public:
      * @param kind           The span kind (defaults to kInternal).
      * @return A shared pointer to the new Span.
      */
-    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(
         std::string_view name,
         opentelemetry::context::Context const& parentContext,
@@ -486,7 +486,7 @@ makeTelemetrySetup(
  * @param networkId  The network identifier from [network_id] config.
  * @return "mainnet" (0), "testnet" (1), "devnet" (2), or "unknown".
  */
-std::string
+[[nodiscard]] std::string
 networkTypeFromId(std::uint32_t networkId);
 
 }  // namespace xrpl::telemetry

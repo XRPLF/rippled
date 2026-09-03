@@ -7,24 +7,24 @@ namespace beast::insight {
 /**
  * @brief What an Event's samples measure.
  *
- * `Event` documents itself as carrying "a millisecond time, or other integral
- * value", but both backends used to assume the first case: the OTel bridge
- * declared every instrument with unit `ms`, and StatsD tagged every sample
- * `|ms`. A size metric therefore exported under a `_milliseconds` name and
- * inherited a latency bucket ladder, which censored a quarter of its samples
- * and pinned its p95 to a constant.
- *
- * Naming the unit at creation time is what lets the OTel bridge pick both the
- * instrument unit and the matching bucket ladder:
+ * `Event` carries "a millisecond time, or other integral value", so the unit
+ * cannot be inferred from the sample. Naming it at creation time is what lets
+ * the OTel bridge pick both the instrument unit and the matching bucket
+ * ladder:
  *
  *     makeEvent("time", Unit::Millis) --> OTel unit "ms" --> millisecond ladder
  *     makeEvent("size", Unit::Bytes)  --> OTel unit "By" --> byte ladder
  *
- * The StatsD backend deliberately ignores this and keeps emitting `|ms` for
- * every Event. That path is out of service -- its UDP port is commented out of
- * the compose file and the integration test fails if anything is listening on
- * 8125 -- so changing its wire format would alter a legacy contract for no
- * local benefit and with no way to verify it.
+ * Without an explicit unit every instrument declares `ms`, so a size metric
+ * exports under a `_milliseconds` name and inherits a latency bucket ladder.
+ * For RPC response sizes that ladder censors about a quarter of the samples
+ * and pins the p95 to a constant.
+ *
+ * The StatsD backend deliberately ignores this and emits `|ms` for every
+ * Event. That path is out of service -- its UDP port is commented out of the
+ * compose file and the integration test fails if anything is listening on
+ * 8125 -- so changing its wire format would alter an external protocol
+ * contract for no local benefit and with no way to verify it.
  *
  * @note Adding a member requires extending otelUnitCode(), which switches
  *       exhaustively so a new member is a compile error rather than a silent
@@ -53,7 +53,7 @@ enum class Unit : std::uint8_t {
  * @param unit The unit to translate.
  * @return A static, null-terminated UCUM code.
  */
-constexpr char const*
+[[nodiscard]] constexpr char const*
 otelUnitCode(Unit unit) noexcept
 {
     switch (unit)
@@ -78,7 +78,7 @@ otelUnitCode(Unit unit) noexcept
  * @param unit The unit to describe.
  * @return A static, null-terminated description.
  */
-constexpr char const*
+[[nodiscard]] constexpr char const*
 otelUnitDescription(Unit unit) noexcept
 {
     switch (unit)

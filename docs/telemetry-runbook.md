@@ -31,7 +31,7 @@ Add to your `xrpld.cfg`:
 ```ini
 [telemetry]
 enabled=1
-endpoint=http://localhost:4318/v1/traces
+traces_endpoint=http://localhost:4318/v1/traces
 ```
 
 ### 3. Build with telemetry support
@@ -47,7 +47,7 @@ cmake --build --preset default
 | Option                     | Default                           | Description                                               |
 | -------------------------- | --------------------------------- | --------------------------------------------------------- |
 | `enabled`                  | `0`                               | Master switch for telemetry                               |
-| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                        |
+| `traces_endpoint`          | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim               |
 | `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute             |
 | `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute      |
 | `trace_rpc`                | `1`                               | Enable RPC request tracing                                |
@@ -174,18 +174,18 @@ hash); `tx.preflight` is stateless and omits both.
 
 ### Ledger Spans
 
-| Span Name         | Source File          | Attributes                            | Description                   |
-| ----------------- | -------------------- | ------------------------------------- | ----------------------------- |
-| `ledger.build`    | BuildLedger.cpp:31   | `ledger_seq`, `tx_count`, `tx_failed` | Ledger build during consensus |
-| `ledger.validate` | LedgerMaster.cpp:915 | `ledger_seq`, `validations`           | Ledger promoted to validated  |
-| `ledger.store`    | LedgerMaster.cpp:409 | `ledger_seq`                          | Ledger stored in history      |
+| Span Name         | Source File      | Attributes                                                              | Description                   |
+| ----------------- | ---------------- | ----------------------------------------------------------------------- | ----------------------------- |
+| `ledger.build`    | BuildLedger.cpp  | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus |
+| `ledger.validate` | LedgerMaster.cpp | `ledger_seq`, `validations`                                             | Ledger promoted to validated  |
+| `ledger.store`    | LedgerMaster.cpp | `ledger_seq`                                                            | Ledger stored in history      |
 
 ### Peer Spans
 
-| Span Name                 | Source File      | Attributes                      | Description                   |
-| ------------------------- | ---------------- | ------------------------------- | ----------------------------- |
-| `peer.proposal.receive`   | PeerImp.cpp:1667 | `peer_id`, `proposal_trusted`   | Proposal received from peer   |
-| `peer.validation.receive` | PeerImp.cpp:2264 | `peer_id`, `validation_trusted` | Validation received from peer |
+| Span Name                 | Source File | Attributes                                                        | Description                   |
+| ------------------------- | ----------- | ----------------------------------------------------------------- | ----------------------------- |
+| `peer.proposal.receive`   | PeerImp.cpp | `peer_id`, `proposal_trusted`                                     | Proposal received from peer   |
+| `peer.validation.receive` | PeerImp.cpp | `peer_id`, `ledger_hash`, `full_validation`, `validation_trusted` | Validation received from peer |
 
 Both peer receive spans are `kConsumer` inbound entry points started as fresh
 trace roots. They never inherit an ambient span left active on the peer thread,
@@ -461,7 +461,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 {name=~"tx\\..*"} | tx_hash = "<hash>"
 
 # Find all spans in a cross-node consensus trace
-{rootServiceName="xrpld"} | consensus_round_id = 92345679
+{rootServiceName="xrpld"} | consensus_round_id = "<round_id>"
 
 # Compare latency between sender and receiver for validations
 {name="consensus.validation.send" || name="consensus.validation.receive"}
@@ -473,12 +473,27 @@ The OTel Collector's spanmetrics connector automatically derives RED (Rate, Erro
 
 ### Generated Metric Names
 
+These names are deliberately generic: the connector emits **one** metric family covering every span, not a metric per span. Which span a series belongs to comes from the `span_name` label, and the rest of the breakdown from the `dimensions` list in `otel-collector-config.yaml`. So a query always names the span in a label selector rather than in the metric name — `span_calls_total{span_name="ledger.build"}`, never a `ledger_build_calls_total`.
+
 | Prometheus Metric                   | Type      | Description                  |
 | ----------------------------------- | --------- | ---------------------------- |
 | `span_calls_total`                  | Counter   | Total span invocations       |
 | `span_duration_milliseconds_bucket` | Histogram | Latency distribution buckets |
 | `span_duration_milliseconds_count`  | Histogram | Latency observation count    |
 | `span_duration_milliseconds_sum`    | Histogram | Cumulative latency           |
+
+Only one part of those names is ours to choose. Reading a name left to right:
+
+| Part                                  | Set by                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------ |
+| `span_`                               | the connector's `namespace: "span"` in `otel-collector-config.yaml` — **our choice** |
+| `calls`, `duration`                   | the spanmetrics connector's own metric names                                         |
+| `_milliseconds`                       | the Prometheus exporter, expanding the metric's declared unit                        |
+| `_total`, `_bucket`, `_count`, `_sum` | Prometheus conventions for counters and histograms                                   |
+
+`_milliseconds` rather than `_ms` is therefore not a style decision taken here. The config declares the histogram in milliseconds (`buckets: [1ms, 5ms, ...]`) and never contains the string `milliseconds`; the exporter writes the unit out in full when it translates OTLP to Prometheus. Shortening it would mean renaming the series after export, which would break every dashboard and leave the exported name and the queried name disagreeing.
+
+Drop the `namespace` setting and these become `traces_span_metrics_*` instead — the connector's default. Any query, dashboard panel or test that names one of these metrics has to move with that setting.
 
 ### Metric Labels
 
