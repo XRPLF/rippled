@@ -102,7 +102,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 
     std::scoped_lock const lock(mutex_);
 
-    XRPL_ASSERT(connection_ != nullptr, "PeerReservationTable::erase: connection must be initialized");
+    XRPL_ASSERT(connection_ != nullptr, "xrpl::PeerReservationTable::erase : connection must be initialized");
     
     auto const it = table_.find({.nodeId = nodeId});
     if (it != table_.end())
