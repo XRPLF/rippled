@@ -6,7 +6,6 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
-#include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sponsor.h>
@@ -522,15 +521,13 @@ private:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         Number const principalRequest{1, 3};
 
-        auto createJson = env.json(set(lender, broker.brokerID, principalRequest), Fee(loanSetFee));
-
-        json::Value counterpartyJson{json::ValueType::Object};
-        counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
-        counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
-        if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
-            counterpartyJson[sfSigners] = createJson[sfSigners];
-
-        createJson = env.json(createJson, Json(sfCounterpartySignature, counterpartyJson));
+        // The lender is both the borrower and the counterparty here, but the
+        // two roles sign different bytes, so each signature must be made for
+        // the field it goes into.
+        auto const createJson = env.json(
+            set(lender, broker.brokerID, principalRequest),
+            Sig(sfCounterpartySignature, lender),
+            Fee(loanSetFee));
         env(createJson);
 
         env.close();
