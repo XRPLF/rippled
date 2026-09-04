@@ -7,7 +7,9 @@
 #include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
@@ -15,6 +17,7 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
@@ -1353,117 +1356,6 @@ private:
         }
     }
 
-    void
-    testCredentialPinsPseudoAccount()
-    {
-        using namespace test::jtx;
-
-        // A credential issued to a vault pseudo-account can't be accepted or
-        // deleted by it (pseudo-accounts can't sign), so it stays pinned in the
-        // pseudo-account's owner directory and blocks VaultDelete with
-        // tecHAS_OBLIGATIONS. A pin created before the cure activates is removed
-        // by VaultDelete once it does.
-        Account const owner{"owner"};
-        Account const attacker{"attacker"};
-        char const credType[] = "FN36";
-
-        Env env{*this, all_ - fixCleanup3_3_0 - fixCleanup3_4_0};
-        env.fund(XRP(1'000'000), owner, attacker);
-        env.close();
-
-        Vault const vault{env};
-        PrettyAsset const asset = xrpIssue();
-        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-        env(tx);
-        env.close();
-
-        auto const vaultSle = env.le(keylet);
-        BEAST_EXPECT(vaultSle);
-        Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
-        env.memoize(pseudo);
-
-        // The pseudo-account owns the share issuance; the pin must not change
-        // its owner count (an unaccepted credential is owned by the issuer).
-        auto const pseudoOwnerCount = ownerCount(env, pseudo);
-
-        testcase("Credential pins vault pseudo-account");
-        env(credentials::create(pseudo, attacker, credType));
-        env.close();
-
-        auto const credKey = credentials::keylet(pseudo, attacker, credType);
-        BEAST_EXPECT(env.le(credKey));
-        BEAST_EXPECT(ownerCount(env, attacker) == 1);
-        BEAST_EXPECT(ownerCount(env, pseudo) == pseudoOwnerCount);
-
-        // The pin blocks deletion of an otherwise-empty vault.
-        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tecHAS_OBLIGATIONS));
-        env.close();
-
-        env.enableFeature(fixCleanup3_4_0);
-        env.close();
-
-        // The pre-existing pin no longer blocks deletion; the credential is
-        // cleaned up and the issuer's owner count is restored.
-        testcase("VaultDelete removes pinned credential");
-        env(vault.del({.owner = owner, .id = keylet.key}));
-        env.close();
-
-        BEAST_EXPECT(!env.le(credKey));
-        BEAST_EXPECT(!env.le(keylet));
-        BEAST_EXPECT(!env.le(::xrpl::keylet::account(pseudo.id())));
-        BEAST_EXPECT(ownerCount(env, attacker) == 0);
-    }
-
-    void
-    testCredentialPinOverflow()
-    {
-        using namespace test::jtx;
-        testcase("Credential pin cleanup is bounded (tecINCOMPLETE)");
-
-        // A pseudo-account can be pinned with more credentials than one
-        // transaction is allowed to clean up. VaultDelete then removes them a
-        // bounded batch at a time, returning tecINCOMPLETE until the last batch.
-        Account const owner{"owner"};
-        Account const attacker{"attacker"};
-
-        Env env{*this, all_ - fixCleanup3_3_0 - fixCleanup3_4_0};
-        env.fund(XRP(10'000'000), owner, attacker);
-        env.close();
-
-        Vault const vault{env};
-        auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-        env(tx);
-        env.close();
-        auto const vaultSle = env.le(keylet);
-        BEAST_EXPECT(vaultSle);
-        Account const pseudo{"vault pseudo-account", vaultSle->at(sfAccount)};
-        env.memoize(pseudo);
-
-        // Pin more than one cleanup batch's worth of credentials.
-        std::uint16_t const count = kMaxDeletablePseudoAccountCredentials + 3;
-        for (std::uint16_t i = 0; i < count; ++i)
-            env(credentials::create(pseudo, attacker, std::to_string(i)));
-        env.close();
-        BEAST_EXPECT(ownerCount(env, attacker) == count);
-
-        env.enableFeature(fixCleanup3_4_0);
-        env.close();
-
-        // First delete removes one bounded batch and reports it isn't finished.
-        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tecINCOMPLETE));
-        env.close();
-        BEAST_EXPECT(env.le(keylet));  // vault still exists
-        auto const remaining = ownerCount(env, attacker);
-        BEAST_EXPECT(remaining > 0 && remaining < count);
-
-        // Second delete finishes the cleanup and removes the vault.
-        env(vault.del({.owner = owner, .id = keylet.key}));
-        env.close();
-        BEAST_EXPECT(!env.le(keylet));
-        BEAST_EXPECT(!env.le(::xrpl::keylet::account(pseudo.id())));
-        BEAST_EXPECT(ownerCount(env, attacker) == 0);
-    }
-
     struct ImpairedLoanVault
     {
         test::jtx::Account issuer;
@@ -1673,6 +1565,846 @@ private:
             // still priced at the discounted rate and cannot cover 9,000.
             env(clawbackHolder(setup, setup.usd(9'000).value()), Ter(tecINSUFFICIENT_FUNDS));
         }
+    }
+
+    // Bug: a fully impaired vault may pay zero assets for a share burn.
+    // Sending zero MPT is a no-op, so the vault pseudo-account's asset
+    // MPToken is never written and ValidVault, which only records deltas for
+    // created, modified or deleted entries, sees no vault delta at all.
+    //
+    // Pre-fixCleanup3_4_0 that alone makes the withdrawal impossible:
+    // zeroDeltaIsLegitimate is gated on the amendment, so the absent vault
+    // delta fails "withdrawal must change vault balance". Every pre-amendment
+    // arm below dies there, before any destination-side check runs.
+    //
+    // The destination side differs per arm, and only the vault-delta return
+    // hides that pre-amendment. With Alice's asset MPToken already present
+    // nothing touches it, so she has no delta either. With it missing,
+    // doWithdraw still called addEmptyHolding for a self-destination on a
+    // zero payout and created her MPToken at amount 0; a created MPToken is
+    // recorded even at zero, so she arrives with a present-and-zero delta,
+    // which for an integral MPT asset the destination check would reject if
+    // it were reached.
+    //
+    // ValidMPTIssuance is a separate checker and still runs. It only trips on
+    // the one arm that both creates and deletes an MPToken: Alice's last
+    // share with the asset MPToken missing, where addEmptyHolding creates the
+    // asset token while her share token is deleted (created + deleted > 1).
+    // Leftover shares with the token missing is create-only, and a last share
+    // with the token present is delete-only; neither exceeds one. Bob still
+    // owns shares throughout, so this is never the vault's final outstanding
+    // share.
+    //
+    // Post-fixCleanup3_4_0, doWithdraw skips addEmptyHolding on a zero
+    // payout and zeroDeltaIsLegitimate lets the vault-delta and
+    // missing-recipient-delta checks accept the transfer. A present
+    // destination delta of zero is still rejected.
+    void
+    testBugMptZeroWithdrawMissingHolding()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        auto runScenario = [this](
+                               FeatureBitset features,
+                               bool removeAssetToken,
+                               bool withdrawAllAliceShares,
+                               TER expected) {
+            testcase(
+                std::string{"bug: MPT vault zero-value withdraw "} +
+                (removeAssetToken ? "without asset MPToken" : "with asset MPToken") +
+                (withdrawAllAliceShares ? ", Alice's last share" : ", Alice has leftover shares") +
+                (features[fixCleanup3_4_0] ? " (post-fixCleanup3_4_0)" : " (pre-fixCleanup3_4_0)"));
+
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(100'000), issuer, owner, alice, bob, borrower);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            mptt.authorize({.account = borrower});
+            env.close();
+
+            env(pay(issuer, alice, asset(2)));
+            env(pay(issuer, bob, asset(8)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = 60s});
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(2)}));
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = asset(8)}));
+            env.close();
+
+            vault.closePastSubscription(subscriptionDate);
+
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            auto const loanKeylet = keylet::loan(
+                brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+            env(set(borrower, brokerKeylet.key, asset(10).value()),
+                kInterestRate(percentageToTenthBips(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return;
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+
+            env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+
+            auto const vaultImpaired = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultImpaired))
+                return;
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsAvailable) == asset(0).value());
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsTotal) == vaultImpaired->at(sfLossUnrealized));
+            Number const totalBefore = vaultImpaired->at(sfAssetsTotal);
+            Number const lossBefore = vaultImpaired->at(sfLossUnrealized);
+
+            MPTID const shareId = vaultImpaired->at(sfShareMPTID);
+            auto const issuanceBefore = env.le(keylet::mptokenIssuance(shareId));
+            if (!BEAST_EXPECT(issuanceBefore))
+                return;
+            std::uint64_t const outstandingBefore =
+                issuanceBefore->getFieldU64(sfOutstandingAmount);
+
+            auto const tokenAlice = env.le(keylet::mptoken(shareId, alice.id()));
+            if (!BEAST_EXPECT(tokenAlice))
+                return;
+            std::uint64_t const sharesBefore = tokenAlice->getFieldU64(sfMPTAmount);
+            BEAST_EXPECT(sharesBefore == 2);
+            std::uint64_t const sharesToRedeem = withdrawAllAliceShares ? sharesBefore : 1;
+            STAmount const redeemShares{MPTIssue{shareId}, Number(sharesToRedeem)};
+
+            auto const assetTokenKeylet = keylet::mptoken(mptt.issuanceID(), alice.id());
+            if (removeAssetToken)
+            {
+                mptt.authorize({.account = alice, .flags = tfMPTUnauthorize});
+                env.close();
+                BEAST_EXPECT(!env.le(assetTokenKeylet));
+            }
+            else
+            {
+                auto const existing = env.le(assetTokenKeylet);
+                if (!BEAST_EXPECT(existing))
+                    return;
+                BEAST_EXPECT(existing->getFieldU64(sfMPTAmount) == 0);
+            }
+
+            std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
+            env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
+                Ter(expected));
+            env.close();
+            if (expected != tesSUCCESS)
+                return;
+
+            if (removeAssetToken)
+            {
+                BEAST_EXPECT(!env.le(assetTokenKeylet));
+            }
+            else
+            {
+                auto const assetAfter = env.le(assetTokenKeylet);
+                if (!BEAST_EXPECT(assetAfter))
+                    return;
+                BEAST_EXPECT(assetAfter->getFieldU64(sfMPTAmount) == 0);
+            }
+
+            auto const shareAfter = env.le(keylet::mptoken(shareId, alice.id()));
+            if (withdrawAllAliceShares)
+            {
+                BEAST_EXPECT(!shareAfter);
+            }
+            else if (BEAST_EXPECT(shareAfter))
+            {
+                BEAST_EXPECT(shareAfter->getFieldU64(sfMPTAmount) == sharesBefore - sharesToRedeem);
+            }
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == asset(0).value());
+
+            auto const issuanceAfter = env.le(keylet::mptokenIssuance(shareId));
+            if (!BEAST_EXPECT(issuanceAfter))
+                return;
+            BEAST_EXPECT(
+                issuanceAfter->getFieldU64(sfOutstandingAmount) ==
+                outstandingBefore - sharesToRedeem);
+        };
+
+        runScenario(
+            all_, false /* removeAssetToken */, false /* withdrawAllAliceShares */, tesSUCCESS);
+        runScenario(
+            all_, false /* removeAssetToken */, true /* withdrawAllAliceShares */, tesSUCCESS);
+        runScenario(
+            all_, true /* removeAssetToken */, false /* withdrawAllAliceShares */, tesSUCCESS);
+        runScenario(
+            all_, true /* removeAssetToken */, true /* withdrawAllAliceShares */, tesSUCCESS);
+        runScenario(
+            all_ - fixCleanup3_4_0,
+            false /* removeAssetToken */,
+            false /* withdrawAllAliceShares */,
+            tecINVARIANT_FAILED);
+        runScenario(
+            all_ - fixCleanup3_4_0,
+            false /* removeAssetToken */,
+            true /* withdrawAllAliceShares */,
+            tecINVARIANT_FAILED);
+        runScenario(
+            all_ - fixCleanup3_4_0,
+            true /* removeAssetToken */,
+            false /* withdrawAllAliceShares */,
+            tecINVARIANT_FAILED);
+        runScenario(
+            all_ - fixCleanup3_4_0,
+            true /* removeAssetToken */,
+            true /* withdrawAllAliceShares */,
+            tecINVARIANT_FAILED);
+    }
+
+    // IOU analogue of the missing-MPToken case above. Alice removes her
+    // zero-balance trust line after depositing, then burns one unit from her
+    // scaled share balance after the vault is fully impaired. Bob's share
+    // balance keeps this out of the sole-shareholder loss-waiver and
+    // final-outstanding-share paths. A zero payout must not recreate Alice's
+    // unsolicited trust line.
+    void
+    testBugIouZeroWithdrawMissingTrustLine()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        Env env(*this, all_);
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, owner, alice, bob, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const asset = issuer["USD"];
+        env.trust(asset(100), owner);
+        env.trust(asset(100), alice);
+        env.trust(asset(100), bob);
+        env.trust(asset(100), borrower);
+        env.close();
+
+        env(pay(issuer, alice, asset(2)));
+        env(pay(issuer, bob, asset(8)));
+        env.close();
+
+        Vault const vault{env};
+        auto const [createTx, vaultKeylet, subscriptionDate] =
+            vault.createClosedEnded({.owner = owner, .asset = asset, .subscriptionOffset = 60s});
+        env(createTx);
+        env.close();
+
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(2)}));
+        env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = asset(8)}));
+        env.close();
+
+        auto const assetLine = keylet::trustLine(alice, asset.raw().get<Issue>());
+        if (!BEAST_EXPECT(env.le(assetLine)))
+            return;
+        env.trust(asset(0), alice);
+        env.close();
+        BEAST_EXPECT(!env.le(assetLine));
+
+        vault.closePastSubscription(subscriptionDate);
+
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(set(owner, vaultKeylet.key));
+        env.close();
+
+        auto const sleBroker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+        env(set(borrower, brokerKeylet.key, asset(10).value()),
+            kInterestRate(percentageToTenthBips(0)),
+            kGracePeriod(60),
+            kPaymentInterval(120),
+            kPaymentTotal(10),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanBefore = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanBefore))
+            return;
+        std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+
+        env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultImpaired = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultImpaired))
+            return;
+        BEAST_EXPECT(vaultImpaired->at(sfAssetsAvailable) == asset(0).value());
+        BEAST_EXPECT(vaultImpaired->at(sfAssetsTotal) == vaultImpaired->at(sfLossUnrealized));
+        Number const totalBefore = vaultImpaired->at(sfAssetsTotal);
+        Number const lossBefore = vaultImpaired->at(sfLossUnrealized);
+
+        MPTID const shareId = vaultImpaired->at(sfShareMPTID);
+        auto const tokenAlice = env.le(keylet::mptoken(shareId, alice.id()));
+        if (!BEAST_EXPECT(tokenAlice))
+            return;
+        std::uint64_t const sharesBefore = tokenAlice->getFieldU64(sfMPTAmount);
+        // Default IOU vault scale is 6, so 2 USD mints 2e6 shares. Redeem one
+        // leftover share; do not require 1:1 like the MPT case.
+        BEAST_EXPECT(sharesBefore > 1);
+        STAmount const redeemShares{MPTIssue{shareId}, Number(1)};
+
+        std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
+        env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+
+        env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // A regression in the View guard would recreate this line even though
+        // no asset value was paid.
+        BEAST_EXPECT(!env.le(assetLine));
+
+        auto const shareAfter = env.le(keylet::mptoken(shareId, alice.id()));
+        if (!BEAST_EXPECT(shareAfter))
+            return;
+        BEAST_EXPECT(shareAfter->getFieldU64(sfMPTAmount) == sharesBefore - 1);
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == asset(0).value());
+    }
+
+    // Same zero-payout withdrawal as testBugMptZeroWithdrawMissingHolding, but
+    // the vault asset is XRP. addEmptyHolding is a no-op for native assets.
+    // Sequence processing still touches the sender AccountRoot; a sponsored
+    // fee leaves that XRP balance economically unchanged. After the
+    // sponsored-withdraw fee-payer fix, deltaAssetsForParty collapses that
+    // economically-zero XRP delta to absence, so tesSUCCESS takes the
+    // missing-recipient-delta arm gated by zeroDeltaIsLegitimate. This test
+    // covers that live SUCCESS path. Pre-fixCleanup3_4_0 still fails the
+    // invariant.
+    void
+    testBugXrpZeroWithdrawSponsoredFee()
+    {
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            testcase(
+                std::string{"bug: XRP vault zero-value withdraw with sponsored fee"} +
+                (features[fixCleanup3_4_0] ? " (post-fixCleanup3_4_0)" : " (pre-fixCleanup3_4_0)"));
+
+            Env env(*this, features);
+
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const borrower{"borrower"};
+            Account const sponsor{"sponsor"};
+
+            env.fund(XRP(100'000), owner, alice, bob, borrower, sponsor);
+            env.close();
+
+            PrettyAsset const asset{xrpIssue()};
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = 60s});
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(2)}));
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = asset(8)}));
+            env.close();
+
+            vault.closePastSubscription(subscriptionDate);
+
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            auto const sleBroker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(sleBroker))
+                return;
+            auto const loanKeylet = keylet::loan(
+                brokerKeylet.key, SeqProxy::rawSequence(sleBroker->at(sfLoanSequence)));
+
+            env(set(borrower, brokerKeylet.key, asset(10).value()),
+                kInterestRate(percentageToTenthBips(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return;
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+
+            env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+
+            auto const vaultImpaired = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultImpaired))
+                return;
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsAvailable) == asset(0).value());
+            BEAST_EXPECT(vaultImpaired->at(sfAssetsTotal) == vaultImpaired->at(sfLossUnrealized));
+            Number const totalBefore = vaultImpaired->at(sfAssetsTotal);
+            Number const lossBefore = vaultImpaired->at(sfLossUnrealized);
+
+            MPTID const shareId = vaultImpaired->at(sfShareMPTID);
+            auto const tokenAlice = env.le(keylet::mptoken(shareId, alice.id()));
+            if (!BEAST_EXPECT(tokenAlice))
+                return;
+            std::uint64_t const sharesBefore = tokenAlice->getFieldU64(sfMPTAmount);
+            BEAST_EXPECT(sharesBefore == 2);
+            STAmount const redeemShares{MPTIssue{shareId}, Number(1)};
+
+            std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
+            env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+
+            auto const aliceBalanceBefore = env.balance(alice);
+            auto const sponsorBalanceBefore = env.balance(sponsor);
+            auto const fee = env.current()->fees().base;
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
+                Fee(fee),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(expected));
+            env.close();
+
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - fee);
+            BEAST_EXPECT(env.balance(alice) == aliceBalanceBefore);
+
+            if (expected != tesSUCCESS)
+                return;
+
+            auto const shareAfter = env.le(keylet::mptoken(shareId, alice.id()));
+            if (!BEAST_EXPECT(shareAfter))
+                return;
+            BEAST_EXPECT(shareAfter->getFieldU64(sfMPTAmount) == sharesBefore - 1);
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+            BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+            BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == asset(0).value());
+        };
+
+        runScenario(all_, tesSUCCESS);
+        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+    }
+
+    // addEmptyHolding() used to check isGlobalFrozen(issuer) and
+    // !lsfDefaultRipple before the "line already exists" tecDUPLICATE
+    // short circuit. doWithdraw() calls addEmptyHolding() for a
+    // self-destination payout and only tolerates tecDUPLICATE, so
+    // tecINTERNAL from a missing DefaultRipple flag aborted the
+    // withdrawal. fixCleanup3_4_0 checks existence first and maps the
+    // create-path DefaultRipple miss to terNO_RIPPLE. Global freeze on an
+    // existing line is still rejected later by checkWithdrawFreeze.
+    void
+    testBugSelfWithdrawAfterIssuerClearsDefaultRipple()
+    {
+        using namespace test::jtx;
+
+        auto runExistingLine = [this](
+                                   FeatureBitset features,
+                                   TER selfExpected,
+                                   bool issuerGlobalFreeze = false) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(10'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env(trust(bob, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+            if (issuerGlobalFreeze)
+            {
+                env(fset(issuer, asfGlobalFreeze));
+                env.close();
+            }
+
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usdIssue)));
+
+            // Alice's USD line is unchanged; a later deposit still succeeds
+            // unless the issuer is globally frozen.
+            if (!issuerGlobalFreeze)
+            {
+                env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(10)}));
+                env.close();
+            }
+
+            Number const destBefore = env.balance(alice, usd.raw()).number();
+            Number const vaultBefore = env.le(vaultKeylet)->at(sfAssetsTotal);
+            Number const withdrawAmt{50};
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+
+            Number const destAfter = env.balance(alice, usd.raw()).number();
+            Number const vaultAfter = env.le(vaultKeylet)->at(sfAssetsTotal);
+            if (isTesSuccess(selfExpected))
+            {
+                BEAST_EXPECT(destAfter == destBefore + withdrawAmt);
+                BEAST_EXPECT(vaultAfter == vaultBefore - withdrawAmt);
+            }
+            else
+            {
+                BEAST_EXPECT(destAfter == destBefore);
+                BEAST_EXPECT(vaultAfter == vaultBefore);
+            }
+
+            if (!issuerGlobalFreeze)
+            {
+                auto destTx =
+                    vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)});
+                destTx[sfDestination] = bob.human();
+                env(destTx);
+                env.close();
+            }
+        };
+
+        auto runDeletedLine = [this](FeatureBitset features, TER selfExpected) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(500)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usdIssue)));
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+        };
+
+        auto runCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+            using namespace loan_broker;
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = alice, .asset = usd, .subscriptionOffset = std::chrono::seconds{60}});
+            (void)subscriptionDate;
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+            env(coverDeposit(alice, brokerKeylet.key, usd(100).value()));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), usdIssue)));
+
+            Number const destBefore = env.balance(alice, usd.raw()).number();
+            Number const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+            Number const withdrawAmt{50};
+
+            env(coverWithdraw(alice, brokerKeylet.key, usd(50).value()), Ter(selfExpected));
+            env.close();
+
+            Number const destAfter = env.balance(alice, usd.raw()).number();
+            Number const coverAfter = env.le(brokerKeylet)->at(sfCoverAvailable);
+            if (isTesSuccess(selfExpected))
+            {
+                BEAST_EXPECT(destAfter == destBefore + withdrawAmt);
+                BEAST_EXPECT(coverAfter == coverBefore - withdrawAmt);
+            }
+            else
+            {
+                BEAST_EXPECT(destAfter == destBefore);
+                BEAST_EXPECT(coverAfter == coverBefore);
+            }
+        };
+
+        auto runDeletedCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+            using namespace loan_broker;
+
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(10'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            Issue const usdIssue = usd.raw().get<Issue>();
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(600)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = alice, .asset = usd, .subscriptionOffset = std::chrono::seconds{60}});
+            (void)subscriptionDate;
+            env(createTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+            env(coverDeposit(alice, brokerKeylet.key, usd(100).value()));
+            env.close();
+
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usdIssue)));
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            env(coverWithdraw(alice, brokerKeylet.key, usd(50).value()), Ter(selfExpected));
+            env.close();
+        };
+
+        auto runPrivateVault = [this](FeatureBitset features, TER selfExpected) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const pdOwner{"pdOwner"};
+            Account const credIssuer{"credIssuer"};
+            std::string const credType = "credential";
+
+            env.fund(XRP(10'000), issuer, alice, pdOwner, credIssuer);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(alice, usd(10'000)));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] =
+                vault.create({.owner = alice, .asset = usd, .flags = tfVaultPrivate});
+            env(vaultTx);
+            env.close();
+
+            pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+            env(pdomain::setTx(pdOwner, credentials));
+            auto const domainId = pdomain::getNewDomain(env.meta());
+            {
+                auto domainTx = vault.set({.owner = alice, .id = vaultKeylet.key});
+                domainTx[sfDomainID] = to_string(domainId);
+                env(domainTx);
+                env.close();
+            }
+
+            env(credentials::create(alice, credIssuer, credType));
+            env(credentials::accept(alice, credIssuer, credType));
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(500)}));
+            env.close();
+
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(selfExpected));
+            env.close();
+        };
+
+        testcase(
+            "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
+            "clears asfDefaultRipple even though the trust line exists "
+            "(pre-fixCleanup3_4_0)");
+        runExistingLine(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: VaultWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
+        runExistingLine(all_, tesSUCCESS);
+
+        testcase(
+            "bug: VaultWithdraw to self with an existing line still gets "
+            "tecFROZEN under asfGlobalFreeze (post-fixCleanup3_4_0)");
+        runExistingLine(all_, tecFROZEN, true);
+
+        testcase(
+            "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
+            "clears asfDefaultRipple and the trust line was deleted "
+            "(pre-fixCleanup3_4_0)");
+        runDeletedLine(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: VaultWithdraw to self fails with terNO_RIPPLE after issuer "
+            "clears asfDefaultRipple and the trust line was deleted "
+            "(post-fixCleanup3_4_0)");
+        runDeletedLine(all_, terNO_RIPPLE);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
+            "issuer clears asfDefaultRipple even though the trust line exists "
+            "(pre-fixCleanup3_4_0)");
+        runCoverWithdraw(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
+        runCoverWithdraw(all_, tesSUCCESS);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
+            "issuer clears asfDefaultRipple and the trust line was deleted "
+            "(pre-fixCleanup3_4_0)");
+        runDeletedCoverWithdraw(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: LoanBrokerCoverWithdraw to self fails with terNO_RIPPLE after "
+            "issuer clears asfDefaultRipple and the trust line was deleted "
+            "(post-fixCleanup3_4_0)");
+        runDeletedCoverWithdraw(all_, terNO_RIPPLE);
+
+        testcase(
+            "bug: private VaultWithdraw to self fails with tecINTERNAL after "
+            "issuer clears asfDefaultRipple even though the trust line exists "
+            "(pre-fixCleanup3_4_0)");
+        runPrivateVault(all_ - fixCleanup3_4_0, tecINTERNAL);
+
+        testcase(
+            "bug: private VaultWithdraw to self succeeds after issuer clears "
+            "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
+        runPrivateVault(all_, tesSUCCESS);
     }
 
     // Bug 1: a sponsored XRP VaultWithdraw to a distinct destination is
@@ -2024,12 +2756,14 @@ public:
         testBugVaultDepositOvercreditsAcrossScaleBoundary();
         testBugVaultLockedByPartialWithdraw();
         testVaultDepositNegativeBalanceFromOppositeLimit();
-        testCredentialPinsPseudoAccount();
-        testCredentialPinOverflow();
         testBug6LimitBypassWithShares();
         testBugClawbackRoundTripOvershoot();
         testBugWithdrawRoundTripOvershoot();
         testBugClawbackAfterLoanImpair();
+        testBugMptZeroWithdrawMissingHolding();
+        testBugIouZeroWithdrawMissingTrustLine();
+        testBugXrpZeroWithdrawSponsoredFee();
+        testBugSelfWithdrawAfterIssuerClearsDefaultRipple();
         testBugSponsoredWithdrawZeroDeltaMisclassifiedAsSecondRecipient();
         testBugSponsorAsDestinationFeeMisappliedToPayout();
         testPrefundedFeeWithdraw();

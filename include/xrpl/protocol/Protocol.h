@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace xrpl {
 
@@ -408,16 +409,6 @@ using TxID = uint256;
 constexpr std::uint16_t kMaxDeletableAmmTrustLines = 512;
 
 /**
- * The maximum number of owner-directory entries to walk when clearing
- * credentials pinned to a pseudo-account, in a single transaction.
- *
- * The walk stops after this many entries whether or not each one turns out to
- * be a credential, so a directory that also holds other objects yields fewer
- * deletions per transaction.
- */
-constexpr std::uint16_t kMaxDeletablePseudoAccountCredentials = 512;
-
-/**
  * The maximum length of a URI inside an Oracle
  */
 constexpr std::size_t kMaxOracleUri = 256;
@@ -553,6 +544,11 @@ constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_
  * Extra base fee multiplier charged to confidential MPT transactions.
  */
 constexpr std::uint32_t kConfidentialFeeMultiplier = 9;
+
+/**
+ * Maximum value a confidential MPT key epoch may reach.
+ */
+constexpr std::uint32_t kMaxKeyEpoch = std::numeric_limits<std::uint32_t>::max();
 
 /**
  * Compressed EC point prefix for even y-coordinate
