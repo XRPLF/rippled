@@ -17,6 +17,8 @@
 #include <test/jtx/require.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
@@ -501,6 +503,27 @@ struct DepositPreauth_test : public beast::unit_test::Suite
         // alice authorizes herself.
         env(deposit::auth(alice, alice), Ter(temCANNOT_PREAUTH_SELF));
         env.close();
+
+        // alice unauthorizes herself.  Before fixDepositPreauthSelf this
+        // slipped past preflight and was charged a fee by preclaim.
+        {
+            auto const baseFee = env.current()->fees().base;
+            PrettyAmount const aliceXrpBalance{env.balance(alice, XRP)};
+            if (features[fixDepositPreauthSelf])
+            {
+                env(deposit::unauth(alice, alice), Ter(temCANNOT_PREAUTH_SELF));
+                env.close();
+                // Preflight rejects the transaction, so alice keeps her fee.
+                BEAST_EXPECT(env.balance(alice, XRP) == aliceXrpBalance);
+            }
+            else
+            {
+                env(deposit::unauth(alice, alice), Ter(tecNO_ENTRY));
+                env.close();
+                // Reaching preclaim costs alice the transaction fee.
+                BEAST_EXPECT(env.balance(alice, XRP) == aliceXrpBalance - drops(baseFee));
+            }
+        }
 
         // alice authorizes an unfunded account.
         env(deposit::auth(alice, carol), Ter(tecNO_TARGET));
@@ -1477,12 +1500,117 @@ struct DepositPreauth_test : public beast::unit_test::Suite
     }
 
     void
+    testUnauthCredentialsDuplicates(FeatureBitset features)
+    {
+        testcase("Unauthorize credentials duplicates");
+
+        using namespace jtx;
+
+        Account const stock{"stock"};
+        Account const issuer{"issuer"};
+
+        Env env(*this, features);
+        env.fund(XRP(5000), stock, issuer);
+        env.close();
+
+        // A duplicated issuer and credential type pair is rejected by preflight,
+        // so it never reaches the keylet built from makeSorted.  This asserts
+        // the exact code rather than merely that the transaction failed.
+        std::vector<deposit::AuthorizeCredentials> const duplicated = {
+            {.issuer = issuer, .credType = "a"}, {.issuer = issuer, .credType = "a"}};
+
+        env(deposit::unauthCredentials(stock, duplicated), Ter(temMALFORMED));
+        env.close();
+
+        // A well-formed unauthorize for a grant that was never created still
+        // reports the missing entry, confirming the new emptiness check did not
+        // swallow the normal path.
+        std::vector<deposit::AuthorizeCredentials> const single = {
+            {.issuer = issuer, .credType = "b"}};
+
+        env(deposit::unauthCredentials(stock, single), Ter(tecNO_ENTRY));
+        env.close();
+    }
+
+    void
+    testInvariants(FeatureBitset features)
+    {
+        testcase("Invariants");
+
+        using namespace jtx;
+
+        Account const alice{"alice"};
+        Account const becky{"becky"};
+        Account const sponsor{"sponsor"};
+        Account const issuer{"issuer"};
+
+        Env env(*this, features);
+        env.fund(XRP(5000), alice, becky, sponsor, issuer);
+        env.close();
+
+        // Normal create and remove must satisfy the invariants, so a passing
+        // result here is what proves the hooks do not misfire.
+        env.require(Owners(alice, 0));
+        env(deposit::auth(alice, becky));
+        env.close();
+        env.require(Owners(alice, 1));
+
+        env(deposit::unauth(alice, becky));
+        env.close();
+        env.require(Owners(alice, 0));
+
+        // A credential grant writes a canonically sorted array; the invariant
+        // checks that ordering, so creating one exercises it.
+        std::vector<deposit::AuthorizeCredentials> const creds = {
+            {.issuer = issuer, .credType = "b"}, {.issuer = issuer, .credType = "a"}};
+
+        env(deposit::authCredentials(alice, creds));
+        env.close();
+        env.require(Owners(alice, 1));
+
+        env(deposit::unauthCredentials(alice, creds));
+        env.close();
+        env.require(Owners(alice, 0));
+
+        // A reserve-sponsored grant puts the owner-count delta on the sponsor
+        // instead of the grant owner, so the invariants assert nothing about
+        // owner counts.
+        if (features[featureSponsor])
+        {
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+            env(deposit::auth(alice, becky),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            // Alice owns the grant, but the sponsor carries its reserve.
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // Removal finds the sponsor on the object and undoes both sides.
+            env(deposit::unauth(alice, becky));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+    }
+
+    void
     run() override
     {
         testEnable();
         auto const supported{jtx::testableAmendments()};
         testInvalid(supported);
         testInvalid(supported - fixCleanup3_3_0);
+        testInvalid(supported - fixDepositPreauthSelf);
         testPayment(supported - featureCredentials);
         testPayment(supported);
         testCredentialsPayment();
@@ -1490,6 +1618,10 @@ struct DepositPreauth_test : public beast::unit_test::Suite
         testCredentialsCreation();
         testExpiredCreds();
         testSortingCredentials();
+        testUnauthCredentialsDuplicates(supported);
+        testUnauthCredentialsDuplicates(supported - fixDepositPreauthSelf);
+        testInvariants(supported);
+        testInvariants(supported - fixDepositPreauthSelf);
     }
 };
 
