@@ -331,7 +331,7 @@ ${IPS_FIXED}
 enabled=1
 service_instance_id=Node-${i}
 traces_endpoint=http://localhost:4318/v1/traces
-exporter=otlp_http
+metrics_endpoint=http://localhost:4318/v1/metrics
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
@@ -342,9 +342,13 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
-server=statsd
-address=127.0.0.1:8125
-prefix=rippled
+# server=otel is the only load-bearing key here -- it selects OTelCollector so
+# beast::insight metrics leave over OTLP. No prefix is set on purpose: on this
+# path it is inert, because OTelCollector's formatName() only lowercases the raw
+# instrument name and the one place the class reads prefix_ is its startup log
+# line. The service is identified by the OTel resource service.name.
+server=otel
+endpoint=http://localhost:4318/v1/metrics
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
@@ -543,15 +547,18 @@ log "--- Spanmetrics ---"
 log "Waiting 20s for Prometheus scrape cycle..."
 sleep 20
 
-calls_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+# Names come from the spanmetrics connector's `namespace: "span"` in
+# otel-collector-config.yaml. Without that namespace the connector emits
+# traces_span_metrics_*, so these queries must move whenever it changes.
+calls_count=$(curl -sf "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$calls_count" -gt 0 ]; then
-    ok "Prometheus: traces_span_metrics_calls_total ($calls_count series)"
+    ok "Prometheus: span_calls_total ($calls_count series)"
 else
-    fail "Prometheus: traces_span_metrics_calls_total (0 series)"
+    fail "Prometheus: span_calls_total (0 series)"
 fi
 
-duration_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+duration_count=$(curl -sf "$PROM/api/v1/query?query=span_duration_milliseconds_count" |
     jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$duration_count" -gt 0 ]; then
     ok "Prometheus: duration histogram ($duration_count series)"
@@ -567,42 +574,63 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 10b: Verify StatsD metrics in Prometheus
+# Step 10b: Verify native OTel metrics in Prometheus (beast::insight)
 # ---------------------------------------------------------------------------
 log ""
-log "--- StatsD Metrics (beast::insight) ---"
-log "Waiting 20s for StatsD aggregation + Prometheus scrape..."
+log "--- Native OTel Metrics (beast::insight via OTLP) ---"
+log "Waiting 20s for OTLP metric export + Prometheus scrape..."
 sleep 20
 
-check_statsd_metric() {
+check_otel_metric() {
     local metric_name="$1"
     local result
     result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" |
         jq '.data.result | length' 2>/dev/null || echo 0)
     if [ "$result" -gt 0 ]; then
-        ok "StatsD: $metric_name ($result series)"
+        ok "OTel: $metric_name ($result series)"
     else
-        fail "StatsD: $metric_name (0 series)"
+        fail "OTel: $metric_name (0 series)"
     fi
 }
 
-# Node health gauges
-check_statsd_metric "rippled_LedgerMaster_Validated_Ledger_Age"
-check_statsd_metric "rippled_LedgerMaster_Published_Ledger_Age"
-check_statsd_metric "rippled_jobq_job_count"
+# Names are what OTelCollector::formatName() produces: the beast::insight
+# name lowercased with '.' and ' ' mapped to '_', any group() segment kept, and
+# no prefix. The [insight] prefix knob is logged at startup and never applied on
+# this path, and the collector's prometheus exporter sets no namespace, so a
+# name carrying a product prefix or capitals cannot match any exported series.
+
+# Node health gauges (ObservableGauge — no _total suffix)
+check_otel_metric "ledgermaster_validated_ledger_age"
+check_otel_metric "ledgermaster_published_ledger_age"
+check_otel_metric "jobq_job_count"
 
 # State accounting
-check_statsd_metric "rippled_State_Accounting_Full_duration"
+check_otel_metric "state_accounting_full_duration"
 
 # Peer finder
-check_statsd_metric "rippled_Peer_Finder_Active_Inbound_Peers"
-check_statsd_metric "rippled_Peer_Finder_Active_Outbound_Peers"
+check_otel_metric "peer_finder_active_inbound_peers"
+check_otel_metric "peer_finder_active_outbound_peers"
 
-# RPC counters (only if RPC was exercised — should be true from Steps 5-8)
-check_statsd_metric "rippled_rpc_requests"
+# RPC counters (Counter — Prometheus adds _total suffix automatically)
+check_otel_metric "rpc_requests_total"
 
-# Overlay traffic
-check_statsd_metric "rippled_total_Bytes_In"
+# Overlay traffic — one series per TrafficCount category; "total" is the
+# aggregate category.
+check_otel_metric "total_bytes_in"
+
+# Verify StatsD receiver is NOT required (no statsd receiver in pipeline)
+log ""
+log "--- Verify StatsD receiver is not required ---"
+# StatsD listens on UDP 8125, so probe with a UDP-aware tool, not curl (TCP).
+if command -v ss >/dev/null 2>&1; then
+    if ss -ulnp 2>/dev/null | grep -q ":8125"; then
+        fail "StatsD port 8125 appears to be listening (should not be needed)"
+    else
+        ok "StatsD port 8125 is not listening (not required)"
+    fi
+else
+    log "ss not found -- skipping StatsD UDP port check"
+fi
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary

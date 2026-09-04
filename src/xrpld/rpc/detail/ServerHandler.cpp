@@ -16,6 +16,7 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
@@ -183,7 +184,11 @@ ServerHandler::ServerHandler(
 {
     auto const& group(cm.group("rpc"));
     rpcRequests_ = group->makeCounter("requests");
-    rpcSize_ = group->makeEvent("size");
+    // "size" measures the serialized response in bytes, not a duration. It
+    // has to say so: the unit picks both the exported name suffix and the
+    // histogram bucket ladder, and borrowing the millisecond ladder censored
+    // a quarter of these samples.
+    rpcSize_ = group->makeEvent("size", beast::insight::Unit::Bytes);
     rpcTime_ = group->makeEvent("time");
 }
 
@@ -1133,7 +1138,7 @@ ServerHandler::processRequest(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::high_resolution_clock::now() - start));
     ++rpcRequests_;
-    rpcSize_.notify(beast::insight::Event::value_type{response.size()});
+    rpcSize_.notify(static_cast<std::uint64_t>(response.size()));
 
     response += '\n';
 

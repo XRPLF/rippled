@@ -1,0 +1,829 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Client-facing RPC behavior and payment pathfinding cost on this node: request rates, response times and sizes, resource-limit warnings and drops, gRPC read-path load, and pathfinding request, compute, and discovery activity.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "RPC Request Rate [$xrpl_network_type]",
+      "description": "**What:** Rate of RPC requests handled, counting every HTTP and WebSocket call.\n**How it's computed:** Per-second rate of the RPC-requests counter over 5 minutes.\n**Reading it:** Tracks client demand on the node.\n**Healthy range:** workload-dependent.\n**Watch for:** Sudden sustained spikes (client surge or abusive polling) or a drop to zero (endpoint unavailable).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "type": "stat",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
+          "interval": "15s",
+          "legendFormat": "Requests / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 1
+    },
+    {
+      "title": "RPC Response",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 2
+    },
+    {
+      "title": "RPC Response Time",
+      "description": "**What:** P95 and P50 of end-to-end RPC handler time (full HTTP handling, not just command execution).\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Lower is better; P95 shows the slow tail.\n**Healthy range:** workload-dependent; most methods well under a second.\n**Watch for:** Rising P95 while request rate is flat (expensive queries or contention).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 Response Time [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P50 Response Time [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 3
+    },
+    {
+      "title": "RPC Response Size",
+      "description": "**⚠ Instrument mismatch — values unreliable.** Response size is recorded through the millisecond-scaled event histogram (rpc_size_bytes_bucket), so byte values saturate at the top time bucket (5000) and the percentiles are not true byte sizes. A dedicated byte-unit histogram is needed to fix this; tracked separately. Treat this panel as indicative only until then.\n\n**What:** P95 and P50 of RPC response payload size in bytes.\n**How it's computed:** 95th and 50th percentiles over the dashboard rate interval.\n**Reading it:** Larger responses cost more bandwidth and CPU to build.\n**Healthy range:** workload-dependent.\n**Watch for:** Large P95 (result-heavy queries such as broad account_tx, or API misuse).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_size_bytes_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 Response Size [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_size_bytes_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P50 Response Size [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "axisLabel": "Size (Bytes)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 4
+    },
+    {
+      "title": "RPC Response Time Distribution",
+      "description": "**What:** RPC response-time spread shown as P50, P90, P95, and P99.\n**How it's computed:** Four quantiles of response time over a 5-minute window.\n**Reading it:** A wide gap between P50 and P99 signals a long latency tail.\n**Healthy range:** workload-dependent; quantiles clustered together.\n**Watch for:** P99 pulling far above P50 (bimodal latency or occasional very slow requests).\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp ServerHandler ctor",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P50 [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.9, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P90 [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P99 [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 5
+    },
+    {
+      "title": "Pathfinding",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 6
+    },
+    {
+      "title": "Resource Warnings Rate [$xrpl_network_type]",
+      "description": "**What:** Rate of resource-limit warnings raised when a peer or client exceeds its usage warning threshold.\n**How it's computed:** Per-second rate of the warn counter over 5 minutes.\n**Reading it:** Occasional warnings are normal under load; a rising rate flags aggressive clients.\n**Healthy range:** workload-dependent; low.\n**Watch for:** A climbing warning rate (clients approaching limits, a precursor to drops).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
+      "type": "stat",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
+          "interval": "15s",
+          "legendFormat": "Warnings / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: warnings/s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 7
+    },
+    {
+      "title": "Resource Drops Rate [$xrpl_network_type]",
+      "description": "**What:** Rate of resource drops: consumers disconnected or blocked for excessive usage.\n**How it's computed:** Per-second rate of the drop counter over 5 minutes.\n**Reading it:** Non-zero means the node is actively rejecting abusive connections.\n**Healthy range:** at or near zero.\n**Watch for:** Sustained non-zero drops (ongoing abuse or a misbehaving client/peer being throttled).\n**Source:** include/xrpl/resource/detail/Logic.h Logic::Stats ctor",
+      "type": "stat",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
+          "interval": "15s",
+          "legendFormat": "Drops / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: drops/s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "repeat": "xrpl_network_type",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
+      "id": 8
+    },
+    {
+      "title": "Pathfinding Fast Duration",
+      "description": "**What:** P95 and P50 execution time of the fast pathfinding search (simplified, favoring speed over completeness).\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Lower is better; fast pathfinding should stay quick.\n**Healthy range:** workload-dependent; typically well below full pathfinding.\n**Watch for:** Rising fast-path latency (pathfinding load or complex order books).\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h ctor",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 52
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 Fast Pathfind [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P50 Fast Pathfind [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 9
+    },
+    {
+      "title": "Pathfinding Full Duration",
+      "description": "**What:** P95 and P50 execution time of the full, exhaustive pathfinding search.\n**How it's computed:** 95th and 50th percentiles over a 5-minute window.\n**Reading it:** Full pathfinding is heavier and slower than fast mode.\n**Healthy range:** workload-dependent.\n**Watch for:** High or rising full-path latency (expensive path computation under subscription load).\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h ctor",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 52
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 Full Pathfind [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P50 Full Pathfind [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 10
+    },
+    {
+      "title": "gRPC (Spans)",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 62
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 11
+    },
+    {
+      "title": "gRPC Request Rate by Method (Spans)",
+      "description": "**What:** Per-method gRPC call rate for the gRPC read API used by reporting and Clio.\n**How it's computed:** Per-second count of gRPC calls grouped by method.\n**Reading it:** Shows which gRPC methods are called and how often; only populated when the node serves gRPC.\n**Healthy range:** workload-dependent.\n**Watch for:** A single method spiking (heavy reporting load) or unexpected methods appearing.\n**Source:** src/xrpld/rpc/GRPCServer.cpp (gRPC method handlers)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 63
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "{{method}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: calls/s",
+          "custom": {
+            "axisLabel": "Calls / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 12
+    },
+    {
+      "title": "gRPC Latency P95 by Method (Spans)",
+      "description": "**What:** P95 latency per gRPC method.\n**How it's computed:** 95th percentile of gRPC call duration per method over 5 minutes.\n**Reading it:** Identifies slow gRPC read paths.\n**Healthy range:** workload-dependent.\n**Watch for:** One method's P95 rising (expensive ledger reads or backend pressure).\n**Source:** src/xrpld/rpc/GRPCServer.cpp (gRPC method handlers)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 63
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, method, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "{{method}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 13
+    },
+    {
+      "title": "gRPC Error Rate by Status (Spans)",
+      "description": "**What:** Rate of gRPC calls broken down by result status: success, error, resource-exhausted, failed-precondition.\n**How it's computed:** Per-second count of gRPC calls grouped by status.\n**Reading it:** Errors and resource-exhausted should be a small share.\n**Healthy range:** workload-dependent; mostly success.\n**Watch for:** Rising error or resource-exhausted rate (clients hitting limits or failing reads).\n**Source:** src/xrpld/rpc/GRPCServer.cpp (gRPC method handlers)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 73
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "{{grpc_status}} [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: calls/s",
+          "custom": {
+            "axisLabel": "Calls / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 14
+    },
+    {
+      "title": "Pathfinding Compute Duration (Spans)",
+      "description": "**What:** P95 and P50 of per-request path computation time.\n**How it's computed:** 95th and 50th percentiles of path-computation duration over 5 minutes.\n**Reading it:** Complements the fast/full timers with per-request visibility; populated under book/path RPC load.\n**Healthy range:** workload-dependent.\n**Watch for:** Rising compute time (complex paths or heavy pathfinding demand).\n**Source:** src/xrpld/rpc/detail/PathRequest.cpp PathRequest::doUpdate",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 73
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P95 Compute [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
+          "interval": "15s",
+          "legendFormat": "P50 Compute [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 15
+    },
+    {
+      "title": "Pathfinding Request & Discovery Rate (Spans)",
+      "description": "**What:** Rate of client path requests and of path-discovery passes.\n**How it's computed:** Per-second count of path-request and path-discovery operations.\n**Reading it:** Shows pathfinding demand and the discovery cost driver for subscription-heavy nodes.\n**Healthy range:** workload-dependent.\n**Watch for:** Discovery rate climbing (subscription load driving repeated path discovery).\n**Source:** src/xrpld/rpc/handlers/orderbook/PathFind.cpp doPathFind; src/xrpld/rpc/detail/PathRequest.cpp PathRequest::findPaths",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 83
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "Requests / Sec [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "Discoveries / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: operations/s",
+          "custom": {
+            "axisLabel": "Operations / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 16
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rpc", "pathfinding"],
+  "templating": {
+    "list": [
+      {
+        "name": "service_name",
+        "label": "Service Name",
+        "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "xrpld",
+          "value": "xrpld"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values(target_info, service_instance_id)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "grpc_method",
+        "label": "gRPC Method",
+        "description": "Filter by gRPC method (GetLedger, GetLedgerData, GetLedgerDiff, GetLedgerEntry)",
+        "type": "query",
+        "query": "label_values(span_calls_total{span_name=~\"grpc\\\\..*\"}, method)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "RPC & Pathfinding",
+  "uid": "rpc-pathfinding"
+}

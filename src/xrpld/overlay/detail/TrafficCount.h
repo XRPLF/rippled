@@ -282,7 +282,7 @@ public:
             {Category::ShareCasObject, "getobject_CAS_share"},
             {Category::GetCasObject, "getobject_CAS_get"},
             {Category::ShareFetchPack, "getobject_Fetch_Pack_share"},
-            {Category::GetFetchPack, "getobject_Fetch Pack_get"},
+            {Category::GetFetchPack, "getobject_Fetch_Pack_get"},
             {Category::GetTransactions, "getobject_Transactions_get"},
             {Category::ShareHash, "getobject_share"},
             {Category::GetHash, "getobject_get"},

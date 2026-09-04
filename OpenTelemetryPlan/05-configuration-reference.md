@@ -244,13 +244,17 @@ Modify PerfLog so its JSON output includes a `trace_id` field whenever a valid s
 
 In the Tempo datasource, set the `tracesToLogs` derived field to link to Loki on the `trace_id` and `tx_hash` tags, with `filterByTraceID: true`.
 
-### 5.8.7 Correlation with Insight/StatsD Metrics
+### 5.8.7 Correlation with Insight/OTel System Metrics
 
-To correlate traces with existing Beast Insight metrics:
+To correlate traces with Beast Insight system metrics:
 
 **Step 1: Export Insight metrics to Prometheus**
 
-Add a Prometheus scrape job (`prometheus.yaml`) named `xrpld-statsd` targeting the StatsD exporter at `statsd-exporter:9102`.
+Beast Insight metrics are exported natively via OTLP to the OTel Collector,
+which exposes them on the Prometheus endpoint alongside spanmetrics. Configure
+the `[insight]` section of `xrpld.cfg` with `server=otel`,
+`endpoint=http://localhost:4318/v1/metrics`, and `prefix=xrpld`; no separate
+StatsD exporter or Prometheus scrape job is needed when using `server=otel`.
 
 **Step 2: Add exemplars to metrics**
 
