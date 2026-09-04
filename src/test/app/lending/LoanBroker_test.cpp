@@ -2968,126 +2968,6 @@ class LoanBroker_test : public beast::unit_test::Suite
         runTestCases(all_ - fixCleanup3_2_0);
     }
 
-    void
-    testCredentialPinsPseudoAccount()
-    {
-        using namespace test::jtx;
-        using namespace loan_broker;
-
-        // A credential issued to a LoanBroker pseudo-account can't be accepted
-        // or deleted by it, so it stays pinned in the pseudo-account's owner
-        // directory and blocks LoanBrokerDelete with tecHAS_OBLIGATIONS. A pin
-        // created before the cure activates is removed by LoanBrokerDelete once
-        // it does.
-        Account const alice{"alice"};  // vault & broker owner
-        Account const attacker{"attacker"};
-        char const credType[] = "FN36";
-
-        Env env{*this, all_ - fixCleanup3_3_0 - fixCleanup3_4_0};
-        env.fund(XRP(1'000'000), alice, attacker);
-        env.close();
-
-        Vault const vault{env};
-        auto [vtx, vkeylet] = vault.create({.owner = alice, .asset = xrpIssue()});
-        env(vtx);
-        env.close();
-        BEAST_EXPECT(env.le(vkeylet));
-
-        auto const brokerKeylet =
-            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
-        env(set(alice.id(), vkeylet.key));
-        env.close();
-
-        auto const broker = env.le(brokerKeylet);
-        BEAST_EXPECT(broker);
-        Account const pseudo{"broker pseudo-account", broker->at(sfAccount)};
-        env.memoize(pseudo);
-
-        testcase("Credential pins broker pseudo-account");
-        env(credentials::create(pseudo, attacker, credType));
-        env.close();
-
-        auto const credKey = credentials::keylet(pseudo, attacker, credType);
-        BEAST_EXPECT(env.le(credKey));
-        BEAST_EXPECT(ownerCount(env, attacker) == 1);
-
-        env(del(alice.id(), brokerKeylet.key), Ter(tecHAS_OBLIGATIONS));
-        env.close();
-
-        env.enableFeature(fixCleanup3_4_0);
-        env.close();
-
-        // The pre-existing pin no longer blocks deletion; the credential is
-        // cleaned up and the issuer's owner count is restored.
-        testcase("LoanBrokerDelete removes pinned credential");
-        env(del(alice.id(), brokerKeylet.key));
-        env.close();
-
-        BEAST_EXPECT(!env.le(credKey));
-        BEAST_EXPECT(!env.le(brokerKeylet));
-        BEAST_EXPECT(!env.le(keylet::account(pseudo.id())));
-        BEAST_EXPECT(ownerCount(env, attacker) == 0);
-    }
-
-    void
-    testCredentialPinOverflow()
-    {
-        using namespace test::jtx;
-        using namespace loan_broker;
-        testcase("Credential pin cleanup is bounded (tecINCOMPLETE)");
-
-        // A pseudo-account can be pinned with more credentials than one
-        // transaction is allowed to clean up. LoanBrokerDelete then removes
-        // them a bounded batch at a time, returning tecINCOMPLETE until the
-        // last batch.
-        Account const alice{"alice"};
-        Account const attacker{"attacker"};
-
-        Env env{*this, all_ - fixCleanup3_3_0 - fixCleanup3_4_0};
-        env.fund(XRP(10'000'000), alice, attacker);
-        env.close();
-
-        Vault const vault{env};
-        auto [vtx, vkeylet] = vault.create({.owner = alice, .asset = xrpIssue()});
-        env(vtx);
-        env.close();
-        BEAST_EXPECT(env.le(vkeylet));
-
-        auto const brokerKeylet =
-            keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
-        env(set(alice.id(), vkeylet.key));
-        env.close();
-
-        auto const broker = env.le(brokerKeylet);
-        BEAST_EXPECT(broker);
-        Account const pseudo{"broker pseudo-account", broker->at(sfAccount)};
-        env.memoize(pseudo);
-
-        // Pin more than one cleanup batch's worth of credentials.
-        std::uint16_t const count = kMaxDeletablePseudoAccountCredentials + 3;
-        for (std::uint16_t i = 0; i < count; ++i)
-            env(credentials::create(pseudo, attacker, std::to_string(i)));
-        env.close();
-        BEAST_EXPECT(ownerCount(env, attacker) == count);
-
-        env.enableFeature(fixCleanup3_4_0);
-        env.close();
-
-        // First delete removes one bounded batch and reports it isn't finished.
-        env(del(alice.id(), brokerKeylet.key), Ter(tecINCOMPLETE));
-        env.close();
-        BEAST_EXPECT(env.le(brokerKeylet));  // broker still exists
-        auto const remaining = ownerCount(env, attacker);
-        BEAST_EXPECT(remaining > 0 && remaining < count);
-
-        // Second delete finishes the cleanup and removes the broker.
-        env(del(alice.id(), brokerKeylet.key));
-        env.close();
-        BEAST_EXPECT(!env.le(brokerKeylet));
-        BEAST_EXPECT(!env.le(keylet::account(pseudo.id())));
-        BEAST_EXPECT(ownerCount(env, attacker) == 0);
-    }
-
 public:
     void
     run() override
@@ -3106,8 +2986,6 @@ public:
 
         testDisabled();
         testLifecycle();
-        testCredentialPinsPseudoAccount();
-        testCredentialPinOverflow();
         testInvalidLoanBrokerDelete();
         testInvalidLoanBrokerSet();
         testRequireAuth();

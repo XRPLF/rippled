@@ -206,6 +206,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
+    // Fail early when self-destination would have to create a holding.
+    // Skip when a holding already exists: canAddHolding does not look at that,
+    // and would block a no-op create (the DefaultRipple-cleared self-withdraw).
+    if (fix340Enabled && account == dstAcct && !holdingExists(ctx.view, dstAcct, vaultAsset))
+    {
+        if (auto const ter = canAddHolding(ctx.view, vaultAsset); !isTesSuccess(ter))
+            return ter;
+    }
+
     // The checks above only establish that an account may hold the asset. A
     // private vault additionally restricts who may take part in it, so paying
     // its asset out to a third party requires both ends of that payout to be
