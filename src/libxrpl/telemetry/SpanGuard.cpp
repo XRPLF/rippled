@@ -569,6 +569,7 @@ SpanGuard::addEvent(std::string_view name, std::initializer_list<EventAttribute>
     // std::vector<std::pair<...>> doesn't satisfy is_key_value_iterable.
     // Wrap in nostd::span over the vector's storage so the SDK accepts it.
     std::vector<std::pair<opentelemetry::nostd::string_view, opentelemetry::common::AttributeValue>>
+
         otelAttrs;
     otelAttrs.reserve(attrs.size());
     for (auto const& [k, v] : attrs)

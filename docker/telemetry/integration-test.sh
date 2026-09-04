@@ -76,6 +76,56 @@ check_span() {
     fi
 }
 
+# Verify trace_id injection in xrpld log output.
+# Greps all node debug.log files for the "trace_id=<hex> span_id=<hex>"
+# pattern that Logs::format() injects when an active OTel span exists.
+# Also cross-checks that a trace_id found in logs matches a trace in Tempo.
+check_log_correlation() {
+    log "Checking log-trace correlation..."
+
+    local total_matches=0
+    local files_scanned=0
+    local sample_trace_id=""
+
+    for i in $(seq 1 "$NUM_NODES"); do
+        local logfile="$WORKDIR/node$i/debug.log"
+        if [ ! -f "$logfile" ]; then
+            continue
+        fi
+        files_scanned=$((files_scanned + 1))
+        local matches
+        matches=$(grep -c 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' "$logfile") || matches=0
+        total_matches=$((total_matches + matches))
+        if [ -z "$sample_trace_id" ] && [ "$matches" -gt 0 ]; then
+            sample_trace_id=$(grep -o 'trace_id=[a-f0-9]\{32\}' "$logfile" | head -1 | cut -d= -f2)
+        fi
+    done
+
+    if [ "$files_scanned" -eq 0 ]; then
+        fail "Log correlation: no debug.log files found in $WORKDIR/node*/"
+        return
+    fi
+
+    if [ "$total_matches" -gt 0 ]; then
+        ok "Log correlation: found $total_matches log lines with trace_id ($files_scanned nodes scanned)"
+    else
+        fail "Log correlation: no trace_id found in any node debug.log ($files_scanned nodes scanned)"
+    fi
+
+    # Cross-check: verify the sample trace_id exists in Tempo
+    if [ -n "$sample_trace_id" ]; then
+        local trace_found
+        # Tempo /api/traces/{id} returns OTLP shape: {"batches":[...]}
+        trace_found=$(curl -sf "$TEMPO/api/traces/$sample_trace_id" |
+            jq '.batches | length' 2>/dev/null) || trace_found=0
+        if [ "$trace_found" -gt 0 ]; then
+            ok "Log-Tempo cross-check: trace_id=$sample_trace_id found in Tempo"
+        else
+            fail "Log-Tempo cross-check: trace_id=$sample_trace_id NOT found in Tempo"
+        fi
+    fi
+}
+
 cleanup() {
     log "Cleaning up..."
     # Kill xrpld nodes
@@ -154,7 +204,10 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 log "Starting observability stack..."
-docker compose -f "$COMPOSE_FILE" up -d
+# Point the collector's log mount at this test's workdir so it tails the
+# per-node debug.log files this script generates. The compose default
+# (./data/logs) is for user-run xrpld; the test owns its own log root.
+XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d
 
 log "Waiting for otel-collector to be ready..."
 for attempt in $(seq 1 30); do
@@ -540,6 +593,13 @@ check_span "peer.proposal.receive"
 check_span "peer.validation.receive"
 
 # ---------------------------------------------------------------------------
+# Step 9b: Verify log-trace correlation
+# ---------------------------------------------------------------------------
+log ""
+log "--- Log-Trace Correlation ---"
+check_log_correlation
+
+# ---------------------------------------------------------------------------
 # Step 10: Verify Prometheus spanmetrics
 # ---------------------------------------------------------------------------
 log ""
@@ -653,6 +713,7 @@ echo ""
 echo "    Tempo:         http://localhost:3200"
 echo "    Grafana:       http://localhost:3000"
 echo "    Prometheus:    http://localhost:9090"
+echo "    Loki:          http://localhost:3100"
 echo ""
 echo "  xrpld nodes (6) are running:"
 for i in $(seq 1 "$NUM_NODES"); do

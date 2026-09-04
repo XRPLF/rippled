@@ -3,10 +3,26 @@
 # Pipelines:
 #   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
 #   metrics: OTLP receiver + spanmetrics connector -> Prometheus exporter
+#   logs:   filelog receiver -> batch processor -> otlphttp/Loki
 #
 # xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
 # them, forwards to Tempo, and derives RED metrics via the spanmetrics
 # connector, which Prometheus scrapes on port 8889.
+#
+# xrpld sends beast::insight metrics natively via OTLP/HTTP to port 4318
+# (same endpoint as traces). The OTLP receiver feeds both the traces and
+# metrics pipelines. Metrics are exported to Prometheus alongside
+# span-derived metrics.
+#
+# The filelog receiver tails xrpld's debug.log files under
+# /var/log/xrpld/ (mounted from the host). A regex_parser operator
+# extracts timestamp, partition, severity, and optional trace_id/span_id
+# fields injected by Logs::format(). Parsed logs are exported to Grafana
+# Loki for log-trace correlation.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
 
 receivers:
   otlp:
@@ -15,11 +31,59 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  # Filelog receiver tails xrpld debug.log files for log-trace
+  # correlation. Extracts structured fields (timestamp, partition, severity,
+  # trace_id, span_id, message) via regex. The trace_id and span_id are
+  # optional — only present when the log was emitted within an active span.
+  filelog:
+    include: [/var/log/xrpld/*/debug.log]
+    # Read each file from the start. The upstream default is `end`, which
+    # skips everything written before the receiver's first poll — so any log
+    # line a node emitted before the collector got to it would be lost, and
+    # nothing is read at all from a file that has stopped being written to.
+    #
+    # Offsets are kept in memory here, so a restarted collector re-reads the
+    # file. Stacks that keep their logs across restarts layer
+    # otel-collector-filestorage.yaml on top to persist them; ephemeral
+    # stacks get a fresh log directory each run and need nothing.
+    start_at: beginning
+    operators:
+      # Log format emitted by Logs::format() is:
+      #   YYYY-Mmm-DD HH:MM:SS.ffffff UTC <partition>:<severity> [trace_id=... span_id=...] <message>
+      # The `partition:` prefix is omitted when partition is empty, so the
+      # capture group is non-capturing optional. Fractional seconds up to 6
+      # digits are parsed via the `%f` strptime directive.
+      - type: regex_parser
+        regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?:(?P<partition>\S+):)?(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: "%Y-%b-%d %H:%M:%S.%f"
+          location: UTC
 
 processors:
   batch:
     timeout: 1s
     send_batch_size: 100
+  resource/logs:
+    attributes:
+      # Loki 3.x OTLP ingestion promotes only its own allow-list of resource
+      # attributes to stream (index) labels; `service.name` is on that list
+      # and arrives as the label `service_name`, which is what the LogQL
+      # examples in the runbook and TESTING.md select on.
+      #
+      # A custom `job` attribute is NOT on that list. Verified against
+      # grafana/loki:3.4.2 with the default config: after ingesting through
+      # this pipeline, /loki/api/v1/labels returned only `service_name` and
+      # `deployment_environment`, `{job="xrpld"}` matched 0 streams, and
+      # `job` appeared as structured metadata instead — which a `{...}`
+      # stream selector cannot match. Promoting it would mean mounting a Loki
+      # config and adding it to limits_config.otlp_config.resource_attributes
+      # (additive to Loki's defaults unless ignore_defaults is set), which is
+      # not worth a constant value — especially as Loki caps index labels at
+      # 15 and already promotes ~17 by default. Select on `service_name`.
+      - key: service.name
+        value: xrpld
+        action: upsert
   # Deployment-tier tagging. Each collector serves ONE environment and ONE
   # network, so it stamps both onto every signal it forwards. This lets a
   # single Grafana stack hold data from many collectors and filter by tier.
@@ -112,6 +176,11 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+  # Export logs to Grafana Loki via OTLP/HTTP. Loki 3.x supports
+  # native OTLP ingestion on its /otlp endpoint, replacing the removed
+  # loki exporter (dropped in otel-collector-contrib v0.147.0).
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
   prometheus:
     endpoint: 0.0.0.0:8889
     # Promote resource attributes (deployment.environment, xrpl.network.type,
@@ -122,6 +191,7 @@ exporters:
       enabled: true
 
 service:
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
@@ -129,5 +199,11 @@ service:
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
-      processors: [resource/tier, resource/stripsdk]
+      processors: [resource/tier, resource/stripsdk, batch]
       exporters: [prometheus]
+    # Log pipeline ingests xrpld debug.log via filelog receiver,
+    # batches entries, and exports to Loki for log-trace correlation.
+    logs:
+      receivers: [filelog]
+      processors: [resource/logs, resource/tier, resource/stripsdk, batch]
+      exporters: [otlphttp/loki]

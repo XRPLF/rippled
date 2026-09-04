@@ -2,12 +2,15 @@
 #
 # Provides services for local development:
 #   - otel-collector: receives OTLP traces from xrpld, batches and
-#     forwards them to Tempo. Listens on ports 4317 (gRPC)
-#     and 4318 (HTTP).
+#     forwards them to Tempo. Also tails xrpld log files
+#     via filelog receiver and exports to Loki. Listens on ports
+#     4317 (gRPC) and 4318 (HTTP).
 #   - tempo: Grafana Tempo tracing backend, queryable via Grafana Explore
 #     on port 3000. Recommended for production (S3/GCS storage, TraceQL).
-#   - grafana: dashboards on port 3000, pre-configured with Tempo
-#     and Prometheus datasources.
+#   - loki: Grafana Loki log aggregation backend for centralized log
+#     ingestion and log-trace correlation.
+#   - grafana: dashboards on port 3000, pre-configured with Tempo,
+#     Prometheus, and Loki datasources.
 #
 # Usage:
 #   docker compose -f docker/telemetry/docker-compose.yml up -d
@@ -18,11 +21,37 @@
 #   traces_endpoint=http://localhost:4318/v1/traces
 
 services:
+  # One-shot init for the collector's offset store. Docker creates a fresh
+  # named volume owned by root, but the collector image runs as 10001:10001
+  # and ships no writable directory, so the file_storage extension could not
+  # create its database and the collector would fail to start. Chown the
+  # volume once, then exit; the collector waits for this to complete.
+  #
+  # Reuses the Prometheus image purely because the stack already pulls it and
+  # it has a shell — this adds no new image dependency. The entrypoint is
+  # overridden since that image normally starts the Prometheus server.
+  otelcol-storage-init:
+    image: prom/prometheus:v3.13.2
+    user: "0:0"
+    entrypoint: ["sh", "-c"]
+    command: ["mkdir -p /data/file_storage && chown -R 10001:10001 /data"]
+    volumes:
+      - otelcol-storage:/data
+    networks:
+      - xrpld-telemetry
+
   # OpenTelemetry Collector: receives spans from xrpld via OTLP protocol,
   # batches them for efficiency, and forwards to Tempo for storage.
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.158.0
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    # Second --config layers filelog offset persistence on top of the shared
+    # base config; the collector deep-merges them. Only this stack keeps its
+    # logs across restarts, so only this stack needs it.
+    command:
+      [
+        "--config=/etc/otel-collector-config.yaml",
+        "--config=/etc/otel-collector-filestorage.yaml",
+      ]
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP (traces + native OTel metrics)
@@ -33,8 +62,25 @@ services:
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+      # Dev-only overlay: persist filelog read offsets across restarts
+      - ./otel-collector-filestorage.yaml:/etc/otel-collector-filestorage.yaml:ro
+      # Mount the xrpld log root for the filelog receiver. The telemetry
+      # configs write to docker/telemetry/data/logs/<network>/debug.log, so
+      # the default source is the repo-relative ./data/logs — user-owned and
+      # needing no root, so `docker compose up` works with no setup. Override
+      # XRPLD_LOG_DIR to point at another root (e.g. the integration test sets
+      # it to its own workdir). Mounted read-only so the collector only tails.
+      - ${XRPLD_LOG_DIR:-./data/logs}:/var/log/xrpld:ro
+      # Persisted filelog read offsets, so a collector restart resumes
+      # instead of re-reading every debug.log from the top.
+      - otelcol-storage:/var/lib/otelcol
     depends_on:
-      - tempo
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+      otelcol-storage-init:
+        condition: service_completed_successfully
     networks:
       - xrpld-telemetry
 
@@ -53,6 +99,20 @@ services:
     networks:
       - xrpld-telemetry
 
+  # Grafana Loki for centralized log ingestion and log-trace
+  # correlation. Loki 3.x supports native OTLP ingestion, so the OTel
+  # Collector exports via otlphttp to Loki's /otlp endpoint.
+  # Query logs via Grafana Explore -> Loki at http://localhost:3000.
+  loki:
+    image: grafana/loki:3.4.2
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    networks:
+      - xrpld-telemetry
+
   prometheus:
     # Pinned to an exact patch release for reproducible, config-stable runs.
     image: prom/prometheus:v3.13.2
@@ -60,6 +120,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
     depends_on:
       - otel-collector
     networks:
@@ -81,6 +142,7 @@ services:
     depends_on:
       - tempo
       - prometheus
+      - loki
     networks:
       - xrpld-telemetry
 
@@ -89,6 +151,9 @@ services:
 #   docker compose -f docker/telemetry/docker-compose.yml down -v
 volumes:
   tempo-data:
+  prometheus-data:
+  loki-data:
+  otelcol-storage:
 
 # Isolated bridge network so services communicate by container name
 # (e.g., the collector reaches Tempo at http://tempo:4317).

@@ -940,6 +940,79 @@ state_accounting_full_duration
 
 ---
 
+## 5a. Log-Trace Correlation (Phase 8)
+
+> **Plan details**: [06-implementation-phases.md §6.8.1](./06-implementation-phases.md) — motivation, architecture, Mermaid diagrams
+> **Task breakdown**: [Phase8_taskList.md](./Phase8_taskList.md) — per-task implementation details
+
+Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enabling log-trace correlation. When a log line is emitted within an active, sampled OTel span, the trace and span identifiers are automatically appended after the severity field:
+
+### Log Format
+
+```
+<timestamp> <partition>:<severity> trace_id=<32hex> span_id=<16hex> <message>
+```
+
+Example:
+
+```
+2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+```
+
+- **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo/Jaeger.
+- **`span_id=<hex16>`** — 16-character lowercase hex span identifier. Identifies the specific span within the trace.
+- **Only present** when the log is emitted within an active OTel span whose context is sampled. Log lines outside of traced code paths, and lines inside a span the sampler dropped, have no trace context fields. A dropped span still carries its parent's identifiers, so emitting them would point at a trace that was never exported.
+
+### Implementation
+
+The trace context injection is implemented in `Logs::format()` (`src/libxrpl/basics/Log.cpp`), guarded by `#ifdef XRPL_ENABLE_TELEMETRY`. It checks the thread-local runtime context value directly (via `RuntimeContext::GetCurrent().GetValue(kSpanKey)`) to avoid the heap allocation that `GetSpan()` performs on the no-span path. On threads without an active span, the cost is a thread-local read + variant type check (~15-20ns). On the active-span path, total cost is ~50ns per log call.
+
+### Log Ingestion Pipeline
+
+```
+xrpld debug.log -> OTel Collector filelog receiver -> regex_parser -> Loki exporter -> Grafana Loki
+```
+
+The OTel Collector's `filelog` receiver tails `debug.log` files and uses a `regex_parser` operator to extract structured fields:
+
+| Field       | Type     | Description                                              |
+| ----------- | -------- | -------------------------------------------------------- |
+| `timestamp` | datetime | Log timestamp                                            |
+| `partition` | string   | Log partition (e.g., `LedgerMaster`, `PeerImp`)          |
+| `severity`  | string   | Severity code (`TRC`, `DBG`, `NFO`, `WRN`, `ERR`, `FTL`) |
+| `trace_id`  | string   | 32-hex trace identifier (optional)                       |
+| `span_id`   | string   | 16-hex span identifier (optional)                        |
+| `message`   | string   | Log message body                                         |
+
+### Grafana Correlation
+
+Bidirectional linking between logs and traces is configured via Grafana datasource provisioning:
+
+- **Tempo -> Loki** (`tracesToLogs`): Clicking "Logs for this trace" on a Tempo trace view filters Loki logs by `trace_id`, showing all log lines from that trace.
+- **Loki -> Tempo** (`derivedFields`): A regex-based derived field on the Loki datasource extracts `trace_id` from log lines and renders it as a clickable link to the corresponding trace in Tempo.
+
+### Loki Backend
+
+Grafana Loki (v3.4.2) serves as the log storage backend. It receives log entries from the OTel Collector's `otlphttp/loki` exporter via the native OTLP endpoint at `http://loki:3100/otlp`.
+
+### LogQL Query Examples
+
+```logql
+# Find all logs for a specific trace
+{service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
+
+# Error logs with trace context
+{service_name="xrpld"} |= "ERR" |= "trace_id="
+
+# Logs from a specific partition with trace context
+{service_name="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+
+# Count traced log lines over time
+count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
+```
+
+---
+
 ## 6. Known Issues
 
 | Issue                                                              | Impact                                           | Status                                                               |
