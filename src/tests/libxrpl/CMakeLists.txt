@@ -5,15 +5,24 @@ include(verify_headers)
 # Test requirements.
 find_package(GTest REQUIRED)
 
-# Single combined gtest binary built from the shared test helpers and all test
-# modules below.
-add_executable(
-    xrpl_tests
-    main.cpp
+add_library(
+    xrpl.testkit.wasm
+    STATIC
     helpers/Account.cpp
     helpers/TestSink.cpp
     helpers/TxTest.cpp
+    tx/wasm/fixtures/NftSetup.cpp
+    tx/wasm/fixtures/WasmLedger.cpp
+    tx/wasm/fixtures/WasmRun.cpp
 )
+target_include_directories(xrpl.testkit.wasm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+    xrpl.testkit.wasm
+    PUBLIC xrpl.libxrpl xrpl_wasm_testkit_cxxbridge
+)
+add_dependencies(xrpl.testkit.wasm xrpl_crates)
+
+add_executable(xrpl_tests main.cpp)
 patch_nix_binary(xrpl_tests)
 set_target_properties(
     xrpl_tests
@@ -21,10 +30,10 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
-
-target_link_libraries(xrpl_tests PRIVATE xrpl_wasm_testkit_cxxbridge)
-add_dependencies(xrpl_tests xrpl_crates)
+target_link_libraries(
+    xrpl_tests
+    PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl xrpl.testkit.wasm
+)
 
 # One source subdirectory per module. Network unit tests are currently not
 # supported on Windows.
@@ -54,6 +63,13 @@ foreach(module IN LISTS test_modules)
         CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
+    )
+    # The framework-free half of tx/wasm/fixtures/ is compiled into xrpl.testkit.wasm,
+    # which this binary links; the rest of that folder belongs here.
+    list(
+        FILTER sources
+        EXCLUDE
+        REGEX "/fixtures/(NftSetup|WasmLedger|WasmRun)\\.cpp$"
     )
     target_sources(xrpl_tests PRIVATE ${sources})
 

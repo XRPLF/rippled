@@ -3,8 +3,8 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
-#include <tx/wasm/NFTFixture.h>
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/NFTFixture.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <string_view>
 

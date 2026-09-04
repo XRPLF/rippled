@@ -7,7 +7,6 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
   - .clang-tidy
-  - src/test/app/wasm_fixtures/*.c
   - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
 allowCompoundWords: true # TODO (#6334)

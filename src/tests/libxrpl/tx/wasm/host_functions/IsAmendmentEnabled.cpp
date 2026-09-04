@@ -2,7 +2,7 @@
 #include <xrpl/protocol/Feature.h>
 
 #include <gtest/gtest.h>
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <string_view>
 

@@ -5,7 +5,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/HostContextFixture.h>
+#include <tx/wasm/fixtures/HostContextFixture.h>
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 
 #include <array>

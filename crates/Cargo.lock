@@ -476,6 +476,7 @@ version = "0.1.0"
 dependencies = [
  "cxx",
  "wat",
+ "xrpl-host-functions",
 ]
 
 [[package]]

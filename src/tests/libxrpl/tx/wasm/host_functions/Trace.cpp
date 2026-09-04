@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/CaptureSink.h>
-#include <tx/wasm/RealHostFixture.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <string>
 
