@@ -278,6 +278,8 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
         return {};
     }
 
+    m->DiscardUnknownFields();
+
     return m;
 }
 
