@@ -230,6 +230,7 @@ TEST(NegativeUNLTests, OptionalFieldsReturnNullopt)
 {
     UInt256 const index{3u};
 
+
     NegativeUNLBuilder builder{
     };
 

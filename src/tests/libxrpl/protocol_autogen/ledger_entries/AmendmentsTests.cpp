@@ -205,6 +205,7 @@ TEST(AmendmentsTests, OptionalFieldsReturnNullopt)
 {
     UInt256 const index{3u};
 
+
     AmendmentsBuilder builder{
     };
 

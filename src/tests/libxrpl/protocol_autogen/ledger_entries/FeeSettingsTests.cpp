@@ -330,6 +330,7 @@ TEST(FeeSettingsTests, OptionalFieldsReturnNullopt)
 {
     UInt256 const index{3u};
 
+
     FeeSettingsBuilder builder{
     };
 
