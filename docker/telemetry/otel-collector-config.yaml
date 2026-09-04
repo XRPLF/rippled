@@ -1,0 +1,70 @@
+# OpenTelemetry Collector configuration for xrpld development.
+#
+# Pipeline: OTLP receiver -> batch processor -> debug + Tempo.
+# xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
+# them and forwards to Tempo via OTLP/gRPC on the Docker network. Tempo
+# is queryable via Grafana Explore using TraceQL.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 100
+  # Deployment-tier tagging. Each collector serves ONE environment and ONE
+  # network, so it stamps both onto every signal it forwards. This lets a
+  # single Grafana stack hold data from many collectors and filter by tier.
+  #   - deployment.environment: the collector IS the environment (local, ci,
+  #     test, prod), so it is authoritative -> upsert (overwrite).
+  #   - xrpl.network.type: the xrpld node knows its own chain and already
+  #     stamps this, so the collector only fills it when absent -> insert.
+  #     This keeps a node's real network (e.g. a local node on mainnet)
+  #     from being overwritten by a collector's default.
+  # Replace the placeholder values per collector; see docker/telemetry
+  # tier examples.
+  resource/tier:
+    attributes:
+      - key: deployment.environment
+        value: local
+        action: upsert
+      - key: xrpl.network.type
+        value: mainnet
+        action: insert
+  # Strip SDK-injected resource attributes (telemetry.sdk.language/name/version).
+  # The OpenTelemetry SDK auto-adds these to every Resource; they carry no
+  # operational value and clutter the attribute set on every backend, so drop
+  # them here for all signals.
+  resource/stripsdk:
+    attributes:
+      - key: telemetry.sdk.language
+        action: delete
+      - key: telemetry.sdk.name
+        action: delete
+      - key: telemetry.sdk.version
+        action: delete
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource/tier, resource/stripsdk, batch]
+      exporters: [debug, otlp/tempo]

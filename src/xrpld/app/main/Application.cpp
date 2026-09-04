@@ -81,10 +81,12 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
@@ -99,6 +101,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -213,6 +216,7 @@ public:
 
     beast::Journal journal_;
     std::unique_ptr<perf::PerfLog> perfLog_;
+    std::unique_ptr<telemetry::Telemetry> telemetry_;
     Application::MutexType masterMutex_;
 
     // Required by the SHAMapStore
@@ -322,6 +326,15 @@ public:
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
+        , telemetry_(
+              telemetry::makeTelemetry(
+                  telemetry::makeTelemetrySetup(
+                      config_->section("telemetry"),
+                      "",  // Updated later via setServiceInstanceId()
+                      build_info::getVersionString(),
+                      config_->networkId),
+                  logs_->journal("Telemetry")))
+
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
               config_->section(Sections::kInsight),
@@ -654,6 +667,12 @@ public:
     getPerfLog() override
     {
         return *perfLog_;
+    }
+
+    telemetry::Telemetry&
+    getTelemetry() override
+    {
+        return *telemetry_;
     }
 
     NodeCache&
@@ -1129,6 +1148,22 @@ private:
     void
     startGenesisLedger();
 
+    /**
+     * Start the tracing pipeline.
+     *
+     * Called once from setup(), as soon as the node identity is known.
+     * Starting here rather than in start() means spans emitted during the
+     * rest of setup() are recorded: SpanGuard drops a span whenever the
+     * global Telemetry instance is not yet live, and the first consensus
+     * round runs inside setup().
+     *
+     * @pre nodeIdentity_ is populated, so setServiceInstanceId() has
+     * already supplied the service.instance.id resource attribute
+     * (the Telemetry resource is fixed once start() builds it).
+     */
+    void
+    startTelemetry() const;
+
     std::shared_ptr<Ledger>
     getLastFullLedger();
 
@@ -1224,6 +1259,27 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
+    nodeIdentity_ = getNodeIdentity(*this, cmdline);
+
+    // Now that the node identity is known, inject it into the telemetry
+    // resource attributes — but only if the user didn't already set a
+    // custom service_instance_id in [telemetry].  The Telemetry object
+    // was constructed with an empty serviceInstanceId because
+    // nodeIdentity_ is not available in the member initializer list.
+    if (!config_->section("telemetry").exists("service_instance_id"))
+        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
+
+    // Start telemetry here, not in start(). Spans are emitted during the rest
+    // of setup() — the first consensus round in beginConsensus() below — and
+    // are dropped unless the global Telemetry instance is already live.
+    //
+    // The position is bounded on both sides:
+    //  - After initRelationalDatabase(): the wallet DB must exist for the node
+    //    identity above, and a DB failure aborts setup(), so starting earlier
+    //    would export a partial trace stream for a run that never comes up.
+    //  - Before beginConsensus(): that call emits the first consensus spans.
+    startTelemetry();
+
     if (validatorKeys_.keys)
         setMaxDisallowedLedger();
 
@@ -1310,8 +1366,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     }
 
     orderBookDB_->setup(getLedgerMaster().getCurrentLedger());
-
-    nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
     if (!cluster_->load(config().section(Sections::kClusterNodes)))
     {
@@ -1528,6 +1582,12 @@ ApplicationImp::start(bool withTimers)
 }
 
 void
+ApplicationImp::startTelemetry() const
+{
+    telemetry_->start();
+}
+
+void
 ApplicationImp::run()
 {
     if (!config_->standalone())
@@ -1615,6 +1675,11 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     nodeStore_->stop();
     perfLog_->stop();
+    // Telemetry must stop last among trace-producing components.
+    // serverHandler_, overlay_, and jobQueue_ are already stopped above,
+    // so no threads should be calling startSpan() at this point.
+    // See TODO in TelemetryImpl::stop() re: thread-safety of sdkProvider_.
+    telemetry_->stop();
 
     JLOG(journal_.info()) << "Done.";
 }
