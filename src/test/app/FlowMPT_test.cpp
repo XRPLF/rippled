@@ -26,8 +26,10 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
@@ -638,6 +640,149 @@ struct FlowMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testMPTEndpointTransferRateOverflow(FeatureBitset features)
+    {
+        testcase("MPT Endpoint transfer rate overflow");
+
+        using namespace jtx;
+
+        Account const iouGW("iou_gateway");
+        Account const mptGW("mpt_gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+
+        {
+            // Control: the same issuer-owned offer path works when the
+            // transfer-fee-adjusted input amount remains representable.
+            Env env(*this, features);
+
+            std::int64_t constexpr deliverAmount = 1'000'000'000'000'000'000LL;
+            std::int64_t constexpr offerAmount = deliverAmount + (deliverAmount / 2);
+
+            env.fund(XRP(10'000), iouGW, mptGW, alice, bob);
+            env.close();
+
+            auto const usd = iouGW["USD"];
+            env.trust(usd(offerAmount), alice);
+            env.trust(usd(offerAmount), mptGW);
+            env(pay(iouGW, alice, usd(offerAmount)));
+
+            MPTTester const mpt(
+                {.env = env, .issuer = mptGW, .holders = {bob}, .transferFee = kMaxTransferFee});
+
+            env(offer(mptGW, usd(offerAmount), mpt(offerAmount)));
+
+            env(pay(alice, bob, mpt(deliverAmount)),
+                Path(~mpt),
+                Sendmax(usd(offerAmount)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
+
+            env.require(Balance(alice, usd(0)), Balance(bob, mpt(deliverAmount)));
+            BEAST_EXPECT(!isOffer(env, mptGW, usd(offerAmount), mpt(offerAmount)));
+        }
+        {
+            // Regression: an extreme transfer-fee-adjusted MPT amount used to
+            // throw from MPTAmount::mulRatio during the endpoint reverse pass.
+            // The reverse pass now caps srcToDst at the largest amount whose
+            // transfer-fee-adjusted input is representable, so the offer limits
+            // the strand and a partial payment goes through.
+            Env env(*this, features);
+
+            std::int64_t constexpr overflowAmount = 7'000'000'000'000'000'000LL;
+            // The offer caps the input at overflowAmount, which the maximum
+            // transfer rate of 1.5 scales down to 7e18 * 2 / 3, rounded down
+            std::int64_t constexpr deliveredAmount = 4'666'666'666'666'666'666LL;
+
+            env.fund(XRP(10'000), iouGW, mptGW, alice, bob);
+            env.close();
+
+            auto const usd = iouGW["USD"];
+            env.trust(usd(overflowAmount), alice);
+            env.trust(usd(overflowAmount), mptGW);
+            env(pay(iouGW, alice, usd(overflowAmount)));
+
+            MPTTester const mpt(
+                {.env = env, .issuer = mptGW, .holders = {bob}, .transferFee = kMaxTransferFee});
+
+            env(offer(mptGW, usd(overflowAmount), mpt(overflowAmount)));
+
+            env(pay(alice, bob, mpt(overflowAmount)),
+                Path(~mpt),
+                Sendmax(usd(overflowAmount)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
+
+            env.require(Balance(alice, usd(0)), Balance(bob, mpt(deliveredAmount)));
+            BEAST_EXPECT(!isOffer(env, mptGW, usd(overflowAmount), mpt(overflowAmount)));
+        }
+    }
+
+    void
+    testMPTEndpointRipplingInputOverflow(FeatureBitset features)
+    {
+        // A payment between the holders of an MPT with a transfer fee ripples
+        // through the issuer, and the issuing step has to charge the transfer
+        // rate on the amount it receives. maxPaymentFlow() returns the issuance
+        // maximum for that step, so srcToDst * transferRate is not necessarily
+        // representable as an MPT amount. The reverse pass must cap the flow at
+        // the largest representable input instead of declaring the strand dry,
+        // otherwise a deliverable partial payment fails with tecPATH_DRY.
+        //
+        // Same defect as the case above, reached without an offer: holder ->
+        // issuer -> holder, one case per branch of the pre-fix revImp.
+        testcase("MPT Endpoint rippling input overflow");
+
+        using namespace jtx;
+
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+
+        // The maximum transfer fee gives a transfer rate of 1.5, so an input of
+        // kMaxMpTokenAmount covers at most kMaxMpTokenAmount * 2 / 3 of output.
+        std::int64_t constexpr maxRepresentable = 6'148'914'691'236'517'204LL;
+        std::int64_t constexpr aliceBalance = 1'000;
+        // The forward pass rounds the delivered amount down: 1000 / 1.5
+        std::int64_t constexpr bobBalance = 666;
+
+        auto const test =
+            [&](std::uint64_t maxAmt, std::int64_t deliver, std::string const& label) {
+                Env env(*this, features);
+                env.fund(XRP(10'000), gw, alice, bob);
+                env.close();
+
+                auto mpt = MPTTester(
+                    {.env = env,
+                     .issuer = gw,
+                     .holders = {alice, bob},
+                     .transferFee = kMaxTransferFee,
+                     .maxAmt = maxAmt});
+
+                env(pay(gw, alice, mpt(aliceBalance)));
+                env.close();
+
+                // alice asks to deliver more than the transfer rate can scale,
+                // so the issuing step caps the flow and her balance limits it
+                // further
+                env(pay(alice, bob, mpt(deliver)),
+                    Sendmax(mpt(kMaxMpTokenAmount)),
+                    Txflags(tfPartialPayment));
+                BEAST_EXPECTS(env.ter() == tesSUCCESS, label);
+                BEAST_EXPECTS(env.balance(alice, mpt) == mpt(0), label);
+                BEAST_EXPECTS(env.balance(bob, mpt) == mpt(bobBalance), label);
+                BEAST_EXPECTS(mpt.checkMPTokenOutstandingAmount(bobBalance), label);
+            };
+
+        // The requested amount is below MaximumAmount, so the reverse pass
+        // takes the non-limiting branch and overflows on the requested amount
+        test(kMaxMpTokenAmount, maxRepresentable + 1, "non-limiting");
+
+        // MaximumAmount is below the requested amount but still large enough
+        // that scaling it by the transfer rate is not representable, so the
+        // reverse pass takes the limiting branch and overflows on the maximum
+        test(maxRepresentable + 1, kMaxMpTokenAmount, "limiting");
+    }
+
+    void
     testFalseDry(FeatureBitset features)
     {
         testcase("falseDryChanges");
@@ -740,6 +885,164 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 result.push_back(sle);
         });
         return result;
+    }
+
+    void
+    testOfferOwnerMPTCreation(FeatureBitset features)
+    {
+        using namespace jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const gw("gw");
+
+        {
+            testcase("Reserve-edge offer owner cannot create another object");
+
+            Env env(*this, features);
+
+            auto const baseFee = env.current()->fees().base;
+            auto const ownerIncrement = reserve(env, 1) - reserve(env, 0);
+            auto const xrpOffer = ownerIncrement - drops(1);
+            auto const bobStart = reserve(env, 2) - drops(1) + baseFee;
+
+            env.fund(XRP(10'000), alice, gw);
+            env.fund(bobStart, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .maxAmt = 10});
+
+            env(offer(bob, usd(1), xrpOffer));
+            env.close();
+
+            env.require(Balance(bob, reserve(env, 2) - drops(1)), Owners(bob, 1));
+
+            // This mirrors the full-crossing setup below. Bob has enough XRP
+            // for the resting offer, but not enough to pay a fee and add
+            // another owner-count object while the offer remains on ledger.
+            env(check::create(bob, alice, drops(1)), Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            env.require(Owners(bob, 1));
+            BEAST_EXPECT(offersOnAccount(env, bob).size() == 1);
+        }
+
+        {
+            testcase("Reserve-edge offer owner creates MPToken during consume");
+
+            Env env(*this, features);
+
+            auto const baseFee = env.current()->fees().base;
+            auto const ownerIncrement = reserve(env, 1) - reserve(env, 0);
+            auto const xrpOffer = ownerIncrement - drops(1);
+            auto const bobStart = reserve(env, 2) - drops(1) + baseFee;
+
+            env.fund(XRP(10'000), alice, carol, gw);
+            env.fund(bobStart, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 10});
+
+            env(pay(gw, alice, usd(1)));
+            env(offer(bob, usd(1), xrpOffer));
+            env.close();
+
+            env.require(Balance(bob, reserve(env, 2) - drops(1)), Owners(bob, 1));
+            BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
+            auto const carolXRP = env.balance(carol);
+
+            // Bob has enough XRP for the resting offer but is close to
+            // reserve. The payment should not create Bob's USD MPToken until
+            // the offer is actually consumed, otherwise the temporary owner
+            // count increase can make the offer look underfunded during path
+            // execution.
+            env(pay(alice, carol, xrpOffer),
+                Path(~XRP),
+                Sendmax(usd(1)),
+                Txflags(tfNoRippleDirect));
+            env.close();
+
+            env.require(Balance(carol, carolXRP + xrpOffer));
+            env.require(Balance(bob, usd(1)));
+            env.require(Balance(bob, reserve(env, 1)), Owners(bob, 1));
+            BEAST_EXPECT(env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
+            BEAST_EXPECT(offersOnAccount(env, bob).empty());
+        }
+
+        {
+            testcase("Partial offer owner creates MPToken during consume");
+
+            Env env(*this, features);
+
+            auto const baseFee = env.current()->fees().base;
+            auto const ownerIncrement = reserve(env, 1) - reserve(env, 0);
+            auto const bobStart = reserve(env, 3) + baseFee;
+
+            env.fund(XRP(10'000), alice, carol, gw);
+            env.fund(bobStart, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 10});
+
+            env(pay(gw, alice, usd(1)));
+            env(offer(bob, usd(2), drops(2 * ownerIncrement)));
+            env.close();
+
+            env.require(Balance(bob, reserve(env, 3)), Owners(bob, 1));
+            BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
+            auto const carolXRP = env.balance(carol);
+
+            // Partial consumption leaves Bob's offer on the ledger, so he ends
+            // up owning both the remaining offer and a newly created MPToken.
+            // The MPToken is created regardless of reserve; this setup simply
+            // funds Bob enough that he still meets reserve(2) afterward (the
+            // under-reserved case is covered in OfferMPT_test's no-reserve-check
+            // testcase).
+            env(pay(alice, carol, drops(ownerIncrement)),
+                Path(~XRP),
+                Sendmax(usd(1)),
+                Txflags(tfNoRippleDirect));
+            env.close();
+
+            env.require(Balance(carol, carolXRP + drops(ownerIncrement)));
+            env.require(Balance(bob, usd(1)));
+            env.require(Balance(bob, reserve(env, 2)), Owners(bob, 2));
+            BEAST_EXPECT(env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
+            BEAST_EXPECT(offersOnAccount(env, bob).size() == 1);
+            BEAST_EXPECT(isOffer(env, bob, usd(1), drops(ownerIncrement)));
+        }
+
+        {
+            testcase("Issuer-owned offer does not create issuer MPToken");
+
+            Env env(*this, features);
+
+            env.fund(XRP(10'000), alice, carol, gw);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 10});
+
+            env(pay(gw, alice, usd(1)));
+            env(offer(gw, usd(1), drops(1'000)));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), gw.id())));
+            auto const carolXRP = env.balance(carol);
+
+            // The issuer can own an offer that receives its own MPT without an
+            // MPToken. Consuming that offer should keep the issuer side
+            // tokenless.
+            env(pay(alice, carol, drops(1'000)),
+                Path(~XRP),
+                Sendmax(usd(1)),
+                Txflags(tfNoRippleDirect));
+            env.close();
+
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(carol, carolXRP + drops(1'000)));
+            BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), gw.id())));
+            BEAST_EXPECT(offersOnAccount(env, gw).empty());
+        }
     }
 
     void
@@ -2113,6 +2416,103 @@ struct FlowMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testLockedMidPathHolder(FeatureBitset features)
+    {
+        // Regression: a cross-currency strand whose second book step
+        // consumes the offer of a holder that is locked on the step's
+        // in-asset (an MPT). The strand is XRP -> [book1: XRP/USD] ->
+        // USD -> [book2: USD/EUR] -> EUR, so book2 has book_.in == USD
+        // (an MPT) and its previous step is another BookStep. That is
+        // exactly the checkMPTDEX() branch that trusts the preceding
+        // BookStep and no longer re-checks isFrozen(owner, book_.in).
+        //
+        // The bypass the branch might appear to open does not exist:
+        // for MPT, isDeepFrozen() == isFrozen() (frozen MPTs can neither
+        // send nor receive), and OfferStream gates every offer through
+        // isDeepFrozen(owner, assetIn) before it can reach checkMPTDEX().
+        // So a locked mid-path holder's offer is removed by the liquidity
+        // source and the strand simply finds no liquidity at book2.
+        testcase("Locked mid-path holder behind a BookStep");
+
+        using namespace jtx;
+
+        Account const gw("gw");
+        Account const alice("alice");  // book1 (XRP/USD) offer owner
+        Account const mid("mid");      // book2 (USD/EUR) offer owner
+        Account const sam("sam");      // source
+        Account const bill("bill");    // destination
+
+        auto const test = [&](bool lock) {
+            Env env(*this, features);
+            env.fund(XRP(1'000), gw, alice, mid, sam, bill);
+            env.close();
+
+            auto usd = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, mid},
+                 .flags = kMptDexFlags | tfMPTCanLock,
+                 .maxAmt = 1'000});
+            auto const eur = gw["EUR"];
+
+            // alice funds book1 (sells USD for XRP); mid funds book2
+            // (sells EUR for USD, i.e. receives the mid-path USD).
+            env(pay(gw, alice, usd(100)));
+            env(trust(mid, eur(100)));
+            env(pay(gw, mid, eur(100)));
+            env(trust(bill, eur(100)));
+            env.close();
+
+            env(offer(alice, XRP(100), usd(100)));  // XRP/USD, sells USD
+            env.close();
+            env(offer(mid, usd(100), eur(100)));  // USD/EUR, sells EUR
+            env.close();
+            BEAST_EXPECT(expectOffers(env, alice, 1));
+            BEAST_EXPECT(expectOffers(env, mid, 1));
+
+            // Lock mid on USD *after* its offer is already on the book:
+            // the reviewer's "frozen holder's offer sits behind a
+            // BookStep" scenario.
+            if (lock)
+            {
+                usd.set({.holder = mid, .flags = tfMPTLock});
+                env.close();
+            }
+
+            env(pay(sam, bill, eur(100)),
+                Sendmax(XRP(100)),
+                Path(~usd, ~eur),
+                Txflags(tfNoRippleDirect),
+                // book1 (XRP/USD) still has liquidity, so the strand is
+                // not fully dry; it just cannot cross book2 once mid's
+                // offer is removed, hence PARTIAL rather than DRY.
+                Ter(lock ? TER(tecPATH_PARTIAL) : TER(tesSUCCESS)));
+            env.close();
+
+            if (lock)
+            {
+                // No liquidity reached book2: mid neither received USD
+                // nor delivered EUR, so bill received nothing.
+                BEAST_EXPECT(env.balance(bill, eur) == eur(0));
+                BEAST_EXPECT(env.balance(mid, usd) == usd(0));
+            }
+            else
+            {
+                // The strand crosses both books: mid receives the
+                // mid-path USD and bill receives EUR.
+                BEAST_EXPECT(env.balance(bill, eur) == eur(100));
+                BEAST_EXPECT(env.balance(mid, usd) == usd(100));
+                BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+                BEAST_EXPECT(expectOffers(env, alice, 0));
+                BEAST_EXPECT(expectOffers(env, mid, 0));
+            }
+        };
+
+        test(false);  // baseline: unlocked strand succeeds
+        test(true);   // locked mid-path holder: strand finds no liquidity
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
@@ -2121,7 +2521,10 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testFalseDry(features);
         testDirectStep(features);
         testBookStep(features);
+        testOfferOwnerMPTCreation(features);
         testTransferRate(features);
+        testMPTEndpointTransferRateOverflow(features);
+        testMPTEndpointRipplingInputOverflow(features);
         testSelfPayment1(features);
         testSelfPayment2(features);
         testSelfFundedXRPEndpoint(false, features);
@@ -2129,6 +2532,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testUnfundedOffer(features);
         testReExecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
+        testLockedMidPathHolder(features);
     }
 
     void

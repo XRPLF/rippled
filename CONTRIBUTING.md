@@ -59,6 +59,17 @@ to an existing XLS. Neither change will be released (in an amendment's
 case, marked as `Supported::yes`) until the corresponding XLS's status
 is `Final`.
 
+## AI coding agents
+
+[`AGENTS.md`](./AGENTS.md) (and its `CLAUDE.md` symlink, for Claude Code) holds shared, checked-in guidance for AI coding agents working in this repository — build/test/lint commands and architecture notes. Additional `AGENTS.md` files may exist in subdirectories to give agents context specific to that part of the codebase; whenever you add one, also add a `CLAUDE.md` symlink pointing to it (`ln -s AGENTS.md CLAUDE.md`) so Claude Code picks it up too.
+
+If you want to give an agent personal instructions that shouldn't be shared with other contributors (e.g. your own workflow preferences), those are gitignored, not checked in:
+
+- `CLAUDE.local.md` — read by Claude Code alongside `CLAUDE.md`.
+- `AGENTS.override.md` — read by AGENTS.md-compatible tools that support a personal override file layered on top of `AGENTS.md`.
+
+Likewise, `.claude/settings.local.json` is for personal, untracked Claude Code settings, while `.claude/settings.json` is shared.
+
 ## Before making a pull request
 
 (Or marking a draft pull request as ready.)
@@ -82,7 +93,7 @@ If you create new source files, they must be organized as follows:
   under `include/xrpl`, and source (`.cpp`) files must go under
   `src/libxrpl`.
 - All other non-test files must go under `src/xrpld`.
-- All test source files must go under `src/test`.
+- New test source files should use `gtest` and go under `src/tests`, unless that isn't possible, in which case they should use our legacy test framework and go under `src/test`.
 - All benchmark source files must go under `src/benchmarks`.
 
 The source must be formatted according to the style guide below. The easiest
@@ -225,8 +236,9 @@ environment, so you don't need to install most of the individual tools
 yourself. The version of each hook sourced from an external repository
 (`clang-format`, `gersemi`, etc.) is pinned in that file, so running the hooks
 locally uses exactly the same versions as CI. A few `local` hooks — most notably
-`clang-tidy` — run tools from your own environment; see
-[Installing clang-tidy](#installing-clang-tidy) for how to get those.
+`clang-tidy` and `cargo fmt` — run tools from your own environment; see
+[Installing clang-tidy](#installing-clang-tidy) and
+[Rust](./docs/build/environment.md#rust) for how to get those.
 
 To get started, install `pre-commit` and enable the git hook scripts:
 
@@ -255,6 +267,7 @@ The hooks configured in this repository include, among others:
 - `clang-tidy` — C++ static analysis (see [Clang-tidy](#clang-tidy)); opt in with `TIDY=1`
 - `fix-include-style`, `fix-pragma-once`, `check-doxygen-style` — C++ hygiene
 - `gersemi` — CMake formatting
+- `cargo fmt` — Rust formatting for the crates in `crates/`
 - `prettier`, `black`, `shfmt` — formatting for JavaScript/JSON/Markdown, Python, and shell
 - `cspell` — spell checking
 
@@ -319,7 +332,11 @@ See the [environment setup guide](./docs/build/environment.md#clang-tidy) for ho
 
 ### Running clang-tidy locally
 
-Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
+Before running clang-tidy, you must generate the files it depends on (protobuf headers, and, when the project is configured with `-Drust=ON`, the cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `tidy_prerequisites` target, which generates all of them:
+
+```bash
+cmake --build build --target tidy_prerequisites
+```
 
 #### Via pre-commit (recommended)
 
