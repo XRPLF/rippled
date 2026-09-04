@@ -19,6 +19,11 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpld/telemetry/MetricNames.h>
+#endif
 #include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 
@@ -304,7 +309,11 @@ RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 std::optional<RCLTxSet>
 RCLConsensus::Adaptor::acquireTxSet(RCLTxSet::ID const& setId)
 {
-    if (auto txns = inboundTransactions_.getSet(setId, true))
+    // The round identity goes with the request, not onto the fetch's span as a
+    // parent or link: this is called once per peer proposal, and one fetch ends
+    // up wanted by several rounds, so the fetch records its requesters instead
+    // of belonging to one of them.
+    if (auto txns = inboundTransactions_.getSet(setId, true, roundParentHash_, roundLedgerSeq_))
     {
         return RCLTxSet{std::move(txns)};
     }
@@ -540,6 +549,24 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
 
     auto span = std::make_shared<telemetry::SpanGuard>(
         telemetry::SpanGuard::childSpan(cs::accept, roundSpanContext_));
+    // Round duration as a native histogram, alongside the span attribute above.
+    // The two answer different questions and neither replaces the other: the
+    // attribute says how long THIS round took, readable inside the trace next
+    // to the proposers and disputes that explain it; the histogram gives the
+    // distribution over time, which is what an alert or an SLO panel needs and
+    // what a trace query cannot cheaply produce fleet-wide. The histogram is
+    // also unsampled, so it stays complete when tracing is head-sampled down.
+    //
+    // This is the one site: makeAcceptSpan() is the single function both the
+    // synchronous (onForceAccept) and asynchronous (onAccept) accept paths call
+    // once per round, so recording here cannot double-count and cannot be
+    // skipped. It runs once per round, never per peer, per proposal or per
+    // transaction.
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_,
+        telemetry::metric::consensusRoundDurationMs,
+        "Wall-clock duration of a completed consensus round in milliseconds",
+        result.roundTime.read().count());
 
     // Every attribute below exists only for the span, so the whole block —
     // attributes and the context capture — is guarded on the span being live.
@@ -1274,6 +1301,13 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
         JLOG(j_.info()) << "Entering consensus process, watching, synced="
                         << (synced ? "yes" : "no");
     }
+
+    // Cache this round's identity for the tx-set fetches it is about to start.
+    // Deliberately here and not in startRoundTracing(), which returns early
+    // when consensus tracing is off: a fetch's round.request event must still
+    // name the round on a node running trace_consensus=0 with trace_ledger=1.
+    roundParentHash_ = prevLgr.id();
+    roundLedgerSeq_ = prevLgr.seq() + 1;
 
     // Notify inbound ledgers that we are starting a new round
     inboundTransactions_.newRound(prevLgr.seq());

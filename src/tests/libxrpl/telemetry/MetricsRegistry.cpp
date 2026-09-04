@@ -22,10 +22,46 @@
  *
  *  4. The no-op / telemetry-disabled path — construction, the two-phase
  *     start() / startAsyncGauges() / stop() lifecycle, and the synchronous
- *     record*() methods. Guarded, because when XRPL_ENABLE_TELEMETRY is
- *     defined MetricsRegistry.cpp is not compiled into this binary (see
- *     src/tests/libxrpl/CMakeLists.txt) and its out-of-line symbols are
- *     unresolvable here.
+ *     record*() methods. Guarded, because
+ *     when XRPL_ENABLE_TELEMETRY is defined MetricsRegistry.cpp is not
+ *     compiled into this binary (see src/tests/libxrpl/CMakeLists.txt) and
+ *     its out-of-line symbols are unresolvable here.
+ *
+ *  Tests cover:
+ *  - Construction with telemetry disabled (no-op behavior).
+ *  - The two-phase start() / startAsyncGauges() / stop() lifecycle when
+ *    disabled.
+ *  - Synchronous instrument recording methods do not crash when disabled.
+ *  - Double stop() is safe.
+ *  - Destructor handles cleanup without crash.
+ *  - Compile-time-disabled proof for the sync-diagnostics gauges: the whole
+ *    async-gauge registration surface is compiled away, and a full disabled
+ *    lifecycle never touches any ServiceRegistry service -- including the
+ *    Overlay and AmendmentTable the peer and amendment gauges would read.
+ *
+ *  NOTE: These tests only exercise the no-op path (telemetry disabled).
+ *  When XRPL_ENABLE_TELEMETRY is defined, MetricsRegistry.cpp pulls in
+ *  xrpld symbols that cannot be linked into this standalone test binary,
+ *  so the tests are compiled out.
+ *
+ *  CONSEQUENCE for the sync-diagnostics gauges (`unl_quorum`,
+ *  `clock_close_offset_seconds`, `sync_state`,
+ *  `server_stall_events_total`, `sync_acquire`, `shamap_cache_hit_rate`,
+ *  `jobq_saturation`, `peer_ledger_supply`,
+ *  `peerfinder_slot_census`, `amendment_block`, `nodestore_state`):
+ *  this file CANNOT assert an observed gauge
+ *  value, because on this build the gauges do not exist -- their registration
+ *  methods and the OTel instrument members are inside
+ *  `#ifdef XRPL_ENABLE_TELEMETRY`, and there is no MeterProvider at all. What
+ *  is provable here, and what the tests below assert, is the complementary
+ *  half: that nothing is registered and no service is consulted. The exact
+ *  observed values (trusted_keys=5, quorum=4, offset=-3, the sync_state /
+ *  stall-episode values, the acquire-progress / cache-hit-rate values, the
+ *  per-type backlog / pool-saturation values, the peer-supply /
+ *  slot-census / amendment-countdown values, and the nodestore
+ *  read/write mean-latency values) are
+ *  asserted in MetricMacros.cpp, which is the file compiled when telemetry IS
+ *  enabled.
  */
 
 #include <xrpld/telemetry/MetricsRegistry.h>
@@ -1025,6 +1061,175 @@ TEST_F(MetricsRegistryTest, destructor_calls_stop)
         registry.start(std::string{kTestEndpoint});
     }
     // If we get here without crash, the destructor handled stop.
+}
+
+// -----------------------------------------------------------------
+// Sync-diagnostics gauges: compile-time-disabled proof.
+//
+// `unl_quorum` reads ValidatorList::trustedKeyCount() and quorum();
+// `clock_close_offset_seconds` reads TimeKeeper::closeOffset(); `sync_state` and
+// `server_stall_events_total` read NetworkOPs and LoadManager; `sync_acquire`
+// reads InboundLedgers::acquireProgress() and `shamap_cache_hit_rate` reads the
+// node Family's tree-node cache; `jobq_saturation` reads
+// JobQueue::getWorkerSaturation(); `peer_ledger_supply` and
+// `peerfinder_slot_census` read Overlay::getPeerLedgerSupply() /
+// getSlotCensus() and `amendment_block` reads
+// AmendmentTable::firstUnsupportedExpected(). All are
+// reached through the ServiceRegistry, and MockServiceRegistry::getValidators()
+// / getTimeKeeper() / getOPs() / getLoadManager() / getInboundLedgers() /
+// getNodeFamily() / getJobQueue() / getOverlay() / getAmendmentTable() THROW
+// std::logic_error. So "no
+// gauge callback ran" is directly observable here: had registerAsyncGauges() run
+// and had a callback fired, one of those accessors would have thrown.
+//
+// Honest scope note: these tests do NOT assert an observed gauge value. On this
+// build the gauges are not compiled at all (see the file header), so there is no
+// value to read -- inventing one would be fiction. The value assertions live in
+// MetricMacros.cpp. What is asserted here is the other half of the contract:
+// registration is absent and no service is consulted.
+// -----------------------------------------------------------------
+
+// The observable-gauge registration surface is compiled OUT when telemetry is
+// disabled: `meter()` -- the only accessor the gauges and the XRPL_METRIC_*
+// macros use to reach the OTel SDK -- does not exist as a member at all. This is
+// a compile-time assertion, so it fails the build (not the run) if the accessor
+// ever escapes its #ifdef and drags the SDK into a telemetry-off build.
+TEST_F(MetricsRegistryTest, disabled_build_exposes_no_meter_accessor)
+{
+    // Detects `registry.meter()` being callable. Under #ifndef
+    // XRPL_ENABLE_TELEMETRY it must not be, so the trait is false.
+    auto hasMeter = []<typename T>(T* r) { return requires { r->meter(); }; };
+    EXPECT_FALSE(hasMeter(static_cast<telemetry::MetricsRegistry*>(nullptr)));
+
+    // The enable flag is still queryable and reports exactly false -- the class
+    // is a no-op, not an absent type.
+    telemetry::MetricsRegistry const registry(false, mockApp_, j_);
+    EXPECT_FALSE(registry.isEnabled());
+}
+
+// A full disabled lifecycle registers no gauge and therefore consults NO
+// ServiceRegistry service. Asserting the cause, not just the absence of a crash:
+// every MockServiceRegistry accessor a sync-diagnostics gauge would need throws,
+// so reaching the end without an exception proves no callback ran.
+TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
+{
+    telemetry::MetricsRegistry registry(false, mockApp_, j_);
+
+    // start() is where registerAsyncGauges() -- and with it
+    // registerUnlQuorumGauge() / registerClockSkewGauge() /
+    // registerSyncStateGauge() / registerStallEventsCounter() /
+    // registerSyncAcquireGauge() / registerCacheHitRateDetailGauge() /
+    // registerJobQueueBacklogGauge() / registerJobQueueSaturationGauge() /
+    // registerPeerLedgerSupplyGauge() / registerSlotCensusGauge() /
+    // registerAmendmentBlockGauge() / registerNodeStoreGauge() --
+    // would run.
+    EXPECT_NO_THROW(registry.start("http://localhost:4318/v1/metrics"));
+
+    // detachCallbacks() is the shutdown hook the real gauges honour. It must be
+    // safe and idempotent even though there is nothing to detach.
+    EXPECT_NO_THROW(registry.detachCallbacks());
+    EXPECT_NO_THROW(registry.detachCallbacks());
+
+    // Still disabled after a full start(): start() must not flip the flag.
+    EXPECT_FALSE(registry.isEnabled());
+
+    EXPECT_NO_THROW(registry.stop());
+
+    // Positive control: the mock DOES throw when a gauge-backing service is
+    // actually requested. Without this, "nothing threw" would be vacuous -- it
+    // could mean the mock is permissive rather than that no callback ran.
+    EXPECT_THROW(mockApp_.getValidators(), std::logic_error);
+    EXPECT_THROW(mockApp_.getTimeKeeper(), std::logic_error);
+    // The two services the sync-state signals read. sync_state needs both
+    // (NetworkOPs for the gate/duration/ledgers-behind, LoadManager for stall
+    // seconds) and server_stall_events_total needs the second, so either one
+    // firing would have thrown above.
+    EXPECT_THROW(mockApp_.getOPs(), std::logic_error);
+    EXPECT_THROW(mockApp_.getLoadManager(), std::logic_error);
+    // The two services the acquire signals read: sync_acquire polls the
+    // in-flight acquire collection, shamap_cache_hit_rate polls the node
+    // Family's tree-node cache. Neither was consulted above.
+    EXPECT_THROW(mockApp_.getInboundLedgers(), std::logic_error);
+    EXPECT_THROW(mockApp_.getNodeFamily(), std::logic_error);
+    // The service the job-queue gauge reads: jobq_saturation polls
+    // getWorkerSaturation() on the JobQueue. Not consulted above, so the
+    // gauge never took the JobQueue mutex on a telemetry-off build.
+    EXPECT_THROW(mockApp_.getJobQueue(), std::logic_error);
+    // The service both peer gauges read: peer_ledger_supply polls
+    // getPeerLedgerSupply(), which walks the active-peer list, and
+    // peerfinder_slot_census polls getSlotCensus(), which takes the PeerFinder
+    // lock. Both go through the Overlay, so a single throw here proves neither
+    // gauge walked the peer list nor took the PeerFinder lock on a
+    // telemetry-off build.
+    EXPECT_THROW(mockApp_.getOverlay(), std::logic_error);
+    // The service the amendment countdown reads: amendment_block polls
+    // firstUnsupportedExpected() on the AmendmentTable, which takes that
+    // table's mutex. Not consulted above, so the countdown never ran. (Its
+    // `warned` half reads NetworkOPs, already covered by the getOPs() check.)
+    EXPECT_THROW(mockApp_.getAmendmentTable(), std::logic_error);
+    // The service the nodestore gauge reads: nodestore_state polls
+    // getStoreDurationUs()/getStoreCount() and
+    // getFetchDurationUs()/getFetchTotalCount() on the node-store Database,
+    // alongside its I/O totals and write-queue detail. Not consulted above,
+    // so the gauge never read those atomics on a telemetry-off build.
+    EXPECT_THROW(mockApp_.getNodeStore(), std::logic_error);
+}
+
+// Even asking for enabled=true registers no sync-diagnostics gauge on a
+// telemetry-off build. isEnabled() faithfully echoes the constructor argument
+// (the flag lives outside the #ifdef), so the flag alone does NOT prove the
+// gauges are inert -- the mock does: a full start()/stop() cycle with
+// enabled=true still consults no service, so no callback was ever registered.
+// Asserts the exact flag value on BOTH construction paths.
+TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled_out)
+{
+    telemetry::MetricsRegistry enabledRequest(true, mockApp_, j_);
+
+    // The flag is echoed back exactly, true not false: it is a plain member,
+    // not gated on XRPL_ENABLE_TELEMETRY.
+    EXPECT_TRUE(enabledRequest.isEnabled());
+
+    // Yet the whole lifecycle stays inert. If registerAsyncGauges() had run and
+    // registered registerUnlQuorumGauge()/registerClockSkewGauge()/
+    // registerSyncStateGauge()/registerStallEventsCounter()/
+    // registerSyncAcquireGauge()/registerCacheHitRateDetailGauge()/
+    // registerJobQueueBacklogGauge()/registerJobQueueSaturationGauge()/
+    // registerPeerLedgerSupplyGauge()/registerSlotCensusGauge()/
+    // registerAmendmentBlockGauge()/registerNodeStoreGauge(), a
+    // callback would reach getValidators()/getTimeKeeper()/getOPs()/
+    // getLoadManager()/getInboundLedgers()/getNodeFamily()/getJobQueue()/
+    // getOverlay()/getAmendmentTable()/getNodeStore() and
+    // throw std::logic_error.
+    EXPECT_NO_THROW(enabledRequest.start("http://localhost:4318/v1/metrics"));
+    EXPECT_NO_THROW(enabledRequest.detachCallbacks());
+    EXPECT_NO_THROW(enabledRequest.stop());
+
+    // Contrast: enabled=false reports exactly false.
+    telemetry::MetricsRegistry const disabledRequest(false, mockApp_, j_);
+    EXPECT_FALSE(disabledRequest.isEnabled());
+}
+
+// The `state_changes_total` counter has no registry-owned wrapper method by
+// design: it is emitted from a labelled call-site macro in
+// NetworkOPsImp::setMode, which is the only place that knows {from,to}. This
+// compile-time assertion is the guard -- if someone adds
+// incrementStateChanges(), the unlabelled instrument would coexist with the
+// labelled one and Prometheus would carry two conflicting versions of the same
+// metric name.
+TEST_F(MetricsRegistryTest, state_changes_counter_has_no_registry_wrapper)
+{
+    auto hasIncrementStateChanges = []<typename T>(T* r) {
+        return requires { r->incrementStateChanges(); };
+    };
+    EXPECT_FALSE(hasIncrementStateChanges(static_cast<telemetry::MetricsRegistry*>(nullptr)));
+
+    // Positive control: a sibling parity counter that WAS deliberately kept as
+    // a registry wrapper is still detectable, so the trait above is really
+    // probing for the method and not vacuously false.
+    auto hasIncrementLedgersClosed = []<typename T>(T* r) {
+        return requires { r->incrementLedgersClosed(); };
+    };
+    EXPECT_TRUE(hasIncrementLedgersClosed(static_cast<telemetry::MetricsRegistry*>(nullptr)));
 }
 
 #endif  // !XRPL_ENABLE_TELEMETRY

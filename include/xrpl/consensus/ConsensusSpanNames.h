@@ -81,12 +81,28 @@
  *    consensus.validation.receive                [PeerImp I/O thread]
  *      Created: PeerImp::onMessage(TMValidation)
  *
+ *  ## Per-ledger trace (separate from the per-round trace above)
+ *
+ *  consensus.validation.accept sits in a DIFFERENT trace from the spans above.
+ *  The round trace is keyed on the PREVIOUS ledger hash (the round's seed);
+ *  this span is keyed on the hash of the ledger the arriving validation is FOR,
+ *  the same key LedgerMaster uses for ledger.validate and ledger.store, so a
+ *  reader following one slow ledger sees the validation that triggered its
+ *  acceptance beside the acceptance itself:
+ *
+ *    trace_id = validatedLedgerHash[0:16]
+ *      +-- consensus.validation.accept   [JtValidationT worker / consensus thread]
+ *      +-- ledger.validate              [LedgerMaster::checkAccept]
+ *      +-- ledger.store                 [LedgerMaster::storeLedger]
+ *
  *  Legend:
  *    +--  child-of relationship (same trace)
  *    +~~~ follows-from link (separate sub-tree, causal link)
  */
 
 #include <xrpl/telemetry/SpanNames.h>
+
+#include <string_view>
 
 namespace xrpl::telemetry::consensus::span {
 
@@ -113,6 +129,13 @@ inline constexpr auto modeChange = makeStr("mode_change");
 inline constexpr auto proposalReceive = join(part::proposal, makeStr("receive"));
 inline constexpr auto validationReceive = join(part::validation, makeStr("receive"));
 inline constexpr auto phaseOpen = join(part::phase, makeStr("open"));
+/**
+ * "validation.accept" — an arriving trusted validation being handed to the
+ * acceptance gate. Distinct from `validationReceive`, which is the overlay
+ * decoding a validation message: this is the later, per-ledger step where the
+ * validation is counted toward accepting a specific ledger.
+ */
+inline constexpr auto validationAccept = join(part::validation, makeStr("accept"));
 }  // namespace op
 
 // ===== Full span names (prefix.op) ===========================================
@@ -130,6 +153,12 @@ inline constexpr auto modeChange = join(seg::consensus, op::modeChange);
 inline constexpr auto proposalReceive = join(seg::consensus, op::proposalReceive);
 inline constexpr auto validationReceive = join(seg::consensus, op::validationReceive);
 inline constexpr auto phaseOpen = join(seg::consensus, op::phaseOpen);
+/**
+ * "consensus.validation.accept" — full name, passed to `SpanGuard::hashSpan()`
+ * (which takes one complete span name) so the span adopts the trace id derived
+ * from the VALIDATED ledger's hash and joins that ledger's trace.
+ */
+inline constexpr auto validationAccept = join(seg::consensus, op::validationAccept);
 
 // ===== Attribute keys ========================================================
 
@@ -223,6 +252,21 @@ inline constexpr auto disputesResolvedCount = makeStr("disputes_resolved_count")
  * `using` re-export above.)
  */
 inline constexpr auto validationSignTime = makeStr("validation_sign_time");
+/**
+ * "validation_status" — what the validation store did with an arriving
+ * validation, set on consensus.validation.accept. One of the bounded
+ * `ValStatus` names (see `val::status*`), so it is safe to aggregate: it is the
+ * difference between "validations are arriving and counting" and "they arrive
+ * and are all rejected", which on a stuck node look identical from the outside.
+ */
+inline constexpr auto validationStatus = makeStr("validation_status");
+/**
+ * "accept_gated" — true when this validation did NOT reach the acceptance gate
+ * because another thread was already accepting the same ledger (the
+ * bypass-accept path). Two values, so it is aggregatable; without it the
+ * absence of a following ledger.validate span in the trace is unexplained.
+ */
+inline constexpr auto acceptGated = makeStr("accept_gated");
 /**
  * Receive-side hash prefixes for cross-peer correlation.
  */
@@ -349,6 +393,24 @@ inline constexpr auto unchanged = makeStr("unchanged");
 inline constexpr auto phaseOpen = makeStr("open");
 inline constexpr auto phaseEstablish = makeStr("establish");
 inline constexpr auto phaseAccepted = makeStr("accepted");
+
+/**
+ * validation_status values — the five `ValStatus` outcomes of adding an
+ * arriving validation to the validation store, plus a sentinel.
+ *
+ * Only `current` continues to the acceptance gate; every other value means the
+ * validation was counted for nothing, which is exactly the state a node stuck
+ * below quorum is in. Spelled here rather than reusing `to_string(ValStatus)`
+ * because that function returns camelCase ("badSeq"), and attribute values on
+ * an aggregated dimension must stay lower_snake_case.
+ */
+inline constexpr auto statusCurrent = makeStr("current");
+inline constexpr auto statusStale = makeStr("stale");
+inline constexpr auto statusBadSeq = makeStr("bad_seq");
+inline constexpr auto statusMultiple = makeStr("multiple");
+inline constexpr auto statusConflicting = makeStr("conflicting");
+inline constexpr auto statusUnknown = makeStr("unknown");
+
 // start_reason values (how startRoundInternal was entered).
 inline constexpr auto startInitial = makeStr("initial");
 inline constexpr auto startRecovered = makeStr("recovered");
@@ -371,5 +433,55 @@ inline constexpr auto validationQueued = makeStr("queued");
 inline constexpr auto validationDroppedDiverged = makeStr("dropped_diverged");
 inline constexpr auto validationDroppedLoad = makeStr("dropped_load");
 }  // namespace val
+
+// ===== Value rules ===========================================================
+
+/**
+ * Map a `ValStatus` to its `validation_status` attribute value.
+ *
+ * Takes a plain int rather than the enum so this header stays free of
+ * `Validations.h` (which pulls in the whole validation-store template) and so
+ * the rule can be asserted directly from the lib-only test binary, which cannot
+ * link xrpld. The caller passes `static_cast<int>(status)`; the enumerator order
+ * is fixed by `ValStatus` and asserted by the paired unit test, which is what
+ * keeps this mapping honest if a value is ever inserted.
+ *
+ * @param valStatus `ValStatus` as an int: 0 Current, 1 Stale, 2 BadSeq,
+ *        3 Multiple, 4 Conflicting.
+ * @return The matching `val::status*` value, or `unknown` for anything else.
+ *
+ * Example — the two readings that matter on a stuck node:
+ * @code
+ * validationStatusValue(0);  // "current"     -- counted, gate will be tried
+ * validationStatusValue(2);  // "bad_seq"     -- rejected, counted for nothing
+ * @endcode
+ *
+ * Example — edge case: an out-of-range value still yields a usable label rather
+ * than an empty attribute, so the dimension never gains a blank series:
+ * @code
+ * validationStatusValue(99);  // "unknown"
+ * @endcode
+ *
+ * @note Pure and side-effect free; safe to call from any thread.
+ */
+[[nodiscard]] constexpr std::string_view
+validationStatusValue(int valStatus) noexcept
+{
+    switch (valStatus)
+    {
+        case 0:
+            return val::statusCurrent;
+        case 1:
+            return val::statusStale;
+        case 2:
+            return val::statusBadSeq;
+        case 3:
+            return val::statusMultiple;
+        case 4:
+            return val::statusConflicting;
+        default:
+            return val::statusUnknown;
+    }
+}
 
 }  // namespace xrpl::telemetry::consensus::span

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# cspell:ignore ISTOGRAM
+# The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+# compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
+
 """Unit tests for check_otel_naming.py.
 
 Stdlib-only (unittest), matching the dependency-free policy of the check itself.
@@ -1869,6 +1873,535 @@ class RuleEReportTuple(unittest.TestCase):
             self.assertTrue(any("E:" in c for c in report.checked))
         finally:
             shutil.rmtree(d)
+
+
+# A minimal *MetricNames.h body: the three namespaces the metric rules read.
+def _metric_header(
+    metric_body: str = "", label_body: str = "", lval_body: str = ""
+) -> str:
+    return (
+        "#pragma once\n"
+        "namespace xrpl::telemetry {\n"
+        f"namespace metric {{\n{metric_body}\n}}\n"
+        f"namespace label {{\n{label_body}\n}}\n"
+        f"namespace lval {{\n{lval_body}\n}}\n"
+        "}\n"
+    )
+
+
+def _mc(symbol: str, wire: str) -> str:
+    """One `inline constexpr char SYM[] = "wire";` declaration."""
+    return f'inline constexpr char {symbol}[] = "{wire}";'
+
+
+class MetricConstantExtraction(unittest.TestCase):
+    """L1-metrics: instrument names / label keys / label values are read from
+    the right namespace, and comments never seed the set."""
+
+    def _run(self, header_text):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(d / "src" / "xrpld" / "telemetry" / "MetricNames.h", header_text)
+            return chk.metric_constants(d)
+        finally:
+            shutil.rmtree(d)
+
+    def test_splits_by_namespace(self):
+        names, keys, vals = self._run(
+            _metric_header(
+                _mc("dnsResolveTotal", "dns_resolve_total"),
+                _mc("outcome", "outcome"),
+                _mc("resolved", "resolved"),
+            )
+        )
+        self.assertEqual(names, {"dns_resolve_total"})
+        self.assertEqual(keys, {"outcome"})
+        self.assertEqual(vals, {"resolved"})
+
+    def test_nested_lval_namespace_included(self):
+        # `namespace lval { namespace dns_resolve { ... } }` — the inner block is
+        # inside the outer's brace-matched span, so its values must be collected.
+        _, _, vals = self._run(
+            _metric_header(
+                lval_body="namespace dns_resolve {\n"
+                + _mc("resolved", "resolved")
+                + "\n}\n"
+            )
+        )
+        self.assertEqual(vals, {"resolved"})
+
+    def test_commented_constant_not_collected(self):
+        names, _, _ = self._run(
+            _metric_header(
+                "// " + _mc("ghost", "ghost_total") + "\n" + _mc("real", "real_total")
+            )
+        )
+        self.assertEqual(names, {"real_total"})
+
+    def test_block_commented_constant_not_collected(self):
+        names, _, _ = self._run(
+            _metric_header("/* " + _mc("ghost", "ghost_total") + " */\n")
+        )
+        self.assertEqual(names, set())
+
+    def test_no_header_empty_sets(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            (d / "src").mkdir()
+            self.assertEqual(chk.metric_constants(d), (set(), set(), set()))
+        finally:
+            shutil.rmtree(d)
+
+    def test_namespaced_constant_ignores_its_flat_prefix(self):
+        # A `kLabel`-prefixed identifier written inside `namespace metric` must
+        # be an instrument name only. The flat prefix pass exists for headers
+        # that have no such namespace, so it must not also claim this one:
+        # letting it through would make an instrument name a valid label key,
+        # and Rule D would then accept `label_peer_total` as a label.
+        names, keys, vals = self._run(
+            _metric_header(
+                metric_body=_mc("kLabelPeerTotal", "label_peer_total"),
+                label_body=_mc("outcome", "outcome"),
+            )
+        )
+        self.assertEqual(names, {"label_peer_total"})
+        self.assertEqual(keys, {"outcome"})
+        self.assertEqual(vals, set())
+
+    def test_flat_prefix_still_read_when_namespaces_absent(self):
+        # The counterpart to the test above: with no `namespace metric`/`label`
+        # block to excise, the flat pass must still classify by prefix.
+        names, keys, vals = self._run(
+            "#pragma once\n"
+            "namespace xrpl::telemetry {\n"
+            + _mc("kLabelOutcome", "outcome")
+            + "\n"
+            + _mc("kResultResolved", "resolved")
+            + "\n}\n"
+        )
+        self.assertEqual(names, set())
+        self.assertEqual(keys, {"outcome"})
+        self.assertEqual(vals, {"resolved"})
+
+
+class RuleIMetricLiterals(unittest.TestCase):
+    """Rule I: literal instrument names / label keys at a metric emit site are
+    flagged, but only inside a metric FAMILY that already has constants."""
+
+    def _run(self, rel_path, source, header=None):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "xrpld" / "telemetry" / "MetricNames.h",
+                (
+                    header
+                    if header is not None
+                    else _metric_header(
+                        _mc("syncState", "sync_state"), _mc("outcome", "outcome")
+                    )
+                ),
+            )
+            _write(d / rel_path, source)
+            report = chk.Report()
+            chk.run_rule_i_metric_literals(d, report)
+            return (
+                sorted(v[2] for v in report.violations),
+                sorted(w[2] for w in report.warnings),
+            )
+        finally:
+            shutil.rmtree(d)
+
+    # ----- positive: a literal in a converted family must FAIL -----
+    def test_literal_macro_name_flagged(self):
+        v, _ = self._run(
+            "src/xrpld/Foo.cpp",
+            'XRPL_METRIC_COUNTER_INC(app, "sync_acquire_total", "d");\n',
+        )
+        self.assertEqual(v, ['name "sync_acquire_total" (COUNTER_INC)'])
+
+    def test_literal_factory_name_flagged(self):
+        v, _ = self._run(
+            "src/xrpld/Foo.cpp",
+            'meter_->CreateInt64ObservableGauge("sync_thing", "d");\n',
+        )
+        self.assertEqual(v, ['name "sync_thing" (CreateInt64ObservableGauge)'])
+
+    def test_literal_label_key_flagged(self):
+        v, _ = self._run(
+            "src/xrpld/Foo.cpp",
+            'XRPL_METRIC_COUNTER_INC_LABELED(app, metric::syncState, "d", '
+            '{{"outcome", std::string(x)}});\n',
+        )
+        self.assertEqual(v, ['label "outcome" (COUNTER_INC_LABELED)'])
+
+    def test_multiline_call_flagged(self):
+        v, _ = self._run(
+            "src/xrpld/Foo.cpp",
+            'XRPL_METRIC_COUNTER_INC(\n    app,\n    "sync_x_total",\n    "d");\n',
+        )
+        self.assertEqual(v, ['name "sync_x_total" (COUNTER_INC)'])
+
+    # ----- negative: things Rule I must NOT flag -----
+    def test_constant_name_accepted(self):
+        v, _ = self._run(
+            "src/xrpld/Foo.cpp",
+            'XRPL_METRIC_COUNTER_INC(app, metric::syncState, "d");\n',
+        )
+        self.assertEqual(v, [])
+
+    def test_label_value_exempt(self):
+        # The VALUE after a constant key is runtime data and must not be flagged.
+        v, _ = self._run(
+            "src/xrpld/Foo.cpp",
+            'XRPL_METRIC_COUNTER_INC_LABELED(app, metric::syncState, "d", '
+            '{{label::outcome, std::string("resolved")}});\n',
+        )
+        self.assertEqual(v, [])
+
+    def test_description_exempt(self):
+        # arg2 is prose, not naming surface.
+        v, _ = self._run(
+            "src/xrpld/Foo.cpp",
+            'XRPL_METRIC_COUNTER_INC(app, metric::syncState, "Some description");\n',
+        )
+        self.assertEqual(v, [])
+
+    def test_test_path_exempt(self):
+        v, _ = self._run(
+            "src/tests/libxrpl/telemetry/MetricMacros.cpp",
+            'XRPL_METRIC_COUNTER_INC(app, "sync_lit_total", "d");\n',
+        )
+        self.assertEqual(v, [])
+
+    def test_metricnames_header_exempt(self):
+        v, _ = self._run(
+            "src/xrpld/telemetry/OtherMetricNames.h",
+            'XRPL_METRIC_COUNTER_INC(app, "sync_lit_total", "d");\n',
+        )
+        self.assertEqual(v, [])
+
+    def test_macro_definition_header_exempt(self):
+        v, _ = self._run(
+            "src/xrpld/telemetry/MetricMacros.h",
+            'XRPL_METRIC_COUNTER_INC(app, "sync_lit_total", "d");\n',
+        )
+        self.assertEqual(v, [])
+
+    # ----- the ratchet: an unconverted family warns (L) instead of failing -----
+    def test_unconverted_family_warns_not_fails(self):
+        v, w = self._run(
+            "src/xrpld/Foo.cpp",
+            'meter_->CreateDoubleObservableGauge("txq_metrics", "d");\n',
+        )
+        self.assertEqual(v, [])
+        self.assertEqual(w, ['name "txq_metrics" (CreateDoubleObservableGauge)'])
+
+    def test_skip_when_no_metric_header(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "xrpld" / "Foo.cpp",
+                'XRPL_METRIC_COUNTER_INC(app, "x_total", "d");\n',
+            )
+            report = chk.Report()
+            chk.run_rule_i_metric_literals(d, report)
+            self.assertEqual(report.violations, [])
+            self.assertTrue(any("I" in s for s in report.skips))
+        finally:
+            shutil.rmtree(d)
+
+
+class RuleJMetricSuffixes(unittest.TestCase):
+    """Rule J: instrument names follow the kind-appropriate suffix rules, with
+    the KIND read from the emit site rather than guessed from the name."""
+
+    def _run(self, metric_body, emit_source=""):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "xrpld" / "telemetry" / "MetricNames.h",
+                _metric_header(metric_body),
+            )
+            if emit_source:
+                _write(d / "src" / "xrpld" / "Foo.cpp", emit_source)
+            report = chk.Report()
+            chk.run_rule_j_metric_suffixes(d, report)
+            return sorted((v[2], v[3]) for v in report.violations)
+        finally:
+            shutil.rmtree(d)
+
+    # ----- positive -----
+    def test_counter_without_total_flagged(self):
+        self.assertEqual(
+            self._run(
+                _mc("dnsResolve", "dns_resolve"),
+                'XRPL_METRIC_COUNTER_INC(app, metric::dnsResolve, "d");\n',
+            ),
+            [("dns_resolve", "counter must end in _total")],
+        )
+
+    def test_histogram_without_unit_flagged(self):
+        self.assertEqual(
+            self._run(
+                _mc("dialLatency", "overlay_dial_latency"),
+                'XRPL_METRIC_HISTOGRAM_RECORD(app, metric::dialLatency, "d", v);\n',
+            ),
+            [("overlay_dial_latency", "histogram needs _us/_ms/_seconds suffix")],
+        )
+
+    def test_gauge_with_total_flagged(self):
+        self.assertEqual(
+            self._run(
+                _mc("syncTotal", "sync_total"),
+                'meter_->CreateInt64ObservableGauge(metric::syncTotal, "d");\n',
+            ),
+            [("sync_total", "_total is reserved for counters")],
+        )
+
+    def test_prefixed_name_flagged(self):
+        self.assertEqual(
+            self._run(_mc("prefixed", "xrpld_sync_state")),
+            [("xrpld_sync_state", "drop the prefix; the exporter adds it")],
+        )
+
+    def test_non_snake_case_flagged(self):
+        self.assertEqual(
+            self._run(_mc("camel", "syncState")),
+            [("syncState", "must be lower_snake_case")],
+        )
+
+    # ----- negative -----
+    def test_conforming_counter_accepted(self):
+        self.assertEqual(
+            self._run(
+                _mc("dnsResolveTotal", "dns_resolve_total"),
+                'XRPL_METRIC_COUNTER_INC(app, metric::dnsResolveTotal, "d");\n',
+            ),
+            [],
+        )
+
+    def test_conforming_histogram_accepted(self):
+        self.assertEqual(
+            self._run(
+                _mc("dialMs", "overlay_dial_latency_ms"),
+                'XRPL_METRIC_HISTOGRAM_RECORD(app, metric::dialMs, "d", v);\n',
+            ),
+            [],
+        )
+
+    def test_gauge_with_unit_bearing_label_values_is_not_flagged(self):
+        # The regression this rule's kind-awareness exists for: a multi-series
+        # GAUGE whose units live in its label VALUES (nodestore_state
+        # observing write_mean_us) must not be read as a mis-suffixed duration.
+        self.assertEqual(
+            self._run(
+                _mc("nodestoreState", "nodestore_state"),
+                'meter_->CreateInt64ObservableGauge(metric::nodestoreState, "d");\n',
+            ),
+            [],
+        )
+
+    def test_unknown_kind_only_shape_checked(self):
+        # With no emit site found, the kind is unknown, so only the
+        # shape-independent rules apply -- a bare gauge-ish name is fine.
+        self.assertEqual(self._run(_mc("syncState", "sync_state")), [])
+
+    def test_one_name_created_as_two_kinds_is_flagged(self):
+        # One wire name built through two different factories exports two
+        # instruments under a single name, and no suffix can satisfy both. The
+        # kind map therefore records a SET per name: keeping only the last kind
+        # visited silently hid this, because whichever emit site the walk
+        # reached last decided the verdict.
+        violations = self._run(
+            _mc("dualKind", "dual_kind_total"),
+            'meter_->CreateUInt64Counter(metric::dualKind, "d");\n'
+            'meter_->CreateInt64ObservableGauge(metric::dualKind, "d");\n',
+        )
+        self.assertEqual(len(violations), 1, violations)
+        # The message names both kinds, so the reader sees the conflict rather
+        # than a suffix complaint that would contradict one of the two sites.
+        self.assertIn("counter", violations[0][-1])
+        self.assertIn("gauge", violations[0][-1])
+
+    def test_two_kinds_where_the_last_one_alone_looks_clean(self):
+        # The sharper case for the same bug. Here the LAST emit site visited is a
+        # histogram and the name carries a duration suffix, so under last-wins
+        # semantics Rule J saw a well-formed histogram and reported nothing at
+        # all -- the conflict was not merely mislabelled, it was invisible. With
+        # a set per name the mismatch surfaces regardless of walk order.
+        violations = self._run(
+            _mc("dualShape", "dual_shape_us"),
+            'meter_->CreateInt64ObservableGauge(metric::dualShape, "d");\n'
+            'meter_->CreateUInt64Histogram(metric::dualShape, "d");\n',
+        )
+        self.assertEqual(len(violations), 1, violations)
+        self.assertIn("gauge", violations[0][-1])
+        self.assertIn("histogram", violations[0][-1])
+
+    def test_skip_when_no_header(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            (d / "src").mkdir()
+            report = chk.Report()
+            chk.run_rule_j_metric_suffixes(d, report)
+            self.assertEqual(report.violations, [])
+            self.assertTrue(any("J" in s for s in report.skips))
+        finally:
+            shutil.rmtree(d)
+
+
+class RuleKExpectedMetrics(unittest.TestCase):
+    """Rule K: a name in expected_metrics.json inside a converted family must
+    resolve to a *MetricNames.h constant."""
+
+    def _run(self, json_text, metric_body):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "xrpld" / "telemetry" / "MetricNames.h",
+                _metric_header(metric_body),
+            )
+            _write(
+                d / "docker" / "telemetry" / "workload" / "expected_metrics.json",
+                json_text,
+            )
+            report = chk.Report()
+            chk.run_rule_k_expected_metrics(d, report)
+            return sorted(v[2] for v in report.violations), report.skips
+        finally:
+            shutil.rmtree(d)
+
+    def test_stale_name_in_converted_family_flagged(self):
+        # `sync_` is owned (sync_state is declared), so a sibling that resolves
+        # to nothing is the rename-drift this rule exists to catch.
+        v, _ = self._run(
+            '{"metrics": [{"metric": "sync_stale_total"}]}',
+            _mc("syncState", "sync_state"),
+        )
+        self.assertEqual(v, ["sync_stale_total"])
+
+    def test_declared_name_accepted(self):
+        v, _ = self._run(
+            '{"metrics": [{"metric": "sync_state"}]}', _mc("syncState", "sync_state")
+        )
+        self.assertEqual(v, [])
+
+    def test_unowned_family_not_flagged(self):
+        # `txq_` has no constants, so its entries are out of scope rather than
+        # a failure -- the ratchet again.
+        v, _ = self._run(
+            '{"metrics": [{"metric": "txq_metrics"}]}', _mc("syncState", "sync_state")
+        )
+        self.assertEqual(v, [])
+
+    def test_name_key_also_read(self):
+        v, _ = self._run(
+            '{"metrics": [{"name": "sync_stale_total"}]}',
+            _mc("syncState", "sync_state"),
+        )
+        self.assertEqual(v, ["sync_stale_total"])
+
+    def test_nested_structure_walked(self):
+        v, _ = self._run(
+            '{"groups": {"a": {"items": [{"metric": "sync_stale_total"}]}}}',
+            _mc("syncState", "sync_state"),
+        )
+        self.assertEqual(v, ["sync_stale_total"])
+
+    def test_promql_selector_stripped(self):
+        # Entries are written as an operator would query them; the selector must
+        # be stripped before the constant lookup or every entry would fail.
+        v, _ = self._run(
+            '{"g": {"metrics": ["sync_state{metric=\\"ledgers_behind\\"}"]}}',
+            _mc("syncState", "sync_state"),
+        )
+        self.assertEqual(v, [])
+
+    def test_histogram_suffix_stripped(self):
+        # _bucket/_count/_sum are appended by the exporter, never named in code.
+        v, _ = self._run(
+            '{"g": {"metrics": ["overlay_dial_latency_ms_bucket"]}}',
+            _mc("dialMs", "overlay_dial_latency_ms"),
+        )
+        self.assertEqual(v, [])
+
+    def test_statsd_group_skipped(self):
+        # beast::insight names come from formatName(), not the OTel API, so a
+        # statsd group must not be held to a *MetricNames.h constant.
+        v, _ = self._run(
+            '{"statsd_gauges": {"metrics": ["sync_not_a_constant"]}}',
+            _mc("syncState", "sync_state"),
+        )
+        self.assertEqual(v, [])
+
+    def test_spanmetrics_group_skipped(self):
+        v, _ = self._run(
+            '{"spanmetrics": {"metrics": ["sync_span_calls_total"]}}',
+            _mc("syncState", "sync_state"),
+        )
+        self.assertEqual(v, [])
+
+    def test_description_prose_not_treated_as_metric(self):
+        v, _ = self._run(
+            '{"g": {"description": "sync_ stuff about metrics", "metrics": []}}',
+            _mc("syncState", "sync_state"),
+        )
+        self.assertEqual(v, [])
+
+    def test_malformed_json_reported(self):
+        v, _ = self._run("{not json", _mc("syncState", "sync_state"))
+        self.assertEqual(len(v), 1)
+
+    def test_skip_when_file_absent(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "xrpld" / "telemetry" / "MetricNames.h",
+                _metric_header(_mc("syncState", "sync_state")),
+            )
+            report = chk.Report()
+            chk.run_rule_k_expected_metrics(d, report)
+            self.assertEqual(report.violations, [])
+            self.assertTrue(any("K" in s for s in report.skips))
+        finally:
+            shutil.rmtree(d)
+
+
+class InstrumentKindClassification(unittest.TestCase):
+    """classify_instrument_kind: `UpDown`/`Observable` are checked before the
+    bare `Counter` substring they both contain."""
+
+    def test_macro_kinds(self):
+        for kind, want in (
+            ("COUNTER_INC", "counter"),
+            ("COUNTER_ADD_LABELED", "counter"),
+            ("HISTOGRAM_RECORD", "histogram"),
+            ("UPDOWN_ADD", "updown"),
+            ("OBSERVABLE_GAUGE_REGISTER", "gauge"),
+        ):
+            self.assertEqual(chk.classify_instrument_kind(kind), want, kind)
+
+    def test_factory_kinds(self):
+        for kind, want in (
+            ("CreateUInt64Counter", "counter"),
+            ("CreateDoubleHistogram", "histogram"),
+            ("CreateInt64UpDownCounter", "updown"),
+            ("CreateInt64ObservableGauge", "gauge"),
+            ("CreateInt64ObservableCounter", "counter"),
+            ("CreateInt64ObservableUpDownCounter", "updown"),
+        ):
+            self.assertEqual(chk.classify_instrument_kind(kind), want, kind)
+
+
+class MetricPrefixFamilies(unittest.TestCase):
+    def test_first_segment_is_the_family(self):
+        self.assertEqual(
+            chk.metric_prefixes({"sync_state", "jobq_saturation", "unl_quorum"}),
+            {"sync_", "jobq_", "unl_"},
+        )
+
+    def test_name_without_underscore_has_no_family(self):
+        self.assertEqual(chk.metric_prefixes({"uptime"}), set())
 
 
 if __name__ == "__main__":

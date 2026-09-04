@@ -216,44 +216,6 @@ public:
     }
 
     /**
-     * Cumulative time spent in backend fetches, in microseconds.
-     *
-     * Divide by getFetchTotalCount() to get the mean read latency. That mean
-     * is what separates a cold store from a warm one: a warm store reads in
-     * single-digit microseconds, a cold one in low hundreds.
-     *
-     * Accumulated in nanoseconds and converted here, so the total is exact to
-     * within one microsecond however fast the reads are. Truncated rather than
-     * rounded: reads totalling under a microsecond read as 0 until they sum
-     * past 1000 ns.
-     *
-     * @return The running microsecond total for the lifetime of this process.
-     */
-    std::uint64_t
-    getFetchDurationUs() const
-    {
-        return fetchDurationNs_ / kNanosecondsPerMicrosecond;
-    }
-
-    /**
-     * Cumulative time spent in backend stores, in microseconds.
-     *
-     * Divide by getStoreCount() to get the mean write latency. This includes
-     * any time the backend spent waiting for its own internal locks, so it is
-     * wall time per store, not service time.
-     *
-     * Same accumulate-in-nanoseconds, convert-on-read contract as
-     * getFetchDurationUs().
-     *
-     * @return The running microsecond total for the lifetime of this process.
-     */
-    std::uint64_t
-    getStoreDurationUs() const
-    {
-        return storeDurationNs_ / kNanosecondsPerMicrosecond;
-    }
-
-    /**
      * Total payload bytes returned by successful fetches.
      *
      * @return The running byte total for the lifetime of this process.
@@ -262,6 +224,62 @@ public:
     getFetchSize() const
     {
         return fetchSz_;
+    }
+
+    /**
+     * Cumulative microseconds spent inside store() calls.
+     *
+     * Pairs with getStoreCount() to derive mean write latency
+     * (`duration / count`), mirroring how the read side pairs
+     * getFetchDurationUs() with getFetchTotalCount(). The mean includes any
+     * time the backend spent waiting for its own internal locks, so it is wall
+     * time per store, not service time.
+     *
+     * This is the "an existing DB syncs slower than a fresh one" signal: the
+     * read counters cannot show it, because back-fill is write-bound. Also
+     * published as the `node_writes_duration_us` field of getCountsJson(), so
+     * the RPC and the metric report the same number.
+     *
+     * @return Total microseconds accumulated across every completed store.
+     *
+     * @note Accumulated in nanoseconds and converted here, so the total is
+     * exact to within one microsecond however fast the stores are. Truncated
+     * rather than rounded: stores totalling under a microsecond read as 0 until
+     * they sum past 1000 ns.
+     * @note Thread-safe: a single relaxed atomic load. Cheap enough for a
+     * periodic observer (the telemetry reader ticks every ~10 s). Relaxed is
+     * sufficient because the value is a monotonic statistic, not a
+     * synchronization signal — a reader that observes a slightly stale total
+     * simply reports a slightly stale mean.
+     * @note Monotonic and never reset, so a dashboard must take a rate or a
+     * delta of both this and getStoreCount() over the same window to see
+     * current latency rather than the since-boot average.
+     */
+    [[nodiscard]] std::uint64_t
+    getStoreDurationUs() const noexcept
+    {
+        return storeDurationNs_.load(std::memory_order_relaxed) / kNanosecondsPerMicrosecond;
+    }
+
+    /**
+     * Cumulative microseconds spent inside fetchNodeObject() calls.
+     *
+     * Pairs with getFetchTotalCount() to derive mean read latency. That mean
+     * is what separates a cold store from a warm one: a warm store reads in
+     * single-digit microseconds, a cold one in low hundreds. The same
+     * total is already published as the `node_reads_duration_us` field of
+     * getCountsJson(); this accessor exposes it directly so a caller need not
+     * build a json::Value and parse a decimal string back to an integer.
+     *
+     * @return Total microseconds accumulated across every completed fetch.
+     *
+     * @note Same threading, monotonicity and nanosecond-accumulation contract
+     * as getStoreDurationUs().
+     */
+    [[nodiscard]] std::uint64_t
+    getFetchDurationUs() const noexcept
+    {
+        return fetchDurationNs_.load(std::memory_order_relaxed) / kNanosecondsPerMicrosecond;
     }
 
     void
@@ -318,22 +336,40 @@ protected:
     }
 
     /**
-     * Add the wall time of one backend store to the cumulative total.
+     * Accumulate the time one completed store took.
      *
-     * Each concrete store path times only its backend call, so the total
-     * reflects disk work and excludes cache bookkeeping.
+     * The write counterpart of the timing fetchNodeObject() already does for
+     * reads. `store()` is pure virtual, so unlike the read path there is no
+     * non-virtual wrapper in this class to time — each concrete database calls
+     * this once per store it completes, and the single conversion lives here
+     * rather than being repeated per subclass. Each concrete store path times
+     * only its backend call, so the total reflects disk work and excludes cache
+     * bookkeeping.
      *
      * Takes the raw duration rather than a converted integer, so every caller
      * accumulates at the same resolution. See storeDurationNs_ for the
      * accumulate-then-convert contract.
      *
-     * @param elapsed Wall time of the completed backend store.
+     * @param elapsed Wall time the store took, as measured by the caller.
+     *
+     * @note Call once per store operation, never inside a per-tree-node loop:
+     * a ledger write walks thousands of SHAMap nodes and this must stay a
+     * single atomic add on the whole write, matching the one-sample-per-fetch
+     * cost on the read side.
+     * @note Thread-safe: one relaxed atomic add, no lock. Relaxed ordering is
+     * correct because the total is a statistic that is only ever read by a
+     * periodic observer, never used to order other memory operations.
+     * @note A negative duration cannot occur (steady_clock is monotonic); one
+     * would convert to a large unsigned value here, so callers must pass an
+     * end-minus-begin span from a single clock.
      */
     void
-    storeDurationStats(std::chrono::steady_clock::duration elapsed)
+    recordStoreDuration(std::chrono::steady_clock::duration elapsed) noexcept
     {
-        storeDurationNs_ += static_cast<std::uint64_t>(
-            std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count());
+        storeDurationNs_.fetch_add(
+            static_cast<std::uint64_t>(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count()),
+            std::memory_order_relaxed);
     }
 
     // Called by the public import function
@@ -402,7 +438,7 @@ private:
     /**
      * Wall time spent in backend stores, in nanoseconds.
      *
-     * Written by each concrete store path via storeDurationStats(), which
+     * Written by each concrete store path via recordStoreDuration(), which
      * times only the backend call. Nanoseconds for the same
      * accumulate-then-convert reason as fetchDurationNs_.
      */

@@ -733,6 +733,233 @@ TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_store
 #endif
 }
 
+// ===========================================================================
+// Per-ledger trace join
+// ===========================================================================
+//
+// One ledger's spans are produced on threads that share no context:
+// ledger.acquire on a JtLedgerData worker, ledger.validate from whichever thread
+// enters LedgerMaster::checkAccept (a peer thread via handleNewValidation, the
+// acquire-completion job, or the consensus thread via switchLCL),
+// consensus.validation.accept from a validation worker, ledger.store from a
+// fourth. No ambient context reaches across those boundaries, so without an
+// explicit join each would be its own single-span trace and a slow ledger could
+// not be read as one unit.
+//
+// The join derives the trace id from the ledger hash, which every one of those
+// sites already holds. The whole contract is therefore: spans built from the
+// SAME hash share a trace id, spans built from DIFFERENT hashes do not, and each
+// is a true root rather than hanging off an unrelated ambient parent. That is a
+// property of hashSpan plus the key, with no LedgerMaster state involved, so it
+// is asserted here against the same in-memory exporter the tests above use.
+//
+// The production call site (LedgerMaster::makeLedgerTraceSpan) cannot be called
+// from this binary, which links libxrpl and not xrpld. What it adds over the raw
+// factory is two attributes and the arguments it forwards; the causality
+// property the emitters depend on, and that no compiler enforces, is the one
+// asserted here.
+
+/**
+ * Build a distinct 32-byte stand-in for a ledger hash.
+ *
+ * Full width on purpose: the emitters pass the whole 32-byte hash and hashSpan
+ * consumes the first 16, so a 32-byte input is what the real call looks like.
+ * The seed varies the FIRST byte, inside the 16 that become the trace id, so two
+ * seeds really do produce two trace ids -- a seed placed in the tail would be
+ * truncated away and the difference assertion would pass for the wrong reason.
+ *
+ * @param seed Distinguishes one fake ledger from another.
+ * @return 32 bytes whose leading 16 differ whenever the seed differs.
+ */
+std::array<std::uint8_t, 32>
+makeLedgerHashBytes(std::uint8_t seed)
+{
+    std::array<std::uint8_t, 32> h{};
+    for (std::size_t i = 0; i < h.size(); ++i)
+        h[i] = static_cast<std::uint8_t>(seed + i);
+    return h;
+}
+
+// THE CONTRACT, positive half: three stages of one ledger, created
+// independently, all land in ONE trace whose id IS the ledger hash. This is what
+// makes a slow ledger readable as one connected trace instead of three orphans.
+TEST_F(SpanGuardScopeTest, ledgerJoin_same_hash_puts_every_stage_in_one_trace)
+{
+    auto const h = makeLedgerHashBytes(0x11);
+    {
+        // Deliberately not nested and not in pipeline order: each stage is built
+        // on its own, exactly as the three emitters do on three threads.
+        auto acquire =
+            SpanGuard::hashSpan(TraceCategory::Ledger, "ledger.acquire", h.data(), h.size());
+        auto validate =
+            SpanGuard::hashSpan(TraceCategory::Ledger, "ledger.validate", h.data(), h.size());
+        auto store = SpanGuard::hashSpan(TraceCategory::Ledger, "ledger.store", h.data(), h.size());
+        ASSERT_TRUE(static_cast<bool>(acquire));
+        ASSERT_TRUE(static_cast<bool>(validate));
+        ASSERT_TRUE(static_cast<bool>(store));
+    }
+
+    auto spans = spanData()->GetSpans();
+    ASSERT_EQ(spans.size(), 3u);
+
+    auto* acquire = findSpan(spans, "ledger.acquire");
+    auto* validate = findSpan(spans, "ledger.validate");
+    auto* store = findSpan(spans, "ledger.store");
+    ASSERT_NE(acquire, nullptr);
+    ASSERT_NE(validate, nullptr);
+    ASSERT_NE(store, nullptr);
+
+    // ONE trace: every stage shares the trace id. This is the whole point.
+    EXPECT_EQ(validate->GetTraceId(), acquire->GetTraceId());
+    EXPECT_EQ(store->GetTraceId(), acquire->GetTraceId());
+
+    // And the trace id IS the key's first 16 bytes -- not merely equal to each
+    // other by chance. That is what lets an operator go from a ledger hash to
+    // its trace and back.
+    EXPECT_EQ(std::memcmp(acquire->GetTraceId().Id().data(), h.data(), 16), 0);
+
+    // Still three DISTINCT spans, not one span reused.
+    EXPECT_NE(acquire->GetSpanId(), validate->GetSpanId());
+    EXPECT_NE(validate->GetSpanId(), store->GetSpanId());
+}
+
+// THE CONTRACT, negative half: two different ledgers must never share a trace.
+// Without this the join would be useless -- a single trace would accumulate
+// every ledger the node ever touched.
+TEST_F(SpanGuardScopeTest, ledgerJoin_different_hashes_never_share_a_trace)
+{
+    auto const first = makeLedgerHashBytes(0x20);
+    auto const second = makeLedgerHashBytes(0x60);
+    {
+        auto a = SpanGuard::hashSpan(
+            TraceCategory::Ledger, "ledger.validate", first.data(), first.size());
+        auto b = SpanGuard::hashSpan(
+            TraceCategory::Ledger, "ledger.store", second.data(), second.size());
+        ASSERT_TRUE(static_cast<bool>(a));
+        ASSERT_TRUE(static_cast<bool>(b));
+    }
+
+    auto spans = spanData()->GetSpans();
+    ASSERT_EQ(spans.size(), 2u);
+    auto* a = findSpan(spans, "ledger.validate");
+    auto* b = findSpan(spans, "ledger.store");
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+
+    EXPECT_NE(a->GetTraceId(), b->GetTraceId());
+    // Each still matches its OWN key, so they are separate because the keys
+    // differ, not because one of them failed to adopt its hash at all.
+    EXPECT_EQ(std::memcmp(a->GetTraceId().Id().data(), first.data(), 16), 0);
+    EXPECT_EQ(std::memcmp(b->GetTraceId().Id().data(), second.data(), 16), 0);
+}
+
+// A joined span is a TRUE ROOT, never a child of whatever was active on the
+// emitting thread. checkAccept is entered from a peer thread, from the
+// acquire-completion job and from the consensus thread; if the span inherited an
+// ambient parent it would be swallowed into an unrelated trace on some of those
+// paths and its trace id would no longer be the ledger hash.
+TEST_F(SpanGuardScopeTest, ledgerJoin_ignores_an_ambient_parent)
+{
+    auto const h = makeLedgerHashBytes(0x33);
+    {
+        // An unrelated span active on this thread: the situation on a reused
+        // job-queue worker.
+        ScopedSpanGuard const ambient(TraceCategory::Rpc, "rpc", "command");
+        ASSERT_TRUE(static_cast<bool>(ambient));
+
+        auto joined =
+            SpanGuard::hashSpan(TraceCategory::Ledger, "ledger.validate", h.data(), h.size());
+        ASSERT_TRUE(static_cast<bool>(joined));
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* ambientSpan = findSpan(spans, "rpc.command");
+    auto* joined = findSpan(spans, "ledger.validate");
+    ASSERT_NE(ambientSpan, nullptr);
+    ASSERT_NE(joined, nullptr);
+
+    // No parent, and NOT in the ambient span's trace.
+    EXPECT_FALSE(joined->GetParentSpanId().IsValid());
+    EXPECT_NE(joined->GetTraceId(), ambientSpan->GetTraceId());
+    // The deterministic id survived: the ambient span did not displace it.
+    EXPECT_EQ(std::memcmp(joined->GetTraceId().Id().data(), h.data(), 16), 0);
+}
+
+// The validation-accept span joins the trace of the ledger it validates, so
+// "which validation drove this acceptance, and how long did the acceptance take"
+// is one trace. It is keyed on the VALIDATED ledger hash -- the key
+// ledger.validate uses -- and deliberately NOT on the previous-ledger hash that
+// seeds the consensus round trace, which stays a separate trace.
+TEST_F(SpanGuardScopeTest, ledgerJoin_validationAccept_joins_the_validated_ledger)
+{
+    auto const validated = makeLedgerHashBytes(0x41);
+    auto const previous = makeLedgerHashBytes(0x81);
+    {
+        auto validation = SpanGuard::hashSpan(
+            TraceCategory::Ledger,
+            "consensus.validation.accept",
+            validated.data(),
+            validated.size());
+        auto accept = SpanGuard::hashSpan(
+            TraceCategory::Ledger, "ledger.validate", validated.data(), validated.size());
+        // The round trace, seeded on the PREVIOUS ledger: a different trace.
+        auto round = SpanGuard::hashSpan(
+            TraceCategory::Consensus, "consensus.round", previous.data(), previous.size());
+        ASSERT_TRUE(static_cast<bool>(validation));
+        ASSERT_TRUE(static_cast<bool>(accept));
+        ASSERT_TRUE(static_cast<bool>(round));
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* validation = findSpan(spans, "consensus.validation.accept");
+    auto* accept = findSpan(spans, "ledger.validate");
+    auto* round = findSpan(spans, "consensus.round");
+    ASSERT_NE(validation, nullptr);
+    ASSERT_NE(accept, nullptr);
+    ASSERT_NE(round, nullptr);
+
+    // Joined to the acceptance of the ledger it validates...
+    EXPECT_EQ(validation->GetTraceId(), accept->GetTraceId());
+    // ...and separate from the round trace, which is keyed on another ledger.
+    EXPECT_NE(validation->GetTraceId(), round->GetTraceId());
+}
+
+// A key SHORTER than 16 bytes cannot seed a trace id, so hashSpan yields a null
+// guard rather than a span in a garbage trace. The emitters always pass a full
+// 32-byte hash, so this is the guard rail: a truncated key degrades to "no span"
+// instead of to a wrong join.
+TEST_F(SpanGuardScopeTest, ledgerJoin_too_short_a_key_yields_no_span)
+{
+    std::array<std::uint8_t, 8> const tooShort{1, 2, 3, 4, 5, 6, 7, 8};
+    auto span = SpanGuard::hashSpan(
+        TraceCategory::Ledger, "ledger.validate", tooShort.data(), tooShort.size());
+    EXPECT_FALSE(static_cast<bool>(span));
+
+    // Nothing exported at all, rather than a span carrying an invalid trace id.
+    EXPECT_EQ(spanData()->GetSpans().size(), 0u);
+}
+
+// DISABLED PATH: with no Telemetry instance installed the join is a no-op that
+// still compiles and returns a usable null guard, which is why
+// LedgerMaster::makeLedgerTraceSpan needs no #ifdef or enabled-check of its own.
+// Not a fixture test: the point is that NO instance is installed.
+TEST(SpanGuardLedgerJoinDisabled, join_is_a_no_op_when_telemetry_is_absent)
+{
+    Telemetry::setInstance(nullptr);
+
+    auto const h = makeLedgerHashBytes(0x55);
+    auto span = SpanGuard::hashSpan(TraceCategory::Ledger, "ledger.validate", h.data(), h.size());
+
+    // Null guard, and its whole surface is still safe to drive.
+    EXPECT_FALSE(static_cast<bool>(span));
+    span.setAttribute("ledger_hash", "deadbeef");
+    span.setAttribute("ledger_seq", static_cast<std::int64_t>(42));
+    span.setOk();
+    // It yields no context either, so no caller can build a child in a bogus
+    // trace off the back of it.
+    EXPECT_FALSE(span.spanContext().isValid());
+}
+
 }  // namespace
 }  // namespace xrpl::telemetry
 

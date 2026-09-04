@@ -30,6 +30,12 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
+#include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpld/telemetry/MetricNames.h>
+#endif
 #include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxSpanNames.h>
@@ -306,6 +312,21 @@ class NetworkOPsImp final : public NetworkOPs
             return std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - start_);
         }
+
+        /**
+         * Microseconds from process start to the first FULL transition. This
+         * is the same quantity reported as `initial_sync_duration_us` in
+         * json(); reading it alone avoids copying the whole counter array.
+         * Thread-safe.
+         *
+         * @return Time to first FULL, or 0 if FULL was never reached.
+         */
+        std::uint64_t
+        initialSyncDurationUs() const
+        {
+            std::scoped_lock const lock(mutex_);
+            return initialSyncUs_;
+        }
     };
 
     /**
@@ -393,11 +414,17 @@ public:
     std::chrono::microseconds
     getServerStateDurationUs() const override;
 
+    std::uint64_t
+    getInitialSyncDurationUs() const override;
+
     std::string
     strOperatingMode(OperatingMode const mode, bool const admin) const override;
 
     std::string
     strOperatingMode(bool const admin = false) const override;
+
+    std::uint32_t
+    getLedgersBehindNetwork() const override;
 
     //
     // Transaction operations.
@@ -1139,6 +1166,43 @@ std::chrono::microseconds
 NetworkOPsImp::getServerStateDurationUs() const
 {
     return accounting_.currentStateDurationUs();
+}
+
+std::uint64_t
+NetworkOPsImp::getInitialSyncDurationUs() const
+{
+    return accounting_.initialSyncDurationUs();
+}
+
+std::uint32_t
+NetworkOPsImp::getLedgersBehindNetwork() const
+{
+    // The network tip is the highest ledger sequence any connected peer says it
+    // holds. Peers report their range in mtSTATUS_CHANGE, which PeerImp caches,
+    // so this is a read of already-received data: no new network round trip.
+    std::uint32_t networkTarget = 0;
+    registry_.get().getOverlay().foreach([&networkTarget](std::shared_ptr<Peer> const& peer) {
+        std::uint32_t minSeq = 0;
+        std::uint32_t maxSeq = 0;
+        peer->ledgerRange(minSeq, maxSeq);
+        networkTarget = std::max(networkTarget, maxSeq);
+    });
+
+    auto const validated = registry_.get().getLedgerMaster().getValidLedgerIndex();
+
+    // A node that has validated nothing is not "behind" by the whole sequence
+    // space; the distance is undefined until there is a validated ledger to
+    // measure from. Returning the raw difference here reported ~105.9 million on
+    // a fresh mainnet start, which is a real reading of a meaningless quantity:
+    // it auto-scaled every consumer's axis and would trip any threshold. Report
+    // zero until the first ledger is validated, and let the sync-state signals
+    // say how far along the initial acquire is.
+    if (validated == 0)
+        return 0;
+
+    // Floor at zero: we can legitimately be ahead of every peer's reported
+    // range, and a peer that has reported nothing yet leaves the target at 0.
+    return networkTarget > validated ? networkTarget - validated : 0;
 }
 
 inline std::string
@@ -2265,6 +2329,17 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     // set the newLCL as our last closed ledger -- this is abnormal code
     JLOG(journal_.error()) << "JUMP last closed ledger to " << newLCL->header().hash;
 
+    // This node was told the network's last closed ledger is not the one it
+    // built on, and is discarding its own chain tip to follow. Log-only until
+    // now, so a node repeatedly thrashing between chains left no time series
+    // to correlate against the rest of the sync pipeline. Rare event, one
+    // counter Add, no labels: the ledger hash and sequence would both be
+    // unbounded as label values, and the log line above already carries them.
+    XRPL_METRIC_COUNTER_INC(
+        registry_.get(),
+        telemetry::metric::ledgerJumpTotal,
+        "Forced jumps of the last closed ledger to a divergent chain");
+
     clearNeedNetworkLedger();
 
     // Update fee computations.
@@ -2842,13 +2917,29 @@ NetworkOPsImp::setMode(OperatingMode om)
     if (mode_ == om)
         return;
 
+    // Record the mode transition labelled with source and destination, so the
+    // dashboard can chart which edges of the sync state machine are traversed
+    // (e.g. repeated full->connected flapping vs. a one-way
+    // tracking->connected->full climb). Only reached on a real mode change,
+    // never in a hot loop, and there are only five modes so the label
+    // cardinality is bounded. strOperatingMode(mode, admin=false) supplies the
+    // names, which keeps them identical to the ones server_info reports.
+    //
+    // This must stay above the assignment below, where mode_ is still the mode
+    // being left: the transition edge, not just the destination, is what tells
+    // flapping apart from a clean climb to FULL. Reading it inline also means
+    // nothing is computed when telemetry is compiled out, since the macro then
+    // drops its arguments.
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        registry_.get(),
+        telemetry::metric::stateChangesTotal,
+        "Total operating mode changes",
+        {{telemetry::label::from, strOperatingMode(mode_.load(), false)},
+         {telemetry::label::to, strOperatingMode(om, false)}});
+
     mode_ = om;
 
     accounting_.mode(om);
-
-    // Record state change for OTel dashboard parity counter.
-    if (auto* mr = registry_.get().getMetricsRegistry())
-        mr->incrementStateChanges();
 
     JLOG(journal_.info()) << "STATE->" << strOperatingMode();
     pubServer();

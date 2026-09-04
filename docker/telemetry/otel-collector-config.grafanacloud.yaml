@@ -214,8 +214,32 @@ connectors:
       - name: method
       - name: grpc_role
       - name: grpc_status
+      # ledger.acquire dimensions. Must stay identical to the local
+      # otel-collector-config.yaml dimension set; see the cardinality note
+      # there for why ledger_hash / ledger_seq are span-only (per-ledger values
+      # would mint one metric series per ledger) and are indexed in Tempo
+      # instead. `outcome` includes `abandoned`, recorded when an acquire is
+      # swept or shut down before reaching a result.
       - name: outcome
       - name: acquire_reason
+      # Sync-diagnostic span dimensions. Must stay identical to the
+      # local otel-collector-config.yaml dimension set; see the cardinality
+      # note there for why txset_hash / remote_endpoint / missing_nodes /
+      # served_nodes / duration_ms are span-only (per-round, per-peer or
+      # per-integer values would each mint their own metric series) and are
+      # indexed in Tempo instead. `outcome` above is reused verbatim by all of
+      # txset.acquire, ledger.acquire.*, peer.dial and ledger.serve.
+      - name: timed_out
+      - name: object_type
+      # Trace-causality span dimensions, on
+      # consensus.validation.accept. Must stay identical to the local
+      # otel-collector-config.yaml dimension set; see the reasoning there for
+      # what each value set is and why the ledger_hash join key stays span-only
+      # (a per-ledger value would mint one metric series per ledger validated)
+      # and is indexed in Tempo instead. consensus_round_duration_ms needs no
+      # entry: it is a native histogram, so the collector only forwards it.
+      - name: validation_status
+      - name: accept_gated
 
 exporters:
   otlp/tempo:

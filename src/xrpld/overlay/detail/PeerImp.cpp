@@ -1,7 +1,3 @@
-// cspell:ignore ISTOGRAM
-// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
-// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
-
 #include <xrpld/overlay/detail/PeerImp.h>
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
@@ -11,6 +7,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Cluster.h>
@@ -25,6 +22,7 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricNames.h>
 #include <xrpld/telemetry/TxSpanNames.h>
 
 #include <xrpl/basics/Blob.h>
@@ -38,6 +36,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -249,7 +248,10 @@ PeerImp::run()
             closed = parseLedgerHash(iter->value());
 
             if (!closed)
+            {
+                self->setDisconnectReason(telemetry::lval::disconnect::malformedHandshake);
                 self->fail("Malformed handshake data (1)");
+            }
         }
 
         if (auto const iter = self->headers_.find("Previous-Ledger"); iter != self->headers_.end())
@@ -257,11 +259,17 @@ PeerImp::run()
             previous = parseLedgerHash(iter->value());
 
             if (!previous)
+            {
+                self->setDisconnectReason(telemetry::lval::disconnect::malformedHandshake);
                 self->fail("Malformed handshake data (2)");
+            }
         }
 
         if (previous && !closed)
+        {
+            self->setDisconnectReason(telemetry::lval::disconnect::malformedHandshake);
             self->fail("Malformed handshake data (3)");
+        }
 
         {
             std::scoped_lock const sl(self->recentLock_);
@@ -292,6 +300,9 @@ PeerImp::stop()
         if (!self->socket_.is_open())
             return;
 
+        // Overlay-wide shutdown, not a fault with this peer. Distinguished so
+        // a clean restart does not look like a wave of peer failures.
+        self->setDisconnectReason(telemetry::lval::disconnect::stopping);
         self->close();
     });
 }
@@ -418,6 +429,10 @@ PeerImp::charge(resource::Charge const& fee, std::string const& context)
                     expected, true, std::memory_order_acq_rel))
             {
                 self->overlay_.incPeerDisconnectCharges();
+                // Set inside the latch, so only the one worker that wins the
+                // exchange writes it. This is the node's own backpressure, not
+                // a peer or network fault.
+                self->setDisconnectReason(telemetry::lval::disconnect::chargeResources);
                 self->fail("charge: Resources");
             }
         }
@@ -641,8 +656,40 @@ PeerImp::close()
     socket_.close(ec);  // NOLINT(bugprone-unused-return-value)
 
     overlay_.incPeerDisconnect();
+
+    // Emitted right next to incPeerDisconnect() above, and behind the same
+    // socket-already-closed early return, so this counter's total tracks that
+    // existing tally rather than being a second, differently-scoped count.
+    // What it adds is the split: today every disconnect collapses into one
+    // number, so our-fault backpressure ("large_sendq", "charge_resources")
+    // cannot be told apart from a topology or network fault ("not_useful",
+    // "ping_timeout", "read_error"), and the two need opposite responses.
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::metric::peerDisconnectTotal,
+        "Peer disconnects, by cause and connection direction",
+        {{telemetry::label::reason, std::string(disconnectReason_)},
+         {telemetry::label::direction,
+          std::string(inbound_ ? telemetry::lval::inbound : telemetry::lval::outbound)}});
+
     JLOG((inbound_ ? journal_.debug() : journal_.info())) << "close: Closed";
 }
+
+// Not static: the metric macros below read the app_ member. With telemetry
+// compiled out they expand to nothing, so the body touches no member and
+// clang-tidy sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void
+PeerImp::reportServeRefusal(char const* request, char const* reason)
+{
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        telemetry::metric::serveRefusedTotal,
+        "Peer data requests this node declined to serve, by request kind and cause",
+        {{telemetry::label::request, std::string(request)},
+         {telemetry::label::reason, std::string(reason)}});
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 PeerImp::fail(std::string const& reason)
@@ -737,12 +784,16 @@ PeerImp::onTimer(error_code const& ec)
 
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
+        setDisconnectReason(telemetry::lval::disconnect::timerError);
         close();
         return;
     }
 
     if (largeSendq_++ >= tuning::kSendqIntervals)
     {
+        // Our own send queue never drained: this node could not keep up with
+        // what it owed the peer, so it is local backpressure, not a peer fault.
+        setDisconnectReason(telemetry::lval::disconnect::largeSendq);
         fail("Large send queue");
         return;
     }
@@ -760,6 +811,9 @@ PeerImp::onTimer(error_code const& ec)
             (t == Tracking::Unknown && (duration > app_.config().maxUnknownTime)))
         {
             overlay_.peerFinder().onFailure(slot_);
+            // The peer is on a different chain, or we cannot tell: a topology
+            // signal, not a fault on either side.
+            setDisconnectReason(telemetry::lval::disconnect::notUseful);
             fail("Not useful");
             return;
         }
@@ -768,6 +822,7 @@ PeerImp::onTimer(error_code const& ec)
     // Already waiting for PONG
     if (lastPingSeq_)
     {
+        setDisconnectReason(telemetry::lval::disconnect::pingTimeout);
         fail("Ping Timeout");
         return;
     }
@@ -806,6 +861,10 @@ PeerImp::onShutdown(error_code ec)
         }
     }
 
+    // The TLS shutdown handshake finished. First-wins means the reason set by
+    // whoever asked for the graceful close is kept; "shutdown" only lands when
+    // the teardown started here, i.e. a clean close with no earlier cause.
+    setDisconnectReason(telemetry::lval::disconnect::shutdown);
     close();
 }
 
@@ -821,6 +880,7 @@ PeerImp::doAccept()
     // the shared value successfully in OverlayImpl
     if (!sharedValue)
     {
+        setDisconnectReason(telemetry::lval::disconnect::sharedValue);
         fail("makeSharedValue: Unexpected failure");
         return;
     }
@@ -870,6 +930,7 @@ PeerImp::doAccept()
                     if (ec == boost::asio::error::operation_aborted)
                         return;
 
+                    setDisconnectReason(telemetry::lval::disconnect::writeError);
                     fail("onWriteResponse", ec);
                     return;
                 }
@@ -879,6 +940,7 @@ PeerImp::doAccept()
                     doProtocolStart();
                     return;
                 }
+                setDisconnectReason(telemetry::lval::disconnect::writeError);
                 fail("Failed to write header");
                 return;
             }));
@@ -953,10 +1015,14 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
         if (ec == boost::asio::error::eof)
         {
             JLOG(journal_.info()) << "EOF";
+            // The peer closed its side cleanly. Counted apart from a read
+            // error because it is normal peer churn, not a fault.
+            setDisconnectReason(telemetry::lval::disconnect::graceful);
             gracefulClose();
             return;
         }
 
+        setDisconnectReason(telemetry::lval::disconnect::readError);
         fail("onReadMessage", ec);
         return;
     }
@@ -986,6 +1052,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
 
         if (ec)
         {
+            setDisconnectReason(telemetry::lval::disconnect::readError);
             fail("onReadMessage", ec);
             return;
         }
@@ -1022,6 +1089,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
+        setDisconnectReason(telemetry::lval::disconnect::writeError);
         fail("onWriteMessage", ec);
         return;
     }
@@ -2784,6 +2852,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         if (sendQueue_.size() >= tuning::kDropSendQueue)
         {
             JLOG(pJournal_.debug()) << "GetObject: Large send queue";
+            reportServeRefusal(
+                telemetry::lval::serve_request::object, telemetry::lval::serve_refused::sendqFull);
             return;
         }
 
@@ -3222,6 +3292,11 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
         (app_.getJobQueue().getJobCount(JtPack) > 10))
     {
         JLOG(pJournal_.info()) << "Too busy to make fetch pack";
+        // A fetch pack is how a syncing peer catches up in bulk, so refusing
+        // one directly slows that peer's sync. Counted separately from the
+        // ledger path because the shed threshold is a different one.
+        reportServeRefusal(
+            telemetry::lval::serve_request::fetchpack, telemetry::lval::serve_refused::loadShed);
         return;
     }
 
@@ -3695,7 +3770,11 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
     JLOG(pJournal_.trace()) << "getTxSet: TX set";
 
     uint256 const txSetHash = uint256::fromRaw(m->ledgerhash());
-    std::shared_ptr<SHAMap> shaMap{app_.getInboundTransactions().getSet(txSetHash, false)};
+    // Zero round identity: acquire=false only looks the set up, and a peer
+    // serving a request is not in a round of its own that could have asked for
+    // it. Nothing is recorded, because no fetch is started.
+    std::shared_ptr<SHAMap> shaMap{
+        app_.getInboundTransactions().getSet(txSetHash, false, uint256{}, 0)};
     if (!shaMap)
     {
         if (m->has_querytype() && !m->has_requestcookie())
@@ -3721,6 +3800,57 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
     return shaMap;
 }
 
+telemetry::SpanGuard
+PeerImp::startServeSpan(int itype) const
+{
+    // A fresh trace root: the request arrives from the wire and is handled on a
+    // shared JtLedgerReq worker, so freshRoot() stops it inheriting whatever
+    // unrelated span happens to be active on that worker.
+    auto span = telemetry::SpanGuard::freshRoot(
+        telemetry::TraceCategory::Ledger,
+        telemetry::seg::ledger,
+        telemetry::ledger_span::op::serve);
+    if (span)
+    {
+        // Which of the four request kinds, from the shared rule so no exit can
+        // disagree with another about the same request.
+        span.setAttribute(
+            telemetry::ledger_span::attr::objectType,
+            telemetry::ledger_span::serveObjectType(itype));
+        // Which peer we are serving. Span-only: one metric series per peer id
+        // would be unbounded, which is why the paired serve_refused_total
+        // counter deliberately carries no peer label either.
+        span.setAttribute(telemetry::peer_span::attr::peerId, static_cast<std::int64_t>(id()));
+    }
+    return span;
+}
+
+void
+PeerImp::finishServeSpan(
+    telemetry::SpanGuard& span,
+    protocol::TMLedgerData const& ledgerData) noexcept
+{
+    if (!span)
+        return;
+    using namespace telemetry;
+    // `ledgerData` IS the reply, so its node count is the served-node count and
+    // is 0 on every refusal path. Reading it here rather than accumulating in
+    // the assembly loop is what keeps the per-node path untouched, and is also
+    // what lets one rule cover all eight exits.
+    auto const served = ledgerData.nodes_size();
+    span.setAttribute(ledger_span::attr::servedNodes, static_cast<std::int64_t>(served));
+    span.setAttribute(
+        ledger_span::attr::outcome, ledger_span::serveOutcome(served, tuning::kSoftMaxReplyNodes));
+    // Which ledger was served. Known only once getLedger() succeeded, so it is
+    // read here rather than at span start. Span-only: a per-ledger value as a
+    // metric dimension would mint one series per ledger.
+    if (ledgerData.has_ledgerseq() && ledgerData.ledgerseq() != 0)
+    {
+        span.setAttribute(
+            ledger_span::attr::ledgerSeq, static_cast<std::int64_t>(ledgerData.ledgerseq()));
+    }
+}
+
 void
 PeerImp::processLedgerRequest(
     std::shared_ptr<protocol::TMGetLedger> const& m,
@@ -3733,10 +3863,21 @@ PeerImp::processLedgerRequest(
     bool fatLeaves{true};
     auto const itype{m->itype()};
 
+    // Span this serve, and stamp its result on whichever of the eight exits
+    // below is taken. The scope-exit guard is what makes that exactly-once
+    // without repeating an emit per branch, and without any exit -- including
+    // one added later -- being able to forget.
+    auto serveSpan = startServeSpan(itype);
+    ScopeExit const finalizeServeSpan{
+        [&serveSpan, &ledgerData]() noexcept { PeerImp::finishServeSpan(serveSpan, ledgerData); }};
+
     if (itype == protocol::liTS_CANDIDATE)
     {
         if (sharedMap = getTxSet(m); !sharedMap)
+        {
+            reportServeRefusal(telemetry::lval::serve_request::txset, telemetry::lval::notFound);
             return;
+        }
         map = sharedMap.get();
 
         // Fill out the reply
@@ -3754,16 +3895,23 @@ PeerImp::processLedgerRequest(
         if (sendQueue_.size() >= tuning::kDropSendQueue)
         {
             JLOG(pJournal_.debug()) << "processLedgerRequest: Large send queue";
+            reportServeRefusal(
+                telemetry::lval::serve_request::ledger, telemetry::lval::serve_refused::sendqFull);
             return;
         }
         if (app_.getFeeTrack().isLoadedLocal() && !cluster())
         {
             JLOG(pJournal_.debug()) << "processLedgerRequest: Too busy";
+            reportServeRefusal(
+                telemetry::lval::serve_request::ledger, telemetry::lval::serve_refused::loadShed);
             return;
         }
 
         if (ledger = getLedger(m); !ledger)
+        {
+            reportServeRefusal(telemetry::lval::serve_request::ledger, telemetry::lval::notFound);
             return;
+        }
 
         // Fill out the reply
         auto const ledgerHash{ledger->header().hash};
@@ -3794,6 +3942,9 @@ PeerImp::processLedgerRequest(
             default:
                 // This case should not be possible here
                 JLOG(pJournal_.error()) << "processLedgerRequest: Invalid ledger info type";
+                reportServeRefusal(
+                    telemetry::lval::serve_request::ledger,
+                    telemetry::lval::serve_refused::badType);
                 return;
         }
     }
@@ -3801,6 +3952,8 @@ PeerImp::processLedgerRequest(
     if (map == nullptr)
     {
         JLOG(pJournal_.warn()) << "processLedgerRequest: Unable to find map";
+        reportServeRefusal(
+            telemetry::lval::serve_request::ledger, telemetry::lval::serve_refused::noMap);
         return;
     }
 
@@ -3902,7 +4055,16 @@ PeerImp::processLedgerRequest(
     }
 
     if (ledgerData.nodes_size() == 0)
+    {
+        // The map was found but produced no nodes to return, so the requester
+        // gets nothing back and will have to ask someone else. Emitted here,
+        // after the node loop, rather than inside it -- one call per request.
+        reportServeRefusal(
+            itype == protocol::liTS_CANDIDATE ? telemetry::lval::serve_request::txset
+                                              : telemetry::lval::serve_request::ledger,
+            telemetry::lval::serve_refused::emptyReply);
         return;
+    }
 
     send(std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA));
 }

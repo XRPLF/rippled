@@ -213,8 +213,83 @@ connectors:
       - name: grpc_role
       - name: grpc_status
       # ledger.acquire dimensions (bounded: outcome, acquire reason).
+      # `outcome` carries the four terminal values complete|failed|timeout|
+      # abandoned. `abandoned` is the one recorded when an acquire is destroyed
+      # (swept or shut down) before reaching a result, so a stuck-then-swept
+      # fetch is counted here rather than silently dropped from the rate.
+      # Deliberately NOT promoted: ledger_hash and ledger_seq. Both are
+      # per-ledger values, so a dimension on either would mint a new metric
+      # series for every ledger acquired -- the same unbounded-cardinality rule
+      # already applied to close_time above. They stay span-only and are
+      # searchable in Tempo instead (see the parquet_dedicated_columns block in
+      # tempo.yaml), which gives per-ledger lookup with no metric series.
       - name: outcome
       - name: acquire_reason
+      # Sync-diagnostic span dimensions. Each is a small, closed value
+      # set, so each adds a bounded number of series per span name:
+      #   timed_out    - 2 values, on the ledger.acquire.* phase spans. Split
+      #                  by it and a phase-duration panel separates "slow but
+      #                  arriving" from "the retry budget ran out".
+      #   object_type  - 4 values (header|tx|as|txset), on ledger.serve. Which
+      #                  request kind this node serves its peers, so shedding
+      #                  account-state tree requests is visible apart from the
+      #                  cheap header replies.
+      # `outcome` above is reused verbatim by the four new spans
+      # (txset.acquire, the three ledger.acquire.* phases, peer.dial,
+      # ledger.serve), so it needs no second entry -- one dimension covers
+      # every span's outcome rate.
+      #
+      # Deliberately NOT promoted, same unbounded-cardinality rule as
+      # ledger_hash / ledger_seq above:
+      #   txset_hash      - one value per proposed tx set (per consensus round)
+      #   remote_endpoint - one value per peer address dialled
+      #   missing_nodes   - an arbitrary node count
+      #   served_nodes    - an arbitrary reply size
+      #   duration_ms     - an arbitrary elapsed time
+      #   current_ledger_hash / current_ledger_seq - the txset.acquire
+      #                     `round.request` event attributes, one value per
+      #                     requesting round. Per-round, so unbounded by the
+      #                     same rule -- but more fundamentally impossible:
+      #                     spanmetrics derives metrics from spans, not span
+      #                     events, so an event attribute cannot be a metric
+      #                     dimension at all. Read them in Tempo only.
+      # A dimension on any of these would mint a metric series per round, per
+      # peer or per distinct integer. They stay span-only and are searchable in
+      # Tempo instead (see parquet_dedicated_columns in tempo.yaml); the
+      # aggregate view of the same quantities comes from the spanmetrics
+      # duration histogram and from the native acquire gauges.
+      - name: timed_out
+      - name: object_type
+      # Trace-causality span dimensions, on
+      # consensus.validation.accept. Both are closed value sets:
+      #   validation_status - 6 values (the 5 ValStatus outcomes plus an
+      #                       unknown sentinel). Only `current` reaches the
+      #                       acceptance gate, so splitting by it separates a
+      #                       node whose arriving validations are counting from
+      #                       one whose validations are all rejected -- which
+      #                       from the outside look identical, both being a
+      #                       node that receives validations and never
+      #                       validates.
+      #   accept_gated      - 2 values. True when this validation did not reach
+      #                       the gate because another thread was already
+      #                       accepting the same ledger, which is why a trace
+      #                       can show a validation with no ledger.validate
+      #                       after it. Without the dimension that gap looks
+      #                       like a lost span.
+      #
+      # Deliberately NOT promoted, same rule as ledger_hash / ledger_seq above:
+      # nothing here carries a per-ledger value. The join key itself
+      # (ledger_hash) is exactly such a value and stays span-only, indexed in
+      # tempo.yaml, because the per-ledger lookup it exists for is a trace
+      # search, not a metric query -- and as a dimension it would mint one
+      # series per ledger validated.
+      #
+      # consensus_round_duration_ms needs NO entry here at all: it is a native
+      # histogram from the OTel SDK, so it rides the existing OTLP -> Prometheus
+      # path and the collector only forwards it. Only span-derived signals need
+      # a dimension.
+      - name: validation_status
+      - name: accept_gated
 
 exporters:
   debug:

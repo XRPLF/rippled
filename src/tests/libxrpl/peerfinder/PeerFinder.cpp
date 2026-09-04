@@ -1266,5 +1266,299 @@ TEST(PeerFinderConfig, rejects_incomplete_or_out_of_range_peer_limits)
     }
 }
 
+/**
+ * A freshly configured Logic reports its ceilings and nothing else.
+ *
+ * This is the baseline reading every other census assertion is measured
+ * against, and it is a real diagnostic state: a node that has just started
+ * and connected to nothing must publish its configured capacity so an
+ * operator can tell "no slots configured" apart from "slots configured but
+ * empty". Asserting every one of the nine fields, not just the interesting
+ * ones, is what makes a field added to SlotCensus without a corresponding
+ * census assignment fail here instead of reading a silent zero forever.
+ */
+TEST(PeerFinderSlotCensus, reports_configured_ceilings_with_no_peers)
+{
+    NiceMock<MockStore> store;
+    allowEmptyStore(store);
+    NiceMock<MockChecker> checker;
+    TestStopwatch clock;
+    Logic<NiceMock<MockChecker>> logic(clock, store, checker, journal());
+
+    Config config;
+    config.autoConnect = false;
+    config.listeningPort = 1024;
+    config.ipLimit = 2;
+    config.outPeers = 3;
+    config.inPeers = 5;
+    config.wantIncoming = true;
+    logic.config(config);
+
+    auto const census = logic.getSlotCensus();
+
+    // The ceilings come straight from the config, so both are exact.
+    EXPECT_EQ(census.outMax, 3);
+    EXPECT_EQ(census.inMax, 5);
+
+    // Nothing is connected, attempted or cached yet. Every occupancy field is
+    // exactly zero -- not merely "small" -- which is the state the dashboard
+    // must show as idle rather than as a slot shortage.
+    EXPECT_EQ(census.outActive, 0);
+    EXPECT_EQ(census.inActive, 0);
+    EXPECT_EQ(census.connecting, 0);
+    EXPECT_EQ(census.fixedConfigured, 0);
+    EXPECT_EQ(census.fixedActive, 0);
+    EXPECT_EQ(census.bootcache, 0);
+    EXPECT_EQ(census.livecache, 0);
+}
+
+/**
+ * Inbound slots are reported as configured only when inbound is wanted.
+ *
+ * Counts::onConfig() assigns inMax_ only under `wantIncoming`, so a node with
+ * inbound disabled must publish inMax == 0 even though config.inPeers is
+ * non-zero. This is the negative half of the ceiling reading: without it, a
+ * census that copied config.inPeers directly would report five free inbound
+ * slots on a node that can never accept one, and the "inbound saturated"
+ * panel would read 0/5 forever instead of 0/0.
+ */
+TEST(PeerFinderSlotCensus, reports_zero_inbound_ceiling_when_inbound_disabled)
+{
+    NiceMock<MockStore> store;
+    allowEmptyStore(store);
+    NiceMock<MockChecker> checker;
+    TestStopwatch clock;
+    Logic<NiceMock<MockChecker>> logic(clock, store, checker, journal());
+
+    Config config;
+    config.autoConnect = false;
+    config.listeningPort = 1024;
+    config.ipLimit = 2;
+    config.outPeers = 3;
+    config.inPeers = 5;
+    config.wantIncoming = false;
+    logic.config(config);
+
+    auto const census = logic.getSlotCensus();
+
+    // inPeers was 5, but inbound is off: the census must report the effective
+    // ceiling the slot logic will actually enforce, which is 0.
+    EXPECT_EQ(census.inMax, 0);
+
+    // The outbound ceiling is unaffected, which is what proves the zero above
+    // is the wantIncoming rule rather than the config being ignored wholesale.
+    EXPECT_EQ(census.outMax, 3);
+}
+
+/**
+ * Occupancy fields follow slot state transitions, and each of the three
+ * outbound-related fields answers a different question.
+ *
+ * `connecting`, `outActive` and `fixedActive` are three separate readings of
+ * the same connection at three different moments, and Counts deliberately
+ * keeps a fixed peer out of `outActive` (see Counts::adjust, which guards the
+ * outActive_/inActive_ branch with `!s.fixed() && !s.reserved()`). Walking one
+ * fixed and one ordinary peer through dial -> connect -> handshake -> close
+ * and asserting the exact value of every field at each step is what pins that
+ * accounting down: a census that read the wrong Counts accessor would still
+ * produce plausible-looking numbers in any single state.
+ */
+TEST(PeerFinderSlotCensus, tracks_slot_occupancy_through_the_connection_lifecycle)
+{
+    NiceMock<MockStore> store;
+    allowEmptyStore(store);
+    NiceMock<MockChecker> checker;
+    TestStopwatch clock;
+    Logic<NiceMock<MockChecker>> logic(clock, store, checker, journal());
+
+    Config config;
+    config.autoConnect = false;
+    config.listeningPort = 1024;
+    config.ipLimit = 2;
+    config.outPeers = 3;
+    config.inPeers = 5;
+    config.wantIncoming = true;
+    logic.config(config);
+
+    auto const fixedEndpoint = endpoint("65.0.0.1:5");
+    logic.addFixedPeer("fixed-one", fixedEndpoint);
+
+    // Configured but not yet dialed: the asymmetry the fixed pair exists to
+    // show. fixedConfigured comes from fixed_.size() and is already 1;
+    // fixedActive comes from Counts and is still 0.
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.fixedConfigured, 1);
+        EXPECT_EQ(census.fixedActive, 0);
+        EXPECT_EQ(census.connecting, 0);
+        EXPECT_EQ(census.outActive, 0);
+    }
+
+    // Dial the fixed peer. The attempt is in flight, so it counts as
+    // `connecting` and as neither `outActive` nor `fixedActive`. A census that
+    // conflated dialing with connected would hide a node stuck redialing.
+    auto const [fixedSlot, fixedResult] = logic.newOutboundSlot(fixedEndpoint);
+    ASSERT_NE(fixedSlot, nullptr);
+    ASSERT_EQ(fixedResult, Result::Success);
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.connecting, 1);
+        EXPECT_EQ(census.outActive, 0);
+        EXPECT_EQ(census.fixedActive, 0);
+        EXPECT_EQ(census.fixedConfigured, 1);
+    }
+
+    // TCP is up but the handshake is not done. The slot moves Connect ->
+    // Connected, both of which Counts still tallies as an attempt, so
+    // `connecting` must hold at 1 rather than moving early.
+    ASSERT_TRUE(logic.onConnected(fixedSlot, endpoint("65.0.0.200:1024")));
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.connecting, 1);
+        EXPECT_EQ(census.outActive, 0);
+        EXPECT_EQ(census.fixedActive, 0);
+    }
+
+    // Handshake done. `connecting` drains and `fixedActive` rises -- but
+    // `outActive` stays at 0, because Counts excludes fixed peers from the
+    // ordinary outbound tally. This is the one reading most easily got wrong:
+    // fixed peers occupy a connection without consuming an outbound slot, so
+    // an outActive that moved here would overstate slot pressure by exactly
+    // the number of fixed peers.
+    PublicKey const fixedKey(randomKeyPair(KeyType::Secp256k1).first);
+    ASSERT_EQ(logic.activate(fixedSlot, fixedKey, false), Result::Success);
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.connecting, 0);
+        EXPECT_EQ(census.fixedActive, 1);
+        EXPECT_EQ(census.outActive, 0);
+        EXPECT_EQ(census.fixedConfigured, 1);
+
+        // Inbound is untouched by outbound activity, so the two halves of the
+        // census cannot be cross-contaminated.
+        EXPECT_EQ(census.inActive, 0);
+        EXPECT_EQ(census.inMax, 5);
+    }
+
+    // An ordinary (non-fixed, non-reserved) outbound peer is what does consume
+    // an outbound slot. Activating it must move outActive to 1 and leave
+    // fixedActive at 1 -- the positive counterpart of the assertion above.
+    auto const [outSlot, outResult] = logic.newOutboundSlot(endpoint("65.0.0.3:7"));
+    ASSERT_NE(outSlot, nullptr);
+    ASSERT_EQ(outResult, Result::Success);
+    ASSERT_TRUE(logic.onConnected(outSlot, endpoint("65.0.0.201:1024")));
+    PublicKey const outKey(randomKeyPair(KeyType::Secp256k1).first);
+    ASSERT_EQ(logic.activate(outSlot, outKey, false), Result::Success);
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.outActive, 1);
+        EXPECT_EQ(census.fixedActive, 1);
+        EXPECT_EQ(census.connecting, 0);
+        EXPECT_EQ(census.outMax, 3);
+    }
+
+    // Accept an inbound peer and activate it. inActive must move while
+    // outActive and fixedActive both hold, and this peer is not fixed, so
+    // fixedActive must NOT move -- the negative assertion that fixedActive
+    // tracks the fixed set rather than total activations.
+    auto const [inSlot, inResult] =
+        logic.newInboundSlot(endpoint("65.0.0.200:1024"), endpoint("65.0.0.4:8"));
+    ASSERT_NE(inSlot, nullptr);
+    ASSERT_EQ(inResult, Result::Success);
+
+    // Accepted-but-not-handshaked is not yet an active inbound peer either.
+    EXPECT_EQ(logic.getSlotCensus().inActive, 0);
+
+    PublicKey const inKey(randomKeyPair(KeyType::Secp256k1).first);
+    ASSERT_EQ(logic.activate(inSlot, inKey, false), Result::Success);
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.inActive, 1);
+        EXPECT_EQ(census.outActive, 1);
+        EXPECT_EQ(census.fixedActive, 1);
+    }
+
+    // Close the fixed peer. fixedActive drains to 0 while fixedConfigured
+    // stays at 1: the peer is still configured, it is just no longer
+    // connected. That 1-versus-0 pair is exactly the "configured fixed peer I
+    // cannot reach" state, and it is the reason both fields are published.
+    // outActive and inActive are untouched, so closing one slot cannot skew
+    // the others.
+    logic.onClosed(fixedSlot);
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.fixedActive, 0);
+        EXPECT_EQ(census.fixedConfigured, 1);
+        EXPECT_EQ(census.outActive, 1);
+        EXPECT_EQ(census.inActive, 1);
+    }
+
+    // Close the remaining two. Every occupancy field returns to exactly zero,
+    // which proves the census reads live counters rather than accumulating
+    // totals that would never come back down.
+    logic.onClosed(outSlot);
+    logic.onClosed(inSlot);
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.outActive, 0);
+        EXPECT_EQ(census.inActive, 0);
+        EXPECT_EQ(census.connecting, 0);
+        EXPECT_EQ(census.fixedActive, 0);
+
+        // The ceilings and the configured fixed set are properties of the
+        // config, not of any connection, so they must survive all of it.
+        EXPECT_EQ(census.outMax, 3);
+        EXPECT_EQ(census.inMax, 5);
+        EXPECT_EQ(census.fixedConfigured, 1);
+    }
+}
+
+/**
+ * Cache depths are reported from the caches themselves, independently.
+ *
+ * bootcache and livecache are separate stores with different lifetimes
+ * (persisted versus session-only), and the census reports both so an operator
+ * can tell a node that has bootstrap addresses but has learned nothing from
+ * peers apart from one that has neither. Populating exactly one of the two
+ * and asserting the other stays at zero is what proves they are read from
+ * distinct sources.
+ */
+TEST(PeerFinderSlotCensus, reports_bootcache_and_livecache_depths_separately)
+{
+    NiceMock<MockStore> store;
+    allowEmptyStore(store);
+    NiceMock<MockChecker> checker;
+    TestStopwatch clock;
+    Logic<NiceMock<MockChecker>> logic(clock, store, checker, journal());
+
+    Config config;
+    config.autoConnect = false;
+    config.listeningPort = 1024;
+    config.ipLimit = 2;
+    logic.config(config);
+
+    ASSERT_EQ(logic.getSlotCensus().bootcache, 0);
+    ASSERT_EQ(logic.getSlotCensus().livecache, 0);
+
+    // Two distinct bootstrap addresses.
+    EXPECT_TRUE(logic.bootcache.insert(endpoint("65.0.0.1:10001")));
+    EXPECT_TRUE(logic.bootcache.insert(endpoint("65.0.0.2:10002")));
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.bootcache, 2);
+        // The session cache is a different store and must still read zero.
+        EXPECT_EQ(census.livecache, 0);
+    }
+
+    // One address learned from a peer this session.
+    logic.livecache.insert(Endpoint{endpoint("65.0.0.3:10003"), 2});
+    {
+        auto const census = logic.getSlotCensus();
+        EXPECT_EQ(census.livecache, 1);
+        // The persisted cache is unchanged by the livecache insert.
+        EXPECT_EQ(census.bootcache, 2);
+    }
+}
+
 }  // namespace
 }  // namespace xrpl::peer_finder

@@ -98,7 +98,7 @@
       "required_attributes": ["tx_hash", "tx_type", "txq_status"],
       "config_flag": "trace_transactions",
       "optional": true,
-      "note": "Only fires when a tx is queued (fee below open-ledger level). Requires fee escalation — driven by the txq-burst workload phase. tx_hash/tx_type/txq_status are set on every code path; fee_level_paid/required_fee_level are conditional (TxQ.cpp ~895-898, after the rejected and applied_direct early exits), so they are NOT guaranteed on every txq.enqueue span and cannot be required."
+      "note": "Only fires when a tx is queued (fee below open-ledger level). Requires fee escalation \u2014 driven by the txq-burst workload phase. tx_hash/tx_type/txq_status are set on every code path; fee_level_paid/required_fee_level are conditional (TxQ.cpp ~895-898, after the rejected and applied_direct early exits), so they are NOT guaranteed on every txq.enqueue span and cannot be required."
     },
     {
       "name": "txq.apply_direct",
@@ -274,6 +274,20 @@
       "note": "Context-propagated from the sending peer. No required local attributes."
     },
     {
+      "name": "consensus.validation.accept",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": [
+        "ledger_hash",
+        "ledger_seq",
+        "validation_status",
+        "accept_gated",
+        "full_validation"
+      ],
+      "config_flag": "trace_ledger",
+      "note": "Emitted once per TRUSTED validation as it reaches the ledger-acceptance gate (handleNewValidation), so its rate is bounded by the UNL size per ledger close. Required, not optional: every node in the harness cluster validates and every other node receives those validations, so the span fires continuously. config_flag is trace_ledger, not trace_consensus, because the span is created through the ledger-hash trace join (TraceCategory::Ledger) -- it belongs to the ledger's trace, not the round's. Its trace id is derived from the VALIDATED ledger hash, the same key ledger.validate and ledger.store use, which is what makes one slow ledger read as one connected trace across the three threads that produce those spans. validation_status is one of the 6 ValStatus values and accept_gated says whether the validation actually reached the gate; both are spanmetrics dimensions. See trace_join_groups below."
+    },
+    {
       "name": "consensus.mode_change",
       "category": "consensus",
       "parent": "consensus.round",
@@ -299,24 +313,106 @@
       "name": "ledger.validate",
       "category": "ledger",
       "parent": null,
-      "required_attributes": ["ledger_seq", "validations"],
-      "config_flag": "trace_ledger"
+      "required_attributes": ["ledger_hash", "ledger_seq", "validations"],
+      "config_flag": "trace_ledger",
+      "note": "ledger_hash is required because it is the trace-join key, not merely a descriptive attribute: this span is the anchor of the per_ledger group in trace_join_groups, and the join is computed by hashing that value. Both it and ledger_seq are stamped unconditionally by LedgerMaster::makeLedgerTraceSpan (LedgerMaster.cpp:186-190, called at :1089), so requiring it costs nothing on a healthy run. Without this the only symptom of a lost join key would be assert_trace_join_groups reporting that spans landed in separate traces, which names the consequence rather than the cause."
     },
     {
       "name": "ledger.store",
       "category": "ledger",
       "parent": null,
-      "required_attributes": ["ledger_seq"],
-      "config_flag": "trace_ledger"
+      "required_attributes": ["ledger_hash", "ledger_seq"],
+      "config_flag": "trace_ledger",
+      "note": "ledger_hash is required for the same reason as on ledger.validate: it is the per_ledger trace-join key, stamped unconditionally by LedgerMaster::makeLedgerTraceSpan (called at LedgerMaster.cpp:511). This span is the required_member of that join group, so a missing key here breaks the join from the other end."
     },
     {
       "name": "ledger.acquire",
       "category": "ledger",
       "parent": null,
-      "required_attributes": ["ledger_seq", "acquire_reason"],
+      "required_attributes": [
+        "ledger_seq",
+        "acquire_reason",
+        "timeouts",
+        "outcome",
+        "ledger_hash"
+      ],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history. ledger_seq and acquire_reason are set unconditionally in init() (InboundLedger.cpp:116, :131) and are therefore required. outcome, timeouts and peer_count are set only on the done() path (InboundLedger.cpp:508-515); init() can satisfy the acquisition from the local store or bail on failed_/!complete_ and return without reaching done(), so those three cannot be required."
+      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history. outcome is one of complete|failed|abandoned and is stamped on every exit path, including the sweep/shutdown path where the fetch never finished (abandoned). ledger_hash identifies the target ledger from the first moment, since a by-hash acquire starts with ledger_seq 0. peer_count is not required: the destructor path deliberately skips the peer lookup to avoid taking the Overlay lock under the InboundLedgers collection lock."
+    },
+    {
+      "name": "ledger.acquire.header",
+      "category": "ledger",
+      "parent": "ledger.acquire",
+      "required_attributes": ["ledger_hash", "outcome", "timed_out"],
+      "config_flag": "trace_ledger",
+      "optional": true,
+      "note": "Child of ledger.acquire, so it is optional for the same reason the parent is: it exists only while a node is fetching a missing ledger, and a healthy 5-node cluster that has agreed from genesis rarely back-fills. Covers the wait for the ledger header, which gates both tree phases -- until it arrives the account-state and transaction root hashes are unknown, so nothing else can be requested. missing_nodes is deliberately absent: a header is a single object, not a tree."
+    },
+    {
+      "name": "ledger.acquire.astree",
+      "category": "ledger",
+      "parent": "ledger.acquire",
+      "required_attributes": [
+        "ledger_hash",
+        "outcome",
+        "timed_out",
+        "missing_nodes"
+      ],
+      "config_flag": "trace_ledger",
+      "optional": true,
+      "note": "Child of ledger.acquire (optional for the same reason). The account-state SHAMap phase, which is nearly all of the work in a real fresh sync -- the flat parent span could not separate it from the small transaction tree. outcome=timeout with a non-zero missing_nodes is the 'peers are not serving this tree' signature. missing_nodes is read from the count getMissingNodes() already produced during its sweep; no extra tree walk."
+    },
+    {
+      "name": "ledger.acquire.txtree",
+      "category": "ledger",
+      "parent": "ledger.acquire",
+      "required_attributes": [
+        "ledger_hash",
+        "outcome",
+        "timed_out",
+        "missing_nodes"
+      ],
+      "config_flag": "trace_ledger",
+      "optional": true,
+      "note": "Child of ledger.acquire (optional for the same reason). The transaction SHAMap phase. Usually completes long before the astree phase, and that asymmetry is the point of splitting them: the parent span's duration is the state tree's, not this one's."
+    },
+    {
+      "name": "ledger.serve",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": [
+        "object_type",
+        "peer_id",
+        "served_nodes",
+        "outcome"
+      ],
+      "config_flag": "trace_ledger",
+      "optional": true,
+      "note": "The supply side: this node answering a peer's TMGetLedger request on the JtLedgerReq worker. In practice every node in the harness cluster is listed in the others' [ips], so they exchange ledger and tx-set requests continuously throughout the run -- but optional even so, because the supply side cannot be required while every demand-side span is optional. A TMGetLedger request is constructed in exactly two places, InboundLedger.cpp and TransactionAcquire.cpp, and their ledger.acquire and txset.acquire spans are both optional; requiring this one would rest a mandatory check on an optional cause. Promote it together with them if a future harness step forces a real fetch. A fresh trace root -- the request arrives from the wire on a shared worker, so it must not inherit an unrelated span active there. object_type is header|tx|as|txset and outcome is complete|partial|refused, both derived by shared rules in LedgerSpanNames.h so the eight exits of processLedgerRequest cannot disagree. ledger_seq is present only once getLedger() succeeded, so it is not required."
+    },
+    {
+      "name": "txset.acquire",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": [
+        "txset_hash",
+        "outcome",
+        "timeouts",
+        "duration_ms",
+        "peer_count"
+      ],
+      "config_flag": "trace_ledger",
+      "optional": true,
+      "note": "One attempt to fetch a transaction set a consensus proposal referenced (TransactionAcquire, whose only telemetry is this span). Optional because it only fires when a node does NOT already hold a proposed set: in the harness cluster every node sees the same relayed transactions and builds the same set locally, so InboundTransactions::getSet finds it in its map and never constructs a TransactionAcquire. It is the sibling of ledger.acquire -- same TimeoutCounter base, same trigger/onTimer/takeNodes shape -- and shares the trace_ledger flag so the two halves of a stuck sync cannot be enabled apart. outcome is complete|failed|timeout|abandoned, stamped on all three exits (done(); abandonAcquireSpan(), when InboundTransactions stops pursuing the fetch -- giveSet, the newRound sweep, stop, or ~InboundTransactionsImp destroying the container; and cancel(), when the TimeoutCounter base marks the task failed without reaching done()); the destructor only asserts one of them already ran. A fetch dropped in the window before init() runs emits NO span at all rather than an abandoned one, so the outcome set describes the spans that exist, not every TransactionAcquire ever constructed. The requesting round(s) are carried by repeated round.request EVENTS (current_ledger_hash + current_ledger_seq), not by a parent or a link: one round starts many fetches and one fetch is wanted by many rounds, so no round owns the span -- which is why there is deliberately no parent_child_relationships entry for it. Events are not asserted by this validator; they are read in Tempo."
+    },
+    {
+      "name": "peer.dial",
+      "category": "peer",
+      "parent": null,
+      "required_attributes": ["remote_endpoint"],
+      "config_flag": "trace_peer",
+      "note": "One outbound connect attempt (ConnectAttempt), a fresh trace root because a dial is the first thing a starting node does and there is nothing to parent it to. Required: run-full-validation.sh lists the other four nodes in each node's [ips], so every node dials and the span always fires. Telemetry is live in time to catch it -- ApplicationImp::setup() calls startTelemetry() before start() calls overlay_->start(). outcome carries the same six values as the overlay_connect_total counter (connected|tcp_fail|tls_fail|self_connection|upgrade_fail|timeout) and is set from the same reportOutcome() funnel, so span and counter cannot disagree. remote_endpoint is the span-only dimension the counter cannot carry, since one series per peer address would be unbounded cardinality. Among its attributes only remote_endpoint is required. outcome and duration_ms are set on every terminal path, both inside reportOutcome(), but NOT on the teardown path: an attempt destroyed during overlay shutdown, or one whose connect was aborted, ends its span in ~ConnectAttempt with neither, deliberately -- the destructor's own comment records that a span ending with no outcome is the honest record of a dial that never concluded. Because peer.dial is a freshRoot, each dial is its own trace holding exactly one instance of the span, and the validator inspects only the most recent trace; a single newly-aborted dial would therefore fail CI on healthy behaviour. That single-trace sampling of a one-instance span is what makes requiring them unsafe -- not any doubt about the terminal paths setting them."
     },
     {
       "name": "peer.proposal.receive",
@@ -380,7 +476,7 @@
       "required_attributes": ["method", "grpc_role", "grpc_status"],
       "config_flag": "trace_rpc",
       "optional": true,
-      "note": "Wildcard — grpc.<MethodName>. The harness has no gRPC client, so these do not fire. Tracked for completeness."
+      "note": "Wildcard \u2014 grpc.<MethodName>. The harness has no gRPC client, so these do not fire. Tracked for completeness."
     }
   ],
   "parent_child_relationships": [
@@ -424,6 +520,21 @@
       "skip_reason": "Real relationship (pathfind.compute is created inside PathRequest::doUpdate at PathRequest.cpp:749-750, under the pathfind.request scope), but the child never exists on the harness because pathfinding is disabled on every node: Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] or [validator_token] section is present, run-full-validation.sh writes [validation_seed] for all five nodes (:308) with no [path_search*] override, and doRipplePathFind returns rpcNOT_SUPPORTED at RipplePathFind.cpp:48-49 before constructing a PathRequest. The parent would appear anyway if the RPC were issued, because its ScopedSpanGuard is created at RipplePathFind.cpp:35, above that guard; but rpc_load_generator.py carries no ripple_path_find weight, so not even the parent appears and both ends of this relationship are absent. Liquidity has nothing to do with it — the earlier 'no liquidity, returns before computing' reason was wrong, because no path search is attempted at all. Asserting this relationship needs the load restored AND a [path_search_max] override (or a non-validator node) in run-full-validation.sh."
     },
     {
+      "parent": "ledger.acquire",
+      "child": "ledger.acquire.astree",
+      "description": "Ledger acquire contains the account-state tree fetch phase. Un-skipped 2026-08-26. The old skip reason said the parent is optional because a healthy 5-node cluster agreeing from genesis rarely back-fills, so the check would fail on a parent with no traces. Run 32969481032 refutes the premise: ledger.acquire reported 5 traces and so did each of its three phase children, one per node. The parenting was never the doubtful part -- beginPhaseSpan() parents through the acquire span's own captured SpanContext rather than the ambient thread context, so it holds on whichever worker opens a phase."
+    },
+    {
+      "parent": "ledger.acquire",
+      "child": "ledger.acquire.header",
+      "description": "Ledger acquire contains the header fetch phase, which gates the two tree fetches. Added 2026-08-26: all three phases are opened identically through the parent's captured SpanContext and all three emitted 5 traces on run 32969481032, but only astree had ever been declared here, so two thirds of the phase hierarchy went unchecked."
+    },
+    {
+      "parent": "ledger.acquire",
+      "child": "ledger.acquire.txtree",
+      "description": "Ledger acquire contains the transaction-tree fetch phase. Un-skipped once the hierarchy check stopped sampling only the newest parent traces. This phase is the conditional one of the three: header opens on !haveHeader_ (InboundLedger.cpp:672) and astree in the else of haveState_ (:689), both of which hold on essentially every acquire, while txtree opens only in the else of haveTransactions_ (:698) -- and a node in this cluster usually already holds the transaction set, because every node sees the same relayed transactions and builds the same set. So the phase fires on a minority of acquires, which is precisely the case newest-N sampling of the parent got wrong; the child was always emitting, just not in the three most recent acquires."
+    },
+    {
       "parent": "rpc.command.*",
       "child": "pathfind.request",
       "description": "The RPC command span contains the path-finding request span.",
@@ -439,7 +550,6 @@
       "skip_reason": "Real relationship with BOTH ends absent, for the reason given in full on the pathfind.compute entry above: pathfinding is disabled on every harness node because Config.cpp:725-726 zeroes pathSearchMax whenever a [validation_seed] section is present, run-full-validation.sh writes one for all five nodes (:308) with no [path_search_max] override, so doRipplePathFind returns rpcNOT_SUPPORTED before any PathRequest is constructed -- and the harness sends no path-finding RPC at all either. Asserting this needs both blockers lifted, which is a workload and node-config change rather than a harness one. Listed here so that the pathfinding family is fully accounted for rather than partly silent.",
       "added": "Closes the declared-but-unlisted gap"
     },
-
     {
       "parent": "rpc.http_request",
       "child": "rpc.process",
@@ -503,6 +613,20 @@
       "description": "The establish phase contains each consensus-reached check."
     }
   ],
-  "total_span_types": 41,
-  "total_unique_attributes": 62
+  "trace_join_groups": {
+    "description": "Groups of spans that share ONE trace id without any parent/child link between them, because each derives its trace id deterministically from the same hash (SpanGuard::hashSpan). This is how spans produced on unrelated threads are joined: no context is propagated, so there is no parent to assert -- the assertion is that the spans co-occur in a single trace. Checked by assert_trace_join_groups() in validate_telemetry.py, which searches for the anchor span and requires at least one of its traces to also contain every member listed in required_members.",
+    "groups": [
+      {
+        "name": "per_ledger",
+        "join_key": "ledger_hash",
+        "anchor": "ledger.validate",
+        "required_members": ["ledger.store"],
+        "optional_members": ["consensus.validation.accept", "ledger.acquire"],
+        "note": "One ledger's spans, keyed on its own 32-byte hash: the acceptance decision (ledger.validate, LedgerMaster::checkAccept), the persist (ledger.store), the trusted validation that drove acceptance (consensus.validation.accept) and the network fetch (ledger.acquire). Each runs on a different thread, so before the join each was its own single-span trace and a slow ledger could not be read as one unit. ledger.validate is the anchor because it fires for every validated ledger. ledger.store is required with it: both run for every ledger the node accepts, and checkAccept reaches storeLedger on the acquire path while consensus reaches it via buildLCL, so at least one ordering always produces both. consensus.validation.accept is optional here only because a ledger this node built itself is accepted via switchLCL without a peer validation arriving first, so the two need not land in the same trace on every ledger. ledger.acquire is optional for the reason its own entry gives: a healthy cluster agreeing from genesis rarely back-fills."
+      }
+    ]
+  },
+  "_conditional_attributes_note": "Five attributes documented in the 'Fresh-node sync diagnostics' table of docs/telemetry-glossary.md are deliberately absent from required_attributes above, because each is emitted only when its value is known and _validate_span_attributes_otlp() has no per-attribute optional flag -- listing one would fail CI red on a healthy run. ledger.acquire/peer_count is set only when finalizeAcquireSpan() is passed a peer count (InboundLedger.cpp), which the sweep and shutdown paths cannot supply. ledger_seq on the three ledger.acquire.header/.astree/.txtree phase spans is set only when seq_ != 0 (InboundLedger.cpp startPhaseSpan), and a by-hash acquire starts with seq_ == 0 and learns the sequence only when the header arrives -- so a phase that opens before the header legitimately carries no sequence. ledger_seq on ledger.serve is set only when the reply carries one (PeerImp.cpp), which an object-by-hash request does not. All five ARE indexed in the glossary table and rendered by the Ledger Sync Health board; the honest encoding is to document them here rather than assert a conditional attribute as required.",
+  "total_span_types": 48,
+  "total_unique_attributes": 74
 }

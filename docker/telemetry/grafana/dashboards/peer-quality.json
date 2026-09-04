@@ -481,6 +481,105 @@
         "overrides": []
       },
       "id": 9
+    },
+    {
+      "title": "Peer Disconnect Rate",
+      "description": "###### What this is:\n*Per-second rate at which this node closes peer connections, across all reasons.*\n\n###### How it's computed:\n*Per-second rate of the peer-disconnect counter over the selected rate interval, summed per node. Narrow it with the Disconnect Reason and Disconnect Direction variables.*\n\n###### Reading it:\n*A low, steady rate is ordinary churn. The height of the line says how fast the peer set is turning over, not why — pair it with Peer Disconnects By Reason & Direction for the cause.*\n\n###### Healthy range:\n*Low and steady relative to each node's own baseline.*\n\n###### Watch for:\n*A sustained rise, which means the peer set is churning faster than it is being replaced and can leave the node short of peers to sync from. Distinct from Resource Disconnects, which counts only the resource-charge subset and carries no reason breakdown.*\n\n###### Keywords:\n- **Peer disconnect** *(per node)* — a peer connection closed by this node, for any reason, counted once per teardown.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::close`\n\n###### References:\n[Resource disconnect](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-disconnect)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 63
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (rate(peer_disconnect_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", reason=~\"$disconnect_reason\", direction=~\"$disconnect_direction\"}[$__rate_interval])), \"series\", \"Peer Disconnects / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "suffix: disconnects/s",
+          "custom": {
+            "axisLabel": "Disconnects / Sec",
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 10
+    },
+    {
+      "title": "Peer Disconnects By Reason & Direction",
+      "description": "###### What this is:\n*Peer closes over time, split by why they closed and by which side opened the connection.*\n\n###### How it's computed:\n*Increase in the peer-disconnect counter per rate interval, grouped by node, reason and direction. Filter with the Disconnect Reason and Disconnect Direction variables.*\n\n###### Reading it:\n*The split separates our-fault backpressure from topology and network faults. large_sendq and charge_resources are this node shedding a peer it cannot keep up with. not_useful and ping_timeout are topology and liveness. read_error and write_error are the transport. graceful, stopping and shutdown are ordinary lifecycle, not faults.*\n\n###### Healthy range:\n*Mostly graceful; the fault reasons near zero.*\n\n###### Watch for:\n*A sustained large_sendq or charge_resources means this node is the bottleneck and is dropping the very peers it needs to sync from, so a slow node makes itself slower. A rising not_useful or ping_timeout on outbound points at the peer set instead. This is the time-shaped view of the split; the Ledger Sync Health dashboard carries the same split as a window total.*\n\n###### Keywords:\n- **Peer disconnect reason** *(per node)* — the cause recorded when a peer connection is closed, paired with whether that connection was inbound or outbound.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::close`\n\n###### References:\n[Resource disconnect](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#resource-disconnect) · [Insane / diverged peers](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#insane-diverged-peers)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 73
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_join(sum by (reason, direction, service_instance_id, xrpl_branch, xrpl_work_item) (increase(peer_disconnect_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", reason=~\"$disconnect_reason\", direction=~\"$disconnect_direction\"}[$__rate_interval])), \"series\", \" \", \"reason\", \"direction\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "Peer Disconnect [${__field.labels.series}] ${__field.labels.xrpl_ident}",
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Disconnects",
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "id": 11
     }
   ],
   "schemaVersion": 39,
@@ -626,6 +725,46 @@
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
         "query": "label_values(target_info, service_instance_id)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "disconnect_reason",
+        "label": "Disconnect Reason",
+        "description": "Filter peer disconnects by cause [graceful / large_sendq / not_useful / ping_timeout / ...]",
+        "type": "query",
+        "query": "label_values(peer_disconnect_total, reason)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "disconnect_direction",
+        "label": "Disconnect Direction",
+        "description": "Filter peer disconnects by which side opened the connection [inbound / outbound]",
+        "type": "query",
+        "query": "label_values(peer_disconnect_total, direction)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"

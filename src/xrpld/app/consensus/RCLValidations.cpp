@@ -10,6 +10,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/consensus/Validations.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
@@ -19,6 +20,7 @@
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <algorithm>
 #include <memory>
@@ -175,10 +177,37 @@ handleNewValidation(
     // masterKey is seated only if validator is trusted or listed
     auto const outcome = validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
 
+    // Span this validation into the trace of the ledger it validates. The
+    // acceptance it may trigger emits its own span from LedgerMaster, possibly
+    // on another thread; both derive the trace id from the same ledger hash, so
+    // the two land in one trace.
+    //
+    // Started before the outcome is checked, so a rejected validation is
+    // recorded with its real status. Otherwise "validations are counting" and
+    // "validations are all rejected" both look like silence on a stuck node.
+    //
+    // Trusted only: untrusted validations cannot move acceptance, so this stays
+    // bounded by the UNL size per ledger.
+    namespace cs = telemetry::consensus::span;
+    std::optional<telemetry::SpanGuard> span;
+    if (val->isTrusted())
+    {
+        span.emplace(LedgerMaster::makeLedgerTraceSpan(cs::validationAccept, hash, seq));
+        span->setAttribute(
+            cs::attr::validationStatus, cs::validationStatusValue(static_cast<int>(outcome)));
+        span->setAttribute(cs::attr::fullValidation, val->isFull());
+        span->setAttribute(cs::attr::acceptGated, bypassAccept == BypassAccept::Yes);
+    }
+
     if (outcome == ValStatus::Current)
     {
         if (val->isTrusted())
         {
+            // The span stays alive across checkAccept below, so its duration is
+            // the time this validation spent driving the acceptance decision --
+            // the number that grows when a node is slow to validate. A rejected
+            // validation never reaches checkAccept, so its span is just the
+            // record that it arrived and was refused.
             if (bypassAccept == BypassAccept::Yes)
             {
                 XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");

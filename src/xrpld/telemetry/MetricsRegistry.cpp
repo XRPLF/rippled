@@ -50,17 +50,22 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/telemetry/MetricNames.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
@@ -97,6 +102,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -121,11 +127,18 @@ constexpr char kJobQueuedDurationUs[] = "job_queued_us";
 constexpr char kJobRunningDurationUs[] = "job_running_us";
 constexpr char kRpcMethodDurationUs[] = "rpc_method_us";
 
-// Attribute (label) keys for the job instruments. Each is referenced from
-// several record sites, and a counter and its histogram must carry exactly
-// the same key spelling or the two series cannot be joined in a query.
-constexpr char kJobTypeLabel[] = "job_type";
-constexpr char kHandlerLabel[] = "handler";
+// Millisecond-valued duration histogram instrument names. Same
+// register-then-create pairing as the microsecond names above, so the same
+// reason applies for naming them: the view and the record site must agree.
+//
+// consensus_round_duration_ms is recorded from RCLConsensus at the call site
+// (via XRPL_METRIC_HISTOGRAM_RECORD, which creates the instrument lazily
+// there), not created here. Only the VIEW is registered here, because a view
+// matches by instrument name and must exist before the instrument is first
+// used — the MeterProvider is built with the view registry, and the round
+// histogram is not created until the first consensus round completes, well
+// after start().
+constexpr char kConsensusRoundDurationMs[] = "consensus_round_duration_ms";
 
 /**
  * Register an explicit-bucket histogram view.
@@ -166,8 +179,8 @@ addHistogramView(
  * Job wait/run times and RPC latencies routinely exceed the SDK default
  * ceiling, so they all share `buckets::kMicrosecondBuckets`.
  *
- * @param views   The registry to add the view to.
- * @param name    Instrument name to match.
+ * @param views The registry to add the view to.
+ * @param name  Instrument name to match (e.g. "job_running_us").
  */
 void
 addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
@@ -176,6 +189,47 @@ addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& 
         views,
         name,
         xrpl::telemetry::buckets::toVector(xrpl::telemetry::buckets::kMicrosecondBuckets));
+}
+
+/**
+ * Register the explicit-bucket view for a consensus-round duration in
+ * MILLISECONDS.
+ *
+ * The round histogram needs its own boundaries for two reasons. The SDK
+ * default tops out at 10,000 ms, and a recovering or stalled node routinely
+ * rounds slower than that — the consensus parameters themselves allow up to
+ * `ledgerAbandonConsensus` = 120 s — so the default would collapse exactly the
+ * slow rounds this signal exists to show into one saturated top bucket. And a
+ * healthy round is about 3-4 s, which the default's coarse spacing near that
+ * value cannot resolve, so a round drifting from 3 s to 5 s would not move any
+ * quantile.
+ *
+ * Boundaries: 500ms, 1s, 2s, 3s, 4s, 5s, 7.5s, 10s, 15s, 20s, 30s, 60s, 120s.
+ * Dense across the healthy 2-5 s band, then widening to the 120 s abandon
+ * limit so a stalled round still lands in a real bucket.
+ *
+ * @param views The registry to add the view to.
+ * @param name  Instrument name to match ("consensus_round_duration_ms").
+ */
+void
+addRoundDurationHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
+{
+    addHistogramView(
+        views,
+        name,
+        {500.0,
+         1'000.0,
+         2'000.0,
+         3'000.0,
+         4'000.0,
+         5'000.0,
+         7'500.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0,
+         60'000.0,
+         120'000.0});
 }
 
 }  // namespace
@@ -308,16 +362,76 @@ MetricsRegistry::initExporterAndProvider(StartOptions const& options)
         attrs[std::string(attr::nodeId)] = options.nodeId;
     auto resourceAttrs = otel_resource::Resource::Create(attrs);
 
-    // Build a view registry with explicit microsecond buckets for the
-    // duration histograms. Without this they use the SDK default buckets
-    // (max 10,000 = 10 ms), saturating every quantile at 10 ms.
+    // Build a view registry with explicit buckets for the duration
+    // histograms. Without this they use the SDK default buckets (max 10,000),
+    // which saturates every quantile at 10 ms for the µs instruments and at
+    // 10 s for the round histogram.
     auto views = std::make_unique<metric_sdk::ViewRegistry>();
     addMicrosecondHistogramView(*views, kJobQueuedDurationUs);
     addMicrosecondHistogramView(*views, kJobRunningDurationUs);
     addMicrosecondHistogramView(*views, kRpcMethodDurationUs);
+    // Millisecond-scale: recorded at the RCLConsensus call site, so only the
+    // view is declared here (see the constant's comment).
+    addRoundDurationHistogramView(*views, kConsensusRoundDurationMs);
+
     // Recorded at its PeerImp.cpp call site, not created here, so the name
     // comes from the shared constant both sites use.
     addMicrosecondHistogramView(*views, kGetObjectLookupUs);
+
+    // Sweep malloc_trim duration. Shares the microsecond ladder rather than
+    // getting a bespoke one, and the ladder is what makes it readable: a trim on
+    // a small heap lands in the tens-of-microseconds buckets, while a trim on a
+    // multi-gigabyte resident heap runs well past 10 ms -- which is exactly the
+    // large-existing-database case this signal exists to catch. With the SDK
+    // default ceiling of 10,000 every one of those would collapse into the
+    // overflow bucket and p95 would read exactly 10 ms however bad it got. The
+    // shared ladder's upper reaches (25 ms, 50 ms, 100 ms, 250 ms, 500 ms, 1 s
+    // and beyond) resolve those, and its lower reaches (100 us, 500 us) resolve
+    // the healthy fresh-node case, so a per-instrument ladder would add a second
+    // thing to maintain for no extra resolution.
+    addMicrosecondHistogramView(*views, metric::sweepMallocTrimUs);
+
+    // Millisecond dial/resolve latencies. Both exceed the SDK default ceiling
+    // of 10,000: the dial timer is 15 s, so without an explicit ladder every
+    // timed-out dial lands in the overflow bucket and p95 reads exactly 10 s
+    // however bad it gets. The 15 s boundary sits on its own so a timeout is
+    // distinguishable from merely slow.
+    addHistogramView(
+        *views,
+        metric::dnsResolveLatencyMs,
+        {1.0,
+         5.0,
+         10.0,
+         25.0,
+         50.0,
+         100.0,
+         250.0,
+         500.0,
+         1'000.0,
+         2'500.0,
+         5'000.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0});
+    addHistogramView(
+        *views,
+        metric::overlayDialLatencyMs,
+        {1.0,
+         5.0,
+         10.0,
+         25.0,
+         50.0,
+         100.0,
+         250.0,
+         500.0,
+         1'000.0,
+         2'500.0,
+         5'000.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0});
 
     // The remaining two GetObject histograms are not durations, so the
     // microsecond ladder above does not fit them. Both still need explicit
@@ -372,10 +486,12 @@ MetricsRegistry::initSyncInstruments()
         "validations_sent_total", "Total validations sent by this node");
     validationsCheckedCounter_ = meter_->CreateUInt64Counter(
         "validations_checked_total", "Total network validations received and checked");
-    stateChangesCounter_ =
-        meter_->CreateUInt64Counter("state_changes_total", "Total operating mode changes");
+    // state_changes_total is NOT created here. It is emitted at its call site
+    // (NetworkOPsImp::setMode) through XRPL_METRIC_COUNTER_INC_LABELED so it
+    // can carry the {from,to} transition labels; a registry-owned instrument
+    // would only give an unlabelled total.
     ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
-        "ledger_history_mismatch_total", "Total built-vs-validated ledger mismatches by reason");
+        metric::ledgerHistoryMismatchTotal, "Total built-vs-validated ledger mismatches by reason");
     txqExpiredCounter_ = meter_->CreateUInt64Counter(
         "txq_expired_total", "Total transactions expired out of the transaction queue");
     txqDroppedCounter_ = meter_->CreateUInt64Counter(
@@ -489,8 +605,8 @@ MetricsRegistry::recordJobQueued(
         return;
     jobQueuedCounter_->Add(
         1,
-        {{kJobTypeLabel, std::string(jobType)},
-         {kHandlerLabel, std::string(sanitiseHandler(jobName))}});
+        {{label::jobType, std::string(jobType)},
+         {label::handler, std::string(sanitiseHandler(jobName))}});
 #endif
 }
 
@@ -506,7 +622,7 @@ MetricsRegistry::recordJobStarted(
     // Build the attribute pair once: both the counter and the histogram
     // must carry the identical label set or they cannot be joined.
     std::string const handler(sanitiseHandler(jobName));
-    jobStartedCounter_->Add(1, {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}});
+    jobStartedCounter_->Add(1, {{label::jobType, std::string(jobType)}, {label::handler, handler}});
     if (jobQueuedDurationHistogram_ && queuedDurUs >= 0)
     {
         // Guard against negative queued durations: the caller derives this
@@ -515,7 +631,7 @@ MetricsRegistry::recordJobStarted(
         // (logging a warning per call), so skip them rather than spam.
         jobQueuedDurationHistogram_->Record(
             static_cast<double>(queuedDurUs),
-            {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
+            {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
 #endif
@@ -531,12 +647,13 @@ MetricsRegistry::recordJobFinished(
     if (!enabled_ || !jobFinishedCounter_)
         return;
     std::string const handler(sanitiseHandler(jobName));
-    jobFinishedCounter_->Add(1, {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}});
+    jobFinishedCounter_->Add(
+        1, {{label::jobType, std::string(jobType)}, {label::handler, handler}});
     if (jobRunningDurationHistogram_)
     {
         jobRunningDurationHistogram_->Record(
             static_cast<double>(runningDurUs),
-            {{kJobTypeLabel, std::string(jobType)}, {kHandlerLabel, handler}},
+            {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
 #endif
@@ -560,6 +677,7 @@ MetricsRegistry::registerAsyncGauges()
     registerObjectCountGauge();
     registerLoadFactorGauge();
     registerNodeStoreGauge();
+    registerRotationStateGauge();
     registerServerInfoGauge();
     registerBuildInfoGauge();
     registerCompleteLedgersGauge();
@@ -572,6 +690,17 @@ MetricsRegistry::registerAsyncGauges()
     registerStorageDetailGauge();
     registerValidationAgreementGauge();
     registerValidationTotalsCounters();
+    registerUnlQuorumGauge();
+    registerClockSkewGauge();
+    registerSyncStateGauge();
+    registerStallEventsCounter();
+    registerSyncAcquireGauge();
+    registerCacheHitRateDetailGauge();
+    registerJobQueueSaturationGauge();
+    registerPeerLedgerSupplyGauge();
+    registerSlotCensusGauge();
+    registerAmendmentBlockGauge();
+    registerLedgerQuorumPublishGauge();
 }
 
 void
@@ -627,7 +756,7 @@ MetricsRegistry::registerCacheHitRateGauge()
                 auto sleRate = app.getCachedSLEs().rate();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(sleRate, {{"metric", "SLE_hit_rate"}});
+                    ->Observe(sleRate, {{label::metric, "SLE_hit_rate"}});
 
                 // Ledger cache hit rate.
                 // TaggedCache::getHitRate() returns 0-100; normalize to
@@ -636,40 +765,40 @@ MetricsRegistry::registerCacheHitRateGauge()
                 auto ledgerRate = app.getLedgerMaster().getCacheHitRate() / 100.0;
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(ledgerRate, {{"metric", "ledger_hit_rate"}});
+                    ->Observe(ledgerRate, {{label::metric, "ledger_hit_rate"}});
 
                 // AcceptedLedger cache hit rate (also 0-100 from
                 // TaggedCache; normalize to 0.0-1.0).
                 auto alRate = app.getAcceptedLedgerCache().getHitRate() / 100.0;
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(alRate, {{"metric", "AL_hit_rate"}});
+                    ->Observe(alRate, {{label::metric, "AL_hit_rate"}});
 
                 // TreeNode cache size.
                 auto tnCacheSize = app.getNodeFamily().getTreeNodeCache()->getCacheSize();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(
-                        static_cast<double>(tnCacheSize), {{"metric", "treenode_cache_size"}});
+                        static_cast<double>(tnCacheSize), {{label::metric, "treenode_cache_size"}});
 
                 // TreeNode track size.
                 auto tnTrackSize = app.getNodeFamily().getTreeNodeCache()->getTrackSize();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(
-                        static_cast<double>(tnTrackSize), {{"metric", "treenode_track_size"}});
+                        static_cast<double>(tnTrackSize), {{label::metric, "treenode_track_size"}});
 
                 // FullBelow cache size.
                 auto fbSize = app.getNodeFamily().getFullBelowCache()->size();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(static_cast<double>(fbSize), {{"metric", "fullbelow_size"}});
+                    ->Observe(static_cast<double>(fbSize), {{label::metric, "fullbelow_size"}});
 
                 // AcceptedLedger cache size (entry count).
                 auto alSize = app.getAcceptedLedgerCache().size();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
-                    ->Observe(static_cast<double>(alSize), {{"metric", "AL_size"}});
+                    ->Observe(static_cast<double>(alSize), {{label::metric, "AL_size"}});
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -698,7 +827,7 @@ MetricsRegistry::registerTxqGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 observe("txq_count", static_cast<double>(metrics.txCount));
@@ -779,7 +908,7 @@ MetricsRegistry::registerLoadFactorGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Combined load factor (server component).
@@ -936,7 +1065,7 @@ MetricsRegistry::registerNodeStoreGauge()
     // across four helpers, one per domain, to stay inside the per-function
     // line budget and to keep each domain testable on its own.
     nodeStoreGauge_ = meter_->CreateInt64ObservableGauge(
-        "nodestore_state",
+        metric::nodestoreState,
         "NodeStore I/O counters, latencies, write-queue depth and acquisition stalls");
     nodeStoreGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
@@ -952,7 +1081,7 @@ MetricsRegistry::registerNodeStoreGauge()
                 ObserveFn const observe = [&](char const* name, std::int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Qualified because the enclosing lambda captures nothing:
@@ -971,11 +1100,75 @@ MetricsRegistry::registerNodeStoreGauge()
 }
 
 void
+MetricsRegistry::registerRotationStateGauge()
+{
+    // --- Sync diagnostics: what an online_delete rotation costs ---
+    // A rotation performs writes an ordinary fetch would not: the archive
+    // backend is about to be deleted, so any node body it serves during the
+    // rotation window has to be rewritten into the writable backend to survive.
+    // That work scales with the archive, competes with sync I/O, and appears
+    // ONLY on a populated, already-rotated online_delete database -- which is
+    // why it never shows up on a fresh node and why it was never measured. The
+    // count existed as copyForwardCount_ but was log-only and reset per
+    // rotation.
+    //
+    // Polled from the node store rather than pushed, matching
+    // registerNodeStoreGauge above: DatabaseRotatingImp lives in libxrpl and
+    // cannot include xrpld/telemetry, so the counters are read through the
+    // DatabaseRotating accessors on each collection tick instead.
+    rotationStateGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::rotationState, "Online-delete rotation state and copy-forward write total");
+    rotationStateGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                // Only a rotating store has a rotation to report. On a node
+                // without online_delete the node store is a DatabaseNodeImp, so
+                // the cast fails and NO series is published -- deliberately, so
+                // that an absent series means "rotation is not configured"
+                // rather than a zero that would read as "rotation is free".
+                auto* rotating = dynamic_cast<node_store::DatabaseRotating*>(&app.getNodeStore());
+                if (rotating == nullptr)
+                    return;
+
+                auto observe = [&](char const* field, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, field}});
+                };
+
+                // The window the extra writes happen in. A panel needs this to
+                // know when the copy-forward total is expected to move.
+                observe(
+                    lval::rotation_state::inFlight,
+                    static_cast<int64_t>(rotating->isRotationInFlight() ? 1 : 0));
+
+                // Monotonic, so the panel takes rate() over it. The per-rotation
+                // tally that rotate() logs is reset on every swap and is
+                // therefore unusable here.
+                observe(
+                    lval::rotation_state::copyForward,
+                    static_cast<int64_t>(rotating->copyForwardTotal()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
 MetricsRegistry::registerServerInfoGauge()
 {
     // --- Server info gauges ---
     serverInfoGauge_ =
-        meter_->CreateInt64ObservableGauge("server_info", "Server-level health metrics");
+        meter_->CreateInt64ObservableGauge(metric::serverInfo, "Server-level health metrics");
     serverInfoGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -988,7 +1181,7 @@ MetricsRegistry::registerServerInfoGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Server operating mode (DISCONNECTED=0 .. FULL=4).
@@ -1150,7 +1343,7 @@ MetricsRegistry::registerDbMetricsGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 auto& rdb = app.getRelationalDatabase();
@@ -1189,7 +1382,7 @@ MetricsRegistry::registerValidatorHealthGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 observe("amendment_blocked", app.getOPs().isAmendmentBlocked() ? 1.0 : 0.0);
@@ -1225,7 +1418,7 @@ MetricsRegistry::registerPeerQualityGauge()
     // Uses Peer::json() to read latency and version since those accessors
     // are not on the abstract Peer interface (they live on PeerImp).
     peerQualityGauge_ =
-        meter_->CreateDoubleObservableGauge("peer_quality", "Peer network quality metrics");
+        meter_->CreateDoubleObservableGauge(metric::peerQuality, "Peer network quality metrics");
     peerQualityGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -1238,7 +1431,7 @@ MetricsRegistry::registerPeerQualityGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Collect latencies, version info, and tracking state from
@@ -1345,7 +1538,7 @@ MetricsRegistry::registerReduceRelayGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Each field is a decimal string; emit when present and parseable.
@@ -1376,8 +1569,8 @@ void
 MetricsRegistry::registerLedgerEconomyGauge()
 {
     // --- Ledger economy gauges ---
-    ledgerEconomyGauge_ =
-        meter_->CreateDoubleObservableGauge("ledger_economy", "Ledger fee and economy metrics");
+    ledgerEconomyGauge_ = meter_->CreateDoubleObservableGauge(
+        metric::ledgerEconomy, "Ledger fee and economy metrics");
     ledgerEconomyGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -1390,7 +1583,7 @@ MetricsRegistry::registerLedgerEconomyGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Fee and reserve values from the validated ledger.
@@ -1442,7 +1635,7 @@ MetricsRegistry::registerStateTrackingGauge()
 {
     // --- State tracking gauges ---
     stateTrackingGauge_ =
-        meter_->CreateDoubleObservableGauge("state_tracking", "Node state and mode tracking");
+        meter_->CreateDoubleObservableGauge(metric::stateTracking, "Node state and mode tracking");
     stateTrackingGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -1455,7 +1648,7 @@ MetricsRegistry::registerStateTrackingGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // State value: 0-4 from OperatingMode, 5=validating, 6=proposing.
@@ -1513,7 +1706,7 @@ MetricsRegistry::registerStorageDetailGauge()
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 // Cumulative payload bytes handed to the NodeStore. This is
@@ -1568,7 +1761,7 @@ MetricsRegistry::registerValidationAgreementGauge()
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<double>>>(result)
-                        ->Observe(value, {{"metric", name}});
+                        ->Observe(value, {{label::metric, name}});
                 };
 
                 observe("agreement_pct_1h", self->validationTracker_.agreementPct1h());
@@ -1655,6 +1848,545 @@ MetricsRegistry::registerValidationTotalsCounters()
         this);
 }
 
+void
+MetricsRegistry::registerUnlQuorumGauge()
+{
+    // --- Sync diagnostics: trusted UNL size against required quorum ---
+    // validator_health already exports the quorum on its own; pairing it
+    // with the trusted-key count in one instrument is what makes the
+    // "can this node ever validate?" comparison a single query.
+    unlQuorumGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::unlQuorum, "Trusted UNL key count vs required quorum");
+    unlQuorumGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, name}});
+                };
+
+                auto& validators = app.getValidators();
+
+                // Trusted master keys currently in effect. Zero means no
+                // usable UNL: quorum can never be met.
+                observe(
+                    lval::unl_quorum::trustedKeys,
+                    static_cast<int64_t>(validators.trustedKeyCount()));
+
+                // Validations required for a ledger to be fully validated.
+                // ValidatorList disables quorum by returning SIZE_MAX when too
+                // many publishers are unavailable, so the raw value must not be
+                // cast to int64_t: it would wrap to -1 and make the headroom
+                // (trusted_keys - quorum) read positive on a node that can
+                // never validate.
+                auto const quorum = validators.quorum();
+                // A disabled quorum therefore omits the series rather than
+                // publishing a sentinel. Both consumers of this gauge are
+                // timeseries panels
+                // sharing one axis with trusted_keys, so a huge value would
+                // flatten the key line to the baseline and hide the outage it
+                // was meant to signal. The boolean below carries the state, and
+                // a missing quorum line is itself the visible anomaly.
+                bool const quorumDisabled = quorum == std::numeric_limits<std::size_t>::max();
+                if (!quorumDisabled)
+                    observe(lval::unl_quorum::quorum, static_cast<int64_t>(quorum));
+                observe(lval::unl_quorum::quorumDisabled, quorumDisabled ? 1 : 0);
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerClockSkewGauge()
+{
+    // --- Sync diagnostics: network close-time offset ---
+    // A persistent offset shows the local clock disagrees with the
+    // network, which delays consensus participation. server_info hides
+    // this below 60 s, so export it continuously instead.
+    clockSkewGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::clockCloseOffsetSeconds,
+        "Network close time offset from the local clock, in seconds");
+    clockSkewGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, name}});
+                };
+
+                // Negative when the local clock runs ahead of the network.
+                observe(
+                    lval::clock_offset::offset,
+                    static_cast<int64_t>(app.getTimeKeeper().closeOffset().count()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerSyncStateGauge()
+{
+    // --- Sync diagnostics: why a fresh node is not FULL yet ---
+    // Four values otherwise visible only in a log line or in server_info
+    // JSON. All four are cheap reads pulled on the ~10 s reader tick.
+    syncStateGauge_ =
+        meter_->CreateInt64ObservableGauge(metric::syncState, "Sync-pipeline health signals");
+    syncStateGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, name}});
+                };
+
+                auto& ops = app.getOPs();
+
+                // Time to first FULL. Zero means the node has not synced yet,
+                // which is exactly the case this signal exists to expose.
+                observe(
+                    lval::sync_state::initialFullDurationUs,
+                    static_cast<int64_t>(ops.getInitialSyncDurationUs()));
+
+                // 1 = still waiting for a full network ledger. While this is
+                // set the node refuses transactions and cannot reach FULL.
+                observe(lval::sync_state::networkLedgerGate, ops.isNeedNetworkLedger() ? 1 : 0);
+
+                // Current main-loop stall duration; 0 when healthy.
+                observe(
+                    lval::sync_state::serverStallSeconds,
+                    static_cast<int64_t>(app.getLoadManager().getCurrentStallSeconds()));
+
+                // Distance from the network tip, floored at zero by the
+                // accessor.
+                observe(
+                    lval::sync_state::ledgersBehind,
+                    static_cast<int64_t>(ops.getLedgersBehindNetwork()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerStallEventsCounter()
+{
+    // --- Sync diagnostics: stall episode count ---
+    // Observed rather than pushed: LoadManager's monitor thread already owns
+    // the cumulative tally, and an ObservableCounter reads it each collection
+    // cycle without threading a push path through the load-monitor loop.
+    // Kept out of the sync_state gauge because a cumulative total needs
+    // counter aggregation for rate() to be meaningful.
+    stallEventsObservable_ = meter_->CreateInt64ObservableCounter(
+        metric::serverStallEventsTotal, "Total server main-loop stall episodes");
+    stallEventsObservable_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            try
+            {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                    ->Observe(
+                        static_cast<int64_t>(self->app_.getLoadManager().getStallEventCount()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerSyncAcquireGauge()
+{
+    // --- Sync diagnostics: is ledger acquisition actually progressing? ---
+    // Aggregated on purpose: a per-ledger label would add one series per ledger
+    // acquired, which is unbounded. The per-ledger view lives on the
+    // ledger.acquire span instead.
+    syncAcquireGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::syncAcquire, "Aggregate ledger-acquire progress across in-flight acquires");
+    syncAcquireGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, name}});
+                };
+
+                // One snapshot feeds all four series, so they are mutually
+                // consistent rather than read at four different instants.
+                auto const progress = app.getInboundLedgers().acquireProgress();
+
+                // Flat and non-zero across ticks = this acquire will never
+                // finish. Shrinking = slow but alive.
+                observe(
+                    lval::sync_acquire::missingStateNodesMax,
+                    static_cast<int64_t>(progress.maxMissingStateNodes));
+                observe(
+                    lval::sync_acquire::missingTxNodesMax,
+                    static_cast<int64_t>(progress.maxMissingTxNodes));
+
+                // Deep stash = arriving data outpaces processing.
+                observe(
+                    lval::sync_acquire::receivedDataDepth,
+                    static_cast<int64_t>(progress.receivedDataDepth));
+
+                // Context for the three above: zero everywhere with zero
+                // in-flight acquires is idle, not healthy.
+                observe(lval::sync_acquire::inFlight, static_cast<int64_t>(progress.inFlight));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerCacheHitRateDetailGauge()
+{
+    // --- Sync diagnostics: SHAMap tree-node cache hit rate ---
+    // The memory layer above the node store: a miss here is what causes a
+    // node-store read, which the NuDB hit-ratio panel then measures.
+    shamapCacheHitRateGauge_ = meter_->CreateDoubleObservableGauge(
+        metric::shamapCacheHitRate, "SHAMap tree-node cache hit rate (0.0-1.0), by cache");
+    shamapCacheHitRateGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                // TaggedCache::getHitRate() returns 0-100; normalize to 0.0-1.0
+                // so the panel can use Grafana's "percentunit" unit, matching
+                // how cache_metrics already reports its rates.
+                auto const rate = app.getNodeFamily().getTreeNodeCache()->getHitRate() / 100.0F;
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<double>>>(result)
+                    ->Observe(
+                        static_cast<double>(rate), {{label::metric, lval::shamap_cache::treenode}});
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerJobQueueSaturationGauge()
+{
+    // --- Sync diagnostics: is the whole worker pool exhausted? ---
+    // Attributes a broad multi-stage slowdown to the pool once, instead of
+    // leaving it to look like an independent fault in every subsystem whose
+    // jobs are queued behind it.
+    jobQueueSaturationGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::jobqSaturation,
+        "Worker-pool saturation: tasks in flight, worker threads, jobs queued");
+    jobQueueSaturationGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* field, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, field}});
+                };
+
+                // One reading feeds all three series so the ratio and the
+                // backlog describe the same instant.
+                auto const saturation = app.getJobQueue().getWorkerSaturation();
+                observe(lval::jobq_saturation::runningTasks, saturation.runningTasks);
+
+                // The denominator for the ratio panel. Derived at startup from
+                // [workers], node size and hardware concurrency, so it cannot
+                // be hardcoded in a dashboard.
+                observe(lval::jobq_saturation::workerThreads, saturation.workerThreads);
+
+                // Ratio at 1.0 alone is a busy pool; ratio at 1.0 with a
+                // non-zero backlog is an exhausted one.
+                observe(lval::jobq_saturation::totalWaiting, saturation.totalWaiting);
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerPeerLedgerSupplyGauge()
+{
+    // --- Sync diagnostics: can the network even serve what I need? ---
+    // Each peer advertises its ledger range and the connection caches it, but
+    // nothing ever compared those ranges, so "no peer holds the sequence I
+    // want" looked exactly like "my peers are slow" -- two faults with
+    // completely different fixes.
+    peerLedgerSupplyGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::peerLedgerSupply, "Peer coverage of the ledger sequence this node needs");
+    peerLedgerSupplyGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* field, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, field}});
+                };
+
+                // One pass over the peers, so all five series describe the
+                // same peer set at the same instant.
+                auto const supply = app.getOverlay().getPeerLedgerSupply(
+                    app.getLedgerMaster().getValidLedgerIndex());
+
+                // The denominator. Zero serving out of zero reporting is
+                // silence; zero out of many is a real supply gap.
+                observe(lval::peer_supply::peersReporting, supply.peersReporting);
+                observe(lval::peer_supply::peersServingValidated, supply.peersServingValidated);
+
+                // The verdict: zero here while peers_reporting is non-zero
+                // means waiting cannot finish the sync.
+                observe(lval::peer_supply::peersServingNext, supply.peersServingNext);
+
+                // The window the peer set covers, so an operator can tell a
+                // request for discarded history from one for an unreached tip.
+                observe(lval::peer_supply::supplyMinSeq, supply.supplyMinSeq);
+                observe(lval::peer_supply::supplyMaxSeq, supply.supplyMaxSeq);
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerSlotCensusGauge()
+{
+    // --- Sync diagnostics: why can this node not get peers? ---
+    // All nine numbers already exist inside PeerFinder; only the two active
+    // counts are exported today, which cannot distinguish "not dialling",
+    // "dialling and failing" and "nothing to dial".
+    slotCensusGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::peerfinderSlotCensus, "PeerFinder slots, connection attempts and address caches");
+    slotCensusGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* field, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, field}});
+                };
+
+                // One snapshot under one PeerFinder lock acquire, so occupancy
+                // and capacity can be compared against each other.
+                auto const census = app.getOverlay().getSlotCensus();
+
+                observe(lval::slot_census::outActive, census.outActive);
+                observe(lval::slot_census::outMax, census.outMax);
+                observe(lval::slot_census::inActive, census.inActive);
+                observe(lval::slot_census::inMax, census.inMax);
+
+                // Dials in flight. Non-zero while out_active stays under
+                // out_max is the "starting and never completing" case.
+                observe(lval::slot_census::connecting, census.connecting);
+
+                // fixed_active below fixed_configured names a configured peer
+                // that cannot be reached.
+                observe(lval::slot_census::fixedConfigured, census.fixedConfigured);
+                observe(lval::slot_census::fixedActive, census.fixedActive);
+
+                // Both at zero on a fresh node means there is nothing to dial.
+                observe(lval::slot_census::bootcache, census.bootcache);
+                observe(lval::slot_census::livecache, census.livecache);
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerAmendmentBlockGauge()
+{
+    // --- Sync diagnostics: how long until this node stops validating? ---
+    // The existing validator_health{metric="amendment_blocked"} reports the
+    // terminal state, when nothing can be done. This is the window before it.
+    amendmentBlockGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::amendmentBlock,
+        "Amendment-block warning and seconds until the node stops validating");
+    amendmentBlockGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* field, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, field}});
+                };
+
+                // An unsupported amendment has reached majority. Until now this
+                // only surfaced as an admin-only server_info warning.
+                observe(lval::amendment_block::warned, app.getOPs().isAmendmentWarned() ? 1 : 0);
+
+                // Seconds until that amendment activates. -1 means nothing is
+                // pending: a distinct healthy value rather than an absent
+                // series, matching validator_health{metric="unl_expiry_days"}.
+                std::int64_t secondsToBlock = -1;
+                if (auto const expected = app.getAmendmentTable().firstUnsupportedExpected())
+                {
+                    // NetClock's representation is unsigned, so the difference
+                    // is taken in int64_t: subtracting the time_points directly
+                    // would wrap once the activation time has passed.
+                    auto const expectedSecs =
+                        static_cast<std::int64_t>(expected->time_since_epoch().count());
+                    auto const nowSecs = static_cast<std::int64_t>(
+                        app.getTimeKeeper().closeTime().time_since_epoch().count());
+
+                    // Clamped at 0: past due means the block is imminent, not
+                    // overdue by an amount worth charting.
+                    secondsToBlock = std::max<std::int64_t>(expectedSecs - nowSecs, 0);
+                }
+                observe(lval::amendment_block::secondsToBlock, secondsToBlock);
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerLedgerQuorumPublishGauge()
+{
+    // --- Sync diagnostics: the quorum gate and the publish pipeline ---
+    // The last two stages of a fresh sync, and the two whose failures are
+    // hardest to see: a node can hold every ledger it needs and still never
+    // declare one validated (quorum short), or validate correctly and never
+    // publish (pipeline behind). The quorum shortfall is otherwise only a
+    // trace log line; the publish lag is not derivable from any other signal.
+    ledgerQuorumPublishGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::ledgerQuorumPublish,
+        "Pre-accept quorum gate and publish lag (tally vs quorum, first-validated, lag)");
+    ledgerQuorumPublishGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* field, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, field}});
+                };
+
+                auto const& ledgerMaster = app.getLedgerMaster();
+
+                // The pair that separates "slow" from "stuck". A tally climbing
+                // toward the target will get there; a tally flat below it never
+                // will, and no acquire or peer panel says which is happening.
+                observe(
+                    lval::quorum_publish::trustedValidationTally,
+                    ledgerMaster.getTrustedValidationTally());
+
+                // What the last gate evaluation actually required, as opposed to
+                // unl_quorum{quorum} which is what the trusted list configures.
+                // Already clamped against the SIZE_MAX "quorum disabled"
+                // sentinel by LedgerMaster, so this never wraps negative.
+                observe(lval::quorum_publish::quorumTarget, ledgerMaster.getQuorumTarget());
+
+                // One-shot: a value is the time the first ledger took to pass
+                // the gate, and 0 means it never has. Not a trend.
+                observe(
+                    lval::quorum_publish::timeToFirstValidatedUs,
+                    ledgerMaster.getTimeToFirstValidatedUs());
+
+                // Validated but not yet published. pubLedgerSeq_ was never
+                // exported, so this gap was not derivable from any other series.
+                observe(lval::quorum_publish::publishLag, ledgerMaster.getPublishLag());
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
 #endif  // XRPL_ENABLE_TELEMETRY
 
 // -----------------------------------------------------------------
@@ -1685,15 +2417,6 @@ MetricsRegistry::incrementValidationsChecked()
 #ifdef XRPL_ENABLE_TELEMETRY
     if (enabled_ && validationsCheckedCounter_)
         validationsCheckedCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementStateChanges()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && stateChangesCounter_)
-        stateChangesCounter_->Add(1);
 #endif
 }
 

@@ -8,6 +8,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
+#include <xrpld/telemetry/MetricMacros.h>
+#ifdef XRPL_ENABLE_TELEMETRY
+// The metric-name constants are named only as macro arguments, which the
+// macros drop when telemetry is compiled out.
+#include <xrpld/telemetry/MetricNames.h>
+#endif
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -100,6 +106,21 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
                         timerInterval_ = ledger_replay_parameters::kSubTaskFallbackTimeout;
+
+                        // Too few peers support ledger replay, so this
+                        // sub-task gives up on the skip-list shortcut and
+                        // acquires the whole ledger instead. That silently
+                        // defeats the replay optimisation -- debug-log-only
+                        // until now. Emitted on the transition into fallback
+                        // (fallBack_ is still false here), not at the acquire
+                        // call below, which re-runs on every later trigger.
+                        XRPL_METRIC_COUNTER_INC_LABELED(
+                            app_,
+                            telemetry::metric::ledgerReplayFallbackTotal,
+                            "Replay sub-acquires that fell back to a full ledger acquire",
+                            {{telemetry::label::stage,
+                              std::string(telemetry::lval::replay_fallback::skiplist)}});
+
                         fallBack_ = true;
                     }
                 }

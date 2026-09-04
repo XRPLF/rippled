@@ -11,10 +11,12 @@ Validation categories:
   2. Metric validation   — SpanMetrics, StatsD, and MetricsRegistry OTLP metrics
                            are non-zero, and each group's required_labels reach
                            Prometheus with non-empty values
-  3. Log-trace correlation — Loki logs contain trace_id/span_id fields
-  4. Dashboard validation — Every dashboard uid in expected_metrics.json
+  3. Sync diagnostics    — Fresh-node sync signals (bootstrap + acquire
+                           pipeline) declared in the "sync_diagnostics" group
+  4. Log-trace correlation — Loki logs contain trace_id/span_id fields
+  5. Dashboard validation — Every dashboard uid in expected_metrics.json
                            provisions and loads (panel count only, not panel data)
-  5. External parity     — Span attrs, metric existence, and value sanity for
+  6. External parity     — Span attrs, metric existence, and value sanity for
                            external dashboard parity (validator-health,
                            peer-quality, node-health)
 
@@ -82,6 +84,12 @@ EXPECTED_METRICS_FILE = SCRIPT_DIR / "expected_metrics.json"
 # cycles) before failing, so the check is robust to runner speed.
 METRIC_POLL_TIMEOUT_SEC = 45.0
 METRIC_POLL_INTERVAL_SEC = 5.0
+
+# Group key in expected_metrics.json holding the fresh-node sync-diagnostics
+# metrics (bootstrap + acquire pipeline). Owned by
+# assert_sync_diagnostics_metrics() so those signals get their own report
+# category and a single, explicit failure per missing metric.
+SYNC_DIAGNOSTICS_GROUP = "sync_diagnostics"
 
 # All metrics are polled concurrently against ONE shared deadline, so the
 # metric phase costs a single poll window instead of one per metric. This caps
@@ -1064,8 +1072,161 @@ async def _validate_parent_child(
 
 
 # ---------------------------------------------------------------------------
+# Trace-join Validation (Tempo API)
+# ---------------------------------------------------------------------------
+
+
+async def assert_trace_join_groups(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    report: ValidationReport,
+) -> None:
+    """Assert each declared trace-join group really lands in ONE trace.
+
+    A trace-join group is a set of spans that share one trace id with NO
+    parent/child link between them: each derives its trace id deterministically
+    from the same hash (SpanGuard::hashSpan over a ledger hash), which is how
+    spans produced on unrelated threads are joined without propagating any
+    context. The parent/child check above cannot express that -- there is no
+    parent to look for -- so the assertion here is co-occurrence: search for the
+    group's anchor span, then require at least one of its traces to also contain
+    every span in required_members.
+
+    A regression this catches: if the join key or the deterministic-root
+    mechanism breaks, each span reverts to its own single-span trace and no trace
+    contains the members together, so a slow ledger is no longer readable as one
+    unit. That is invisible to every other check in this harness -- the spans are
+    all still emitted with all their attributes.
+
+    An absent "trace_join_groups" key is a genuine no-op (nothing declared yet),
+    not a failure: unlike the sync_diagnostics metric group, this key is optional
+    and older expected_spans.json files predate it.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for the Tempo API.
+        report:    ValidationReport to accumulate results.
+    """
+    logger.info("--- Trace-Join Validation (Tempo) ---")
+
+    with open(EXPECTED_SPANS_FILE) as f:
+        expected = json.load(f)
+
+    groups = expected.get("trace_join_groups", {}).get("groups", [])
+    if not groups:
+        logger.info("[SKIP] span.trace_join: no join groups declared")
+        return
+
+    for group in groups:
+        await _validate_trace_join_group(session, tempo_url, group, report)
+
+
+async def _validate_trace_join_group(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    group: dict[str, Any],
+    report: ValidationReport,
+) -> None:
+    """Validate one trace-join group: anchor and members share a trace.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Tempo API base URL.
+        group:     One entry from expected_spans.json trace_join_groups.groups.
+        report:    ValidationReport to accumulate results.
+    """
+    name = group.get("name", "<unnamed>")
+    anchor = group["anchor"]
+    required = list(group.get("required_members", []))
+    check_name = f"span.trace_join.{name}"
+
+    try:
+        query = '{resource.service.name="xrpld" && name="' + anchor + '"}'
+        traces = await _tempo_search(session, tempo_url, query, limit=10)
+
+        if not traces:
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="span",
+                    passed=False,
+                    message=f"{name}: no {anchor} traces to check the join against",
+                    details={"anchor": anchor, "required_members": required},
+                )
+            )
+            return
+
+        # Walk the anchor's traces and keep the best result: the join holds as
+        # soon as ONE trace carries every required member. Several traces are
+        # examined because a given ledger may legitimately be missing an
+        # optional member (e.g. a self-built ledger has no arriving validation).
+        best_missing = required
+        for summary in traces:
+            trace_id = summary.get("traceID", "")
+            if not trace_id:
+                continue
+            spans = await _tempo_get_trace(session, tempo_url, trace_id)
+            present = {s.get("name", "") for s in spans}
+            missing = [m for m in required if m not in present]
+            if len(missing) < len(best_missing):
+                best_missing = missing
+            if not missing:
+                break
+
+        report.add(
+            CheckResult(
+                name=check_name,
+                category="span",
+                passed=not best_missing,
+                message=(
+                    f"{name}: {anchor} shares a trace with {required}"
+                    if not best_missing
+                    else (
+                        f"{name}: no {anchor} trace contained {best_missing} "
+                        f"-- the per-{group.get('join_key', 'hash')} trace join "
+                        f"is broken (spans are landing in separate traces)"
+                    )
+                ),
+                details={
+                    "anchor": anchor,
+                    "join_key": group.get("join_key"),
+                    "required_members": required,
+                    "missing": best_missing,
+                    "traces_examined": len(traces),
+                },
+            )
+        )
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name=check_name,
+                category="span",
+                passed=False,
+                message=f"{name}: trace-join check failed ({exc})",
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
 # Metric Validation (Prometheus API)
 # ---------------------------------------------------------------------------
+
+# Top-level keys of expected_metrics.json that validate_metrics() must not walk
+# with its generic group loop: "description" is prose, "grafana_dashboards"
+# holds dashboard UIDs (checked by validate_dashboards), and
+# "sync_diagnostics" has its own validator, assert_sync_diagnostics_metrics().
+#
+# MERGE HAZARD, for whoever brings phase-10 forward into this branch. phase-10
+# replaces the flatten below with _metric_check_targets(), which selects every
+# group satisfying isinstance(category_data, dict) and has no equivalent of this
+# tuple. Resolving that merge in phase-10's favour therefore lets
+# validate_metrics walk "sync_diagnostics" as well, while
+# assert_sync_diagnostics_metrics still walks it -- every metric in the group
+# polled twice and reported twice, inflating the check total. The resolution must
+# reinstate this exclusion inside _metric_check_targets, or fold
+# assert_sync_diagnostics_metrics into it and drop the separate pass. Either is
+# fine; keeping both walkers without an exclusion is not.
+SKIPPED_METRIC_GROUPS = ("description", "grafana_dashboards", SYNC_DIAGNOSTICS_GROUP)
 
 
 async def _log_prometheus_metric_names(
@@ -1252,18 +1413,26 @@ def _metric_check_targets(
         documented as required had never actually been checked.
 
     Note:
-        A group is any top-level value that is an object. The contract also
-        carries a string ("description"), a list ("accounted_patterns") and an
-        object that declares no metrics ("grafana_dashboards"); the isinstance
-        test skips the first two structurally rather than by name, so adding
-        another non-group key cannot break this function, and the third
-        contributes nothing because it has no "metrics" key. This selects
-        exactly the same groups the previous name-based exclusion list did.
+        A group is any top-level object EXCEPT those in SKIPPED_METRIC_GROUPS.
+        The contract also carries a string ("description"), a list
+        ("accounted_patterns") and an object that declares no metrics
+        ("grafana_dashboards"); the isinstance test skips the first two
+        structurally rather than by name, so adding another non-group key cannot
+        break this function, and the third contributes nothing because it has no
+        "metrics" key.
+
+        The name-based exclusion is still required for one group, so the
+        isinstance test alone is NOT equivalent to it. "sync_diagnostics" is an
+        object and does declare "metrics", but it has its own validator,
+        assert_sync_diagnostics_metrics, which polls and reports the same names.
+        Selecting it here as well would poll every metric in the group twice and
+        report each check twice, inflating the totals. It is excluded by name
+        because the reason is ownership, which no structural test can express.
     """
     groups = [
         (category_key, category_data)
         for category_key, category_data in expected.items()
-        if isinstance(category_data, dict)
+        if isinstance(category_data, dict) and category_key not in SKIPPED_METRIC_GROUPS
     ]
     targets = [
         (category_key, metric_name)
@@ -1308,6 +1477,11 @@ async def validate_metrics(
     # overran the CI job budget and lost the artifact-upload and summary
     # diagnostics. Sharing the deadline bounds the whole phase to a single
     # poll window.
+    #
+    # _metric_check_targets applies SKIPPED_METRIC_GROUPS, which is what keeps
+    # "sync_diagnostics" out of this walk: it has its own validator,
+    # assert_sync_diagnostics_metrics, and letting both walk it would poll and
+    # report every metric in the group twice.
     targets, label_targets = _metric_check_targets(expected)
 
     deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
@@ -1485,6 +1659,90 @@ async def _check_prometheus_metric(
             passed=False,
             message=f"{metric_name}: query failed ({exc})",
         )
+
+
+async def assert_sync_diagnostics_metrics(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    report: ValidationReport,
+) -> None:
+    """Assert every metric in the 'sync_diagnostics' group is present.
+
+    Fresh-node sync-diagnostics work packages append native metric names to the
+    "sync_diagnostics" group in expected_metrics.json; this check fails the run
+    if any listed metric regresses to absent, so a dropped signal cannot pass
+    CI silently. An empty group is a genuine no-op: nothing is queried and no
+    check is recorded, which is the state before any signal has landed.
+
+    A missing group key is itself a failure — the key is the anchor the sync
+    work packages append to, so its absence means the harness lost the contract
+    rather than that there is nothing to check.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus API base URL.
+        report:         ValidationReport to accumulate results.
+    """
+    logger.info("--- Fresh-Node Sync Diagnostics Metrics ---")
+
+    with open(EXPECTED_METRICS_FILE) as f:
+        expected = json.load(f)
+
+    group = expected.get(SYNC_DIAGNOSTICS_GROUP)
+    if group is None:
+        report.add(
+            CheckResult(
+                name=f"metric.{SYNC_DIAGNOSTICS_GROUP}.group_present",
+                category="metric",
+                passed=False,
+                message=(
+                    f"'{SYNC_DIAGNOSTICS_GROUP}' group missing from "
+                    f"{EXPECTED_METRICS_FILE.name}"
+                ),
+            )
+        )
+        return
+
+    metrics = group.get("metrics", [])
+    if not metrics:
+        logger.info(
+            "[SKIP] metric.%s: group is empty (no sync-diagnostics signals "
+            "declared yet)",
+            SYNC_DIAGNOSTICS_GROUP,
+        )
+        return
+
+    # Same fan-out shape as validate_metrics(): ONE shared deadline for the
+    # whole group, so the phase costs a single poll window instead of one per
+    # metric, and a semaphore so the fan-out cannot exhaust the Prometheus
+    # connection pool.
+    #
+    # _check_prometheus_metric RETURNS its CheckResult rather than recording it,
+    # so each result must be added here. Discarding them would let the group
+    # pass silently whatever Prometheus holds, which is the more dangerous half
+    # of the defect this replaces: the original call also passed `report` where
+    # `deadline` belongs and omitted `sem` entirely, raising TypeError before any
+    # check ran and taking the validation phases ordered after it down with it --
+    # three of them as CI invokes this (dashboards, parity span attrs, parity
+    # value sanity), since the workflow passes --skip-loki; four when the
+    # log-correlation phase is enabled.
+    deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
+    sem = asyncio.Semaphore(METRIC_POLL_CONCURRENCY)
+    checks = await asyncio.gather(
+        *(
+            _check_prometheus_metric(
+                session,
+                prometheus_url,
+                metric_name,
+                SYNC_DIAGNOSTICS_GROUP,
+                deadline,
+                sem,
+            )
+            for metric_name in metrics
+        )
+    )
+    for check in checks:
+        report.add(check)
 
 
 async def _check_metric_label(
@@ -2427,7 +2685,9 @@ async def run_validation(
     async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT) as session:
         await validate_spans(session, tempo_url, report)
         await validate_span_durations(session, tempo_url, report)
+        await assert_trace_join_groups(session, tempo_url, report)
         await validate_metrics(session, prometheus_url, report)
+        await assert_sync_diagnostics_metrics(session, prometheus_url, report)
         if not skip_loki:
             await validate_log_trace_correlation(session, loki_url, tempo_url, report)
         await validate_dashboards(session, grafana_url, report)

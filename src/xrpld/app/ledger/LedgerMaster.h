@@ -24,6 +24,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <xrpl.pb.h>
 
@@ -35,6 +36,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -282,6 +284,162 @@ public:
     std::optional<uint256>
     txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex);
 
+    /**
+     * Ledgers fully validated but not yet published to clients.
+     *
+     * The publish pipeline (doAdvance) lags validation by design, but the
+     * gap must drain. A gap that stays positive and grows means validation
+     * is healthy while publishing is not, which is a different fault from
+     * anything the acquire or quorum signals can show.
+     *
+     * @return Non-negative publish lag in ledgers; 0 when caught up, and 0
+     * before the first ledger is validated.
+     *
+     * @note Safe to call from any thread, including a telemetry
+     * observable-gauge callback: two relaxed atomic loads, no lock. The two
+     * sequences are read independently, so a reading taken while
+     * setValidLedger() and setPubLedger() are both running may be off by
+     * one ledger for one poll. That is immaterial for a lag trend and is
+     * the price of not taking the LedgerMaster mutex on the poll thread.
+     */
+    [[nodiscard]] std::int64_t
+    getPublishLag() const noexcept
+    {
+        auto const valid =
+            static_cast<std::int64_t>(validLedgerSeq_.load(std::memory_order_relaxed));
+        auto const published =
+            static_cast<std::int64_t>(pubLedgerSeq_.load(std::memory_order_relaxed));
+        auto const lag = valid - published;
+        return lag > 0 ? lag : 0;
+    }
+
+    /**
+     * Trusted validations counted at the most recent pre-accept gate.
+     *
+     * checkAccept() refuses to declare a ledger validated until this tally
+     * reaches getQuorumTarget(). Exposing the tally is what separates
+     * "validations are accumulating, just slowly" from "validations arrive
+     * but never reach quorum".
+     *
+     * @return Trusted validation count at the last gate evaluation; 0 before
+     * the first one.
+     *
+     * @note Safe to call from any thread: one relaxed atomic load, no lock.
+     */
+    [[nodiscard]] std::int64_t
+    getTrustedValidationTally() const noexcept
+    {
+        return lastTrustedTally_.load(std::memory_order_relaxed);
+    }
+
+    /**
+     * Validations required at the most recent pre-accept gate.
+     *
+     * @return Quorum threshold at the last gate evaluation; 0 before the
+     * first one. Reports std::numeric_limits<std::int64_t>::max() when the
+     * validator list has switched quorum off entirely (see
+     * getNeededValidations()), so the value never wraps negative and a
+     * tally-versus-target panel cannot invert on a node that can never
+     * validate.
+     *
+     * @note Safe to call from any thread: one relaxed atomic load, no lock.
+     */
+    [[nodiscard]] std::int64_t
+    getQuorumTarget() const noexcept
+    {
+        return lastQuorumTarget_.load(std::memory_order_relaxed);
+    }
+
+    /**
+     * Time from construction until the first ledger passed the pre-accept
+     * gate, in microseconds.
+     *
+     * A one-shot measurement, like the time-to-first-FULL signal: it is
+     * written once and never changes, so it has no trend. Exactly two
+     * readings are meaningful — a duration, meaning the node reached its
+     * first fully-validated ledger and this is how long that took, or 0,
+     * meaning it never has.
+     *
+     * @return Microseconds to the first fully-validated ledger; 0 until then.
+     *
+     * @note Safe to call from any thread: one relaxed atomic load, no lock.
+     */
+    [[nodiscard]] std::int64_t
+    getTimeToFirstValidatedUs() const noexcept
+    {
+        return timeToFirstValidatedUs_.load(std::memory_order_relaxed);
+    }
+
+    /**
+     * Start a span that joins the per-ledger trace keyed on the ledger hash.
+     *
+     * One ledger's spans are produced on threads that know nothing about each
+     * other: `ledger.acquire` on a JtLedgerData worker, `ledger.validate` from
+     * whichever thread calls checkAccept (a peer thread via
+     * handleNewValidation, the JtLedgerData "AcqDone" job, or the consensus
+     * thread via switchLCL), and `ledger.store` from a fourth. No ambient
+     * context reaches across those boundaries, so without an explicit join
+     * each ledger's spans would be separate one-span traces and a slow ledger
+     * could not be read as one unit.
+     *
+     * They are joined without propagating anything: `SpanGuard::hashSpan()`
+     * derives the trace id from the first 16 bytes of a hash, so every span
+     * that passes the SAME ledger hash lands in the SAME trace, and spans for
+     * different ledgers stay in different traces. Every one of these sites
+     * already holds the ledger hash, so nothing new has to be plumbed through.
+     * This is the pattern the apply pipeline already uses to join preflight,
+     * preclaim and the transactor on the transaction id
+     * (`libxrpl/tx/applySteps.cpp`).
+     *
+     * The span is a true trace root (deterministic trace id, no parent), so
+     * the spans of one ledger are siblings under one trace rather than a
+     * parent/child chain — which is the honest shape, since none of them
+     * causes another directly and their order varies with the sync path taken.
+     *
+     * Which stage a span is stays encoded in the span NAME rather than in an
+     * extra attribute: the collector already exposes the span name as the
+     * `span_name` label on the derived metrics, so a separate phase attribute
+     * would be a second copy of the same fact that could disagree with it.
+     *
+     * @param name        Full span name (e.g. "ledger.validate"). hashSpan
+     *                    takes one complete name, not a prefix/suffix pair, so
+     *                    pass the joined constant.
+     * @param ledgerHash  The ledger's own 32-byte hash: the join key. Its
+     *                    first 16 bytes become the trace id, and the whole
+     *                    hash is recorded as the `ledger_hash` attribute.
+     * @param seq         Ledger sequence, recorded as `ledger_seq` so a trace
+     *                    can be found by ledger number.
+     * @return An active guard, or a null (no-op) guard when telemetry is off,
+     *         built without telemetry, or ledger tracing is not enabled.
+     *
+     * Example — join the acceptance decision to the rest of the ledger's trace:
+     * @code
+     *   auto span = makeLedgerTraceSpan(
+     *       ledger_span::validate, ledger->header().hash, ledger->header().seq);
+     *   span.setAttribute(ledger_span::attr::validations, tvc);
+     * @endcode
+     *
+     * Example — edge case: with tracing disabled the guard is null and every
+     * method on it is a no-op, so no call site needs its own check:
+     * @code
+     *   auto span = makeLedgerTraceSpan(ledger_span::store, hash, seq);
+     *   // span is false; setAttribute() below does nothing.
+     * @endcode
+     *
+     * @note Called once per ledger per stage, never per SHAMap node or per
+     * transaction. Costs one span plus two attributes when tracing is on, and
+     * one predicted branch when it is off.
+     * @note Thread-safe: builds a fresh guard from its arguments and the global
+     * Telemetry instance, touching no LedgerMaster state, so it may be called
+     * from any thread and while mutex_ is held.
+     * @note Limitation: the join holds only for spans keyed on the SAME ledger
+     * hash. A stage that has only a sequence number (a by-seq lookup before the
+     * hash is known) cannot join the trace, and a genuinely different ledger
+     * always gets a different trace.
+     */
+    [[nodiscard]] static telemetry::SpanGuard
+    makeLedgerTraceSpan(std::string_view name, uint256 const& ledgerHash, std::uint32_t seq);
+
 private:
     void
     setValidLedger(std::shared_ptr<Ledger const> const& l);
@@ -393,6 +551,54 @@ private:
 
     // Time that the previous upgrade warning was issued.
     TimeKeeper::time_point upgradeWarningPrevTime_;
+
+    // --- Sync diagnostics: the pre-accept quorum gate -----------------------
+    //
+    // checkAccept() computes a trusted-validation tally and the quorum it must
+    // reach, then returns early when the tally is short. Both values used to
+    // exist only for the duration of that call and a trace log line, so a node
+    // with peers and validators that still refuses to validate looked
+    // identical to an idle one. These snapshots keep the last gate evaluation
+    // readable by the metrics poll thread.
+    //
+    //   checkAccept (per validated ledger, holds mutex_)
+    //     |  computes tvc, minVal
+    //     +--> lastTrustedTally_ / lastQuorumTarget_   (relaxed stores)
+    //     |
+    //     +--> gate passes --> timeToFirstValidatedUs_ (once per process)
+    //
+    //   OTel reader thread (~10 s tick)
+    //     +--> getTrustedValidationTally() / getQuorumTarget()
+    //          getTimeToFirstValidatedUs() / getPublishLag()  (relaxed loads)
+    //
+    // Deliberately atomics rather than values guarded by mutex_: the emit path
+    // holds mutex_ while the metric macro takes an OTel-internal lock, so a
+    // reader that took mutex_ from inside an OTel callback would invert that
+    // order. Lock-free reads make the inversion impossible.
+
+    /**
+     * Trusted validations counted at the last checkAccept gate; 0 before the
+     * first gate evaluation.
+     */
+    std::atomic<std::int64_t> lastTrustedTally_{0};
+
+    /**
+     * Validations required at the last checkAccept gate; 0 before the first
+     * gate evaluation, and int64 max when quorum is switched off entirely.
+     */
+    std::atomic<std::int64_t> lastQuorumTarget_{0};
+
+    /**
+     * Microseconds from construction to the first ledger that passed the
+     * pre-accept gate. Written exactly once; 0 means it has not happened.
+     */
+    std::atomic<std::int64_t> timeToFirstValidatedUs_{0};
+
+    /**
+     * Construction time, the epoch the first-validated milestone measures
+     * from. Steady, so it is unaffected by wall-clock or NTP adjustments.
+     */
+    std::chrono::steady_clock::time_point const startTime_{std::chrono::steady_clock::now()};
 
 private:
     struct Stats
