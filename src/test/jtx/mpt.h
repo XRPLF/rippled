@@ -719,7 +719,7 @@ public:
         PedersenProofParams const& amountParams,
         PedersenProofParams const& balanceParams) const;
 
-    [[nodiscard]] Buffer
+    [[nodiscard]] std::optional<Buffer>
     getConvertBackProof(
         Account const& holder,
         std::uint64_t const amount,
@@ -814,15 +814,28 @@ private:
     [[nodiscard]] std::uint32_t
     getFlags(std::optional<Account> const& holder) const;
 
+    /**
+     * @brief Sets sfMPTokenIssuanceID on jv, falling back to id_ if arg's id is
+     *        not set.
+     *
+     * @param jv The JSON object to set the field on.
+     * @param id The explicit issuance ID override from the caller, if any.
+     */
+    void
+    setIssuanceIdField(json::Value& jv, std::optional<MPTID> const& id) const;
+
+    [[nodiscard]] std::uint32_t
+    ticketOrSeq(
+        std::optional<std::uint32_t> const& ticketSeq,
+        std::optional<Account> const& account) const;
+
     template <typename T>
     void
     fillConversionCiphertexts(
         T const& arg,
         json::Value& jv,
-        Buffer& holderCiphertext,
-        Buffer& issuerCiphertext,
-        std::optional<Buffer>& auditorCiphertext,
-        Buffer& blindingFactor) const;
+        Account const& account,
+        std::uint64_t const amount) const;
 };
 
 }  // namespace xrpl::test::jtx
