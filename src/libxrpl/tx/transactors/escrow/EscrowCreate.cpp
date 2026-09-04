@@ -240,7 +240,13 @@ escrowCreatePreclaimHelper<Issue>(
         return tecFROZEN;
 
     STAmount const spendableAmount = accountHolds(
-        ctx.view, account, issue.currency, issuer, FreezeHandling::IgnoreFreeze, ctx.j);
+        ctx.view,
+        account,
+        issue.currency,
+        issuer,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::ZeroIfUnauthorized,
+        ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::kZero)

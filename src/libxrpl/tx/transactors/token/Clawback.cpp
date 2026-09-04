@@ -132,12 +132,15 @@ preclaimHelper<Issue>(
     // We can't directly check the balance of trustline because
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
+    // IgnoreAuth: clawback is the issuer's remediation path for balances on
+    // unauthorized trust lines, so those must remain visible here.
     if (accountHolds(
             ctx.view,
             holder,
             clawAmount.get<Issue>().currency,
             issuer,
             FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
@@ -226,13 +229,15 @@ applyHelper<Issue>(ApplyContext& ctx)
     if (holder == issuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // Get the spendable balance. Must use `accountHolds`.
+    // Get the spendable balance. Must use `accountHolds`. IgnoreAuth: see
+    // preclaim.
     STAmount const spendableAmount = accountHolds(
         ctx.view(),
         holder,
         clawAmount.get<Issue>().currency,
         clawAmount.getIssuer(),
         FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         ctx.journal);
 
     return directSendNoFee(

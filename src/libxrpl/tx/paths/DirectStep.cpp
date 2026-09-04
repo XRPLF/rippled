@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -391,7 +392,25 @@ DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 std::pair<IOUAmount, DebtDirection>
 DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
 {
-    return maxPaymentFlow(sb);
+    auto const flow = maxPaymentFlow(sb);
+
+    // check() lets a redeeming step through even when dst_ was never
+    // authorized to hold src_'s issuance, because returning dst_'s own IOU
+    // creates no unauthorized holding. check() runs once at strand
+    // construction, though, while the flow engine re-evaluates maxFlow every
+    // iteration: once the redeemed balance reaches zero maxPaymentFlow
+    // switches to the Issues branch and would extend the unauthorized line
+    // fresh credit, which is the zero-crossing mint behind XRPLF/rippled
+    // issue #5450. Go dry instead, so such a line drains to zero and stops.
+    // A pseudo-account dst_ is exempt for the reason given in check().
+    if (issues(flow.second) && sb.rules().enabled(fixCleanup3_5_0) &&
+        !isTesSuccess(requireAuth(sb, Issue{currency_, src_}, dst_, AuthType::StrongAuth)) &&
+        !isPseudoAccount(sb, dst_))
+    {
+        return {IOUAmount(beast::kZero), DebtDirection::Issues};
+    }
+
+    return flow;
 }
 
 std::pair<IOUAmount, DebtDirection>
@@ -430,12 +449,82 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
-        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField) &&
-            (*sleLine)[sfBalance] == beast::kZero)
+        // src_ holds dst_'s IOU exactly when the balance favors src_.
+        int const balanceSign = (*sleLine)[sfBalance].signum();
+        bool const srcHoldsDstIou = src_ < dst_ ? balanceSign > 0 : balanceSign < 0;
+
+        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField))
         {
-            JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
-                             << " src: " << src_;
-            return terNO_AUTH;
+            // Post fixCleanup3_5_0 an unauthorized line may not receive at
+            // all: the zero-balance condition below was the historical
+            // grandfather clause letting a line that already carried a
+            // balance keep receiving, which is how an unauthorized position
+            // could grow (see XRPLF/rippled issue #5450). The
+            // ValidTrustLineAuth invariant remains the backstop for flows
+            // that bypass the payment engine.
+            //
+            // srcHoldsDstIou excludes the opposite direction: there the
+            // balance favors src_, so the step returns dst_'s own issuance
+            // to it instead of handing dst_ a balance src_ never
+            // authorized. That redemption is one of the two permitted
+            // flows, and maxFlow caps it at the redeemable amount so it
+            // cannot cross zero into an unauthorized holding.
+            if (ctx.view.rules().enabled(fixCleanup3_5_0) && !srcHoldsDstIou)
+            {
+                JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
+                                 << " src: " << src_;
+                return tecNO_AUTH;
+            }
+
+            // A zero balance means !srcHoldsDstIou, so post amendment the
+            // gate above has already returned: this branch is reachable
+            // pre-amendment only.
+            if ((*sleLine)[sfBalance] == beast::kZero)
+            {
+                JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
+                                 << " src: " << src_;
+                return terNO_AUTH;
+            }
+        }
+
+        // A balance the issuer never authorized may only be delivered to the
+        // issuer itself. toStrand appends the transaction's Destination as
+        // the final path element, so the step carrying ctx.isLast delivers
+        // to dst_; dst_ being this line's issuer then makes the strand a
+        // redemption. Any onward step spends the balance to a third party
+        // or converts it, which only a redemption or a Clawback may do. The
+        // ValidTrustLineAuth invariant remains the backstop for paths that
+        // bypass the payment engine.
+        if (!ctx.isLast && ctx.view.rules().enabled(fixCleanup3_5_0))
+        {
+            // A pseudo-account src_ is exempt: it cannot submit a TrustSet
+            // to become authorized, mirroring the fixCleanup3_4_0 carve-out
+            // inside requireAuth without depending on that amendment.
+            if (srcHoldsDstIou && !isPseudoAccount(ctx.view, src_) &&
+                !isTesSuccess(
+                    requireAuth(ctx.view, Issue{currency_, dst_}, src_, AuthType::StrongAuth)))
+            {
+                JLOG(j_.debug()) << "DirectStepI: cannot spend an unauthorized balance. src: "
+                                 << src_;
+                return tecNO_AUTH;
+            }
+        }
+
+        // src_ being an AMM account means this step delivers its LPToken to
+        // dst_, handing dst_ exposure to both of the AMM's pool assets, so
+        // dst_ must be authorized for both; see checkLPTokenAuthorization.
+        // The reverse direction (dst_ is the AMM) is a return to the issuer
+        // and stays legal, letting an unauthorized holder divest.
+        if (ctx.view.rules().enabled(fixCleanup3_5_0) && sleSrc->isFieldPresent(sfAMMID))
+        {
+            if (auto const ter = checkLPTokenAuthorization(ctx.view, dst_, src_);
+                !isTesSuccess(ter))
+            {
+                JLOG(j_.debug()) << "DirectStepI: cannot deliver an LPToken to an account not "
+                                    "authorized for the AMM's assets. dst: "
+                                 << dst_;
+                return ter;
+            }
         }
 
         if (ctx.prevStep != nullptr)
@@ -478,8 +567,12 @@ template <class TDerived>
 std::pair<IOUAmount, DebtDirection>
 DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
-    auto const srcOwed = toAmount<IOUAmount>(
-        accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_));
+    // IgnoreAuth: srcOwed also feeds redemption back to the issuer, the one
+    // movement an unauthorized line is allowed. Strands that would spend
+    // such a balance past the issuer are rejected in check(), and the
+    // ValidTrustLineAuth invariant backstops everything else.
+    auto const srcOwed = toAmount<IOUAmount>(accountHolds(
+        sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_));
 
     if (srcOwed.signum() > 0)
         return {srcOwed, DebtDirection::Redeems};
@@ -495,7 +588,9 @@ DirectStepI<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir) co
     if (dir == StrandDirection::Forward && cache_)
         return cache_->srcDebtDir;
 
-    auto const srcOwed = accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_);
+    // IgnoreAuth: see maxPaymentFlow.
+    auto const srcOwed = accountHolds(
+        sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
     return srcOwed.signum() > 0 ? DebtDirection::Redeems : DebtDirection::Issues;
 }
 

@@ -1,20 +1,39 @@
 #include <test/app/invariants/InvariantsBase.h>
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/check.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
+#include <xrpld/app/ledger/OpenLedger.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -26,7 +45,9 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -224,11 +245,833 @@ class InvariantsTrustLine_test : public InvariantsBase
     }
 
     void
+    testValidTrustLineAuth()
+    {
+        using namespace test::jtx;
+        testcase << "unauthorized trust lines";
+
+        Account const g1{"G1"};
+
+        // Preclose: g1 requires authorization and a1 opens a line that g1
+        // never authorizes. No valid transaction can give it a balance.
+        auto const unauthorizedLine = [&](Account const& a1, Account const&, Env& env) {
+            env.fund(XRP(1000), g1);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            env.trust(g1["USD"](10000), a1);
+            env.close();
+            return true;
+        };
+
+        auto const authorizedLine = [&](Account const& a1, Account const& a2, Env& env) {
+            unauthorizedLine(a1, a2, env);
+            env(trust(g1, g1["USD"](0), a1, tfSetfAuth));
+            env.close();
+            return true;
+        };
+
+        // Overwrite the holder's balance of g1/USD on the a1--g1 line;
+        // sfBalance is signed from the low account's perspective.
+        auto const setHolderBalance = [&](Account const& holder, ApplyContext& ac, int amount) {
+            auto const sle = ac.view().peek(keylet::trustLine(holder, g1["USD"]));
+            if (!sle)
+                return false;
+            bool const holderIsLow = holder.id() < g1.id();
+            sle->setFieldAmount(sfBalance, g1["USD"](holderIsLow ? amount : -amount));
+            ac.view().update(sle);
+            return true;
+        };
+
+        // test: an unauthorized line must not gain funds (post
+        // fixCleanup3_5_0 the invariant enforces).
+        doInvariantCheck(
+            {{"an unauthorized trust line gained funds"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            unauthorizedLine);
+
+        // test: pre fixCleanup3_5_0 the same violation is logged but the
+        // transaction is not failed, preserving legacy behavior on ledgers
+        // without the amendment.
+        doInvariantCheck(
+            makeEnv(testableAmendments() - fixCleanup3_5_0),
+            {{"an unauthorized trust line gained funds"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            unauthorizedLine);
+
+        // test: once the issuer grants authorization the line may gain funds.
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            authorizedLine);
+
+        // test: AMMClawback is exempt from the invariant -- issuer-driven
+        // remediation may recreate the paired-asset balance on an
+        // unauthorized line and must not be held hostage by it.
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttAMM_CLAWBACK, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            unauthorizedLine);
+
+        // test: the authorization must predate the transaction. Stamping the
+        // flag onto the line in the same transaction that credits it can
+        // only be a buggy transactor -- a legitimate grant (TrustSet with
+        // tfSetfAuth) never moves a balance.
+        doInvariantCheck(
+            {{"an unauthorized trust line gained funds"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::trustLine(a1, g1["USD"]));
+                if (!sle)
+                    return false;
+                bool const g1IsLow = g1.id() < a1.id();
+                sle->setFieldU32(sfFlags, sle->getFlags() | (g1IsLow ? lsfLowAuth : lsfHighAuth));
+                ac.view().update(sle);
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            unauthorizedLine);
+
+        // test: like the line's auth flags, the issuer's lsfRequireAuth is
+        // read from the pre-transaction state: clearing it (AccountSet) never
+        // moves a balance, so a same-transaction clear-and-credit cannot
+        // suppress the check.
+        doInvariantCheck(
+            {{"an unauthorized trust line gained funds"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const root = ac.view().peek(keylet::account(g1.id()));
+                if (!root)
+                    return false;
+                root->setFieldU32(sfFlags, root->getFlags() & ~lsfRequireAuth);
+                ac.view().update(root);
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            unauthorizedLine);
+
+        // test: deleting the issuer's account root cannot suppress the check
+        // either -- the root still resolves through its pre-transaction
+        // state.
+        doInvariantCheck(
+            {{"an unauthorized trust line gained funds"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const root = ac.view().peek(keylet::account(g1.id()));
+                if (!root)
+                    return false;
+                ac.view().erase(root);
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            unauthorizedLine);
+
+        // test: a gain under an issuer account root that existed in neither
+        // the pre- nor the post-transaction state -- possible only through a
+        // buggy transactor rewriting the line's limit fields -- leaves
+        // authorization unknowable, so it fails closed with every exemption
+        // withheld.
+        doInvariantCheck(
+            {{"an unauthorized trust line gained funds (missing issuer account root)"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::trustLine(a1, g1["USD"]));
+                if (!sle)
+                    return false;
+                // Repoint the issuer's side of the line at an account that
+                // never existed.
+                Account const phantom{"phantom"};
+                bool const a1IsLow = a1.id() < g1.id();
+                sle->setFieldAmount(a1IsLow ? sfHighLimit : sfLowLimit, phantom["USD"](0));
+                ac.view().update(sle);
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            unauthorizedLine);
+
+        // test: an issuer without lsfRequireAuth needs no authorization.
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return setHolderBalance(a1, ac, 100);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            [&](Account const& a1, Account const&, Env& env) {
+                env.fund(XRP(1000), g1);
+                env.trust(g1["USD"](10000), a1);
+                env.close();
+                return true;
+            });
+
+        // Unauthorized lines with a balance exist in ledger history -- they
+        // predate today's authorization checks (XRPLF/rippled issue #5450).
+        // No valid transaction can recreate that state, so seed it directly
+        // into the open ledger, bypassing the transaction pipeline.
+        auto const seedLegacyBalance = [&](Env& env, Account const& a1, Account const& a2) {
+            env.fund(XRP(1000), a1, a2, g1);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            env.trust(g1["USD"](10000), a1);
+            env.trust(g1["USD"](10000), a2);
+            env(trust(g1, g1["USD"](0), a2, tfSetfAuth));
+            env.close();
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle =
+                    std::make_shared<SLE>(*view.read(keylet::trustLine(a1, g1["USD"])));
+                bool const holderIsLow = a1.id() < g1.id();
+                sle->setFieldAmount(sfBalance, g1["USD"](holderIsLow ? 100 : -100));
+                view.rawReplace(sle);
+                return true;
+            });
+        };
+
+        // test: draining a legacy unauthorized balance stays legal, so the
+        // funds can still be redeemed or clawed back rather than stranded.
+        {
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            Env env = makeEnv(testableAmendments());
+            seedLegacyBalance(env, a1, a2);
+            doInvariantCheck(
+                std::move(env),
+                a1,
+                a2,
+                {},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    return setHolderBalance(a1, ac, 40);
+                },
+                XRPAmount{},
+                STTx{ttPAYMENT, [](STObject& tx) {}},
+                {tesSUCCESS, tesSUCCESS});
+        }
+
+        // test: a legacy unauthorized balance must not grow any further.
+        {
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            Env env = makeEnv(testableAmendments());
+            seedLegacyBalance(env, a1, a2);
+            doInvariantCheck(
+                std::move(env),
+                a1,
+                a2,
+                {{"an unauthorized trust line gained funds"}},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    return setHolderBalance(a1, ac, 150);
+                },
+                XRPAmount{},
+                STTx{ttPAYMENT, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+        }
+
+        // test: a legacy unauthorized balance must not be spent to a third
+        // party, not even an authorized one; only draining back to the
+        // issuer is permitted (post fixCleanup3_5_0 the invariant enforces).
+        {
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            Env env = makeEnv(testableAmendments());
+            seedLegacyBalance(env, a1, a2);
+            doInvariantCheck(
+                std::move(env),
+                a1,
+                a2,
+                {{"an unauthorized trust line spent funds"}},
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    return setHolderBalance(a1, ac, 40) && setHolderBalance(a2, ac, 60);
+                },
+                XRPAmount{},
+                STTx{ttPAYMENT, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+        }
+
+        // test: pre fixCleanup3_5_0 the same spend is logged but the
+        // transaction is not failed -- legacy behavior let an unauthorized
+        // balance be spent to any party.
+        {
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            Env env = makeEnv(testableAmendments() - fixCleanup3_5_0);
+            seedLegacyBalance(env, a1, a2);
+            doInvariantCheck(
+                std::move(env),
+                a1,
+                a2,
+                {{"an unauthorized trust line spent funds"}},
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    return setHolderBalance(a1, ac, 40) && setHolderBalance(a2, ac, 60);
+                },
+                XRPAmount{},
+                STTx{ttPAYMENT, [](STObject& tx) {}},
+                {tesSUCCESS, tesSUCCESS});
+        }
+
+        // test: cashing out a legacy unauthorized balance on the DEX is the
+        // same spend, just initiated by the taker. Post fixCleanup3_5_0 the
+        // unauthorized balance reads as zero in accountFunds, so the offer
+        // cannot even be placed and the book stays clean of landmines; pre
+        // amendment the offer places and the taker's crossing succeeds.
+        for (bool const withCleanup : {true, false})
+        {
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            Env env = makeEnv(
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
+            seedLegacyBalance(env, a1, a2);
+
+            // a1 offers the unauthorized USD for XRP.
+            if (withCleanup)
+            {
+                env(offer(a1, XRP(50), g1["USD"](50)), Ter(tecUNFUNDED_OFFER));
+
+                // With nothing to cross, a2's offer just joins the book.
+                env(offer(a2, g1["USD"](50), XRP(50)));
+                BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](0));
+            }
+            else
+            {
+                env(offer(a1, XRP(50), g1["USD"](50)));
+
+                // a2 -- authorized, and doing nothing wrong -- takes it.
+                env(offer(a2, g1["USD"](50), XRP(50)));
+                BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](50));
+            }
+        }
+
+        // test: a payment crossing the line balance through zero would turn
+        // the holder into an unauthorized holder. Historically the
+        // transactor's auth gate (DirectIPaymentStep::check) only fired on
+        // an exactly-zero balance, waving the payment through on the
+        // strength of the pre-existing opposite-direction balance. Both
+        // behaviors documented: post fixCleanup3_5_0 the engine delivers the
+        // redeemable part and then goes dry, so a payment asking for more
+        // cannot complete; pre amendment it succeeds and mints an
+        // unauthorized balance.
+        for (bool const withCleanup : {true, false})
+        {
+            Env env = makeEnv(
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1, g1);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            // Both sides extend trust for USD on the one shared line; g1
+            // never authorizes a1.
+            env(trust(g1, a1["USD"](1000)));
+            env(trust(a1, g1["USD"](1000)));
+            env.close();
+            // a1 issues 5 USD to g1: g1 is the holder here, a1 requires no
+            // authorization, and the shared line's balance is now nonzero.
+            env(pay(a1, g1, a1["USD"](5)));
+            env.close();
+            // g1 pays 10 USD: 5 redeem g1's holdings and the other 5 would
+            // make the unauthorized a1 a holder of g1's IOU.
+            if (withCleanup)
+            {
+                // Only the 5 redeemable units are available, so the strand
+                // goes dry short of the requested amount and the whole
+                // payment fails without touching the balance. An
+                // unauthorized balance being invisible to a funding check
+                // is the same shape as the tecPATH_PARTIAL that
+                // accountHolds(ZeroIfUnauthorized) produces elsewhere.
+                env(pay(g1, a1, g1["USD"](10)), Ter(tecPATH_PARTIAL));
+                env.close();
+                BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](-5));
+
+                // Redeeming exactly what g1 holds creates no unauthorized
+                // balance, so it stays legal and drains the line to zero.
+                env(pay(g1, a1, g1["USD"](5)));
+                env.close();
+                BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](0));
+
+                // With the line at zero there is nothing left to redeem, so
+                // any further receive is the plain unauthorized-receive case.
+                env(pay(g1, a1, g1["USD"](1)), Ter(tecNO_AUTH));
+                env.close();
+                BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](0));
+            }
+            else
+            {
+                env(pay(g1, a1, g1["USD"](10)));
+                env.close();
+                BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](5));
+            }
+        }
+
+        // test: fully withdrawing an AMM that holds a RequireAuth IOU
+        // deletes the AMM pseudo-account together with its trust lines in
+        // the same transaction; the deleted pseudo-account must remain
+        // exempt even though it is gone from the post-transaction view.
+        {
+            Env env = makeEnv(testableAmendments());
+            Account const alice{"alice"};
+            env.fund(XRP(30000), g1, alice);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            env(trust(alice, g1["USD"](10000)));
+            env(trust(g1, g1["USD"](0), alice, tfSetfAuth));
+            env(pay(g1, alice, g1["USD"](1000)));
+            env.close();
+
+            AMM amm(env, alice, XRP(100), g1["USD"](100));
+            BEAST_EXPECT(amm.ammExists());
+            amm.withdrawAll(alice);
+            BEAST_EXPECT(!amm.ammExists());
+        }
+
+        // test: pseudo-accounts are implicitly authorized (mirroring
+        // requireAuth). The vault deposit in preclose already exercises the
+        // exemption under real transactions -- the vault pseudo-account's
+        // line to g1 gains funds carrying no authorization flag -- and the
+        // precheck then grows the same line directly.
+        std::optional<Keylet> vaultKeylet;
+        doInvariantCheck(
+            {},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                if (!vaultKeylet)
+                    return false;
+                auto const vaultSle = ac.view().read(*vaultKeylet);
+                if (!vaultSle)
+                    return false;
+                AccountID const pseudo = vaultSle->at(sfAccount);
+                auto const sle =
+                    ac.view().peek(keylet::trustLine(pseudo, g1.id(), g1["USD"].currency));
+                if (!sle)
+                    return false;
+                bool const pseudoIsLow = pseudo < g1.id();
+                sle->setFieldAmount(sfBalance, g1["USD"](pseudoIsLow ? 150 : -150));
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                authorizedLine(a1, a2, env);
+                env(pay(g1, a1, g1["USD"](500)));
+                env.close();
+                Vault const vault{env};
+                auto const [tx, keylet] = vault.create({.owner = a1, .asset = Issue{g1["USD"]}});
+                vaultKeylet = keylet;
+                env(tx);
+                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = g1["USD"](100)}));
+                env.close();
+                return env.le(keylet) != nullptr;
+            });
+    }
+
+    void
+    testValidTrustLineAuthLPTokens()
+    {
+        using namespace test::jtx;
+        testcase << "unauthorized LPToken gains";
+
+        Account const g1{"G1"};
+        std::optional<Issue> lpIssue;
+
+        // Preclose: g1 requires authorization for USD; a1 (authorized)
+        // creates an XRP/USD pool; a2 opens an LPToken line but is never
+        // authorized for USD.
+        auto const ammWithUnauthorizedHolder = [&](Account const& a1, Account const& a2, Env& env) {
+            env.fund(XRP(1000), g1);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            env(trust(g1, g1["USD"](0), a1, tfSetfAuth));
+            env.trust(g1["USD"](1000), a1);
+            env.close();
+            env(pay(g1, a1, g1["USD"](100)));
+            env.close();
+            AMM const amm(env, a1, XRP(100), g1["USD"](100));
+            lpIssue = amm.lptIssue();
+            env.trust(STAmount{*lpIssue, 1000}, a2);
+            env.close();
+            return true;
+        };
+
+        // Overwrite a2's LPToken balance directly, bypassing every
+        // transactor gate; only the invariant remains.
+        auto const gainLPTokens = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            if (!lpIssue)
+                return false;
+            auto const sle = ac.view().peek(keylet::trustLine(a2, *lpIssue));
+            if (!sle)
+                return false;
+            STAmount balance{*lpIssue, 10};
+            if (a2.id() > lpIssue->account)
+                balance.negate();
+            sle->setFieldAmount(sfBalance, balance);
+            ac.view().update(sle);
+            return true;
+        };
+
+        // test: post fixCleanup3_5_0 an LPToken gain by a receiver not
+        // authorized for both pool assets is rejected.
+        doInvariantCheck(
+            {{"an account gained LPTokens without authorization for the AMM's assets"}},
+            gainLPTokens,
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            ammWithUnauthorizedHolder);
+
+        // test: pre-amendment the same gain is logged but not failed.
+        lpIssue.reset();
+        doInvariantCheck(
+            makeEnv(testableAmendments() - fixCleanup3_5_0),
+            {{"an account gained LPTokens without authorization for the AMM's assets"}},
+            gainLPTokens,
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            ammWithUnauthorizedHolder);
+    }
+
+    void
+    testUnauthorizedAccountHolds()
+    {
+        using namespace test::jtx;
+        testcase << "accountHolds authorization handling";
+
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+
+        for (bool const withCleanup : {true, false})
+        {
+            Env env = makeEnv(
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
+            env.fund(XRP(1000), a1, a2, g1);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            env.trust(g1["USD"](10000), a1);
+            env.trust(g1["USD"](10000), a2);
+            env(trust(g1, g1["USD"](0), a2, tfSetfAuth));
+            env.close();
+            env(pay(g1, a2, g1["USD"](50)));
+
+            // a1's unauthorized balance is legacy state (XRPLF/rippled issue
+            // #5450); no valid transaction can create it.
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle =
+                    std::make_shared<SLE>(*view.read(keylet::trustLine(a1, g1["USD"])));
+                bool const holderIsLow = a1.id() < g1.id();
+                sle->setFieldAmount(sfBalance, g1["USD"](holderIsLow ? 100 : -100));
+                view.rawReplace(sle);
+                return true;
+            });
+
+            auto const& view = *env.current();
+            auto const j = env.journal;
+            Issue const usd = g1["USD"];
+
+            // IgnoreAuth always reports the raw balance.
+            BEAST_EXPECT(
+                accountHolds(
+                    view, a1, usd, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j) ==
+                g1["USD"](100));
+
+            // ZeroIfUnauthorized hides the unauthorized balance, but only
+            // once fixCleanup3_5_0 is enabled.
+            BEAST_EXPECT(
+                accountHolds(
+                    view,
+                    a1,
+                    usd,
+                    FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::ZeroIfUnauthorized,
+                    j) == (withCleanup ? g1["USD"](0) : g1["USD"](100)));
+
+            // An authorized holder is unaffected either way.
+            BEAST_EXPECT(
+                accountHolds(
+                    view,
+                    a2,
+                    usd,
+                    FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::ZeroIfUnauthorized,
+                    j) == g1["USD"](50));
+        }
+    }
+
+    void
+    testLegacyUnauthorizedEndToEnd()
+    {
+        using namespace test::jtx;
+        testcase << "legacy unauthorized balance end to end";
+
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+
+        // Start pre-amendment, with the NFT authorization gap still open:
+        // this is the very flow that created the unauthorized balances of
+        // XRPLF/rippled issue #5450.
+        Env env = makeEnv(testableAmendments() - fixEnforceNFTokenTrustlineV2 - fixCleanup3_5_0);
+        env.fund(XRP(10000), g1, a1, a2);
+        env(fset(g1, asfRequireAuth));
+        env.close();
+        env(trust(a1, g1["USD"](10000)));
+        env(trust(g1, g1["USD"](0), a1, tfSetfAuth));
+        env(pay(g1, a1, g1["USD"](1000)));
+        env(trust(a2, g1["USD"](10000)));
+        env.close();
+
+        // a2 sells an NFT to the authorized a1 for USD and legally ends up
+        // holding 10 USD without authorization.
+        uint256 const nftID = token::getNextID(env, a2, 0u, tfTransferable);
+        env(token::mint(a2, 0), Txflags(tfTransferable));
+        env.close();
+        uint256 const sellIdx = keylet::nftokenOffer(a2, SeqProxy::rawSequence(env.seq(a2))).key;
+        env(token::createOffer(a2, nftID, g1["USD"](10)), Txflags(tfSellNFToken));
+        env.close();
+        env(token::acceptSellOffer(a1, sellIdx));
+        env.close();
+        BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](10));
+
+        // a2 parks an offer selling the unauthorized USD; pre-amendment the
+        // offer is funded and rests in the book.
+        auto const staleOffer = keylet::offer(a2.id(), SeqProxy::rawSequence(env.seq(a2)));
+        env(offer(a2, XRP(10), g1["USD"](10)));
+        env.close();
+        BEAST_EXPECT(env.le(staleOffer));
+
+        // The amendment activates with the stale state in place.
+        env.enableFeature(fixCleanup3_5_0);
+        env.close();
+
+        // The raw balance is untouched, but funding-style reads see zero.
+        BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](10));
+        Issue const usd = g1["USD"];
+        BEAST_EXPECT(
+            accountHolds(
+                *env.current(),
+                a2,
+                usd,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
+                env.journal) == g1["USD"](0));
+
+        // a1 crosses the stale offer: it is removed as unfunded, nothing
+        // trades, and a1's own offer rests. No third party eats a failure
+        // for touching the leftover.
+        auto const a1Offer = keylet::offer(a1.id(), SeqProxy::rawSequence(env.seq(a1)));
+        env(offer(a1, g1["USD"](10), XRP(10)));
+        env.close();
+        BEAST_EXPECT(!env.le(staleOffer));
+        BEAST_EXPECT(env.le(a1Offer));
+        BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](10));
+
+        // Spending to a third party is rejected by the payment engine
+        // itself: the strand spends the unauthorized balance past the
+        // issuer, so DirectStepI::check fails it cleanly.
+        env(pay(a2, a1, g1["USD"](5)), Ter(tecNO_AUTH));
+        env.close();
+
+        // Converting the balance is spending it too: the USD hop of a
+        // cross-currency payment is not the strand's last step, so the same
+        // gate rejects it.
+        env(pay(a2, a2, XRP(5)), Sendmax(g1["USD"](5)), Ter(tecNO_AUTH));
+        env.close();
+
+        // Receiving more is rejected by the payment engine as well: post
+        // fixCleanup3_5_0 the grandfather clause no longer lets a nonzero
+        // unauthorized line receive.
+        env(pay(a1, a2, g1["USD"](5)), Ter(tecNO_AUTH));
+        env.close();
+
+        // A check to a third party cannot be cashed against the invisible
+        // balance...
+        uint256 const chkToA1 = keylet::check(a2.id(), SeqProxy::rawSequence(env.seq(a2))).key;
+        env(check::create(a2, a1, g1["USD"](5)));
+        env.close();
+        env(check::cash(a1, chkToA1, g1["USD"](5)), Ter(tecPATH_PARTIAL));
+        env.close();
+
+        // ...but the issuer cashing a check is a redemption and stays legal.
+        uint256 const chkToG1 = keylet::check(a2.id(), SeqProxy::rawSequence(env.seq(a2))).key;
+        env(check::create(a2, g1, g1["USD"](4)));
+        env.close();
+        env(check::cash(g1, chkToG1, g1["USD"](4)));
+        env.close();
+        BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](6));
+
+        // Returning the rest to the issuer stays legal and drains the
+        // legacy state for good.
+        env(pay(a2, g1, g1["USD"](6)));
+        env.close();
+        BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](0));
+
+        // And nothing is left to fund a new offer.
+        env(offer(a2, XRP(10), g1["USD"](10)), Ter(tecUNFUNDED_OFFER));
+    }
+
+    void
+    testUnauthorizedCheckCash()
+    {
+        using namespace test::jtx;
+        testcase << "checks written against an unauthorized balance";
+
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+
+        for (bool const withCleanup : {true, false})
+        {
+            Env env = makeEnv(
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
+            env.fund(XRP(1000), a1, a2, g1);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            env.trust(g1["USD"](10000), a1);
+            env.trust(g1["USD"](10000), a2);
+            env(trust(g1, g1["USD"](0), a2, tfSetfAuth));
+            env.close();
+
+            // Seed a1's legacy unauthorized balance into the open ledger; no
+            // close from here on, or the raw state is lost.
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle =
+                    std::make_shared<SLE>(*view.read(keylet::trustLine(a1, g1["USD"])));
+                bool const holderIsLow = a1.id() < g1.id();
+                sle->setFieldAmount(sfBalance, g1["USD"](holderIsLow ? 100 : -100));
+                view.rawReplace(sle);
+                return true;
+            });
+
+            // a1 writes checks to the authorized a2 and to the issuer.
+            uint256 const toA2 = keylet::check(a1.id(), SeqProxy::rawSequence(env.seq(a1))).key;
+            env(check::create(a1, a2, g1["USD"](5)));
+            uint256 const toG1 = keylet::check(a1.id(), SeqProxy::rawSequence(env.seq(a1))).key;
+            env(check::create(a1, g1, g1["USD"](4)));
+
+            // Post fixCleanup3_5_0 the writer's unauthorized balance reads
+            // as zero for a third-party casher; pre amendment the legacy
+            // balance is spendable.
+            if (withCleanup)
+            {
+                env(check::cash(a2, toA2, g1["USD"](5)), Ter(tecPATH_PARTIAL));
+                BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](100));
+            }
+            else
+            {
+                env(check::cash(a2, toA2, g1["USD"](5)));
+                BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](95));
+                BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](5));
+            }
+
+            // The issuer cashing a check is a redemption and works in both
+            // eras.
+            env(check::cash(g1, toG1, g1["USD"](4)));
+            BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](withCleanup ? 96 : 91));
+        }
+    }
+
+    void
+    testUnauthorizedEmptyLineReceive()
+    {
+        using namespace test::jtx;
+        testcase << "unauthorized empty line cannot receive";
+
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+
+        for (bool const withCleanup : {true, false})
+        {
+            Env env = makeEnv(
+                withCleanup ? testableAmendments() : testableAmendments() - fixCleanup3_5_0);
+            env.fund(XRP(1000), a1, g1);
+            env(fset(g1, asfRequireAuth));
+            env.close();
+            // a1 opens the line; g1 never authorizes it. Balance is zero.
+            env.trust(g1["USD"](10000), a1);
+            env.close();
+
+            // Post fixCleanup3_5_0 the engine answers a final tecNO_AUTH;
+            // before it, the retriable terNO_AUTH left a dry path.
+            env(pay(g1, a1, g1["USD"](5)), Ter(withCleanup ? TER{tecNO_AUTH} : TER{tecPATH_DRY}));
+            env.close();
+            BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](0));
+
+            // Authorization repairs it either way.
+            env(trust(g1, g1["USD"](0), a1, tfSetfAuth));
+            env.close();
+            env(pay(g1, a1, g1["USD"](5)));
+            env.close();
+            BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](5));
+        }
+    }
+
+    void
+    testUnauthorizedOwnIssuance()
+    {
+        using namespace test::jtx;
+        testcase << "unauthorized holder may still spend its own issuance";
+
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+
+        Env env = makeEnv(testableAmendments());
+        env.fund(XRP(1000), g1, a1, a2);
+        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfDefaultRipple));
+        env.close();
+
+        // g1 extends credit to a2 on their shared USD line; the line carries
+        // no issuer-side auth flag, so a2 is unauthorized for g1's USD --
+        // but the same line can still carry a2's own issuance to g1.
+        env(trust(g1, a2["USD"](100)));
+        env(trust(a1, g1["USD"](100)));
+        env(trust(g1, g1["USD"](0), a1, tfSetfAuth));
+        env.close();
+
+        // a2 pays a1 in g1's USD funded purely by a2's own issuance: on the
+        // a2 -> g1 hop the balance favors g1 (g1 holds a2's IOU), so the
+        // spend gate must not fire.
+        env(pay(a2, a1, g1["USD"](5)));
+        env.close();
+        BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](5));
+        BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](-5));
+    }
+
+    void
     run() override
     {
         testNoXRPTrustLine();
         testNoDeepFreezeTrustLinesWithoutFreeze();
         testTransfersNotFrozen();
+        testValidTrustLineAuth();
+        testValidTrustLineAuthLPTokens();
+        testUnauthorizedAccountHolds();
+        testLegacyUnauthorizedEndToEnd();
+        testUnauthorizedCheckCash();
+        testUnauthorizedEmptyLineReceive();
+        testUnauthorizedOwnIssuance();
     }
 };
 
