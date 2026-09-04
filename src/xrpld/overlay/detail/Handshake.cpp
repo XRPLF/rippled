@@ -100,7 +100,7 @@ makeFeaturesRequestHeader(
 
 std::string
 makeFeaturesResponseHeader(
-    http_request_type const& headers,
+    HttpRequestType const& headers,
     bool comprEnabled,
     bool ledgerReplayEnabled,
     bool txReduceRelayEnabled,
@@ -144,15 +144,15 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     if (len < kSslMinimumFinishedLength)
         return std::nullopt;
 
-    sha512_hasher const h;
+    Sha512Hasher const h;
 
     BaseUInt<512> cookie;
     SHA512(buf, len, cookie.data());
     return cookie;
 }
 
-std::optional<uint256>
-makeSharedValue(stream_type& ssl, beast::Journal journal)
+std::optional<UInt256>
+makeSharedValue(StreamType& ssl, beast::Journal journal)
 {
     auto const cookie1 = hashLastMessage(ssl.native_handle(), SSL_get_finished);
     if (!cookie1)
@@ -184,7 +184,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 void
 buildHandshake(
     boost::beast::http::fields& h,
-    xrpl::uint256 const& sharedValue,
+    xrpl::UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::ip::Address publicIp,
     beast::ip::Address remoteIp,
@@ -229,7 +229,7 @@ buildHandshake(
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
-    xrpl::uint256 const& sharedValue,
+    xrpl::UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::ip::Address publicIp,
     beast::ip::Address remote,
@@ -368,9 +368,9 @@ makeRequest(
     bool comprEnabled,
     bool ledgerReplayEnabled,
     bool txReduceRelayEnabled,
-    bool vpReduceRelayEnabled) -> request_type
+    bool vpReduceRelayEnabled) -> RequestType
 {
-    request_type m;
+    RequestType m;
     m.method(boost::beast::http::verb::get);
     m.target("/");
     m.version(11);
@@ -386,18 +386,18 @@ makeRequest(
     return m;
 }
 
-http_response_type
+HttpResponseType
 makeResponse(
     bool crawlPublic,
-    http_request_type const& req,
+    HttpRequestType const& req,
     beast::ip::Address publicIp,
     beast::ip::Address remoteIp,
-    uint256 const& sharedValue,
+    UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion protocol,
     Application& app)
 {
-    http_response_type resp;
+    HttpResponseType resp;
     resp.result(boost::beast::http::status::switching_protocols);
     resp.version(req.version());
     resp.insert("Connection", "Upgrade");

@@ -371,7 +371,7 @@ STObject::isEquivalent(STBase const& t) const
     });
 }
 
-uint256
+UInt256
 STObject::getHash(HashPrefix prefix) const
 {
     Serializer s;
@@ -380,7 +380,7 @@ STObject::getHash(HashPrefix prefix) const
     return s.getSHA512Half();
 }
 
-uint256
+UInt256
 STObject::getSigningHash(HashPrefix prefix) const
 {
     Serializer s;
@@ -609,25 +609,25 @@ STObject::getFieldU64(SField const& field) const
     return getFieldByValue<STUInt64>(field);
 }
 
-uint128
+UInt128
 STObject::getFieldH128(SField const& field) const
 {
     return getFieldByValue<STUInt128>(field);
 }
 
-uint160
+UInt160
 STObject::getFieldH160(SField const& field) const
 {
     return getFieldByValue<STUInt160>(field);
 }
 
-uint192
+UInt192
 STObject::getFieldH192(SField const& field) const
 {
     return getFieldByValue<STUInt192>(field);
 }
 
-uint256
+UInt256
 STObject::getFieldH256(SField const& field) const
 {
     return getFieldByValue<STUInt256>(field);
@@ -752,19 +752,19 @@ STObject::setFieldU64(SField const& field, std::uint64_t v)
 }
 
 void
-STObject::setFieldH128(SField const& field, uint128 const& v)
+STObject::setFieldH128(SField const& field, UInt128 const& v)
 {
     setFieldUsingSetValue<STUInt128>(field, v);
 }
 
 void
-STObject::setFieldH192(SField const& field, uint192 const& v)
+STObject::setFieldH192(SField const& field, UInt192 const& v)
 {
     setFieldUsingSetValue<STUInt192>(field, v);
 }
 
 void
-STObject::setFieldH256(SField const& field, uint256 const& v)
+STObject::setFieldH256(SField const& field, UInt256 const& v)
 {
     setFieldUsingSetValue<STUInt256>(field, v);
 }

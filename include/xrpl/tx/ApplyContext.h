@@ -29,7 +29,7 @@ public:
     explicit ApplyContext(
         ServiceRegistry& registry,
         OpenView& base,
-        std::optional<uint256 const> const& parentBatchId,
+        std::optional<UInt256 const> const& parentBatchId,
         STTx const& tx,
         TER preclaimResult,
         XRPAmount baseFee,
@@ -117,10 +117,10 @@ public:
     void
     visit(
         std::function<void(
-            uint256 const& key,
+            UInt256 const& key,
             bool isDelete,
-            SLE::const_ref before,
-            SLE::const_ref after)> const& func);
+            SLE::ConstRef before,
+            SLE::ConstRef after)> const& func);
 
     void
     destroyXRP(XRPAmount const& fee)
@@ -144,7 +144,7 @@ private:
     std::optional<ApplyViewImpl> view_;
 
     // The ID of the batch transaction we are executing under, if set.
-    std::optional<uint256 const> parentBatchId_;
+    std::optional<UInt256 const> parentBatchId_;
 };
 
 }  // namespace xrpl

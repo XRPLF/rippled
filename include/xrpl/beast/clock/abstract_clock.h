@@ -39,7 +39,7 @@ public:
     using period = Clock::period;
     using duration = Clock::duration;
     using time_point = Clock::time_point;
-    using clock_type = Clock;
+    using ClockType = Clock;
 
     static bool const is_steady = Clock::is_steady;  // NOLINT(readability-identifier-naming)
 

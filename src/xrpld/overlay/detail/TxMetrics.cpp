@@ -78,7 +78,7 @@ SingleMetrics::addMetrics(std::uint32_t val)
     using namespace std::chrono_literals;
     accum += val;
     n++;
-    auto const timeElapsed = clock_type::now() - intervalStart;
+    auto const timeElapsed = ClockType::now() - intervalStart;
     auto const timeElapsedInSecs = std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
 
     if (timeElapsedInSecs >= 1s)
@@ -90,7 +90,7 @@ SingleMetrics::addMetrics(std::uint32_t val)
             std::accumulate(rollingAvgAggregate.begin(), rollingAvgAggregate.end(), 0ull);
         rollingAvg = total / rollingAvgAggregate.size();
 
-        intervalStart = clock_type::now();
+        intervalStart = ClockType::now();
         accum = 0;
         n = 0;
     }

@@ -301,15 +301,15 @@ public:
     //--------------------------------------------------------------------------
 
     // ordered
-    template <class Base, bool IsUnordered = Base::is_unordered::value>
+    template <class Base, bool IsUnordered = Base::IsUnorderedType::value>
     struct ContType
     {
         template <
             class Compare = std::less<typename Base::Key>,
             class Allocator = std::allocator<typename Base::Value>>
         using Cont = detail::AgedOrderedContainer<
-            Base::is_multi::value,
-            Base::is_map::value,
+            Base::IsMultiType::value,
+            Base::IsMapType::value,
             typename Base::Key,
             typename Base::T,
             typename Base::Clock,
@@ -326,8 +326,8 @@ public:
             class KeyEqual = std::equal_to<typename Base::Key>,
             class Allocator = std::allocator<typename Base::Value>>
         using Cont = detail::AgedUnorderedContainer<
-            Base::is_multi::value,
-            Base::is_map::value,
+            Base::IsMultiType::value,
+            Base::IsMapType::value,
             typename Base::Key,
             typename Base::T,
             typename Base::Clock,
@@ -356,9 +356,9 @@ public:
     public:
         using typename Base::Key;
 
-        using is_unordered = std::integral_constant<bool, IsUnordered>;
-        using is_multi = std::integral_constant<bool, IsMulti>;
-        using is_map = std::integral_constant<bool, IsMap>;
+        using IsUnorderedType = std::integral_constant<bool, IsUnordered>;
+        using IsMultiType = std::integral_constant<bool, IsMulti>;
+        using IsMapType = std::integral_constant<bool, IsMap>;
 
         using Alloc = std::allocator<typename Base::Value>;
         using MyAlloc = AllocT<typename Base::Value>;
@@ -381,7 +381,7 @@ public:
     static std::string
     name(Cont const&)
     {
-        return TestTraits<Cont::is_unordered, Cont::is_multi, Cont::is_map>::name();
+        return TestTraits<Cont::IsUnorderedType, Cont::IsMultiType, Cont::IsMapType>::name();
     }
 
     template <class Traits>
@@ -406,12 +406,12 @@ public:
     template <class Container, class Values>
     void
     checkMapContents(Container& c, Values const& v)
-        requires(Container::is_map::value && !Container::is_multi::value);
+        requires(Container::IsMapType::value && !Container::IsMultiType::value);
 
     template <class Container, class Values>
     void
     checkMapContents(Container, Values const&)
-        requires(!(Container::is_map::value && !Container::is_multi::value))
+        requires(!(Container::IsMapType::value && !Container::IsMultiType::value))
     {
     }
 
@@ -419,12 +419,12 @@ public:
     template <class C, class Values>
     void
     checkUnorderedContentsRefRef(C&& c, Values const& v)
-        requires(std::remove_reference_t<C>::is_unordered::value);
+        requires(std::remove_reference_t<C>::IsUnorderedType::value);
 
     template <class C, class Values>
     void
     checkUnorderedContentsRefRef(C&&, Values const&)
-        requires(!std::remove_reference_t<C>::is_unordered::value)
+        requires(!std::remove_reference_t<C>::IsUnorderedType::value)
     {
     }
 
@@ -636,7 +636,7 @@ public:
 template <class Container, class Values>
 void
 AgedAssociativeContainerTestBase::checkMapContents(Container& c, Values const& v)
-    requires(Container::is_map::value && !Container::is_multi::value)
+    requires(Container::IsMapType::value && !Container::IsMultiType::value)
 {
     if (v.empty())
     {
@@ -663,11 +663,11 @@ AgedAssociativeContainerTestBase::checkMapContents(Container& c, Values const& v
 template <class C, class Values>
 void
 AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values const& v)
-    requires(std::remove_reference_t<C>::is_unordered::value)
+    requires(std::remove_reference_t<C>::IsUnorderedType::value)
 {
     using Cont = std::remove_reference_t<C>;
     using Traits =
-        TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
+        TestTraits<Cont::IsUnorderedType::value, Cont::IsMultiType::value, Cont::IsMapType::value>;
     using size_type = Cont::size_type;
     auto const hash(c.hashFunction());
     auto const keyEq(c.keyEq());
@@ -722,7 +722,7 @@ void
 AgedAssociativeContainerTestBase::checkContents(Cont& c)
 {
     using Traits =
-        TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
+        TestTraits<Cont::IsUnorderedType::value, Cont::IsMultiType::value, Cont::IsMapType::value>;
     using Values = Traits::Values;
     checkContents(c, Values());
 }
@@ -1763,42 +1763,42 @@ public:
     using T = int;
 
     static_assert(
-        std::is_same_v<aged_set<Key>, detail::AgedOrderedContainer<false, false, Key, void>>,
+        std::is_same_v<AgedSet<Key>, detail::AgedOrderedContainer<false, false, Key, void>>,
         "bad alias: aged_set");
 
     static_assert(
-        std::is_same_v<aged_multiset<Key>, detail::AgedOrderedContainer<true, false, Key, void>>,
+        std::is_same_v<AgedMultiset<Key>, detail::AgedOrderedContainer<true, false, Key, void>>,
         "bad alias: aged_multiset");
 
     static_assert(
-        std::is_same_v<aged_map<Key, T>, detail::AgedOrderedContainer<false, true, Key, T>>,
+        std::is_same_v<AgedMap<Key, T>, detail::AgedOrderedContainer<false, true, Key, T>>,
         "bad alias: aged_map");
 
     static_assert(
-        std::is_same_v<aged_multimap<Key, T>, detail::AgedOrderedContainer<true, true, Key, T>>,
+        std::is_same_v<AgedMultimap<Key, T>, detail::AgedOrderedContainer<true, true, Key, T>>,
         "bad alias: aged_multimap");
 
     static_assert(
         std::is_same_v<
-            aged_unordered_set<Key>,
+            AgedUnorderedSet<Key>,
             detail::AgedUnorderedContainer<false, false, Key, void>>,
         "bad alias: aged_unordered_set");
 
     static_assert(
         std::is_same_v<
-            aged_unordered_multiset<Key>,
+            AgedUnorderedMultiset<Key>,
             detail::AgedUnorderedContainer<true, false, Key, void>>,
         "bad alias: aged_unordered_multiset");
 
     static_assert(
         std::is_same_v<
-            aged_unordered_map<Key, T>,
+            AgedUnorderedMap<Key, T>,
             detail::AgedUnorderedContainer<false, true, Key, T>>,
         "bad alias: aged_unordered_map");
 
     static_assert(
         std::is_same_v<
-            aged_unordered_multimap<Key, T>,
+            AgedUnorderedMultimap<Key, T>,
             detail::AgedUnorderedContainer<true, true, Key, T>>,
         "bad alias: aged_unordered_multimap");
 

@@ -43,7 +43,7 @@ SignerEntries::deserialize(STObject const& obj, beast::Journal journal, std::str
         // Extract SignerEntry fields.
         AccountID const account = sEntry.getAccountID(sfAccount);
         std::uint16_t const weight = sEntry.getFieldU16(sfSignerWeight);
-        std::optional<uint256> const tag = sEntry.at(~sfWalletLocator);
+        std::optional<UInt256> const tag = sEntry.at(~sfWalletLocator);
 
         accountVec.emplace_back(account, weight, tag);
     }

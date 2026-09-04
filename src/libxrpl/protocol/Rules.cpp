@@ -109,18 +109,18 @@ createGuards(
 class Rules::Impl
 {
 private:
-    std::unordered_set<uint256, HardenedHash<>> set_;
-    std::optional<uint256> digest_;
-    std::unordered_set<uint256, beast::Uhash<>> const& presets_;
+    std::unordered_set<UInt256, HardenedHash<>> set_;
+    std::optional<UInt256> digest_;
+    std::unordered_set<UInt256, beast::Uhash<>> const& presets_;
 
 public:
-    explicit Impl(std::unordered_set<uint256, beast::Uhash<>> const& presets) : presets_(presets)
+    explicit Impl(std::unordered_set<UInt256, beast::Uhash<>> const& presets) : presets_(presets)
     {
     }
 
     Impl(
-        std::unordered_set<uint256, beast::Uhash<>> const& presets,
-        std::optional<uint256> const& digest,
+        std::unordered_set<UInt256, beast::Uhash<>> const& presets,
+        std::optional<UInt256> const& digest,
         STVector256 const& amendments)
         : digest_(digest), presets_(presets)
     {
@@ -128,14 +128,14 @@ public:
         set_.insert(amendments.begin(), amendments.end());
     }
 
-    [[nodiscard]] std::unordered_set<uint256, beast::Uhash<>> const&
+    [[nodiscard]] std::unordered_set<UInt256, beast::Uhash<>> const&
     presets() const
     {
         return presets_;
     }
 
     [[nodiscard]] bool
-    enabled(uint256 const& feature) const
+    enabled(UInt256 const& feature) const
     {
         if (presets_.contains(feature))
             return true;
@@ -157,27 +157,27 @@ public:
     }
 };
 
-Rules::Rules(std::unordered_set<uint256, beast::Uhash<>> const& presets)
+Rules::Rules(std::unordered_set<UInt256, beast::Uhash<>> const& presets)
     : impl_(std::make_shared<Impl>(presets))
 {
 }
 
 Rules::Rules(
-    std::unordered_set<uint256, beast::Uhash<>> const& presets,
-    std::optional<uint256> const& digest,
+    std::unordered_set<UInt256, beast::Uhash<>> const& presets,
+    std::optional<UInt256> const& digest,
     STVector256 const& amendments)
     : impl_(std::make_shared<Impl>(presets, digest, amendments))
 {
 }
 
-std::unordered_set<uint256, beast::Uhash<>> const&
+std::unordered_set<UInt256, beast::Uhash<>> const&
 Rules::presets() const
 {
     return impl_->presets();
 }
 
 bool
-Rules::enabled(uint256 const& feature) const
+Rules::enabled(UInt256 const& feature) const
 {
     XRPL_ASSERT(impl_, "xrpl::Rules::enabled : initialized");
 
@@ -194,7 +194,7 @@ Rules::operator==(Rules const& other) const
 }
 
 bool
-isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
+isFeatureEnabled(UInt256 const& feature, bool resultIfNoRules)
 {
     auto const& rules = getCurrentTransactionRules();
     if (!rules)
@@ -203,7 +203,7 @@ isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
 }
 
 bool
-isFeatureEnabled(uint256 const& feature)
+isFeatureEnabled(UInt256 const& feature)
 {
     return isFeatureEnabled(feature, false);
 }

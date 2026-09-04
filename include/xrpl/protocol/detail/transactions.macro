@@ -21,7 +21,7 @@
  *     struct TxSettings
  *     {
  *         Delegation delegable{Delegation::NotDelegable};
- *         uint256 amendment{};
+ *         UInt256 amendment{};
  *         Privilege privileges{Privilege::NoPriv};
  *     };
  *

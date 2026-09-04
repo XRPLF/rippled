@@ -137,7 +137,7 @@ doNoRippleCheck(rpc::JsonContext& context)
         }
     }
 
-    forEachItemAfter(*ledger, accountID, uint256(), 0, limit, [&](SLE::const_ref ownedItem) {
+    forEachItemAfter(*ledger, accountID, UInt256(), 0, limit, [&](SLE::ConstRef ownedItem) {
         if (ownedItem->getType() == ltRIPPLE_STATE)
         {
             bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();

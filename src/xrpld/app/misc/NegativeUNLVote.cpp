@@ -36,7 +36,7 @@ NegativeUNLVote::NegativeUNLVote(NodeID const& myId, beast::Journal j) : myId_(m
 void
 NegativeUNLVote::doVoting(
     std::shared_ptr<Ledger const> const& prevLedger,
-    hash_set<PublicKey> const& unlKeys,
+    HashSet<PublicKey> const& unlKeys,
     RCLValidations& validations,
     std::shared_ptr<SHAMap> const& initialSet)
 {
@@ -48,8 +48,8 @@ NegativeUNLVote::doVoting(
 
     // Build NodeID set for internal use.
     // Build NodeID to PublicKey map for lookup before creating ttUNL_MODIFY Tx.
-    hash_set<NodeID> unlNodeIDs;
-    hash_map<NodeID, PublicKey> nidToKeyMap;
+    HashSet<NodeID> unlNodeIDs;
+    HashMap<NodeID, PublicKey> nidToKeyMap;
     for (auto const& k : unlKeys)
     {
         auto nid = calcNodeID(k);
@@ -58,7 +58,7 @@ NegativeUNLVote::doVoting(
     }
 
     // Build a reliability score table of validators
-    if (std::optional<hash_map<NodeID, std::uint32_t>> scoreTable =
+    if (std::optional<HashMap<NodeID, std::uint32_t>> scoreTable =
             buildScoreTable(prevLedger, unlNodeIDs, validations))
     {
         // build next negUnl
@@ -70,7 +70,7 @@ NegativeUNLVote::doVoting(
         if (negUnlToReEnable)
             negUnlKeys.erase(*negUnlToReEnable);
 
-        hash_set<NodeID> negUnlNodeIDs;
+        HashSet<NodeID> negUnlNodeIDs;
         for (auto const& k : negUnlKeys)
         {
             auto nid = calcNodeID(k);
@@ -138,10 +138,10 @@ NegativeUNLVote::addTx(
 }
 
 NodeID
-NegativeUNLVote::choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates)
+NegativeUNLVote::choose(UInt256 const& randomPadData, std::vector<NodeID> const& candidates)
 {
     XRPL_ASSERT(!candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
-    static_assert(NodeID::kBytes <= uint256::kBytes);
+    static_assert(NodeID::kBytes <= UInt256::kBytes);
     NodeID const randomPad = NodeID::fromVoid(randomPadData.data());
     NodeID txNodeID = candidates[0];
     for (int j = 1; j < candidates.size(); ++j)
@@ -154,10 +154,10 @@ NegativeUNLVote::choose(uint256 const& randomPadData, std::vector<NodeID> const&
     return txNodeID;
 }
 
-std::optional<hash_map<NodeID, std::uint32_t>>
+std::optional<HashMap<NodeID, std::uint32_t>>
 NegativeUNLVote::buildScoreTable(
     std::shared_ptr<Ledger const> const& prevLedger,
-    hash_set<NodeID> const& unl,
+    HashSet<NodeID> const& unl,
     RCLValidations& validations)
 {
     // Find agreed validation messages received for
@@ -186,7 +186,7 @@ NegativeUNLVote::buildScoreTable(
     }
 
     // have enough ledger ancestors, build the score table
-    hash_map<NodeID, std::uint32_t> scoreTable;
+    HashMap<NodeID, std::uint32_t> scoreTable;
     for (auto const& k : unl)
     {
         scoreTable[k] = 0;
@@ -234,9 +234,9 @@ NegativeUNLVote::buildScoreTable(
 
 NegativeUNLVote::Candidates
 NegativeUNLVote::findAllCandidates(
-    hash_set<NodeID> const& unl,
-    hash_set<NodeID> const& negUnl,
-    hash_map<NodeID, std::uint32_t> const& scoreTable)
+    HashSet<NodeID> const& unl,
+    HashSet<NodeID> const& negUnl,
+    HashMap<NodeID, std::uint32_t> const& scoreTable)
 {
     // Compute if need to find more validators to disable
     auto const canAdd = [&]() -> bool {
@@ -307,7 +307,7 @@ NegativeUNLVote::findAllCandidates(
 }
 
 void
-NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted)
+NegativeUNLVote::newValidators(LedgerIndex seq, HashSet<NodeID> const& nowTrusted)
 {
     std::scoped_lock const lock(mutex_);
     for (auto const& n : nowTrusted)

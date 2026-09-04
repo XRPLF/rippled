@@ -90,7 +90,7 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass);
 bool
 verifyPubKeyAndSeq(
     std::shared_ptr<Ledger const> const& l,
-    hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq);
+    HashMap<PublicKey, std::uint32_t> nUnlLedgerSeq);
 
 /**
  * Count the number of Tx in a TxSet
@@ -240,12 +240,12 @@ class NegativeUNL_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
 
         // Record the public keys and ledger sequences of expected negative UNL
         // validators when we build the ledger history
-        hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq;
+        HashMap<PublicKey, std::uint32_t> nUnlLedgerSeq;
 
         {
             //(1) the ledger after genesis, not a flag ledger
@@ -288,7 +288,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(l->validatorToDisable() == publicKeys[0]);
                 //++ first ToDisable Tx in ledger's TxSet
-                uint256 const txID = txDisable0.getTransactionID();
+                UInt256 const txID = txDisable0.getTransactionID();
                 BEAST_EXPECT(l->txExists(txID));
             }
         }
@@ -570,12 +570,12 @@ struct NetworkHistory
     bool
     createLedgerHistory()
     {
-        static uint256 kFakeAmendment;  // So we have different genesis ledgers
+        static UInt256 kFakeAmendment;  // So we have different genesis ledgers
         auto l = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{kFakeAmendment++},
+            std::vector<UInt256>{kFakeAmendment++},
             env.app().getNodeFamily());
         history.push_back(l);
 
@@ -683,9 +683,9 @@ struct NetworkHistory
     Parameter param;
     RCLValidations& validations;
     std::vector<PublicKey> unlKeys;
-    hash_set<PublicKey> unlKeySet;
+    HashSet<PublicKey> unlKeySet;
     std::vector<NodeID> unlNodeIDs;
-    hash_set<NodeID> unlNodeIdSet;
+    HashSet<NodeID> unlNodeIdSet;
     LedgerHistory history;
     bool goodHistory;
 };
@@ -755,8 +755,8 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
         NodeID const myId(0xA0);
         NegativeUNLVote const vote(myId, env.journal);
 
-        uint256 const pad0(0);
-        uint256 const padF = ~pad0;
+        UInt256 const pad0(0);
+        UInt256 const padF = ~pad0;
         NodeID const n1(1);
         NodeID const n2(2);
         NodeID const n3(3);
@@ -958,9 +958,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
     static bool
     checkCandidateSizes(
         NegativeUNLVote& vote,
-        hash_set<NodeID> const& unl,
-        hash_set<NodeID> const& negUnl,
-        hash_map<NodeID, std::uint32_t> const& scoreTable,
+        HashSet<NodeID> const& unl,
+        HashSet<NodeID> const& negUnl,
+        HashMap<NodeID, std::uint32_t> const& scoreTable,
         std::size_t numDisable,
         std::size_t numReEnable)
     {
@@ -999,12 +999,12 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
              .hasToReEnable = false,
              .numLedgers = 0}};
 
-        hash_set<NodeID> negUnl012;
+        HashSet<NodeID> negUnl012;
         for (std::uint32_t i = 0; i < 3; ++i)
             negUnl012.insert(history.unlNodeIDs[i]);
 
         // build a good scoreTable to use, or copy and modify
-        hash_map<NodeID, std::uint32_t> goodScoreTable;
+        HashMap<NodeID, std::uint32_t> goodScoreTable;
         for (auto const& n : history.unlNodeIDs)
             goodScoreTable[n] = NegativeUNLVote::kNegativeUnlHighWaterMark + 1;
 
@@ -1017,7 +1017,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
         }
         {
             // all bad scores
-            hash_map<NodeID, std::uint32_t> scoreTable;
+            HashMap<NodeID, std::uint32_t> scoreTable;
             for (auto& n : history.unlNodeIDs)
                 scoreTable[n] = NegativeUNLVote::kNegativeUnlLowWaterMark - 1;
             BEAST_EXPECT(
@@ -1025,7 +1025,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
         }
         {
             // all between watermarks
-            hash_map<NodeID, std::uint32_t> scoreTable;
+            HashMap<NodeID, std::uint32_t> scoreTable;
             for (auto& n : history.unlNodeIDs)
                 scoreTable[n] = NegativeUNLVote::kNegativeUnlLowWaterMark + 1;
             BEAST_EXPECT(
@@ -1052,7 +1052,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
         {
             // 2 in negUnl but not in unl, have a remove candidate from score
             // table
-            hash_set<NodeID> unlTemp = history.unlNodeIdSet;
+            HashSet<NodeID> unlTemp = history.unlNodeIdSet;
             unlTemp.erase(history.unlNodeIDs[0]);
             unlTemp.erase(history.unlNodeIDs[1]);
             BEAST_EXPECT(checkCandidateSizes(vote, unlTemp, negUnl012, goodScoreTable, 0, 3));
@@ -1064,7 +1064,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
             scoreTable.erase(history.unlNodeIDs[0]);
             scoreTable.erase(history.unlNodeIDs[1]);
             scoreTable[history.unlNodeIDs[2]] = NegativeUNLVote::kNegativeUnlLowWaterMark + 1;
-            hash_set<NodeID> unlTemp = history.unlNodeIdSet;
+            HashSet<NodeID> unlTemp = history.unlNodeIdSet;
             unlTemp.erase(history.unlNodeIDs[0]);
             unlTemp.erase(history.unlNodeIDs[1]);
             BEAST_EXPECT(checkCandidateSizes(vote, unlTemp, negUnl012, scoreTable, 0, 2));
@@ -1074,8 +1074,8 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
             // 2 new validators
             NodeID const new1(0xbead);
             NodeID const new2(0xbeef);
-            hash_set<NodeID> const nowTrusted = {new1, new2};
-            hash_set<NodeID> unlTemp = history.unlNodeIdSet;
+            HashSet<NodeID> const nowTrusted = {new1, new2};
+            HashSet<NodeID> unlTemp = history.unlNodeIdSet;
             unlTemp.insert(new1);
             unlTemp.insert(new2);
             vote.newValidators(256, nowTrusted);
@@ -1084,7 +1084,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                 auto scoreTable = goodScoreTable;
                 scoreTable[new1] = NegativeUNLVote::kNegativeUnlHighWaterMark + 1;
                 scoreTable[new2] = NegativeUNLVote::kNegativeUnlHighWaterMark + 1;
-                hash_set<NodeID> negUnlTemp = negUnl012;
+                HashSet<NodeID> negUnlTemp = negUnl012;
                 negUnlTemp.insert(new1);
                 negUnlTemp.insert(new2);
                 BEAST_EXPECT(checkCandidateSizes(vote, unlTemp, negUnlTemp, scoreTable, 0, 3 + 2));
@@ -1149,9 +1149,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
             auto fillScoreTable = [&](std::uint32_t unlSize,
                                       std::uint32_t nUnlSize,
                                       std::uint32_t score,
-                                      hash_set<NodeID>& unl,
-                                      hash_set<NodeID>& negUnl,
-                                      hash_map<NodeID, std::uint32_t>& scoreTable) {
+                                      HashSet<NodeID>& unl,
+                                      HashSet<NodeID>& negUnl,
+                                      HashMap<NodeID, std::uint32_t>& scoreTable) {
                 std::vector<NodeID> nodeIDs;
                 std::vector<PublicKey> const keys = createPublicKeys(unlSize);
                 for (auto const& k : keys)
@@ -1170,9 +1170,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                 {
                     for (auto score : scores)
                     {
-                        hash_set<NodeID> unl;
-                        hash_set<NodeID> negUnl;
-                        hash_map<NodeID, std::uint32_t> scoreTable;
+                        HashSet<NodeID> unl;
+                        HashSet<NodeID> negUnl;
+                        HashMap<NodeID, std::uint32_t> scoreTable;
                         fillScoreTable(us, us * np / 100, score, unl, negUnl, scoreTable);
                         BEAST_EXPECT(unl.size() == us);
                         BEAST_EXPECT(negUnl.size() == us * np / 100);
@@ -1211,9 +1211,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
             {
                 auto fillScoreTable = [&](std::uint32_t unlSize,
                                           std::uint32_t nUnlPercent,
-                                          hash_set<NodeID>& unl,
-                                          hash_set<NodeID>& negUnl,
-                                          hash_map<NodeID, std::uint32_t>& scoreTable) {
+                                          HashSet<NodeID>& unl,
+                                          HashSet<NodeID>& negUnl,
+                                          HashMap<NodeID, std::uint32_t>& scoreTable) {
                     std::vector<NodeID> nodeIDs;
                     std::vector<PublicKey> const keys = createPublicKeys(unlSize);
                     for (auto const& k : keys)
@@ -1248,9 +1248,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                 {
                     for (auto np : nUnlPercent)
                     {
-                        hash_set<NodeID> unl;
-                        hash_set<NodeID> negUnl;
-                        hash_map<NodeID, std::uint32_t> scoreTable;
+                        HashSet<NodeID> unl;
+                        HashSet<NodeID> negUnl;
+                        HashMap<NodeID, std::uint32_t> scoreTable;
 
                         fillScoreTable(us, np, unl, negUnl, scoreTable);
                         BEAST_EXPECT(unl.size() == us);
@@ -1750,7 +1750,7 @@ class NegativeUNLVoteNewValidator_test : public beast::unit_test::Suite
                         auto extraKey2 = randomKeyPair(KeyType::Ed25519).first;
                         history.unlKeySet.insert(extraKey1);
                         history.unlKeySet.insert(extraKey2);
-                        hash_set<NodeID> nowTrusted;
+                        HashSet<NodeID> nowTrusted;
                         nowTrusted.insert(calcNodeID(extraKey1));
                         nowTrusted.insert(calcNodeID(extraKey2));
                         vote.newValidators(history.lastLedger()->seq(), nowTrusted);
@@ -1781,7 +1781,7 @@ class NegativeUNLVoteNewValidator_test : public beast::unit_test::Suite
                         auto extraKey2 = randomKeyPair(KeyType::Ed25519).first;
                         history.unlKeySet.insert(extraKey1);
                         history.unlKeySet.insert(extraKey2);
-                        hash_set<NodeID> nowTrusted;
+                        HashSet<NodeID> nowTrusted;
                         nowTrusted.insert(calcNodeID(extraKey1));
                         nowTrusted.insert(calcNodeID(extraKey2));
                         vote.newValidators(256, nowTrusted);
@@ -1808,7 +1808,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
 
         auto createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
@@ -1828,8 +1828,8 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::Suite
         std::uint32_t const numNodes = 10;
         std::uint32_t const negUnlSize = 3;
         std::vector<std::string> cfgKeys;
-        hash_set<NodeID> activeValidators;
-        hash_set<PublicKey> nUnlKeys;
+        HashSet<NodeID> activeValidators;
+        HashSet<PublicKey> nUnlKeys;
         std::vector<std::shared_ptr<STValidation>> vals;
         for (int i = 0; i < numNodes; ++i)
         {
@@ -1914,7 +1914,7 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
 bool
 verifyPubKeyAndSeq(
     std::shared_ptr<Ledger const> const& l,
-    hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq)
+    HashMap<PublicKey, std::uint32_t> nUnlLedgerSeq)
 {
     auto sle = l->read(keylet::negativeUNL());
     if (!sle)

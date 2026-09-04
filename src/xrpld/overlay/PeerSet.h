@@ -62,7 +62,7 @@ public:
     /**
      * get the set of ids of previously added peers
      */
-    [[nodiscard]] virtual std::set<Peer::id_t> const&
+    [[nodiscard]] virtual std::set<Peer::IdT> const&
     getPeerIds() const = 0;
 };
 

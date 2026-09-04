@@ -70,10 +70,10 @@ constexpr auto kLedgerAcquireTimeout = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t seq,
     Reason reason,
-    clock_type& clock,
+    ClockType& clock,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
@@ -187,10 +187,10 @@ InboundLedger::~InboundLedger()
     }
 }
 
-static std::vector<uint256>
-neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
+static std::vector<UInt256>
+neededHashes(UInt256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
 {
-    std::vector<uint256> ret;
+    std::vector<UInt256> ret;
 
     if (!root.isZero())
     {
@@ -210,13 +210,13 @@ neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* 
     return ret;
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 InboundLedger::neededTxHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().txHash, ledger_->txMap(), max, filter);
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
@@ -737,7 +737,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
 void
 InboundLedger::filterNodes(
-    std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
+    std::vector<std::pair<SHAMapNodeID, UInt256>>& nodes,
     TriggerReason reason)
 {
     // Sort nodes so that the ones we haven't recently
@@ -1008,10 +1008,10 @@ InboundLedger::takeTxRootNode(std::string_view data, SHAMapAddNode& san)
     return !result.isInvalid();
 }
 
-std::vector<InboundLedger::neededHash_t>
+std::vector<InboundLedger::NeededHashT>
 InboundLedger::getNeededHashes()
 {
-    std::vector<neededHash_t> ret;
+    std::vector<NeededHashT> ret;
 
     if (!haveHeader_)
     {

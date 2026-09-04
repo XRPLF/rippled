@@ -66,7 +66,7 @@ public:
      * @return A constant reference to the 256-bit key
      */
     [[nodiscard]]
-    uint256 const&
+    UInt256 const&
     getKey() const
     {
         return sle_->key();
@@ -81,7 +81,7 @@ public:
      * @return The ledger index if present, std::nullopt otherwise
      */
     [[nodiscard]]
-    std::optional<uint256>
+    std::optional<UInt256>
     getLedgerIndex() const
     {
         if (sle_->isFieldPresent(sfLedgerIndex))

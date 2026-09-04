@@ -413,7 +413,7 @@ public:
         // any ledger. sfPreviousTxnLgrSeq still points to a valid closed
         // ledger, so getLedgerBySeq succeeds but txRead returns null.
         auto const oracleKeylet = keylet::oracle(owner, oracle.documentID());
-        uint256 const bogusTxnID{0xABCABCAB};
+        UInt256 const bogusTxnID{0xABCABCAB};
         bool const modified = env.app().getOpenLedger().modify(
             [&oracleKeylet, &bogusTxnID](OpenView& view, beast::Journal) -> bool {
                 auto const sle = view.read(oracleKeylet);

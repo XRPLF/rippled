@@ -72,7 +72,7 @@ class RCLValidations_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{config.features},
             config.fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < ((2 * maxAncestors) + 1); ++i)
@@ -238,7 +238,7 @@ class RCLValidations_test : public beast::unit_test::Suite
             kCreateGenesis,
             Rules{config.features},
             config.fees.toFees(),
-            std::vector<uint256>{},
+            std::vector<UInt256>{},
             env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)

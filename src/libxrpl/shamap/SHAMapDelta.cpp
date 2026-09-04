@@ -153,7 +153,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::SHAMap::compare : missing a node");
-            Throw<SHAMapMissingNode>(type_, uint256());
+            Throw<SHAMapMissingNode>(type_, UInt256());
             // LCOV_EXCL_STOP
         }
 

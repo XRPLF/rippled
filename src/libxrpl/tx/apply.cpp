@@ -138,7 +138,7 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
 }
 
 void
-forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
+forceValidity(HashRouter& router, UInt256 const& txid, Validity validity)
 {
     // Callers reach here when they deliberately skip signature verification,
     // such as a cluster peer that trusts its neighbor's checks, or a
@@ -188,7 +188,7 @@ ApplyResult
 apply(
     ServiceRegistry& registry,
     OpenView& view,
-    uint256 const& parentBatchId,
+    UInt256 const& parentBatchId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j)

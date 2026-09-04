@@ -43,7 +43,7 @@ public:
 
         for (int i = 0; i < 64; i++)
         {
-            uint128 src;
+            UInt128 src;
             beast::rngfill(src.data(), src.size(), defaultPrng());
             Seed const seed(src);
             BEAST_EXPECT(memcmp(seed.data(), src.data(), src.size()) == 0);

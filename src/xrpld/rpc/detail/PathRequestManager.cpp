@@ -62,7 +62,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
     auto event = app_.getJobQueue().makeLoadEvent(JtPathFind, "PathRequest::updateAll");
 
-    std::vector<PathRequest::wptr> requests;
+    std::vector<PathRequest::Wptr> requests;
     std::shared_ptr<AssetCache> cache;
 
     // Get the ledger and cache we should be using

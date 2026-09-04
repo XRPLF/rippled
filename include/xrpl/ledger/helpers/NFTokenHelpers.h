@@ -38,7 +38,7 @@ removeTokenOffersWithLimit(
  * Finds the specified token in the owner's token directory.
  */
 std::optional<STObject>
-findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID);
+findToken(ReadView const& view, AccountID const& owner, UInt256 const& nftokenID);
 
 /**
  * Finds the token in the owner's token directory.  Returns token and page.
@@ -53,7 +53,7 @@ struct TokenAndPage
     }
 };
 std::optional<TokenAndPage>
-findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
+findTokenAndPage(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID);
 
 /**
  * Insert the token in the owner's token directory.
@@ -65,10 +65,10 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft);
  * Remove the token from the owner's token directory.
  */
 TER
-removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
+removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID);
 
 TER
-removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref page);
+removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, SLE::Ref page);
 
 /**
  * Deletes the given token offer.
@@ -81,7 +81,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
  * The offer also consumes one incremental reserve.
  */
 bool
-deleteTokenOffer(ApplyView& view, SLE::ref offer);
+deleteTokenOffer(ApplyView& view, SLE::Ref offer);
 
 /**
  * Repairs the links in an NFTokenPage directory.
@@ -92,13 +92,13 @@ bool
 repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner);
 
 bool
-compareTokens(uint256 const& a, uint256 const& b);
+compareTokens(UInt256 const& a, UInt256 const& b);
 
 TER
 changeTokenURI(
     ApplyView& view,
     AccountID const& owner,
-    uint256 const& nftokenID,
+    UInt256 const& nftokenID,
     std::optional<xrpl::Slice> const& uri);
 
 /**
@@ -142,7 +142,7 @@ tokenOfferCreateApply(
     std::optional<AccountID> const& dest,
     std::optional<std::uint32_t> const& expiration,
     SeqProxy seqProxy,
-    uint256 const& nftokenID,
+    UInt256 const& nftokenID,
     XRPAmount const& priorBalance,
     beast::Journal j,
     std::uint32_t txFlags = tfSellNFToken);

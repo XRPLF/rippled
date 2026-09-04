@@ -56,7 +56,7 @@ deserializePrefixedHeader(Slice data, bool hasHash)
     return deserializeHeader(data + 4, hasHash);
 }
 
-uint256
+UInt256
 calculateLedgerHash(LedgerHeader const& info)
 {
     // VFALCO This has to match addRaw in View.h.

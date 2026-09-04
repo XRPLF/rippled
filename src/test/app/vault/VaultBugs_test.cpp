@@ -2444,7 +2444,7 @@ private:
 
             // Inclusive SubscriptionDate boundary: still Subscription, so an
             // ordinary withdrawal is allowed.
-            closeToTime(env, tp{d{subscriptionDate}});
+            closeToTime(env, Tp{D{subscriptionDate}});
 
             auto const vaultBefore = env.le(vaultKeylet);
             if (!BEAST_EXPECT(vaultBefore))

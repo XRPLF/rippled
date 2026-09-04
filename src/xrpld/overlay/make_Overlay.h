@@ -31,6 +31,6 @@ makeOverlay(
     Resolver& resolver,
     boost::asio::io_context& ioContext,
     BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector);
+    beast::insight::Collector::Ptr const& collector);
 
 }  // namespace xrpl

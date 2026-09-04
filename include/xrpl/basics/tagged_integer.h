@@ -40,7 +40,7 @@ private:
 
 public:
     using value_type = Int;
-    using tag_type = Tag;
+    using TagType = Tag;
 
     TaggedInteger() = default;
 

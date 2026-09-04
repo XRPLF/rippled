@@ -177,7 +177,7 @@ doUnsubscribe(rpc::JsonContext& context)
 
             if (jv.isMember(jss::domain))
             {
-                uint256 domain;
+                UInt256 domain;
                 if (!jv[jss::domain].isString() || !domain.parseHex(jv[jss::domain].asString()))
                 {
                     return rpcError(RpcDomainMalformed);

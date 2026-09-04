@@ -65,19 +65,19 @@ STValidation::validationFormat()
     return kFormat;
 };
 
-uint256
+UInt256
 STValidation::getSigningHash() const
 {
     return STObject::getSigningHash(HashPrefix::Validation);
 }
 
-uint256
+UInt256
 STValidation::getLedgerHash() const
 {
     return getFieldH256(sfLedgerHash);
 }
 
-uint256
+UInt256
 STValidation::getConsensusHash() const
 {
     return getFieldH256(sfConsensusHash);

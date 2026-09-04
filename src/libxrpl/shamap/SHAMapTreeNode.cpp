@@ -48,7 +48,7 @@ SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool
 {
     Serializer s(data.data(), data.size());
 
-    uint256 tag;
+    UInt256 tag;
 
     if (s.size() < tag.kBytes)
     {
@@ -88,7 +88,7 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
 {
     Serializer s(data.data(), data.size());
 
-    uint256 tag;
+    UInt256 tag;
 
     if (s.size() < tag.kBytes)
     {

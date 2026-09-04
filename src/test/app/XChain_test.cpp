@@ -82,14 +82,14 @@ struct SEnv
     }
 
     SEnv&
-    enableFeature(uint256 const feature)
+    enableFeature(UInt256 const feature)
     {
         env.enableFeature(feature);
         return *this;
     }
 
     SEnv&
-    disableFeature(uint256 const feature)
+    disableFeature(UInt256 const feature)
     {
         env.app().config().features.erase(feature);
         return *this;
@@ -262,12 +262,12 @@ struct Balance
 template <class T>
 struct BalanceTransfer
 {
-    using balance = Balance<T>;
+    using Balance = Balance<T>;
 
-    balance from;
-    balance to;
-    balance payer;                        // pays the rewards
-    std::vector<balance> rewardAccounts;  // receives the reward
+    Balance from;
+    Balance to;
+    Balance payer;                        // pays the rewards
+    std::vector<Balance> rewardAccounts;  // receives the reward
     XRPAmount txFees;
 
     BalanceTransfer(
@@ -282,7 +282,7 @@ struct BalanceTransfer
         , to(env, toAcct)
         , payer(env, payer)
         , rewardAccounts([&]() {
-            std::vector<balance> r;
+            std::vector<Balance> r;
             r.reserve(numPayees);
             for (size_t i = 0; i < numPayees; ++i)
                 r.emplace_back(env, payees[i]);
@@ -307,7 +307,7 @@ struct BalanceTransfer
     payeesReceived(STAmount const& reward) const
     {
         return std::ranges::all_of(
-            rewardAccounts, [&](balance const& b) { return b.diff() == reward; });
+            rewardAccounts, [&](Balance const& b) { return b.diff() == reward; });
     }
 
     bool
@@ -3931,7 +3931,7 @@ private:
 
         struct BridgeCounters
         {
-            using complete_cb = std::function<void(std::vector<size_t> const& signers)>;
+            using CompleteCb = std::function<void(std::vector<size_t> const& signers)>;
 
             uint32_t claimId{0};
             uint32_t createCount{0};  // for account create. First should be 1
@@ -3940,7 +3940,7 @@ private:
 
             uint32_t numCreateAttnSent{0};  // for current claimCount
             std::vector<size_t> signers;
-            std::vector<complete_cb> createCallbacks;
+            std::vector<CompleteCb> createCallbacks;
         };
 
         struct Claims

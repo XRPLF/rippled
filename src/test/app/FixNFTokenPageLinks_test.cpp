@@ -47,12 +47,12 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
     // A helper function that generates 96 nfts packed into three pages
     // of 32 each.  Returns a sorted vector of the NFTokenIDs packed into
     // the pages.
-    std::vector<uint256>
+    std::vector<UInt256>
     genPackedTokens(test::jtx::Env& env, test::jtx::Account const& owner)
     {
         using namespace test::jtx;
 
-        std::vector<uint256> nfts;
+        std::vector<UInt256> nfts;
         nfts.reserve(96);
 
         // We want to create fully packed NFT pages.  This is a little
@@ -178,7 +178,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
             // NFTokenPageLink fixes require sfOwner and reject fields that
             // belong to other LedgerStateFix types.
             json::Value tx = ledger_state_fix::nftPageLinks(alice, alice);
-            tx[sfBookDirectory.jsonName] = to_string(uint256{1});
+            tx[sfBookDirectory.jsonName] = to_string(UInt256{1});
             env(tx, Fee(linkFixFee), Ter(temINVALID));
         }
         {
@@ -270,12 +270,12 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         //**********************************************************************
 
         // alice generates three packed pages.
-        std::vector<uint256> aliceNFTs = genPackedTokens(env, alice);
+        std::vector<UInt256> aliceNFTs = genPackedTokens(env, alice);
         BEAST_EXPECT(nftCount(env, alice) == 96);
         BEAST_EXPECT(ownerCount(env, alice) == 3);
 
         // Get the index of the middle page.
-        uint256 const aliceMiddleNFTokenPageIndex = [&env, &alice]() {
+        UInt256 const aliceMiddleNFTokenPageIndex = [&env, &alice]() {
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();
@@ -318,12 +318,12 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         //**********************************************************************
 
         // bob generates three packed pages.
-        std::vector<uint256> bobNFTs = genPackedTokens(env, bob);
+        std::vector<UInt256> bobNFTs = genPackedTokens(env, bob);
         BEAST_EXPECT(nftCount(env, bob) == 96);
         BEAST_EXPECT(ownerCount(env, bob) == 3);
 
         // Get the index of the middle page.
-        uint256 const bobMiddleNFTokenPageIndex = [&env, &bob]() {
+        UInt256 const bobMiddleNFTokenPageIndex = [&env, &bob]() {
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(bob));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();
@@ -361,22 +361,22 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         //**********************************************************************
 
         // carol generates three packed pages.
-        std::vector<uint256> carolNFTs = genPackedTokens(env, carol);
+        std::vector<UInt256> carolNFTs = genPackedTokens(env, carol);
         BEAST_EXPECT(nftCount(env, carol) == 96);
         BEAST_EXPECT(ownerCount(env, carol) == 3);
 
         // Get the index of the middle page.
-        uint256 const carolMiddleNFTokenPageIndex = [&env, &carol]() {
+        UInt256 const carolMiddleNFTokenPageIndex = [&env, &carol]() {
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();
 
         // carol sells all of the tokens in the very last page to daria.
-        std::vector<uint256> dariaNFTs;
+        std::vector<UInt256> dariaNFTs;
         dariaNFTs.reserve(32);
         for (int i = 0; i < 32; ++i)
         {
-            uint256 const offerIndex =
+            UInt256 const offerIndex =
                 keylet::nftokenOffer(carol, SeqProxy::rawSequence(env.seq(carol))).key;
             env(token::createOffer(carol, carolNFTs.back(), XRP(0)), Txflags(tfSellNFToken));
             env.close();
@@ -409,9 +409,9 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         // bob's has: the last page is missing.  Now we make things more
         // complicated by putting the last page back.  carol buys their NFTs
         // back from daria.
-        for (uint256 const& nft : dariaNFTs)
+        for (UInt256 const& nft : dariaNFTs)
         {
-            uint256 const offerIndex =
+            UInt256 const offerIndex =
                 keylet::nftokenOffer(carol, SeqProxy::rawSequence(env.seq(carol))).key;
             env(token::createOffer(carol, nft, drops(1)), token::Owner(daria));
             env.close();

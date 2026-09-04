@@ -34,7 +34,7 @@ protected:
     class TestLogic : private boost::base_from_member<TestStopwatch>, public Logic
     {
     private:
-        using clock_type = boost::base_from_member<TestStopwatch>;
+        using ClockType = boost::base_from_member<TestStopwatch>;
 
     public:
         explicit TestLogic(beast::Journal journal)

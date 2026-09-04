@@ -560,7 +560,7 @@ EscrowCreate::doApply()
 }
 
 void
-EscrowCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+EscrowCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

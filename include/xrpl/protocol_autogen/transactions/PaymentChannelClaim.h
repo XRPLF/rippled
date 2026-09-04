@@ -20,7 +20,7 @@ class PaymentChannelClaimBuilder;
  *
  * Type: ttPAYCHAN_CLAIM (15)
  * Delegable: Delegation::Delegable
- * Amendment: uint256{}
+ * Amendment: UInt256{}
  * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

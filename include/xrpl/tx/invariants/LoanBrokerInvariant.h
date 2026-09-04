@@ -40,7 +40,7 @@ class ValidLoanBroker
     // Collect all the LoanBrokers found directly or indirectly through
     // pseudo-accounts. Key is the brokerID / index. It will be used to find the
     // LoanBroker object if brokerBefore and brokerAfter are nullptr
-    std::map<uint256, BrokerInfo> brokers_;
+    std::map<UInt256, BrokerInfo> brokers_;
     // The broker whose ledger entry was deleted by this transaction, if any.
     // Only ttLOAN_BROKER_DELETE removes a broker, and it removes exactly one.
     // This is the pre-transaction state, which is what LoanBrokerDelete::preclaim
@@ -58,11 +58,11 @@ class ValidLoanBroker
     std::vector<SLE::const_pointer> mpts_;
 
     static bool
-    goodZeroDirectory(ReadView const& view, SLE::const_ref dir, beast::Journal const& j);
+    goodZeroDirectory(ReadView const& view, SLE::ConstRef dir, beast::Journal const& j);
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);

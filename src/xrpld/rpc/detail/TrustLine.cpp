@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-TrustLineBase::TrustLineBase(SLE::const_ref sle, AccountID const& viewAccount)
+TrustLineBase::TrustLineBase(SLE::ConstRef sle, AccountID const& viewAccount)
     : key_(sle->key())
     , lowLimit_(sle->getFieldAmount(sfLowLimit))
     , highLimit_(sle->getFieldAmount(sfHighLimit))
@@ -36,7 +36,7 @@ TrustLineBase::getJson(int)
 }
 
 std::optional<PathFindTrustLine>
-PathFindTrustLine::makeItem(AccountID const& accountID, SLE::const_ref sle)
+PathFindTrustLine::makeItem(AccountID const& accountID, SLE::ConstRef sle)
 {
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};
@@ -52,7 +52,7 @@ getTrustLineItems(
     LineDirection direction = LineDirection::Outgoing)
 {
     std::vector<T> items;
-    forEachItem(view, accountID, [&items, &accountID, &direction](SLE::const_ref sleCur) {
+    forEachItem(view, accountID, [&items, &accountID, &direction](SLE::ConstRef sleCur) {
         auto ret = T::makeItem(accountID, sleCur);
         if (ret && (direction == LineDirection::Outgoing || !ret->getNoRipple()))
             items.push_back(std::move(*ret));
@@ -74,7 +74,7 @@ PathFindTrustLine::getItems(
     return detail::getTrustLineItems<PathFindTrustLine>(accountID, view, direction);
 }
 
-RPCTrustLine::RPCTrustLine(SLE::const_ref sle, AccountID const& viewAccount)
+RPCTrustLine::RPCTrustLine(SLE::ConstRef sle, AccountID const& viewAccount)
     : TrustLineBase(sle, viewAccount)
     , lowQualityIn_(sle->getFieldU32(sfLowQualityIn))
     , lowQualityOut_(sle->getFieldU32(sfLowQualityOut))
@@ -84,7 +84,7 @@ RPCTrustLine::RPCTrustLine(SLE::const_ref sle, AccountID const& viewAccount)
 }
 
 std::optional<RPCTrustLine>
-RPCTrustLine::makeItem(AccountID const& accountID, SLE::const_ref sle)
+RPCTrustLine::makeItem(AccountID const& accountID, SLE::ConstRef sle)
 {
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};

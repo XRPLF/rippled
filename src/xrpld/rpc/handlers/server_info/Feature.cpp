@@ -31,7 +31,7 @@ doFeature(rpc::JsonContext& context)
 
     bool const isAdmin = context.role == Role::ADMIN;
     // Get majority amendment status
-    majorityAmendments_t majorities;
+    MajorityAmendmentsT majorities;
 
     if (auto const valLedger = context.ledgerMaster.getValidatedLedger())
         majorities = getMajorityAmendments(*valLedger);

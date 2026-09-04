@@ -14,7 +14,7 @@
 
 namespace xrpl::resource {
 
-using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
 // An entry in the table
 // VFALCO DEPRECATED using boost::intrusive list
@@ -25,7 +25,7 @@ struct Entry : public beast::List<Entry>::Node
     /**
      * @param now Construction time of Entry.
      */
-    explicit Entry(clock_type::time_point const now)
+    explicit Entry(ClockType::time_point const now)
         : refcount(0), localBalance(now), remoteBalance(0)
     {
     }
@@ -49,7 +49,7 @@ struct Entry : public beast::List<Entry>::Node
 
     // Balance including remote contributions
     int
-    balance(clock_type::time_point const now)
+    balance(ClockType::time_point const now)
     {
         return localBalance.value(now) + remoteBalance;
     }
@@ -57,7 +57,7 @@ struct Entry : public beast::List<Entry>::Node
     // Add a charge and return normalized balance
     // including contributions from imports.
     int
-    add(int charge, clock_type::time_point const now)
+    add(int charge, ClockType::time_point const now)
     {
         return localBalance.add(charge, now) + remoteBalance;
     }
@@ -72,16 +72,16 @@ struct Entry : public beast::List<Entry>::Node
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample<kDecayWindowSeconds, clock_type> localBalance;
+    DecayingSample<kDecayWindowSeconds, ClockType> localBalance;
 
     // Normalized balance contribution from imports
     int remoteBalance;
 
     // Time of the last warning
-    clock_type::time_point lastWarningTime;
+    ClockType::time_point lastWarningTime;
 
     // For inactive entries, time after which this entry will be erased
-    clock_type::time_point whenExpires;
+    ClockType::time_point whenExpires;
 };
 
 inline std::ostream&

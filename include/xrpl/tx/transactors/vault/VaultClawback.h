@@ -35,7 +35,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -48,8 +48,8 @@ public:
 private:
     std::expected<std::pair<STAmount, STAmount>, TER>
     assetsToClawback(
-        SLE::ref vault,
-        SLE::const_ref sleShareIssuance,
+        SLE::Ref vault,
+        SLE::ConstRef sleShareIssuance,
         AccountID const& holder,
         STAmount const& clawbackAmount);
 };

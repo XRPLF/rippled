@@ -176,7 +176,7 @@ getSigningData(STTx const& that, HashPrefix prefix)
     return s.getData();
 }
 
-uint256
+UInt256
 STTx::getSigningHash() const
 {
     return STObject::getSigningHash(HashPrefix::TxSign);
@@ -468,7 +468,7 @@ STTx::checkSingleSign(STObject const& sigObject, HashPrefix prefix) const
 }
 
 std::expected<void, std::string>
-STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const
+STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
@@ -554,7 +554,7 @@ multiSignHelper(
 }
 
 std::expected<void, std::string>
-STTx::checkBatchMultiSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const
+STTx::checkBatchMultiSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : batch transaction");
     // We can ease the computational load inside the loop a bit by
@@ -634,11 +634,11 @@ STTx::buildBatchTxns()
     }
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 STTx::getBatchTransactionIDs() const
 {
     auto const& txns = getBatchTransactions();
-    std::vector<uint256> ids;
+    std::vector<UInt256> ids;
     ids.reserve(txns.size());
     for (auto const& stx : txns)
         ids.push_back(stx->getTransactionID());

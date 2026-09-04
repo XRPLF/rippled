@@ -58,7 +58,7 @@ public:
     /**
      * Returns the current HTTP request.
      */
-    virtual http_request_type&
+    virtual HttpRequestType&
     request() = 0;
 
     /**

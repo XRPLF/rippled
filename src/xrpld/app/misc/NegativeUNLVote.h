@@ -93,7 +93,7 @@ public:
     void
     doVoting(
         std::shared_ptr<Ledger const> const& prevLedger,
-        hash_set<PublicKey> const& unlKeys,
+        HashSet<PublicKey> const& unlKeys,
         RCLValidations& validations,
         std::shared_ptr<SHAMap> const& initialSet);
 
@@ -105,13 +105,13 @@ public:
      * @param nowTrusted the new validators
      */
     void
-    newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted);
+    newValidators(LedgerIndex seq, HashSet<NodeID> const& nowTrusted);
 
 private:
     NodeID const myId_;
     beast::Journal j_;
     mutable std::mutex mutex_;
-    hash_map<NodeID, LedgerIndex> newValidators_;
+    HashMap<NodeID, LedgerIndex> newValidators_;
 
     /**
      * UNLModify Tx candidates
@@ -147,7 +147,7 @@ private:
      * @return the picked candidate
      */
     static NodeID
-    choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
+    choose(UInt256 const& randomPadData, std::vector<NodeID> const& candidates);
 
     /**
      * Build a reliability measurement score table of validators' validation
@@ -163,10 +163,10 @@ private:
      * @return the built scoreTable or empty optional if table could not be
      * built
      */
-    std::optional<hash_map<NodeID, std::uint32_t>>
+    std::optional<HashMap<NodeID, std::uint32_t>>
     buildScoreTable(
         std::shared_ptr<Ledger const> const& prevLedger,
-        hash_set<NodeID> const& unl,
+        HashSet<NodeID> const& unl,
         RCLValidations& validations);
 
     /**
@@ -180,9 +180,9 @@ private:
      */
     Candidates
     findAllCandidates(
-        hash_set<NodeID> const& unl,
-        hash_set<NodeID> const& negUnl,
-        hash_map<NodeID, std::uint32_t> const& scoreTable);
+        HashSet<NodeID> const& unl,
+        HashSet<NodeID> const& negUnl,
+        HashMap<NodeID, std::uint32_t> const& scoreTable);
 
     /**
      * Purge validators that are not new anymore.

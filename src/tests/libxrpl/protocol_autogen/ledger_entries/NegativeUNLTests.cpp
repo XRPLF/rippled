@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(NegativeUNLTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    UInt256 const index{1u};
 
     auto const disabledValidatorsValue = canonical_ARRAY();
     auto const validatorToDisableValue = canonical_VL();
@@ -95,7 +95,7 @@ TEST(NegativeUNLTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(NegativeUNLTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    UInt256 const index{2u};
 
     auto const disabledValidatorsValue = canonical_ARRAY();
     auto const validatorToDisableValue = canonical_VL();
@@ -192,7 +192,7 @@ TEST(NegativeUNLTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(NegativeUNLTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -211,7 +211,7 @@ TEST(NegativeUNLTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(NegativeUNLTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    UInt256 const index{4u};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -228,8 +228,7 @@ TEST(NegativeUNLTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(NegativeUNLTests, OptionalFieldsReturnNullopt)
 {
-    uint256 const index{3u};
-
+    UInt256 const index{3u};
 
     NegativeUNLBuilder builder{
     };

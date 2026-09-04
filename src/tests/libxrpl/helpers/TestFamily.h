@@ -92,13 +92,13 @@ public:
     }
 
     void
-    missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash) override
+    missingNodeAcquireBySeq(std::uint32_t refNum, UInt256 const& nodeHash) override
     {
         Throw<std::runtime_error>("TestFamily: missing node (by seq)");
     }
 
     void
-    missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum) override
+    missingNodeAcquireByHash(UInt256 const& refHash, std::uint32_t refNum) override
     {
         Throw<std::runtime_error>("TestFamily: missing node (by hash)");
     }

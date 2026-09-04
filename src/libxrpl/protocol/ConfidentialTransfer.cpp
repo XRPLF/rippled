@@ -39,7 +39,7 @@ toAccountId(AccountID const& account)
 }
 
 mpt_issuance_id
-toIssuanceId(uint192 const& issuance)
+toIssuanceId(UInt192 const& issuance)
 {
     mpt_issuance_id res;
     std::memcpy(res.bytes, issuance.data(), kMPT_ISSUANCE_ID_SIZE);
@@ -63,15 +63,15 @@ toParticipant(ConfidentialRecipient const& r)
 
 }  // namespace
 
-uint256
+UInt256
 getSendContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     AccountID const& destination,
     std::uint32_t version)
 {
-    uint256 result;
+    UInt256 result;
     mpt_get_send_context_hash(
         toAccountId(account),
         toIssuanceId(issuanceID),
@@ -82,14 +82,14 @@ getSendContextHash(
     return result;
 }
 
-uint256
+UInt256
 getClawbackContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     AccountID const& holder)
 {
-    uint256 result;
+    UInt256 result;
     mpt_get_clawback_context_hash(
         toAccountId(account),
         toIssuanceId(issuanceID),
@@ -99,23 +99,23 @@ getClawbackContextHash(
     return result;
 }
 
-uint256
-getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::uint32_t sequence)
+UInt256
+getConvertContextHash(AccountID const& account, UInt192 const& issuanceID, std::uint32_t sequence)
 {
-    uint256 result;
+    UInt256 result;
     mpt_get_convert_context_hash(
         toAccountId(account), toIssuanceId(issuanceID), sequence, result.data());
     return result;
 }
 
-uint256
+UInt256
 getConvertBackContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     std::uint32_t version)
 {
-    uint256 result;
+    UInt256 result;
     mpt_get_convert_back_context_hash(
         toAccountId(account), toIssuanceId(issuanceID), sequence, version, result.data());
     return result;
@@ -398,7 +398,7 @@ checkEncryptedAmountFormat(STObject const& object)
 }
 
 TER
-verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash)
+verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, UInt256 const& contextHash)
 {
     if (proofSlice.size() != kEcSchnorrProofLength || pubKeySlice.size() != kEcPubKeyLength)
     {
@@ -420,7 +420,7 @@ verifyClawbackProof(
     Slice const& proof,
     Slice const& pubKeySlice,
     Slice const& ciphertext,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     if (ciphertext.size() != kEcGamalEncryptedTotalLength ||
         pubKeySlice.size() != kEcPubKeyLength || proof.size() != kEcClawbackProofLength)
@@ -452,7 +452,7 @@ verifySendProof(
     Slice const& spendingBalance,
     Slice const& amountCommitment,
     Slice const& balanceCommitment,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     auto const recipientCount = getConfidentialRecipientCount(auditor.has_value());
     if (proof.size() != kEcSendProofLength || sender.publicKey.size() != kEcPubKeyLength ||
@@ -522,7 +522,7 @@ verifyConvertBackProof(
     Slice const& spendingBalance,
     Slice const& balanceCommitment,
     uint64_t amount,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     if (proof.size() != kEcConvertBackProofLength || pubKeySlice.size() != kEcPubKeyLength ||
         spendingBalance.size() != kEcGamalEncryptedTotalLength ||

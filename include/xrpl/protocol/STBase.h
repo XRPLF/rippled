@@ -20,10 +20,10 @@ namespace xrpl {
  */
 struct JsonOptions
 {
-    using underlying_t = unsigned int;
-    underlying_t value;
+    using UnderlyingT = unsigned int;
+    UnderlyingT value;
 
-    enum class Values : underlying_t {
+    enum class Values : UnderlyingT {
         None = 0b0000'0000,
         IncludeDate = 0b0000'0001,
         DisableApiPriorV2 = 0b0000'0010,
@@ -32,16 +32,16 @@ struct JsonOptions
         All = IncludeDate | DisableApiPriorV2  // 0b0000'0011
     };
 
-    constexpr JsonOptions(underlying_t v) noexcept : value(v)
+    constexpr JsonOptions(UnderlyingT v) noexcept : value(v)
     {
     }
 
-    constexpr JsonOptions(Values v) noexcept : value(static_cast<JsonOptions::underlying_t>(v))
+    constexpr JsonOptions(Values v) noexcept : value(static_cast<JsonOptions::UnderlyingT>(v))
     {
     }
 
     [[nodiscard]] constexpr explicit
-    operator underlying_t() const noexcept
+    operator UnderlyingT() const noexcept
     {
         return value;
     }
@@ -80,7 +80,7 @@ struct JsonOptions
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {
-        return {~v.value & static_cast<underlying_t>(Values::All)};
+        return {~v.value & static_cast<UnderlyingT>(Values::All)};
     }
 };
 

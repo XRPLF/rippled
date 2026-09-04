@@ -23,11 +23,11 @@ namespace xrpl {
 class TxMeta
 {
 public:
-    TxMeta(uint256 const& transactionID, std::uint32_t ledger);
-    TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
-    TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
+    TxMeta(UInt256 const& transactionID, std::uint32_t ledger);
+    TxMeta(UInt256 const& txID, std::uint32_t ledger, Blob const&);
+    TxMeta(UInt256 const& txID, std::uint32_t ledger, STObject const&);
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     getTxID() const
     {
         return transactionID_;
@@ -54,11 +54,11 @@ public:
     }
 
     void
-    setAffectedNode(uint256 const&, SField const& type, std::uint16_t nodeType);
+    setAffectedNode(UInt256 const&, SField const& type, std::uint16_t nodeType);
     STObject&
-    getAffectedNode(SLE::ref node, SField const& type);  // create if needed
+    getAffectedNode(SLE::Ref node, SField const& type);  // create if needed
     STObject&
-    getAffectedNode(uint256 const&);
+    getAffectedNode(UInt256 const&);
 
     /**
      * Return a list of accounts affected by this transaction
@@ -110,19 +110,19 @@ public:
     }
 
     void
-    setParentBatchID(std::optional<uint256> const& id)
+    setParentBatchID(std::optional<UInt256> const& id)
     {
         parentBatchID_ = id;
     }
 
 private:
-    uint256 transactionID_;
+    UInt256 transactionID_;
     std::uint32_t ledgerSeq_;
     std::uint32_t index_;
     int result_;
 
     std::optional<STAmount> deliveredAmount_;
-    std::optional<uint256> parentBatchID_;
+    std::optional<UInt256> parentBatchID_;
 
     STArray nodes_;
 };

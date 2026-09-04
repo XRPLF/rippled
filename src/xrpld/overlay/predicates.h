@@ -13,7 +13,7 @@ namespace xrpl {
  */
 struct SendAlways
 {
-    using return_type = void;
+    using ReturnType = void;
 
     std::shared_ptr<Message> const& msg;
 
@@ -36,7 +36,7 @@ struct SendAlways
 template <typename Predicate>
 struct SendIfPred
 {
-    using return_type = void;
+    using ReturnType = void;
 
     std::shared_ptr<Message> const& msg;
     Predicate const& predicate;
@@ -71,7 +71,7 @@ sendIf(std::shared_ptr<Message> const& m, Predicate const& f)
 template <typename Predicate>
 struct SendIfNotPred
 {
-    using return_type = void;
+    using ReturnType = void;
 
     std::shared_ptr<Message> const& msg;
     Predicate const& predicate;
@@ -151,9 +151,9 @@ struct PeerInCluster
  */
 struct PeerInSet
 {
-    std::set<Peer::id_t> const& peerSet;
+    std::set<Peer::IdT> const& peerSet;
 
-    PeerInSet(std::set<Peer::id_t> const& peers) : peerSet(peers)
+    PeerInSet(std::set<Peer::IdT> const& peers) : peerSet(peers)
     {
     }
 

@@ -40,7 +40,7 @@ public:
      */
     /** @{ */
     explicit Seed(Slice const& slice);
-    explicit Seed(uint128 const& seed);
+    explicit Seed(UInt128 const& seed);
     /** @} */
 
     [[nodiscard]] std::uint8_t const*

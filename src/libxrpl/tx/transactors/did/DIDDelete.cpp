@@ -64,7 +64,7 @@ DIDDelete::doApply()
 }
 
 void
-DIDDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+DIDDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -75,9 +75,9 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         uint32_t const flags = 0,
         bool const domainOffer = false)
     {
-        auto offerInDir = [&](uint256 const& directory,
+        auto offerInDir = [&](UInt256 const& directory,
                               uint64_t const pageIndex,
-                              std::optional<uint256> domain = std::nullopt) -> bool {
+                              std::optional<UInt256> domain = std::nullopt) -> bool {
             auto const page = env.le(keylet::page(directory, pageIndex));
             if (!page)
                 return false;
@@ -141,13 +141,13 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         return true;
     }
 
-    static uint256
+    static UInt256
     getBookDirKey(Book const& book, STAmount const& takerPays, STAmount const& takerGets)
     {
         return keylet::quality(keylet::book(book), getRate(takerGets, takerPays)).key;
     }
 
-    static std::optional<uint256>
+    static std::optional<UInt256>
     getDefaultOfferDirKey(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
         if (auto const sle = env.le(keylet::offer(account.id(), SeqProxy::rawSequence(offerSeq))))
@@ -157,7 +157,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     }
 
     [[nodiscard]] static bool
-    checkDirectorySize(Env const& env, uint256 directory, std::uint32_t dirSize)
+    checkDirectorySize(Env const& env, UInt256 directory, std::uint32_t dirSize)
     {
         std::optional<std::uint64_t> pageIndex{0};
         std::uint32_t dirCnt = 0;
@@ -210,7 +210,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
                 PermissionedDEX(env);
 
-            env(offer(bob_, XRP(10), USD(10)), Domain(uint256{}), Ter(temMALFORMED));
+            env(offer(bob_, XRP(10), USD(10)), Domain(UInt256{}), Ter(temMALFORMED));
             env.close();
         }
 
@@ -289,7 +289,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             Env env(*this, features);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
-            uint256 const badDomain{
+            UInt256 const badDomain{
                 "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
                 "E5"};
 
@@ -428,7 +428,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env(pay(bob_, alice_, USD(10)),
                 Path(~USD),
                 Sendmax(XRP(10)),
-                Domain(uint256{}),
+                Domain(UInt256{}),
                 Ter(temMALFORMED));
             env.close();
         }
@@ -438,7 +438,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             Env env(*this, features);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
-            uint256 const badDomain{
+            UInt256 const badDomain{
                 "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
                 "E5"};
 
@@ -1700,7 +1700,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 PermissionedDEX(env);
 
-            uint256 const badDomain{
+            UInt256 const badDomain{
                 "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
                 "E5"};
 
@@ -2025,7 +2025,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.fund(XRP(1000), carol);
             env.close();
 
-            env(ledger_state_fix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
+            env(ledger_state_fix::bookExchangeRate(carol, UInt256{1}), Ter(temDISABLED));
         }
 
         {
@@ -2038,13 +2038,13 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             // BookExchangeRate fixes require sfBookDirectory.
-            auto missingBookDirectory = ledger_state_fix::bookExchangeRate(carol, uint256{1});
+            auto missingBookDirectory = ledger_state_fix::bookExchangeRate(carol, UInt256{1});
             missingBookDirectory.removeMember(sfBookDirectory.jsonName);
             env(missingBookDirectory, Ter(temINVALID));
 
             // BookExchangeRate fixes reject fields that belong to other
             // LedgerStateFix types.
-            auto extraOwner = ledger_state_fix::bookExchangeRate(carol, uint256{1});
+            auto extraOwner = ledger_state_fix::bookExchangeRate(carol, UInt256{1});
             extraOwner[sfOwner.jsonName] = carol.human();
             env(extraOwner, Ter(temINVALID));
         }
@@ -2056,7 +2056,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             {
                 // Preclaim check: the target directory must exist.
-                env(ledger_state_fix::bookExchangeRate(setup.carol, uint256{1}),
+                env(ledger_state_fix::bookExchangeRate(setup.carol, UInt256{1}),
                     Fee(fixFee),
                     Ter(tecOBJECT_NOT_FOUND));
             }

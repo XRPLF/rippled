@@ -1085,7 +1085,7 @@ private:
         env.close();
         env.require(Balance(cam, aBux(350'000'000'000'000)));
         env.require(Balance(cam, bBux(350'000'000'000'000)));
-        env.require(offers(cam, 1));
+        env.require(Offers(cam, 1));
 
         // This offer caused the assert.
         env(offer(cam, bBux(300'000'000'000'000), aBux(300'000'000'000'000)));

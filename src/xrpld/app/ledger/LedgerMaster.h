@@ -52,7 +52,7 @@ public:
     explicit LedgerMaster(
         Application& app,
         Stopwatch& stopwatch,
-        beast::insight::Collector::ptr const& collector,
+        beast::insight::Collector::Ptr const& collector,
         beast::Journal journal);
 
     ~LedgerMaster() override = default;
@@ -120,7 +120,7 @@ public:
     switchLCL(std::shared_ptr<Ledger const> const& lastClosed);
 
     void
-    failedSave(std::uint32_t seq, uint256 const& hash);
+    failedSave(std::uint32_t seq, UInt256 const& hash);
 
     std::string
     getCompleteLedgers() const;
@@ -149,7 +149,7 @@ public:
     /**
      * Get a ledger's hash by sequence number using the cache
      */
-    uint256
+    UInt256
     getHashBySeq(std::uint32_t index);
 
     /**
@@ -176,7 +176,7 @@ public:
     getLedgerBySeq(std::uint32_t index);
 
     std::shared_ptr<Ledger const>
-    getLedgerByHash(uint256 const& hash);
+    getLedgerByHash(UInt256 const& hash);
 
     void
     setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV);
@@ -211,11 +211,11 @@ public:
     void
     checkAccept(std::shared_ptr<Ledger const> const& ledger);
     void
-    checkAccept(uint256 const& hash, std::uint32_t seq);
+    checkAccept(UInt256 const& hash, std::uint32_t seq);
     void
     consensusBuilt(
         std::shared_ptr<Ledger const> const& ledger,
-        uint256 const& consensusHash,
+        UInt256 const& consensusHash,
         json::Value consensus);
 
     void
@@ -250,16 +250,16 @@ public:
     gotFetchPack(bool progress, std::uint32_t seq);
 
     void
-    addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data);
+    addFetchPack(UInt256 const& hash, std::shared_ptr<Blob> data);
 
     std::optional<Blob>
-    getFetchPack(uint256 const& hash) override;
+    getFetchPack(UInt256 const& hash) override;
 
     void
     makeFetchPack(
         std::weak_ptr<Peer> const& wPeer,
         std::shared_ptr<protocol::TMGetObjectByHash> const& request,
-        uint256 haveLedgerHash,
+        UInt256 haveLedgerHash,
         UptimeClock::time_point uptime);
 
     std::size_t
@@ -279,7 +279,7 @@ public:
     minSqlSeq();
 
     // Iff a txn exists at the specified ledger and offset then return its txnid
-    std::optional<uint256>
+    std::optional<UInt256>
     txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex);
 
 private:
@@ -342,11 +342,11 @@ private:
     std::shared_ptr<Ledger const> histLedger_;
 
     // Fully validated ledger, whether or not we have the ledger resident.
-    std::pair<uint256, LedgerIndex> lastValidLedger_{uint256(), 0};
+    std::pair<UInt256, LedgerIndex> lastValidLedger_{UInt256(), 0};
 
     LedgerHistory ledgerHistory_;
 
-    CanonicalTXSet heldTransactions_{uint256()};
+    CanonicalTXSet heldTransactions_{UInt256()};
 
     // A set of transactions to replay during the next close
     std::unique_ptr<LedgerReplay> replayData_;
@@ -383,7 +383,7 @@ private:
 
     std::uint32_t const ledgerFetchSize_;
 
-    TaggedCache<uint256, Blob> fetchPacks_;
+    TaggedCache<UInt256, Blob> fetchPacks_;
 
     std::uint32_t fetchSeq_{0};
 
@@ -398,7 +398,7 @@ private:
     struct Stats
     {
         template <class Handler>
-        Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
+        Stats(Handler const& handler, beast::insight::Collector::Ptr const& collector)
             : hook(collector->makeHook(handler))
             , validatedLedgerAge(collector->makeGauge("LedgerMaster", "Validated_Ledger_Age"))
             , publishedLedgerAge(collector->makeGauge("LedgerMaster", "Published_Ledger_Age"))

@@ -22,7 +22,7 @@
 
 namespace xrpl {
 
-TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
+TxMeta::TxMeta(UInt256 const& txid, std::uint32_t ledger, STObject const& obj)
     : transactionID_(txid)
     , ledgerSeq_(ledger)
     , index_(obj.getFieldU32(sfTransactionIndex))
@@ -36,7 +36,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
     setAdditionalFields(obj);
 }
 
-TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
+TxMeta::TxMeta(UInt256 const& txid, std::uint32_t ledger, Blob const& vec)
     : transactionID_(txid), ledgerSeq_(ledger), nodes_(sfAffectedNodes, 32)
 {
     SerialIter sit(makeSlice(vec));
@@ -49,7 +49,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
     setAdditionalFields(obj);
 }
 
-TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
+TxMeta::TxMeta(UInt256 const& transactionID, std::uint32_t ledger)
     : transactionID_(transactionID)
     , ledgerSeq_(ledger)
     , index_(std::numeric_limits<std::uint32_t>::max())
@@ -60,7 +60,7 @@ TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
 }
 
 void
-TxMeta::setAffectedNode(uint256 const& node, SField const& type, std::uint16_t nodeType)
+TxMeta::setAffectedNode(UInt256 const& node, SField const& type, std::uint16_t nodeType)
 {
     // make sure the node exists and force its type
     for (auto& n : nodes_)
@@ -146,9 +146,9 @@ TxMeta::getAffectedAccounts() const
 }
 
 STObject&
-TxMeta::getAffectedNode(SLE::ref node, SField const& type)
+TxMeta::getAffectedNode(SLE::Ref node, SField const& type)
 {
-    uint256 const index = node->key();
+    UInt256 const index = node->key();
     for (auto& n : nodes_)
     {
         if (n.getFieldH256(sfLedgerIndex) == index)
@@ -158,7 +158,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
     STObject& obj = nodes_.back();
 
     XRPL_ASSERT(
-        obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
+        obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::Ref) : field type match");
     obj.setFieldH256(sfLedgerIndex, index);
     obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
@@ -166,7 +166,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 }
 
 STObject&
-TxMeta::getAffectedNode(uint256 const& node)
+TxMeta::getAffectedNode(UInt256 const& node)
 {
     for (auto& n : nodes_)
     {
@@ -174,7 +174,7 @@ TxMeta::getAffectedNode(uint256 const& node)
             return n;
     }
     // LCOV_EXCL_START
-    UNREACHABLE("xrpl::TxMeta::getAffectedNode(uint256) : node not found");
+    UNREACHABLE("xrpl::TxMeta::getAffectedNode(UInt256) : node not found");
     Throw<std::runtime_error>("Affected node not found");
     return *(nodes_.begin());  // Silence compiler warning.
     // LCOV_EXCL_STOP

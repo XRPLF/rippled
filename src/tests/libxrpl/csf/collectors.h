@@ -186,7 +186,7 @@ struct TxCollector
         }
     };
 
-    hash_map<Tx::ID, Tracker> txs;
+    HashMap<Tx::ID, Tracker> txs;
 
     using Hist = Histogram<SimTime::duration>;
     Hist submitToAccept;
@@ -412,7 +412,7 @@ struct LedgerCollector
         }
     };
 
-    hash_map<Ledger::ID, Tracker> ledgers;
+    HashMap<Ledger::ID, Tracker> ledgers;
 
     using Hist = Histogram<SimTime::duration>;
     Hist acceptToFullyValid;

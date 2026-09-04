@@ -48,10 +48,10 @@ namespace xrpl {
 ConnectAttempt::ConnectAttempt(
     Application& app,
     boost::asio::io_context& ioContext,
-    endpoint_type remoteEndpoint,
+    EndpointType remoteEndpoint,
     resource::Consumer usage,
-    shared_context const& context,
-    Peer::id_t id,
+    SharedContext const& context,
+    Peer::IdT id,
     std::shared_ptr<peer_finder::Slot> const& slot,
     beast::Journal journal,
     OverlayImpl& overlay)
@@ -65,8 +65,8 @@ ConnectAttempt::ConnectAttempt(
     , strand_(boost::asio::make_strand(ioContext))
     , timer_(ioContext)
     , streamPtr_(
-          std::make_unique<stream_type>(
-              socket_type(std::forward<boost::asio::io_context&>(ioContext)),
+          std::make_unique<StreamType>(
+              SocketType(std::forward<boost::asio::io_context&>(ioContext)),
               *context))
     , socket_(streamPtr_->next_layer().socket())
     , stream_(*streamPtr_)
@@ -104,7 +104,7 @@ ConnectAttempt::run()
     stream_.next_layer().async_connect(
         remoteEndpoint_,
         boost::asio::bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onConnect(ec); }));
+            strand_, [self = shared_from_this()](ErrorCode const& ec) { self->onConnect(ec); }));
 }
 
 //------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ ConnectAttempt::fail(std::string const& reason)
 }
 
 void
-ConnectAttempt::fail(std::string const& name, error_code ec)
+ConnectAttempt::fail(std::string const& name, ErrorCode ec)
 {
     JLOG(journal_.debug()) << name << ": " << ec.message();
     close();
@@ -159,7 +159,7 @@ ConnectAttempt::setTimer()
 
     timer_.async_wait(
         boost::asio::bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+            strand_, [self = shared_from_this()](ErrorCode const& ec) { self->onTimer(ec); }));
 }
 
 void
@@ -176,7 +176,7 @@ ConnectAttempt::cancelTimer()
 }
 
 void
-ConnectAttempt::onTimer(error_code ec)
+ConnectAttempt::onTimer(ErrorCode ec)
 {
     if (!socket_.is_open())
         return;
@@ -196,7 +196,7 @@ ConnectAttempt::onTimer(error_code ec)
 }
 
 void
-ConnectAttempt::onConnect(error_code ec)
+ConnectAttempt::onConnect(ErrorCode ec)
 {
     cancelTimer();
 
@@ -226,11 +226,11 @@ ConnectAttempt::onConnect(error_code ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
+            strand_, [self = shared_from_this()](ErrorCode const& ec) { self->onHandshake(ec); }));
 }
 
 void
-ConnectAttempt::onHandshake(error_code ec)
+ConnectAttempt::onHandshake(ErrorCode ec)
 {
     cancelTimer();
     if (!socket_.is_open())
@@ -287,11 +287,11 @@ ConnectAttempt::onHandshake(error_code ec)
         req_,
         boost::asio::bind_executor(
             strand_,
-            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onWrite(ec); }));
+            [self = shared_from_this()](ErrorCode const& ec, std::size_t) { self->onWrite(ec); }));
 }
 
 void
-ConnectAttempt::onWrite(error_code ec)
+ConnectAttempt::onWrite(ErrorCode ec)
 {
     cancelTimer();
 
@@ -313,11 +313,11 @@ ConnectAttempt::onWrite(error_code ec)
         response_,
         boost::asio::bind_executor(
             strand_,
-            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onRead(ec); }));
+            [self = shared_from_this()](ErrorCode const& ec, std::size_t) { self->onRead(ec); }));
 }
 
 void
-ConnectAttempt::onRead(error_code ec)
+ConnectAttempt::onRead(ErrorCode ec)
 {
     cancelTimer();
 
@@ -336,7 +336,7 @@ ConnectAttempt::onRead(error_code ec)
             stream_.async_shutdown(
                 boost::asio::bind_executor(
                     strand_,
-                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+                    [self = shared_from_this()](ErrorCode const& ec) { self->onShutdown(ec); }));
             return;
         }
 
@@ -348,7 +348,7 @@ ConnectAttempt::onRead(error_code ec)
 }
 
 void
-ConnectAttempt::onShutdown(error_code ec)
+ConnectAttempt::onShutdown(ErrorCode ec)
 {
     cancelTimer();
     if (!ec)
@@ -394,7 +394,7 @@ ConnectAttempt::processResponse()
                     {
                         if (v.isString())
                         {
-                            error_code ec;
+                            ErrorCode ec;
                             auto const ep = parseEndpoint(v.asString(), ec);
                             if (!ec)
                                 eps.push_back(ep);

@@ -438,7 +438,7 @@ public:
 class LoanBatch_test : public LoanTestBase
 {
 protected:
-    beast::xor_shift_engine engine_;
+    beast::XorShiftEngine engine_;
 
     std::uniform_int_distribution<> assetDist_{0, 2};
     std::uniform_int_distribution<std::int64_t> principalDist_{100'000, 1'000'000'000};

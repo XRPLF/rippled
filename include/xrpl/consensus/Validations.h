@@ -312,28 +312,25 @@ class Validations
     mutable Mutex mutex_;
 
     // Validations from currently listed and trusted nodes (partial and full)
-    hash_map<NodeID, Validation> current_;
+    HashMap<NodeID, Validation> current_;
 
     // Used to enforce the largest validation invariant for the local node
     SeqEnforcer<Seq> localSeqEnforcer_;
 
     // Sequence of the largest validation received from each node
-    hash_map<NodeID, SeqEnforcer<Seq>> seqEnforcers_;
+    HashMap<NodeID, SeqEnforcer<Seq>> seqEnforcers_;
 
     /**
      * Validations from listed nodes, indexed by ledger id (partial and full)
      */
-    beast::aged_unordered_map<
-        ID,
-        hash_map<NodeID, Validation>,
-        std::chrono::steady_clock,
-        beast::Uhash<>>
-        byLedger_;
+    beast::
+        AgedUnorderedMap<ID, HashMap<NodeID, Validation>, std::chrono::steady_clock, beast::Uhash<>>
+            byLedger_;
 
     // Partial and full validations indexed by sequence
-    beast::aged_unordered_map<
+    beast::AgedUnorderedMap<
         Seq,
-        hash_map<NodeID, Validation>,
+        HashMap<NodeID, Validation>,
         std::chrono::steady_clock,
         beast::Uhash<>>
         bySequence_;
@@ -351,10 +348,10 @@ class Validations
 
     // Last (validated) ledger successfully acquired. If in this map, it is
     // accounted for in the trie.
-    hash_map<NodeID, Ledger> lastLedger_;
+    HashMap<NodeID, Ledger> lastLedger_;
 
     // Set of ledgers being acquired from the network
-    hash_map<std::pair<Seq, ID>, hash_set<NodeID>> acquiring_;
+    HashMap<std::pair<Seq, ID>, HashSet<NodeID>> acquiring_;
 
     // Parameters to determine validation staleness
     ValidationParms const parms_;
@@ -794,7 +791,7 @@ public:
      * @param removed Identifiers of nodes that are no longer trusted
      */
     void
-    trustChanged(hash_set<NodeID> const& added, hash_set<NodeID> const& removed)
+    trustChanged(HashSet<NodeID> const& added, HashSet<NodeID> const& removed)
     {
         std::scoped_lock const lock{mutex_};
 
@@ -862,9 +859,9 @@ public:
             // fall back to majority over acquiring ledgers
             auto it = std::ranges::max_element(acquiring_, [](auto const& a, auto const& b) {
                 std::pair<Seq, ID> const& aKey = a.first;
-                typename hash_set<NodeID>::size_type const& aSize = a.second.size();
+                typename HashSet<NodeID>::size_type const& aSize = a.second.size();
                 std::pair<Seq, ID> const& bKey = b.first;
-                typename hash_set<NodeID>::size_type const& bSize = b.second.size();
+                typename HashSet<NodeID>::size_type const& bSize = b.second.size();
                 // order by number of trusted peers validating that ledger
                 // break ties with ledger ID
                 return std::tie(aSize, aKey.second) < std::tie(bSize, bKey.second);
@@ -930,7 +927,7 @@ public:
      *       does not know their sequence number
      */
     ID
-    getPreferredLCL(Ledger const& lcl, Seq minSeq, hash_map<ID, std::uint32_t> const& peerCounts)
+    getPreferredLCL(Ledger const& lcl, Seq minSeq, HashMap<ID, std::uint32_t> const& peerCounts)
     {
         std::optional<std::pair<Seq, ID>> preferred = getPreferred(lcl);
 
@@ -1009,9 +1006,9 @@ public:
      * @return The set of node ids for active, listed validators
      */
     auto
-    getCurrentNodeIDs() -> hash_set<NodeID>
+    getCurrentNodeIDs() -> HashSet<NodeID>
     {
-        hash_set<NodeID> ret;
+        HashSet<NodeID> ret;
         std::scoped_lock const lock{mutex_};
         current(
             lock,
@@ -1127,7 +1124,7 @@ public:
      * @return Quantity of laggards.
      */
     std::size_t
-    laggards(Seq const seq, hash_set<NodeKey>& trustedKeys)
+    laggards(Seq const seq, HashSet<NodeKey>& trustedKeys)
     {
         std::size_t laggards = 0;
 

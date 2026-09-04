@@ -20,7 +20,7 @@ class CollectorManagerImp : public CollectorManager
 public:
     // NOLINTBEGIN(readability-identifier-naming)
     beast::Journal journal_;
-    beast::insight::Collector::ptr collector_;
+    beast::insight::Collector::Ptr collector_;
     std::unique_ptr<beast::insight::Groups> groups_;
     // NOLINTEND(readability-identifier-naming)
 
@@ -46,13 +46,13 @@ public:
 
     ~CollectorManagerImp() override = default;
 
-    beast::insight::Collector::ptr const&
+    beast::insight::Collector::Ptr const&
     collector() override
     {
         return collector_;
     }
 
-    beast::insight::Group::ptr const&
+    beast::insight::Group::Ptr const&
     group(std::string const& name) override
     {
         return groups_->get(name);

@@ -230,9 +230,9 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         // Remove if expired
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
-        if (entry->isFieldPresent(sfExpiration) && tp{d{(*entry)[sfExpiration]}} <= expire_)
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
+        if (entry->isFieldPresent(sfExpiration) && Tp{D{(*entry)[sfExpiration]}} <= expire_)
         {
             JLOG(j_.trace()) << "Removing expired offer " << entry->key();
             permRmOffer(entry->key());
@@ -401,7 +401,7 @@ TOfferStreamBase<TIn, TOut>::step()
 
 template <StepAmount TIn, StepAmount TOut>
 void
-FlowOfferStream<TIn, TOut>::permRmOffer(uint256 const& offerIndex)
+FlowOfferStream<TIn, TOut>::permRmOffer(UInt256 const& offerIndex)
 {
     permToRemove_.insert(offerIndex);
 }

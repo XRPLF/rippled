@@ -208,7 +208,7 @@ public:
             Env env(*this);
             env.fund(n, "alice", "bob", gw);
             env.close();
-            env(trust("alice", usd(100)), Require(lines("alice", 1)));
+            env(trust("alice", usd(100)), Require(Lines("alice", 1)));
         }
 
         // balance
@@ -335,7 +335,7 @@ public:
         env(pay(env.master, "dilbert", XRP(1000)), Sig(env.master));
 
         env.trust(usd(100), "alice", "bob", "carol");
-        env.require(Owners("alice", 1), lines("alice", 1));
+        env.require(Owners("alice", 1), Lines("alice", 1));
         env(rate(gw, 1.05));
 
         env(pay(gw, "carol", usd(50)));
@@ -482,8 +482,8 @@ public:
         {
             Env env(*this);
             env.fund(XRP(10000), "alice");
-            env(noop("alice"), Require(Owners("alice", 0), tickets("alice", 0)));
-            env(ticket::create("alice", 1), Require(Owners("alice", 1), tickets("alice", 1)));
+            env(noop("alice"), Require(Owners("alice", 0), Tickets("alice", 0)));
+            env(ticket::create("alice", 1), Require(Owners("alice", 1), Tickets("alice", 1)));
         }
     }
 
@@ -754,7 +754,7 @@ public:
         // the supported amendments list and tests that it can be
         // enabled explicitly
 
-        auto const neverSupportedFeat = [&]() -> std::optional<uint256> {
+        auto const neverSupportedFeat = [&]() -> std::optional<UInt256> {
             auto const n = supported.size();
             for (size_t i = 0; i < n; ++i)
             {
@@ -772,7 +772,7 @@ public:
             return;
         }
 
-        auto hasFeature = [](Env& env, uint256 const& f) {
+        auto hasFeature = [](Env& env, UInt256 const& f) {
             return (env.app().config().features.contains(f));
         };
 
@@ -781,14 +781,14 @@ public:
             Env env{*this};
             BEAST_EXPECT(supported.count() == env.app().config().features.size());
             foreachFeature(
-                supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
+                supported, [&](UInt256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
         }
 
         {
             // a Env FeatureBitset has *only* those features
             Env env{*this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
             BEAST_EXPECT(env.app().config().features.size() == 2);
-            foreachFeature(supported, [&](uint256 const& f) {
+            foreachFeature(supported, [&](UInt256 const& f) {
                 bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
@@ -801,7 +801,7 @@ public:
             // a Env supported_features_except is missing *only* those features
             Env env{*this, missingSomeFeatures};
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2));
-            foreachFeature(supported, [&](uint256 const& f) {
+            foreachFeature(supported, [&](UInt256 const& f) {
                 bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
@@ -820,7 +820,7 @@ public:
             BEAST_EXPECT(env.app().config().features.size() == (2 + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
 
-            foreachFeature(supported, [&](uint256 const& f) {
+            foreachFeature(supported, [&](UInt256 const& f) {
                 bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
@@ -836,7 +836,7 @@ public:
             // one additional never supported feature flag
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2 + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
-            foreachFeature(supported, [&](uint256 const& f) {
+            foreachFeature(supported, [&](UInt256 const& f) {
                 bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
@@ -853,7 +853,7 @@ public:
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(
-                supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
+                supported, [&](UInt256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
         }
     }
 
