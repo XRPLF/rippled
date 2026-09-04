@@ -19,6 +19,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
@@ -809,6 +810,8 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
             jvResult[jss::engine_result] = sToken;
             jvResult[jss::engine_result_code] = tpTrans->getResult();
             jvResult[jss::engine_result_message] = sHuman;
+
+            rpc::populateAugmentedSubmitFields(jvResult, tpTrans);
         }
     }
     catch (std::exception&)
@@ -819,6 +822,33 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 }
 
 }  // namespace detail
+
+//------------------------------------------------------------------------------
+
+void
+populateAugmentedSubmitFields(
+    json::Value& jvResult,
+    std::shared_ptr<Transaction> const& transaction)
+{
+    auto const submitResult = transaction->getSubmitResult();
+
+    jvResult[jss::accepted] = submitResult.any();
+    jvResult[jss::applied] = submitResult.applied;
+    jvResult[jss::broadcast] = submitResult.broadcast;
+    jvResult[jss::queued] = submitResult.queued;
+    jvResult[jss::kept] = submitResult.kept;
+
+    if (auto currentLedgerState = transaction->getCurrentLedgerState())
+    {
+        jvResult[jss::account_sequence_next] =
+            safeCast<json::Value::UInt>(currentLedgerState->accountSeqNext);
+        jvResult[jss::account_sequence_available] =
+            safeCast<json::Value::UInt>(currentLedgerState->accountSeqAvail);
+        jvResult[jss::open_ledger_cost] = to_string(currentLedgerState->minFeeRequired);
+        jvResult[jss::validated_ledger_index] =
+            safeCast<json::Value::UInt>(currentLedgerState->validatedLedger);
+    }
+}
 
 //------------------------------------------------------------------------------
 
