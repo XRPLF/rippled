@@ -28,10 +28,10 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <memory>
 #include <system_error>
@@ -101,10 +101,10 @@ NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
 {
     STAmount const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount <= beast::kZero)
+    if (amount.native() || !isPositiveAmount(amount))
         return temBAD_AMOUNT;
 
-    if (badCurrency() == amount.get<Issue>().currency)
+    if (isBadCurrency(amount.get<Issue>().currency))
         return temBAD_CURRENCY;
 
     return tesSUCCESS;
@@ -118,7 +118,7 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
+    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || !isPositiveAmount(amount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -141,7 +141,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     }
     else
     {
-        if (amount <= beast::kZero)
+        if (!isPositiveXRPAmount(amount))
             return temBAD_AMOUNT;
     }
 

@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -17,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <memory>
 #include <utility>
@@ -40,7 +40,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
         return err;
 
     auto const domain = ctx.tx.at(~sfDomainID);
-    if (domain && *domain == beast::kZero)
+    if (domain && isZeroId(*domain))
         return temMALFORMED;
 
     return tesSUCCESS;

@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 namespace xrpl {
 
@@ -28,7 +29,7 @@ LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
+    if (isZeroId(ctx.tx[sfLoanBrokerID]))
         return temINVALID;
 
     return tesSUCCESS;

@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 
 #include <algorithm>
@@ -78,10 +79,10 @@ LoanPay::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanPay::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::kZero)
+    if (isZeroId(ctx.tx[sfLoanID]))
         return temINVALID;
 
-    if (ctx.tx[sfAmount] <= beast::kZero)
+    if (!isPositiveAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is
