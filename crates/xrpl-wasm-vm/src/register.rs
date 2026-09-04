@@ -1,12 +1,17 @@
 //! What this engine does with each host call, once the ABI's own machinery has
 //! taken the call apart.
 //!
-//! `wasmi_glue!()` expands to the [`HostFunctionBodies`] trait and
+//! `wasmi_glue!` expands to the [`HostFunctionBodies`] trait and
 //! [`register_host_functions`], both generated from the declarations in
 //! `xrpl-host-functions` — so the wasm signature every closure is registered at is
 //! the one [`crate::check`] screens an import by, rather than a second statement of
 //! it. What is left here is one body per declaration, and the compiler will not
 //! accept the `impl` without all of them.
+//!
+//! [`glue_env`] is this engine's side of that macro's contract, and the expansion
+//! reaches for nothing outside it. The `use` lines below are the bodies' own, so
+//! what they import and what the macro is handed are separate lists that happen to
+//! overlap.
 //!
 //! **A body charges no gas and touches no wire encoding.** The generated closure
 //! does both, around the call: it charges before the body runs and turns the
@@ -27,19 +32,30 @@
 //! `CallResult<()>` and the glue charges it through `charged_unreported`. That
 //! comes from its declared `HostResult<()>` and not from a special case here.
 
-use crate::abi::{
-    CallResult, charged, charged_unreported, guest_memory, write_buffered, write_into,
-    write_mant_exp,
-};
+use crate::abi::{CallResult, guest_memory, write_buffered, write_into, write_mant_exp};
 use crate::args::{InBytes, InStr, InU32, OutBytes, TraceCode};
 use crate::vm::VmState;
 use wasmi::Caller;
 
-/// The module name the guest imports under (`(import "host_lib" "ldgr_index" …)`),
-/// as the guest SDK and this fork's fixtures spell it.
-pub(crate) const HOST_MODULE: &str = "host_lib";
+/// Everything `wasmi_glue!` names on this side, gathered where the macro can be
+/// handed it.
+///
+/// The macro is written in a crate that can name none of this, so it takes the
+/// module rather than resolving these names against whatever the call site
+/// happens to have in scope. A rename in `abi.rs` or `args.rs` is then an
+/// unresolved import on the line here that says the macro needs it.
+///
+/// What their *shapes* must be is not stated here and cannot be: the four region
+/// types implement `xrpl_host_functions::FromWasmRegion` and [`TraceCode`]
+/// implements `FromWasmScalar`, both in `args.rs`, and the expansion pins each
+/// charging helper's signature itself.
+mod glue_env {
+    pub(crate) use crate::abi::{CallResult, charged, charged_unreported};
+    pub(crate) use crate::args::{InBytes, InStr, InU32, OutBytes, TraceCode};
+    pub(crate) use crate::vm::VmState;
+}
 
-xrpl_host_functions::wasmi_glue!();
+xrpl_host_functions::wasmi_glue!(glue_env);
 
 /// The bodies this engine registers, named as one type so
 /// [`register_host_functions`] can be given them.

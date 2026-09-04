@@ -9,9 +9,11 @@
 //! derived from the declarations is generated. The expansion names nothing this file
 //! does not, so the two sides meet only in the block below.
 //!
-//! [`WasmValType`] crosses that split the other way: no declaration mentions it, but
-//! the wasm signature derived from each one is spelled in it, so it is hand-written
-//! here and the expansion names it.
+//! Three items cross that split the other way — no declaration mentions any of them,
+//! and the expansion names all three. [`WasmValType`] is what the wasm signature
+//! derived from a declaration is spelled in; `FromWasmRegion` and `FromWasmScalar`
+//! are what `wasmi_glue!` builds a marshalled argument through, and so are the shape
+//! half of that macro's contract with the engine it expands in.
 //!
 //! So this file is lists — error codes, trace data types, functions. The `macro_rules!`
 //! that expand the first two into enums live in `macros.rs`.
@@ -73,6 +75,14 @@ trace_data_types! {
     AsText = 7,
 }
 
+/// The wasm module name a guest imports these functions under:
+/// `(import "host_lib" "ldgr_index" …)`.
+///
+/// Part of the ABI rather than of any engine — it is half of every import's
+/// name, so a guest that spells it differently links against nothing. An engine
+/// registers under it and a screening stage refuses anything else.
+pub const HOST_MODULE: &str = "host_lib";
+
 /// A wasm value type, as much of them as this ABI uses.
 ///
 /// The vocabulary the generated wasm signatures are spelled in: a declaration's
@@ -83,6 +93,37 @@ trace_data_types! {
 pub enum WasmValType {
     I32,
     I64,
+}
+
+/// Builds the argument an engine marshals a `(ptr, len)` region into, from the
+/// two wasm parameters the region arrived as: a declared `&[u8]`, `&str`, `u32`
+/// or `&mut [u8]`.
+///
+/// This and [`FromWasmScalar`] are the shapes half of what `wasmi_glue!` needs of
+/// an engine — the module it is handed says *which* type marshals each declared
+/// one, and these say what the expansion may do with them. Nothing is checked
+/// here: the pair arrives as the guest sent it, and where a malformed region is
+/// refused is the engine's business.
+///
+/// **Kept apart from [`FromWasmScalar`]** rather than folded into one trait with
+/// an associated wasm type, and the reason is the diagnostic. The mistake worth
+/// catching is an arity one — a declared `u32` is a region, not a code — and as
+/// two traits that lands as an unsatisfied bound pointing at the offending
+/// argument type, where one trait would make it an `i32`-against-`(i32, i32)`
+/// mismatch pointing at the macro call.
+#[cfg(feature = "wasmi_glue")]
+pub trait FromWasmRegion {
+    fn from_wasm(ptr: i32, len: i32) -> Self;
+}
+
+/// Builds the argument an engine marshals a single `i32` code into: the declared
+/// `TraceDataType`.
+///
+/// [`FromWasmRegion`] is the other shape, and says why the two are separate
+/// traits.
+#[cfg(feature = "wasmi_glue")]
+pub trait FromWasmScalar {
+    fn from_wasm(code: i32) -> Self;
 }
 
 // Two rules hold over every declaration below, and neither is visible at any one of

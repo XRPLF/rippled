@@ -26,9 +26,8 @@ mod signature;
 
 use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
-use xrpl_host_functions::HostFunctionSpec;
+use xrpl_host_functions::{HOST_MODULE, HostFunctionSpec};
 
-use crate::register::HOST_MODULE;
 use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile};
 use signature::check_signature;
 

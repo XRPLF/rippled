@@ -14,10 +14,18 @@
 //! [`TraceCode`] must name a rendering. So the arguments arrive unchecked and are
 //! checked in the order the body reads them, which is the order the guest is
 //! answered in.
+//!
+//! **The `from_wasm` impls below are half of `wasmi_glue!`'s contract**, and the
+//! only construction these types have: the generated closures in `register.rs`
+//! build every argument through [`FromWasmRegion`] or [`FromWasmScalar`], and
+//! `register.rs`'s `glue_env` is where the macro is told which type here marshals
+//! which declared one. Which of the two traits a type takes is the ABI's decision
+//! and not this file's — so `InU32` is a region, four little-endian bytes rather
+//! than the scalar its declared `u32` reads like.
 
 use crate::vm::MAX_FIELD_BYTES;
 use core::ops::Range;
-use xrpl_host_functions::{HostError, HostResult, TraceDataType};
+use xrpl_host_functions::{FromWasmRegion, FromWasmScalar, HostError, HostResult, TraceDataType};
 
 /// A byte region as the guest declared it: the `(ptr, len)` pair off the wire, not
 /// yet checked.
@@ -68,11 +76,13 @@ impl Region {
 #[derive(Copy, Clone)]
 pub(crate) struct InBytes(Region);
 
-impl InBytes {
-    pub(crate) fn new(ptr: i32, len: i32) -> InBytes {
+impl FromWasmRegion for InBytes {
+    fn from_wasm(ptr: i32, len: i32) -> InBytes {
         InBytes(Region::new(ptr, len))
     }
+}
 
+impl InBytes {
     /// The region's bytes, aliasing the guest's memory rather than copied out of
     /// it.
     pub(crate) fn read(self, data: &[u8]) -> HostResult<&[u8]> {
@@ -84,11 +94,13 @@ impl InBytes {
 #[derive(Copy, Clone)]
 pub(crate) struct InStr(Region);
 
-impl InStr {
-    pub(crate) fn new(ptr: i32, len: i32) -> InStr {
+impl FromWasmRegion for InStr {
+    fn from_wasm(ptr: i32, len: i32) -> InStr {
         InStr(Region::new(ptr, len))
     }
+}
 
+impl InStr {
     /// The region's bytes as text. The read is also the UTF-8 check, so a host is
     /// never handed bytes claiming to be a `&str` and is not the one to validate
     /// them.
@@ -102,11 +114,13 @@ impl InStr {
 #[derive(Copy, Clone)]
 pub(crate) struct InU32(Region);
 
-impl InU32 {
-    pub(crate) fn new(ptr: i32, len: i32) -> InU32 {
+impl FromWasmRegion for InU32 {
+    fn from_wasm(ptr: i32, len: i32) -> InU32 {
         InU32(Region::new(ptr, len))
     }
+}
 
+impl InU32 {
     /// The number the region holds. Exactly four bytes, since the width is the
     /// ABI's rather than the guest's; `InvalidParams` for any other length.
     pub(crate) fn read(self, data: &[u8]) -> HostResult<u32> {
@@ -127,11 +141,13 @@ impl InU32 {
 #[derive(Copy, Clone)]
 pub(crate) struct OutBytes(Region);
 
-impl OutBytes {
-    pub(crate) fn new(ptr: i32, len: i32) -> OutBytes {
+impl FromWasmRegion for OutBytes {
+    fn from_wasm(ptr: i32, len: i32) -> OutBytes {
         OutBytes(Region::new(ptr, len))
     }
+}
 
+impl OutBytes {
     pub(crate) fn range(self) -> HostResult<Range<usize>> {
         self.0.range()
     }
@@ -145,11 +161,13 @@ impl OutBytes {
 #[derive(Copy, Clone)]
 pub(crate) struct TraceCode(i32);
 
-impl TraceCode {
-    pub(crate) fn new(code: i32) -> TraceCode {
+impl FromWasmScalar for TraceCode {
+    fn from_wasm(code: i32) -> TraceCode {
         TraceCode(code)
     }
+}
 
+impl TraceCode {
     /// The type the code names; `InvalidParams` if it names none, since a
     /// rendering the guest did not ask for is not one to guess at.
     pub(crate) fn read(self) -> HostResult<TraceDataType> {
@@ -168,7 +186,7 @@ mod tests {
 
     #[test]
     fn a_u32_argument_is_four_little_endian_bytes() {
-        assert_eq!(InU32::new(0, 4).read(&MEMORY), Ok(0x1234_5678));
+        assert_eq!(InU32::from_wasm(0, 4).read(&MEMORY), Ok(0x1234_5678));
     }
 
     /// The width is the ABI's, so a region of any other length names no number —
@@ -178,7 +196,7 @@ mod tests {
     fn a_u32_argument_of_any_other_width_is_refused() {
         for len in [0, 1, 3, 5, 8] {
             assert_eq!(
-                InU32::new(0, len).read(&MEMORY),
+                InU32::from_wasm(0, len).read(&MEMORY),
                 Err(HostError::InvalidParams),
                 "{len} bytes"
             );
@@ -189,9 +207,9 @@ mod tests {
     /// and has nothing left to validate.
     #[test]
     fn a_str_argument_is_checked_where_it_is_read() {
-        assert_eq!(InStr::new(4, 2).read(&MEMORY), Ok("hi"));
+        assert_eq!(InStr::from_wasm(4, 2).read(&MEMORY), Ok("hi"));
         assert_eq!(
-            InStr::new(6, 1).read(&MEMORY),
+            InStr::from_wasm(6, 1).read(&MEMORY),
             Err(HostError::InvalidParams),
             "0xff is not UTF-8"
         );
@@ -202,18 +220,18 @@ mod tests {
     #[test]
     fn a_region_is_held_to_the_memory_and_to_the_field_cap() {
         assert_eq!(
-            InBytes::new(8, 16).read(&MEMORY),
+            InBytes::from_wasm(8, 16).read(&MEMORY),
             Err(HostError::PointerOutOfBounds)
         );
 
         let past_the_cap = i32::try_from(MAX_FIELD_BYTES).expect("the cap is a small constant") + 1;
         assert_eq!(
-            InBytes::new(0, past_the_cap).read(&MEMORY),
+            InBytes::from_wasm(0, past_the_cap).read(&MEMORY),
             Err(HostError::DataFieldTooLarge)
         );
 
         assert_eq!(
-            InBytes::new(-1, 4).read(&MEMORY),
+            InBytes::from_wasm(-1, 4).read(&MEMORY),
             Err(HostError::InvalidParams)
         );
     }
@@ -223,12 +241,12 @@ mod tests {
     #[test]
     fn a_trace_code_names_a_rendering_or_none() {
         for &data_type in TraceDataType::ALL {
-            assert_eq!(TraceCode::new(data_type.code()).read(), Ok(data_type));
+            assert_eq!(TraceCode::from_wasm(data_type.code()).read(), Ok(data_type));
         }
 
         for code in [0, -1, i32::MAX] {
             assert_eq!(
-                TraceCode::new(code).read(),
+                TraceCode::from_wasm(code).read(),
                 Err(HostError::InvalidParams),
                 "{code}"
             );

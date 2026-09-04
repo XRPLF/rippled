@@ -1,5 +1,12 @@
-//! The wire shape of a declaration: declared Rust types turned into wasm value
-//! types.
+//! The wire shape of a declaration: **everything a declared Rust type decides**,
+//! in one place — the wasm value types it lowers to, the names those wasm
+//! parameters take, the type a generated body is handed for it, and which of the
+//! ABI's two argument traits builds that type out of those parameters.
+//!
+//! Those four are one screen and one set of `match` arms on purpose. They are
+//! separately consumed — the first by the ABI table, all four by `glue` — but
+//! they must agree, and a reader answering "what does a `&[u8]` parameter become"
+//! should not have to read two files to find out.
 //!
 //! This is the only place that mapping is written down, and the whole of it —
 //! a type no arm here names is a type the ABI does not have, not a type that
@@ -23,7 +30,7 @@
 //! `HostResult` is — so a declaration may spell any of these types qualified.
 
 use proc_macro2::TokenStream;
-use quote::{ToTokens, quote};
+use quote::{ToTokens, format_ident, quote};
 use syn::{Ident, PathArguments, Type, TypePath, TypeReference};
 
 /// What a host function may be handed, and what each costs on the wire.
@@ -132,17 +139,59 @@ impl ParamType {
         }
     }
 
-    /// Whether this parameter is marshalled as a region rather than passed as a
-    /// wasm scalar.
+    /// What a declaration calls each of those wasm parameters: the declared name
+    /// for a scalar, and `{name}_ptr`/`{name}_len` for the pair a region lowers
+    /// to.
     ///
-    /// Exactly the types [`Self::as_wasm_params`] answers a pair for, which
-    /// `lowers_every_declared_parameter_type` pins row by row: the glue names a
-    /// region's two wasm parameters `{name}_ptr` and `{name}_len`, so the two
-    /// answers falling out of step would name a parameter the arity does not have.
-    pub(crate) fn is_region(self) -> bool {
+    /// **It must answer as many names as [`Self::as_wasm_params`] answers types**,
+    /// the generated closure declaring them one against the other. The two matches
+    /// are written with the same arms for that reason, and
+    /// `lowers_every_declared_parameter_type` pins the lengths row by row.
+    pub(crate) fn wasm_names(self, name: &Ident) -> Vec<Ident> {
         match self {
-            Self::I32 | Self::I64 | Self::TraceDataType => false,
-            Self::InBytes | Self::InStr | Self::InU32 | Self::OutBytes => true,
+            Self::I32 | Self::I64 | Self::TraceDataType => vec![name.clone()],
+            Self::InBytes | Self::InStr | Self::InU32 | Self::OutBytes => {
+                vec![format_ident!("{name}_ptr"), format_ident!("{name}_len")]
+            }
+        }
+    }
+
+    /// The type a generated body takes this parameter as: a wasm scalar spelled
+    /// as itself, and everything else the argument type carrying its shape and
+    /// its direction.
+    ///
+    /// This is what makes an input region used as an output one a compile error
+    /// naming both. The argument types are the engine's, not this crate's, so
+    /// `vm` is the path they are reached under — and **which types take it is
+    /// decided here**, since a wasm scalar is `i32` under every engine.
+    pub(crate) fn argument_type(self, vm: &TokenStream) -> TokenStream {
+        match self {
+            Self::I32 => quote!(i32),
+            Self::I64 => quote!(i64),
+            Self::TraceDataType => quote!(#vm::TraceCode),
+            Self::InBytes => quote!(#vm::InBytes),
+            Self::InStr => quote!(#vm::InStr),
+            Self::InU32 => quote!(#vm::InU32),
+            Self::OutBytes => quote!(#vm::OutBytes),
+        }
+    }
+
+    /// Which of the ABI's two argument traits builds this parameter's argument
+    /// type out of the wasm parameters it arrived as, or `None` for a wasm
+    /// scalar, which is marshalled by neither and reaches a body as itself.
+    ///
+    /// The arity is the whole of the distinction — `FromWasmRegion` takes the
+    /// two of a `(ptr, len)` pair, `FromWasmScalar` the one of a code — so this
+    /// answers alongside [`Self::as_wasm_params`] rather than from a predicate
+    /// somewhere else. `u32` is the row worth knowing: it is a region, so a
+    /// declared sequence number is two wasm parameters and not one.
+    pub(crate) fn argument_trait(self) -> Option<TokenStream> {
+        match self {
+            Self::I32 | Self::I64 => None,
+            Self::TraceDataType => Some(quote!(FromWasmScalar)),
+            Self::InBytes | Self::InStr | Self::InU32 | Self::OutBytes => {
+                Some(quote!(FromWasmRegion))
+            }
         }
     }
 
@@ -239,35 +288,104 @@ mod tests {
 
     use WasmValType::{I32, I64};
 
-    /// Every declared parameter type, and what it costs on the wire. The whole
-    /// mapping, so nothing reaches the wire through a row nobody wrote down.
+    /// Every declared parameter type and everything it decides: what it costs on
+    /// the wire, what a body is handed for it, and which trait builds that. The
+    /// whole mapping, so nothing reaches the wire through a row nobody wrote down.
     ///
-    /// [`ParamType::is_region`] is asserted against the same rows rather than
-    /// against a list of its own: it must answer for exactly the types that lower
-    /// to a pair, and the glue names that pair from it.
+    /// The **names** are asserted here rather than in `glue`, and by length rather
+    /// than spelling: a type that answered fewer names than value types would have
+    /// the generated closure declare a parameter its arity does not have, and that
+    /// is the one way these answers can contradict each other.
+    ///
+    /// The trait column is the same agreement seen from the other side — a region
+    /// costs two wasm parameters and takes `FromWasmRegion`, a code one and
+    /// `FromWasmScalar`, and the two scalars neither.
     #[test]
     fn lowers_every_declared_parameter_type() {
-        let mapping: [(Type, &[WasmValType]); 7] = [
-            (parse_quote!(i32), &[I32]),
-            (parse_quote!(i64), &[I64]),
-            (parse_quote!(TraceDataType), &[I32]),
-            (parse_quote!(&[u8]), &[I32, I32]),
-            (parse_quote!(&str), &[I32, I32]),
-            (parse_quote!(u32), &[I32, I32]),
-            (parse_quote!(&mut [u8]), &[I32, I32]),
+        let mapping: [(Type, &[WasmValType], &str, Option<&str>); 7] = [
+            (parse_quote!(i32), &[I32], "i32", None),
+            (parse_quote!(i64), &[I64], "i64", None),
+            (
+                parse_quote!(TraceDataType),
+                &[I32],
+                "vm :: TraceCode",
+                Some("FromWasmScalar"),
+            ),
+            (
+                parse_quote!(&[u8]),
+                &[I32, I32],
+                "vm :: InBytes",
+                Some("FromWasmRegion"),
+            ),
+            (
+                parse_quote!(&str),
+                &[I32, I32],
+                "vm :: InStr",
+                Some("FromWasmRegion"),
+            ),
+            (
+                parse_quote!(u32),
+                &[I32, I32],
+                "vm :: InU32",
+                Some("FromWasmRegion"),
+            ),
+            (
+                parse_quote!(&mut [u8]),
+                &[I32, I32],
+                "vm :: OutBytes",
+                Some("FromWasmRegion"),
+            ),
         ];
+        let declared_name = format_ident!("seq");
+        let vm = quote!(vm);
 
-        for (declared, expected) in mapping {
+        for (declared, wasm, argument, argument_trait) in mapping {
             let param = ParamType::parse(&declared)
                 .unwrap_or_else(|_| panic!("`{}` should be a parameter type", quoted(&declared)));
-            assert_eq!(param.as_wasm_params(), expected, "`{}`", quoted(&declared));
+
+            assert_eq!(param.as_wasm_params(), wasm, "`{}`", quoted(&declared));
             assert_eq!(
-                param.is_region(),
-                expected.len() == 2,
-                "a region is exactly what lowers to a pair: `{}`",
+                param.argument_type(&vm).to_string(),
+                argument,
+                "`{}`",
+                quoted(&declared)
+            );
+            assert_eq!(
+                param
+                    .argument_trait()
+                    .map(|name| name.to_string())
+                    .as_deref(),
+                argument_trait,
+                "`{}`",
+                quoted(&declared)
+            );
+            assert_eq!(
+                param.wasm_names(&declared_name).len(),
+                wasm.len(),
+                "one name per wasm parameter: `{}`",
                 quoted(&declared)
             );
         }
+    }
+
+    /// A region's two wasm parameters are named off the declaration, so the
+    /// generated closure reads as the declaration does; a scalar keeps its name
+    /// outright.
+    #[test]
+    fn names_a_region_s_pair_after_the_declared_parameter() {
+        let seq = format_ident!("seq");
+
+        let names = |declared: Type| {
+            ParamType::parse(&declared)
+                .expect("a parameter type")
+                .wasm_names(&seq)
+                .iter()
+                .map(Ident::to_string)
+                .collect::<Vec<_>>()
+        };
+
+        assert_eq!(names(parse_quote!(u32)), ["seq_ptr", "seq_len"]);
+        assert_eq!(names(parse_quote!(i32)), ["seq"]);
     }
 
     /// The two `(ptr, len)` pairs that lower alike are still told apart, since
