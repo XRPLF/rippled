@@ -23,13 +23,13 @@ struct PaychannelKeyletCall : HostContextTest
                                  0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84};
     AccountID const account = AccountID::fromVoid(accountBytes.data());
     AccountID const destination = AccountID::fromVoid(destinationBytes.data());
-    std::int32_t const seq = 54321;
+    std::uint32_t const seq = 54321;
 };
 
 TEST_F(PaychannelKeyletCall, AccountsAndSeqAreForwardedKeyletIsWritten)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, paychannelKeylet(account, destination, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Return(keylet));
 
     OutRegion out{32};
@@ -42,7 +42,7 @@ TEST_F(PaychannelKeyletCall, AccountsAndSeqAreForwardedKeyletIsWritten)
 
 TEST_F(PaychannelKeyletCall, HostErrorBecomesContractReturnValue)
 {
-    EXPECT_CALL(host, paychannelKeylet(account, destination, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
 
     OutRegion out{32};
@@ -94,7 +94,7 @@ TEST_F(PaychannelKeyletCall, BothAccountsMalformedIsRefusedWithoutAskingHost)
 
 TEST_F(PaychannelKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 {
-    EXPECT_CALL(host, paychannelKeylet(account, destination, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Throw(std::runtime_error{"paychannel keylet came apart"}));
 
     OutRegion out{32};
@@ -111,7 +111,7 @@ TEST_F(PaychannelKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 TEST_F(PaychannelKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, paychannelKeylet(account, destination, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Return(keylet));
 
     OutRegion out{keylet.size() - 1};
@@ -125,7 +125,7 @@ TEST_F(PaychannelKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 TEST_F(PaychannelKeyletCall, OutRegionOfExactSizeIsWritten)
 {
     Bytes const keylet(32, 0xab);
-    EXPECT_CALL(host, paychannelKeylet(account, destination, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Return(keylet));
 
     OutRegion out{keylet.size()};
@@ -138,7 +138,7 @@ TEST_F(PaychannelKeyletCall, OutRegionOfExactSizeIsWritten)
 
 TEST_F(PaychannelKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
 {
-    EXPECT_CALL(host, paychannelKeylet(account, destination, static_cast<std::uint32_t>(seq)))
+    EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Return(Bytes{}));
 
     OutRegion out{32};

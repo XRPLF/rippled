@@ -686,12 +686,12 @@ HostContext::ammKeylet(
 std::int32_t
 HostContext::checkKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.checkKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.checkKeylet(accountId, seq);
         });
     });
 }
@@ -754,12 +754,12 @@ HostContext::didKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<std:
 std::int32_t
 HostContext::escrowKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.escrowKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.escrowKeylet(accountId, seq);
         });
     });
 }
@@ -788,12 +788,12 @@ HostContext::trustLineKeylet(
 std::int32_t
 HostContext::mptokenIssuanceKeylet(
     rust::Slice<std::uint8_t const> issuer,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(issuer, out, [&](auto const& accountId) {
-            return hostFunctions_.mptokenIssuanceKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.mptokenIssuanceKeylet(accountId, seq);
         });
     });
 }
@@ -819,12 +819,12 @@ HostContext::mptokenKeylet(
 std::int32_t
 HostContext::nftokenOfferKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.nftokenOfferKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.nftokenOfferKeylet(accountId, seq);
         });
     });
 }
@@ -832,12 +832,12 @@ HostContext::nftokenOfferKeylet(
 std::int32_t
 HostContext::offerKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.offerKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.offerKeylet(accountId, seq);
         });
     });
 }
@@ -845,12 +845,12 @@ HostContext::offerKeylet(
 std::int32_t
 HostContext::oracleKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t docId,
+    std::uint32_t docId,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.oracleKeylet(accountId, static_cast<std::uint32_t>(docId));
+            return hostFunctions_.oracleKeylet(accountId, docId);
         });
     });
 }
@@ -859,14 +859,13 @@ std::int32_t
 HostContext::paychannelKeylet(
     rust::Slice<std::uint8_t const> account,
     rust::Slice<std::uint8_t const> destination,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccounts(
             account, destination, out, [&](auto const& account1, auto const& account2) {
-                return hostFunctions_.paychannelKeylet(
-                    account1, account2, static_cast<std::uint32_t>(seq));
+                return hostFunctions_.paychannelKeylet(account1, account2, seq);
             });
     });
 }
@@ -874,13 +873,12 @@ HostContext::paychannelKeylet(
 std::int32_t
 HostContext::permissionedDomainKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.permissionedDomainKeylet(
-                accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.permissionedDomainKeylet(accountId, seq);
         });
     });
 }
@@ -900,12 +898,12 @@ HostContext::signerListKeylet(
 std::int32_t
 HostContext::ticketKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.ticketKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.ticketKeylet(accountId, seq);
         });
     });
 }
@@ -913,12 +911,12 @@ HostContext::ticketKeylet(
 std::int32_t
 HostContext::vaultKeylet(
     rust::Slice<std::uint8_t const> account,
-    std::int32_t seq,
+    std::uint32_t seq,
     rust::Slice<std::uint8_t> out) const noexcept
 {
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         return invokeWithAccount(account, out, [&](auto const& accountId) {
-            return hostFunctions_.vaultKeylet(accountId, static_cast<std::uint32_t>(seq));
+            return hostFunctions_.vaultKeylet(accountId, seq);
         });
     });
 }

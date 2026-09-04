@@ -5,3 +5,16 @@ edition.workspace = true
 
 [dependencies]
 xrpl-host-functions-macros.path = "../xrpl-host-functions-macros"
+
+# `wasmi_glue!` and the two argument traits it marshals through are a host's
+# business, and this crate is what a contract links against — so the feature is
+# what keeps `cargo doc` here showing a contract developer only the ABI. It costs
+# nothing either way: a `macro_rules!` is inert and a trait with no impls emits
+# nothing.
+#
+# `xrpl-wasm-vm` enables it and features unify across the graph, so the off
+# configuration is only ever checked by `cargo check -p xrpl-host-functions`,
+# which is in the loop in `tmp/notes/wasm-vm/testing.md` for that reason.
+[features]
+default = []
+wasmi_glue = []

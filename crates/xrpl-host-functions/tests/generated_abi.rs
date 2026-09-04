@@ -8,7 +8,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 
 use xrpl_host_functions::{
-    HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult, TraceDataType,
+    HASH_LEN, HostError, HostFunctionSpec, HostFunctions, HostResult, TraceDataType, WasmValType,
 };
 
 /// Records what it was asked to do; enough to prove the trait is usable.
@@ -196,7 +196,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// A keylet from an account and a sequence; `InvalidAccount` on an empty account.
-    fn check_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn check_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -263,7 +263,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The account-and-sequence shape, for an `Escrow`.
-    fn escrow_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn escrow_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -292,7 +292,7 @@ impl HostFunctions for FakeHost {
     fn mptoken_issuance_keylet(
         &self,
         issuer: &[u8],
-        _seq: i32,
+        _seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         if issuer.is_empty() {
@@ -314,7 +314,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The account-and-sequence shape, for an `NFTokenOffer`.
-    fn nftoken_offer_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn nftoken_offer_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -322,7 +322,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same account-and-sequence shape, for an `Offer`.
-    fn offer_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn offer_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -330,7 +330,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same account-and-scalar shape, for an `Oracle` keyed by document id.
-    fn oracle_keylet(&self, account: &[u8], _doc_id: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn oracle_keylet(&self, account: &[u8], _doc_id: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -343,7 +343,7 @@ impl HostFunctions for FakeHost {
         &self,
         account: &[u8],
         destination: &[u8],
-        _seq: i32,
+        _seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account.is_empty() || destination.is_empty() {
@@ -356,7 +356,7 @@ impl HostFunctions for FakeHost {
     fn permissioned_domain_keylet(
         &self,
         account: &[u8],
-        _seq: i32,
+        _seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account.is_empty() {
@@ -374,7 +374,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same account-and-sequence shape, for a `Ticket`.
-    fn ticket_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn ticket_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -382,7 +382,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same account-and-sequence shape, for a `Vault`.
-    fn vault_keylet(&self, account: &[u8], _seq: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn vault_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
             return Err(HostError::InvalidAccount);
         }
@@ -395,7 +395,7 @@ impl HostFunctions for FakeHost {
         put(out, &digest)
     }
 
-    fn trace(&self, msg: &str, data: &[u8], data_type: TraceDataType) -> HostResult<()> {
+    fn trace(&self, msg: &str, data_type: TraceDataType, data: &[u8]) -> HostResult<()> {
         self.traced
             .borrow_mut()
             .push(format!("{msg}/{data_type:?}/{}", data.len()));
@@ -457,12 +457,12 @@ impl HostFunctions for FakeHost {
     }
 
     /// A scalar-in float: writes the low byte of `x` as a stand-in float.
-    fn float_from_int(&self, x: i64, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_int(&self, x: i64, out: &mut [u8], _mode: i32) -> HostResult<usize> {
         put(out, &[x as u8])
     }
 
     /// A byte-in float; `InvalidParams` on an empty region.
-    fn float_from_uint(&self, x: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_uint(&self, x: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -470,7 +470,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same, for a serialized amount.
-    fn float_from_stamount(&self, amount: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stamount(&self, amount: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if amount.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -478,7 +478,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same, for a serialized number.
-    fn float_from_stnumber(&self, number: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_from_stnumber(&self, number: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if number.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -486,7 +486,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// A float rounded to an integer, written as bytes.
-    fn float_to_int(&self, x: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_to_int(&self, x: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -514,8 +514,8 @@ impl HostFunctions for FakeHost {
         &self,
         mantissa: i64,
         _exponent: i32,
-        _mode: i32,
         out: &mut [u8],
+        _mode: i32,
     ) -> HostResult<usize> {
         put(out, &[mantissa as u8])
     }
@@ -529,7 +529,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// A binary float operator; `InvalidParams` if either operand is empty.
-    fn float_add(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -537,7 +537,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same shape, for subtraction.
-    fn float_subtract(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_subtract(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -545,7 +545,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same shape, for multiplication.
-    fn float_multiply(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_multiply(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -553,7 +553,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same shape, for division.
-    fn float_divide(&self, x: &[u8], y: &[u8], _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_divide(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -561,7 +561,7 @@ impl HostFunctions for FakeHost {
     }
 
     /// The same shape, for exponentiation.
-    fn float_power(&self, x: &[u8], _n: i32, _mode: i32, out: &mut [u8]) -> HostResult<usize> {
+    fn float_power(&self, x: &[u8], _n: i32, out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
             return Err(HostError::InvalidParams);
         }
@@ -779,7 +779,7 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
-    assert_eq!(host.trace("hello", b"xy", TraceDataType::AsHex), Ok(()));
+    assert_eq!(host.trace("hello", TraceDataType::AsHex, b"xy"), Ok(()));
     assert_eq!(host.update_data(b"abcd"), Ok(4));
     assert_eq!(host.get_nft(&[7; 20], &[9; 32], &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
@@ -798,25 +798,25 @@ fn the_trait_is_implementable() {
     assert_eq!(host.get_nft_flags(&[]), Err(HostError::InvalidParams));
     assert_eq!(host.get_nft_transfer_fee(&[9; 32]), Ok(9));
     assert_eq!(host.get_nft_sequence(&[9; 32], &mut out), Ok(1));
-    assert_eq!(host.float_from_int(5, 0, &mut out), Ok(1));
-    assert_eq!(host.float_from_uint(&[3; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_from_stamount(&[3; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_from_stnumber(&[3; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_to_int(&[3; 8], 0, &mut out), Ok(1));
+    assert_eq!(host.float_from_int(5, &mut out, 0), Ok(1));
+    assert_eq!(host.float_from_uint(&[3; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_from_stamount(&[3; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_from_stnumber(&[3; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_to_int(&[3; 8], &mut out, 0), Ok(1));
     let mut mant = [0u8; 8];
     let mut exp = [0u8; 4];
     assert_eq!(host.float_to_mant_exp(&[3; 8], &mut mant, &mut exp), Ok(2));
-    assert_eq!(host.float_from_mant_exp(5, 0, 0, &mut out), Ok(1));
+    assert_eq!(host.float_from_mant_exp(5, 0, &mut out, 0), Ok(1));
     assert_eq!(host.float_compare(&[9; 8], &[4; 8]), Ok(5));
     assert_eq!(
         host.float_compare(&[], &[4; 8]),
         Err(HostError::InvalidParams)
     );
-    assert_eq!(host.float_add(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_subtract(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_multiply(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_divide(&[3; 8], &[4; 8], 0, &mut out), Ok(1));
-    assert_eq!(host.float_power(&[3; 8], 2, 0, &mut out), Ok(1));
+    assert_eq!(host.float_add(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_subtract(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_multiply(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_divide(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
+    assert_eq!(host.float_power(&[3; 8], 2, &mut out, 0), Ok(1));
 
     assert_eq!(*host.traced.borrow(), ["hello/AsHex/2"]);
 }
@@ -860,7 +860,7 @@ fn the_trait_is_callable_through_a_shared_trait_object() {
 
     assert_eq!(host.get_ledger_sqn(&mut out), Ok(4));
     assert_eq!(
-        host.trace("count", &1i64.to_le_bytes(), TraceDataType::Int64),
+        host.trace("count", TraceDataType::Int64, &1i64.to_le_bytes()),
         Ok(())
     );
 
@@ -947,6 +947,113 @@ fn the_spec_table_matches_the_declarations() {
     );
 }
 
+/// The wire shape of every function: the parameters a guest's import must declare
+/// and the result it must expect.
+///
+/// A change-detector like the table above, and the one statement of the wasm
+/// signature that is *not* derived from the declarations: the literals are the wire
+/// as `xrpl-wasm-vm` registers it, so this compares the two sides of the ABI rather
+/// than one against itself.
+///
+/// It catches arity and value types, not order: every region lowers to `i32`, so
+/// swapping two parameters leaves the signature identical.
+#[test]
+fn the_wasm_signatures_match_the_declarations() {
+    let table: Vec<String> = HostFunctionSpec::ALL
+        .iter()
+        .map(|function| format!("{} {}", function.wasm_name(), signature(*function)))
+        .collect();
+
+    assert_eq!(
+        table,
+        [
+            "ldgr_index (i32, i32) -> i32",
+            "parent_ldgr_time (i32, i32) -> i32",
+            "parent_ldgr_hash (i32, i32) -> i32",
+            "base_fee (i32, i32) -> i32",
+            "amendment_enabled (i32, i32) -> i32",
+            "cache_le (i32, i32, i32) -> i32",
+            "tx_field (i32, i32, i32) -> i32",
+            "home_le_field (i32, i32, i32) -> i32",
+            "le_field (i32, i32, i32, i32) -> i32",
+            "tx_inner (i32, i32, i32, i32) -> i32",
+            "home_le_inner (i32, i32, i32, i32) -> i32",
+            "le_inner (i32, i32, i32, i32, i32) -> i32",
+            "tx_arr_len (i32) -> i32",
+            "home_le_arr_len (i32) -> i32",
+            "le_arr_len (i32, i32) -> i32",
+            "tx_inner_arr_len (i32, i32) -> i32",
+            "home_le_inner_arr_len (i32, i32) -> i32",
+            "le_inner_arr_len (i32, i32, i32) -> i32",
+            "check_sig (i32, i32, i32, i32, i32, i32) -> i32",
+            "accountroot_id (i32, i32, i32, i32) -> i32",
+            "amm_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "check_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "credential_id (i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "delegate_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "deposit_preauth_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "did_id (i32, i32, i32, i32) -> i32",
+            "escrow_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "trustline_id (i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "mpt_issuance_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "mptoken_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "nft_offer_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "offer_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "oracle_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "paychan_id (i32, i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "permissioned_domain_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "signers_id (i32, i32, i32, i32) -> i32",
+            "ticket_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "vault_id (i32, i32, i32, i32, i32, i32) -> i32",
+            "sha512_half (i32, i32, i32, i32) -> i32",
+            "trace (i32, i32, i32, i32, i32)",
+            "set_data (i32, i32) -> i32",
+            "nft_uri (i32, i32, i32, i32, i32, i32) -> i32",
+            "nft_issuer (i32, i32, i32, i32) -> i32",
+            "nft_taxon (i32, i32, i32, i32) -> i32",
+            "nft_flags (i32, i32) -> i32",
+            "nft_xfer_fee (i32, i32) -> i32",
+            "nft_serial (i32, i32, i32, i32) -> i32",
+            "float_from_int (i64, i32, i32, i32) -> i32",
+            "float_from_uint (i32, i32, i32, i32, i32) -> i32",
+            "float_from_stamount (i32, i32, i32, i32, i32) -> i32",
+            "float_from_stnumber (i32, i32, i32, i32, i32) -> i32",
+            "float_to_int (i32, i32, i32, i32, i32) -> i32",
+            "float_to_mant_exp (i32, i32, i32, i32, i32, i32) -> i32",
+            "float_from_mant_exp (i64, i32, i32, i32, i32) -> i32",
+            "float_cmp (i32, i32, i32, i32) -> i32",
+            "float_add (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "float_sub (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "float_mult (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "float_div (i32, i32, i32, i32, i32, i32, i32) -> i32",
+            "float_pow (i32, i32, i32, i32, i32, i32) -> i32",
+        ]
+    );
+}
+
+/// `(i32, i32) -> i32`: one function type, spelled as wasm's text format and
+/// wasmi's own errors spell it.
+fn signature(function: HostFunctionSpec) -> String {
+    let params: Vec<&str> = function
+        .wasm_params()
+        .iter()
+        .copied()
+        .map(spelled)
+        .collect();
+
+    match function.wasm_result() {
+        Some(result) => format!("({}) -> {}", params.join(", "), spelled(result)),
+        None => format!("({})", params.join(", ")),
+    }
+}
+
+fn spelled(val_type: WasmValType) -> &'static str {
+    match val_type {
+        WasmValType::I32 => "i32",
+        WasmValType::I64 => "i64",
+    }
+}
+
 /// The other half of the wire vocabulary, and the same change-detector argument: the
 /// codes are what a guest passes, so they are pinned as literals here. `ALL` is in code
 /// order, so the round trip pins the discriminants and not just the membership.
@@ -982,15 +1089,19 @@ fn every_variant_appears_in_all_exactly_once() {
     assert_eq!(names.len(), HostFunctionSpec::ALL.len());
 }
 
-/// Both accessors are `const`, so an engine can build its import and gas tables at
-/// compile time rather than on every invocation. The assertions sit in `const`
-/// blocks so they are checked while compiling, which is the claim; the values
+/// Every accessor is `const`, so an engine can build its import, signature and gas
+/// tables at compile time rather than on every invocation. The assertions sit in
+/// `const` blocks so they are checked while compiling, which is the claim; the values
 /// themselves are pinned above.
 #[test]
 fn the_table_is_usable_in_const_context() {
     const NAME: &str = HostFunctionSpec::Trace.wasm_name();
     const GAS: u64 = HostFunctionSpec::Trace.gas();
+    const PARAMS: &[WasmValType] = HostFunctionSpec::Trace.wasm_params();
+    const RESULT: Option<WasmValType> = HostFunctionSpec::Trace.wasm_result();
 
     const { assert!(!NAME.is_empty()) };
     const { assert!(GAS > 0) };
+    const { assert!(!PARAMS.is_empty()) };
+    const { assert!(RESULT.is_none()) };
 }
