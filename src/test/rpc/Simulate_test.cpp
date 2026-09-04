@@ -1402,7 +1402,8 @@ class Simulate_test : public beast::unit_test::Suite
         });
 
         using namespace std::chrono_literals;
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
 
         // The handler must have set loadType to kFeeHeavyBurdenRpc
         BEAST_EXPECT(loadType == resource::kFeeHeavyBurdenRpc);
