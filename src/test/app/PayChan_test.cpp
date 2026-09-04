@@ -23,7 +23,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -1378,6 +1377,14 @@ struct PayChan_test : public beast::unit_test::Suite
                 rv = env.rpc("channel_verify", pkAsHex, chan1Str, " 1000", sig);
                 BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
                 rv = env.rpc("channel_verify", pkAsHex, chan1Str, "", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+            }
+            {
+                // zero drops — must be rejected as malformed (fix for #6764)
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto rv = env.rpc("channel_authorize", "alice", chan1Str, "0");
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "0", sig);
                 BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
             }
             {
