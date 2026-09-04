@@ -235,9 +235,9 @@
       "parent": "consensus.accept",
       "required_attributes": [
         "ledger_seq",
-        "close_time",
-        "parent_close_time",
-        "close_time_self",
+        "close_time_ripple_epoch_s",
+        "parent_close_time_ripple_epoch_s",
+        "close_time_self_ripple_epoch_s",
         "close_time_vote_bins",
         "resolution_direction"
       ],
@@ -302,7 +302,7 @@
       "parent": null,
       "required_attributes": [
         "ledger_seq",
-        "close_time",
+        "close_time_ripple_epoch_s",
         "close_time_correct",
         "close_resolution_ms"
       ],
