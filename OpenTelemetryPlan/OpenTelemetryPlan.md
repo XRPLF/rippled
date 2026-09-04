@@ -53,6 +53,7 @@ flowchart TB
         phases["06-implementation-phases.md"]
         backends["07-observability-backends.md"]
         appendix["08-appendix.md"]
+        secure["secure-OTel.md"]
     end
 
     overview --> fundamentals
@@ -67,6 +68,7 @@ flowchart TB
     config --> phases
     phases --> backends
     backends --> appendix
+    backends --> secure
 
     style overview fill:#1b5e20,stroke:#0d3d14,color:#fff,stroke-width:2px
     style fundamentals fill:#00695c,stroke:#004d40,color:#fff
@@ -81,6 +83,7 @@ flowchart TB
     style phases fill:#4a148c,stroke:#2e0d57,color:#fff
     style backends fill:#4a148c,stroke:#2e0d57,color:#fff
     style appendix fill:#4a148c,stroke:#2e0d57,color:#fff
+    style secure fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
 
 </div>
@@ -99,6 +102,7 @@ flowchart TB
 | **6**   | [Implementation Phases](./06-implementation-phases.md)     | 5-phase timeline, tasks, risks, success metrics                        |
 | **7**   | [Observability Backends](./07-observability-backends.md)   | Backend selection guide and production architecture                    |
 | **8**   | [Appendix](./08-appendix.md)                               | Glossary, references, version history                                  |
+| **Sec** | [Securing the OTel Pipeline](./secure-OTel.md)             | Threat model and hardening (mTLS, peer trace-context validation)       |
 
 ---
 
@@ -193,6 +197,14 @@ The recommended production architecture uses a gateway collector pattern with re
 The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, references to external documentation and specifications, version history for this implementation plan, and a complete document index.
 
 ➡️ **[View Appendix](./08-appendix.md)**
+
+---
+
+## Securing the OTel Pipeline
+
+Threat model and hardening guidance for production deployments where xrpld nodes ship telemetry to a centrally-hosted collector across an untrusted network. Covers the two attack surfaces (collector ingress and peer trace-context spoofing) and the chosen defenses: mTLS as primary collector auth, NetworkPolicy as defense-in-depth, and source-side validation plus per-peer rate limiting for the `protocol::TraceContext` field on peer messages.
+
+➡️ **[View Securing the OTel Pipeline](./secure-OTel.md)**
 
 ---
 

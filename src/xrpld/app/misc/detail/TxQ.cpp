@@ -2,8 +2,10 @@
 
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/detail/TxQSpanNames.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -30,6 +32,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 
@@ -541,6 +544,10 @@ TxQ::tryClearAccountQueueUpThruTx(
     FeeMetrics::Snapshot const& metricsSnapshot,
     beast::Journal j)
 {
+    using namespace telemetry;
+    [[maybe_unused]] ScopedSpanGuard span(
+        TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::batchClear);
+
     SeqProxy const tSeqProx{tx.getSeqProxy()};
     XRPL_ASSERT(
         beginTxIter != accountIter->second.transactions.end(),
@@ -612,7 +619,8 @@ TxQ::tryClearAccountQueueUpThruTx(
     if (txResult.applied)
     {
         // All of the queued transactions applied, so remove them from the
-        // queue.
+        // queue.  `dist` queued txs preceded the current one in the batch.
+        span.setAttribute(txq_span::attr::numCleared, static_cast<std::int64_t>(dist));
         endTxIter = erase(accountIter->second, beginTxIter, endTxIter);
         // If `tx` is replacing a queued tx, delete that one, too.
         if (endTxIter != accountIter->second.transactions.end() && endTxIter->first == tSeqProx)
@@ -741,8 +749,47 @@ TxQ::apply(
     OpenView& view,
     std::shared_ptr<STTx const> const& tx,
     ApplyFlags flags,
-    beast::Journal j)
+    beast::Journal j,
+    telemetry::SpanContext const* parentCtx)
 {
+    using namespace telemetry;
+    // Parent the enqueue span to the caller's tx.process span when a context is
+    // supplied (submission path), using the explicit-context factory: the parent
+    // comes from the captured ctx rather than being inherited from whatever span
+    // is ambient, and this ScopedSpanGuard's scope is RAII-bounded to this fully
+    // synchronous call (no coroutine yield), so no unrelated parent leaks in and
+    // its scope cannot leak out onto a reused worker.
+    // On the open-ledger rebuild path parentCtx is null and this is a root; the
+    // current_ledger_seq attribute below correlates it to the ledger instead.
+    // A lambda (not a ternary) picks the factory: ScopedSpanGuard's move ctor is
+    // deleted, so guaranteed copy elision on each return is the only way to
+    // construct it conditionally.
+    auto span = [&]() -> ScopedSpanGuard {
+        if (parentCtx && parentCtx->isValid())
+            return ScopedSpanGuard::childSpan(txq_span::enqueue, *parentCtx);
+        return ScopedSpanGuard(
+            TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
+    }();
+    // Guarded on the span being recorded: this runs for every transaction and
+    // again for each one replayed on an open-ledger rebuild, and the two hash
+    // strings each allocate. The compiled-out guard's operator bool() is a
+    // literal false, so the block disappears in that build.
+    if (span)
+    {
+        span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
+        if (auto const* fmt = TxFormats::getInstance().findByType(tx->getTxnType()))
+            span.setAttribute(txq_span::attr::txType, fmt->getName().c_str());
+        // The ledger being worked on (open/tentative apply or in-flight
+        // consensus build) — correlates this enqueue to the ledger trace in
+        // every context.
+        span.setAttribute(txq_span::attr::currentLedgerSeq, static_cast<std::int64_t>(view.seq()));
+        span.setAttribute(
+            txq_span::attr::currentLedgerHash, to_string(view.header().parentHash).c_str());
+        // Default outcome; overridden below on the direct-apply and queued
+        // paths. Every other early return leaves the tx rejected from the queue.
+        span.setAttribute(txq_span::attr::txqStatus, txq_span::val::rejected);
+    }
+
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
@@ -753,7 +800,10 @@ TxQ::apply(
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
+    {
+        span.setAttribute(txq_span::attr::txqStatus, txq_span::val::appliedDirect);
         return *directApplied;
+    }
 
     if ((flags & TapDryRun) != 0u)
         return {telCAN_NOT_QUEUE, false};
@@ -880,6 +930,10 @@ TxQ::apply(
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
     auto const feeLevelPaid = getFeeLevelPaid(view, *tx);
     auto const requiredFeeLevel = getRequiredFeeLevel(view, flags, metricsSnapshot, lock);
+    span.setAttribute(
+        txq_span::attr::feeLevelPaid, static_cast<std::int64_t>(feeLevelPaid.value()));
+    span.setAttribute(
+        txq_span::attr::requiredFeeLevel, static_cast<std::int64_t>(requiredFeeLevel.value()));
 
     // Is there a blocker already in the account's queue?  If so, don't
     // allow additional transactions in the queue.
@@ -1213,6 +1267,7 @@ TxQ::apply(
             /* Can't erase (*replacedTxIter) here because success
                 implies that it has already been deleted.
             */
+            span.setAttribute(txq_span::attr::txqStatus, txq_span::val::applied);
             return result;
         }
     }
@@ -1328,6 +1383,7 @@ TxQ::apply(
                      << " to queue."
                      << " Flags: " << flags;
 
+    span.setAttribute(txq_span::attr::txqStatus, txq_span::val::queued);
     return {terQUEUED, false};
 }
 
@@ -1346,6 +1402,10 @@ TxQ::apply(
 void
 TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 {
+    using namespace telemetry;
+    ScopedSpanGuard span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::cleanup);
+    span.setAttribute(txq_span::attr::ledgerSeq, static_cast<int64_t>(view.header().seq));
+
     std::scoped_lock const lock(mutex_);
 
     feeMetrics_.update(app, view, timeLeap, setup_);
@@ -1357,18 +1417,21 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
         maxSize_ = std::max(snapshot.txnsExpected * setup_.ledgersInQueue, setup_.queueSizeMin);
 
     // Remove any queued candidates whose LastLedgerSequence has gone by.
+    std::int64_t expiredCount = 0;
     for (auto candidateIter = byFee_.begin(); candidateIter != byFee_.end();)
     {
         if (candidateIter->lastValid && *candidateIter->lastValid <= ledgerSeq)
         {
             byAccount_.at(candidateIter->account).dropPenalty = true;
             candidateIter = erase(candidateIter);
+            ++expiredCount;
         }
         else
         {
             ++candidateIter;
         }
     }
+    span.setAttribute(txq_span::attr::expiredCount, expiredCount);
 
     // Remove any TxQAccounts that don't have candidates
     // under them
@@ -1417,6 +1480,8 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 bool
 TxQ::accept(Application& app, OpenView& view)
 {
+    using namespace telemetry;
+
     /* Move transactions from the queue from largest fee level to smallest.
        As we add more transactions, the required fee level will increase.
        Stop when the transaction fee level gets lower than the required fee
@@ -1426,6 +1491,11 @@ TxQ::accept(Application& app, OpenView& view)
     auto ledgerChanged = false;
 
     std::scoped_lock const lock(mutex_);
+
+    // Create the span and read byFee_.size() only after taking the lock, since
+    // byFee_ is guarded by mutex_.
+    ScopedSpanGuard span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::accept);
+    span.setAttribute(txq_span::attr::queueSize, static_cast<int64_t>(byFee_.size()));
 
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
 
@@ -1454,10 +1524,33 @@ TxQ::accept(Application& app, OpenView& view)
             JLOG(j_.trace()) << "Applying queued transaction " << candidateIter->txID
                              << " to open ledger.";
 
+            ScopedSpanGuard txSpan(
+                TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::acceptTx);
+            // Guarded on the span being recorded: this runs for every queued
+            // transaction the loop tries to apply to the open ledger, on every
+            // ledger close, and the hash string allocates 64 characters. The
+            // compiled-out guard's operator bool() is a literal false, so the
+            // block disappears in that build.
+            if (txSpan)
+            {
+                txSpan.setAttribute(txq_span::attr::txHash, to_string(candidateIter->txID).c_str());
+                txSpan.setAttribute(
+                    txq_span::attr::retriesRemaining,
+                    static_cast<int64_t>(candidateIter->retriesRemaining));
+            }
+
             auto const [txnResult, didApply, _metadata] = candidateIter->apply(app, view, j_);
+            // The apply above is the transaction itself and always runs; only
+            // the attribute reading its result is telemetry. transToken() is a
+            // lookup that builds a string, so it is guarded too.
+            if (txSpan)
+            {
+                txSpan.setAttribute(txq_span::attr::terCode, transToken(txnResult).c_str());
+            }
 
             if (didApply)
             {
+                txSpan.setAttribute(txq_span::attr::txqStatus, txq_span::val::applied);
                 // Remove the candidate from the queue
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID
                                  << " applied successfully with " << transToken(txnResult)
@@ -1478,12 +1571,14 @@ TxQ::accept(Application& app, OpenView& view)
                 {
                     account.dropPenalty = true;
                 }
+                txSpan.setAttribute(txq_span::attr::txqStatus, txq_span::val::failed);
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Remove from queue.";
                 candidateIter = eraseAndAdvance(candidateIter);
             }
             else
             {
+                txSpan.setAttribute(txq_span::attr::txqStatus, txq_span::val::retried);
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Leave in queue."
                                  << " Applied: " << didApply << ". Flags: " << candidateIter->flags;
@@ -1579,6 +1674,7 @@ TxQ::accept(Application& app, OpenView& view)
         }
     }
     XRPL_ASSERT(byFee_.size() == startingSize, "xrpl::TxQ::accept : byFee size match");
+    span.setAttribute(txq_span::attr::ledgerChanged, ledgerChanged);
 
     return ledgerChanged;
 }
@@ -1662,6 +1758,10 @@ TxQ::tryDirectApply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    using namespace telemetry;
+    [[maybe_unused]] ScopedSpanGuard const span(
+        TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
+
     auto const account = (*tx)[sfAccount];
     auto const sleAccount = view.read(keylet::account(account));
 

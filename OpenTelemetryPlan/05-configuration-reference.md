@@ -15,22 +15,24 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 
 ### 5.1.2 Configuration Options Summary
 
-| Option                | Type   | Default                           | Description                                          |
-| --------------------- | ------ | --------------------------------- | ---------------------------------------------------- |
-| `enabled`             | bool   | `false`                           | Enable/disable telemetry                             |
-| `traces_endpoint`     | string | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim          |
-| `use_tls`             | bool   | `false`                           | Enable TLS for exporter connection                   |
-| `tls_ca_cert`         | string | `""`                              | Path to CA certificate file                          |
-| `batch_size`          | uint   | `512`                             | Spans per export batch                               |
-| `batch_delay_ms`      | uint   | `5000`                            | Max delay before sending batch (ms)                  |
-| `max_queue_size`      | uint   | `2048`                            | Maximum queued spans                                 |
-| `trace_transactions`  | 0 or 1 | `1`                               | Enable transaction tracing                           |
-| `trace_consensus`     | 0 or 1 | `1`                               | Enable consensus tracing                             |
-| `trace_rpc`           | 0 or 1 | `1`                               | Enable RPC tracing                                   |
-| `trace_peer`          | 0 or 1 | `1`                               | Enable peer message tracing (high volume)            |
-| `trace_ledger`        | 0 or 1 | `1`                               | Enable ledger tracing                                |
-| `service_name`        | string | `"xrpld"`                         | Service name (`service.name`) for traces and metrics |
-| `service_instance_id` | string | `<node_pubkey>`                   | Instance identifier                                  |
+| Option                     | Type   | Default                           | Description                                                                                                |
+| -------------------------- | ------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `enabled`                  | bool   | `false`                           | Enable/disable telemetry                                                                                   |
+| `traces_endpoint`          | string | `http://localhost:4318/v1/traces` | Full OTLP/HTTP URL for spans, used verbatim                                                                |
+| `use_tls`                  | bool   | `false`                           | Enable TLS for exporter connection                                                                         |
+| `tls_ca_cert`              | string | `""`                              | Path to CA certificate file                                                                                |
+| `batch_size`               | uint   | `512`                             | Spans per export batch                                                                                     |
+| `batch_delay_ms`           | uint   | `5000`                            | Max delay before sending batch (ms)                                                                        |
+| `max_queue_size`           | uint   | `2048`                            | Maximum queued spans                                                                                       |
+| `trace_transactions`       | 0 or 1 | `1`                               | Enable transaction tracing                                                                                 |
+| `trace_consensus`          | 0 or 1 | `1`                               | Enable consensus tracing                                                                                   |
+| `trace_rpc`                | 0 or 1 | `1`                               | Enable RPC tracing                                                                                         |
+| `trace_peer`               | 0 or 1 | `1`                               | Enable peer message tracing (high volume)                                                                  |
+| `trace_ledger`             | 0 or 1 | `1`                               | Enable ledger tracing                                                                                      |
+| `tx_trace_strategy`        | string | `"deterministic"`                 | TX trace ID strategy: `"deterministic"` (trace_id = txHash[0:16]) or `"attribute"` (random)                |
+| `consensus_trace_strategy` | string | `"deterministic"`                 | Consensus trace ID strategy: `"deterministic"` (trace_id = prevLedgerHash[0:16]) or `"attribute"` (random) |
+| `service_name`             | string | `"xrpld"`                         | Service name (`service.name`) for traces and metrics                                                       |
+| `service_instance_id`      | string | `<node_pubkey>`                   | Instance identifier                                                                                        |
 
 **Planned (not yet implemented)**: the following options appear in the design
 documents but are not parsed by `TelemetryConfig.cpp` in Phase 1b and later
@@ -96,6 +98,8 @@ The top-level `CMakeLists.txt` adds an `XRPL_ENABLE_TELEMETRY` option (default `
 ## 5.5 OpenTelemetry Collector Configuration
 
 > **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring
+
+> **Production hardening**: The configurations in this section are starting points. For production deployments where xrpld ships telemetry across a network to a centrally-hosted collector, see [Securing the OTel Pipeline](./secure-OTel.md) for the required mTLS receiver config, NetworkPolicy, and peer trace-context validation.
 
 The authoritative collector config lives in the repo at `docker/telemetry/otel-collector-config.yaml` (with Tempo backend config in `docker/telemetry/tempo.yaml`). The sections below summarize the development and production shapes of that pipeline.
 

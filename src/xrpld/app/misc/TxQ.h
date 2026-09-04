@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <boost/circular_buffer.hpp>
@@ -334,7 +335,8 @@ public:
         OpenView& view,
         std::shared_ptr<STTx const> const& tx,
         ApplyFlags flags,
-        beast::Journal j);
+        beast::Journal j,
+        telemetry::SpanContext const* parentCtx = nullptr);
 
     /**
      * Fill the new open ledger with transactions from the queue.

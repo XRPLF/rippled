@@ -174,6 +174,8 @@
  *   goes through the public methods.
  */
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <string_view>
@@ -195,6 +197,23 @@ namespace xrpl::telemetry {
  * whether to create a real span or return a null guard.
  */
 enum class TraceCategory { Rpc, Transactions, Consensus, Peer, Ledger };
+
+/**
+ * Raw trace context bytes for cross-node propagation.
+ *
+ * Holds the binary trace_id, span_id, and trace_flags extracted from
+ * an active span. Used by protocol-layer code to inject trace context
+ * into outgoing protobuf messages without depending on OTel types.
+ *
+ * @see SpanGuard::getTraceBytes(), TraceContextPropagator.h
+ */
+struct TraceBytes
+{
+    std::array<std::uint8_t, 16> traceId{};  ///< 16-byte W3C trace identifier.
+    std::array<std::uint8_t, 8> spanId{};    ///< 8-byte span id of current span.
+    std::uint8_t traceFlags{0};              ///< W3C trace flags (bit 0 = sampled).
+    bool valid{false};  ///< True if this struct holds data from an active span.
+};
 
 /**
  * Opaque wrapper for an OTel context snapshot.
@@ -363,6 +382,53 @@ public:
     [[nodiscard]] static SpanGuard
     linkedSpan(std::string_view name, SpanContext const& linkCtx) noexcept;
 
+    // --- Hash-derived span (category-gated) -----------------------------
+
+    /**
+     * Create a span whose trace_id is derived from arbitrary hash data.
+     * trace_id = hashData[0:16], span_id = random. Gated by the given
+     * TraceCategory. All nodes using the same hash independently produce
+     * spans under the same trace_id, enabling cross-node correlation
+     * without context propagation.
+     * @param cat       Trace subsystem category.
+     * @param name      Full span name (e.g. "tx.receive").
+     * @param hashData  Pointer to at least 16 bytes of hash data.
+     * @param hashSize  Size of the hash buffer (must be >= 16).
+     * @return An active guard, or a null guard when the category is
+     * disabled or hashSize is under 16.
+     */
+    [[nodiscard]] static SpanGuard
+    hashSpan(
+        TraceCategory const cat,
+        std::string_view const name,
+        std::uint8_t const* const hashData,
+        std::size_t const hashSize);
+
+    /**
+     * Create a hash-derived span with a remote parent.
+     * trace_id = hashData[0:16], parent span_id from protobuf context
+     * propagation. Produces a child span of the sender's span while
+     * sharing the deterministic trace_id.
+     * @param cat             Trace subsystem category.
+     * @param name            Full span name.
+     * @param hashData        Pointer to at least 16 bytes of hash data.
+     * @param hashSize        Size of the hash buffer (must be >= 16).
+     * @param parentSpanId    Pointer to 8 bytes of parent span ID.
+     * @param parentSpanSize  Size of parent span ID buffer (must be 8).
+     * @param traceFlags      Trace flags from remote context.
+     * @return An active guard, or a null guard when the category is
+     * disabled, hashSize is under 16, or parentSpanSize is not 8.
+     */
+    [[nodiscard]] static SpanGuard
+    hashSpan(
+        TraceCategory const cat,
+        std::string_view const name,
+        std::uint8_t const* const hashData,
+        std::size_t const hashSize,
+        std::uint8_t const* const parentSpanId,
+        std::size_t const parentSpanSize,
+        std::uint8_t const traceFlags);
+
     // --- Context capture -----------------------------------------------
 
     /**
@@ -389,6 +455,19 @@ public:
      */
     [[nodiscard]] static SpanContext
     threadLocalContext() noexcept;
+
+    /**
+     * Extract raw trace context bytes from this span for propagation.
+     *
+     * Unlike threadLocalContext() which captures the thread-local runtime
+     * context, this method reads the span's own SpanContext directly.
+     * Safe to call from any thread that holds a reference to this guard.
+     *
+     * @return A TraceBytes struct with valid=true if the span is active
+     *         and has a valid context, or valid=false otherwise.
+     */
+    [[nodiscard]] TraceBytes
+    getTraceBytes() const;
 
     // --- Attribute setters (explicit overloads, no OTel types) ---------
 
@@ -926,8 +1005,31 @@ public:
         return {};
     }
 
+    [[nodiscard]] static SpanGuard
+    hashSpan(TraceCategory, std::string_view, std::uint8_t const*, std::size_t)
+    {
+        return {};
+    }
+    [[nodiscard]] static SpanGuard
+    hashSpan(
+        TraceCategory,
+        std::string_view,
+        std::uint8_t const*,
+        std::size_t,
+        std::uint8_t const*,
+        std::size_t,
+        std::uint8_t)
+    {
+        return {};
+    }
+
     [[nodiscard]] SpanContext
     spanContext() const noexcept
+    {
+        return {};
+    }
+    [[nodiscard]] TraceBytes
+    getTraceBytes() const
     {
         return {};
     }

@@ -32,20 +32,29 @@
 
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/span.h>
 #include <opentelemetry/semconv/exception_attributes.h>
 #include <opentelemetry/trace/context.h>
+#include <opentelemetry/trace/default_span.h>
 #include <opentelemetry/trace/scope.h>
 #include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_context.h>
+#include <opentelemetry/trace/span_id.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/span_startoptions.h>
+#include <opentelemetry/trace/trace_flags.h>
+#include <opentelemetry/trace/trace_id.h>
 
+#include <array>
 #include <cstdint>
+#include <cstring>
 #include <exception>
 #include <format>
 #include <memory>
@@ -324,6 +333,74 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx) noexcep
     // LCOV_EXCL_STOP
 }
 
+// ===== Hash-derived span (category-gated) ==================================
+
+// Standalone hash-derived span: a TRUE root whose trace_id == hashData[0:16].
+SpanGuard
+SpanGuard::hashSpan(
+    TraceCategory const cat,
+    std::string_view const name,
+    std::uint8_t const* const hashData,
+    std::size_t const hashSize)
+{
+    if (hashSize < 16)
+        return {};
+    auto* tel = Telemetry::getInstance();
+    if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+        return {};
+
+    // Force the deterministic trace_id via the DeterministicIdGenerator, on the
+    // SDK root branch, so the span is a TRUE root (empty parent_span_id) whose
+    // trace_id == hashData[0:16]. The kIsRootSpanKey context forces the SDK's
+    // no-valid-parent branch, where GenerateTraceId() is called and returns the
+    // pending id. The PendingTraceId guard scopes that id to this one startSpan.
+    std::array<std::uint8_t, 16> tid{};
+    std::memcpy(tid.data(), hashData, 16);
+    auto rootCtx = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
+    PendingTraceId const pending{tid};
+    return SpanGuard(
+        std::make_unique<Impl>(
+            tel->startSpan(std::string(name), rootCtx, categoryToSpanKind(cat))));
+}
+
+// Cross-node hash-derived span: a CHILD of the sender's real remote span
+// (remote=true), not a root — so it must NOT use PendingTraceId / rootCtx.
+SpanGuard
+SpanGuard::hashSpan(
+    TraceCategory const cat,
+    std::string_view const name,
+    std::uint8_t const* const hashData,
+    std::size_t const hashSize,
+    std::uint8_t const* const parentSpanId,
+    std::size_t const parentSpanSize,
+    std::uint8_t const traceFlags)
+{
+    if (hashSize < 16 || parentSpanSize != 8)
+        return {};
+    auto* tel = Telemetry::getInstance();
+    if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+        return {};
+
+    otel_trace::TraceId const traceId(
+        opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
+
+    otel_trace::SpanId const parentSpan(
+        opentelemetry::nostd::span<std::uint8_t const, 8>(parentSpanId, 8));
+
+    otel_trace::SpanContext const combinedCtx(
+        traceId,
+        parentSpan,
+        otel_trace::TraceFlags(traceFlags),
+        /* remote = */ true);
+
+    auto parentCtx = opentelemetry::context::Context{}.SetValue(
+        otel_trace::kSpanKey,
+        opentelemetry::nostd::shared_ptr<otel_trace::Span>(
+            new otel_trace::DefaultSpan(combinedCtx)));
+
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
+}
+
 // ===== Context capture =====================================================
 
 SpanContext
@@ -349,6 +426,26 @@ SpanGuard::threadLocalContext() noexcept
     // OTel "capture current context" operation used for propagation.
     auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
     return SpanContext(std::make_shared<SpanContext::Impl>(std::move(ctx)));
+}
+
+TraceBytes
+SpanGuard::getTraceBytes() const
+{
+    if (!impl_ || !impl_->span)
+        return {};
+
+    auto const& spanCtx = impl_->span->GetContext();
+    if (!spanCtx.IsValid())
+        return {};
+
+    TraceBytes result;
+    auto const& tid = spanCtx.trace_id();
+    std::memcpy(result.traceId.data(), tid.Id().data(), 16);
+    auto const& sid = spanCtx.span_id();
+    std::memcpy(result.spanId.data(), sid.Id().data(), 8);
+    result.traceFlags = spanCtx.trace_flags().flags();
+    result.valid = true;
+    return result;
 }
 
 // ===== Attribute setters ===================================================

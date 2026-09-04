@@ -30,6 +30,8 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
+#include <xrpld/telemetry/PropagationHelpers.h>
+#include <xrpld/telemetry/TxSpanNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
@@ -116,6 +118,7 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/asio/error.hpp>
@@ -154,6 +157,13 @@
 #include <utility>
 #include <vector>
 
+// Needed only by the tx.process span in processTransaction(), which is compiled
+// out when telemetry is off. Without the same guard here it would be an unused
+// include in that build, which clang-tidy's misc-include-cleaner rejects.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpld/telemetry/TxTracing.h>
+#endif  // XRPL_ENABLE_TELEMETRY
+
 namespace xrpl {
 
 /**
@@ -177,9 +187,17 @@ class NetworkOPsImp final : public NetworkOPs
         FailHard const failType;
         bool applied = false;
         TER result;
+        std::shared_ptr<telemetry::SpanGuard> span;  ///< Keeps the tx.process
+                                                     ///< span alive until the
+                                                     ///< batch processes this.
 
-        TransactionStatus(std::shared_ptr<Transaction> t, bool a, bool l, FailHard f)
-            : transaction(std::move(t)), admin(a), local(l), failType(f)
+        TransactionStatus(
+            std::shared_ptr<Transaction> t,
+            bool a,
+            bool l,
+            FailHard f,
+            std::shared_ptr<telemetry::SpanGuard> s = nullptr)
+            : transaction(std::move(t)), admin(a), local(l), failType(f), span(std::move(s))
         {
             XRPL_ASSERT(
                 local || failType == FailHard::No,
@@ -387,9 +405,15 @@ public:
      * @param transaction Transaction object.
      * @param bUnlimited Whether a privileged client connection submitted it.
      * @param failType fail_hard setting from transaction submission.
+     * @param span Optional tx.process span to keep alive across the
+     *             batch boundary so its context propagates to peers.
      */
     void
-    doTransactionSync(std::shared_ptr<Transaction> transaction, bool bUnlimited, FailHard failType);
+    doTransactionSync(
+        std::shared_ptr<Transaction> transaction,
+        bool bUnlimited,
+        FailHard failType,
+        std::shared_ptr<telemetry::SpanGuard> span = nullptr);
 
     /**
      * For transactions not submitted by a locally connected client, fire and
@@ -404,7 +428,8 @@ public:
     doTransactionAsync(
         std::shared_ptr<Transaction> transaction,
         bool bUnlimited,
-        FailHard failtype);
+        FailHard failtype,
+        std::shared_ptr<telemetry::SpanGuard> span = nullptr);
 
 private:
     bool
@@ -1489,6 +1514,46 @@ NetworkOPsImp::processTransaction(
     bool bLocal,
     FailHard failType)
 {
+    using namespace telemetry;
+    // SpanGuard is thread-free (holds no Scope), so it is safe to store here
+    // and end on the batch worker thread that later applies this transaction —
+    // no detach step is needed.
+    // Left null when telemetry is compiled out: there is no span to own, so
+    // nothing is allocated for one. The transaction pipeline already accepts a
+    // null span -- both doTransaction* overloads default it to nullptr -- and
+    // every use tests it. Without this the make_shared allocated once per
+    // submitted and relayed transaction to hold an empty object.
+    std::shared_ptr<SpanGuard> span;
+#ifdef XRPL_ENABLE_TELEMETRY
+    span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
+#endif
+    // Guarded on the span being live because these values are not free and this
+    // runs for every submitted and relayed transaction: the hash string
+    // allocates, and the open-ledger index takes the ledger master's lock. With
+    // telemetry compiled out the span is null; with it compiled in the block is
+    // skipped when telemetry is disabled at runtime or the transaction category
+    // is off.
+    if (span && *span)
+    {
+        span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
+        span->setAttribute(tx_span::attr::local, bLocal);
+        // The current (open) ledger index at submission/relay time — the ledger
+        // being worked on. Correlates this tx.process to the ledger trace; the
+        // tx has not yet been applied to a specific ledger, so there is no hash.
+        span->setAttribute(
+            tx_span::attr::currentLedgerSeq,
+            static_cast<std::int64_t>(ledgerMaster_.getCurrentLedgerIndex()));
+        if (auto const& stx = transaction->getSTransaction())
+        {
+            if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+                span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+            span->setAttribute(
+                tx_span::attr::fee, static_cast<int64_t>(stx->getFieldAmount(sfFee).xrp().drops()));
+            span->setAttribute(
+                tx_span::attr::sequence, static_cast<int64_t>(stx->getSeqProxy().value()));
+        }
+    }
+
     auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
 
     // preProcessTransaction can change our pointer
@@ -1497,11 +1562,15 @@ NetworkOPsImp::processTransaction(
 
     if (bLocal)
     {
-        doTransactionSync(transaction, bUnlimited, failType);
+        if (span)
+            span->setAttribute(tx_span::attr::path, tx_span::val::sync);
+        doTransactionSync(transaction, bUnlimited, failType, std::move(span));
     }
     else
     {
-        doTransactionAsync(transaction, bUnlimited, failType);
+        if (span)
+            span->setAttribute(tx_span::attr::path, tx_span::val::async);
+        doTransactionAsync(transaction, bUnlimited, failType, std::move(span));
     }
 }
 
@@ -1509,14 +1578,15 @@ void
 NetworkOPsImp::doTransactionAsync(
     std::shared_ptr<Transaction> transaction,
     bool bUnlimited,
-    FailHard failType)
+    FailHard failType,
+    std::shared_ptr<telemetry::SpanGuard> span)
 {
     std::scoped_lock const lock(mutex_);
 
     if (transaction->getApplying())
         return;
 
-    transactions_.emplace_back(transaction, bUnlimited, false, failType);
+    transactions_.emplace_back(transaction, bUnlimited, false, failType, std::move(span));
     transaction->setApplying();
 
     if (dispatchState_ == DispatchState::None)
@@ -1532,13 +1602,14 @@ void
 NetworkOPsImp::doTransactionSync(
     std::shared_ptr<Transaction> transaction,
     bool bUnlimited,
-    FailHard failType)
+    FailHard failType,
+    std::shared_ptr<telemetry::SpanGuard> span)
 {
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (!transaction->getApplying())
     {
-        transactions_.emplace_back(transaction, bUnlimited, true, failType);
+        transactions_.emplace_back(transaction, bUnlimited, true, failType, std::move(span));
         transaction->setApplying();
     }
 
@@ -1685,8 +1756,19 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.failType == FailHard::Yes)
                         flags |= TapFailHard;
 
+                    // Parent the txq.enqueue span to this tx's tx.process span
+                    // via an explicit captured context (the parent is explicit,
+                    // not ambient-inherited). Null on the open-ledger rebuild
+                    // path, where no tx.process span exists.
+                    auto const txProcessCtx =
+                        (e.span && *e.span) ? e.span->spanContext() : telemetry::SpanContext{};
                     auto const result = registry_.get().getTxQ().apply(
-                        registry_.get().getApp(), view, e.transaction->getSTransaction(), flags, j);
+                        registry_.get().getApp(),
+                        view,
+                        e.transaction->getSTransaction(),
+                        flags,
+                        j,
+                        txProcessCtx.isValid() ? &txProcessCtx : nullptr);
                     e.result = result.ter;
                     e.applied = result.applied;
                     changed = changed || result.applied;
@@ -1704,6 +1786,19 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         auto newOL = registry_.get().getOpenLedger().current();
         for (TransactionStatus const& e : transactions)
         {
+            // Make this transaction's span ambient for the duration of its
+            // apply so the per-tx log lines below carry its trace_id.
+            // Non-owning: the span is still owned/ended by e.span. Scoped to
+            // one loop iteration, so each tx's span is ambient only for its
+            // own processing. No yield in this loop.
+            auto txActivation = telemetry::activateIfLive(e.span);
+
+            if (e.span && *e.span)
+            {
+                e.span->setAttribute(
+                    telemetry::tx_span::attr::terResult, transToken(e.result).c_str());
+                e.span->setAttribute(telemetry::tx_span::attr::applied, e.applied);
+            }
             e.transaction->clearSubmitResult();
 
             if (e.applied)
@@ -1864,6 +1959,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     tx.set_receivetimestamp(
                         registry_.get().getTimeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
+                    // Inject the tx.process span's trace context so the
+                    // receiving node can link its tx.receive span as a child.
+                    if (e.span && *e.span)
+                        telemetry::injectSpanContext(*e.span, tx);
                     // FIXME: This should be when we received it
                     registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
                     e.transaction->setBroadcast();
