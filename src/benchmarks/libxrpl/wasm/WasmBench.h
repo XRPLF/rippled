@@ -9,59 +9,42 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
 
-// The gas-calibration harness: how a `*.bench.cpp` measures a host call, and how that
-// measurement becomes a suggested price. What the numbers mean and how to read a report are in
-// ../README.md.
+// The gas-calibration harness. What the numbers mean and how to read a report are in ../README.md.
 
 namespace xrpl::test::bench {
 
-// Enough gas that a thousand-call benchmark loop never ends early; a benchmark measures
-// work, so running out of budget would silently measure something shorter instead.
+// Enough that a benchmark loop never ends early; running out would measure something shorter.
 inline constexpr std::int64_t kBenchGas = 2'000'000'000;
 
-// How many host calls a benchmarked contract makes per run. Large enough that the
-// per-call cost dominates the residue left by the baseline subtraction, small enough that
-// one run stays in the microsecond range.
+// Host calls per run: enough that the per-call cost dominates the baseline subtraction's residue.
 inline constexpr std::int32_t kCallsPerRun = 1000;
 
-// How many timed iterations each case runs. Pinned rather than left to Google Benchmark's
-// automatic sizing, which cannot work here: a case reports the subtraction's residue — tens
-// of nanoseconds — while the iteration that produced it ran two whole contracts, module
-// compilation included, and cost milliseconds. Automatic sizing sees only the reported time,
-// so it would ask for millions of iterations to accumulate its default `min_time` and the
-// case would never finish. Every registration therefore ends
-// `->UseManualTime()->Iterations(kBenchIterations)`.
+// Timed iterations per case. Pinned because automatic sizing cannot work here: a case reports a
+// residue of nanoseconds while the iteration producing it ran two contracts and cost milliseconds,
+// so sizing would ask for millions.
 inline constexpr std::int32_t kBenchIterations = 50;
 
-// How many pairs the one-off calibration averages. Higher than `kBenchIterations` because
-// `secondsPerGas` is the divisor for *every* reported number, so its noise is common-mode across
-// the whole report, and because calibration runs a bare wasm loop with no ledger and no host
-// calls — a few hundred extra pairs cost milliseconds. More samples of a mean is only more
-// precision, not a different estimator, so this does not reintroduce the bias that mixing a
-// best-of with a mean did.
+// Pairs the one-off calibration averages. Higher than `kBenchIterations` because `secondsPerGas`
+// divides every reported number, and a bare wasm loop is cheap to repeat.
 inline constexpr std::int32_t kCalibrationPairs = 400;
 
-// How much a run may write into guest memory before `charge_transfer` starts refusing calls
-// (`TRANSFER_LIMIT_BYTES` in crates/xrpl-wasm-vm/src/vm.rs). Per run, so it resets between the
-// runs a benchmark makes — but one run of `kCallsPerRun` calls could exhaust it partway through
-// and spend the rest of the loop measuring the refusal path instead of the host function.
+// Above this relative uncertainty, `suggested_gas` is reported as unreliable.
+inline constexpr double kMaxRelativeSpread = 0.25;
+
+// `TRANSFER_LIMIT_BYTES` in crates/xrpl-wasm-vm/src/vm.rs: what a run may write into guest memory
+// before `charge_transfer` starts refusing calls.
 inline constexpr std::int64_t kTransferLimitBytes = 1 << 20;
 
-// How many calls a run can afford, given how many bytes each one has the host **write into guest
-// memory**.
-//
-// One direction only: the budget is charged in `write_into` / `write_buffered` / `write_mant_exp`
-// and nowhere else. What the guest passes *in* is borrowed rather than copied and costs nothing
-// against it, so a caller passes the size of its output region, not of its input.
-//
-// Never raises the count to meet a floor — that would be the one thing this function exists to
-// prevent. A case that cannot afford a single call cannot be measured, so that fails loudly.
+// How many calls a run can afford, given the bytes each has the host **write into guest memory**.
+// Output direction only — what the guest passes in is borrowed, and costs nothing against the
+// budget. Never raises the count to meet a floor; a case that cannot afford one call fails loudly.
 int
 callsWithinTransferBudget(std::int64_t bytesWrittenPerCall);
 
@@ -72,10 +55,9 @@ struct Timing
     std::int64_t gas{};
 };
 
-// A `(data ...)` segment placing `bytes` at `offset` in the guest's memory, so a case's
-// input is in place before the timed loop starts and the loop measures the host call rather
-// than the guest arranging its arguments. See `watEscaped` in WasmRun.h for why zeroed
-// memory will not do.
+// A `(data ...)` segment placing `bytes` at `offset` in guest memory, so the timed loop measures
+// the host call rather than the guest arranging its arguments. `watEscaped` in WasmRun.h says why
+// zeroed memory will not do.
 std::string
 dataSegment(int offset, std::span<std::uint8_t const> bytes);
 
@@ -90,11 +72,14 @@ makeLoopWat(std::string_view imports, std::string_view data, std::string_view bo
 Timing
 timeRun(HostFunctions& host, Bytes const& wasm);
 
-// What this machine costs, measured once and shared by every case.
+// What this machine costs, measured once and shared by every case: two cases pricing one function
+// two ways (`Impl` + crossing floor, versus `ThroughVm`) must divide by the *same* `secondsPerGas`
+// or they disagree for reasons unrelated to the function.
 class Calibration
 {
 public:
-    Calibration();
+    static Calibration const&
+    instance();
 
     // Seconds of wall time one unit of gas buys here.
     [[nodiscard]] double
@@ -103,35 +88,123 @@ public:
         return secondsPerGas_;
     }
 
-    // The gas a host call costs before it does anything: region decode, bounds checks, the cxx
-    // hop.
+    // The gas a host call costs before it does anything: region decode, bounds checks, the cxx hop.
     [[nodiscard]] double
     crossingFloorGas() const
     {
         return crossingFloorGas_;
     }
 
+    // Propagated into every case's `rel_error`, which is what lets one snapshot stay shared:
+    // `--benchmark_repetitions` resamples per-case timings but never this divisor.
+    [[nodiscard]] double
+    secondsPerGasRelStdErr() const
+    {
+        return secondsPerGasRelStdErr_;
+    }
+
+    // An additive term in every `Impl` case's `suggested_gas`, and most of the cheap ones.
+    [[nodiscard]] double
+    crossingFloorRelStdErr() const
+    {
+        return crossingFloorRelStdErr_;
+    }
+
 private:
+    Calibration();
+
+    double secondsPerGasRelStdErr_{};
+    double crossingFloorRelStdErr_{};
     double secondsPerGas_{};
     double crossingFloorGas_{};
 };
 
-// What the gas table says a host function costs, by its guest import name.
-// Read from the declaration through the `wasm_testkit` bridge.
+// What the gas table declares for a host function, by guest import name, read through the
+// `wasm_testkit` bridge so it cannot drift.
 double
 declaredGas(std::string_view wasmName);
 
 // Attach the calibration counters to a finished case.
+//
+// `guestOverheadGas` is fuel the guest burned around the call — loop bookkeeping and the
+// `i32.const`s pushing arguments. From the fuel meter, so it is exact. Zero for `Impl` cases.
 void
 report(
     benchmark::State& state,
     double secondsPerCall,
     double chargedGas,
+    double guestOverheadGas,
+    double relativeSpread,
+    std::int64_t rounds,
     std::string_view wasmName,
     bool throughVm);
 
-// Measure a host function *through the whole stack* — guest, VM, marshalling, real impl,
-// real ledger — with everything but the host calls subtracted away.
+// Accumulates one whole-operation case and turns it into counters.
+//
+// The two harnesses below subtract setup away, amortizing over `kCallsPerRun` calls against a
+// baseline. Here that is inverted: setup is the subject, timed whole, nothing amortized.
+class StageTimer
+{
+public:
+    // Pass zero for `moduleBytes` unless the case belongs to a sweep that *varies* module size —
+    // the per-byte counter it enables is an average over the whole operation, meaningless where the
+    // module is constant.
+    StageTimer(benchmark::State& state, std::int64_t moduleBytes);
+
+    void
+    add(double seconds);
+
+    // Attach the counters. Call once, after the loop.
+    void
+    report();
+
+private:
+    benchmark::State& state_;
+    std::int64_t moduleBytes_{};
+    double total_{};
+    double sumSquares_{};
+    std::int64_t rounds_{};
+};
+
+// Measure `preflightEscrowWasm`: compile, then the walk over the module's imports and exports.
+//
+// `expectAccepted` is what the module *should* do. A refused module stops at the first fault and is
+// far cheaper, so a case that silently flipped verdict would report a confident number for an
+// operation it never performed.
+void
+benchmarkPreflight(
+    benchmark::State& state,
+    Bytes const& wasm,
+    bool expectAccepted = true,
+    bool sizeSweep = false);
+
+// Measure a whole `runEscrowWasm` — every stage, unamortized.
+template <class SetUp>
+void
+benchmarkRun(benchmark::State& state, Bytes const& wasm, SetUp&& setUp, bool sizeSweep = false)
+{
+    // Force the calibration and the engine's lazy construction before the clock starts, so the
+    // first case does not absorb them into its own first iteration.
+    [[maybe_unused]] auto const& calibration = Calibration::instance();
+
+    auto probe = setUp();
+    if (auto const check = runEscrowWasm(wasm, *probe, kBenchGas); !check.has_value())
+    {
+        state.SkipWithError("the benchmarked contract did not run to completion");
+        return;
+    }
+
+    auto timer = StageTimer{state, sizeSweep ? static_cast<std::int64_t>(wasm.size()) : 0};
+    for (auto _ : state)
+    {
+        auto host = setUp();
+        timer.add(timeRun(*host, wasm).seconds);
+    }
+    timer.report();
+}
+
+// Measure a host function through the whole stack — guest, VM, marshalling, real impl, real ledger
+// — with everything but the host calls subtracted away.
 template <class SetUp>
 void
 benchmarkThroughVm(
@@ -146,18 +219,12 @@ benchmarkThroughVm(
     auto const loaded = assembleWat(makeLoopWat(imports, data, body, calls));
     auto const baseline = assembleWat(makeLoopWat(imports, data, body, 0));
 
-    // A host serves exactly one run: it caches the current ledger object, the slot table and
-    // the contract's data for that run's length, and `runEscrowWasm` asserts it was handed a
-    // clean one (see `checkSelf` in WasmVM.cpp). So every run below builds its own. That
-    // costs the measurement nothing — `timeRun` starts its clock after the host exists —
-    // and it is why `setUp` is a factory rather than a host.
+    // A host serves exactly one run — `runEscrowWasm` asserts it was handed a clean one
+    // (`checkSelf` in WasmVM.cpp). Hence `setUp` being a factory rather than a host.
     auto probe = setUp();
 
-    // Confirm the contract actually succeeds before measuring it — and note that "the run
-    // succeeded" is not enough to establish that.
-    // So require both: the run completed, and the contract's last host call returned a
-    // non-negative result. Every body here leaves that result in `$r`, which the module
-    // returns.
+    // A soft host error still completes the run, so require both that it completed and that the
+    // last host call returned a non-negative result, which every body leaves in `$r`.
     auto const check = runEscrowWasm(loaded, *probe, kBenchGas);
     if (!check.has_value())
     {
@@ -173,6 +240,7 @@ benchmarkThroughVm(
     }
 
     auto totalSeconds = 0.0;
+    auto sumSquares = 0.0;
     auto totalGas = 0.0;
     auto rounds = std::int64_t{0};
     for (auto _ : state)
@@ -182,45 +250,56 @@ benchmarkThroughVm(
         auto coldHost = setUp();
         auto const cold = timeRun(*coldHost, baseline);
 
-        // Clamped at zero: on a noisy machine a single pair can invert, and a negative
-        // iteration time would make Google Benchmark's statistics meaningless.
+        // Clamped: on a noisy machine a pair can invert, and a negative iteration time would make
+        // Google Benchmark's statistics meaningless.
         auto const perCall = std::max(0.0, hot.seconds - cold.seconds) / calls;
         state.SetIterationTime(perCall);
 
         totalSeconds += perCall;
+        sumSquares += perCall * perCall;
         totalGas += static_cast<double>(hot.gas - cold.gas) / calls;
         ++rounds;
     }
 
     if (rounds > 0)
     {
-        report(state, totalSeconds / rounds, totalGas / rounds, wasmName, true);
+        auto const meanSeconds = totalSeconds / rounds;
+        auto const variance = std::max(0.0, (sumSquares / rounds) - (meanSeconds * meanSeconds));
+        auto const spread = meanSeconds > 0.0 ? std::sqrt(variance) / meanSeconds : 0.0;
+
+        // Zero for the empty-name case — `guestInstruction`, which prices no host function. There
+        // is no host call to separate scaffolding *from*, and subtracting the full charge would
+        // leave `implied_gas = measured - charged`, ~0 by construction: it would turn the harness's
+        // one self-test into a tautology that cannot fail.
+        auto const chargedPerCall = totalGas / rounds;
+        auto const overhead = wasmName.empty() ? 0.0 : chargedPerCall - declaredGas(wasmName);
+
+        report(
+            state,
+            meanSeconds,
+            chargedPerCall,
+            std::max(0.0, overhead),
+            spread,
+            rounds,
+            wasmName,
+            true);
     }
 }
 
-// Measure a host function's *impl alone* — the computation, with no guest, no VM and no
-// marshalling. Paired with the `ThroughVm` case for the same function, the difference is
-// what crossing the guest/host boundary costs.
-// Register with `->UseManualTime()`.
+// Measure a host function's impl alone — no guest, no VM, no marshalling. Against the `ThroughVm`
+// case for the same function, the difference is what crossing the boundary costs.
 template <class SetUp, class Call>
 void
 benchmarkImpl(benchmark::State& state, std::string_view wasmName, SetUp&& setUp, Call&& call)
 {
     auto host = setUp();
 
-    // Confirm the call succeeds — one that errors returns early and is far cheaper than one that
-    // does the work, so a case with a subtly wrong argument reports a plausible, confidently
-    // wrong, and always *too low* price. `benchmarkThroughVm` gets this for free from the
-    // contract's return value; a direct call has no such signal.
+    // A call that errors returns early and is far cheaper than one that works, so a subtly wrong
+    // argument yields a confident and always *too low* price. Probed either side of the loop rather
+    // than inside it, where the branch would land in the measurement: *before* catches wrong
+    // arguments, *after* catches a call that stopped working once the loop exhausted something.
     //
-    // Checked on either side of the timed loop rather than inside it. Inside, the branch lands in
-    // the measurement — worth up to ~13% on the cheapest calls, which run about 2 ns. Outside it
-    // costs nothing and still catches both failure modes: the *before* probe catches wrong
-    // arguments, the *after* probe catches a call that stopped working partway through because
-    // the loop exhausted something.
-    //
-    // The `requires` skips host functions that answer nothing (`trace`) or answer a bare value
-    // rather than an `expected`.
+    // The `requires` skips host functions that answer nothing (`trace`) or answer a bare value.
     auto const checkSucceeds = [&](char const* when) {
         if constexpr (requires { call(*host).has_value(); })
         {
@@ -242,15 +321,14 @@ benchmarkImpl(benchmark::State& state, std::string_view wasmName, SetUp&& setUp,
     }
 
     auto totalSeconds = 0.0;
+    auto sumSquares = 0.0;
     auto rounds = std::int64_t{0};
     for (auto _ : state)
     {
         auto const start = std::chrono::steady_clock::now();
         for (int i = 0; i < kCallsPerRun; ++i)
         {
-            // `trace` is the one host function that answers nothing, so there is no result
-            // to hold onto; `ClobberMemory` stands in for `DoNotOptimize` to keep the call
-            // from being elided.
+            // `trace` answers nothing, so `ClobberMemory` stands in for `DoNotOptimize`.
             if constexpr (std::is_void_v<decltype(call(*host))>)
             {
                 call(*host);
@@ -268,6 +346,7 @@ benchmarkImpl(benchmark::State& state, std::string_view wasmName, SetUp&& setUp,
         state.SetIterationTime(perCall);
 
         totalSeconds += perCall;
+        sumSquares += perCall * perCall;
         ++rounds;
     }
 
@@ -276,11 +355,14 @@ benchmarkImpl(benchmark::State& state, std::string_view wasmName, SetUp&& setUp,
         return;
     }
 
-    // No VM ran, so nothing was charged — and the crossing this case leaves out is added back
-    // into `suggested_gas`, because a guest cannot make the call without paying it.
     if (rounds > 0)
     {
-        report(state, totalSeconds / rounds, 0.0, wasmName, false);
+        auto const meanSeconds = totalSeconds / rounds;
+        auto const variance = std::max(0.0, (sumSquares / rounds) - (meanSeconds * meanSeconds));
+        auto const spread = meanSeconds > 0.0 ? std::sqrt(variance) / meanSeconds : 0.0;
+
+        // Nothing charged and no guest scaffolding; `report` adds the crossing back in.
+        report(state, meanSeconds, 0.0, 0.0, spread, rounds, wasmName, false);
     }
 }
 
