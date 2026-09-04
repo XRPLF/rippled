@@ -346,20 +346,20 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 
 The following table summarizes what data is collected by category:
 
-| Category        | Attributes Collected                                                                              | Purpose                      |
-| --------------- | ------------------------------------------------------------------------------------------------- | ---------------------------- |
-| **Transaction** | `tx_hash`, `tx_type`, `tx_result`, `tx_fee`, `ledger_index`                                       | Trace transaction lifecycle  |
-| **Consensus**   | `consensus_round`, `consensus_phase`, `consensus_mode`, `proposers`, `round_time_ms`              | Analyze consensus timing     |
-| **RPC**         | `command`, `version`, `rpc_status`, `duration_ms`                                                 | Monitor RPC performance      |
-| **Peer**        | `peer_id` (public key), `peer_latency_ms`, `message_type`, `message_size_bytes`                   | Network topology analysis    |
-| **Ledger**      | `ledger_hash`, `ledger_index`, `close_time`, `ledger_tx_count`                                    | Ledger progression tracking  |
-| **Job**         | `job_type`, `job_queue_ms`, `job_worker`                                                          | JobQueue performance         |
-| **PathFinding** | `pathfind_source_currency`, `pathfind_dest_currency`, `pathfind_path_count`, `pathfind_cache_hit` | Payment path analysis        |
-| **TxQ**         | `txq_queue_depth`, `txq_fee_level`, `txq_eviction_reason`                                         | Queue depth and fee tracking |
-| **Fee**         | `fee_load_factor`, `fee_escalation_level`                                                         | Fee escalation monitoring    |
-| **Validator**   | `validator_list_size`, `validator_list_age_sec`                                                   | UNL health monitoring        |
-| **Amendment**   | `amendment_name`, `amendment_status`                                                              | Protocol upgrade tracking    |
-| **SHAMap**      | `shamap_type`, `shamap_missing_nodes`, `shamap_duration_ms`                                       | State tree sync performance  |
+| Category        | Attributes Collected                                                                                             | Purpose                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **Transaction** | `tx_hash`, `tx_type`, `tx_result`, `tx_fee`, `ledger_index`                                                      | Trace transaction lifecycle  |
+| **Consensus**   | `consensus_round`, `consensus_phase`, `consensus_mode`, `proposers`, `round_time_ms`                             | Analyze consensus timing     |
+| **RPC**         | `command`, `version`, `rpc_status`, `duration_ms`                                                                | Monitor RPC performance      |
+| **Peer**        | `peer_id` (public key), `peer_latency_ms`, `message_type`, `message_size_bytes`                                  | Network topology analysis    |
+| **Ledger**      | `ledger_hash`, `ledger_index`, `close_time`, `ledger_tx_count`                                                   | Ledger progression tracking  |
+| **Job**         | `job_type`, `job_queue_ms`, `job_worker`                                                                         | JobQueue performance         |
+| **PathFinding** | `pathfind_fast`, `pathfind_search_level`, `pathfind_num_paths`, `pathfind_ledger_index`, `pathfind_num_requests` | Payment path analysis        |
+| **TxQ**         | `txq_queue_depth`, `txq_fee_level`, `txq_eviction_reason`                                                        | Queue depth and fee tracking |
+| **Fee**         | `fee_load_factor`, `fee_escalation_level`                                                                        | Fee escalation monitoring    |
+| **Validator**   | `validator_list_size`, `validator_list_age_sec`                                                                  | UNL health monitoring        |
+| **Amendment**   | `amendment_name`, `amendment_status`                                                                             | Protocol upgrade tracking    |
+| **SHAMap**      | `shamap_type`, `shamap_missing_nodes`, `shamap_duration_ms`                                                      | State tree sync performance  |
 
 ### 2.4.4 Privacy & Sensitive Data Policy
 
@@ -382,32 +382,48 @@ The following data is explicitly **excluded** from telemetry collection:
 
 #### Privacy Protection Mechanisms
 
-| Mechanism                     | Description                                                                                                                             |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Account Hashing**           | `tx_account` is hashed at collector level before storage                                                                                |
-| **Configurable Redaction**    | Sensitive fields can be excluded via `[telemetry]` config section                                                                       |
-| **Collector Tail Sampling**   | xrpld head sampling is fixed at 1.0 (every span emitted); the collector retains ~10% of non-error traces, reducing stored data exposure |
-| **Local Control**             | Node operators have full control over what gets exported                                                                                |
-| **No Raw Payloads**           | Transaction content is never recorded, only metadata (hash, type, result)                                                               |
-| **Collector-Level Filtering** | Additional redaction/hashing can be configured at OTel Collector                                                                        |
+| Mechanism                     | Description                                                                                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Account Hashing**           | Account addresses are hashed both SDK-side (`pathfind_source_account`, `pathfind_dest_account` — always hashed before emission) and again at the collector level, so raw addresses never reach storage |
+| **Configurable Redaction**    | Sensitive fields can be excluded via `[telemetry]` config section                                                                                                                                      |
+| **Collector Tail Sampling**   | xrpld head sampling is fixed at 1.0 (every span emitted); the collector retains ~10% of non-error traces, reducing stored data exposure                                                                |
+| **Sampling**                  | Only 10% of traces recorded by default, reducing data exposure                                                                                                                                         |
+| **Local Control**             | Node operators have full control over what gets exported                                                                                                                                               |
+| **No Raw Payloads**           | Transaction content is never recorded, only metadata (hash, type, result)                                                                                                                              |
+| **Collector-Level Filtering** | Additional redaction/hashing can be configured at OTel Collector                                                                                                                                       |
+
+#### Account Address Hashing
+
+Account addresses are **always** hashed before they reach the telemetry
+backend — there is no opt-out flag and therefore no insecure-by-default
+failure mode. Protection is applied in two independent layers:
+
+1. **SDK-side** (this node): the path-finding RPC handlers call
+   `redactAccount()` (`xrpl::telemetry`, `Redaction.h`) before setting the
+   `pathfind_source_account` / `pathfind_dest_account` span attributes. The
+   helper emits the first 16 characters of `sha512Half(address)` as
+   lowercase hex — deterministic (spans for one account still correlate)
+   but non-reversible.
+2. **Collector-side** (defense-in-depth): an `attributes/hash` processor in
+   the OpenTelemetry Collector re-hashes those same attributes, so any node
+   that emitted a raw value is still redacted before storage.
 
 #### Collector-Level Data Protection
 
 The OpenTelemetry Collector can be configured (via an `attributes` processor)
 to hash or redact sensitive attributes before export — for example, hashing
-`tx_account`, deleting `peer_address` to drop IP addresses, and deleting
-`params` to redact request parameters.
+`pathfind_source_account` / `pathfind_dest_account`, deleting `peer_address`
+to drop IP addresses, and deleting `params` to redact request parameters.
 
 #### Configuration Options for Privacy
 
 In `xrpld.cfg`, operators control data collection granularity through the
 `[telemetry]` section. Besides `enabled`, per-component toggles
 (`trace_transactions`, `trace_consensus`, `trace_rpc`, `trace_peer` — the last
-often disabled due to high volume) select which spans are emitted, and
-redaction flags (`redact_account` to hash account addresses, `redact_peer_address`
-to remove peer IP addresses) control SDK-level redaction before export.
-
-> **Note**: The `redact_account` configuration in `xrpld.cfg` controls SDK-level redaction before export, while collector-level filtering (see [Collector-Level Data Protection](#collector-level-data-protection) above) provides an additional defense-in-depth layer. Both can operate independently.
+often disabled due to high volume) select which spans are emitted. Account
+address hashing is not configurable: addresses are hashed unconditionally by
+the SDK helper described above, with collector-level hashing as a second
+layer.
 
 > **Key Principle**: Telemetry collects **operational metadata** (timing, counts, hashes) — never **sensitive content** (keys, balances, amounts, raw payloads).
 

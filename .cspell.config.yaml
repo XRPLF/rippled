@@ -140,6 +140,7 @@ words:
   - gpgkey
   - Hinnant
   - hotwallet
+  - hicpp
   - hwaddress
   - hwrap
   - ifndef
@@ -395,3 +396,5 @@ words:
   - xychart
   - zpages
   - zstdio
+  - pratik
+  - dedup

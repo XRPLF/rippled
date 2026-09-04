@@ -2,6 +2,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/PathFindSpanNames.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -13,6 +14,8 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/telemetry/Redaction.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <memory>
 #include <utility>
@@ -23,6 +26,36 @@ namespace xrpl {
 json::Value
 doRipplePathFind(rpc::JsonContext& context)
 {
+    using namespace telemetry;
+    // pathfind.request nests under rpc.command. This scope is held across
+    // context.coro->yield() below; the coro-aware OTel context storage moves it
+    // with the coroutine on resume (it is never stranded on a worker's
+    // thread-local stack), so the scope pops on the correct store and the
+    // span's log lines stay trace-correlated.
+    auto span = ScopedSpanGuard(
+        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
+    // Guarded on the span being live because setAttribute's arguments are
+    // evaluated whatever the build, and neither is free: asString() copies the
+    // address out of the JSON and redactAccount() takes a SHA-512Half over it.
+    // That is two copies and two hashes on every ripple_path_find call. The
+    // compiled-out guard's operator bool() is a literal false, so the block
+    // disappears entirely in that build; with telemetry compiled in it is
+    // skipped when telemetry is disabled at runtime or the category is off.
+    if (span)
+    {
+        // Addresses are hashed before emission for privacy. Read through a
+        // const reference: the non-const json::Value::operator[] inserts a null
+        // for a missing key, which would make PathRequest::parseJson's
+        // isMember() checks see an absent field as present and return Malformed
+        // instead of Missing. Reading for telemetry must not alter what the
+        // request looks like.
+        auto const& params = std::as_const(context.params);
+        if (auto const& src = params[jss::source_account]; src.isString())
+            span.setAttribute(pathfind_span::attr::sourceAccount, redactAccount(src.asString()));
+        if (auto const& dst = params[jss::destination_account]; dst.isString())
+            span.setAttribute(pathfind_span::attr::destAccount, redactAccount(dst.asString()));
+    }
+
     if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);
 

@@ -6,6 +6,7 @@
 # Search filters provide pre-configured dropdowns in the Explore UI.
 # Each phase adds filters for the span attributes it introduces.
 # Base filters — node identity, service, span name, status.
+# RPC command, status, role filters.
 
 apiVersion: 1
 
@@ -88,4 +89,20 @@ datasources:
             tag: duration
             operator: ">"
             scope: intrinsic
+            type: dynamic
+          # RPC tracing filters
+          - id: rpc-command
+            tag: command
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: rpc-status
+            tag: rpc_status
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: rpc-role
+            tag: rpc_role
+            operator: "="
+            scope: span
             type: dynamic
