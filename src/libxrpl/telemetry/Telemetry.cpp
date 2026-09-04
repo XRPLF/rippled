@@ -302,6 +302,10 @@ public:
         if (setup_.useTls)
         {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
+            // Present a client cert for mutual TLS. When both paths are
+            // empty the connection falls back to one-way (server) TLS.
+            exporterOpts.ssl_client_cert_path = setup_.tlsClientCertPath;
+            exporterOpts.ssl_client_key_path = setup_.tlsClientKeyPath;
         }
 
         auto exporter = otlp_http::OtlpHttpExporterFactory::Create(exporterOpts);

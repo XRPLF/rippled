@@ -200,6 +200,19 @@ public:
         std::string tlsCertPath;
 
         /**
+         * Path to this node's client certificate (PEM), presented to the
+         * collector for mutual TLS. Empty disables client-side auth, in
+         * which case only server (one-way) TLS is used.
+         */
+        std::string tlsClientCertPath;
+
+        /**
+         * Path to the private key (PEM) for tlsClientCertPath. Required
+         * whenever tlsClientCertPath is set.
+         */
+        std::string tlsClientKeyPath;
+
+        /**
          * Head-based sampling ratio. Intentionally fixed at 1.0 (sample
          * everything) and NOT read from config. A per-node ratio would let
          * nodes make divergent keep/drop decisions for the same distributed
@@ -398,8 +411,10 @@ public:
 /**
  * Create a Telemetry instance.
  *
- * Returns a TelemetryImpl when setup.enabled is true, or a
- * NullTelemetry no-op stub otherwise.
+ * With XRPL_ENABLE_TELEMETRY defined, returns a TelemetryImpl when
+ * setup.enabled is true, or a no-op stub otherwise. Without it, the only
+ * definition of this factory always returns the no-op stub and never reads
+ * setup.enabled.
  *
  * @param setup    Configuration from the [telemetry] config section.
  * @param journal  Journal for log output during initialization.
@@ -416,6 +431,17 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
  * @param networkId      Network identifier from [network_id] config
  * (0 = mainnet, 1 = testnet, 2 = devnet).
  * @return A populated Setup struct with defaults for missing values.
+ * @throws std::runtime_error  If `enabled` is set and the mutual TLS (mTLS)
+ * settings contradict each other: only one of `tls_client_cert`/`tls_client_key`
+ * is given, or a client certificate is given while `use_tls` is 0. Also if
+ * `enabled` and `use_tls` are both set and a non-empty `tls_ca_cert`,
+ * `tls_client_cert` or `tls_client_key` cannot be read; an empty path is skipped,
+ * so an empty `tls_ca_cert` still means "use the system CA store". All three
+ * checks are skipped when `enabled` is 0.
+ * @throws boost::bad_lexical_cast  If any numeric key (`enabled`, `use_tls`,
+ * `batch_size`, the trace switches, ...) holds a value Section::valueOr cannot
+ * convert. None of the numeric reads sit inside the `enabled` branch, so this
+ * escapes whether telemetry is on or off.
  */
 Telemetry::Setup
 makeTelemetrySetup(
