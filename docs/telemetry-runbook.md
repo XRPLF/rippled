@@ -80,14 +80,27 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans
 
-| Span Name    | Source File    | Attributes                                                                                              | Description                           |
-| ------------ | -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp    | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`, `current_ledger_seq`        | Transaction received from peer relay  |
+| Span Name       | Source File     | Attributes                                                                                              | Description                           |
+| --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`, `current_ledger_seq`        | Transaction received from peer relay  |
+| `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                                                   | Transaction set applied per ledger    |
+| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                |
+| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage             |
+| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)         |
 
-`current_ledger_seq` is the current (open) ledger index at submit/receive time —
-the ledger being worked on, not an established one. It lets a transaction's
-lifecycle spans be joined to the ledger trace it targeted (`span.current_ledger_seq`).
+The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
+share a deterministic `trace_id` from `txID[0:16]`, so they group under one
+trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
+`apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
+RED metrics on the _Transaction Overview_ dashboard.
+
+`current_ledger_seq` is the current (open/in-flight) ledger index a span acted on
+— the ledger being worked on, not an established one — so a transaction's
+txID-keyed spans can be joined to the ledger trace it targeted
+(`span.current_ledger_seq`). The view-bearing stages (`tx.preclaim`,
+`tx.transactor`) also carry `current_ledger_hash` (the current ledger's parent
+hash); `tx.preflight` is stateless and omits both.
 
 ### Transaction Queue Spans
 
@@ -149,16 +162,40 @@ lifecycle spans be joined to the ledger trace it targeted (`span.current_ledger_
 # Find specific ledger's consensus details
 {name="consensus.accept.apply"} | ledger_seq = 92345678
 
-# Find all spans in a consensus round (deterministic trace strategy)
-{name="consensus.round"} | consensus_round_id = "<round_id>"
+# Find all spans in a consensus round (deterministic trace strategy).
+# consensus_round_id is an int64 — the previous ledger sequence plus one.
+{name="consensus.round"} | consensus_round_id = 92345679
 
 # Find dispute resolutions
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
 ```
 
+### Ledger Spans
+
+| Span Name         | Source File      | Attributes                                                              | Description                   |
+| ----------------- | ---------------- | ----------------------------------------------------------------------- | ----------------------------- |
+| `ledger.build`    | BuildLedger.cpp  | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus |
+| `ledger.validate` | LedgerMaster.cpp | `ledger_seq`, `validations`                                             | Ledger promoted to validated  |
+| `ledger.store`    | LedgerMaster.cpp | `ledger_seq`                                                            | Ledger stored in history      |
+
+### Peer Spans
+
+| Span Name                 | Source File | Attributes                                                        | Description                   |
+| ------------------------- | ----------- | ----------------------------------------------------------------- | ----------------------------- |
+| `peer.proposal.receive`   | PeerImp.cpp | `peer_id`, `proposal_trusted`                                     | Proposal received from peer   |
+| `peer.validation.receive` | PeerImp.cpp | `peer_id`, `ledger_hash`, `full_validation`, `validation_trusted` | Validation received from peer |
+
+Both peer receive spans are `kConsumer` inbound entry points started as fresh
+trace roots. They never inherit an ambient span left active on the peer thread,
+so they do not nest under an unrelated transaction's trace. The distributed
+child span that links back to the sending node is the separate
+`consensus.*.receive` / `tx.receive` span (see Cross-Node Trace Propagation).
+
+---
+
 ## Insights and Sample Queries
 
-This section shows what questions you can now answer using the enriched span attributes, with example Tempo TraceQL queries.
+This section shows what questions you can answer using the span attributes, with example Tempo TraceQL queries.
 
 ### Transaction Workflow Analysis
 
@@ -182,6 +219,47 @@ This section shows what questions you can now answer using the enriched span att
 # Trace a specific transaction by type across the network
 {name=~"tx\\..*"} | tx_type = "NFTokenMint"
 ```
+
+### Apply Pipeline by Stage
+
+```
+# All three stages of one transaction (preflight -> preclaim -> apply)
+{name=~"tx.preflight|tx.preclaim|tx.transactor"}
+
+# Transactions that failed at the preclaim stage
+{name="tx.preclaim"} | ter_result != "tesSUCCESS"
+
+# Transactions that hard-failed preflight (never reached preclaim/apply)
+{name="tx.preflight"} | ter_result != "tesSUCCESS"
+```
+
+PromQL on the span-derived metrics (dashboard: _Transaction Overview_):
+
+```
+# Per-stage throughput — the funnel preflight >= preclaim >= apply
+sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m]))
+
+# Per-stage p95 latency
+histogram_quantile(0.95, sum by (le, stage) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m])))
+
+# Per-stage failure rate (ter_result != tesSUCCESS; a failing ter completes the
+# span normally, so filter on the attribute, not status_code which only flags exceptions)
+sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor", ter_result!~"tesSUCCESS|"}[5m]))
+```
+
+> **Alerting**: a rising `tx.preflight` / `tx.preclaim` failure rate points to
+> malformed or stale-sequence submissions (often spam or a misbehaving client);
+> a rising `tx.transactor` failure rate points to apply-time problems. Alert per
+> stage rather than on a single aggregate so the failing stage is obvious.
+
+> **Sampling caveat**: these stage metrics are span-derived, so they count only
+> the spans the collector's spanmetrics connector sees. Head sampling at the node
+> is fixed at 1.0 and is not configurable (`Telemetry.h`), and the shipped
+> collector pipeline has no tail sampling, so today nothing is dropped and the
+> counts are absolute. Volume reduction is delegated to the collector: adding a
+> tail-sampling processor to the traces pipeline puts it ahead of the spanmetrics
+> connector, and these metrics would then undercount proportionally — treat them
+> as relative trends in that case. Native StatsD metrics are never sampled.
 
 ### Transaction Queue Health
 
@@ -210,7 +288,7 @@ This section shows what questions you can now answer using the enriched span att
 {name="rpc.http_request"} | request_payload_size > 100000
 
 # Find resource-heavy RPC commands (by load_type)
-{name=~"rpc.command.*"} | load_type = "exception_rpc"
+{name=~"rpc.command.*"} | load_type = "exceptioned RPC"
 
 # Find a specific WebSocket command
 {name="rpc.ws_message"} | command = "subscribe"
@@ -418,12 +496,14 @@ name verbatim. Prometheus' dots → underscores sanitization only fires for
 dotted attribute names (e.g. resource attributes like `service.name`), which
 does not apply to these dimensions.
 
-| Span Attribute   | Metric Label     | Applies To                     |
-| ---------------- | ---------------- | ------------------------------ |
-| `command`        | `command`        | `rpc.command.*` spans          |
-| `rpc_status`     | `rpc_status`     | `rpc.command.*` spans          |
-| `consensus_mode` | `consensus_mode` | `consensus.ledger_close` spans |
-| `local`          | `local`          | `tx.process` spans             |
+| Span Attribute       | Metric Label         | Applies To                      |
+| -------------------- | -------------------- | ------------------------------- |
+| `command`            | `command`            | `rpc.command.*` spans           |
+| `rpc_status`         | `rpc_status`         | `rpc.command.*` spans           |
+| `consensus_mode`     | `consensus_mode`     | `consensus.ledger_close` spans  |
+| `local`              | `local`              | `tx.process` spans              |
+| `proposal_trusted`   | `proposal_trusted`   | `peer.proposal.receive` spans   |
+| `validation_trusted` | `validation_trusted` | `peer.validation.receive` spans |
 
 ### Histogram Buckets
 
@@ -432,6 +512,60 @@ Configured in `otel-collector-config.yaml`:
 ```
 1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s
 ```
+
+## StatsD Metrics (beast::insight)
+
+xrpld has a built-in metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These complement the span-derived RED metrics by providing system-level gauges, counters, and timers that don't map to individual trace spans.
+
+### Configuration
+
+Add to `xrpld.cfg`:
+
+```ini
+[insight]
+server=statsd
+address=127.0.0.1:8125
+prefix=xrpld
+```
+
+The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and exports them to Prometheus alongside spanmetrics.
+
+### Metric Reference
+
+#### Gauges
+
+| Prometheus Metric                           | Source                    | Description                                                                |
+| ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
+| `xrpld_LedgerMaster_Validated_Ledger_Age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
+| `xrpld_LedgerMaster_Published_Ledger_Age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
+| `xrpld_State_Accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `xrpld_State_Accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
+| `xrpld_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
+| `xrpld_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
+| `xrpld_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
+| `xrpld_jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth                                                    |
+| `xrpld_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
+| `xrpld_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+
+#### Counters
+
+| Prometheus Metric               | Source                | Description                    |
+| ------------------------------- | --------------------- | ------------------------------ |
+| `xrpld_rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
+| `xrpld_ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
+| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
+| `xrpld_warn`                    | Logic.h:33            | Resource manager warning count |
+| `xrpld_drop`                    | Logic.h:34            | Resource manager drop count    |
+
+#### Histograms (from StatsD timers)
+
+| Prometheus Metric     | Source                | Description                    |
+| --------------------- | --------------------- | ------------------------------ |
+| `xrpld_rpc_time`      | ServerHandler.cpp:110 | RPC response time (ms)         |
+| `xrpld_rpc_size`      | ServerHandler.cpp:109 | RPC response size (bytes)      |
+| `xrpld_ios_latency`   | Application.cpp:438   | I/O service loop latency (ms)  |
+| `xrpld_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
+| `xrpld_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
 
 ## Deployment Tiers
 
@@ -519,7 +653,7 @@ three signals' attributes over OTLP directly.
 
 ## Grafana Dashboards
 
-Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
+Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### RPC Performance (`rpc-performance`)
 
@@ -529,38 +663,125 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                                     | `command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
+| Overall RPC Throughput      | timeseries | `rpc.http_request` + `rpc.process` rate                                                                                                   | —                        |
+| RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                                         | `status_code`            |
+| Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                                              | `command`                |
+| WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                     | —                        |
 
 ### Transaction Overview (`transaction-overview`)
 
-| Panel                             | Type       | PromQL                                                                               | Labels Used |
-| --------------------------------- | ---------- | ------------------------------------------------------------------------------------ | ----------- |
-| Transaction Processing Rate       | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive` | `span_name` |
-| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                      | —           |
-| Transaction Path Distribution     | piechart   | `sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `local`     |
-| Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                  | —           |
+| Panel                              | Type           | PromQL                                                                                              | Labels Used                         |
+| ---------------------------------- | -------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Transaction Processing Rate        | timeseries     | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                | `span_name`                         |
+| Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                                     | —                                   |
+| Transaction Path Distribution      | piechart       | `sum by (local) (increase(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))`            | `local`                             |
+| Transaction Receive vs Suppressed  | timeseries     | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                                 | —                                   |
+| TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                                      | `le`                                |
+| TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                               | —                                   |
+| Peer TX Receive Rate               | timeseries     | `tx.receive` rate                                                                                   | —                                   |
+| TX Apply Failed Rate               | stat           | `tx.apply` with `STATUS_CODE_ERROR`                                                                 | `status_code`                       |
+| TxQ Accept: Applied Ratio per Node | state-timeline | applied / (applied+failed) of `traces_span_metrics_calls_total{span_name="txq.accept_tx"}` per node | `txq_status`, `service_instance_id` |
 
 ### Consensus Health (`consensus-health`)
 
-| Panel                         | Type       | PromQL                                                                             | Labels Used |
-| ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ----------- |
-| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`              | —           |
-| Consensus Proposals Sent Rate | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.proposal.send"}[5m])`   | —           |
-| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`               | —           |
-| Validation Send Rate          | stat       | `rate(traces_span_metrics_calls_total{span_name="consensus.validation.send"}[5m])` | —           |
-| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`        | —           |
-| Close Time Agreement          | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.accept.apply"}[5m])`    | —           |
+| Panel                         | Type       | PromQL                                                                             | Labels Used      |
+| ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ---------------- |
+| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`              | —                |
+| Consensus Proposals Sent Rate | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.proposal.send"}[5m])`   | —                |
+| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`               | —                |
+| Validation Send Rate          | stat       | `rate(traces_span_metrics_calls_total{span_name="consensus.validation.send"}[5m])` | —                |
+| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`        | —                |
+| Close Time Agreement          | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.accept.apply"}[5m])`    | —                |
+| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                       | `consensus_mode` |
+| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                                | —                |
+| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                |
+| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`             |
+
+### Ledger Operations (`ledger-operations`)
+
+| Panel                   | Type       | PromQL                                         | Labels Used |
+| ----------------------- | ---------- | ---------------------------------------------- | ----------- |
+| Ledger Build Rate       | stat       | `ledger.build` call rate                       | —           |
+| Ledger Build Duration   | timeseries | p95/p50 of `ledger.build`                      | —           |
+| Ledger Validation Rate  | stat       | `ledger.validate` call rate                    | —           |
+| Build Duration Heatmap  | heatmap    | `ledger.build` histogram buckets               | `le`        |
+| TX Apply Duration       | timeseries | p95/p50 of `tx.apply`                          | —           |
+| TX Apply Rate           | timeseries | `tx.apply` call rate                           | —           |
+| Ledger Store Rate       | stat       | `ledger.store` call rate                       | —           |
+| Build vs Close Duration | timeseries | p95 `ledger.build` vs `consensus.ledger_close` | —           |
+
+### Peer Network (`peer-network`)
+
+Requires `trace_peer=1` in the `[telemetry]` config section.
+
+| Panel                            | Type       | PromQL                                                                    | Labels Used          |
+| -------------------------------- | ---------- | ------------------------------------------------------------------------- | -------------------- |
+| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate                                              | —                    |
+| Validation Receive Rate          | timeseries | `peer.validation.receive` rate                                            | —                    |
+| Proposals Trusted vs Untrusted   | piechart   | `increase()` counts in the selected window, split by `proposal_trusted`   | `proposal_trusted`   |
+| Validations Trusted vs Untrusted | piechart   | `increase()` counts in the selected window, split by `validation_trusted` | `validation_trusted` |
+
+### Node Health -- StatsD (`xrpld-statsd-node-health`)
+
+| Panel                                  | Type       | PromQL                                                          | Labels Used |
+| -------------------------------------- | ---------- | --------------------------------------------------------------- | ----------- |
+| Validated Ledger Age                   | stat       | `xrpld_LedgerMaster_Validated_Ledger_Age`                       | —           |
+| Published Ledger Age                   | stat       | `xrpld_LedgerMaster_Published_Ledger_Age`                       | —           |
+| Operating Mode Duration                | timeseries | `xrpld_State_Accounting_*_duration`                             | —           |
+| Operating Mode Transitions             | timeseries | `xrpld_State_Accounting_*_transitions`                          | —           |
+| I/O Latency                            | timeseries | `histogram_quantile(0.95, xrpld_ios_latency_bucket)`            | —           |
+| Job Queue Depth                        | timeseries | `xrpld_jobq_job_count`                                          | —           |
+| Ledger Fetch Rate                      | stat       | `rate(xrpld_ledger_fetches[5m])`                                | —           |
+| Ledger History Mismatches              | stat       | `rate(xrpld_ledger_history_mismatch[5m])`                       | —           |
+| Key Jobs Execution Time                | timeseries | `xrpld_acceptLedger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`  |
+| Key Jobs Dequeue Wait Time             | timeseries | `xrpld_acceptLedger_q{quantile="$quantile"}` (+ 10 more)        | `quantile`  |
+| FullBelowCache Size                    | timeseries | `xrpld_Node_family_full_below_cache_size`                       | —           |
+| FullBelowCache Hit Rate                | gauge      | `xrpld_Node_family_full_below_cache_hit_rate`                   | —           |
+| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                   | —           |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(xrpld_State_Accounting_Full_duration[5m]) / 1000000`      | —           |
+| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"xrpld_<all_jobs>", quantile="$quantile"}`          | `quantile`  |
+| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"xrpld_<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
+
+### Network Traffic -- StatsD (`xrpld-statsd-network`)
+
+| Panel                                | Type       | PromQL                                     | Labels Used |
+| ------------------------------------ | ---------- | ------------------------------------------ | ----------- |
+| Active Peers                         | timeseries | `xrpld_Peer_Finder_Active_*_Peers`         | —           |
+| Peer Disconnects                     | timeseries | `xrpld_Overlay_Peer_Disconnects`           | —           |
+| Total Network Bytes                  | timeseries | `rate(xrpld_total_Bytes_In/Out[5m])`       | —           |
+| Total Network Messages               | timeseries | `xrpld_total_Messages_In/Out`              | —           |
+| Transaction Traffic                  | timeseries | `xrpld_transactions_Messages_In/Out`       | —           |
+| Proposal Traffic                     | timeseries | `xrpld_proposals_Messages_In/Out`          | —           |
+| Validation Traffic                   | timeseries | `xrpld_validations_Messages_In/Out`        | —           |
+| Traffic by Category                  | bargauge   | `topk(10, xrpld_*_Bytes_In)`               | —           |
+| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(xrpld_*_duplicate_Bytes_In/Out[5m])` | —           |
+| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(xrpld_*_Bytes_In[5m]))`     | —           |
+
+### RPC & Pathfinding -- StatsD (`xrpld-statsd-rpc`)
+
+| Panel                     | Type       | PromQL                                                 | Labels Used |
+| ------------------------- | ---------- | ------------------------------------------------------ | ----------- |
+| RPC Request Rate          | stat       | `rate(xrpld_rpc_requests[5m])`                         | —           |
+| RPC Response Time         | timeseries | `histogram_quantile(0.95, xrpld_rpc_time_bucket)`      | —           |
+| RPC Response Size         | timeseries | `histogram_quantile(0.95, xrpld_rpc_size_bucket)`      | —           |
+| RPC Response Time Heatmap | heatmap    | `xrpld_rpc_time_bucket`                                | —           |
+| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, xrpld_pathfind_fast_bucket)` | —           |
+| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, xrpld_pathfind_full_bucket)` | —           |
+| Resource Warnings Rate    | stat       | `rate(xrpld_warn[5m])`                                 | —           |
+| Resource Drops Rate       | stat       | `rate(xrpld_drop[5m])`                                 | —           |
 
 ### Span → Metric → Dashboard Summary
 
 | Span Name                      | Prometheus Metric Filter                     | Grafana Dashboard                             |
 | ------------------------------ | -------------------------------------------- | --------------------------------------------- |
-| `rpc.http_request`             | `{span_name="rpc.http_request"}`             | -- (available but not paneled)                |
+| `rpc.http_request`             | `{span_name="rpc.http_request"}`             | RPC Performance (Overall Throughput)          |
 | `rpc.ws_upgrade`               | `{span_name="rpc.ws_upgrade"}`               | -- (available but not paneled)                |
-| `rpc.ws_message`               | `{span_name="rpc.ws_message"}`               | -- (available but not paneled)                |
-| `rpc.process`                  | `{span_name="rpc.process"}`                  | -- (available but not paneled)                |
-| `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (all 4 panels)                |
-| `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (3 panels)               |
-| `tx.receive`                   | `{span_name="tx.receive"}`                   | Transaction Overview (2 panels)               |
+| `rpc.ws_message`               | `{span_name="rpc.ws_message"}`               | RPC Performance (WebSocket Rate)              |
+| `rpc.process`                  | `{span_name="rpc.process"}`                  | RPC Performance (Overall Throughput)          |
+| `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (Rate, Latency, Error, Top)   |
+| `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (Rate, Latency, Heatmap) |
+| `tx.receive`                   | `{span_name="tx.receive"}`                   | Transaction Overview (Rate, Receive)          |
+| `tx.apply`                     | `{span_name="tx.apply"}`                     | Transaction Overview + Ledger Ops (Apply)     |
 | `txq.enqueue`                  | `{span_name="txq.enqueue"}`                  | -- (available but not paneled)                |
 | `txq.apply_direct`             | `{span_name="txq.apply_direct"}`             | -- (available but not paneled)                |
 | `txq.batch_clear`              | `{span_name="txq.batch_clear"}`              | -- (available but not paneled)                |
@@ -572,14 +793,19 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | `consensus.establish`          | `{span_name="consensus.establish"}`          | -- (available but not paneled)                |
 | `consensus.update_positions`   | `{span_name="consensus.update_positions"}`   | -- (available but not paneled)                |
 | `consensus.check`              | `{span_name="consensus.check"}`              | -- (available but not paneled)                |
-| `consensus.accept`             | `{span_name="consensus.accept"}`             | Consensus Health (Round Duration)             |
+| `consensus.accept`             | `{span_name="consensus.accept"}`             | Consensus Health (Duration, Rate, Heatmap)    |
 | `consensus.proposal.send`      | `{span_name="consensus.proposal.send"}`      | Consensus Health (Proposals Rate)             |
-| `consensus.ledger_close`       | `{span_name="consensus.ledger_close"}`       | Consensus Health (Close Duration)             |
+| `consensus.ledger_close`       | `{span_name="consensus.ledger_close"}`       | Consensus Health (Close, Mode)                |
 | `consensus.validation.send`    | `{span_name="consensus.validation.send"}`    | Consensus Health (Validation Rate)            |
 | `consensus.accept.apply`       | `{span_name="consensus.accept.apply"}`       | Consensus Health (Apply Duration, Close Time) |
 | `consensus.mode_change`        | `{span_name="consensus.mode_change"}`        | -- (available but not paneled)                |
 | `consensus.proposal.receive`   | `{span_name="consensus.proposal.receive"}`   | -- (available but not paneled)                |
 | `consensus.validation.receive` | `{span_name="consensus.validation.receive"}` | -- (available but not paneled)                |
+| `ledger.build`                 | `{span_name="ledger.build"}`                 | Ledger Ops (Build Rate, Duration, Heatmap)    |
+| `ledger.validate`              | `{span_name="ledger.validate"}`              | Ledger Ops (Validation Rate)                  |
+| `ledger.store`                 | `{span_name="ledger.store"}`                 | Ledger Ops (Store Rate)                       |
+| `peer.proposal.receive`        | `{span_name="peer.proposal.receive"}`        | Peer Network (Rate, Trusted/Untrusted)        |
+| `peer.validation.receive`      | `{span_name="peer.validation.receive"}`      | Peer Network (Rate, Trusted/Untrusted)        |
 
 ## Troubleshooting
 

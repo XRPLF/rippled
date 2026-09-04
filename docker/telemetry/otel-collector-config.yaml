@@ -1,9 +1,16 @@
 # OpenTelemetry Collector configuration for xrpld development.
 #
-# Pipeline: OTLP receiver -> batch processor -> debug + Tempo.
+# Pipelines:
+#   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
+#   metrics: StatsD receiver + spanmetrics connector -> Prometheus exporter
+#
 # xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
-# them and forwards to Tempo via OTLP/gRPC on the Docker network. Tempo
-# is queryable via Grafana Explore using TraceQL.
+# them, forwards to Tempo, and derives RED metrics via the spanmetrics
+# connector, which Prometheus scrapes on port 8889.
+#
+# xrpld's beast::insight framework sends StatsD UDP metrics to port 8125.
+# The StatsD receiver aggregates them and exports to Prometheus alongside
+# the span-derived metrics.
 
 receivers:
   otlp:
@@ -12,6 +19,20 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  statsd:
+    endpoint: "0.0.0.0:8125"
+    aggregation_interval: 15s
+    enable_metric_type: true
+    is_monotonic_counter: true
+    timer_histogram_mapping:
+      - statsd_type: "timing"
+        observer_type: "summary"
+        summary:
+          percentiles: [0, 50, 90, 95, 99, 100]
+      - statsd_type: "histogram"
+        observer_type: "summary"
+        summary:
+          percentiles: [0, 50, 90, 95, 99, 100]
 
 processors:
   batch:
@@ -58,6 +79,45 @@ processors:
       - key: pathfind_dest_account
         action: hash
 
+connectors:
+  spanmetrics:
+    # Resource attributes that define the resource-metrics grouping key.
+    # All resource attributes are propagated onto the output metrics
+    # regardless; promotion to Prometheus labels is handled by the
+    # prometheus exporter's resource_to_telemetry_conversion. Listing the
+    # per-node id and the deployment-tier keys keeps series from distinct
+    # nodes/tiers grouped separately.
+    resource_metrics_key_attributes:
+      - service.instance.id
+      - deployment.environment
+      - xrpl.network.type
+    histogram:
+      explicit:
+        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
+    dimensions:
+      - name: command
+      - name: rpc_status
+      - name: consensus_mode
+      - name: close_time_correct
+      - name: local
+      - name: suppressed
+      - name: proposal_trusted
+      - name: validation_trusted
+      - name: tx_type
+      - name: ter_result
+      # Apply-pipeline stage (preflight|preclaim|apply) — splits the
+      # tx.preflight/tx.preclaim/tx.transactor span RED metrics per stage.
+      - name: stage
+      - name: txq_status
+      - name: consensus_state
+      - name: load_type
+      - name: is_batch
+      # Consensus lifecycle dimensions (low cardinality, bounded value sets).
+      - name: mode_new
+      - name: consensus_stalled
+      - name: consensus_phase
+      - name: consensus_result
+
 exporters:
   debug:
     verbosity: detailed
@@ -65,6 +125,14 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    # Promote resource attributes (deployment.environment, xrpl.network.type,
+    # service.name, service.instance.id) to Prometheus labels. Without this
+    # the tier attributes stamped by resource/tier stay on the resource and
+    # never reach the metric series, so dashboards could not filter by them.
+    resource_to_telemetry_conversion:
+      enabled: true
 
 extensions:
   health_check:
@@ -76,4 +144,8 @@ service:
     traces:
       receivers: [otlp]
       processors: [resource/tier, resource/stripsdk, attributes/hash, batch]
-      exporters: [debug, otlp/tempo]
+      exporters: [debug, otlp/tempo, spanmetrics]
+    metrics:
+      receivers: [spanmetrics, statsd]
+      processors: [resource/tier, resource/stripsdk]
+      exporters: [prometheus]

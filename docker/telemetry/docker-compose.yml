@@ -7,7 +7,7 @@
 #   - tempo: Grafana Tempo tracing backend, queryable via Grafana Explore
 #     on port 3000. Recommended for production (S3/GCS storage, TraceQL).
 #   - grafana: dashboards on port 3000, pre-configured with Tempo
-#     datasource.
+#     and Prometheus datasources.
 #
 # Usage:
 #   docker compose -f docker/telemetry/docker-compose.yml up -d
@@ -24,9 +24,14 @@ services:
     image: otel/opentelemetry-collector-contrib:0.158.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
-      - "4317:4317" # OTLP gRPC receiver
-      - "4318:4318" # OTLP HTTP receiver (xrpld sends traces here)
-      - "13133:13133" # Health check endpoint
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      # StatsD UDP (beast::insight metrics). Bound to loopback only: the
+      # receiver has no auth, and xrpld runs on the host, so it reaches the
+      # collector via 127.0.0.1. Do not expose on 0.0.0.0 in shared setups.
+      - "127.0.0.1:8125:8125/udp"
+      - "8889:8889" # Prometheus metrics (spanmetrics + statsd)
+      - "13133:13133" # Health check
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
@@ -50,6 +55,18 @@ services:
     networks:
       - xrpld-telemetry
 
+  prometheus:
+    # Pinned to an exact patch release for reproducible, config-stable runs.
+    image: prom/prometheus:v3.13.2
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - otel-collector
+    networks:
+      - xrpld-telemetry
+
   # Grafana: visualization UI with Tempo pre-configured as a datasource.
   # Anonymous admin access enabled for local development convenience.
   grafana:
@@ -62,8 +79,10 @@ services:
     volumes:
       # Auto-provision Tempo datasource and search filters on startup
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - tempo
+      - prometheus
     networks:
       - xrpld-telemetry
 

@@ -296,19 +296,90 @@ See [Phase4_taskList.md § Phase 4b](./Phase4_taskList.md) for full design.
 
 ### Tasks
 
-| Task | Description                   |
-| ---- | ----------------------------- |
-| 5.1  | Operator runbook              |
-| 5.2  | Grafana dashboards            |
-| 5.3  | Alert definitions             |
-| 5.4  | Collector deployment examples |
-| 5.5  | Developer documentation       |
-| 5.6  | Training materials            |
-| 5.7  | Final integration testing     |
+| Task | Description                   | Status              |
+| ---- | ----------------------------- | ------------------- |
+| 5.1  | Operator runbook              | Complete            |
+| 5.2  | Grafana dashboards            | Complete            |
+| 5.3  | Alert definitions             | Deferred — post-MVP |
+| 5.4  | Collector deployment examples | Complete            |
+| 5.5  | Developer documentation       | Complete            |
+| 5.6  | Training materials            | Deferred — post-MVP |
+| 5.7  | Final integration testing     | Complete            |
 
 ---
 
-## 6.7 Risk Assessment
+## 6.7 Phase 6: StatsD Metrics Integration (Week 10)
+
+**Objective**: Bridge xrpld's existing `beast::insight` StatsD metrics into the OpenTelemetry collection pipeline, exposing 300+ pre-existing metrics alongside span-derived RED metrics in Prometheus/Grafana.
+
+### Background
+
+xrpld has a mature metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These metrics cover node health, peer networking, RPC performance, job queue, and overlay traffic — data that **does not** overlap with the span-based instrumentation from Phases 1-5. By adding a StatsD receiver to the OTel Collector, both metric sources converge in Prometheus.
+
+### Metric Inventory
+
+| Category        | Group              | Type          | Count      | Key Metrics                                            |
+| --------------- | ------------------ | ------------- | ---------- | ------------------------------------------------------ |
+| Node State      | `State_Accounting` | Gauge         | 10         | `*_duration`, `*_transitions` per operating mode       |
+| Ledger          | `LedgerMaster`     | Gauge         | 2          | `Validated_Ledger_Age`, `Published_Ledger_Age`         |
+| Ledger Fetch    | —                  | Counter       | 1          | `ledger_fetches`                                       |
+| Ledger History  | `ledger.history`   | Counter       | 1          | `mismatch`                                             |
+| RPC             | `rpc`              | Counter+Event | 3          | `requests`, `time` (histogram), `size` (histogram)     |
+| Job Queue       | —                  | Gauge+Event   | 1 + 2×N    | `job_count`, per-job `{name}` and `{name}_q`           |
+| Peer Finder     | `Peer_Finder`      | Gauge         | 2          | `Active_Inbound_Peers`, `Active_Outbound_Peers`        |
+| Overlay         | `Overlay`          | Gauge         | 1          | `Peer_Disconnects`                                     |
+| Overlay Traffic | per-category       | Gauge         | 4×57 = 228 | `Bytes_In/Out`, `Messages_In/Out` per traffic category |
+| Pathfinding     | —                  | Event         | 2          | `pathfind_fast`, `pathfind_full` (histograms)          |
+| I/O             | —                  | Event         | 1          | `ios_latency` (histogram)                              |
+| Resource Mgr    | —                  | Meter         | 2          | `warn`, `drop` (rate counters)                         |
+| Caches          | per-cache          | Gauge         | 2×N        | `{cache}.size`, `{cache}.hit_rate`                     |
+
+**Total**: ~255+ unique metrics (plus dynamic job-type and cache metrics)
+
+### Tasks
+
+| Task | Description                                                                                                     |
+| ---- | --------------------------------------------------------------------------------------------------------------- |
+| 6.1  | **DEFERRED** Fix Meter wire format (`\|m` → `\|c`) in StatsDCollector.cpp — breaking change, tracked separately |
+| 6.2  | Add `statsd` receiver to OTel Collector config                                                                  |
+| 6.3  | Expose UDP port 8125 in docker-compose.yml                                                                      |
+| 6.4  | Add `[insight]` config to integration test node configs                                                         |
+| 6.5  | Create "Node Health" Grafana dashboard (16 panels)                                                              |
+| 6.6  | Create "Network Traffic" Grafana dashboard (10 panels)                                                          |
+| 6.7  | Create "RPC & Pathfinding (StatsD)" Grafana dashboard (8 panels)                                                |
+| 6.8  | Update integration test to verify StatsD metrics in Prometheus                                                  |
+| 6.9  | Update TESTING.md and telemetry-runbook.md                                                                      |
+
+### Wire Format Fix (Task 6.1) — DEFERRED
+
+The `StatsDMeterImpl` in `StatsDCollector.cpp` sends metrics with `|m` suffix, which is non-standard StatsD. The OTel StatsD receiver silently drops these. Fix: change `|m` to `|c` (counter), which is semantically correct since meters are increment-only counters. Only 2 metrics are affected (`warn`, `drop` in Resource Manager).
+
+**Status**: Deferred as a separate change — this is a breaking change for any StatsD backend that previously consumed the custom `|m` type. The Resource Warnings and Resource Drops dashboard panels will show no data until this fix is applied.
+
+### New Grafana Dashboards
+
+**Node Health** (`statsd-node-health.json`, uid: `xrpld-statsd-node-health`):
+
+- Validated/Published Ledger Age, Operating Mode Duration/Transitions, I/O Latency, Job Queue Depth, Ledger Fetch Rate, Ledger History Mismatches, Key Jobs Execution/Dequeue Time, FullBelowCache Size/Hit Rate, Ledger Publish Gap, State Duration Rate, All Jobs Detail
+
+**Network Traffic** (`statsd-network-traffic.json`, uid: `xrpld-statsd-network`):
+
+- Active Inbound/Outbound Peers, Peer Disconnects, Total Bytes/Messages In/Out, Transaction/Proposal/Validation Traffic, Top Traffic Categories, Duplicate Traffic, All Traffic Categories Detail
+
+**RPC & Pathfinding (StatsD)** (`statsd-rpc-pathfinding.json`, uid: `xrpld-statsd-rpc`):
+
+- RPC Request Rate, Response Time p95/p50, Response Size p95/p50, Pathfinding Fast/Full Duration, Resource Warnings/Drops, Response Time Heatmap
+
+### Exit Criteria
+
+- [ ] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=xrpld_LedgerMaster_Validated_Ledger_Age`)
+- [ ] All 3 new Grafana dashboards load without errors
+- [ ] Integration test verifies at least core StatsD metrics (ledger age, peer counts, RPC requests)
+- [ ] ~~Meter metrics (`warn`, `drop`) flow correctly after `|m` → `|c` fix~~ — DEFERRED (breaking change, tracked separately)
+
+---
+
+## 6.8 Risk Assessment
 
 ```mermaid
 quadrantChart
@@ -339,7 +410,7 @@ quadrantChart
 
 ---
 
-## 6.8 Success Metrics
+## 6.9 Success Metrics
 
 | Metric                   | Target                                                         | Measurement           |
 | ------------------------ | -------------------------------------------------------------- | --------------------- |
@@ -352,13 +423,13 @@ quadrantChart
 
 ---
 
-## 6.9 Quick Wins and Crawl-Walk-Run Strategy
+## 6.10 Quick Wins and Crawl-Walk-Run Strategy
 
 > **TxQ** = Transaction Queue
 
 This section outlines a prioritized approach to maximize ROI with minimal initial investment.
 
-### 6.9.1 Crawl-Walk-Run Overview
+### 6.10.1 Crawl-Walk-Run Overview
 
 <div align="center">
 
@@ -407,7 +478,7 @@ flowchart TB
 - **RUN (Weeks 6-9)**: Full consensus instrumentation, establish-phase gap fill, cross-node correlation, StatsD integration, and production deployment with sampling and alerting.
 - **Arrows (crawl → walk → run)**: Each phase builds on the prior one; you cannot skip ahead because later phases depend on infrastructure established earlier.
 
-### 6.9.2 Quick Wins (Immediate Value)
+### 6.10.2 Quick Wins (Immediate Value)
 
 | Quick Win                      | Value  | When to Deploy |
 | ------------------------------ | ------ | -------------- |
@@ -417,7 +488,7 @@ flowchart TB
 | **Transaction Submit Tracing** | High   | Week 3         |
 | **Consensus Round Duration**   | Medium | Week 6         |
 
-### 6.9.3 CRAWL Phase (Weeks 1-2)
+### 6.10.3 CRAWL Phase (Weeks 1-2)
 
 **Goal**: Get basic tracing working with minimal code changes.
 
@@ -439,7 +510,7 @@ flowchart TB
 - No cross-node complexity
 - Single file modification to existing code
 
-### 6.9.4 WALK Phase (Weeks 3-5)
+### 6.10.4 WALK Phase (Weeks 3-5)
 
 **Goal**: Add transaction lifecycle tracing across nodes.
 
@@ -460,7 +531,7 @@ flowchart TB
 - Moderate complexity (requires context propagation)
 - High value for debugging transaction issues
 
-### 6.9.5 RUN Phase (Weeks 6-9)
+### 6.10.5 RUN Phase (Weeks 6-9)
 
 **Goal**: Full observability including consensus.
 
@@ -483,7 +554,7 @@ flowchart TB
 - Requires thorough testing
 - Lower relative value (consensus issues are rarer)
 
-### 6.9.6 ROI Prioritization Matrix
+### 6.10.6 ROI Prioritization Matrix
 
 ```mermaid
 quadrantChart
@@ -505,13 +576,13 @@ quadrantChart
 
 ---
 
-## 6.10 Definition of Done
+## 6.11 Definition of Done
 
 > **TxQ** = Transaction Queue | **HA** = High Availability
 
 Clear, measurable criteria for each phase.
 
-### 6.10.1 Phase 1: Core Infrastructure
+### 6.11.1 Phase 1: Core Infrastructure
 
 | Criterion       | Measurement                                                | Target                       |
 | --------------- | ---------------------------------------------------------- | ---------------------------- |
@@ -523,7 +594,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: All criteria met, PR merged, no regressions in CI.
 
-### 6.10.2 Phase 2: RPC Tracing
+### 6.11.2 Phase 2: RPC Tracing
 
 | Criterion          | Measurement                        | Target                     |
 | ------------------ | ---------------------------------- | -------------------------- |
@@ -535,7 +606,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: RPC traces visible in Tempo for all commands, dashboard shows latency distribution.
 
-### 6.10.3 Phase 3: Transaction Tracing
+### 6.11.3 Phase 3: Transaction Tracing
 
 | Criterion             | Measurement                                       | Target                                                   |
 | --------------------- | ------------------------------------------------- | -------------------------------------------------------- |
@@ -550,7 +621,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Transaction traces span 3+ nodes in test network with deterministic trace_id correlation, parent-child ordering via protobuf propagation, and performance within bounds.
 
-### 6.10.4 Phase 4: Consensus Tracing
+### 6.11.4 Phase 4: Consensus Tracing
 
 | Criterion            | Measurement                   | Target                    |
 | -------------------- | ----------------------------- | ------------------------- |
@@ -562,7 +633,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Consensus rounds fully traceable, no impact on consensus timing.
 
-### 6.10.5 Phase 5: Production Deployment
+### 6.11.5 Phase 5: Production Deployment
 
 | Criterion    | Measurement                  | Target                     |
 | ------------ | ---------------------------- | -------------------------- |
@@ -575,7 +646,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Telemetry running in production, operators trained, alerts active.
 
-### 6.10.6 Success Metrics Summary
+### 6.11.6 Success Metrics Summary
 
 | Phase   | Primary Metric         | Secondary Metric            | Deadline      |
 | ------- | ---------------------- | --------------------------- | ------------- |
@@ -587,7 +658,7 @@ Clear, measurable criteria for each phase.
 
 ---
 
-## 6.11 Recommended Implementation Order
+## 6.12 Recommended Implementation Order
 
 Based on ROI analysis, implement in this exact order:
 

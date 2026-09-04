@@ -15,6 +15,7 @@
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/overlay/detail/PeerSpanNames.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
@@ -69,6 +70,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1958,6 +1960,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
+    using namespace telemetry;
+    // root: inbound peer message entry point (kConsumer); must not inherit
+    // any span left active on this peer thread. Named after the span it holds,
+    // peer.proposal.receive, to keep it distinct from `proposalSpan` below,
+    // which holds the consensus-level span handed to the job worker.
+    auto proposalReceiveSpan =
+        ScopedSpanGuard::freshRoot(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
+    proposalReceiveSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
+
     protocol::TMProposeSet const& set = *m;
 
     auto const sig = makeSlice(set.signature());
@@ -1984,6 +1995,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
     auto const isTrusted = app_.getValidators().trusted(publicKey);
+    proposalReceiveSpan.setAttribute(peer_span::attr::proposalTrusted, isTrusted);
 
     // If the operator has specified that untrusted proposals be dropped then
     // this happens here I.e. before further wasting CPU verifying the signature
@@ -2059,26 +2071,26 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // out, so nothing is allocated on a path every inbound proposal takes.
     // The job body only carries the handle to hold the span alive, so an
     // empty handle is safe there.
-    std::shared_ptr<telemetry::SpanGuard> span;
+    std::shared_ptr<telemetry::SpanGuard> proposalSpan;
 #ifdef XRPL_ENABLE_TELEMETRY
-    span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+    proposalSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
 #endif
-    // Every attribute below exists only for the span, so the block is guarded
-    // on the span being live. Unguarded, each inbound proposal — trusted or
+    // Every attribute below exists only for the proposalSpan, so the block is guarded
+    // on the proposalSpan being live. Unguarded, each inbound proposal — trusted or
     // not — builds two full hex strings and a substring of each, four string
     // allocations no one reads.
-    if (span && *span)
+    if (proposalSpan && *proposalSpan)
     {
-        span->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
-        span->setAttribute(
+        proposalSpan->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
+        proposalSpan->setAttribute(
             telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
         // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
         // peer positions and prior ledgers without exporting full 32-byte
         // hashes on every receive event.
-        span->setAttribute(
+        proposalSpan->setAttribute(
             telemetry::consensus::span::attr::prevLedgerPrefix,
             to_string(prevLedger).substr(0, 16).c_str());
-        span->setAttribute(
+        proposalSpan->setAttribute(
             telemetry::consensus::span::attr::positionHashPrefix,
             to_string(proposeHash).substr(0, 16).c_str());
     }
@@ -2087,7 +2099,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     app_.getJobQueue().addJob(
         isTrusted ? JtProposalT : JtProposalUt,
         "checkPropose",
-        [weak, isTrusted, m, proposal, sp = std::move(span)]() {
+        [weak, isTrusted, m, proposal, sp = std::move(proposalSpan)]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
         });
@@ -2555,6 +2567,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
+    using namespace telemetry;
+    // root: inbound peer message entry point (kConsumer); must not inherit
+    // any span left active on this peer thread. Named after the span it holds,
+    // peer.validation.receive, to keep it distinct from the consensus-level
+    // span handed to the job worker below.
+    auto validationReceiveSpan = ScopedSpanGuard::freshRoot(
+        TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
+    validationReceiveSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
+
     if (m->validation().size() < 50)
     {
         JLOG(pJournal_.warn()) << "Validation: Too small";
@@ -2587,6 +2608,19 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             }
             val->setSeen(closeTime);
         }
+        // setAttribute evaluates its arguments even when telemetry is compiled
+        // out, and to_string() heap-allocates a 64-character hex string. This
+        // runs before the duplicate check below, so without the guard every
+        // peer's copy of every validation pays for that string. The guard is
+        // false when telemetry is compiled out, switched off in the config, or
+        // the Peer trace category is disabled; a span that exists but was
+        // sampled out still pays.
+        if (validationReceiveSpan)
+        {
+            validationReceiveSpan.setAttribute(
+                peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
+            validationReceiveSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
+        }
 
         if (!isCurrent(
                 app_.getValidations().parms(),
@@ -2603,6 +2637,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // suppression for 30 seconds to avoid doing a relatively expensive
         // lookup every time a spam packet is received
         auto const isTrusted = app_.getValidators().trusted(val->getSignerPublic());
+        validationReceiveSpan.setAttribute(peer_span::attr::validationTrusted, isTrusted);
 
         // If the operator has specified that untrusted validations be
         // dropped then this happens here I.e. before further wasting CPU

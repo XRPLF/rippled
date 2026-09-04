@@ -1,0 +1,422 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Ledger Build Rate",
+      "description": "**What:** How often the node constructs a new ledger from its parent, applying transactions and writing state.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the consensus close cadence.\n**Healthy range:** About 0.25/s on mainnet (~4s rounds).\n**Watch for:** A drop below the close rate means the node is not keeping up with ledger construction.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m]))",
+          "legendFormat": "Builds / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ledgers/s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Build Duration",
+      "description": "**What:** Time to build a full ledger, including applying transactions, writing state, and finalising acceptance.\n**How it's computed:** 95th and 50th percentile of per-build durations over a 5-minute window, per node.\n**Reading it:** Scales with transaction volume and disk I/O.\n**Healthy range:** Tens to a few hundred milliseconds under typical load.\n**Watch for:** Long build times indicate expensive transaction sets or I/O pressure while flushing state.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])))",
+          "legendFormat": "P95 Build Duration [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])))",
+          "legendFormat": "P50 Build Duration [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Validation Rate",
+      "description": "**What:** How often ledgers reach the trusted-validation quorum and become fully validated.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build and close rates on a healthy node.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A shortfall means ledgers are not accumulating enough trusted validations to be accepted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::checkAccept",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.validate\"}[5m]))",
+          "legendFormat": "Validations / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ledgers/s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Build Duration Heatmap",
+      "description": "**What:** Distribution of ledger-build durations over time, revealing spread beyond a single percentile.\n**How it's computed:** Counts of builds by duration band in each 5-minute window, per node.\n**Reading it:** A tight band at low durations is healthy; brighter cells mark the common build time.\n**Healthy range:** Concentrated in the low tens of milliseconds.\n**Watch for:** An occasional high-duration band flags slow builds that percentile charts may miss.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        },
+        "yAxis": {
+          "axisLabel": "Duration (ms)"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "spanNulls": 1800000
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transaction Apply Duration",
+      "description": "**What:** Time to apply the agreed transaction set into the new ledger, including retry passes.\n**How it's computed:** 95th and 50th percentile of per-ledger apply durations over a 5-minute window, per node.\n**Reading it:** Grows with the number and complexity of transactions in the set.\n**Healthy range:** Tens to a few hundred milliseconds under normal load.\n**Watch for:** Sustained high durations indicate heavy or expensive transaction sets.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m])))",
+          "legendFormat": "P95 tx.apply [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m])))",
+          "legendFormat": "P50 tx.apply [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transaction Apply Rate",
+      "description": "**What:** How often the transaction-application phase runs during ledger building.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** One apply pass per ledger build, so it should track the build rate.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** Divergence from the build rate signals an accounting or pipeline anomaly.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m]))",
+          "legendFormat": "tx.apply / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: transactions/s",
+          "custom": {
+            "axisLabel": "Transactions / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Store Rate",
+      "description": "**What:** How often completed ledgers are written into the local ledger history.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build rate under normal operation.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A store rate below the build rate means ledgers are being built but not persisted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::storeLedger",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.store\"}[5m]))",
+          "legendFormat": "Stores / Sec [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ledgers/s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Build vs Close Duration",
+      "description": "**What:** Ledger construction time versus total ledger-close time; construction is a subset of close.\n**How it's computed:** 95th percentile of each duration over a 5-minute window, per node.\n**Reading it:** Build should sit at or just below close.\n**Healthy range:** Both a few hundred milliseconds or less, tracking each other.\n**Watch for:** A large gap means significant overhead in the consensus pipeline outside ledger construction.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl, src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onClose",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 600
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])))",
+          "legendFormat": "P95 ledger.build [{{service_instance_id}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.ledger_close\"}[5m])))",
+          "legendFormat": "P95 consensus.ledger_close [{{service_instance_id}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["ledger"],
+  "templating": {
+    "list": [
+      {
+        "name": "service_name",
+        "label": "Service Name",
+        "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "xrpld",
+          "value": "xrpld"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
+        "type": "query",
+        "query": "label_values(target_info, service_instance_id)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "description": "Ledger lifecycle: build rate and duration, transaction apply and store rates, validation rate, and close timing.",
+  "title": "Ledger Operations",
+  "uid": "ledger-operations"
+}
