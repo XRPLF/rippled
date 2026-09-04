@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpld/rpc/detail/Handler.h>
-
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypes.h>
@@ -15,8 +13,9 @@
 #include <fstream>
 #include <functional>
 #include <mutex>
-#include <set>
+#include <span>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_map>
 #include <utility>
@@ -59,7 +58,8 @@ class PerfLogImp : public PerfLog
     struct Counters
     {
     public:
-        using MethodStart = std::pair<char const*, steady_time_point>;
+        using MethodStart = std::pair<std::string_view, steady_time_point>;
+
         /**
          * RPC performance counters.
          */
@@ -91,14 +91,18 @@ class PerfLogImp : public PerfLog
 
         // rpc and jq do not need mutex protection because all
         // keys and values are created before more threads are started.
-        std::unordered_map<std::string, Locked<Rpc>> rpc;
+        //
+        // Every key is a view of a method name constant, which outlives the
+        // program, so the map neither copies a name to store it nor needs one
+        // materialized to look it up.
+        std::unordered_map<std::string_view, Locked<Rpc>> rpc;
         std::unordered_map<JobType, Locked<Jq>> jq;
         std::vector<std::pair<JobType, steady_time_point>> jobs;
         mutable std::mutex jobsMutex;
         std::unordered_map<std::uint64_t, MethodStart> methods;
         mutable std::mutex methodsMutex;
 
-        Counters(std::set<char const*> const& labels, JobTypes const& jobTypes);
+        Counters(std::span<std::string_view const> labels, JobTypes const& jobTypes);
         json::Value
         countersJson() const;
         json::Value
@@ -109,7 +113,7 @@ class PerfLogImp : public PerfLog
     Application& app_;
     beast::Journal const j_;
     std::function<void()> const signalStop_;
-    Counters counters_{xrpl::rpc::getHandlerNames(), JobTypes::instance()};
+    Counters counters_;
     std::ofstream logFile_;
     std::thread thread_;
     std::mutex mutex_;
@@ -126,28 +130,35 @@ class PerfLogImp : public PerfLog
     void
     report();
     void
-    rpcEnd(std::string const& method, std::uint64_t const requestId, bool finish);
+    rpcEnd(std::string_view method, std::uint64_t const requestId, bool finish);
 
 public:
+    /**
+     * @param methodNames The RPC methods to count, one counter per name. The
+     *        names must outlive this object, which holds views of them. Passed
+     *        in rather than looked up here so that this layer needs to know
+     *        nothing about the RPC dispatch table.
+     */
     PerfLogImp(
         Setup setup,
         Application& app,
+        std::span<std::string_view const> methodNames,
         beast::Journal journal,
         std::function<void()>&& signalStop);
 
     ~PerfLogImp() override;
 
     void
-    rpcStart(std::string const& method, std::uint64_t const requestId) override;
+    rpcStart(std::string_view method, std::uint64_t const requestId) override;
 
     void
-    rpcFinish(std::string const& method, std::uint64_t const requestId) override
+    rpcFinish(std::string_view method, std::uint64_t const requestId) override
     {
         rpcEnd(method, requestId, true);
     }
 
     void
-    rpcError(std::string const& method, std::uint64_t const requestId) override
+    rpcError(std::string_view method, std::uint64_t const requestId) override
     {
         rpcEnd(method, requestId, false);
     }
