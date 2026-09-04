@@ -26,6 +26,7 @@ class PerfLog;
 }  // namespace perf
 namespace telemetry {
 class Telemetry;
+class MetricsRegistry;
 }  // namespace telemetry
 
 // This is temporary until we migrate all code to use ServiceRegistry.
@@ -47,6 +48,10 @@ using CachedSLEs = TaggedCache<uint256, SLE const>;
 
 // Forward declarations
 class AcceptedLedger;
+// Defined in src/xrpld/app/ledger/AcquireStats.h. Forward-declared here
+// because libxrpl must not include an xrpld header; a reference to an
+// incomplete type is all this interface needs.
+class AcquireStats;
 class AmendmentTable;
 class Cluster;
 class CollectorManager;
@@ -198,6 +203,15 @@ public:
     virtual PendingSaves&
     getPendingSaves() = 0;
 
+    /**
+     * Return the process-wide ledger-acquisition counters.
+     *
+     * Shared by every acquisition, so the counts are process-wide rather than
+     * per-ledger.
+     */
+    virtual AcquireStats&
+    getAcquireStats() = 0;
+
     virtual OpenLedger&
     getOpenLedger() = 0;
 
@@ -229,6 +243,13 @@ public:
 
     virtual telemetry::Telemetry&
     getTelemetry() = 0;
+
+    /**
+     * Return the MetricsRegistry, or nullptr if telemetry is disabled.
+     * Used by PerfLog and other hot paths to record OTel metrics.
+     */
+    virtual telemetry::MetricsRegistry*
+    getMetricsRegistry() = 0;
 
     // Configuration and state
     [[nodiscard]] virtual bool

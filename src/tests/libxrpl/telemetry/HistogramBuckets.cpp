@@ -60,7 +60,52 @@ INSTANTIATE_TEST_SUITE_P(
     HistogramBucketsTest,
     ::testing::Values(
         std::span<double const>{kMillisecondBuckets},
-        std::span<double const>{kByteBuckets}));
+        std::span<double const>{kByteBuckets},
+        std::span<double const>{kMicrosecondBuckets},
+        std::span<double const>{kObjectCountBuckets},
+        std::span<double const>{kChargeBuckets}));
+
+TEST(HistogramBucketsRange, microsecondFloorLandsBelowTheMeasuredMass)
+{
+    // Measured: 99.3% of job_queued_us samples sat below the old 100 us floor,
+    // so p75/p95/p99 all interpolated inside bucket 0 and returned
+    // 75.5/95.7/99.7 us -- the boundary scaled by the requested quantile,
+    // not a latency. Warm nodestore reads are ~1.5 us, so the floor has to
+    // reach single microseconds and several edges must precede 100 us.
+    EXPECT_LE(kMicrosecondBuckets.front(), 1.0);
+
+    auto const belowHundred =
+        std::ranges::count_if(kMicrosecondBuckets, [](double edge) { return edge < 100.0; });
+    EXPECT_GE(belowHundred, 5) << "too little resolution below 100 us";
+}
+
+TEST(HistogramBucketsRange, microsecondCeilingStillReachesOneMinute)
+{
+    // Job waits and RPC latencies routinely exceed the SDK default ceiling of
+    // 10,000; multi-second stalls must stay measurable rather than censored.
+    EXPECT_EQ(kMicrosecondBuckets.back(), 60'000'000.0);
+}
+
+TEST(HistogramBucketsRange, objectCountLadderCannotSaturate)
+{
+    // GetObject counts run 1..kHardMaxReplyNodes, so the top edge IS the hard
+    // cap and censoring is impossible by construction.
+    EXPECT_EQ(kObjectCountBuckets.front(), 1.0);
+    EXPECT_EQ(kObjectCountBuckets.back(), 12'288.0);
+}
+
+TEST(HistogramBucketsRange, chargeLadderBracketsTheResourceThresholds)
+{
+    // The two edges that decide a peer's fate must be present so a dashboard
+    // can show how close charges run to each: warning at 5000, drop at 25000.
+    // A leading 0 separates the free tier from everything else.
+    EXPECT_EQ(kChargeBuckets.front(), 0.0);
+    for (double const threshold : {5'000.0, 25'000.0})
+    {
+        EXPECT_NE(std::ranges::find(kChargeBuckets, threshold), kChargeBuckets.end())
+            << threshold << " is a resource threshold and must be an edge";
+    }
+}
 
 // The validator must also REJECT. A predicate that only ever returns true
 // would let every ladder above pass while proving nothing.

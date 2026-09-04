@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <mutex>
@@ -31,6 +32,7 @@ ValidationTracker::recordOurValidation(uint256 const& ledgerHash, LedgerIndex se
     }
     evt.weValidated = true;
     totalValidationsSent_.fetch_add(1, std::memory_order_relaxed);
+    boundPending(ledgerHash);
 }
 
 void
@@ -46,6 +48,72 @@ ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerInde
     }
     evt.networkValidated = true;
     totalValidationsChecked_.fetch_add(1, std::memory_order_relaxed);
+    boundPending(ledgerHash);
+}
+
+void
+ValidationTracker::classifyPending(LedgerEvent& evt, TimePoint now)
+{
+    evt.reconciled = true;
+    evt.agreed = evt.weValidated && evt.networkValidated;
+
+    if (evt.agreed)
+    {
+        totalAgreements_.fetch_add(1, std::memory_order_relaxed);
+        totalAgreementsGross_.fetch_add(1, std::memory_order_relaxed);
+    }
+    else
+    {
+        totalMissed_.fetch_add(1, std::memory_order_relaxed);
+        totalMissedGross_.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    WindowEvent const we{.time = now, .ledgerHash = evt.ledgerHash, .agreed = evt.agreed};
+    window1h_.push_back(we);
+    window24h_.push_back(we);
+    window7d_.push_back(we);
+}
+
+void
+ValidationTracker::boundPending(uint256 const& justRecorded)
+{
+    if (pending_.size() <= kMaxPendingEvents)
+        return;
+
+    auto oldest = pending_.end();
+    for (auto it = pending_.begin(); it != pending_.end(); ++it)
+    {
+        if (it->first == justRecorded)
+            continue;
+        if (oldest == pending_.end() || it->second.recordTime < oldest->second.recordTime)
+            oldest = it;
+    }
+
+    if (oldest == pending_.end())
+        return;
+
+    // Classify before erasing. An event contributes to the agreement and miss
+    // totals only when it is classified, so dropping an unclassified one would
+    // lose it outright -- the ledger would be counted neither as an agreement
+    // nor as a miss, and the lifetime totals would silently under-report.
+    //
+    // This forces the classification earlier than the grace period, using
+    // whichever flags have arrived. That is the cost of being over the bound at
+    // all: a validation that would have arrived during the remaining grace
+    // window now lands after its event is gone, so it can neither complete the
+    // agreement nor repair it later. Being over the bound means reconcile() is
+    // not running, so the alternative is unbounded growth.
+    if (!oldest->second.reconciled)
+        classifyPending(oldest->second, Clock::now());
+
+    pending_.erase(oldest);
+}
+
+std::size_t
+ValidationTracker::pendingCount() const
+{
+    std::scoped_lock const lock(mutex_);
+    return pending_.size();
 }
 
 void
@@ -58,32 +126,28 @@ ValidationTracker::reconcile()
     {
         if (!evt.reconciled && (now - evt.recordTime) >= kGracePeriod)
         {
-            // Initial reconciliation after grace period.
-            evt.reconciled = true;
-            evt.agreed = evt.weValidated && evt.networkValidated;
-
-            if (evt.agreed)
-            {
-                totalAgreements_.fetch_add(1, std::memory_order_relaxed);
-            }
-            else
-            {
-                totalMissed_.fetch_add(1, std::memory_order_relaxed);
-            }
-
-            WindowEvent const we{.time = now, .ledgerHash = evt.ledgerHash, .agreed = evt.agreed};
-            window1h_.push_back(we);
-            window24h_.push_back(we);
-            window7d_.push_back(we);
+            // Initial reconciliation after grace period. The gross tallies are
+            // moved once, here, at first classification -- see the
+            // counting-decision note in the repair branch below.
+            classifyPending(evt, now);
         }
         else if (
             evt.reconciled && !evt.agreed && evt.weValidated && evt.networkValidated &&
             (now - evt.recordTime) <= kLateRepairWindow)
         {
-            // Late repair: was a miss, now both flags set.
+            // Late repair: was a miss, now both flags set. Adjust the NET
+            // totals (used by the windowed agreement gauge) so the live view
+            // reflects the repair.
             evt.agreed = true;
             totalMissed_.fetch_sub(1, std::memory_order_relaxed);
             totalAgreements_.fetch_add(1, std::memory_order_relaxed);
+
+            // Counting decision (initial-classification only): the gross
+            // tallies (totalAgreementsGross_ / totalMissedGross_) that back the
+            // monotonic Prometheus _total counters are deliberately NOT touched
+            // here. Each ledger is counted once, at first classification; a
+            // repair must not decrement missed (a _total may never decrease)
+            // nor add a second agreement (which would double-count the ledger).
 
             // Flip the corresponding window entries from miss to agreement.
             repairWindowEntry(window1h_, evt.ledgerHash);
@@ -236,6 +300,18 @@ uint64_t
 ValidationTracker::totalMissed() const
 {
     return totalMissed_.load(std::memory_order_relaxed);
+}
+
+uint64_t
+ValidationTracker::totalAgreementsEver() const
+{
+    return totalAgreementsGross_.load(std::memory_order_relaxed);
+}
+
+uint64_t
+ValidationTracker::totalMissedEver() const
+{
+    return totalMissedGross_.load(std::memory_order_relaxed);
 }
 
 uint64_t

@@ -18,6 +18,8 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
+#include <xrpld/telemetry/MetricMacros.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 
 #include <xrpl/basics/Log.h>
@@ -794,6 +796,11 @@ RCLConsensus::Adaptor::doAccept(
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(built.ledger, result.txns.id(), std::move(consensusJson));
 
+    // Record ledger close for OTel dashboard parity counter. Uses the
+    // call-site macro (see MetricMacros.h) rather than a MetricsRegistry
+    // member.
+    XRPL_METRIC_COUNTER_INC(app_, "ledgers_closed_total", "Total ledgers closed by consensus");
+
     //-------------------------------------------------------------------------
     {
         // Apply disputed transactions that didn't get in
@@ -1120,6 +1127,22 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
     // Publish to all our subscribers:
     app_.getOPs().pubValidation(v);
+
+    // Record validation sent for OTel dashboard parity counter.
+    if (auto* mr = app_.getMetricsRegistry())
+    {
+        mr->incrementValidationsSent();
+#ifdef XRPL_ENABLE_TELEMETRY
+        // Record our validation for the agreement tracker so it can
+        // compare against network-validated ledgers.
+        //
+        // Only when enabled: recording takes the tracker's lock and inserts an
+        // entry, and nothing reconciles or drains those entries unless the
+        // observable gauges are running.
+        if (mr->isEnabled())
+            mr->getValidationTracker().recordOurValidation(ledger.id(), ledger.seq());
+#endif
+    }
 }
 
 void

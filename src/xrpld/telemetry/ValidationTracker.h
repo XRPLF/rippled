@@ -218,6 +218,30 @@ public:
     totalMissed() const;
 
     /**
+     * Lifetime agreements counted at first classification only.
+     *
+     * @note Unlike totalAgreements(), this is strictly monotonic: it is
+     * incremented only when a ledger is first reconciled as an agreement and
+     * is never adjusted by a late repair. It backs the monotonic Prometheus
+     * counter validation_agreements_total. See the counting-semantics
+     * note in detail/ValidationTracker.cpp.
+     */
+    [[nodiscard]] uint64_t
+    totalAgreementsEver() const;
+
+    /**
+     * Lifetime misses counted at first classification only.
+     *
+     * @note Unlike totalMissed(), this is strictly monotonic: it is
+     * incremented only when a ledger is first reconciled as a miss and is
+     * never decremented by a late repair. It backs the monotonic Prometheus
+     * counter validation_missed_total. See the counting-semantics note
+     * in detail/ValidationTracker.cpp.
+     */
+    [[nodiscard]] uint64_t
+    totalMissedEver() const;
+
+    /**
      * Total validations this node sent.
      */
     [[nodiscard]] uint64_t
@@ -228,6 +252,17 @@ public:
      */
     [[nodiscard]] uint64_t
     totalValidationsChecked() const;
+
+    /**
+     * Number of ledgers currently held awaiting reconciliation.
+     *
+     * Never exceeds kMaxPendingEvents: the record methods enforce that bound
+     * as they insert, so the map stays bounded whether or not anything ever
+     * reconciles or reads it.
+     * @return Size of the pending map.
+     */
+    [[nodiscard]] std::size_t
+    pendingCount() const;
 
     /** @} */
 
@@ -312,14 +347,41 @@ private:
     std::deque<WindowEvent> window7d_;
 
     /**
-     * Lifetime count of agreements.
+     * Lifetime count of agreements (net: incremented on agree, also on
+     * repair). May be read via totalAgreements(); feeds the windowed gauge.
      */
     std::atomic<uint64_t> totalAgreements_{0};
 
     /**
-     * Lifetime count of misses.
+     * Lifetime count of misses (net: incremented on miss, decremented on
+     * repair). NON-monotonic. May be read via totalMissed().
      */
     std::atomic<uint64_t> totalMissed_{0};
+
+    /**
+     * Monotonic "gross" lifetime tallies for the Prometheus _total counters.
+     *
+     * Counting decision (initial-classification only): each reconciled
+     * ledger is counted exactly once, at its first classification, into
+     * exactly one of the two tallies below. A later late-repair
+     * (miss -> agreement) does NOT move either tally. This keeps both
+     * strictly monotonic (a Prometheus _total must never decrease) and
+     * additive: totalAgreementsGross_ + totalMissedGross_ == ledgers
+     * reconciled. The repaired/agreement view is still available from the
+     * windowed gauge (validation_agreement) and the net totals above.
+     */
+
+    /**
+     * Monotonic lifetime initial agreements; backs
+     * validation_agreements_total. Never adjusted on repair.
+     */
+    std::atomic<uint64_t> totalAgreementsGross_{0};
+
+    /**
+     * Monotonic lifetime initial misses; backs validation_missed_total.
+     * Never decremented on repair.
+     */
+    std::atomic<uint64_t> totalMissedGross_{0};
 
     /**
      * Lifetime count of validations this node sent.
@@ -345,6 +407,51 @@ private:
      */
     void
     evictOldPending(TimePoint now);
+
+    /**
+     * Hold pending_ at kMaxPendingEvents by dropping its oldest entry.
+     *
+     * Called on the insert path, because that is the only place the bound can
+     * be guaranteed. reconcile() also prunes, but it runs only while the gauge
+     * callbacks are registered, which needs telemetry both compiled in and
+     * enabled -- so a node with telemetry off, or with [telemetry] enabled=0,
+     * would otherwise grow this map by one entry per validated ledger forever.
+     *
+     * Drops the oldest entry rather than the least useful one: the map is
+     * unordered, so this is a linear scan, but it runs at most once per
+     * recorded validation and only once the map is already full.
+     *
+     * An entry that has not been classified yet is classified before it is
+     * dropped, so the ledger it represents still reaches the agreement or miss
+     * totals. See classifyPending() for what that costs.
+     *
+     * @param justRecorded Hash inserted by the caller, kept even if the scan
+     *        finds it oldest (equal timestamps make that possible).
+     * @note Caller must hold mutex_.
+     */
+    void
+    boundPending(uint256 const& justRecorded);
+
+    /**
+     * Classify one pending event as an agreement or a miss, once.
+     *
+     * Marks the event reconciled, decides agreed from the two validation
+     * flags, moves the net and gross totals, and appends the event to all
+     * three sliding windows. Shared by reconcile(), which calls it once the
+     * grace period has elapsed, and by boundPending(), which calls it when it
+     * has to drop an entry that was never classified.
+     *
+     * A ledger reaches the totals exactly once, here. Classifying early -- as
+     * boundPending() must -- fixes the verdict on whichever flags have arrived,
+     * so a validation still in flight cannot complete or repair it.
+     *
+     * @param evt The pending event to classify; its reconciled and agreed
+     *        fields are set.
+     * @param now Timestamp recorded on the window entries.
+     * @note Caller must hold mutex_.
+     */
+    void
+    classifyPending(LedgerEvent& evt, TimePoint now);
 
     /**
      * Scan a window deque and flip the first non-agreed entry matching

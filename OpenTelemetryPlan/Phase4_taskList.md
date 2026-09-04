@@ -6,21 +6,53 @@
 >
 > **Branch**: `pratik/otel-phase4-consensus-tracing` (from `pratik/otel-phase3-tx-tracing`)
 
-> **Note on attribute names**: the `xrpl.<domain>.<field>` keys shown below are
-> written in the older dotted form for readability — it mirrors how the fully
-> qualified attribute reads in a Tempo trace view. The implemented keys follow
-> the convention in [CONTRIBUTING.md](../CONTRIBUTING.md#telemetry-span-attribute-naming)
-> (underscore form, e.g. `consensus_round`, `consensus_mode`); the
+> **Note on attribute names**: the `xrpl.<domain>.<field>` keys that earlier
+> revisions of this task list used were **never emitted**. `9e27120a15` removed
+> the dotted `xrpl.*` namespace from **span** attributes repo-wide. Falsifiable
+> check: `grep -rn 'seg::xrpl' src/ include/` → exactly **2** hits, both
+> `include/xrpl/telemetry/SpanNames.h:117-118` (`attr::networkId`,
+> `attr::networkType`), and both are **resource** attributes
+> (`xrpl.network.id` / `xrpl.network.type`) set on the OTel resource at startup —
+> the one place the dotted form is still reserved. No span attribute uses it.
+> (Do **not** cite `grep 'makeStr("xrpl\.' src/ include/` → 0 hits as evidence:
+> these keys were always composed with `join(seg::…, …)`, never that literal, so
+> the grep has returned 0 for the entire history of the file and cannot fail.)
+> Those spellings have been corrected in place, so every attribute key below is
+> the live one. The mapping that was applied:
+> `xrpl.ledger.seq` → `ledger_seq`, `xrpl.consensus.mode` → `consensus_mode`,
+> `xrpl.consensus.round` → `consensus_round`,
+> `xrpl.consensus.round_id` → `consensus_round_id`,
+> `xrpl.consensus.ledger_id` → `consensus_ledger_id`,
+> `xrpl.tx.id` → `tx_id`,
+> `xrpl.validation.ledger_hash` / `xrpl.peer.validation.ledger_hash` → `ledger_hash`,
+> `xrpl.validation.full` / `xrpl.peer.validation.full` → `full_validation`,
+> `xrpl.peer.version` → `peer_version`.
+> Separately, `19a6c2a306` split the single `trusted` key into
+> `proposal_trusted` (on `consensus.proposal.receive` and `peer.proposal.receive`)
+> and `validation_trusted` (on `consensus.validation.receive` and
+> `peer.validation.receive`). Naming follows
+> [CONTRIBUTING.md](../CONTRIBUTING.md#telemetry-span-attribute-naming); the
 > `*SpanNames.h` constants are the single source of truth.
+>
+> **Three names in this document are not span attributes at all**:
+>
+> - `amendment_blocked` — a **metric label value** only:
+>   `validator_health{metric="amendment_blocked"}` (`MetricsRegistry.cpp:1216`).
+>   No span carries it.
+> - `server_state` — a **metric label value** only:
+>   `server_info{metric="server_state"}` (`MetricsRegistry.cpp:1014`). It is also
+>   an RPC method name. No span carries it.
+> - `proposers_validated` — **never implemented** on any span. `proposersValidated`
+>   exists only as a C++ function/parameter name (`RCLConsensus.cpp:310`);
+>   `consensus.accept` carries `proposers` instead (see Task 4.8).
 
 ### Related Plan Documents
 
-| Document                                                     | Relevance                                                   |
-| ------------------------------------------------------------ | ----------------------------------------------------------- |
-| [04-code-samples.md](./04-code-samples.md)                   | Consensus instrumentation (§4.5.2), consensus span patterns |
-| [01-architecture-analysis.md](./01-architecture-analysis.md) | Consensus round flow (§1.4), key trace points (§1.6)        |
-| [06-implementation-phases.md](./06-implementation-phases.md) | Phase 4 tasks (§6.5), definition of done (§6.11.4)          |
-| [02-design-decisions.md](./02-design-decisions.md)           | Consensus attribute schema (§2.4.4)                         |
+| Document                                                     | Relevance                                                            |
+| ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| [01-architecture-analysis.md](./01-architecture-analysis.md) | Consensus round flow (§1.4), key trace points (§1.6)                 |
+| [06-implementation-phases.md](./06-implementation-phases.md) | Phase 4 tasks and exit criteria (§6.5), definition of done (§6.12.4) |
+| [02-design-decisions.md](./02-design-decisions.md)           | Consensus attribute schema (§2.4.2 → "Consensus Attributes")         |
 
 ---
 
@@ -34,8 +66,8 @@
 
 - `RCLConsensus::Adaptor::startRoundTracing()` creates `consensus.round` span
   via `SpanGuard::hashSpan()` (deterministic) or `SpanGuard::span()` (attribute strategy)
-- Attributes set: `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`,
-  `xrpl.consensus.mode`, `trace_strategy`, `xrpl.consensus.round_id`
+- Attributes set: `consensus_ledger_id`, `ledger_seq`,
+  `consensus_mode`, `trace_strategy`, `consensus_round_id`
 - Round span stored as `roundSpan_` member in `RCLConsensus::Adaptor`
 - `roundSpanContext_` snapshot captured for cross-thread span linking
 
@@ -46,7 +78,9 @@
 
 **Reference**:
 
-- [04-code-samples.md §4.5.2](./04-code-samples.md) — startRound instrumentation example
+- `RCLConsensus::Adaptor::startRoundTracing()` — the live startRound
+  instrumentation (the former `04-code-samples.md` §4.5.2 was deleted by
+  `d6450631bf`; the code is the reference now)
 - [01-architecture-analysis.md §1.4](./01-architecture-analysis.md) — Consensus round flow
 
 ---
@@ -75,7 +109,8 @@
 
 **Reference**:
 
-- [04-code-samples.md §4.5.2](./04-code-samples.md) — phaseTransition instrumentation
+- `Consensus.h` — the live phase-transition instrumentation (`04-code-samples.md`
+  was deleted by `d6450631bf`)
 
 ---
 
@@ -89,11 +124,13 @@
 
 - In `Adaptor::propose()`:
   - Creates `consensus.proposal.send` span via `SpanGuard::span()`
-  - Sets `xrpl.consensus.round` attribute
+  - Sets `consensus_round` attribute
 
 - In `PeerImp::onMessage(TMProposeSet)`:
   - Creates `consensus.proposal.receive` span
-  - Sets `trusted` attribute (bool)
+  - Sets `proposal_trusted` attribute (bool) — `PeerSpanNames.h:41`,
+    `ConsensusSpanNames.h:244`; renamed from the original `trusted` by
+    `19a6c2a306`, and the dotted `xrpl.peer.*` form was dropped by `9e27120a15`
 
 **Done here** (cross-node propagation, send + receive):
 
@@ -112,8 +149,11 @@
 
 **Reference**:
 
-- [04-code-samples.md §4.5.2](./04-code-samples.md) — peerProposal instrumentation
-- [02-design-decisions.md §2.4.4](./02-design-decisions.md) — Consensus attribute schema
+- `PeerImp::onMessage(TMProposeSet)` — the live peerProposal instrumentation
+  (`04-code-samples.md` was deleted by `d6450631bf`)
+- [02-design-decisions.md §2.4.2](./02-design-decisions.md) — Consensus attribute
+  schema (the "Consensus Attributes" table under "Span Attributes by Category";
+  §2.4.4 is the Privacy & Sensitive Data Policy, not the schema)
 
 ---
 
@@ -130,12 +170,14 @@
   - Uses `SpanGuard::linkedSpan()` to create a follows-from link to the round span
   - Thread-safe: uses `roundSpanContext_` snapshot (captured on consensus thread,
     read on jtACCEPT thread)
-  - Sets `xrpl.ledger.seq` and `proposing` attributes
+  - Sets `ledger_seq` and `proposing` attributes
 
 - In `PeerImp::onMessage(TMValidation)`:
   - Creates `consensus.validation.receive` span
-  - Sets `trusted` attribute (bool)
-  - Sets `xrpl.ledger.seq` attribute
+  - Sets `validation_trusted` attribute (bool) — `PeerSpanNames.h:42`,
+    `ConsensusSpanNames.h:245`; renamed from the original `trusted` by
+    `19a6c2a306`, and the dotted `xrpl.peer.*` form was dropped by `9e27120a15`
+  - Sets `ledger_seq` attribute
 
 **Not implemented** (deferred to Phase 4b — cross-node propagation):
 
@@ -155,9 +197,9 @@
 
 **Implemented attributes** (across various spans):
 
-- `xrpl.ledger.seq` — on `consensus.round`, `consensus.accept.apply`
-- `xrpl.consensus.round` — on `consensus.proposal.send`
-- `xrpl.consensus.mode` — on `consensus.round`, `consensus.ledger_close`
+- `ledger_seq` — on `consensus.round`, `consensus.accept.apply`
+- `consensus_round` — on `consensus.proposal.send`
+- `consensus_mode` — on `consensus.round`, `consensus.ledger_close`
 - `proposers` — on `consensus.accept`, `consensus.establish`, `consensus.update_positions`
 - `converge_percent` — on `consensus.establish`, `consensus.update_positions`, `consensus.check`
 - `tx_count` — on `consensus.accept.apply` span (in `doAccept()`)
@@ -187,7 +229,7 @@
 
 - In `doAccept()` (RCLConsensus.cpp):
   - Records `tx.included` events on the `consensus.accept.apply` span for each transaction in the accepted set
-  - Each event includes `xrpl.tx.id` attribute with the transaction hash
+  - Each event includes `tx_id` attribute with the transaction hash
   - This links consensus traces to individual transactions
 
 **Key modified files**:
@@ -227,54 +269,73 @@
 
 **Objective**: Add ledger hash, validation type, and quorum data to consensus validation spans on both send and receive paths. This enables trace-level validation agreement analysis — filter by ledger hash to see which validators agreed for a given ledger.
 
-**Status**: Not implemented. None of the enrichment attributes are set. The `consensus.validation.send` span only has `ledger.seq` and `proposing`. The `consensus.accept` span has `quorum` set to `result.proposers` (not the actual validator quorum from `app_.validators().quorum()`). No `PeerImp.cpp` changes were made.
+**Status**: Implemented, except `proposers_validated`.
+
+- `consensus.validation.send` sets `ledger_seq`, `ledger_hash`, `proposing` and
+  `full_validation` (`RCLConsensus.cpp:975-981`).
+- `peer.validation.receive` sets `ledger_hash` and `full_validation`
+  (`PeerImp.cpp:2573-2574`).
+- `consensus.accept` sets `quorum` from `app_.getValidators().quorum()`
+  (`RCLConsensus.cpp:516`) — the earlier defect where `quorum` carried
+  `result.proposers` instead of the real validator quorum is **fixed**.
+- Still open: `proposers_validated` on `consensus.accept` — never implemented.
+  `consensus.accept` already carries `proposers` (`RCLConsensus.cpp:513`), so a
+  second key for the same value was not added.
+
+All attribute keys are bare/underscore; the dotted `xrpl.*` forms in the spec
+below were never emitted as **span** attributes. Check:
+`grep -rn 'seg::xrpl' src/ include/` → 2 hits, both `SpanNames.h:117-118`
+resource attributes (`xrpl.network.{id,type}`). See the note at the top of this
+document for why the old `makeStr("xrpl\.` grep proved nothing.
 
 **What to do**:
 
 - Edit `src/xrpld/app/consensus/RCLConsensus.cpp`:
   - On the `consensus.validation.send` span (in `validate()` / `doAccept()`):
-    - Add `xrpl.validation.ledger_hash` (string) — the ledger hash being validated
-    - Add `xrpl.validation.full` (bool) — whether this is a full validation (not partial)
+    - Add `ledger_hash` (string) — the ledger hash being validated
+    - Add `full_validation` (bool) — whether this is a full validation (not partial)
   - On the `consensus.accept` span (in `onAccept()`):
-    - Add `validation_quorum` (int64) — from `app_.validators().quorum()`
-    - Add `proposers_validated` (int64) — from `result.proposers`
+    - Add `quorum` (int64) — from `app_.getValidators().quorum()` ✅ shipped
+    - Add `proposers_validated` (int64) — from `result.proposers` ❌ never
+      implemented; `proposers` already carries this value
 
 - Edit `src/xrpld/overlay/detail/PeerImp.cpp`:
   - On the `peer.validation.receive` span:
-    - Add `xrpl.peer.validation.ledger_hash` (string) — from deserialized `STValidation` object
-    - Add `xrpl.peer.validation.full` (bool) — from `STValidation` flags
+    - Add `ledger_hash` (string) — from deserialized `STValidation` object
+    - Add `full_validation` (bool) — from `STValidation` flags
 
 **New span attributes**:
 
-| Span                        | Attribute                          | Type   | Source                            |
-| --------------------------- | ---------------------------------- | ------ | --------------------------------- |
-| `consensus.validation.send` | `xrpl.validation.ledger_hash`      | string | Ledger hash from validate() args  |
-| `consensus.validation.send` | `xrpl.validation.full`             | bool   | Full vs partial validation        |
-| `peer.validation.receive`   | `xrpl.peer.validation.ledger_hash` | string | From STValidation deserialization |
-| `peer.validation.receive`   | `xrpl.peer.validation.full`        | bool   | From STValidation flags           |
-| `consensus.accept`          | `validation_quorum`                | int64  | `app_.validators().quorum()`      |
-| `consensus.accept`          | `proposers_validated`              | int64  | `result.proposers`                |
+| Span                        | Attribute (live name) | Type   | Source                            | Status                    |
+| --------------------------- | --------------------- | ------ | --------------------------------- | ------------------------- |
+| `consensus.validation.send` | `ledger_hash`         | string | Ledger hash from validate() args  | ✅ `RCLConsensus.cpp:977` |
+| `consensus.validation.send` | `full_validation`     | bool   | Full vs partial validation        | ✅ `RCLConsensus.cpp:981` |
+| `peer.validation.receive`   | `ledger_hash`         | string | From STValidation deserialization | ✅ `PeerImp.cpp:2573`     |
+| `peer.validation.receive`   | `full_validation`     | bool   | From STValidation flags           | ✅ `PeerImp.cpp:2574`     |
+| `consensus.accept`          | `quorum`              | int64  | `app_.getValidators().quorum()`   | ✅ `RCLConsensus.cpp:516` |
+| `consensus.accept`          | `proposers_validated` | int64  | `result.proposers`                | ❌ never implemented      |
 
 **Rationale**: The external dashboard's most valuable feature is validation agreement tracking. By recording the ledger hash on both outgoing and incoming validation spans, we create the raw data for agreement analysis at the trace level. Example Tempo query:
 
 ```
-{name="consensus.validation.send"} | xrpl.validation.ledger_hash = "A1B2C3..."
+{name="consensus.validation.send" && span.ledger_hash = "A1B2C3..."}
 ```
 
 Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement %) on top of this data.
 
-**Key modified files (not yet modified)**:
+**Key modified files**:
 
-- `src/xrpld/app/consensus/RCLConsensus.cpp`
-- `src/xrpld/overlay/detail/PeerImp.cpp`
+- `src/xrpld/app/consensus/RCLConsensus.cpp` (`:516`, `:975-981`)
+- `src/xrpld/overlay/detail/PeerImp.cpp` (`:2573-2574`)
 
 **Exit Criteria**:
 
 - [x] `consensus.validation.send` spans carry `ledger_hash` and `full_validation`
-- [ ] `peer.validation.receive` spans carry `xrpl.peer.validation.ledger_hash` and `xrpl.peer.validation.full`
-- [ ] `consensus.accept` spans carry `validation_quorum` and `proposers_validated`
+- [x] `peer.validation.receive` spans carry `ledger_hash` and `full_validation` — `PeerImp.cpp:2573-2574`
+- [x] `consensus.accept` spans carry `quorum` — `RCLConsensus.cpp:516`
+- [ ] `consensus.accept` spans carry `proposers_validated` — **open**, never implemented
 - [x] Ledger hash attributes match between send and receive for the same ledger
-- [ ] No impact on consensus performance
+- [ ] No impact on consensus performance — not measured
 
 ---
 
@@ -320,13 +381,13 @@ Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement 
 
 ### Implemented Spans
 
-| Span Name                   | Method                             | Key Attributes                                                                                                                                                                                                        |
-| --------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.proposal.send`   | `Adaptor::propose`                 | `xrpl.consensus.round`, `is_bow_out`                                                                                                                                                                                  |
-| `consensus.ledger_close`    | `Adaptor::onClose`                 | `xrpl.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                              |
-| `consensus.accept`          | `Adaptor::onAccept`                | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                           |
-| `consensus.accept.apply`    | `Adaptor::doAccept`                | `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `xrpl.ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
-| `consensus.validation.send` | `Adaptor::onAccept` (via validate) | `proposing`, `ledger_hash`, `ledger_seq`, `full_validation`, `validation_sign_time`                                                                                                                                   |
+| Span Name                   | Method                             | Key Attributes                                                                                                                                                                                                   |
+| --------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.proposal.send`   | `Adaptor::propose`                 | `consensus_round`, `is_bow_out`                                                                                                                                                                                  |
+| `consensus.ledger_close`    | `Adaptor::onClose`                 | `ledger_seq`, `consensus_mode`                                                                                                                                                                                   |
+| `consensus.accept`          | `Adaptor::onAccept`                | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                      |
+| `consensus.accept.apply`    | `Adaptor::doAccept`                | `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `ledger_seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
+| `consensus.validation.send` | `Adaptor::onAccept` (via validate) | `proposing`, `ledger_hash`, `ledger_seq`, `full_validation`, `validation_sign_time`                                                                                                                              |
 
 #### Close Time Attributes (consensus.accept.apply)
 
@@ -344,13 +405,15 @@ driven by `avCT_CONSENSUS_PCT` (75% validator agreement threshold):
 - **`close_time_vote_bins`** — Number of distinct close-time vote bins from peer proposals. Higher values indicate less agreement among validators.
 - **`resolution_direction`** — Whether close-time resolution `"increased"` (coarser), `"decreased"` (finer), or stayed `"unchanged"` relative to the previous ledger.
 
-**Exit Criteria** (from [06-implementation-phases.md §6.11.4](./06-implementation-phases.md)):
+**Exit Criteria** (from [06-implementation-phases.md §6.5](./06-implementation-phases.md)
+— §6.11.4 is the WALK phase, i.e. transaction tracing, and does not carry these
+criteria; the Phase 4 definition of done is §6.12.4):
 
 - [x] Complete consensus round traces
 - [x] Phase transitions visible (open, establish, close, accept)
 - [x] Proposals and validations traced — send and receive; relay deferred to Phase 4b
 - [x] Close time agreement tracked (per `avCT_CONSENSUS_PCT`)
-- [x] No impact on consensus timing
+- [ ] No impact on consensus timing — **not measured**
 - [x] Transaction-consensus correlation (Task 4.6) — `tx.included` events in doAccept
 - [ ] Validation span enrichment (Task 4.8) — not implemented
 
@@ -381,14 +444,14 @@ Two strategies for cross-node trace correlation, switchable via config:
 Derive `trace_id = SHA256(previousLedger.id())[0:16]` so all nodes in the same
 consensus round share the same trace_id without P2P context propagation.
 
-- **Pros**: All nodes appear in the same trace in Tempo/Jaeger automatically.
+- **Pros**: All nodes appear in the same trace in Tempo automatically.
   No collector-side post-processing needed.
 - **Cons**: Overrides OTel's random trace_id generation; requires custom
   `IdGenerator` or manual span context construction.
 
 ### Strategy B — Attribute-Based Correlation
 
-Use normal random trace_id but attach `xrpl.consensus.ledger_id` as an attribute
+Use normal random trace_id but attach `consensus_ledger_id` as an attribute
 on every consensus span. Correlation happens at query time via Tempo/Grafana
 `by attribute` queries.
 
@@ -425,10 +488,10 @@ In `RCLConsensus::Adaptor::startRound()`:
   5. Call `startSpan("consensus.round", parentContext)` so the new span
      inherits the deterministic trace_id.
 - If `attribute`: start a normal `consensus.round` span, set
-  `xrpl.consensus.ledger_id = previousLedger.id()` as attribute.
+  `consensus_ledger_id = previousLedger.id()` as attribute.
 
-Both strategies always set `xrpl.consensus.round_id` (round number) and
-`xrpl.consensus.ledger_id` (previous ledger hash) as attributes.
+Both strategies always set `consensus_round_id` (round number) and
+`consensus_ledger_id` (previous ledger hash) as attributes.
 
 ---
 
@@ -544,7 +607,7 @@ spans in `Consensus.h`.
   - Reads `consensus_trace_strategy` via `app_.getTelemetry().getConsensusTraceStrategy()`
   - **Deterministic**: uses `SpanGuard::hashSpan()` with `prevLgr.id()` data
   - **Attribute**: uses `SpanGuard::span(TraceCategory::Consensus, seg::consensus, "round")`
-  - Sets attributes: `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`, `xrpl.consensus.mode`, `trace_strategy`, `xrpl.consensus.round_id`
+  - Sets attributes: `consensus_ledger_id`, `ledger_seq`, `consensus_mode`, `trace_strategy`, `consensus_round_id`
   - Captures `roundSpanContext_` snapshot for cross-thread span linking
   - Saves `prevRoundContext_` from previous round for follows-from links
 
@@ -813,7 +876,7 @@ and OFF, and don't affect consensus timing.
 
 | Span Name                    | Location           | Key Attributes (actually set)                                                                                                                                                                                             |
 | ---------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.round`            | `RCLConsensus.cpp` | `xrpl.consensus.round_id`, `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`, `xrpl.consensus.mode`, `trace_strategy`                                                                                                         |
+| `consensus.round`            | `RCLConsensus.cpp` | `consensus_round_id`, `consensus_ledger_id`, `ledger_seq`, `consensus_mode`, `trace_strategy`                                                                                                                             |
 | `consensus.phase.open`       | `Consensus.h`      | `start_reason`, `previous_close_agree`, `peer_positions_at_open`, `early_close_triggered` (at start); `open_duration_ms`, `peer_positions_at_close`, `tx_sets_acquired`, `close_reason`, `proposers_validated` (at close) |
 | `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`, `disputes_count`, `close_time_avalanche_state`                                                                                                                        |
 | `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`, `disputes_count`, `avalanche_threshold`                                                                                             |
@@ -822,17 +885,17 @@ and OFF, and don't affect consensus timing.
 
 ### New Events (Phase 4a)
 
-| Event Name        | Parent Span                  | Attributes (actually set)                                        |
-| ----------------- | ---------------------------- | ---------------------------------------------------------------- |
-| `dispute.resolve` | `consensus.update_positions` | `xrpl.tx.id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` |
-| `tx.included`     | `consensus.accept.apply`     | `xrpl.tx.id`                                                     |
+| Event Name        | Parent Span                  | Attributes (actually set)                                   |
+| ----------------- | ---------------------------- | ----------------------------------------------------------- |
+| `dispute.resolve` | `consensus.update_positions` | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` |
+| `tx.included`     | `consensus.accept.apply`     | `tx_id`                                                     |
 
 ### New Attributes (Phase 4a)
 
 ```cpp
 // Round-level (on consensus.round) — ALL IMPLEMENTED
-"xrpl.consensus.round_id"             = int64    // Consensus round number
-"xrpl.consensus.ledger_id"            = string   // previousLedger.id() hash
+"consensus_round_id"                   = int64    // Consensus round number
+"consensus_ledger_id"                  = string   // previousLedger.id() hash
 "trace_strategy"                       = string   // "deterministic" or "attribute"
 
 // Establish-level — IMPLEMENTED
@@ -880,9 +943,12 @@ and OFF, and don't affect consensus timing.
 - **No `getTelemetry()` adaptor method**: `SpanGuard::span()` is a static factory that
   internally checks telemetry state, so `Consensus.h` doesn't need adaptor access
   for span creation. Only `RCLConsensus::Adaptor` accesses `app_.getTelemetry()` directly.
-- **Config validation**: `consensus_trace_strategy` is validated to be either
-  `"deterministic"` or `"attribute"`, falling back to `"deterministic"` for
-  unrecognised values.
+- **No config validation**: `consensus_trace_strategy` is **not** validated.
+  `TelemetryConfig.cpp:155-156` copies the raw string through, and the only
+  comparison in the code is `strategy == "attribute"` (`RCLConsensus.cpp:1296`).
+  Any unrecognised value — including a typo — silently takes the deterministic
+  branch, with no log warning. The effective fallback is correct; the absence of
+  a diagnostic is a known gap.
 - **Plan deviation**: `roundSpan_` is stored in `RCLConsensus::Adaptor` (not
   `Consensus.h`) because the adaptor has access to telemetry config and can
   implement the deterministic trace ID strategy. `establishSpan_` is correctly
@@ -929,7 +995,7 @@ Received messages use **span links** (follows-from), NOT parent-child:
 
 - The receiver's processing span links to the sender's context
 - This preserves each node's independent trace tree
-- Cross-node correlation visible via linked traces in Tempo/Jaeger
+- Cross-node correlation visible via linked traces in Tempo
 
 ## Interaction with Deterministic Trace ID (Strategy A)
 

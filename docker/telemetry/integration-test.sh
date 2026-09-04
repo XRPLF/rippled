@@ -27,7 +27,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 XRPLD="$REPO_ROOT/.build/xrpld"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 STANDALONE_CFG="$SCRIPT_DIR/xrpld-telemetry.cfg"
-WORKDIR="/tmp/xrpld-integration"
+WORKDIR="${WORKDIR:-/tmp/xrpld-integration}"
 NUM_NODES=6
 PEER_PORT_BASE=51235
 RPC_PORT_BASE=5005
@@ -96,6 +96,7 @@ check_log_correlation() {
         local matches
         matches=$(grep -c 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' "$logfile") || matches=0
         total_matches=$((total_matches + matches))
+        # Capture the first trace_id we find for cross-referencing with Tempo
         if [ -z "$sample_trace_id" ] && [ "$matches" -gt 0 ]; then
             sample_trace_id=$(grep -o 'trace_id=[a-f0-9]\{32\}' "$logfile" | head -1 | cut -d= -f2)
         fi
@@ -393,6 +394,7 @@ trace_transactions=1
 trace_consensus=1
 trace_peer=1
 trace_ledger=1
+metrics_endpoint=http://localhost:4318/v1/metrics
 
 [insight]
 # server=otel is the only load-bearing key here -- it selects OTelCollector so
@@ -402,6 +404,7 @@ trace_ledger=1
 # line. The service is identified by the OTel resource service.name.
 server=otel
 endpoint=http://localhost:4318/v1/metrics
+service_instance_id=Node-${i}
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
@@ -691,6 +694,68 @@ if command -v ss >/dev/null 2>&1; then
 else
     log "ss not found -- skipping StatsD UDP port check"
 fi
+
+# ---------------------------------------------------------------------------
+# Step 10c: Verify OTel SDK Metrics
+# ---------------------------------------------------------------------------
+log ""
+log "--- OTel SDK Metrics (MetricsRegistry) ---"
+log "Waiting 15s for OTel metric export + Prometheus scrape..."
+sleep 15
+
+check_otel_metric() {
+    local metric_name="$1"
+    local result
+    result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" |
+        jq '.data.result | length' 2>/dev/null || echo 0)
+    if [ "$result" -gt 0 ]; then
+        ok "OTel: $metric_name ($result series)"
+    else
+        fail "OTel: $metric_name (0 series)"
+    fi
+}
+
+# NodeStore I/O
+check_otel_metric 'nodestore_state{metric="node_reads_total"}'
+check_otel_metric 'nodestore_state{metric="write_load"}'
+
+# Cache hit rates
+check_otel_metric 'cache_metrics{metric="SLE_hit_rate"}'
+check_otel_metric 'cache_metrics{metric="treenode_cache_size"}'
+
+# TxQ metrics
+check_otel_metric 'txq_metrics{metric="txq_count"}'
+check_otel_metric 'txq_metrics{metric="txq_reference_fee_level"}'
+
+# Per-RPC metrics
+check_otel_metric "rpc_method_started_total"
+check_otel_metric "rpc_method_finished_total"
+
+# Per-job metrics
+check_otel_metric "job_queued_total"
+check_otel_metric "job_finished_total"
+
+# Counted object instances
+check_otel_metric "object_count"
+
+# Load factor breakdown
+check_otel_metric 'load_factor_metrics{metric="load_factor"}'
+check_otel_metric 'load_factor_metrics{metric="load_factor_server"}'
+
+# ValidationTracker rolling-window agreement gauge.
+# MetricsRegistry::registerValidationAgreementGauge() publishes
+# validation_agreement with a `metric` label for each window
+# (1h / 24h / 7d) plus the matching agreement/miss counts. The 7-day
+# window matches the external xrpl-validator-dashboard parity target.
+check_otel_metric 'validation_agreement{metric="agreement_pct_1h"}'
+check_otel_metric 'validation_agreement{metric="agreement_pct_24h"}'
+check_otel_metric 'validation_agreement{metric="agreement_pct_7d"}'
+check_otel_metric 'validation_agreement{metric="agreements_1h"}'
+check_otel_metric 'validation_agreement{metric="missed_1h"}'
+check_otel_metric 'validation_agreement{metric="agreements_24h"}'
+check_otel_metric 'validation_agreement{metric="missed_24h"}'
+check_otel_metric 'validation_agreement{metric="agreements_7d"}'
+check_otel_metric 'validation_agreement{metric="missed_7d"}'
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary

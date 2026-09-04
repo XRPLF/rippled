@@ -136,16 +136,61 @@ connectors:
     # nodes/tiers grouped separately.
     resource_metrics_key_attributes:
       - service.instance.id
+      - xrpl.node.id
       - deployment.environment
       - xrpl.network.type
     histogram:
+      # Pin unit=ms so the metric stays span_duration_milliseconds_* and le
+      # labels stay in ms even if a future collector flips the default to
+      # seconds (connector.spanmetrics.useSecondAsDefaultMetricsUnit gate).
+      unit: ms
       explicit:
-        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
+        # Buckets MUST stay strictly ascending (the connector binary-searches
+        # them and silently misbuckets otherwise). Sub-MILLISECOND boundaries
+        # (0.01-0.5ms) exist because most xrpld spans are far below 1ms --
+        # tx.preflight means ~0.012ms, tx.preclaim ~0.15ms -- so a 1ms floor
+        # put >99.99% of samples in the first bucket and pinned every p95/p99
+        # at a constant 0.95ms. Sub-second boundaries cover
+        # RPC/tx/ledger spans; the 2s-4s boundaries resolve second-scale
+        # consensus spans (consensus.round ~3.9s, consensus.establish ~1.9s)
+        # that used to pile into a single 1s-5s bucket; 10s/30s give the
+        # ledger.acquire tail (~17% exceeds 5s during catch-up) a measurable
+        # home so its p95/p99 stop reading as +Inf.
+        buckets:
+          [
+            0.01ms,
+            0.05ms,
+            0.1ms,
+            0.25ms,
+            0.5ms,
+            1ms,
+            5ms,
+            10ms,
+            25ms,
+            50ms,
+            100ms,
+            250ms,
+            500ms,
+            1s,
+            2s,
+            3s,
+            4s,
+            5s,
+            10s,
+            30s,
+          ]
     dimensions:
       - name: command
       - name: rpc_status
       - name: consensus_mode
+      # Only the boolean close_time_correct is promoted, never the close_time
+      # value itself: close_time is a monotonic NetClock timestamp, so a
+      # dimension on it would mint a new metric series every ledger (unbounded
+      # cardinality). The close-time value is exposed as the server_info
+      # last_close_time gauge instead (for last-close age); the close interval
+      # comes from the ledgers_closed_total counter.
       - name: close_time_correct
+      - name: consensus_state
       - name: local
       - name: suppressed
       - name: proposal_trusted
@@ -156,7 +201,6 @@ connectors:
       # tx.preflight/tx.preclaim/tx.transactor span RED metrics per stage.
       - name: stage
       - name: txq_status
-      - name: consensus_state
       - name: load_type
       - name: is_batch
       # Consensus lifecycle dimensions (low cardinality, bounded value sets).
@@ -168,6 +212,9 @@ connectors:
       - name: method
       - name: grpc_role
       - name: grpc_status
+      # ledger.acquire dimensions (bounded: outcome, acquire reason).
+      - name: outcome
+      - name: acquire_reason
 
 exporters:
   debug:

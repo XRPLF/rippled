@@ -1,6 +1,53 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Perf Runs (JMeter)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "jmeter"],
+          "type": "tags"
+        },
+        "type": "tags"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(15, 122, 102)",
+        "name": "Perf Runs (Locust)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac", "locust"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "description": "What this shows: Ledger data exchange and object-fetch traffic between this node and its peers: ledger sync, tree-node retrieval, and transaction-set exchange.\nUse it to: See how much ledger data the node is pulling or serving and spot catch-up activity.",
   "editable": true,
@@ -11,7 +58,7 @@
   "panels": [
     {
       "title": "Overlay Traffic by Category (Bytes In Rate) [$xrpl_network_type]",
-      "description": "###### What this is:\n*All overlay traffic categories ranked by inbound bytes, giving an at-a-glance view of which message types consume the most receive bandwidth.*\n\n###### How it's computed:\n*Top categories by inbound byte rate across all traffic categories. The category name is recovered from the metric name before `rate()` is applied, because `rate()` drops `__name__`; a subquery is used so the renamed series can then be rated. Each bar is labelled with its traffic category followed by the node identity; the shared `_bytes_in` suffix is dropped from the category name because the panel already reports inbound bytes.*\n\n###### Reading it:\n*The longest bars are the biggest bandwidth consumers; on a synced node transactions, proposals, and validations usually lead.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*A single ledger-data or fetch category dominating (ongoing sync) or an unexpected category topping the list.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*All overlay traffic categories ranked by inbound bytes, giving an at-a-glance view of which message types consume the most receive bandwidth.*\n\n###### How it's computed:\n*Top categories by inbound byte rate across all traffic categories. The category name is recovered from the metric name before `rate()` is applied, because `rate()` drops `__name__`; a subquery is used so the renamed series can then be rated. Each bar is labelled with its traffic category followed by the node identity; the shared `_bytes_in` suffix is dropped from the category name because the panel already reports inbound bytes.*\n\n###### Reading it:\n*The longest bars are the biggest bandwidth consumers; on a synced node transactions, proposals, and validations usually lead.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*A single ledger-data or fetch category dominating (ongoing sync) or an unexpected category topping the list.*\n\n###### Keywords:\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n- **Peer** *(per node)* \u2014 another server this node holds a protocol connection to.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#overlay)",
       "type": "bargauge",
       "gridPos": {
         "h": 10,
@@ -72,7 +119,7 @@
     },
     {
       "title": "Ledger Data \u2014 Ledger",
-      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Keywords:\n- **Ledger data** *(network event)* \u2014 the bulk transfer of ledger contents between peers during sync.\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-data)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -122,7 +169,7 @@
     },
     {
       "title": "Ledger Data \u2014 Transaction",
-      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Keywords:\n- **Ledger data** *(network event)* \u2014 the bulk transfer of ledger contents between peers during sync.\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-data)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -184,7 +231,7 @@
     },
     {
       "title": "Ledger Data \u2014 Account State",
-      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Keywords:\n- **Ledger data** *(network event)* \u2014 the bulk transfer of ledger contents between peers during sync.\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-data)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -234,7 +281,7 @@
     },
     {
       "title": "Ledger Traffic \u2014 Ledger",
-      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Keywords:\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n- **Peer** *(per node)* \u2014 another server this node holds a protocol connection to.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#overlay)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -284,7 +331,7 @@
     },
     {
       "title": "Ledger Traffic \u2014 Transaction",
-      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Keywords:\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n- **Peer** *(per node)* \u2014 another server this node holds a protocol connection to.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#overlay)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -346,7 +393,7 @@
     },
     {
       "title": "Ledger Traffic \u2014 Account State",
-      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Keywords:\n- **Overlay** *(network-wide)* \u2014 the peer-to-peer mesh xrpld nodes form to gossip transactions, proposals and validations.\n- **Peer** *(per node)* \u2014 another server this node holds a protocol connection to.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#overlay)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -396,7 +443,7 @@
     },
     {
       "title": "GetObject \u2014 Ledger",
-      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Keywords:\n- **GetObject** *(network event)* \u2014 a peer request for specific ledger objects by hash, served from the NodeStore.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -446,7 +493,7 @@
     },
     {
       "title": "GetObject \u2014 Transaction",
-      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Keywords:\n- **GetObject** *(network event)* \u2014 a peer request for specific ledger objects by hash, served from the NodeStore.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -508,7 +555,7 @@
     },
     {
       "title": "GetObject \u2014 Account State",
-      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Keywords:\n- **GetObject** *(network event)* \u2014 a peer request for specific ledger objects by hash, served from the NodeStore.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -558,7 +605,7 @@
     },
     {
       "title": "GetObject Messages \u2014 Ledger",
-      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Keywords:\n- **GetObject** *(network event)* \u2014 a peer request for specific ledger objects by hash, served from the NodeStore.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -602,7 +649,7 @@
     },
     {
       "title": "GetObject Messages \u2014 Transaction",
-      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Keywords:\n- **GetObject** *(network event)* \u2014 a peer request for specific ledger objects by hash, served from the NodeStore.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -652,7 +699,7 @@
     },
     {
       "title": "GetObject Messages \u2014 Account State",
-      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Keywords:\n- **GetObject** *(network event)* \u2014 a peer request for specific ledger objects by hash, served from the NodeStore.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -696,7 +743,7 @@
     },
     {
       "title": "GetObject Messages \u2014 Specials",
-      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Keywords:\n- **GetObject** *(network event)* \u2014 a peer request for specific ledger objects by hash, served from the NodeStore.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -752,7 +799,7 @@
     },
     {
       "title": "GetObject \u2014 Specials",
-      "description": "###### What this is:\n*Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.*\n\n###### Keywords:\n- **GetObject** *(network event)* \u2014 a peer request for specific ledger objects by hash, served from the NodeStore.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -845,7 +892,7 @@
     },
     {
       "title": "Sync State",
-      "description": "###### What this is:\n*Current server operating state as a numeric code: 0 disconnected, 1 connected, 2 syncing, 3 tracking, 4 full, 5 validating, 6 proposing. A healthy validator sits at 6, a healthy non-validating node at 4.*\n\n###### How it's computed:\n*state_tracking{metric=\"state_value\"} (gauge). Companion time_in_current_state_seconds shows how long it has been stuck there.*\n\n###### Reading it:\n*Flat at 4-6 = full/healthy. Dropping to 1-2 and staying = the node fell out of sync and is re-acquiring (the primary red flag this row explains).*\n\n###### Healthy range:\n*4-6 steady, briefly 2-3 right after restart.*\n\n###### Watch for:\n*A node stuck below 4 for more than a few minutes, or oscillating - read the lower panels for the cause.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`",
+      "description": "###### What this is:\n*Current server operating state as a numeric code: 0 disconnected, 1 connected, 2 syncing, 3 tracking, 4 full, 5 validating, 6 proposing. A healthy validator sits at 6, a healthy non-validating node at 4.*\n\n###### How it's computed:\n*state_tracking{metric=\"state_value\"} (gauge). Companion time_in_current_state_seconds shows how long it has been stuck there.*\n\n###### Reading it:\n*Flat at 4-6 = full/healthy. Dropping to 1-2 and staying = the node fell out of sync and is re-acquiring (the primary red flag this row explains).*\n\n###### Healthy range:\n*4-6 steady, briefly 2-3 right after restart.*\n\n###### Watch for:\n*A node stuck below 4 for more than a few minutes, or oscillating - read the lower panels for the cause.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -970,7 +1017,7 @@
     },
     {
       "title": "Validated Ledger Age",
-      "description": "###### What this is:\n*Seconds since this node last had a freshly validated ledger. The single clearest 'am I keeping up with the network' signal.*\n\n###### How it's computed:\n*ledgermaster_validated_ledger_age gauge (seconds), per node.*\n\n###### Reading it:\n*Should hover at the network close interval (~3-5s). A rising sawtooth or a high plateau means the node is falling behind or not validating.*\n\n###### Healthy range:\n*<= ~6s on a synced node.*\n\n###### Watch for:\n*Sustained climb above ~15s, or a monotonic ramp = the node is not keeping up; correlate with job-queue wait and NuDB read latency below.*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::getValidatedLedgerAge`",
+      "description": "###### What this is:\n*Seconds since this node last had a freshly validated ledger. The single clearest 'am I keeping up with the network' signal.*\n\n###### How it's computed:\n*ledgermaster_validated_ledger_age gauge (seconds), per node.*\n\n###### Reading it:\n*Should hover at the network close interval (~3-5s). A rising sawtooth or a high plateau means the node is falling behind or not validating.*\n\n###### Healthy range:\n*<= ~6s on a synced node.*\n\n###### Watch for:\n*Sustained climb above ~15s, or a monotonic ramp = the node is not keeping up; correlate with job-queue wait and NuDB read latency below.*\n\n###### Keywords:\n- **Validated ledger age** *(per node)* \u2014 seconds since the last freshly validated ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::getValidatedLedgerAge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger-age)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1022,7 +1069,7 @@
     },
     {
       "title": "Time Spent Per State",
-      "description": "###### What this is:\n*Operating mode as a colour-coded timeline. Each band's width is the time spent in that state, so short-lived states show as thin slivers instead of vanishing.*\n\n###### How it's computed:\n*server_info{metric=\"server_state\"} (gauge), the raw OperatingMode 0-4. Uses server_state rather than state_value because state_value folds 5 and 6 onto FULL, which would split one Full band into three colours.*\n\n###### Reading it:\n*One green band across the window = healthy. Red/orange/yellow bands show when and for how long the node was degraded.*\n\n###### Healthy range:\n*Continuously green (Full), brief orange/yellow/blue only after a restart.*\n\n###### Watch for:\n*Repeated thin bands = the node is oscillating. This is sampled every 10s, so a state shorter than one sample can still be missed.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`",
+      "description": "###### What this is:\n*Operating mode as a colour-coded timeline. Each band's width is the time spent in that state, so short-lived states show as thin slivers instead of vanishing.*\n\n###### How it's computed:\n*server_info{metric=\"server_state\"} (gauge), the raw OperatingMode 0-4. Uses server_state rather than state_value because state_value folds 5 and 6 onto FULL, which would split one Full band into three colours.*\n\n###### Reading it:\n*One green band across the window = healthy. Red/orange/yellow bands show when and for how long the node was degraded.*\n\n###### Healthy range:\n*Continuously green (Full), brief orange/yellow/blue only after a restart.*\n\n###### Watch for:\n*Repeated thin bands = the node is oscillating. This is sampled every 10s, so a state shorter than one sample can still be missed.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "state-timeline",
       "gridPos": {
         "h": 10,
@@ -1135,7 +1182,7 @@
     },
     {
       "title": "Ledger Close Rate",
-      "description": "###### What this is:\n*Rate at which the node closes ledgers, versus the ~0.25/s network cadence. A throughput deficit means it is not advancing in step with the network.*\n\n###### How it's computed:\n*rate(ledgers_closed_total[$__rate_interval]) per node.*\n\n###### Reading it:\n*Should track ~0.22-0.25 ledgers/s (one every ~4s). Near-zero while behind = stalled; a burst above network rate = catching up.*\n\n###### Healthy range:\n*~0.25/s steady on a synced node.*\n\n###### Watch for:\n*Near-zero close rate while Validated Ledger Age climbs = hard stall (e.g. genesis-flapping or disk-bound acquisition).*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::closeLedger`",
+      "description": "###### What this is:\n*Rate at which the node closes ledgers, versus the ~0.25/s network cadence. A throughput deficit means it is not advancing in step with the network.*\n\n###### How it's computed:\n*rate(ledgers_closed_total[$__rate_interval]) per node.*\n\n###### Reading it:\n*Should track ~0.22-0.25 ledgers/s (one every ~4s). Near-zero while behind = stalled; a burst above network rate = catching up.*\n\n###### Healthy range:\n*~0.25/s steady on a synced node.*\n\n###### Watch for:\n*Near-zero close rate while Validated Ledger Age climbs = hard stall (e.g. genesis-flapping or disk-bound acquisition).*\n\n###### Keywords:\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[app/ledger/LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::closeLedger`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-close)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1204,7 +1251,7 @@
     },
     {
       "title": "Job Queue Wait p95 By Type",
-      "description": "###### What this is:\n*95th-percentile time a job waits in the queue before a worker thread picks it up, for the sync-critical job types. This is the metric form of the 'ProcessLData wait: NNNNms' warnings in the debug log.*\n\n###### How it's computed:\n*histogram_quantile(0.95, rate(jobq_<type>_q_milliseconds_bucket[$__rate_interval])) for ledgerdata, acceptledger, fetchtxndata, transaction, advanceledger, ledgerrequest.*\n\n###### Reading it:\n*Queue wait should be single-digit to low-tens of ms. High ledgerdata/fetchtxndata wait = the node cannot process inbound ledger data fast enough.*\n\n###### Healthy range:\n*< ~50ms p95 per type on a healthy node.*\n\n###### Watch for:\n*ledgerdata or fetchtxndata q-wait spiking to seconds = worker threads are blocked (usually on NuDB reads - see the cause tier).*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getJson (per-type queue timing)`",
+      "description": "###### What this is:\n*95th-percentile time a job waits in the queue before a worker thread picks it up, for the sync-critical job types. This is the metric form of the 'ProcessLData wait: NNNNms' warnings in the debug log.*\n\n###### How it's computed:\n*histogram_quantile(0.95, rate(job_queued_us_bucket{job_type=\"<type>\"}[$__rate_interval])) for ledgerData, acceptLedger, fetchTxnData, transaction, advanceLedger, ledgerRequest. Reads the OTel-native microsecond instrument rather than the beast jobq_* pair: beast Events round every duration up to a whole millisecond, so 94-100% of their samples landed in the first bucket and every percentile was an interpolation inside it rather than a measurement.*\n\n###### Reading it:\n*Queue wait is normally tens to hundreds of microseconds. High ledgerData/fetchTxnData wait = the node cannot process inbound ledger data fast enough.*\n\n###### Healthy range:\n*< ~500us p95 per type on a healthy node; sustained milliseconds is already backpressure.*\n\n###### Watch for:\n*ledgerData or fetchTxnData q-wait spiking to seconds = worker threads are blocked (usually on NuDB reads - see the cause tier).*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code by MetricsRegistry as an OTel-native histogram in microseconds; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getJson (per-type queue timing)`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1225,48 +1272,48 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(jobq_ledgerdata_q_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"ledgerdata q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{job_type=\"ledgerData\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"ledgerData q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(jobq_acceptledger_q_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"acceptledger q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{job_type=\"acceptLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"acceptLedger q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(jobq_fetchtxndata_q_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"fetchtxndata q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{job_type=\"fetchTxnData\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"fetchTxnData q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(jobq_transaction_q_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"transaction q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{job_type=\"transaction\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"transaction q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(jobq_advanceledger_q_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"advanceledger q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{job_type=\"advanceLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"advanceLedger q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(jobq_ledgerrequest_q_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"ledgerrequest q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{job_type=\"ledgerRequest\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"ledgerRequest q-wait p95\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
-          "unit": "ms",
+          "unit": "µs",
           "custom": {
             "axisLabel": "p95 Wait (ms)",
             "spanNulls": 1800000,
@@ -1284,7 +1331,7 @@
     },
     {
       "title": "NuDB Read Latency",
-      "description": "###### What this is:\n*Average nodestore (NuDB) read latency: how long each on-disk object read takes. The direct disk-layer cost that backs up the job queue.*\n\n###### How it's computed:\n*rate(nodestore_state{metric=\"node_reads_duration_us\"}[$__rate_interval]) / rate(nodestore_state{metric=\"node_reads_total\"}[$__rate_interval]), in us.*\n\n###### Reading it:\n*Low single-digit us when the OS page cache is warm; tens-to-hundreds of us when reads hit the disk. Rises sharply during cold-cache catch-up.*\n\n###### Healthy range:\n*< ~10us/read warm; higher is expected briefly after a wipe/restart.*\n\n###### Watch for:\n*Sustained high us/read is the disk-bound signal on its own; the found ratio below stays near 100% even then, so do not wait for it to drop. Check EBS IOPS / io scheduler latency.*\n\n###### Source:\n[nodestore/backend/NuDBFactory.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/backend/NuDBFactory.cpp)\n\n###### Function:\n`NuDB backend read path`",
+      "description": "###### What this is:\n*Average nodestore (NuDB) read latency: how long each on-disk object read takes. The direct disk-layer cost that backs up the job queue.*\n\n###### How it's computed:\n*rate(nodestore_state{metric=\"node_reads_duration_us\"}[$__rate_interval]) / rate(nodestore_state{metric=\"node_reads_total\"}[$__rate_interval]), in us.*\n\n###### Reading it:\n*Low single-digit us when the OS page cache is warm; tens-to-hundreds of us when reads hit the disk. Rises sharply during cold-cache catch-up.*\n\n###### Healthy range:\n*< ~10us/read warm; higher is expected briefly after a wipe/restart.*\n\n###### Watch for:\n*Sustained high us/read is the disk-bound signal on its own; the found ratio below stays near 100% even then, so do not wait for it to drop. Check EBS IOPS / io scheduler latency.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[nodestore/backend/NuDBFactory.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/backend/NuDBFactory.cpp)\n\n###### Function:\n`NuDB backend read path`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1329,7 +1376,7 @@
     },
     {
       "title": "I/O Scheduler Latency p95",
-      "description": "###### What this is:\n*95th-percentile latency of the node's internal I/O service queue - the async task scheduler that dispatches network and disk callbacks.*\n\n###### How it's computed:\n*histogram_quantile(0.95, rate(ios_latency_milliseconds_bucket[$__rate_interval])).*\n\n###### Reading it:\n*Low and flat when the event loop is responsive. Rising p95 means callbacks are queuing behind long-running work (often blocking disk reads).*\n\n###### Healthy range:\n*< ~10ms p95.*\n\n###### Watch for:\n*p95 climbing into hundreds of ms = the I/O service is saturated; the node cannot service network/disk events promptly, stalling sync.*\n\n###### Source:\n[core/impl/Workers.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/Workers.cpp)\n\n###### Function:\n`io_service latency histogram`",
+      "description": "###### What this is:\n*95th-percentile latency of the node's internal I/O service queue - the async task scheduler that dispatches network and disk callbacks.*\n\n###### How it's computed:\n*histogram_quantile(0.95, rate(ios_latency_milliseconds_bucket[$__rate_interval])).*\n\n###### Reading it:\n*Low and flat when the event loop is responsive. Rising p95 means callbacks are queuing behind long-running work (often blocking disk reads).*\n\n###### Healthy range:\n*< ~10ms p95.*\n\n###### Watch for:\n*p95 climbing into hundreds of ms = the I/O service is saturated; the node cannot service network/disk events promptly, stalling sync.*\n\n###### Keywords:\n- **I/O scheduler** *(per node)* \u2014 the queue that serializes NodeStore disk reads and writes.\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/impl/Workers.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/Workers.cpp)\n\n###### Function:\n`io_service latency histogram`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1374,7 +1421,7 @@
     },
     {
       "title": "NuDB Read Found Ratio",
-      "description": "###### What this is:\n*Fraction of nodestore fetches that found the object they asked for. This is not a cache hit ratio: `node_reads_hit` counts every fetch that returned an object, whatever served it, so a fetch that went all the way to disk still counts here.*\n\n###### How it's computed:\n*rate(nodestore_state{metric=\"node_reads_hit\"}[$__rate_interval]) / rate(nodestore_state{metric=\"node_reads_total\"}[$__rate_interval]).*\n\n###### Reading it:\n*Normally sits near 1.0 (100%) on any node that has the data, warm or cold, because a synced node almost always finds what it asks for. It does not fall when the page cache goes cold.*\n\n###### Healthy range:\n*Near 1.0. A ratio well below 1.0 means fetches are missing, which points at a gap in local history rather than at cache pressure.*\n\n###### Watch for:\n*Never read this panel on its own. A ~100% found ratio at over 100 microseconds per read is the cold-read signature, not a healthy cache: the data is found every time and paid for every time. Always pair it with NuDB Read Latency.*\n\n###### Source:\n[nodestore/Database.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/Database.cpp)\n\n###### Function:\n`Database::fetchNodeObject`",
+      "description": "###### What this is:\n*Fraction of nodestore fetches that found the object they asked for. This is not a cache hit ratio: `node_reads_hit` counts every fetch that returned an object, whatever served it, so a fetch that went all the way to disk still counts here.*\n\n###### How it's computed:\n*rate(nodestore_state{metric=\"node_reads_hit\"}[$__rate_interval]) / rate(nodestore_state{metric=\"node_reads_total\"}[$__rate_interval]).*\n\n###### Reading it:\n*Normally sits near 1.0 (100%) on any node that has the data, warm or cold, because a synced node almost always finds what it asks for. It does not fall when the page cache goes cold.*\n\n###### Healthy range:\n*Near 1.0. A ratio well below 1.0 means fetches are missing, which points at a gap in local history rather than at cache pressure.*\n\n###### Watch for:\n*Never read this panel on its own. A ~100% found ratio at over 100 microseconds per read is the cold-read signature, not a healthy cache: the data is found every time and paid for every time. Always pair it with NuDB Read Latency.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[nodestore/Database.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/Database.cpp)\n\n###### Function:\n`Database::fetchNodeObject`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1419,7 +1466,7 @@
     },
     {
       "title": "NuDB Read Pressure",
-      "description": "###### What this is:\n*Nodestore read throughput and backlog: reads per second, the pending read queue depth, and how many read threads are active. Shows disk saturation depth.*\n\n###### How it's computed:\n*rate(node_reads_total), and gauges read_queue / read_threads_running from nodestore_state.*\n\n###### Reading it:\n*reads/s spikes during catch-up. A growing read_queue with all read threads busy = disk cannot keep up with demand.*\n\n###### Healthy range:\n*read_queue ~0 and reads/s low on a warm synced node.*\n\n###### Watch for:\n*read_queue climbing while read_threads_running is pinned at read_threads_total = disk-bound; the IOPS ceiling is the limiter.*\n\n###### Source:\n[nodestore/backend/NuDBFactory.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/backend/NuDBFactory.cpp)\n\n###### Function:\n`NuDB read scheduler`",
+      "description": "###### What this is:\n*Nodestore read throughput and backlog: reads per second, the pending read queue depth, and how many read threads are active. Shows disk saturation depth.*\n\n###### How it's computed:\n*rate(node_reads_total), and gauges read_queue / read_threads_running from nodestore_state.*\n\n###### Reading it:\n*reads/s spikes during catch-up. A growing read_queue with all read threads busy = disk cannot keep up with demand.*\n\n###### Healthy range:\n*read_queue ~0 and reads/s low on a warm synced node.*\n\n###### Watch for:\n*read_queue climbing while read_threads_running is pinned at read_threads_total = disk-bound; the IOPS ceiling is the limiter.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[nodestore/backend/NuDBFactory.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/backend/NuDBFactory.cpp)\n\n###### Function:\n`NuDB read scheduler`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1511,7 +1558,7 @@
     },
     {
       "title": "Job Queue Depth",
-      "description": "###### What this is:\n*Total number of jobs currently queued across the JobQueue. A backlog means work is arriving faster than worker threads can drain it.*\n\n###### How it's computed:\n*jobq_job_count gauge (total queued jobs), per node.*\n\n###### Reading it:\n*Near 0 when keeping up. Sustained positive depth = the node is overloaded or blocked on a downstream resource (usually disk reads).*\n\n###### Healthy range:\n*~0 on a healthy node.*\n\n###### Watch for:\n*Depth climbing in step with Validated Ledger Age = the queue backlog is why the node is falling behind.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getJobCountTotal`",
+      "description": "###### What this is:\n*Total number of jobs currently queued across the JobQueue. A backlog means work is arriving faster than worker threads can drain it.*\n\n###### How it's computed:\n*jobq_job_count gauge (total queued jobs), per node.*\n\n###### Reading it:\n*Near 0 when keeping up. Sustained positive depth = the node is overloaded or blocked on a downstream resource (usually disk reads).*\n\n###### Healthy range:\n*~0 on a healthy node.*\n\n###### Watch for:\n*Depth climbing in step with Validated Ledger Age = the queue backlog is why the node is falling behind.*\n\n###### Keywords:\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::getJobCountTotal`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#job-queue-job-type)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1557,7 +1604,7 @@
     },
     {
       "title": "Load Factor & Peers",
-      "description": "###### What this is:\n*Server load factor (fee/throttle multiplier; 1 = unloaded) alongside active inbound/outbound peer counts. Rules out overload and insufficient fetch sources as causes.*\n\n###### How it's computed:\n*load_factor_metrics{metric=\"load_factor\"}, and peer_finder_active_inbound_peers / _outbound_peers gauges.*\n\n###### Reading it:\n*load_factor at 1 = no local overload. Outbound peers should be healthy (~10+); too few peers limits how fast the node can fetch ledger data.*\n\n###### Healthy range:\n*load_factor = 1; outbound peers >= ~8.*\n\n###### Watch for:\n*load_factor > 1 = local overload throttling; very low peer count = not enough sources to acquire history from (a distinct sync bottleneck).*\n\n###### Source:\n[overlay/detail/OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl load / PeerFinder counts`",
+      "description": "###### What this is:\n*Server load factor (fee/throttle multiplier; 1 = unloaded) alongside active inbound/outbound peer counts. Rules out overload and insufficient fetch sources as causes.*\n\n###### How it's computed:\n*load_factor_metrics{metric=\"load_factor\"}, and peer_finder_active_inbound_peers / _outbound_peers gauges.*\n\n###### Reading it:\n*load_factor at 1 = no local overload. Outbound peers should be healthy (~10+); too few peers limits how fast the node can fetch ledger data.*\n\n###### Healthy range:\n*load_factor = 1; outbound peers >= ~8.*\n\n###### Watch for:\n*load_factor > 1 = local overload throttling; very low peer count = not enough sources to acquire history from (a distinct sync bottleneck).*\n\n###### Keywords:\n- **Load factor** *(per node)* \u2014 the multiplier the node applies to the reference transaction fee when under load.\n- **Transaction queue (TxQ)** *(per node)* \u2014 holds transactions that cannot enter the open ledger yet, ordered by fee level.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[overlay/detail/OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl load / PeerFinder counts`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#load-factor)",
       "type": "timeseries",
       "gridPos": {
         "h": 10,
@@ -1614,6 +1661,535 @@
         "overrides": []
       },
       "id": 27
+    },
+    {
+      "title": "Job Queue Saturation",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 141
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 28
+    },
+    {
+      "title": "Job Queue Backlog and Deferred by Type",
+      "description": "###### What this is:\n*Per-job-type queue depth, two series per type. Waiting is the whole backlog: every job enqueued for that type that has not started yet. Deferred is the subset of that backlog that is blocked specifically because the type is already running at its concurrency limit. Deferred is the leading indicator of backpressure, because JobQueue::addJob never rejects a job for queue pressure -- it returns success and defers instead, so a capped type under pressure produces no error and no dropped work. Without these the only evidence is latency, which appears after the harm is already done.*\n\n###### How it's computed:\n*Two targets, each the top 10 gauges by current value: jobq_<jobtype>_waiting and jobq_<jobtype>_deferred. JobQueue::collect snapshots both counters under the one lock that guards them, so the pair is read at the same instant and is directly comparable, then publishes them on the 1-second export cycle. Gauges exist only for non-special job types, so the 11 special types -- the ones declared with a limit of 0, which bypass the limit logic entirely and therefore never defer -- do not appear on either series.*\n\n###### Reading it:\n*Read the two together; the ratio is the diagnostic, not either value alone. Deferred is always a subset of waiting, because addRefCountedJob increments waiting for every job and deferred only for the ones that arrive while the type is at its limit. Waiting high with deferred at zero means the type has spare slots and the backlog is just arrival burstiness -- it will drain without intervention. Waiting high with deferred also high means the concurrency limit is the binding constraint, not the work. Both near zero is the normal state. These are depths, not rates: the value is how many jobs are queued right now. finishJob drains deferred one per completion, so a deferred line that stays elevated means arrivals are outpacing completions rather than one isolated burst. Only the 10 highest series per state are drawn, which on an idle node is arbitrary among the zeros and under load is exactly the types under pressure.*\n\n###### Healthy range:\n*Deferred zero on all types. Waiting near zero, with brief spikes during ledger close.*\n\n###### Watch for:\n*ledgerrequest deferred above zero: the 3-slot ledgerRequest queue is full, so TMGetLedger service to syncing peers is being delayed. Use LedgerReq Wait by Handler next to see which of its two producers is responsible. ledgerdata or fetchtxndata deferred: inbound ledger data cannot be absorbed fast enough, which is what makes validated ledger age grow. A waiting line that climbs steadily while deferred stays flat points at the worker pool or at slow jobs rather than at the limit. Note both are sampled once per export cycle, so a sub-second spike can be missed; a reading of zero is not proof that nothing was ever queued or deferred.*\n\n###### Keywords:\n- **Deferred job** *(per node)* \u2014 a job held back because its type is already at its concurrency limit; the leading indicator of queue backpressure.\n- **Concurrency limit** *(per node)* \u2014 the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::addRefCountedJob / JobQueue::collect`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#deferred-job)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 142
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(topk(10, {service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", __name__=~\"jobq_.*_deferred\"}), \"series\", \"$1 Deferred\", \"__name__\", \"jobq_(.*)_deferred\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(topk(10, {service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", __name__=~\"jobq_.*_waiting\"}), \"series\", \"$1 Waiting\", \"__name__\", \"jobq_(.*)_waiting\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Queued Jobs (Waiting / Deferred)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 29
+    },
+    {
+      "title": "LedgerReq Wait by Handler",
+      "description": "###### What this is:\n*Queue wait for the ledgerRequest job type, split by which handler enqueued the job. The type has a concurrency limit of 3 and two producers that compete for those slots: RcvGetLedger, which serves TMGetLedger to syncing peers, and RcvGetObjByHash, which serves TMGetObjectByHash. Both report the same job_type, so without the handler split a wait spike cannot be attributed to either.*\n\n###### How it's computed:\n*p99 of job_queued_us for job_type=\"ledgerRequest\", grouped by the handler label. JobQueue::processTask measures the wait, then PerfLog hands it to MetricsRegistry::recordJobStarted, which is where the histogram is recorded. The handler value is the addJob name passed through a sanitizer that keeps letters-only names and folds everything else to \"other\", which bounds the label domain to 43 names plus \"other\". Both producers here are letters-only, so both appear under their own names; \"other\" is a mixed bucket and never means one specific caller.*\n\n###### Reading it:\n*This is the panel that answers which producer is starving the 3-slot queue. Both lines high together means the queue is genuinely oversubscribed and both kinds of peer request are being delayed. One line high while the other is flat means that producer is arriving faster than 3 concurrent slots can absorb, and it is the one delaying the other. Wait is queue time only, so a high line here is contention, not slow work; the work itself is on the GetObject Handler Latency Breakdown panel.*\n\n###### Healthy range:\n*Single-digit to low-tens of milliseconds p99 for both handlers, matching the wider Job Queue Wait p95 By Type panel.*\n\n###### Watch for:\n*RcvGetObjByHash wait climbing: one in-bounds TMGetObjectByHash request can perform thousands of NodeStore lookups, so a few concurrent ones occupy every slot and delay TMGetLedger to peers that are themselves syncing. Cross-check Job Queue Backlog and Deferred by Type for jobq_ledgerrequest_deferred above zero to confirm the limit, not the work, is the binding constraint.*\n\n###### Keywords:\n- **Handler label** *(per node)* \u2014 the addJob call-site name attached to job metrics, so producers sharing one job type stay separable.\n- **Concurrency limit** *(per node)* \u2014 the cap on how many jobs of one type may run at once; a type at its cap cannot start more work.\n- **Job queue / job type** *(per node)* \u2014 xrpld's worker-thread pool; every unit of background work is enqueued under a named job type.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`MetricsRegistry::recordJobStarted`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#handler-label)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 142
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.99, sum by (le, handler, service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(job_queued_us_bucket{job_type=\"ledgerRequest\", handler=~\"$handler\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"$1 q-wait p99\", \"handler\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "\u00b5s",
+          "custom": {
+            "axisLabel": "p99 Wait (\u00b5s)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 30
+    },
+    {
+      "title": "Sync Bottleneck Discrimination",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 152
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 31
+    },
+    {
+      "title": "NodeStore Read Latency (Bottleneck Discriminator)",
+      "description": "###### What this is:\n*The single measurement that separates the two ways a ledger sync stalls. Both modes look identical from the job queue -- the ledgerData lane sits at its concurrency limit of 3 with work waiting -- so lane occupancy on its own diagnoses nothing. Read latency does separate them, because the two modes load opposite ends of the storage path.*\n\n###### How it's computed:\n*Two views of the same quantity. Lifetime is the nodestore_state{metric=\"read_mean_us\"} gauge, which is total fetch microseconds divided by total fetches since process start, so it moves slowly and shows the run as a whole. Windowed is rate(node_reads_duration_us) / rate(node_reads_total) over the panel interval, so it reacts within one scrape. The axis is logarithmic because the two modes differ by more than an order of magnitude and a linear axis flattens the lower one.*\n\n###### Reading it:\n*Below about 10 microseconds per read means the backend is answering from the page cache and reads are not the constraint; if the lane is still full, the cost is on the write side -- check NuDB Writer Queue Depth next. Above about 100 microseconds per read, together with a high found ratio on NuDB Read Found Ratio, means objects are being found but paid for with disk latency on every access. High latency with a low found ratio is a different thing again: the working set does not fit and misses are scanning every backend. The threshold lines at 10 and 100 mark the two boundaries.*\n\n###### Healthy range:\n*Single-digit microseconds per read on a warm synced node, with lifetime and windowed close together.*\n\n###### Watch for:\n*Windowed rising well above lifetime: the recent window is much worse than the run average, which is the earliest reading of a cache that has just gone cold. A measured cold-read episode peaked at 223 microseconds and settled in the 13-35 range while still hitting 88 percent or better, and that shape hung a node for roughly 25 minutes. Also treat a flat 8-9 microsecond line during a stall as informative rather than reassuring -- it rules reads out and points at the write path.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[nodestore/backend/NuDBFactory.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/nodestore/backend/NuDBFactory.cpp)\n\n###### Function:\n`Database::getFetchDurationUs / NuDB backend read path`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 153
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"read_mean_us\"}, \"series\", \"Read Mean (Lifetime)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"node_reads_duration_us\"}[$__rate_interval])) / (sum by (service_instance_id, xrpl_branch, xrpl_node_role, xrpl_work_item) (rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"node_reads_total\"}[$__rate_interval])) > 0), \"series\", \"Read Mean (Windowed)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "\u00b5s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "custom": {
+            "axisLabel": "Read Latency (\u00b5s/read)",
+            "scaleDistribution": {
+              "type": "log",
+              "log": 10
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            },
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 32
+    },
+    {
+      "title": "NuDB Writer Queue Depth",
+      "description": "###### What this is:\n*How many writers are queued at NuDB's insert mutex. NuDB takes one global lock per insert, so concurrent writers do not overlap -- they line up. This panel is the confirming half of the read-latency discriminator: when reads are fast and the lane is still full, the queueing is here.*\n\n###### How it's computed:\n*Mean Depth is nodestore_state{metric=\"nudb_writer_depth_x100\"} divided by 100. At the source it is depthSum over depthSamples, both accumulated when an insert enters the critical section, so an insert still in flight is part of the mean. The exported gauge is integral, so the mean is scaled by 100 to keep the fractional part; dividing it back is what makes 1.60 readable instead of 1. In Flight is the instantaneous nudb_writers_in_flight sample.*\n\n###### Reading it:\n*Depth is a queue length, so 1.0 is the floor and means every insert found the lock free. Anything meaningfully above 1.0 means inserts are waiting on each other and the write path, not the disk, is setting the pace. In Flight is a point sample from the scrape instant and will look spikier than the mean; read the mean for the trend and In Flight for the peak.*\n\n###### Healthy range:\n*Mean depth at or just above 1.0, In Flight low.*\n\n###### Watch for:\n*Mean depth above 1 while read latency stays in single-digit microseconds -- that pair is the write-lock ceiling, and no amount of read tuning will move it. A measured run of this mode held depth at 1.60 with reads flat at 8-9 microseconds and took 510 seconds to reach full. That 1.60 came from a build whose sample count advanced at insert exit rather than entry, which biased the mean down, so treat it as a lower bound. The same run appeared to complete nothing, which was a separate counting defect, not a stalled node. Depth at 1.0 with slow reads is the opposite mode; look at the read panel.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[telemetry/MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`MetricsRegistry::observeWritePathDetail`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 153
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"nudb_writer_depth_x100\"} / 100, \"series\", \"Writer Mean Depth\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"nudb_writers_in_flight\"}, \"series\", \"Writers In Flight\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Writers Queued At Insert Mutex",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "id": 33
+    },
+    {
+      "title": "NuDB Insert Time (Mean & Max)",
+      "description": "###### What this is:\n*Time spent inside a NuDB insert, mean and worst case, alongside the backend's overall mean write latency. Splits an insert's cost into the part that is real work and the part that is waiting for the global insert mutex.*\n\n###### How it's computed:\n*Insert Mean is nodestore_state{metric=\"nudb_insert_mean_us\"}, total insert microseconds over insert count. Insert Max is nudb_insert_max_us, a true running maximum rather than a quantile, so one bad insert is visible and never averaged away. Write Mean is the write_mean_us gauge for the whole backend write path.*\n\n###### Reading it:\n*Compare Insert Mean against the service time implied by Writer Queue Depth. Mean insert time above the unqueued service time is wait, and the gap is the fraction of every write spent queued rather than working. Insert Max far above Insert Mean means the distribution has a tail -- typically a bucket split or a commit -- which a mean alone hides.*\n\n###### Healthy range:\n*Insert Mean in the low tens of microseconds with Insert Max within roughly an order of magnitude of it.*\n\n###### Watch for:\n*A widening gap between Insert Mean and the service floor. In a measured write-lock-bound run the mean was 20 microseconds of which only 12.5 was service, leaving 7.5 -- at least 37 percent of every insert -- as pure queueing. It is a floor rather than an exact figure because it is derived from a mean depth that the build of the day biased downward, and a larger depth implies a larger queueing share. That is the cost the writer-depth panel predicts, quantified. Insert Max climbing on its own without the mean moving is a tail problem, not a saturation problem.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[telemetry/MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`MetricsRegistry::observeWritePathDetail`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 163
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"nudb_insert_mean_us\"}, \"series\", \"Insert Mean\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"nudb_insert_max_us\"}, \"series\", \"Insert Max\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"write_mean_us\"}, \"series\", \"Write Mean (Lifetime)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "\u00b5s",
+          "custom": {
+            "axisLabel": "Insert Time (\u00b5s)",
+            "scaleDistribution": {
+              "type": "log",
+              "log": 10
+            },
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 34
+    },
+    {
+      "title": "Acquire Deferrals vs Timeouts (All Lanes)",
+      "description": "###### What this is:\n*The two counters that together identify an acquisition livelock, summed over every acquisition lane. Deferrals count timer jobs that were skipped because the lane was already at its limit. Timeouts count timer bodies that actually ran and advanced an acquisition's retry counter. Both series are on one panel deliberately: the signal is the divergence between them, and neither counter shows it alone. Both are recorded in TimeoutCounter, a base shared by five subclasses with different job limits, so this pair pools every lane -- read the ledger-scoped panel for a diagnosis and this one only to ask whether any lane is deferring.*\n\n###### How it's computed:\n*rate() over nodestore_state{metric=\"acquire_deferrals\"} and nodestore_state{metric=\"acquire_timeouts\"}. Both are cumulative counters, so the rate is the per-second event frequency and a restart shows as a gap rather than as a negative spike.*\n\n###### Reading it:\n*Deferrals rising while timeouts stay flat is the livelock fingerprint, but on this pair it does not say WHICH lane. Retry counts only advance when a timer body runs, so if every timer is being deferred instead, the retry budget never advances and the give-up path is effectively disarmed -- the acquisition can neither finish nor fail, and it holds its slot indefinitely. The two rates moving together is the benign case: the lane is busy but timers are still landing and acquisitions are still progressing toward either success or abandonment.*\n\n###### Healthy range:\n*Both near zero when synced. During catch-up, deferrals non-zero is expected, but timeouts should track rather than flatten.*\n\n###### Watch for:\n*A deferral rate that climbs while the timeout rate stays pinned -- then confirm on Ledger Acquire Deferrals vs Timeouts before calling it a ledger-acquisition stall, because a saturated replay lane produces the same shape here. One measured stall recorded 5441 deferrals against 687 timeouts -- an eight-to-one ratio -- but those were all-lane counts and cannot be attributed to ledger acquisition. Cross-check Acquisition Progress: a flat completion rate confirms the acquisitions are stuck rather than merely slow.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[app/ledger/InboundLedgers.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedgers.cpp)\n\n###### Function:\n`InboundLedgers acquire retry timer / AcquireStats`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 163
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_deferrals\"}[$__rate_interval]), \"series\", \"Deferrals/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_timeouts\"}[$__rate_interval]), \"series\", \"Timeouts/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "suffix: events/s",
+          "custom": {
+            "axisLabel": "Events / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 35
+    },
+    {
+      "title": "Acquisition Progress (Completions, Give-Ups & Aborts)",
+      "description": "###### What this is:\n*Whether ledger acquisitions are reaching an ending at all. Completions are acquisitions that finished with the data. Give-Ups are acquisitions that exhausted their retry budget. Aborts are acquisitions destroyed before either outcome. Together they are every way an acquisition can leave the system, so the sum going to zero while work is queued means nothing is leaving.*\n\n###### How it's computed:\n*rate() over the cumulative nodestore_state{metric=\"acquire_completions\"}, acquire_give_ups and acquire_aborts counters. Completions cover both ways an acquisition can finish: the normal done() path and the init() path satisfied entirely from the local store.*\n\n###### Reading it:\n*This panel is the outcome side of the deferral panel. A healthy catch-up shows a steady completion rate; a healthy failure shows give-ups. What should never happen is all three flat while the ledgerData lane is full, because that means acquisitions are occupying slots without ever resolving. Read this together with Deferrals vs Timeouts: deferrals climbing with completions at zero narrows the stall down to the retry path.*\n\n###### Healthy range:\n*Completion rate positive whenever ledgers are being acquired. Give-ups and aborts low.*\n\n###### Watch for:\n*Zero completions sustained while the lane is busy -- on a current build. A measured write-bound run recorded zero completions across 510 seconds, but that run predates the fix that counts acquisitions satisfied from the local store, which were previously never counted at all; the node did reach full, so the zero was the counter and not the node. Completions are now counted at both exits behind an idempotent latch, so a zero here means zero. A rising give-up rate is less alarming than a flat one -- it at least means the retry budget is being consumed and slots are being returned.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[app/ledger/InboundLedgers.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedgers.cpp)\n\n###### Function:\n`InboundLedger completion / AcquireStats`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 173
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_completions\"}[$__rate_interval]), \"series\", \"Completions/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_give_ups\"}[$__rate_interval]), \"series\", \"Give-Ups/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_aborts\"}[$__rate_interval]), \"series\", \"Aborts/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "suffix: outcomes/s",
+          "custom": {
+            "axisLabel": "Outcomes / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 36
+    },
+    {
+      "title": "Discarded Acquire Work (Sweeps & Partial Aborts)",
+      "description": "###### What this is:\n*Work that was fetched and then thrown away. Sweep Evictions are acquisitions removed by the one-minute idle sweep. Partial Aborts are the subset of aborted acquisitions that had already built part of a map when they were destroyed, so the bytes fetched for them were wasted.*\n\n###### How it's computed:\n*rate() over the cumulative nodestore_state{metric=\"acquire_sweep_evictions\"} and acquire_aborts_partial counters.*\n\n###### Reading it:\n*Sweep evictions are the sweeper reclaiming acquisitions that stopped making progress, so a sustained non-zero rate means acquisitions are going idle rather than finishing -- it is the sweeper cleaning up after the stall on the adjacent panels, not a cause of its own. Partial aborts quantify the waste: each one is fetch bandwidth and nodestore writes spent on a map that was discarded, which then has to be fetched again.*\n\n###### Healthy range:\n*Both at or near zero.*\n\n###### Watch for:\n*A sweep-eviction rate that persists after the sync should have settled -- acquisitions are being started and abandoned in a loop, and each cycle re-pays the fetch cost. Two measured runs of the same duration differed sharply here, 127 sweeps in the write-bound case against 38 in the read-bound one, so a high sweep count is itself weak evidence for the write-bound mode. Confirm with read latency and writer depth before acting on it.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[app/ledger/InboundLedgers.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/InboundLedgers.cpp)\n\n###### Function:\n`InboundLedgers::sweep / AcquireStats`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 173
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_sweep_evictions\"}[$__rate_interval]), \"series\", \"Sweep Evictions/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_aborts_partial\"}[$__rate_interval]), \"series\", \"Partial Aborts/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "suffix: acquisitions/s",
+          "custom": {
+            "axisLabel": "Acquisitions / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 37
+    },
+    {
+      "title": "Ledger Acquire Deferrals vs Timeouts (Ledger Lane Only)",
+      "description": "###### What this is:\n*The deferral and timeout counters narrowed to ledger acquisition alone. The all-lane pair on the panel above sums every TimeoutCounter subclass -- inbound ledgers, transaction sets and the three ledger-replay tasks -- each with its own job limit, so a saturated replay lane reproduces the livelock shape while ledger acquisition is healthy. These two count the same events for the InboundLedger lane only, so a divergence here is about ledger acquisition and nothing else.*\n\n###### How it's computed:\n*rate() over nodestore_state{metric=\"acquire_ledger_deferrals\"} and nodestore_state{metric=\"acquire_ledger_timeouts\"}. Both are cumulative counters incremented only when the recording TimeoutCounter's job name is InboundLedger, so the rate is the per-second event frequency for that lane and a restart shows as a gap rather than a negative spike.*\n\n###### Reading it:\n*Same fingerprint as the all-lane panel, but trustworthy: deferrals rising while timeouts stay flat means ledger acquisition's retry budget is not advancing, so the give-up path cannot fire and an acquisition holds its slot without finishing or failing. The two rates moving together is benign -- the lane is busy but timers are landing. Read this panel first and treat the all-lane panel as context for whether some other lane is also under pressure.*\n\n###### Healthy range:\n*Both near zero when synced. During catch-up, deferrals non-zero is expected, but timeouts should track rather than flatten.*\n\n###### Watch for:\n*A ledger deferral rate that climbs while the ledger timeout rate stays pinned. Compare against the all-lane panel: if the all-lane pair diverges but these two do not, the stall is in another acquisition lane and ledger acquisition is not the problem. Cross-check Acquisition Progress -- a flat completion rate alongside a divergence here confirms the acquisitions are stuck rather than merely slow.*\n\n###### Keywords:\n- **NodeStore** *(per node)* \u2014 the key-value object store holding ledger data (tree nodes), backed by NuDB.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[app/ledger/detail/TimeoutCounter.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/TimeoutCounter.cpp)\n\n###### Function:\n`TimeoutCounter::queueJob, TimeoutCounter::invokeOnTimer (via isLedgerAcquisition) / AcquireStats`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#nodestore)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 183
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_ledger_deferrals\"}[$__rate_interval]), \"series\", \"Ledger Deferrals/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"acquire_ledger_timeouts\"}[$__rate_interval]), \"series\", \"Ledger Timeouts/s\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "suffix: events/s",
+          "custom": {
+            "axisLabel": "Events / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "id": 38
     }
   ],
   "schemaVersion": 39,
@@ -1759,6 +2335,26 @@
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
         "query": "label_values(target_info, service_instance_id)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "handler",
+        "label": "Handler",
+        "description": "Filter by enqueueing handler (sanitised addJob name, e.g. RcvGetLedger)",
+        "type": "query",
+        "query": "label_values(job_queued_total, handler)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

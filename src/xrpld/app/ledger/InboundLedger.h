@@ -14,6 +14,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <xrpl.pb.h>
 
@@ -22,6 +23,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <string_view>
 #include <utility>
@@ -140,6 +142,21 @@ private:
     void
     done();
 
+    /**
+     * Count this acquisition as completed, at most once.
+     *
+     * done() is not the only place an acquisition finishes: init() can satisfy
+     * one entirely from the local store and return without ever reaching
+     * done(). Both call this, and the completionCounted_ latch makes the
+     * second call a no-op, so a completion is counted exactly once however it
+     * was reached.
+     *
+     * Does nothing unless the acquisition actually succeeded, so a failed or
+     * still-running acquisition is never counted.
+     */
+    void
+    recordCompletionOnce();
+
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;
 
@@ -181,6 +198,16 @@ private:
     bool haveState_{false};
     bool haveTransactions_{false};
     bool signaled_{false};
+    /**
+     * Whether this acquisition has already been counted as completed.
+     *
+     * Separate from signaled_ because the two guard different things:
+     * signaled_ makes the done() state machine idempotent, while this makes
+     * the counter idempotent across the two independent exits that finish an
+     * acquisition (done() and init()'s local-hit path). Always accessed under
+     * mtx_.
+     */
+    bool completionCounted_{false};
     bool byHash_{true};
     std::uint32_t seq_;
     Reason const reason_;
@@ -195,6 +222,17 @@ private:
         receivedData_;
     bool receiveDispatched_{false};
     std::unique_ptr<PeerSet> peerSet_;
+
+    /**
+     * Spans the acquire lifecycle: started in init(), finalized in done()
+     * with the outcome (complete/failed), timeout count, and peer count.
+     * This span is the only signal for back-fill / fork-recovery cost; no
+     * other span or metric covers it.
+     * Thread-free: emplaced by the acquiring thread, reset on a JtLedgerData
+     * worker. A SpanGuard owns no thread-local Scope, so it can be destroyed
+     * on the worker without corrupting the origin thread's context stack.
+     */
+    std::optional<telemetry::SpanGuard> acquireSpan_;
 };
 
 }  // namespace xrpl

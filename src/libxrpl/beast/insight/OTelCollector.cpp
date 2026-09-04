@@ -31,7 +31,6 @@
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
-
 #include <xrpl/beast/insight/OTelCollector.h>
 
 #include <xrpl/beast/insight/Collector.h>
@@ -141,8 +140,8 @@ class OTelCounterImpl : public CounterImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: lowercased, with dots and
-     *               spaces mapped to underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelCounterImpl(
@@ -191,8 +190,8 @@ class OTelEventImpl : public EventImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: lowercased, with dots and
-     *               spaces mapped to underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the histogram instrument.
      * @param unit   What the samples measure. Selects the instrument's
      *               declared unit, its description, and through the unit the
@@ -244,8 +243,8 @@ class OTelGaugeImpl : public GaugeImpl
 public:
     /**
      * @param name       Export-ready metric name, already run through
-     *                   formatName() by the collector: lowercased, with dots
-     *                   and spaces mapped to underscores (e.g. "rpc_size").
+     *                   formatName() by the collector: lowercase, with `.`
+     *                   and ` ` mapped to `_`.
      * @param collector  Owning collector, used to invoke hooks before reads.
      */
     OTelGaugeImpl(std::string name, std::shared_ptr<OTelCollectorImp> const& collector);
@@ -355,8 +354,8 @@ class OTelMeterImpl : public MeterImpl
 public:
     /**
      * @param name   Export-ready metric name, already run through
-     *               formatName() by the collector: lowercased, with dots and
-     *               spaces mapped to underscores (e.g. "rpc_size").
+     *               formatName() by the collector: lowercase, with `.` and
+     *               ` ` mapped to `_` (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelMeterImpl(
@@ -425,9 +424,11 @@ private:
  * Caveats:
  *   - Observable gauge callbacks run on the SDK's internal thread. Hook
  *     handlers must be thread-safe.
- *   - Metric names are lowercased and have dots and spaces mapped to
- *     underscores. The [insight] prefix is not applied on this path; the
- *     service.name resource attribute identifies the service.
+ *   - Metric names carry NO prefix. formatName() only lowercases the raw
+ *     name and turns dots and spaces into underscores, to match
+ *     StatsD->Prometheus naming conventions. The service is identified by
+ *     the OTel resource (service.name), so prefix_ is kept for logging
+ *     only and never affects an exported name.
  *   - The OTel Prometheus exporter appends "_total" to counters. The
  *     metric names we register do NOT include this suffix — Prometheus
  *     adds it automatically.
@@ -554,8 +555,8 @@ public:
     /** @} */
 
     /**
-     * @brief Get the OTel Meter instance for creating instruments.
-     * @return Shared pointer to the OTel Meter.
+     * @brief The shared Meter, for gauges creating their instrument in arm().
+     * @return The Meter this collector resolved at construction.
      */
     [[nodiscard]] opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
     otelMeter() const;
@@ -563,12 +564,14 @@ public:
     /**
      * @brief Format a raw metric name for export.
      *
-     * Lowercases the name and maps dots and spaces to underscores. The
-     * [insight] prefix is not applied; the service.name resource attribute
-     * identifies the service. Example: name="RPC.Size" -> "rpc_size".
+     * Lowercases the name and replaces dots and spaces with underscores to
+     * match StatsD->Prometheus naming. Adds NO prefix: the service is
+     * identified by the OTel resource (service.name).
+     * Example: name="LedgerMaster.Validated_Ledger_Age"
+     *   -> "ledgermaster_validated_ledger_age"
      *
      * @param name  Raw metric name from beast::insight callers.
-     * @return Export-ready metric name.
+     * @return Fully-qualified metric name.
      */
     [[nodiscard]] static std::string
     formatName(std::string_view name);
@@ -580,8 +583,8 @@ private:
     Journal journal_;
 
     /**
-     * Legacy metric-name prefix (e.g., "xrpld"). Logged at startup only;
-     * exported metric names do not carry it.
+     * Configured metric-name prefix (e.g., "xrpld"). Log-only: it is
+     * echoed in the startup log line and never applied to a metric name.
      */
     std::string prefix_;
 

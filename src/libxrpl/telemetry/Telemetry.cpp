@@ -292,8 +292,8 @@ class TelemetryImpl : public Telemetry
 {
     /**
      * Configuration from the [telemetry] config section.
-     * Non-const so setServiceInstanceId() can update the instance ID
-     * before start() creates the OTel resource.
+     * Non-const so setServiceInstanceId() and setNodeId() can update the
+     * identity attributes before start() creates the OTel resource.
      */
     Setup setup_;
 
@@ -330,131 +330,6 @@ class TelemetryImpl : public Telemetry
      * Set by stop(), so a second call does nothing.
      */
     bool stopped_{false};
-
-    /**
-     * Build the OTel resource shared by the tracer and meter providers.
-     *
-     * Both pipelines must report the same resource identity, so this is the
-     * single place the attributes are named. Called twice because the two
-     * providers are now built at different times: metrics in the constructor,
-     * traces in start().
-     *
-     * @return The resource carrying service and network identity.
-     */
-    [[nodiscard]] resource::Resource
-    makeResource() const
-    {
-        return resource::Resource::Create({
-            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
-            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
-            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
-            {std::string(attr::networkId),
-             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
-            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
-        });
-    }
-
-    /**
-     * Build and publish the metrics pipeline (MeterProvider + periodic reader
-     * + OTLP exporter + histogram view).
-     *
-     * Called from the constructor so the provider is published before any
-     * subsystem creates an instrument. opentelemetry-cpp 1.28.0 has no proxy
-     * MeterProvider: a meter is a point-in-time copy and is never rebound, so
-     * an instrument created before this would hold a noop meter for the process
-     * lifetime.
-     *
-     * The reader is attached here too. The SDK notes a reader added later "may
-     * not receive any in-flight meter data".
-     *
-     * Observable instruments are registered later, once the services their
-     * callbacks read exist. See Collector::onCollectionReady().
-     *
-     * @note Throws whatever the SDK factories throw; the constructor catches.
-     */
-
-    /**
-     * @brief Build the OTLP/HTTP metric exporter.
-     *
-     * @return Exporter pointed at the metrics endpoint, with the same TLS
-     *         options the trace exporter uses.
-     */
-    [[nodiscard]] auto
-    makeMetricExporter() const
-    {
-        otlp_http::OtlpHttpMetricExporterOptions opts;
-        opts.url = setup_.metricsEndpoint;
-        if (setup_.useTls)
-        {
-            opts.ssl_ca_cert_path = setup_.tlsCertPath;
-            opts.ssl_client_cert_path = setup_.tlsClientCertPath;
-            opts.ssl_client_key_path = setup_.tlsClientKeyPath;
-        }
-        return otlp_http::OtlpHttpMetricExporterFactory::Create(opts);
-    }
-
-    /**
-     * @brief Register one histogram view, selected by instrument unit.
-     *
-     * The unit is the selector, so an instrument gets the ladder matching what
-     * it measures and a byte count is never bucketed on a latency ladder.
-     *
-     * The view name stays EMPTY: a non-empty one renames every matching
-     * histogram to it and collapses them into a single series. The meter
-     * selector must match kMeterName, or the view never applies and
-     * instruments fall back to the SDK default ladder (ceiling 10,000).
-     *
-     * @param unitCode    OTel unit code to select on, e.g. "ms".
-     * @param boundaries  Bucket upper bounds, from HistogramBuckets.h.
-     * @param description Description recorded on the view.
-     */
-    void
-    addUnitView(
-        std::string const& unitCode,
-        std::vector<double> boundaries,
-        std::string const& description)
-    {
-        auto selector = metrics_sdk::InstrumentSelectorFactory::Create(
-            metrics_sdk::InstrumentType::kHistogram, "*", unitCode);
-        auto meterSelector =
-            metrics_sdk::MeterSelectorFactory::Create(std::string(kMeterName), "", "");
-        auto config = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
-        config->boundaries_ = std::move(boundaries);
-        auto view = metrics_sdk::ViewFactory::Create(
-            "", description, metrics_sdk::AggregationType::kHistogram, std::move(config));
-        meterProvider_->AddView(std::move(selector), std::move(meterSelector), std::move(view));
-    }
-
-    void
-    initMetrics()
-    {
-        // Both come from [telemetry], which has already checked that they are
-        // positive and that the timeout is below the interval.
-        metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
-        readerOpts.export_interval_millis = setup_.metricExportInterval;
-        readerOpts.export_timeout_millis = setup_.metricExportTimeout;
-
-        auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
-            makeMetricExporter(), readerOpts);
-
-        meterProvider_ = metrics_sdk::MeterProviderFactory::Create(
-            std::make_unique<metrics_sdk::ViewRegistry>(), makeResource());
-        meterProvider_->AddMetricReader(std::move(reader));
-
-        addUnitView(
-            beast::insight::otelUnitCode(beast::insight::Unit::Millis),
-            buckets::toVector(buckets::kMillisecondBuckets),
-            "Duration buckets, 1 ms to 120 s");
-        addUnitView(
-            beast::insight::otelUnitCode(beast::insight::Unit::Bytes),
-            buckets::toVector(buckets::kByteBuckets),
-            "Size buckets, 512 B to 1 MiB");
-
-        // Publish globally so both direct-API and beast-sourced metrics ride
-        // one pipeline.
-        metrics_api::Provider::SetMeterProvider(
-            opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(meterProvider_));
-    }
 
 public:
     TelemetryImpl(Setup setup, beast::Journal journal) : setup_(std::move(setup)), journal_(journal)
@@ -498,6 +373,12 @@ public:
     }
 
     void
+    setNodeId(std::string const& id) override
+    {
+        setup_.nodeId = id;
+    }
+
+    void
     start() override
     {
         JLOG(journal_.info()) << "Telemetry starting: traces_endpoint=" << setup_.tracesEndpoint
@@ -531,9 +412,8 @@ public:
         // marked with kDiscardedAttr (via SpanGuard::discard()).
         auto processor = std::make_unique<FilteringSpanProcessor>(std::move(batchProcessor));
 
-        // Configure resource attributes. Shared with the metrics pipeline the
-        // constructor already published, so both report one identity.
-        auto resourceAttrs = makeResource();
+        // Configure resource attributes
+        auto resourceAttrs = makeTracerResource();
 
         // Configure sampler. Head sampling is fixed at 1.0 (sample everything);
         // setup_.samplingRatio is not config-driven. Wrap the ratio sampler in a
@@ -571,13 +451,157 @@ public:
         trace_api::Provider::SetTracerProvider(
             opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(sdkProvider_));
 
-        // The metrics pipeline was built by initMetrics() in the constructor.
+        // The metrics pipeline (meterProvider_) was already built and published
+        // in the constructor via initMetrics(), before any subsystem could
+        // create a beast::insight instrument. See initMetrics().
 
         // Register as the global Telemetry instance so SpanGuard factory
         // methods can access it without callers passing a reference.
         Telemetry::setInstance(this);
 
         JLOG(journal_.info()) << "Telemetry started successfully";
+    }
+
+    /**
+     * Build the tracer resource: the process-identity attributes stamped on
+     * every exported span.
+     *
+     * Called from start(), which runs after Application::setup() has injected
+     * the node identity, so setup_.nodeId is populated by then.
+     *
+     * @return The resource attached to the TracerProvider.
+     */
+    [[nodiscard]] resource::Resource
+    makeTracerResource() const
+    {
+        return resource::Resource::Create({
+            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
+            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
+            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
+            {std::string(attr::networkId),
+             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
+            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
+            {std::string(attr::nodeId), setup_.nodeId},            // LCOV_EXCL_LINE
+        });
+    }
+
+    /**
+     * Build the metrics resource: the same attributes as the tracer resource
+     * in start(), so metrics and traces share one identity.
+     *
+     * xrpl.node.id is added only when setup_.nodeId already holds a value.
+     * setNodeId() runs after the constructor that calls this, so on the normal
+     * startup path the attribute is left off rather than stamped blank.
+     *
+     * @return The resource attached to the MeterProvider.
+     */
+    [[nodiscard]] resource::Resource
+    makeMetricsResource() const
+    {
+        resource::ResourceAttributes attrs{
+            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
+            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
+            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
+            {std::string(attr::networkId), static_cast<int64_t>(setup_.networkId)},
+            {std::string(attr::networkType), setup_.networkType},
+        };
+
+        if (!setup_.nodeId.empty())
+            attrs[std::string(attr::nodeId)] = setup_.nodeId;
+
+        return resource::Resource::Create(attrs);
+    }
+
+    /**
+     * Build and publish the metrics pipeline (MeterProvider + periodic
+     * reader + OTLP exporter + histogram view).
+     *
+     * Called from the constructor, NOT start(), so the global MeterProvider
+     * exists before subsystems construct their beast::insight instruments
+     * during ApplicationImp's member-init list. The metrics resource uses
+     * setup_.serviceInstanceId from config; it is immutable once the provider
+     * is built, so a later node-key setServiceInstanceId() does not affect it.
+     * The same applies to setNodeId(): xrpl.node.id reaches this resource only
+     * if setup_.nodeId is already populated when the constructor runs.
+     */
+    void
+    initMetrics()
+    {
+        // Configure OTLP HTTP metric exporter, honoring the same TLS
+        // options as the trace exporter. The URL is used verbatim: metrics
+        // have their own config key and are not derived from traces.
+        otlp_http::OtlpHttpMetricExporterOptions metricExporterOpts;
+        metricExporterOpts.url = setup_.metricsEndpoint;
+        if (setup_.useTls)
+        {
+            metricExporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
+            metricExporterOpts.ssl_client_cert_path = setup_.tlsClientCertPath;
+            metricExporterOpts.ssl_client_key_path = setup_.tlsClientKeyPath;
+        }
+
+        auto metricExporter = otlp_http::OtlpHttpMetricExporterFactory::Create(metricExporterOpts);
+
+        // Both come from [telemetry], which has already checked that they are
+        // positive and that the timeout is below the interval.
+        metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
+        readerOpts.export_interval_millis = setup_.metricExportInterval;
+        readerOpts.export_timeout_millis = setup_.metricExportTimeout;
+
+        auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
+            std::move(metricExporter), readerOpts);
+
+        auto resourceAttrs = makeMetricsResource();
+
+        // Create MeterProvider with the shared resource, then attach reader.
+        meterProvider_ = metrics_sdk::MeterProviderFactory::Create(
+            std::make_unique<metrics_sdk::ViewRegistry>(), resourceAttrs);
+        meterProvider_->AddMetricReader(std::move(reader));
+
+        // One histogram view per unit. The unit is the selector, so an
+        // instrument gets the ladder that fits what it measures -- a byte
+        // count no longer inherits a latency ladder. Edges come from
+        // HistogramBuckets.h, which owns every ladder.
+        //
+        // Each view keeps the "*" name pattern and an EMPTY view name: a
+        // non-empty view name would rename every matching histogram to it and
+        // collapse them (ios_latency, rpc_size, rpc_time, pathfind_*, and all
+        // the jobq_* pairs) into a single series.
+        //
+        // The meter selector MUST match the meter name used by getMeter() and
+        // the beast OTelCollector (kMeterName = "xrpld"); otherwise a view
+        // never applies and instruments fall back to the SDK default ladder,
+        // whose ceiling is 10,000.
+        auto const addUnitView = [this](
+                                     std::string const& unitCode,
+                                     std::vector<double> boundaries,
+                                     std::string const& description) {
+            auto selector = metrics_sdk::InstrumentSelectorFactory::Create(
+                metrics_sdk::InstrumentType::kHistogram, "*", unitCode);
+            auto meterSelector =
+                metrics_sdk::MeterSelectorFactory::Create(std::string(kMeterName), "", "");
+            auto config = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
+            config->boundaries_ = std::move(boundaries);
+            auto view = metrics_sdk::ViewFactory::Create(
+                "",  // empty name: keep each instrument's own name, only set buckets
+                description,
+                metrics_sdk::AggregationType::kHistogram,
+                std::move(config));
+            meterProvider_->AddView(std::move(selector), std::move(meterSelector), std::move(view));
+        };
+
+        addUnitView(
+            beast::insight::otelUnitCode(beast::insight::Unit::Millis),
+            buckets::toVector(buckets::kMillisecondBuckets),
+            "Duration buckets, 1 ms to 120 s");
+        addUnitView(
+            beast::insight::otelUnitCode(beast::insight::Unit::Bytes),
+            buckets::toVector(buckets::kByteBuckets),
+            "Size buckets, 512 B to 1 MiB");
+
+        // Publish as the global meter provider so developers (and the beast
+        // OTelCollector shim) reach the same pipeline.
+        metrics_api::Provider::SetMeterProvider(
+            opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(meterProvider_));
     }
 
     void

@@ -21,8 +21,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Test the OTel naming checker
+        # The checker's own unit tests, run before the check itself so a broken
+        # rule is reported as a broken rule rather than as a naming violation
+        # (or, worse, as a rule that silently stops flagging anything).
+        # stdlib `unittest` only: the repo installs no third-party test runner
+        # for CI, and the checker itself is deliberately dependency-free.
+        run: python -m unittest discover -s .github/scripts/otel-naming -p 'test_*.py' --verbose
       - name: Check OTel naming
         # The script is stdlib-only and reads only files already in the tree;
         # it enforces each rule only when the layer it needs is present, so it
         # works whether telemetry changes land in one PR or several.
         run: python .github/scripts/otel-naming/check_otel_naming.py
+      - name: Check histogram bucket parity
+        # The C++ millisecond ladder and the collector's spanmetrics ladder are
+        # specified to agree over their shared range. They were identical when
+        # first shipped, then the collector side alone was extended and nothing
+        # noticed for eleven phases: native histograms stayed capped at 5s while
+        # spans reached 30s, so every quantile above 5s reported a flat 5000.
+        # Nothing but a check keeps two lists in step.
+        run: python .github/scripts/telemetry/check_bucket_parity.py

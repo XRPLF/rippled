@@ -7,7 +7,10 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Task.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/WriteStats.h>
 #include <xrpl/protocol/SystemParameters.h>
 
 #include <gtest/gtest.h>
@@ -15,6 +18,10 @@
 #include <nodestore/TestBase.h>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -56,6 +63,72 @@ importBackends()
 #endif
     return types;
 }
+
+/**
+ * A scheduler that records what the nodestore reports about each operation.
+ *
+ * The production scheduler forwards these reports to the job queue and to
+ * telemetry, so capturing them here lets a test observe exactly the values a
+ * dashboard would receive.
+ *
+ *   Database::fetchNodeObject()
+ *        |
+ *        +-- FetchReport{elapsed, wasFound} --> onFetch()
+ *
+ *   Database::store() -> backend
+ *        |
+ *        +-- BatchWriteReport{elapsed, writeCount} --> onBatchWrite()
+ *
+ * @note Counters are atomic because Scheduler is called from the nodestore's
+ *       read threads in production. The tests below fetch synchronously on
+ *       one thread, so the totals are still exact.
+ */
+struct CapturingScheduler : Scheduler
+{
+    std::atomic<std::uint64_t> totalReportedUs{0};  ///< Sum of reported fetch durations.
+    std::atomic<std::uint64_t> fetchCount{0};       ///< Fetch reports received.
+    std::atomic<std::uint64_t> foundCount{0};       ///< Fetch reports with wasFound set.
+    std::atomic<std::uint64_t> batchWriteCount{0};  ///< Batch-write reports received.
+
+    /**
+     * Fetch reports whose duration is not a whole number of milliseconds.
+     *
+     * A millisecond-typed duration converts to a whole multiple of 1000
+     * microseconds, so it can never be counted here however fast or slow the
+     * machine is. A non-zero count therefore proves the report carried
+     * sub-millisecond resolution, and it proves it without assuming anything
+     * about how long a read takes.
+     */
+    std::atomic<std::uint64_t> subMillisecondCount{0};
+
+    void
+    scheduleTask(Task& task) override
+    {
+        task.performScheduledTask();
+    }
+
+    void
+    onFetch(FetchReport const& report) override
+    {
+        // duration_cast, not .count(), so this compiles against either unit
+        // and the test can be run before and after the fix.
+        auto const us = static_cast<std::uint64_t>(
+            std::chrono::duration_cast<std::chrono::microseconds>(report.elapsed).count());
+
+        totalReportedUs += us;
+        ++fetchCount;
+        if (report.wasFound)
+            ++foundCount;
+        if (us % 1000 != 0)
+            ++subMillisecondCount;
+    }
+
+    void
+    onBatchWrite(BatchWriteReport const&) override
+    {
+        ++batchWriteCount;
+    }
+};
 
 }  // namespace
 
@@ -140,6 +213,164 @@ TEST_P(NodeStoreDatabaseTest, fetch_missing)
 
     // never store: every key must be absent
     fetchMissing(*db, batch_);
+}
+
+// Database::getWriteStats() forwards to the backend, and the telemetry
+// exporter branches on the optional to decide whether to publish the NuDB
+// write-queue labels at all. Backend.cpp covers the backend's own answer;
+// this covers the forwarding, which is what the exporter actually calls.
+TEST_P(NodeStoreDatabaseTest, write_stats_forwarded_from_backend)
+{
+    auto db = makeDatabase();
+
+    // Before any write, only a measuring backend answers at all.
+    auto const initial = db->getWriteStats();
+    // NuDB records the write path only when telemetry is compiled in; without
+    // it nothing measures, so the negative path below covers every backend.
+#ifdef XRPL_ENABLE_TELEMETRY
+    bool const measures = GetParam() == "nudb";
+#else
+    bool const measures = false;
+#endif
+    ASSERT_EQ(initial.has_value(), measures)
+        << "only nudb measures its write path, and only with telemetry; backend=" << GetParam();
+
+    if (!initial)
+    {
+        // Negative path: a non-measuring backend must keep reporting absence
+        // after real writes too, so the exporter omits the labels rather
+        // than publishing zeros that would read as an idle write path.
+        storeBatch(*db, batch_);
+        EXPECT_FALSE(db->getWriteStats().has_value());
+        return;
+    }
+
+    // A freshly opened store has written nothing.
+    EXPECT_EQ(initial->insertCount, 0u);
+    EXPECT_EQ(initial->insertTotalUs, 0u);
+    EXPECT_EQ(initial->depthSum, 0u);
+    EXPECT_EQ(initial->concurrentWriters, 0u);
+
+    storeBatch(*db, batch_);
+
+    // Every object stored through the Database reaches the backend exactly
+    // once, so the forwarded count is the batch size and not, say, the
+    // number of store() batches.
+    auto const after = db->getWriteStats();
+    ASSERT_TRUE(after.has_value());
+    EXPECT_EQ(after->insertCount, batch_.size());
+    // One writer thread, so the depth recorded at each insert is exactly 1.
+    // This catches a depth accumulator fed the wrong quantity (insertCount's
+    // running value, or the elapsed microseconds), but it CANNOT catch one fed
+    // a constant 1, because here the real depth is 1. That case needs genuine
+    // overlap and is covered by NuDBFactory.cpp's
+    // write_stats_measure_depth_under_real_overlap.
+    EXPECT_EQ(after->depthSum, batch_.size());
+    // No writer is left in flight once the calls have returned.
+    EXPECT_EQ(after->concurrentWriters, 0u);
+    // Same live depth through the other accessor on the same object, so the
+    // two cannot drift onto different fields.
+    EXPECT_EQ(db->getWriteLoad(), 0);
+    EXPECT_GT(after->insertTotalUs, 0u);
+    // max * n >= sum. Catches a field holding the running MINIMUM, since
+    // min * n <= sum with equality only when every sample is identical.
+    // Degenerates when the samples do not vary; the unconditional guarantee
+    // that the field is a maximum is the non-decreasing check in
+    // NuDBFactory.cpp's write_stats_accumulate_per_insert.
+    EXPECT_GE(after->insertMaxUs * after->insertCount, after->insertTotalUs);
+}
+
+// Read latency is the discriminator between a warm nodestore and a cold one:
+// a warm store answers in single-digit microseconds and a cold one in low
+// hundreds, while the hit rate reads the same for both. FetchReport::elapsed
+// is what the production scheduler forwards, so if that field cannot hold a
+// sub-millisecond value the difference is gone before anything can record it.
+//
+// nudb rather than memory: a real store's reads take microseconds of
+// measurable work, whereas an in-memory map lookup can finish inside a single
+// microsecond tick and report a legitimate zero.
+TEST(NodeStoreDatabase, sub_millisecond_fetch_latency_is_reported)
+{
+    CapturingScheduler scheduler;
+    TempDir const nodeDb;
+    Section nodeParams;
+    nodeParams.set("type", "nudb");
+    nodeParams.set("path", nodeDb.path());
+
+    beast::Journal const journal(TestSink::instance());
+
+    // No cache_size/cache_age, so DatabaseNodeImp builds no cache and every
+    // fetch reaches the backend. That keeps the counts exact.
+    auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+    ASSERT_NE(db, nullptr);
+
+    // Nothing has been fetched, so nothing has been reported. This also
+    // proves the counters below are moved by this test and not by setup.
+    ASSERT_EQ(scheduler.fetchCount.load(), 0u);
+    ASSERT_EQ(scheduler.totalReportedUs.load(), 0u);
+    ASSERT_EQ(db->getFetchDurationUs(), 0u);
+
+    constexpr std::size_t kNumStored = 256;
+    auto const stored = createPredictableBatch(kNumStored, kSeedValue);
+    ASSERT_EQ(stored.size(), kNumStored);
+    storeBatch(*db, stored);
+
+    // Each store reaches the backend once, and nudb reports every insert as a
+    // one-object batch write. A change to BatchWriteReport that broke its
+    // millisecond contract would show up here rather than silently.
+    EXPECT_EQ(scheduler.batchWriteCount.load(), kNumStored);
+
+    // Positive path: every object is present, so every fetch is a hit.
+    for (auto const& object : stored)
+        EXPECT_NE(db->fetchNodeObject(object->getHash(), 0), nullptr);
+
+    // Every fetch produced exactly one report, and each one saw its object.
+    ASSERT_EQ(scheduler.fetchCount.load(), kNumStored);
+    EXPECT_EQ(scheduler.foundCount.load(), kNumStored);
+
+    // The accumulator keeps nanoseconds internally, so 256 reads sum past a
+    // microsecond and register here even when each individual read finishes in
+    // well under one. This is a statement about the accumulator's resolution,
+    // not about this machine's speed: to still read zero, all 256 reads would
+    // have to complete inside a single microsecond in total.
+    auto const internalUs = db->getFetchDurationUs();
+    ASSERT_GT(internalUs, 0u);
+
+    // Each report truncates its own fetch to whole microseconds, while the
+    // accumulator keeps the remainder. The reported total can therefore only be
+    // smaller than the accumulated one, and only by the discarded remainder of
+    // each fetch, which is strictly under 1 us per fetch.
+    auto const reportedUs = scheduler.totalReportedUs.load();
+    EXPECT_LE(reportedUs, internalUs);
+    EXPECT_LE(internalUs - reportedUs, kNumStored);
+
+    // Negative path: a miss is still a fetch, so it is still reported and
+    // still timed, but it is not a hit. A report that only fired on hits
+    // would hide exactly the cold-read case this measures.
+    constexpr std::size_t kNumMissing = 32;
+    auto const missing = createPredictableBatch(kNumMissing, kSeedValue + 1);
+    ASSERT_EQ(missing.size(), kNumMissing);
+    for (auto const& object : missing)
+        EXPECT_EQ(db->fetchNodeObject(object->getHash(), 0), nullptr);
+
+    EXPECT_EQ(scheduler.fetchCount.load(), kNumStored + kNumMissing);
+    EXPECT_EQ(scheduler.foundCount.load(), kNumStored);
+
+    // The same bound still holds once misses are included, so the miss path
+    // reports what it measured rather than substituting a zero.
+    //
+    // GE and not GT: a cumulative total cannot shrink, but the microsecond view
+    // of it only advances once the accumulated nanoseconds cross the next
+    // thousand, so requiring growth from 32 more reads would be a statement
+    // about this machine's speed rather than about the code.
+    auto const internalUsWithMisses = db->getFetchDurationUs();
+    EXPECT_GE(internalUsWithMisses, internalUs);
+    auto const reportedUsWithMisses = scheduler.totalReportedUs.load();
+    EXPECT_LE(reportedUsWithMisses, internalUsWithMisses);
+    EXPECT_LE(internalUsWithMisses - reportedUsWithMisses, kNumStored + kNumMissing);
+
+    // Reads perform no writes, so the write-report count cannot have moved.
+    EXPECT_EQ(scheduler.batchWriteCount.load(), kNumStored);
 }
 
 INSTANTIATE_TEST_SUITE_P(

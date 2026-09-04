@@ -15,6 +15,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
     - [Conan lockfile error](#conan-lockfile-error)
     - [CMake target not found](#cmake-target-not-found)
   - [Conditional compilation](#conditional-compilation)
+  - [Recording utilities](#recording-utilities)
   - [Span lifetime and cross-thread handling](#span-lifetime-and-cross-thread-handling)
     - [`SpanGuard` versus `ScopedSpanGuard`](#spanguard-versus-scopedspanguard)
     - [Coroutine-aware context storage](#coroutine-aware-context-storage)
@@ -29,13 +30,19 @@ When enabled, it instruments RPC requests with trace spans that are exported via
 OTLP/HTTP to an OpenTelemetry Collector, which forwards them to a tracing backend
 such as Grafana Tempo.
 
-Telemetry is **off by default** at both compile time and runtime:
+Telemetry is gated twice — once at compile time and once at runtime:
 
-- **Compile time**: The Conan option `telemetry` and CMake option `telemetry` must be set to `True`/`ON`.
-  When disabled, all `SpanGuard` calls compile to inline no-ops (defined in `SpanGuard.h`)
+- **Compile time**: The Conan option `telemetry` and CMake option `telemetry` decide
+  whether the OTel SDK is linked in and `XRPL_ENABLE_TELEMETRY` is defined.
+  When off, all `SpanGuard` calls compile to inline no-ops (defined in `SpanGuard.h`)
   with zero overhead — no OTel SDK dependency required.
-- **Runtime**: The `[telemetry]` config section must set `enabled=1`.
-  When disabled at runtime, a no-op implementation is used.
+  The option is currently `True`/`ON` on the telemetry branches so that CI builds and
+  exercises the instrumented code; **`False`/`OFF` is the intended default once this
+  feature is merged.** Pass the value you want explicitly rather than relying on the
+  default.
+- **Runtime**: Telemetry is **off by default** — the `[telemetry]` config section must
+  set `enabled=1`. When disabled at runtime, a no-op implementation is used even in a
+  build that has the SDK compiled in.
 
 ## Building with Telemetry
 
@@ -103,11 +110,21 @@ cmake --build . --parallel $(nproc)
 
 ## Building without telemetry
 
-Omit the `-o telemetry=True` option (or pass `-o telemetry=False`).
+Pass `-o telemetry=False` to `conan install`, and `-Dtelemetry=OFF` to CMake if you
+configure without the Conan-generated toolchain. Do not just omit the option — it then
+resolves to whatever the current default is, and that default is `True` on the
+telemetry branches.
+
 The `opentelemetry-cpp` dependency will not be downloaded,
 the `XRPL_ENABLE_TELEMETRY` preprocessor define will not be set,
 and all tracing macros will compile to no-ops.
 The resulting binary is identical to one built before telemetry support was added.
+
+> **`-DXRPL_ENABLE_TELEMETRY=OFF` disables nothing.** `XRPL_ENABLE_TELEMETRY` is not a
+> CMake option — it is only a compile definition added when `telemetry` is on. Passing it
+> on the command line leaves telemetry compiled in; CMake merely lists it at the end of
+> configuration under `Manually-specified variables were not used by the project`.
+> Use `-Dtelemetry=OFF`.
 
 ## Troubleshooting
 
@@ -147,6 +164,34 @@ if (span)
 A span that exists but was sampled out still pays: there is no `isRecording()` to test.
 
 The `XRPL_METRIC_*` macros are the opposite case. They expand to `do { } while (false)` and discard their arguments, so anything named only inside a macro argument list disappears on its own and needs no guard.
+
+## Recording utilities
+
+Some state exists only to be reported: a timestamp read to measure something, a counter nothing outside telemetry reads, a value kept so that a change in it can be logged. Writing that with preprocessor branches puts `#ifdef` through business logic and leaves the class with a different member set in each build — a difference that has previously made a test mock abstract.
+
+`xrpl/telemetry/Recording.h` holds that state in types that carry a real member when telemetry is compiled in and are empty types with no-op methods when it is not. Declare the member unconditionally: its storage collapses to padding, and its work disappears.
+
+| Utility      | Use it for                                                                                  | With telemetry compiled out                      |
+| ------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `kEnabled`   | `if constexpr (telemetry::kEnabled)` around a telemetry-only block that has no span to test | `false`, so the block is discarded               |
+| `Stopwatch`  | an elapsed time measured only in order to report it                                         | holds nothing; `elapsedUs()` returns exactly `0` |
+| `Counter<T>` | a count with no reader outside telemetry                                                    | holds nothing; `load()` returns `T{}`            |
+
+```cpp
+// Times a loop with no preprocessor branch anywhere. The clock is not read at
+// all in a build with telemetry compiled out.
+telemetry::Stopwatch const timer;
+for (auto const& obj : objects)
+    lookUp(obj);
+recordLookupMetrics(timer.elapsedUs());
+```
+
+Two constraints decide whether these are usable at a given site:
+
+- **A no-op method does not skip its arguments.** `counter.add(expensiveCount())` still calls `expensiveCount()`. Pass values that are cheap to produce, and put anything expensive inside `if constexpr (telemetry::kEnabled)`.
+- **`if constexpr` still type-checks the branch it discards** in non-template code, so use it only where the block names no `opentelemetry::` type. `SpanGuard` exists to keep those types out of call sites, so that is the usual case; a block that does name them stays behind `#ifdef`.
+
+`Counter` declares copy and move deleted, matching the `std::atomic` it holds when telemetry is compiled in, so a class that owns one has the same copy semantics in both builds.
 
 ## Span lifetime and cross-thread handling
 

@@ -30,6 +30,7 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxSpanNames.h>
 
@@ -290,6 +291,21 @@ class NetworkOPsImp final : public NetworkOPs
                 .start = start_,
                 .initialSyncUs = initialSyncUs_};
         }
+
+        /**
+         * Time spent in the current operating mode so far. This is the same
+         * quantity reported as `server_state_duration_us` in json(): the
+         * elapsed time since the last state transition. Thread-safe.
+         *
+         * @return Duration since entering the current state, in microseconds.
+         */
+        std::chrono::microseconds
+        currentStateDurationUs() const
+        {
+            std::scoped_lock const lock(mutex_);
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - start_);
+        }
     };
 
     /**
@@ -373,6 +389,9 @@ public:
 public:
     OperatingMode
     getOperatingMode() const override;
+
+    std::chrono::microseconds
+    getServerStateDurationUs() const override;
 
     std::string
     strOperatingMode(OperatingMode const mode, bool const admin) const override;
@@ -1114,6 +1133,12 @@ inline OperatingMode
 NetworkOPsImp::getOperatingMode() const
 {
     return mode_;
+}
+
+std::chrono::microseconds
+NetworkOPsImp::getServerStateDurationUs() const
+{
+    return accounting_.currentStateDurationUs();
 }
 
 inline std::string
@@ -2821,6 +2846,10 @@ NetworkOPsImp::setMode(OperatingMode om)
 
     accounting_.mode(om);
 
+    // Record state change for OTel dashboard parity counter.
+    if (auto* mr = registry_.get().getMetricsRegistry())
+        mr->incrementStateChanges();
+
     JLOG(journal_.info()) << "STATE->" << strOperatingMode();
     pubServer();
 }
@@ -2829,6 +2858,14 @@ bool
 NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::string const& source)
 {
     JLOG(journal_.trace()) << "recvValidation " << val->getLedgerHash() << " from " << source;
+#ifdef XRPL_ENABLE_TELEMETRY
+    // One per validation received. The registry is always constructed, so the
+    // null test never short-circuits: without the guard every validation pays
+    // a virtual lookup and an out-of-line call whose body is empty. Nothing
+    // outside the validations_checked_total metric reads the counter.
+    if (auto* mr = registry_.get().getMetricsRegistry())
+        mr->incrementValidationsChecked();
+#endif
 
     std::unique_lock lock(validationsMutex_);
     BypassAccept bypassAccept = BypassAccept::No;
