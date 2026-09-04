@@ -237,7 +237,8 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
         {
             AccountID const delegateAccount = proposedTx.getAccountID(sfDelegate);
             STTx const proposedStTx{STObject{proposedTx}};
-            if (isTesSuccess(xrpl::invokeCheckPermission(ctx.view, proposedStTx)))
+            if (ctx.view.exists(keylet::account(delegateAccount)) &&
+                isTesSuccess(xrpl::invokeCheckPermission(ctx.view, proposedStTx)))
             {
                 isSigner = isAuthorizedFor(delegateAccount);
                 if (!isSigner)
