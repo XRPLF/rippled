@@ -508,7 +508,11 @@ protected:
         // Wraps (mod 2^64) for overdrafts, unlike the ledger's own homomorphic
         // commitment subtraction (mod the curve order) — that mismatch is
         // exactly what makes the forged proof fail verification.
-        std::uint64_t const remaining = setup.prevSpending - setup.sendAmount;
+        // Computed without a wrapping `uint64` subtract: Clang UBSan treats
+        // unsigned overflow as fatal (see incrementConfidentialVersion).
+        std::uint64_t const remaining = setup.sendAmount <= setup.prevSpending
+            ? setup.prevSpending - setup.sendAmount
+            : ~setup.sendAmount + setup.prevSpending + 1;
 
         Buffer negAmountBf(kEcBlindingFactorLength);
         Buffer remainingBf(kEcBlindingFactorLength);
