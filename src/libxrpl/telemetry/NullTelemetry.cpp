@@ -19,9 +19,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #endif
 
-#include <memory>
-#include <utility>
-
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
@@ -32,6 +29,10 @@
 
 #include <string_view>
 #endif
+
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl::telemetry {
 
@@ -101,6 +102,12 @@ public:
     shouldTraceLedger() const override
     {
         return false;
+    }
+
+    [[nodiscard]] std::string const&
+    getConsensusTraceStrategy() const override
+    {
+        return setup_.consensusTraceStrategy;
     }
 
 #ifdef XRPL_ENABLE_TELEMETRY

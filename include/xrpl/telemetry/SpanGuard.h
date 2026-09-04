@@ -178,14 +178,20 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <initializer_list>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 // The smart-pointer members all belong to the telemetry-enabled declarations;
 // the compiled-out types hold nothing, so this include is unused there.
 #include <memory>
 #endif
+
+namespace protocol {
+class TraceContext;
+}  // namespace protocol
 
 namespace xrpl::telemetry {
 
@@ -214,6 +220,12 @@ struct TraceBytes
     std::uint8_t traceFlags{0};              ///< W3C trace flags (bit 0 = sampled).
     bool valid{false};  ///< True if this struct holds data from an active span.
 };
+
+/**
+ * Key-value pair for span event attributes.
+ * Used by addEvent(name, attrs) to attach structured metadata to events.
+ */
+using EventAttribute = std::pair<std::string_view, std::string_view>;
 
 /**
  * Opaque wrapper for an OTel context snapshot.
@@ -390,10 +402,14 @@ public:
      * TraceCategory. All nodes using the same hash independently produce
      * spans under the same trace_id, enabling cross-node correlation
      * without context propagation.
-     * @param cat       Trace subsystem category.
-     * @param name      Full span name (e.g. "tx.receive").
-     * @param hashData  Pointer to at least 16 bytes of hash data.
-     * @param hashSize  Size of the hash buffer (must be >= 16).
+     * @param cat          Trace subsystem category.
+     * @param name         Full span name (e.g. "tx.receive").
+     * @param hashData     Pointer to at least 16 bytes of hash data.
+     * @param hashSize     Size of the hash buffer (must be >= 16).
+     * @param followsFrom  Optional captured context to attach as a
+     *                     follows-from link. Use to stitch sequential
+     *                     top-level spans (e.g. consecutive consensus
+     *                     rounds). Ignored if nullptr or invalid.
      * @return An active guard, or a null guard when the category is
      * disabled or hashSize is under 16.
      */
@@ -402,7 +418,8 @@ public:
         TraceCategory const cat,
         std::string_view const name,
         std::uint8_t const* const hashData,
-        std::size_t const hashSize);
+        std::size_t const hashSize,
+        SpanContext const* followsFrom = nullptr);
 
     /**
      * Create a hash-derived span with a remote parent.
@@ -469,6 +486,37 @@ public:
     [[nodiscard]] TraceBytes
     getTraceBytes() const;
 
+    /**
+     * Report whether this thread has a live span context to propagate.
+     *
+     * Lets a caller decide whether to create an optional protobuf
+     * submessage before calling injectCurrentContextToProtobuf(), which
+     * writes nothing when no span is active. Tests exactly the two
+     * conditions that injector checks and allocates nothing, so it is cheap
+     * enough to call on every broadcast. threadLocalContext() is not
+     * a substitute: it builds a shared SpanContext::Impl before validity
+     * can be tested.
+     *
+     * @return true when a span with a valid context is active on this
+     * thread.
+     */
+    [[nodiscard]] static bool
+    hasCurrentContext() noexcept;
+
+    /**
+     * Inject the calling thread's currently-active OTel context into a
+     * protobuf TraceContext message for cross-node propagation.
+     *
+     * Encapsulates `RuntimeContext::GetCurrent()` + `injectToProtobuf`
+     * so callers in app-layer code (e.g. RCLConsensus broadcasting
+     * TMProposeSet / TMValidation) don't depend on any OTel headers.
+     * No-op if telemetry is disabled or no span is active.
+     *
+     * @param proto The protobuf TraceContext to populate.
+     */
+    static void
+    injectCurrentContextToProtobuf(protocol::TraceContext& proto);
+
     // --- Attribute setters (explicit overloads, no OTel types) ---------
 
     /**
@@ -522,6 +570,15 @@ public:
      */
     void
     addEvent(std::string_view name) noexcept;
+
+    /**
+     * Add a named event with key-value attributes to the span's timeline.
+     * No-op on a null guard.
+     * @param name   Event name.
+     * @param attrs  Attribute pairs (all string_view for simplicity).
+     */
+    void
+    addEvent(std::string_view name, std::initializer_list<EventAttribute> attrs) noexcept;
 
     /**
      * Record an exception as a span event following OTel semantic
@@ -1006,7 +1063,12 @@ public:
     }
 
     [[nodiscard]] static SpanGuard
-    hashSpan(TraceCategory, std::string_view, std::uint8_t const*, std::size_t)
+    hashSpan(
+        TraceCategory,
+        std::string_view,
+        std::uint8_t const*,
+        std::size_t,
+        SpanContext const* = nullptr)
     {
         return {};
     }
@@ -1032,6 +1094,17 @@ public:
     getTraceBytes() const
     {
         return {};
+    }
+
+    [[nodiscard]] static bool
+    hasCurrentContext() noexcept
+    {
+        return false;
+    }
+
+    static void
+    injectCurrentContextToProtobuf(protocol::TraceContext&)
+    {
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
 
@@ -1072,6 +1145,10 @@ public:
     }
     void
     addEvent(std::string_view) noexcept
+    {
+    }
+    void
+    addEvent(std::string_view, std::initializer_list<EventAttribute>) noexcept
     {
     }
     void

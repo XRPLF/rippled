@@ -12,6 +12,7 @@
 #include <xrpl/consensus/Validations.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
@@ -34,6 +35,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -682,6 +684,29 @@ struct Peer
     void
     onModeChange(ConsensusMode, ConsensusMode)
     {
+    }
+
+    // Telemetry hooks — no-ops in the simulator. The generic engine calls
+    // these at every phase transition / outcome resolution so the
+    // production adaptor (RCLConsensus::Adaptor) can record events on the
+    // round span; the simulator runs without telemetry.
+    void
+    onPhaseEvent(std::string_view, std::string_view)
+    {
+    }
+
+    void
+    onOutcomeEvent(std::string_view)
+    {
+    }
+
+    // The generic engine parents its phase spans under the round span via
+    // this context; the simulator runs without telemetry, so return an
+    // invalid context and no phase span is created.
+    static telemetry::SpanContext
+    roundSpanContext()
+    {
+        return {};
     }
 
     // Share a message by broadcasting to all connected peers

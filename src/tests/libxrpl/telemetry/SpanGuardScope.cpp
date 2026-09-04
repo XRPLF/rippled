@@ -159,6 +159,17 @@ public:
         return true;
     }
 
+    /**
+     * @return A fixed strategy label; the scope tests do not exercise
+     * deterministic trace-id correlation, so any stable value works.
+     */
+    [[nodiscard]] std::string const&
+    getConsensusTraceStrategy() const override
+    {
+        static std::string const kStrategy{"none"};
+        return kStrategy;
+    }
+
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view name) override
     {

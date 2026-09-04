@@ -261,6 +261,14 @@ public:
          * Enable tracing for ledger close/accept.
          */
         bool traceLedger = true;
+
+        /**
+         * Strategy for cross-node consensus trace correlation.
+         * "deterministic" — derive trace_id from ledger hash so all
+         * validators in the same round share the same trace_id.
+         * "attribute" — random trace_id, correlate via ledger_id attribute.
+         */
+        std::string consensusTraceStrategy = "deterministic";
     };
 
     virtual ~Telemetry() = default;
@@ -331,6 +339,12 @@ public:
      */
     [[nodiscard]] virtual bool
     shouldTraceLedger() const = 0;
+
+    /**
+     * @return The configured consensus trace correlation strategy.
+     */
+    [[nodiscard]] virtual std::string const&
+    getConsensusTraceStrategy() const = 0;
 
 #ifdef XRPL_ENABLE_TELEMETRY
     /**

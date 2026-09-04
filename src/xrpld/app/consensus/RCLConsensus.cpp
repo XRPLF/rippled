@@ -18,6 +18,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
+#include <xrpld/telemetry/PropagationHelpers.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -31,6 +32,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/consensus/CensorshipDetector.h>
 #include <xrpl/consensus/Consensus.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -62,6 +64,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -80,9 +83,17 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+// The Telemetry interface and the shared segment names are named only by
+// startRoundTracing(), which is telemetry-enabled code.
+#include <xrpl/telemetry/SpanNames.h>
+#include <xrpl/telemetry/Telemetry.h>
+#endif
 
 namespace xrpl {
 
@@ -225,6 +236,14 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
+    // Child of the round span via its captured context (roundSpan_ is a
+    // thread-free SpanGuard, so parent explicitly via its context).
+    auto span = telemetry::SpanGuard::childSpan(
+        telemetry::consensus::span::proposalSend, roundSpanContext_);
+    span.setAttribute(
+        telemetry::consensus::span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
+    span.setAttribute(telemetry::consensus::span::attr::isBowOut, proposal.isBowOut());
+
     JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
                      << xrpl::to_string(proposal.prevLedger()) << " -> "
                      << xrpl::to_string(proposal.position());
@@ -260,6 +279,16 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         sig);
 
     app_.getHashRouter().addSuppression(suppression);
+
+    // Inject the current thread's active span context (e.g. the consensus
+    // round span) so receiving peers can link their proposal.receive span
+    // as a child of this trace.
+    //
+    // The helper injects only when a span is actually active, so a node with
+    // telemetry compiled out, disabled by config, or simply not tracing this
+    // round sends no TraceContext at all rather than an empty one that makes
+    // every peer take its has_trace_context() branch for nothing.
+    telemetry::injectCurrentContext(prop);
 
     app_.getOverlay().broadcast(prop);
 }
@@ -327,6 +356,29 @@ RCLConsensus::Adaptor::onClose(
     NetClock::time_point const& closeTime,
     ConsensusMode mode) -> Result
 {
+    namespace cs = telemetry::consensus::span;
+
+    // Child of the round span via its captured context (roundSpan_ is a
+    // thread-free SpanGuard, so parent explicitly via its context).
+    auto span = telemetry::SpanGuard::childSpan(cs::ledgerClose, roundSpanContext_);
+    // setAttribute is the only consumer of everything read here, so the block is
+    // guarded on the span being live. Unguarded, every round takes the open
+    // ledger's currentMutex_ and copies a shared_ptr just to read txCount, and
+    // builds a mode string, for attributes no one may be recording.
+    if (span)
+    {
+        span.setAttribute(
+            cs::attr::ledgerSeq, static_cast<int64_t>(ledger.ledger->header().seq) + 1);
+        span.setAttribute(cs::attr::mode, toDisplayString(mode).c_str());
+        span.setAttribute(
+            cs::attr::txCountOpen, static_cast<int64_t>(app_.getOpenLedger().current()->txCount()));
+        span.setAttribute(
+            cs::attr::closeTimeResolutionMs,
+            static_cast<int64_t>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(ledger.closeTimeResolution())
+                    .count()));
+    }
+
     bool const wrongLCL = mode == ConsensusMode::WrongLedger;
     bool const proposing = mode == ConsensusMode::Proposing;
 
@@ -422,7 +474,15 @@ RCLConsensus::Adaptor::onForceAccept(
     ConsensusMode const& mode,
     json::Value&& consensusJson)
 {
-    doAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(consensusJson));
+    auto acceptSpan = makeAcceptSpan(result);
+    doAccept(
+        result,
+        prevLedger,
+        closeResolution,
+        rawCloseTimes,
+        mode,
+        std::move(consensusJson),
+        std::move(acceptSpan));
 }
 
 void
@@ -435,21 +495,92 @@ RCLConsensus::Adaptor::onAccept(
     json::Value&& consensusJson,
     bool const validating)
 {
+    auto acceptSpan = makeAcceptSpan(result);
+
     app_.getJobQueue().addJob(
         JtAccept,
         "AcceptLedger",
         // NOLINTNEXTLINE(cppcoreguidelines-misleading-capture-default-by-value)
-        [=, this, cj = std::move(consensusJson)]() mutable {
+        [=, this, cj = std::move(consensusJson), sp = std::move(acceptSpan)]() mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state
             // will not change until startRound is called (which happens via
             // endConsensus).
             RclConsensusLogger clog("onAccept", validating, j_);
-            this->doAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(cj));
+            this->doAccept(
+                result,
+                prevLedger,
+                closeResolution,
+                rawCloseTimes,
+                mode,
+                std::move(cj),
+                std::move(sp));
             this->app_.getOPs().endConsensus(clog.ss());
         });
 }
+
+// Not static: the guarded body reads app_ and roundSpanContext_. With telemetry
+// compiled out it returns an empty handle and touches no member, so clang-tidy
+// sees a method that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+std::shared_ptr<telemetry::SpanGuard>
+RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
+{
+    // The whole body is telemetry: the guard, its attributes and the captured
+    // context serve the accept span only. With telemetry compiled out the handle
+    // stays empty, so accepting a ledger does not allocate a control block for a
+    // span that can never record. doAccept only hands the handle to
+    // activateIfLive(), which tests it, so an empty handle is safe on both the
+    // sync (onForceAccept) and async (onAccept) paths.
+#ifdef XRPL_ENABLE_TELEMETRY
+    namespace cs = telemetry::consensus::span;
+
+    auto span = std::make_shared<telemetry::SpanGuard>(
+        telemetry::SpanGuard::childSpan(cs::accept, roundSpanContext_));
+
+    // Every attribute below exists only for the span, so the whole block —
+    // attributes and the context capture — is guarded on the span being live.
+    if (*span)
+    {
+        span->setAttribute(cs::attr::proposers, static_cast<int64_t>(result.proposers));
+        span->setAttribute(
+            cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
+        span->setAttribute(cs::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));
+        span->setAttribute(cs::attr::disputesCount, static_cast<int64_t>(result.disputes.size()));
+        char const* stateStr = [&] {
+            switch (result.state)
+            {
+                case ConsensusState::Yes:
+                    return "yes";
+                case ConsensusState::MovedOn:
+                    return "moved_on";
+                case ConsensusState::Expired:
+                    return "expired";
+                default:
+                    return "no";
+            }
+        }();
+        span->setAttribute(cs::attr::consensusState, stateStr);
+
+        // Capture the accept span's context so createValidationSpan() — which
+        // runs on the jtACCEPT worker thread — can link the validation.send
+        // span to the accept span (matching the design diagram and the
+        // "validation follows acceptance" causal model).
+        //
+        // span is a thread-free SpanGuard handed to the JtAccept worker
+        // (onAccept), which ends it there. spanContext() captures the guard's
+        // own span, so accept.apply parents via acceptSpanContext_ regardless
+        // of which thread runs the sync (onForceAccept) or async (onAccept)
+        // path -- no scope work is needed.
+        acceptSpanContext_ = span->spanContext();
+    }
+    return span;
+#else
+    return {};
+#endif
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void
 RCLConsensus::Adaptor::doAccept(
@@ -458,8 +589,17 @@ RCLConsensus::Adaptor::doAccept(
     NetClock::duration closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    json::Value&& consensusJson)
+    json::Value&& consensusJson,
+    std::shared_ptr<telemetry::SpanGuard> acceptSpan)
 {
+    namespace cs = telemetry::consensus::span;
+
+    // Make the accept span ambient for the whole accept so doAccept's log lines
+    // (and any spans created here) correlate to it. Non-owning: acceptSpan still
+    // owns/ends the span. doAccept runs to completion on the JtAccept worker
+    // (no coroutine yield), so this scope is thread-local and safe.
+    auto acceptActivation = telemetry::activateIfLive(acceptSpan);
+
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
 
@@ -486,6 +626,58 @@ RCLConsensus::Adaptor::doAccept(
         closeTimeCorrect = true;
     }
 
+    // Parent accept.apply via the captured accept context (acceptSpanContext_):
+    // the accept span is a thread-free SpanGuard, so an explicit context is
+    // used for both the sync (onForceAccept) and async (onAccept) paths. Falls
+    // back to the round context if the accept span was null.
+    auto doAcceptSpan = acceptSpanContext_.isValid()
+        ? telemetry::SpanGuard::childSpan(cs::acceptApply, acceptSpanContext_)
+        : telemetry::SpanGuard::childSpan(cs::acceptApply, roundSpanContext_);
+    doAcceptSpan.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq()) + 1);
+    doAcceptSpan.setAttribute(
+        cs::attr::closeTimeRippleEpochS,
+        static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
+    doAcceptSpan.setAttribute(cs::attr::closeTimeCorrect, closeTimeCorrect);
+    doAcceptSpan.setAttribute(
+        cs::attr::closeResolutionMs,
+        static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(closeResolution).count()));
+    doAcceptSpan.setAttribute(
+        cs::attr::consensusState,
+        consensusFail ? std::string_view{cs::val::movedOn} : std::string_view{cs::val::finished});
+    doAcceptSpan.setAttribute(cs::attr::proposing, proposing);
+    doAcceptSpan.setAttribute(
+        cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
+    doAcceptSpan.setAttribute(
+        cs::attr::parentCloseTimeRippleEpochS,
+        static_cast<int64_t>(prevLedger.closeTime().time_since_epoch().count()));
+    doAcceptSpan.setAttribute(
+        cs::attr::closeTimeSelfRippleEpochS,
+        static_cast<int64_t>(rawCloseTimes.self.time_since_epoch().count()));
+    doAcceptSpan.setAttribute(
+        cs::attr::closeTimeVoteBins, static_cast<int64_t>(rawCloseTimes.peers.size()));
+    doAcceptSpan.setAttribute(
+        cs::attr::disputesResolvedCount, static_cast<int64_t>(result.disputes.size()));
+    // prevRes and dir feed the resolution_direction attribute and nothing else,
+    // so both are guarded on the span being active. Unguarded, every accepted
+    // ledger builds a std::string that no one reads.
+    if (doAcceptSpan)
+    {
+        auto const prevRes = prevLedger.closeTimeResolution();
+        auto const dir = [&]() -> std::string {
+            if (closeResolution > prevRes)
+            {
+                return "increased";
+            }
+            if (closeResolution < prevRes)
+            {
+                return "decreased";
+            }
+            return "unchanged";
+        }();
+        doAcceptSpan.setAttribute(cs::attr::resolutionDirection, std::move(dir));
+    }
+
     JLOG(j_.debug()) << "Report: Prop=" << (proposing ? "yes" : "no")
                      << " val=" << (validating_ ? "yes" : "no")
                      << " corLCL=" << (haveCorrectLCL ? "yes" : "no")
@@ -503,18 +695,33 @@ RCLConsensus::Adaptor::doAccept(
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
+    // txCount and the per-transaction event feed the span and nothing else, so
+    // both are guarded on the span being active. Unguarded, every accepted
+    // ledger builds one 64-character hash string per transaction that no one
+    // reads.
+    int64_t txCount = 0;
     for (auto const& item : *result.txns.map)
     {
         try
         {
             retriableTxs.insert(std::make_shared<STTx const>(SerialIter{item.slice()}));
             JLOG(j_.debug()) << "    Tx: " << item.key();
+            if (doAcceptSpan)
+            {
+                ++txCount;
+                auto const txHash = to_string(item.key());
+                doAcceptSpan.addEvent(cs::event::txIncluded, {{cs::attr::txId, txHash}});
+            }
         }
         catch (std::exception const& ex)
         {
             failed.insert(item.key());
             JLOG(j_.warn()) << "    Tx: " << item.key() << " throws: " << ex.what();
         }
+    }
+    if (doAcceptSpan)
+    {
+        doAcceptSpan.setAttribute(cs::attr::txCount, txCount);
     }
 
     auto built = buildLCL(
@@ -796,12 +1003,35 @@ RCLConsensus::Adaptor::buildLCL(
 void
 RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing)
 {
+    auto valSpan = createValidationSpan();
+    // Testing the guard as well as the optional matters: a guard that exists but
+    // is not live still evaluates its arguments, and the ledger_hash attribute
+    // below turns a 32-byte hash into a 64-character string.
+    if (valSpan && *valSpan)
+    {
+        namespace cs = telemetry::consensus::span;
+        valSpan->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.seq()));
+        valSpan->setAttribute(
+            cs::attr::ledgerHash, to_string(ledger.ledger->header().hash).c_str());
+        valSpan->setAttribute(cs::attr::proposing, proposing);
+        // proposing implies a full validation (vfFullValidation is set on
+        // the STValidation only when proposing — see below).
+        valSpan->setAttribute(cs::attr::fullValidation, proposing);
+    }
+
     using namespace std::chrono_literals;
 
     auto validationTime = app_.getTimeKeeper().closeTime();
     if (validationTime <= lastValidationTime_)
         validationTime = lastValidationTime_ + 1s;
     lastValidationTime_ = validationTime;
+
+    if (valSpan && *valSpan)
+    {
+        valSpan->setAttribute(
+            telemetry::consensus::span::attr::validationSignTime,
+            static_cast<int64_t>(validationTime.time_since_epoch().count()));
+    }
 
     if (!validatorKeys_.keys)
     {
@@ -874,6 +1104,18 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     // Broadcast to all our peers:
     protocol::TMValidation val;
     val.set_validation(serialized.data(), serialized.size());
+    // Inject the current thread's active span context so receiving
+    // peers can link their validation.receive span as a child.
+    //
+    // The trace_context appended below is outside the signature on
+    // `serialized`, so it is not covered by validation authenticity.
+    // Downstream consumers treat it as advisory only. A signature-covered
+    // trace context is a possible future enhancement.
+    //
+    // As on the proposal path, the helper injects only when a span is actually
+    // active, so a node that is not tracing sends no TraceContext at all
+    // rather than an empty one.
+    telemetry::injectCurrentContext(val);
     app_.getOverlay().broadcast(val);
 
     // Publish to all our subscribers:
@@ -883,6 +1125,16 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 void
 RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
+    namespace cs = telemetry::consensus::span;
+
+    // Child of the round span via its captured context (roundSpan_ is a
+    // thread-free SpanGuard, so parent explicitly via its context). A mode
+    // change outside a round leaves roundSpanContext_ invalid, yielding a null
+    // guard (no-op).
+    auto span = telemetry::SpanGuard::childSpan(cs::modeChange, roundSpanContext_);
+    span.setAttribute(cs::attr::modeOld, toDisplayString(before).c_str());
+    span.setAttribute(cs::attr::modeNew, toDisplayString(after).c_str());
+
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
 
@@ -1007,6 +1259,8 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
     if (!nowTrusted.empty())
         nUnlVote_.newValidators(prevLgr.seq() + 1, nowTrusted);
 
+    startRoundTracing(prevLgr);
+
     // propose only if we're in sync with the network (and validating)
     return validating_ && synced;
 }
@@ -1048,6 +1302,153 @@ RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 {
     if ((positions == 0u) && app_.getOPs().isFull())
         app_.getOPs().setMode(OperatingMode::CONNECTED);
+}
+
+// Neither is static: both guarded bodies read the span-context members. With
+// telemetry compiled out one body is empty and the other returns std::nullopt,
+// so clang-tidy sees two methods that could be static.
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+void
+RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
+{
+    // The whole body is telemetry: every member it touches exists only to carry
+    // span state. It is compiled out rather than left to the early return below,
+    // because the work above that return — two virtual Telemetry calls and the
+    // strategy string compare — would otherwise run once per round for nothing.
+#ifdef XRPL_ENABLE_TELEMETRY
+    namespace cs = telemetry::consensus::span;
+
+    // Capture the prior round's context BEFORE the new span overwrites
+    // roundSpanContext_; used to add a follows-from link from the new
+    // round's span so consecutive rounds remain navigable.
+    prevRoundSpanContext_ = roundSpanContext_;
+
+    // Reset the prior accept context so a stale value can't be used to
+    // link a validation that fires before this round's accept span exists.
+    acceptSpanContext_ = telemetry::SpanContext{};
+
+    if (roundSpan_)
+        roundSpan_.reset();
+
+    auto const& strategy = app_.getTelemetry().getConsensusTraceStrategy();
+
+    telemetry::SpanContext const* const link =
+        prevRoundSpanContext_.isValid() ? &prevRoundSpanContext_ : nullptr;
+
+    if (strategy == "attribute")
+    {
+        // Non-deterministic strategy: each node gets a random trace_id,
+        // correlated via the consensus_ledger_id attribute rather than a
+        // shared trace_id. Still attach a follows-from link to the prior
+        // round so consecutive rounds stay navigable. linkedSpan is not
+        // TraceCategory-aware, so gate it explicitly to match the gating
+        // of the hashSpan/span factories used below.
+        if (link != nullptr && app_.getTelemetry().shouldTraceConsensus())
+        {
+            roundSpan_.emplace(telemetry::SpanGuard::linkedSpan(cs::round, *link));
+        }
+        else
+        {
+            roundSpan_.emplace(
+                telemetry::SpanGuard::span(
+                    telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::round));
+        }
+    }
+    else
+    {
+        // "deterministic" (the default): derive the trace_id from the previous
+        // ledger hash so all validators tracing the same round share one trace.
+        roundSpan_.emplace(
+            telemetry::SpanGuard::hashSpan(
+                telemetry::TraceCategory::Consensus,
+                cs::round,
+                prevLgr.id().data(),
+                prevLgr.id().kBytes,
+                link));
+    }
+
+    if (!*roundSpan_)
+    {
+        return;
+    }
+
+    roundSpan_->setAttribute(cs::attr::ledgerId, to_string(prevLgr.id()).c_str());
+    roundSpan_->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq()) + 1);
+    roundSpan_->setAttribute(cs::attr::mode, toDisplayString(mode_.load()).c_str());
+    roundSpan_->setAttribute(cs::attr::traceStrategy, strategy.c_str());
+    roundSpan_->setAttribute(cs::attr::roundId, static_cast<int64_t>(prevLgr.seq()) + 1);
+    roundSpan_->setAttribute(cs::attr::previousLedgerSeq, static_cast<int64_t>(prevLgr.seq()));
+    roundSpan_->setAttribute(cs::attr::previousProposers, static_cast<int64_t>(prevProposers_));
+    roundSpan_->setAttribute(
+        cs::attr::previousRoundTimeMs, static_cast<int64_t>(prevRoundTime_.load().count()));
+    roundSpan_->setAttribute(cs::attr::consensusPhase, cs::val::phaseOpen);
+
+    roundSpan_->addEvent(cs::event::phaseOpen);
+
+    // roundSpanContext_ is the durable handle that child spans on other
+    // threads parent to. roundSpan_ is a thread-free SpanGuard that is
+    // reset() on a different worker than it was emplaced on, so spanContext()
+    // captures its own span and no scope work is needed.
+    roundSpanContext_ = roundSpan_->spanContext();
+#endif
+}
+
+std::optional<telemetry::SpanGuard>
+RCLConsensus::Adaptor::createValidationSpan()
+{
+    // The whole body is telemetry: it only builds a span from stored contexts.
+    // Compiled out, it yields std::nullopt, so validate() takes neither branch
+    // that reads the ledger hash into a string.
+#ifdef XRPL_ENABLE_TELEMETRY
+    namespace cs = telemetry::consensus::span;
+
+    // Prefer linking to the accept span (matches the design diagram and
+    // the "validation follows acceptance" causal model). Fall back to the
+    // round span only if the accept context isn't yet captured (e.g.
+    // tracing started after onAccept, or makeAcceptSpan returned a null
+    // guard).
+    if (acceptSpanContext_.isValid())
+    {
+        return telemetry::SpanGuard::linkedSpan(cs::validationSend, acceptSpanContext_);
+    }
+
+    if (!roundSpanContext_.isValid())
+    {
+        return std::nullopt;
+    }
+
+    return telemetry::SpanGuard::linkedSpan(cs::validationSend, roundSpanContext_);
+#else
+    return std::nullopt;
+#endif
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
+
+void
+RCLConsensus::Adaptor::onPhaseEvent(std::string_view eventName, std::string_view phaseLabel)
+{
+    namespace cs = telemetry::consensus::span;
+
+    if (!roundSpan_ || !*roundSpan_)
+    {
+        return;
+    }
+
+    roundSpan_->addEvent(eventName);
+    if (!phaseLabel.empty())
+    {
+        roundSpan_->setAttribute(cs::attr::consensusPhase, phaseLabel);
+    }
+}
+
+void
+RCLConsensus::Adaptor::onOutcomeEvent(std::string_view eventName)
+{
+    if (!roundSpan_ || !*roundSpan_)
+    {
+        return;
+    }
+    roundSpan_->addEvent(eventName);
 }
 
 void

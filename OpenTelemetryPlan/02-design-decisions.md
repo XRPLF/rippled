@@ -261,6 +261,23 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 | `tx_count`           | int64   | Transactions in consensus set       |
 | `round_time_ms`      | float64 | Round duration                      |
 
+Establish-phase gap fill and cross-node correlation attributes (Phase 4a):
+
+| Key                   | Type   | Description                                               |
+| --------------------- | ------ | --------------------------------------------------------- |
+| `consensus_round_id`  | int64  | Consensus round number                                    |
+| `consensus_ledger_id` | string | `previousLedger.id()` — shared across nodes               |
+| `trace_strategy`      | string | `"deterministic"` or `"attribute"`                        |
+| `converge_percent`    | int64  | Convergence % (0-100+)                                    |
+| `establish_count`     | int64  | Number of establish iterations                            |
+| `disputes_count`      | int64  | Active disputed transactions                              |
+| `agree_count`         | int64  | Peers that agree (haveConsensus)                          |
+| `disagree_count`      | int64  | Peers that disagree                                       |
+| `threshold_percent`   | int64  | Close-time consensus threshold (`avCT_CONSENSUS_PCT`=75%) |
+| `consensus_result`    | string | `"yes"`, `"no"`, `"moved_on"`, `"expired"`                |
+| `mode_old`            | string | Previous consensus mode                                   |
+| `mode_new`            | string | New consensus mode                                        |
+
 #### RPC Attributes
 
 | Key           | Type    | Description                                                                   |

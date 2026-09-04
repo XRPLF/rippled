@@ -35,11 +35,13 @@
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/Telemetry.h>
+#include <xrpl/telemetry/TraceContextPropagator.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/span.h>
+#include <opentelemetry/nostd/variant.h>
 #include <opentelemetry/semconv/exception_attributes.h>
 #include <opentelemetry/trace/context.h>
 #include <opentelemetry/trace/default_span.h>
@@ -57,12 +59,14 @@
 #include <cstring>
 #include <exception>
 #include <format>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <typeinfo>
 #include <utility>
+#include <vector>
 
 namespace xrpl::telemetry {
 
@@ -341,7 +345,8 @@ SpanGuard::hashSpan(
     TraceCategory const cat,
     std::string_view const name,
     std::uint8_t const* const hashData,
-    std::size_t const hashSize)
+    std::size_t const hashSize,
+    SpanContext const* const followsFrom)
 {
     if (hashSize < 16)
         return {};
@@ -358,6 +363,28 @@ SpanGuard::hashSpan(
     std::memcpy(tid.data(), hashData, 16);
     auto rootCtx = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
     PendingTraceId const pending{tid};
+
+    // When a prior context is supplied, attach it as a follows-from LINK (not a
+    // parent) so consecutive roots (e.g. consensus rounds) stay navigable while
+    // this span remains a true root under its deterministic trace_id.
+    if (followsFrom != nullptr && followsFrom->isValid())
+    {
+        auto linkSpan = otel_trace::GetSpan(followsFrom->impl_->ctx);
+        if (linkSpan && linkSpan->GetContext().IsValid())
+        {
+            auto tracer = tel->getTracer("xrpld");
+            otel_trace::StartSpanOptions opts;
+            opts.parent = rootCtx;  // root marker → forces GenerateTraceId()
+            opts.kind = categoryToSpanKind(cat);
+            return SpanGuard(
+                std::make_unique<Impl>(tracer->StartSpan(
+                    std::string(name),
+                    {},
+                    {{linkSpan->GetContext(), {{kLinkTypeKey, kLinkTypeFollowsFrom}}}},
+                    opts)));
+        }
+    }
+
     return SpanGuard(
         std::make_unique<Impl>(
             tel->startSpan(std::string(name), rootCtx, categoryToSpanKind(cat))));
@@ -448,6 +475,28 @@ SpanGuard::getTraceBytes() const
     return result;
 }
 
+bool
+SpanGuard::hasCurrentContext() noexcept
+{
+    // Read the active span straight out of the runtime context. GetSpan()
+    // would be shorter but heap-allocates a DefaultSpan whenever the context
+    // holds no span, which is the case this predicate exists to keep free.
+    // The two conditions below are the ones injectToProtobuf() returns early
+    // on, so a true result means that injector will write all three fields.
+    auto const ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+    auto const value = ctx.GetValue(otel_trace::kSpanKey);
+    auto const* const span =
+        opentelemetry::nostd::get_if<opentelemetry::nostd::shared_ptr<otel_trace::Span>>(&value);
+    return span != nullptr && *span && (*span)->GetContext().IsValid();
+}
+
+void
+SpanGuard::injectCurrentContextToProtobuf(protocol::TraceContext& proto)
+{
+    auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+    injectToProtobuf(ctx, proto);
+}
+
 // ===== Attribute setters ===================================================
 
 void
@@ -509,6 +558,31 @@ SpanGuard::addEvent(std::string_view name) noexcept
 {
     if (impl_)
         impl_->span->AddEvent(std::string(name));
+}
+
+void
+SpanGuard::addEvent(std::string_view name, std::initializer_list<EventAttribute> attrs) noexcept
+{
+    if (!impl_)
+        return;
+    // OTel's AddEvent template requires a key-value-iterable; a plain
+    // std::vector<std::pair<...>> doesn't satisfy is_key_value_iterable.
+    // Wrap in nostd::span over the vector's storage so the SDK accepts it.
+    std::vector<std::pair<opentelemetry::nostd::string_view, opentelemetry::common::AttributeValue>>
+        otelAttrs;
+    otelAttrs.reserve(attrs.size());
+    for (auto const& [k, v] : attrs)
+    {
+        otelAttrs.emplace_back(
+            opentelemetry::nostd::string_view{k.data(), k.size()},
+            opentelemetry::common::AttributeValue{
+                opentelemetry::nostd::string_view{v.data(), v.size()}});
+    }
+    impl_->span->AddEvent(
+        std::string(name),
+        opentelemetry::nostd::span<std::pair<
+            opentelemetry::nostd::string_view,
+            opentelemetry::common::AttributeValue> const>{otelAttrs.data(), otelAttrs.size()});
 }
 
 void

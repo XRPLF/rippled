@@ -21,6 +21,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <xrpl.pb.h>
 
@@ -34,6 +35,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
@@ -85,6 +87,66 @@ class RCLConsensus
 
         CensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
         NegativeUNLVote nUnlVote_;
+
+        /**
+         * Span for the current consensus round.
+         *
+         *  Created in preStartRound(), ended (via reset()) when the next
+         *  round begins. When consensusTraceStrategy is "deterministic",
+         *  the trace_id is derived from previousLedger.id() so that all
+         *  validators in the same round share the same trace_id.
+         *
+         *  Thread-free: a SpanGuard owns no thread-local Scope, so it can be
+         *  emplaced and reset on different job workers safely. Child spans link
+         *  via roundSpanContext_ (captured once), not an ambient parent span.
+         */
+        std::optional<telemetry::SpanGuard> roundSpan_;
+
+        /**
+         * SpanContext snapshot of the current round span.
+         *
+         *  Captured in startRoundTracing() as a lightweight value-type copy
+         *  so that createValidationSpan() — which runs on the jtACCEPT
+         *  worker thread — can build span links without accessing roundSpan_
+         *  across threads.
+         */
+        telemetry::SpanContext roundSpanContext_;
+
+        /**
+         * SpanContext of the prior round, captured before roundSpanContext_
+         *  is overwritten by the next round's startRoundTracing().
+         *
+         *  Used as a follows-from link target on the new round's span so
+         *  consecutive rounds (each with its own deterministic trace-id)
+         *  remain navigable in trace UIs as a connected sequence.
+         *
+         *  Read and written only by startRoundTracing(), which is compiled out
+         *  with telemetry, leaving this field unused in that build. Marked
+         *  rather than guarded so that the member set matches the two sibling
+         *  span contexts in both configurations; the compiled-out SpanContext
+         *  holds nothing.
+         */
+        [[maybe_unused]] telemetry::SpanContext prevRoundSpanContext_;
+
+        /**
+         * SpanContext snapshot of the current round's accept span.
+         *
+         *  Captured in makeAcceptSpan() and consumed by createValidationSpan()
+         *  on the jtACCEPT worker thread so the validation.send span can be
+         *  follows-from linked to consensus.accept. Reset on each
+         *  startRoundTracing() to prevent a stale prior-round context from
+         *  being linked.
+         *
+         *  Thread safety: same model as roundSpanContext_. The write in
+         *  makeAcceptSpan happens on the main consensus thread under
+         *  mutex_, and the read in createValidationSpan happens on the
+         *  jtACCEPT worker thread that was posted by makeAcceptSpan.
+         *  The job queue dispatch establishes a happens-before relation,
+         *  so no atomic synchronization is needed. The next reset (in
+         *  startRoundTracing) only runs after endConsensus → startRound,
+         *  which by Consensus design only fires after doAccept completes.
+         */
+        telemetry::SpanContext acceptSpanContext_;
 
     public:
         using Ledger_t = RCLCxLedger;
@@ -176,6 +238,75 @@ class RCLConsensus
         parms() const
         {
             return parms_;
+        }
+
+        /**
+         * Set up the consensus round span and link it to the previous round.
+         *
+         * Saves the previous round's context for span-link construction,
+         * ends the old round span, and creates a new "consensus.round" span.
+         * Depending on the configured trace strategy the trace_id is either
+         * deterministic (derived from prevLgr hash) or random.
+         *
+         * @param prevLgr  The ledger that will be the prior ledger for the
+         *                 new round.
+         */
+        void
+        startRoundTracing(RCLCxLedger const& prevLgr);
+
+        /**
+         * Create the "consensus.validation.send" span linked to the round.
+         *
+         * @return An engaged optional SpanGuard if tracing is active,
+         *         std::nullopt otherwise.
+         */
+        std::optional<telemetry::SpanGuard>
+        createValidationSpan();
+
+        /**
+         * Record a phase-transition event on the active round span.
+         *
+         * Called from the engine at each phase boundary
+         * (open/establish/accepted/recovery) so the round span carries a
+         * complete timeline of state changes. Also updates the
+         * `consensus_phase` attribute to the current phase name.
+         *
+         * @param eventName   Event name (e.g. "phase.establish").
+         * @param phaseLabel  String value for the consensus_phase attr
+         *                    ("open"/"establish"/"accepted"). Empty to skip
+         *                    the attribute update (e.g. for "recovery").
+         */
+        void
+        onPhaseEvent(std::string_view eventName, std::string_view phaseLabel);
+
+        /**
+         * Record a checkConsensus outcome event on the round span.
+         *
+         * Called from the engine at the establish→accepted transition so
+         * the path that drove acceptance (Yes / MovedOn / Expired) is
+         * queryable from the round-level trace.
+         *
+         * @param eventName  Event name (e.g. "outcome.yes").
+         */
+        void
+        onOutcomeEvent(std::string_view eventName);
+
+        /**
+         * Captured context of the current round span.
+         *
+         * The generic engine uses this to parent the phase spans it owns
+         * (consensus.phase.open, consensus.establish) under the round span
+         * without touching roundSpan_ across threads. roundSpan_ is a
+         * thread-free SpanGuard (never an ambient parent), so child spans must
+         * link via this captured context. Returns an invalid context before the
+         * round span is created.
+         *
+         * @return The round span's captured context, or an invalid context.
+         */
+        telemetry::SpanContext
+        roundSpanContext() const
+        {
+            return roundSpanContext_;
         }
 
     private:
@@ -364,8 +495,18 @@ class RCLConsensus
         notify(protocol::NodeEvent ne, RCLCxLedger const& ledger, bool haveCorrectLCL);
 
         /**
+         * Create a consensus.accept span as a child of the round span.
+         * Returned via shared_ptr so it can be captured into the
+         * jtACCEPT lambda and live until doAccept completes.
+         */
+        std::shared_ptr<telemetry::SpanGuard>
+        makeAcceptSpan(Result const& result);
+
+        /**
          * Accept a new ledger based on the given transactions.
          *
+         * @param acceptSpan  Parent span created by makeAcceptSpan();
+         *                    accept.apply is created as its child.
          * @ref onAccept
          */
         void
@@ -375,7 +516,8 @@ class RCLConsensus
             NetClock::duration closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            json::Value&& consensusJson);
+            json::Value&& consensusJson,
+            std::shared_ptr<telemetry::SpanGuard> acceptSpan);
 
         /**
          * Build the new last closed ledger.
