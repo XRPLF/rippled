@@ -38,11 +38,15 @@ checkSignerKey(
     bool const permitPhantom,
     beast::Journal j)
 {
+    // Defensive: preclaim already ran verify(), which fails on an unparseable
+    // key, so a caller from that path never reaches this branch.
+    // LCOV_EXCL_START
     if (!publicKeyType(signingPubKey))
     {
         JLOG(j.debug()) << "TransactionProposalSign: unknown key type.";
         return temBAD_SIGNATURE;
     }
+    // LCOV_EXCL_STOP
 
     auto const fromKey = calcAccountID(PublicKey(signingPubKey));
     auto const sleSigner = view.read(keylet::account(signerAccount));
@@ -53,7 +57,10 @@ checkSignerKey(
         {
             if (permitPhantom)
                 return tesSUCCESS;
-            return tecNO_PERMISSION;
+            // Single-sign path: signerAccount is SigningFor, which is the
+            // proposed transaction's target and was verified to exist at
+            // TransactionProposalCreate time.
+            return tecNO_PERMISSION;  // LCOV_EXCL_LINE
         }
         if (sleSigner->isFlag(lsfDisableMaster))
         {
@@ -166,8 +173,10 @@ TransactionProposalSign::preclaim(PreclaimContext const& ctx)
         proposal::signingData(proposedTx, signingFor, signerAccount, makeSlice(signingPubKey));
     if (!data)
     {
+        // LCOV_EXCL_START
         JLOG(ctx.j.debug()) << "TransactionProposalSign: cannot build signing data.";
         return temMALFORMED;
+        // LCOV_EXCL_STOP
     }
 
     if (!publicKeyType(makeSlice(signingPubKey)) ||
@@ -207,7 +216,8 @@ TransactionProposalSign::doApply()
         if (auto const ret = proposal::deleteProposal(
                 view(), sleProposal, ctx_.registry.get().getJournal("View"));
             !isTesSuccess(ret))
-            return ret;
+            return ret;  // LCOV_EXCL_LINE — deleteProposal's failure paths are themselves
+                         // LCOV_EXCL.
         return tecEXPIRED;
     }
 

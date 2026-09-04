@@ -115,8 +115,11 @@ recordIntoSigners(STObject& slot, STObject const& proposalSignature, bool const 
     auto const signerID = proposalSignature.getAccountID(sfAccount);
     if (accountPresent(signers, signerID))
         return tecDUPLICATE;
+    // Defensive: SignerListSet caps SignerList at kMaxMultiSigners, so
+    // collecting more than that many distinct authorized signers is not
+    // reachable through normal contribution flow.
     if (signers.size() >= STTx::kMaxMultiSigners)
-        return tecOVERSIZE;
+        return tecOVERSIZE;  // LCOV_EXCL_LINE
 
     signers.push_back(makeSignerEntry(proposalSignature));
     sortByAccount(signers);
@@ -277,7 +280,10 @@ signingData(
     }
     catch (std::exception const&)
     {
-        return std::nullopt;
+        // Defensive: proposedTx was validated at TransactionProposalCreate
+        // preflight, so an exception building STTx from it is unexpected
+        // ledger state, not a normal preclaim path.
+        return std::nullopt;  // LCOV_EXCL_LINE
     }
 }
 
@@ -307,14 +313,19 @@ recordContribution(
         return tesSUCCESS;
     }
 
+    // Defensive: kMaxBatchSigners (24) is larger than the ceiling on distinct
+    // batch participants a Batch can produce — kMaxBatchTxCount (8) inners,
+    // each contributing at most one BatchSigner entry — so the array can never
+    // grow large enough through normal contribution flow.
     if (batchSigners.size() >= kMaxBatchSigners)
-        return tecOVERSIZE;
+        return tecOVERSIZE;  // LCOV_EXCL_LINE
 
     auto entry = STObject::makeInnerObject(sfBatchSigner);
     entry.setAccountID(sfAccount, signingFor);
     if (auto const ret = recordIntoSigners(entry, proposalSignature, singleSign);
         !isTesSuccess(ret))
-        return ret;
+        return ret;  // LCOV_EXCL_LINE — fresh entry: no existing signers or single-sign, so
+                     // recordIntoSigners cannot fail here.
     batchSigners.push_back(std::move(entry));
     sortByAccount(batchSigners);
     proposedTx.setFieldArray(sfBatchSigners, batchSigners);
