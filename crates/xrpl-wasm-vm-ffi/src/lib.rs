@@ -1291,7 +1291,7 @@ mod tests {
     }
 
     /// A panic during a check is its own status rather than one more malformed
-    /// module: the far side answers a node-local failure, not `temBAD_WASM`.
+    /// module: the far side answers a node-local failure, not `temINVALID_BYTECODE`.
     #[test]
     fn a_panic_during_a_check_becomes_a_status_instead_of_an_unwind() {
         let crossed = guarded(

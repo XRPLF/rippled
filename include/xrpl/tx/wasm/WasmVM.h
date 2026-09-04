@@ -37,7 +37,7 @@ runEscrowWasm(
 // That is what makes this callable from a transactor's `preflight`, which has no view
 // to build a host over.
 //
-// `temBAD_WASM` for every fault in the module - the transaction carries something this
+// `temINVALID_BYTECODE` for every fault in the module - the transaction carries something this
 // engine cannot run, so it is refused before it can reach the ledger.
 // `telFAILED_PROCESSING` if the engine itself failed: nothing was learned about the
 // module, and a defect here is not evidence that the transaction is malformed.

@@ -15,7 +15,7 @@
 //!   region, the second the answer itself.
 //!
 //! Matching is on types as they are spelled — a proc macro resolves nothing, so
-//! `type Bytes = u32; … x: Bytes` is unrecognisable — but on a path's last
+//! `type Bytes = u32; … x: Bytes` is unrecognizable — but on a path's last
 //! segment, so any of these types may be spelled qualified.
 
 use proc_macro2::TokenStream;
@@ -75,12 +75,12 @@ pub(crate) enum WasmValType {
 }
 
 impl ParamType {
-    /// Recognises the declared type, or refuses it against its own span.
+    /// Recognizes the declared type, or refuses it against its own span.
     pub(crate) fn parse(ty: &Type) -> syn::Result<Self> {
         const ALLOWED: &str = "a host function's parameter must be `i32`, `i64`, `u32`, \
                                `&[u8]`, `&mut [u8]`, `&str` or `TraceDataType`";
 
-        let recognised = match ty {
+        let recognized = match ty {
             // A lifetime on the reference changes nothing on the wire.
             Type::Reference(TypeReference {
                 mutability, elem, ..
@@ -101,7 +101,7 @@ impl ParamType {
             },
         };
 
-        recognised.ok_or_else(|| syn::Error::new_spanned(ty, ALLOWED))
+        recognized.ok_or_else(|| syn::Error::new_spanned(ty, ALLOWED))
     }
 
     /// The wasm parameters this declared type lowers to, in order. `InBytes` and
@@ -178,7 +178,7 @@ impl ParamType {
 }
 
 impl ResultType {
-    /// Recognises the success type of a declaration's `HostResult<T>`, or
+    /// Recognizes the success type of a declaration's `HostResult<T>`, or
     /// refuses it against its own span.
     pub(crate) fn parse(success: &Type) -> syn::Result<Self> {
         const ALLOWED: &str = "a host function must return `HostResult<usize>` for a value it \
