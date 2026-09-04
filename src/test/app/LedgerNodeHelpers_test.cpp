@@ -82,7 +82,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
             auto const leafNode = intr_ptr::makeShared<SHAMapAccountStateLeafNode>(leafItem, 1);
             // Truncate the data to trigger an exception in SHAMapTreeNode::makeAccountState when
             // the data is used to deserialize the node.
-            uint256 const tag;
+            UInt256 const tag;
             auto const leafData = serializeNode(leafNode).substr(0, tag.kBytes - 1);
             auto const result = getTreeNode(leafData);
             BEAST_EXPECT(!result);
@@ -104,7 +104,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
             // Valid: legacy `nodeid` field at arbitrary depth.
             {
                 auto const innerDepth = 3;
-                auto const innerID = SHAMapNodeID::createID(innerDepth, uint256{});
+                auto const innerID = SHAMapNodeID::createID(innerDepth, UInt256{});
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(innerData);
@@ -116,7 +116,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
             // Valid: new `id` field at minimum depth.
             {
                 auto const innerDepth = 0;
-                auto const innerID = SHAMapNodeID::createID(innerDepth, uint256{});
+                auto const innerID = SHAMapNodeID::createID(innerDepth, UInt256{});
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(innerData);
@@ -137,7 +137,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
             // Invalid: both legacy `nodeid` and new `id` fields set for an inner node.
             {
                 auto const innerDepth = 9;
-                auto const innerID = SHAMapNodeID::createID(innerDepth, uint256{});
+                auto const innerID = SHAMapNodeID::createID(innerDepth, UInt256{});
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(innerData);

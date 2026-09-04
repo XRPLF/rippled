@@ -45,16 +45,16 @@ namespace xrpl::test {
 
 class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublisherServer>
 {
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using address_type = boost::asio::ip::address;
-    using socket_type = boost::asio::ip::tcp::socket;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using AddressType = boost::asio::ip::address;
+    using SocketType = boost::asio::ip::tcp::socket;
 
-    using req_type = boost::beast::http::request<boost::beast::http::string_body>;
-    using resp_type = boost::beast::http::response<boost::beast::http::string_body>;
-    using error_code = boost::system::error_code;
+    using ReqType = boost::beast::http::request<boost::beast::http::string_body>;
+    using RespType = boost::beast::http::response<boost::beast::http::string_body>;
+    using ErrorCode = boost::system::error_code;
 
-    socket_type sock_;
-    endpoint_type ep_;
+    SocketType sock_;
+    EndpointType ep_;
     boost::asio::ip::tcp::acceptor acceptor_;
     // Generates a version 1 validator list, using the int parameter as the
     // actual version.
@@ -252,13 +252,13 @@ public:
     void
     start()
     {
-        error_code ec;
+        ErrorCode ec;
         acceptor_.open(ep_.protocol());
         acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
         acceptor_.bind(ep_);
         acceptor_.listen(boost::asio::socket_base::max_listen_connections);
         acceptor_.async_accept(
-            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
+            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](ErrorCode ec) {
                 if (auto p = wp.lock())
                 {
                     p->onAccept(ec);
@@ -269,7 +269,7 @@ public:
     void
     stop()
     {
-        error_code ec;
+        ErrorCode ec;
         acceptor_.close(ec);
         // TODO: consider making this join
         // any running do_peer threads
@@ -280,7 +280,7 @@ public:
         stop();
     }
 
-    endpoint_type
+    EndpointType
     localEndpoint() const
     {
         return acceptor_.local_endpoint();
@@ -469,11 +469,11 @@ private:
     {
         int id;
         TrustedPublisherServer& self;
-        socket_type sock;
+        SocketType sock;
         boost::asio::executor_work_guard<boost::asio::executor> work;
         bool ssl;
 
-        Lambda(int id, TrustedPublisherServer& self, socket_type&& sock, bool ssl)
+        Lambda(int id, TrustedPublisherServer& self, SocketType&& sock, bool ssl)
             : id(id), self(self), sock(std::move(sock)), work(this->sock.get_executor()), ssl(ssl)
         {
         }
@@ -486,7 +486,7 @@ private:
     };
 
     void
-    onAccept(error_code ec)
+    onAccept(ErrorCode ec)
     {
         if (ec || !acceptor_.is_open())
             return;
@@ -494,7 +494,7 @@ private:
         static int nextId = 0;  // NOLINT(readability-identifier-naming)
         std::thread{Lambda{++nextId, *this, std::move(sock_), useSSL_}}.detach();
         acceptor_.async_accept(
-            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
+            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](ErrorCode ec) {
                 if (auto p = wp.lock())
                 {
                     p->onAccept(ec);
@@ -503,13 +503,13 @@ private:
     }
 
     void
-    doPeer(int id, socket_type&& s, bool ssl)
+    doPeer(int id, SocketType&& s, bool ssl)
     {
         using namespace boost::beast;
         using namespace boost::asio;
-        socket_type sock(std::move(s));
+        SocketType sock(std::move(s));
         flat_buffer sb;
-        error_code ec;
+        ErrorCode ec;
         std::optional<ssl_stream<ip::tcp::socket&>> sslStream;
 
         if (ssl)
@@ -524,8 +524,8 @@ private:
 
         for (;;)
         {
-            resp_type res;
-            req_type req;
+            RespType res;
+            ReqType req;
             try
             {
                 if (ssl)

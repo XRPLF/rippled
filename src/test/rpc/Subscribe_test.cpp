@@ -957,7 +957,7 @@ public:
             if (sizeCompare && accountVec.size() != (txHistoryVec.size()))
                 return false;
 
-            hash_map<std::string, int> txHistoryMap;
+            HashMap<std::string, int> txHistoryMap;
             for (auto const& tx : txHistoryVec)
             {
                 txHistoryMap.emplace(std::get<1>(tx), std::get<0>(tx));
@@ -1390,9 +1390,9 @@ public:
         // Verify `nftoken_id` value equals to the NFTokenID that was
         // changed in the most recent NFTokenMint or NFTokenAcceptOffer
         // transaction
-        auto verifyNFTokenID = [&](uint256 const& actualNftID) {
+        auto verifyNFTokenID = [&](UInt256 const& actualNftID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                uint256 nftID;
+                UInt256 nftID;
                 BEAST_EXPECT(nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
                 return nftID == actualNftID;
             }));
@@ -1400,15 +1400,15 @@ public:
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256> actualNftIDs) {
+        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                std::vector<uint256> metaIDs;
+                std::vector<UInt256> metaIDs;
                 std::transform(
                     jv[jss::meta][jss::nftoken_ids].begin(),
                     jv[jss::meta][jss::nftoken_ids].end(),
                     std::back_inserter(metaIDs),
                     [this](json::Value id) {
-                        uint256 nftID;
+                        UInt256 nftID;
                         BEAST_EXPECT(nftID.parseHex(id.asString()));
                         return nftID;
                     });
@@ -1429,9 +1429,9 @@ public:
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
-        auto verifyNFTokenOfferID = [&](uint256 const& offerID) {
+        auto verifyNFTokenOfferID = [&](UInt256 const& offerID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                uint256 metaOfferID;
+                UInt256 metaOfferID;
                 BEAST_EXPECT(metaOfferID.parseHex(jv[jss::meta][jss::offer_id].asString()));
                 return metaOfferID == offerID;
             }));
@@ -1441,12 +1441,12 @@ public:
         {
             // Alice mints 2 NFTs
             // Verify the NFTokenIDs are correct in the NFTokenMint tx meta
-            uint256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
+            UInt256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId1);
 
-            uint256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
+            UInt256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId2);
@@ -1454,13 +1454,13 @@ public:
             // Alice creates one sell offer for each NFT
             // Verify the offer indexes are correct in the NFTokenCreateOffer tx
             // meta
-            uint256 const aliceOfferIndex1 =
+            UInt256 const aliceOfferIndex1 =
                 keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId1, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 =
+            UInt256 const aliceOfferIndex2 =
                 keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId2, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
@@ -1491,13 +1491,13 @@ public:
         // Check `nftoken_ids` in brokered mode
         {
             // Alice mints a NFT
-            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
+            UInt256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker =
+            UInt256 const offerAliceToBroker =
                 keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)),
                 token::Destination(broker),
@@ -1506,7 +1506,7 @@ public:
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker =
+            UInt256 const offerBobToBroker =
                 keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
             env(token::createOffer(bob, nftId, drops(1)), token::Owner(alice));
             BEAST_EXPECT(env.syncClose());
@@ -1522,19 +1522,19 @@ public:
         // multiple offers are cancelled for the same NFT
         {
             // Alice mints a NFT
-            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
+            UInt256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
             env(token::mint(alice, 0u), Txflags(tfTransferable));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
-            uint256 const aliceOfferIndex1 =
+            UInt256 const aliceOfferIndex1 =
                 keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 =
+            UInt256 const aliceOfferIndex2 =
                 keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::createOffer(alice, nftId, drops(1)), Txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
@@ -1549,7 +1549,7 @@ public:
 
         if (features[featureNFTokenMintOffer])
         {
-            uint256 const aliceMintWithOfferIndex1 =
+            UInt256 const aliceMintWithOfferIndex1 =
                 keylet::nftokenOffer(alice, SeqProxy::rawSequence(env.seq(alice))).key;
             env(token::mint(alice), token::Amount(XRP(0)));
             BEAST_EXPECT(env.syncClose());

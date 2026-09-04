@@ -416,7 +416,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 }
 
 void
-AMMClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMClawback::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

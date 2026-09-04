@@ -33,10 +33,10 @@ class SHAMapItem : public CountedObject<SHAMapItem>
 
     // This is the interface for creating new instances of this class.
     friend boost::intrusive_ptr<SHAMapItem>
-    makeShamapitem(uint256 const& tag, Slice data);
+    makeShamapitem(UInt256 const& tag, Slice data);
 
 private:
-    uint256 const tag_;
+    UInt256 const tag_;
 
     // We use std::uint32_t to minimize the size; there's no SHAMapItem whose
     // size exceeds 4GB and there won't ever be (famous last words?), so this
@@ -50,7 +50,7 @@ private:
     // the only way to properly create one is to first allocate enough memory
     // so we limit this constructor to codepaths that do this right and limit
     // arbitrary construction.
-    SHAMapItem(uint256 const& tag, Slice data)
+    SHAMapItem(UInt256 const& tag, Slice data)
         : tag_(tag), size_(static_cast<std::uint32_t>(data.size()))
     {
         std::memcpy(
@@ -70,7 +70,7 @@ public:
     SHAMapItem&
     operator=(SHAMapItem&&) = delete;
 
-    uint256 const&
+    UInt256 const&
     key() const
     {
         return tag_;
@@ -145,7 +145,7 @@ intrusive_ptr_release(SHAMapItem const* x)
 }
 
 inline boost::intrusive_ptr<SHAMapItem>
-makeShamapitem(uint256 const& tag, Slice data)
+makeShamapitem(UInt256 const& tag, Slice data)
 {
     XRPL_ASSERT(
         data.size() <= megabytes<std::size_t>(16), "xrpl::makeShamapitem : maximum input size");

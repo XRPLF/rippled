@@ -49,7 +49,7 @@ del(jtx::Account const& account)
 }
 
 json::Value
-transfer(jtx::Account const& account, uint32_t flags, std::optional<uint256> const& index)
+transfer(jtx::Account const& account, uint32_t flags, std::optional<UInt256> const& index)
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipTransfer;

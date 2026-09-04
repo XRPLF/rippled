@@ -159,16 +159,16 @@ InfoSub::totalSubscriptionCount() const
 
 bool
 InfoSub::tryReserveAccountSubscriptions(
-    hash_set<AccountID> const& proposedAccounts,
-    hash_set<AccountID> const& normalAccounts,
+    HashSet<AccountID> const& proposedAccounts,
+    HashSet<AccountID> const& normalAccounts,
     std::size_t cap)
 {
     // One lock hold covers the count, the check and the insert.
     std::scoped_lock const sl(lock_);
 
     // Entries not already tracked; re-subscribing held accounts is not charged.
-    auto const countNew = [](hash_set<AccountID> const& requested,
-                             hash_set<AccountID> const& existing) {
+    auto const countNew = [](HashSet<AccountID> const& requested,
+                             HashSet<AccountID> const& existing) {
         std::size_t fresh = 0;
         for (auto const& account : requested)
         {

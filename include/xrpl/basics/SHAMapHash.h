@@ -14,20 +14,20 @@ namespace xrpl {
 
 class SHAMapHash
 {
-    uint256 hash_;
+    UInt256 hash_;
 
 public:
     SHAMapHash() = default;
-    explicit SHAMapHash(uint256 const& hash) : hash_(hash)
+    explicit SHAMapHash(UInt256 const& hash) : hash_(hash)
     {
     }
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     asUInt256() const
     {
         return hash_;
     }
-    uint256&
+    UInt256&
     asUInt256()
     {
         return hash_;

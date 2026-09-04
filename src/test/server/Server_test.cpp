@@ -40,8 +40,8 @@
 
 namespace xrpl::test {
 
-using socket_type = boost::beast::tcp_stream;
-using stream_type = boost::beast::ssl_stream<socket_type>;
+using SocketType = boost::beast::tcp_stream;
+using StreamType = boost::beast::ssl_stream<SocketType>;
 
 class Server_test : public beast::unit_test::Suite
 {
@@ -115,8 +115,8 @@ public:
         static Handoff
         onHandoff(
             Session& session,
-            std::unique_ptr<stream_type> const& bundle,
-            http_request_type const& request,
+            std::unique_ptr<StreamType> const& bundle,
+            HttpRequestType const& request,
             boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
@@ -125,7 +125,7 @@ public:
         static Handoff
         onHandoff(
             Session& session,
-            http_request_type const& request,
+            HttpRequestType const& request,
             boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
@@ -235,8 +235,8 @@ public:
     testRequest(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_context ios;
-        using socket = boost::asio::ip::tcp::socket;
-        socket s(ios);
+        using Socket = boost::asio::ip::tcp::socket;
+        Socket s(ios);
 
         if (!connect(s, ep))
             return;
@@ -252,7 +252,7 @@ public:
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
+        s.shutdown(Socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -261,8 +261,8 @@ public:
     testKeepalive(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_context ios;
-        using socket = boost::asio::ip::tcp::socket;
-        socket s(ios);
+        using Socket = boost::asio::ip::tcp::socket;
+        Socket s(ios);
 
         if (!connect(s, ep))
             return;
@@ -288,7 +288,7 @@ public:
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
+        s.shutdown(Socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
     }
 
     void
@@ -328,8 +328,8 @@ public:
             static Handoff
             onHandoff(
                 Session& session,
-                std::unique_ptr<stream_type> const& bundle,
-                http_request_type const& request,
+                std::unique_ptr<StreamType> const& bundle,
+                HttpRequestType const& request,
                 boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
@@ -338,7 +338,7 @@ public:
             static Handoff
             onHandoff(
                 Session& session,
-                http_request_type const& request,
+                HttpRequestType const& request,
                 boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};

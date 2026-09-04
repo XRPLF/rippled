@@ -69,7 +69,7 @@ struct Directory_test : public beast::unit_test::Suite
     // Insert n empty pages, numbered [0, ... n - 1], in the
     // specified directory:
     static void
-    makePages(Sandbox& sb, uint256 const& base, std::uint64_t n)
+    makePages(Sandbox& sb, UInt256 const& base, std::uint64_t n)
     {
         for (std::uint64_t i = 0; i < n; ++i)
         {
@@ -314,7 +314,7 @@ struct Directory_test : public beast::unit_test::Suite
         // should have no entries and be empty:
         {
             Sandbox const sb(env.closed().get(), TapNone);
-            uint256 const bookBase = getBookBase({xrpIssue(), usd, std::nullopt});
+            UInt256 const bookBase = getBookBase({xrpIssue(), usd, std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
             BEAST_EXPECT(!sb.succ(bookBase, getQualityNext(bookBase)));
@@ -346,9 +346,9 @@ struct Directory_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        constexpr uint256 kBase("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
+        constexpr UInt256 kBase("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
 
-        constexpr uint256 kItem("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
+        constexpr UInt256 kItem("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
 
         {
             // Create a chain of three pages:
@@ -530,7 +530,7 @@ struct Directory_test : public beast::unit_test::Suite
                 env,
                 lastPage,
                 keylet::ownerDir(alice.id()),
-                [lastPage, this](ApplyView& view, uint256 key, std::uint64_t page) {
+                [lastPage, this](ApplyView& view, UInt256 key, std::uint64_t page) {
                     auto sle = view.peek({ltCREDENTIAL, key});
                     if (!BEAST_EXPECT(sle))
                         return false;

@@ -102,7 +102,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 *result ==
-                uint256(
+                UInt256(
                     "277F4FD89C20B92457FEF05FF63F6405563AD0563C73D967A29727"
                     "72679ADC65"));
         }
@@ -113,7 +113,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 *result ==
-                uint256(
+                UInt256(
                     "293DF7335EBBAF4420D52E70ABF470EB4C5792CAEA2F91F76193C2"
                     "819F538FDE"));
         }

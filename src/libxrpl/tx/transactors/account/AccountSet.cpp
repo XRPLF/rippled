@@ -408,7 +408,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfEmailHash))
     {
-        uint128 const uHash = tx.getFieldH128(sfEmailHash);
+        UInt128 const uHash = tx.getFieldH128(sfEmailHash);
 
         if (!uHash)
         {
@@ -427,7 +427,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfWalletLocator))
     {
-        uint256 const uHash = tx.getFieldH256(sfWalletLocator);
+        UInt256 const uHash = tx.getFieldH256(sfWalletLocator);
 
         if (!uHash)
         {
@@ -588,7 +588,7 @@ AccountSet::doApply()
 }
 
 void
-AccountSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AccountSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

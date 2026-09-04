@@ -40,7 +40,7 @@ TransactionMaster::TransactionMaster(Application& app)
 
 bool
 TransactionMaster::inLedger(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t ledger,
     std::optional<uint32_t> tseq,
     std::optional<uint32_t> netID)
@@ -55,13 +55,13 @@ TransactionMaster::inLedger(
 }
 
 std::shared_ptr<Transaction>
-TransactionMaster::fetchFromCache(uint256 const& txnID)
+TransactionMaster::fetchFromCache(UInt256 const& txnID)
 {
     return cache_.fetch(txnID);
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-TransactionMaster::fetch(uint256 const& txnID, ErrorCodeI& ec)
+TransactionMaster::fetch(UInt256 const& txnID, ErrorCodeI& ec)
 {
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
@@ -83,7 +83,7 @@ TransactionMaster::fetch(uint256 const& txnID, ErrorCodeI& ec)
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 TransactionMaster::fetch(
-    uint256 const& txnID,
+    UInt256 const& txnID,
     ClosedInterval<uint32_t> const& range,
     ErrorCodeI& ec)
 {
@@ -141,7 +141,7 @@ TransactionMaster::fetch(
 void
 TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 {
-    uint256 const tid = (*pTransaction)->getID();
+    UInt256 const tid = (*pTransaction)->getID();
     if (tid != beast::kZero)
     {
         auto txn = *pTransaction;
@@ -157,7 +157,7 @@ TransactionMaster::sweep()
     cache_.sweep();
 }
 
-TaggedCache<uint256, Transaction>&
+TaggedCache<UInt256, Transaction>&
 TransactionMaster::getCache()
 {
     return cache_;

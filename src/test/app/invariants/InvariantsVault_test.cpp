@@ -85,7 +85,7 @@ class InvariantsVault_test : public InvariantsBase
             AccountID borrower = beast::kZero;
             // Broker the created loan references. Left unset when the test does
             // not depend on the broker resolving to a real ledger entry.
-            uint256 brokerKey = beast::kZero;
+            UInt256 brokerKey = beast::kZero;
         };
         struct Adjustments
         {
@@ -217,7 +217,7 @@ class InvariantsVault_test : public InvariantsBase
                     lp.totalValueOutstanding != 0 || lp.managementFeeOutstanding != 0;
                 // The vault key stands in for an unset broker: it keeps the loan
                 // keylet distinct per vault while resolving to no broker.
-                uint256 const brokerKey = lp.brokerKey != beast::kZero ? lp.brokerKey : keylet.key;
+                UInt256 const brokerKey = lp.brokerKey != beast::kZero ? lp.brokerKey : keylet.key;
                 for (std::uint32_t seq = 1; seq <= static_cast<std::uint32_t>(args.loanCount);
                      ++seq)
                 {
@@ -494,7 +494,7 @@ class InvariantsVault_test : public InvariantsBase
                     return false;
                 // Note, such an "orphaned" update of MPT issuance attached to a
                 // vault is invalid; ttVAULT_SET must also update Vault object.
-                sleShares->setFieldH256(sfDomainID, uint256(13));
+                sleShares->setFieldH256(sfDomainID, UInt256(13));
                 ac.view().update(sleShares);
                 return true;
             },
@@ -1594,7 +1594,7 @@ class InvariantsVault_test : public InvariantsBase
         doInvariantCheck(
             {"Loan broker does not exist"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleLoan = makeLoanSle(uint256{}, 1, a2.id());
+                auto sleLoan = makeLoanSle(UInt256{}, 1, a2.id());
                 ac.view().insert(sleLoan);
                 return true;
             },
@@ -1964,7 +1964,7 @@ class InvariantsVault_test : public InvariantsBase
                     sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
                 // sleAccount->setFieldH256(sfVaultID, vaultKeylet.key);
                 // Setting wrong vault key
-                sleAccount->setFieldH256(sfVaultID, uint256(42));
+                sleAccount->setFieldH256(sfVaultID, UInt256(42));
                 ac.view().insert(sleAccount);
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
@@ -2587,8 +2587,8 @@ class InvariantsVault_test : public InvariantsBase
         // dates and satisfy the redemption-buffer gap), deposit only in Subscription / NoPhase,
         // withdraw not in Investment, loan origination only in Investment.
 
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
 
@@ -2622,7 +2622,7 @@ class InvariantsVault_test : public InvariantsBase
                     env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = XRP(10)}));
                 }
                 if (advanceBySub >= 0)
-                    env.close(tp{d{sub + advanceBySub}});
+                    env.close(Tp{D{sub + advanceBySub}});
                 return true;
             };
         };
@@ -2858,7 +2858,7 @@ class InvariantsVault_test : public InvariantsBase
 
                 // Advance parent close time into Investment so
                 // ValidVault::finalizeLoanSet is satisfied.
-                env.close(tp{d{sub + 1}});
+                env.close(Tp{D{sub + 1}});
                 return true;
             });
     }
@@ -2986,7 +2986,7 @@ class InvariantsVault_test : public InvariantsBase
 
             // Variant 1: L = (T - A) * 2. Fires under both settings.
             {
-                Keylet vaultKeylet = keylet::vault(uint256{});
+                Keylet vaultKeylet = keylet::vault(UInt256{});
                 Account const issuer{"issuer_loss_gap"};
                 Account const borrower{"borrower_loss_gap"};
 
@@ -3024,7 +3024,7 @@ class InvariantsVault_test : public InvariantsBase
             // regression that widened it to two units would silently accept
             // this state.
             {
-                Keylet vaultKeylet = keylet::vault(uint256{});
+                Keylet vaultKeylet = keylet::vault(UInt256{});
                 Account const issuer{"issuer_loss_gap2"};
                 Account const borrower{"borrower_loss_gap2"};
 

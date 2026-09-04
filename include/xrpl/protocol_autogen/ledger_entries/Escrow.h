@@ -547,7 +547,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     Escrow
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return Escrow{std::make_shared<SLE>(std::move(object_), index)};
     }

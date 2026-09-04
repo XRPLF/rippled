@@ -20,6 +20,6 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
  * Repair sfExchangeRate on a book directory's first page.
  */
 json::Value
-bookExchangeRate(jtx::Account const& acct, uint256 const& bookDir);
+bookExchangeRate(jtx::Account const& acct, UInt256 const& bookDir);
 
 }  // namespace xrpl::test::jtx::ledger_state_fix

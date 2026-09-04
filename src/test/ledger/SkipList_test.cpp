@@ -26,7 +26,7 @@ class SkipList_test : public beast::unit_test::Suite
                 kCreateGenesis,
                 Rules{config.features},
                 config.fees.toFees(),
-                std::vector<uint256>{},
+                std::vector<UInt256>{},
                 env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)

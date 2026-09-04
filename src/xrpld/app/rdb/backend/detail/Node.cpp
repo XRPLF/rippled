@@ -312,7 +312,7 @@ saveValidatedLedger(
 
             for (auto const& acceptedLedgerTx : *aLedger)
             {
-                uint256 const transactionID = acceptedLedgerTx->getTransactionID();
+                UInt256 const transactionID = acceptedLedgerTx->getTransactionID();
 
                 std::string const txnId(to_string(transactionID));
                 std::string const txnSeq(std::to_string(acceptedLedgerTx->getTxnSeq()));
@@ -526,17 +526,17 @@ getLimitedNewestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex,
 }
 
 std::optional<LedgerHeader>
-getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Journal j)
+getLedgerInfoByHash(soci::session& session, UInt256 const& ledgerHash, beast::Journal j)
 {
     std::ostringstream s;
     s << "WHERE LedgerHash = '" << ledgerHash << "'";
     return getLedgerInfo(session, s.str(), j);
 }
 
-uint256
+UInt256
 getHashByIndex(soci::session& session, LedgerIndex ledgerIndex)
 {
-    uint256 ret;
+    UInt256 ret;
 
     std::string sql = "SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
     sql.append(std::to_string(ledgerIndex));
@@ -925,7 +925,7 @@ getNewestAccountTxs(
  *         number of transactions skipped. We need to skip some number of
  *         transactions if option offset is > 0 in the options structure.
  */
-static std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+static std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getAccountTxsB(
     soci::session& session,
     Application& app,
@@ -933,7 +933,7 @@ getAccountTxsB(
     bool descending,
     beast::Journal j)
 {
-    std::vector<RelationalDatabase::txnMetaLedgerType> ret;
+    std::vector<RelationalDatabase::TxnMetaLedgerType> ret;
 
     std::string const sql = transactionsSQL(
         app,
@@ -982,7 +982,7 @@ getAccountTxsB(
     return {ret, total};
 }
 
-std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getOldestAccountTxsB(
     soci::session& session,
     Application& app,
@@ -992,7 +992,7 @@ getOldestAccountTxsB(
     return getAccountTxsB(session, app, options, false, j);
 }
 
-std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
+std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getNewestAccountTxsB(
     soci::session& session,
     Application& app,
@@ -1336,7 +1336,7 @@ std::variant<RelationalDatabase::AccountTx, TxSearched>
 getTransaction(
     soci::session& session,
     Application& app,
-    uint256 const& id,
+    UInt256 const& id,
     std::optional<ClosedInterval<uint32_t>> const& range,
     ErrorCodeI& ec)
 {

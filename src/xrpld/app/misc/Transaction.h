@@ -55,7 +55,7 @@ class Transaction : public std::enable_shared_from_this<Transaction>,
 {
 public:
     using pointer = std::shared_ptr<Transaction>;
-    using ref = pointer const&;
+    using Ref = pointer const&;
 
     Transaction(std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
 
@@ -79,7 +79,7 @@ public:
         return transaction_;
     }
 
-    uint256 const&
+    UInt256 const&
     getID() const
     {
         return transactionID_;
@@ -312,7 +312,7 @@ public:
     // at the time of search.
     struct Locator
     {
-        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
+        std::variant<std::pair<UInt256, uint32_t>, ClosedInterval<uint32_t>> locator;
 
         /**
          * @return true if transaction was found, false otherwise
@@ -324,7 +324,7 @@ public:
         [[nodiscard]] bool
         isFound() const
         {
-            return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
+            return std::holds_alternative<std::pair<UInt256, uint32_t>>(locator);
         }
 
         /**
@@ -332,10 +332,10 @@ public:
          *
          * @throws if isFound() returns false
          */
-        uint256 const&
+        UInt256 const&
         getNodestoreHash()
         {
-            return std::get<std::pair<uint256, uint32_t>>(locator).first;
+            return std::get<std::pair<UInt256, uint32_t>>(locator).first;
         }
 
         /**
@@ -346,7 +346,7 @@ public:
         uint32_t
         getLedgerSequence()
         {
-            return std::get<std::pair<uint256, uint32_t>>(locator).second;
+            return std::get<std::pair<UInt256, uint32_t>>(locator).second;
         }
 
         /**
@@ -362,16 +362,16 @@ public:
     };
 
     static Locator
-    locate(uint256 const& id, Application& app);
+    locate(UInt256 const& id, Application& app);
 
     static std::
         variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-        load(uint256 const& id, Application& app, ErrorCodeI& ec);
+        load(UInt256 const& id, Application& app, ErrorCodeI& ec);
 
     static std::
         variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
         load(
-            uint256 const& id,
+            UInt256 const& id,
             Application& app,
             ClosedInterval<uint32_t> const& range,
             ErrorCodeI& ec);
@@ -380,12 +380,12 @@ private:
     static std::
         variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
         load(
-            uint256 const& id,
+            UInt256 const& id,
             Application& app,
             std::optional<ClosedInterval<uint32_t>> const& range,
             ErrorCodeI& ec);
 
-    uint256 transactionID_;
+    UInt256 transactionID_;
 
     LedgerIndex ledgerIndex_ = 0;
     std::optional<uint32_t> txnSeq_;

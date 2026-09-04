@@ -76,6 +76,6 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal);
+makeManager(beast::insight::Collector::Ptr const& collector, beast::Journal journal);
 
 }  // namespace xrpl::resource

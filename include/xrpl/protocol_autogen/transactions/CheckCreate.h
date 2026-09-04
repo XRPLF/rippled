@@ -20,7 +20,7 @@ class CheckCreateBuilder;
  *
  * Type: ttCHECK_CREATE (16)
  * Delegable: Delegation::Delegable
- * Amendment: uint256{}
+ * Amendment: UInt256{}
  * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

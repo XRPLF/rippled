@@ -176,7 +176,7 @@ Database::stop()
 
 void
 Database::asyncFetch(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
@@ -229,7 +229,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 // Perform a fetch and report the time it took
 std::shared_ptr<NodeObject>
 Database::fetchNodeObject(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t ledgerSeq,
     FetchType fetchType,
     bool duplicate)

@@ -67,7 +67,7 @@ public:
      * @return Ledger if found, otherwise no value.
      */
     std::optional<LedgerHeader>
-    getLedgerInfoByHash(uint256 const& ledgerHash) override;
+    getLedgerInfoByHash(UInt256 const& ledgerHash) override;
 
     /**
      * @brief getHashByIndex Returns the hash of the ledger with the given
@@ -75,7 +75,7 @@ public:
      * @param ledgerIndex Ledger sequence.
      * @return Hash of the ledger.
      */
-    uint256
+    UInt256
     getHashByIndex(LedgerIndex ledgerIndex) override;
 
     /**
@@ -349,7 +349,7 @@ public:
      */
     std::variant<AccountTx, TxSearched>
     getTransaction(
-        uint256 const& id,
+        UInt256 const& id,
         std::optional<ClosedInterval<std::uint32_t>> const& range,
         ErrorCodeI& ec) override;
 

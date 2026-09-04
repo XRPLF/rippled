@@ -706,7 +706,7 @@ Env::doRpc(
 }
 
 void
-Env::enableFeature(uint256 const feature)
+Env::enableFeature(UInt256 const feature)
 {
     // Env::close() must be called for feature
     // enable to take place.
@@ -714,7 +714,7 @@ Env::enableFeature(uint256 const feature)
 }
 
 void
-Env::disableFeature(uint256 const feature)
+Env::disableFeature(UInt256 const feature)
 {
     // Env::close() must be called for feature
     // enable to take place.

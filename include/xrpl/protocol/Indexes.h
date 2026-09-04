@@ -55,7 +55,7 @@ amendments() noexcept;
  * Any item that can be in an owner dir.
  */
 Keylet
-child(uint256 const& key) noexcept;
+child(UInt256 const& key) noexcept;
 
 /**
  * The index of the "short" skip list
@@ -125,7 +125,7 @@ Keylet
 offer(AccountID const& id, SeqProxy const& seq) noexcept;
 
 inline Keylet
-offer(uint256 const& key) noexcept
+offer(UInt256 const& key) noexcept
 {
     return {ltOFFER, key};
 }
@@ -151,7 +151,7 @@ Keylet
 ticket(AccountID const& id, SeqProxy const& ticketSeq);
 
 inline Keylet
-ticket(uint256 const& key)
+ticket(UInt256 const& key)
 {
     return {ltTICKET, key};
 }
@@ -177,7 +177,7 @@ Keylet
 check(AccountID const& id, SeqProxy const& seq) noexcept;
 
 inline Keylet
-check(uint256 const& key) noexcept
+check(UInt256 const& key) noexcept
 {
     return {ltCHECK, key};
 }
@@ -196,7 +196,7 @@ depositPreauth(
     std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
 
 inline Keylet
-depositPreauth(uint256 const& key) noexcept
+depositPreauth(UInt256 const& key) noexcept
 {
     return {ltDEPOSIT_PREAUTH, key};
 }
@@ -208,7 +208,7 @@ depositPreauth(uint256 const& key) noexcept
  * Any ledger entry
  */
 Keylet
-unchecked(uint256 const& key) noexcept;
+unchecked(UInt256 const& key) noexcept;
 
 /**
  * The root page of an account's directory
@@ -221,7 +221,7 @@ ownerDir(AccountID const& id) noexcept;
  */
 /** @{ */
 Keylet
-page(uint256 const& root, std::uint64_t const index = 0) noexcept;
+page(UInt256 const& root, std::uint64_t const index = 0) noexcept;
 
 inline Keylet
 page(Keylet const& root, std::uint64_t const index = 0) noexcept
@@ -265,7 +265,7 @@ Keylet
 nftokenPageMax(AccountID const& owner);
 
 Keylet
-nftokenPage(Keylet const& k, uint256 const& token);
+nftokenPage(Keylet const& k, UInt256 const& token);
 /** @} */
 
 /**
@@ -275,7 +275,7 @@ Keylet
 nftokenOffer(AccountID const& owner, SeqProxy const& seq);
 
 inline Keylet
-nftokenOffer(uint256 const& offer)
+nftokenOffer(UInt256 const& offer)
 {
     return {ltNFTOKEN_OFFER, offer};
 }
@@ -284,13 +284,13 @@ nftokenOffer(uint256 const& offer)
  * The directory of buy offers for the specified NFT
  */
 Keylet
-nftBuys(uint256 const& id) noexcept;
+nftBuys(UInt256 const& id) noexcept;
 
 /**
  * The directory of sell offers for the specified NFT
  */
 Keylet
-nftSells(uint256 const& id) noexcept;
+nftSells(UInt256 const& id) noexcept;
 
 /**
  * AMM entry
@@ -299,7 +299,7 @@ Keylet
 amm(Asset const& issue1, Asset const& issue2) noexcept;
 
 Keylet
-amm(uint256 const& amm) noexcept;
+amm(UInt256 const& amm) noexcept;
 
 /**
  * A keylet for Delegate object
@@ -328,7 +328,7 @@ Keylet
 credential(AccountID const& subject, AccountID const& issuer, Slice const& credType) noexcept;
 
 inline Keylet
-credential(uint256 const& key) noexcept
+credential(UInt256 const& key) noexcept
 {
     return {ltCREDENTIAL, key};
 }
@@ -337,7 +337,7 @@ Keylet
 mptokenIssuance(MPTID const& issuanceID) noexcept;
 
 inline Keylet
-mptokenIssuance(uint256 const& issuanceKey)
+mptokenIssuance(UInt256 const& issuanceKey)
 {
     return {ltMPTOKEN_ISSUANCE, issuanceKey};
 }
@@ -346,19 +346,19 @@ Keylet
 mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept;
 
 inline Keylet
-mptoken(uint256 const& mptokenKey)
+mptoken(UInt256 const& mptokenKey)
 {
     return {ltMPTOKEN, mptokenKey};
 }
 
 Keylet
-mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
+mptoken(UInt256 const& issuanceKey, AccountID const& holder) noexcept;
 
 Keylet
 vault(AccountID const& owner, SeqProxy const& seq) noexcept;
 
 inline Keylet
-vault(uint256 const& vaultKey)
+vault(UInt256 const& vaultKey)
 {
     return {ltVAULT, vaultKey};
 }
@@ -367,16 +367,16 @@ Keylet
 loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept;
 
 inline Keylet
-loanBroker(uint256 const& key)
+loanBroker(UInt256 const& key)
 {
     return {ltLOAN_BROKER, key};
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept;
+loan(UInt256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept;
 
 inline Keylet
-loan(uint256 const& key)
+loan(UInt256 const& key)
 {
     return {ltLOAN, key};
 }
@@ -385,20 +385,20 @@ Keylet
 permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
 
 Keylet
-permissionedDomain(uint256 const& domainID) noexcept;
+permissionedDomain(UInt256 const& domainID) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
 
-uint256
+UInt256
 getBookBase(Book const& book);
 
-uint256
-getQualityNext(uint256 const& uBase);
+UInt256
+getQualityNext(UInt256 const& uBase);
 
 // VFALCO This name could be better
 std::uint64_t
-getQuality(uint256 const& uBase);
+getQuality(UInt256 const& uBase);
 
 template <class... KeyletParams>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)

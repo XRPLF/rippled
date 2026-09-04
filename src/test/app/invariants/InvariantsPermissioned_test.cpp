@@ -420,7 +420,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 [](STObject& tx) {
                     tx.setFieldH256(
                         sfDomainID,
-                        uint256{"F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E33"
+                        UInt256{"F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E33"
                                 "70F3649CE134E5"});
                     Account const a1{"A1"};
                     tx.setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -736,7 +736,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             auto sleDir = std::make_shared<SLE>(dir);
             sleDir->setFieldH256(sfRootIndex, dir.key);
             STVector256 indexes;
-            indexes.pushBack(uint256{1});
+            indexes.pushBack(UInt256{1});
             sleDir->setFieldV256(sfIndexes, indexes);
             sleDir->setFieldU64(sfExchangeRate, exchangeRate);
             return sleDir;
@@ -748,7 +748,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             auto sleDir = std::make_shared<SLE>(keylet::page(rootDir, 1));
             sleDir->setFieldH256(sfRootIndex, rootDir.key);
             STVector256 indexes;
-            indexes.pushBack(uint256{2});
+            indexes.pushBack(UInt256{2});
             sleDir->setFieldV256(sfIndexes, indexes);
             return sleDir;
         };
@@ -916,7 +916,7 @@ class InvariantsPermissioned_test : public InvariantsBase
         return sle;
     }
 
-    static std::pair<std::uint32_t, uint256>
+    static std::pair<std::uint32_t, UInt256>
     createPermissionedDomainEnv(
         test::jtx::Env& env,
         test::jtx::Account const& a1,
@@ -935,7 +935,7 @@ class InvariantsPermissioned_test : public InvariantsBase
 
         std::uint32_t const seq = env.seq(a1);
         env(pdomain::setTx(a1, credentials));
-        uint256 const key = pdomain::getNewDomain(env.meta());
+        UInt256 const key = pdomain::getNewDomain(env.meta());
 
         return {seq, key};
     }

@@ -61,7 +61,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
 
 [[nodiscard]] STAmount
 clawbackAmount(
-    SLE::const_ref vault,
+    SLE::ConstRef vault,
     std::optional<STAmount> const& maybeAmount,
     AccountID const& account)
 {
@@ -232,8 +232,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
 std::expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
-    SLE::ref vault,
-    SLE::const_ref sleShareIssuance,
+    SLE::Ref vault,
+    SLE::ConstRef sleShareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
@@ -542,7 +542,7 @@ VaultClawback::doApply()
 }
 
 void
-VaultClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultClawback::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

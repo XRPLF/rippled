@@ -48,10 +48,10 @@ namespace xrpl::test {
 class tx_reduce_relay_test : public beast::unit_test::Suite
 {
 public:
-    using socket_type = boost::asio::ip::tcp::socket;
-    using middle_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<middle_type>;
-    using shared_context = std::shared_ptr<boost::asio::ssl::context>;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using MiddleType = boost::beast::tcp_stream;
+    using StreamType = boost::beast::ssl_stream<MiddleType>;
+    using SharedContext = std::shared_ptr<boost::asio::ssl::context>;
 
 private:
     void
@@ -122,11 +122,11 @@ private:
         PeerTest(
             Application& app,
             std::shared_ptr<peer_finder::Slot> const& slot,
-            http_request_type&& request,
+            HttpRequestType&& request,
             PublicKey const& publicKey,
             ProtocolVersion protocol,
             resource::Consumer consumer,
-            std::unique_ptr<tx_reduce_relay_test::stream_type>&& streamPtr,
+            std::unique_ptr<tx_reduce_relay_test::StreamType>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
                   app,
@@ -153,7 +153,7 @@ private:
             sendTx++;
         }
         void
-        addTxQueue(uint256 const& hash) override
+        addTxQueue(UInt256 const& hash) override
         {
             queueTx++;
         }
@@ -171,7 +171,7 @@ private:
 
     std::uint16_t lid_{0};
     std::uint16_t rid_{1};
-    shared_context context_;
+    SharedContext context_;
     ProtocolVersion protocolVersion_;
     boost::beast::multi_buffer readBuf_;
 
@@ -189,8 +189,8 @@ private:
         (nDisabled == 0)
             ? request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false))
             : (void)nDisabled--;
-        auto streamPtr = std::make_unique<stream_type>(
-            socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
+        auto streamPtr = std::make_unique<StreamType>(
+            SocketType(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
         beast::ip::Endpoint const local(
             boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
@@ -227,7 +227,7 @@ private:
         std::uint16_t relayPercentage,
         std::uint16_t expectRelay,
         std::uint16_t expectQueue,
-        std::set<Peer::id_t> const& toSkip = {})
+        std::set<Peer::IdT> const& toSkip = {})
     {
         testcase(test);
         jtx::Env env(*this);
@@ -250,7 +250,7 @@ private:
             m.set_rawtransaction(s.data(), s.size());
             m.set_deferred(false);
             m.set_status(protocol::TransactionStatus::tsNEW);
-            env.app().getOverlay().relay(uint256{0}, m, toSkip);
+            env.app().getOverlay().relay(UInt256{0}, m, toSkip);
             BEAST_EXPECT(PeerTest::sendTx == expectRelay && PeerTest::queueTx == expectQueue);
         }
     }
@@ -259,7 +259,7 @@ private:
     run() override
     {
         bool const log = false;
-        std::set<Peer::id_t> skip = {0, 1, 2, 3, 4};
+        std::set<Peer::IdT> skip = {0, 1, 2, 3, 4};
         testConfig(log);
         // relay to all peers, no hash queue
         testRelay("feature disabled", false, 10, 0, 10, 25, 10, 0);

@@ -29,8 +29,8 @@ struct SingleMetrics
     SingleMetrics(bool ptu = true) : perTimeUnit(ptu)
     {
     }
-    using clock_type = std::chrono::steady_clock;
-    clock_type::time_point intervalStart{clock_type::now()};
+    using ClockType = std::chrono::steady_clock;
+    ClockType::time_point intervalStart{ClockType::now()};
     std::uint64_t accum{0};
     std::uint64_t rollingAvg{0};
     std::uint32_t n{0};

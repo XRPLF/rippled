@@ -38,7 +38,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
         std::string const& dbPath,
         std::string const& ledger,
         StartUpType type,
-        std::optional<uint256> trapTxHash)
+        std::optional<UInt256> trapTxHash)
     {
         cfg->startLedger = ledger;
         cfg->startUp = type;
@@ -56,7 +56,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
         std::string ledgerFile = {};
         json::Value ledger = {};
         json::Value hashes = {};
-        uint256 trapTxHash = {};
+        UInt256 trapTxHash = {};
         // NOLINTEND(readability-redundant-member-init)
     };
 
@@ -104,7 +104,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
             auto const txs = env.rpc(
                 "ledger", std::to_string(41), "tx")[jss::result][jss::ledger][jss::transactions];
             BEAST_EXPECT(txs.isArray() && txs.size() > 0);
-            uint256 tmp;
+            UInt256 tmp;
             BEAST_EXPECT(tmp.parseHex(txs[0u][jss::hash].asString()));
             return tmp;
         }();

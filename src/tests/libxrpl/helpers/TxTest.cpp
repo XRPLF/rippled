@@ -43,7 +43,7 @@ allFeatures()
 {
     static FeatureBitset const kFeatures = [] {
         auto const& sa = allAmendments();
-        std::vector<uint256> feats;
+        std::vector<UInt256> feats;
         feats.reserve(sa.size());
         for ([[maybe_unused]] auto const& [name, _] : sa)
         {
@@ -63,7 +63,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
 {
     // Convert FeatureBitset to unordered_set for Rules constructor
     auto const featureBits = features.value_or(allFeatures());
-    foreachFeature(featureBits, [&](uint256 const& f) { featureSet_.insert(f); });
+    foreachFeature(featureBits, [&](UInt256 const& f) { featureSet_.insert(f); });
 
     // Create rules with the specified features
     rules_.emplace(featureSet_);
@@ -77,7 +77,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         *rules_,
         fees,
-        std::vector<uint256>{featureSet_.begin(), featureSet_.end()},
+        std::vector<UInt256>{featureSet_.begin(), featureSet_.end()},
         registry_.getNodeFamily());
 
     // Initialize time from the genesis ledger.  closedLedger_ is created above
@@ -91,7 +91,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
 }
 
 bool
-TxTest::isEnabled(uint256 const& feature) const
+TxTest::isEnabled(UInt256 const& feature) const
 {
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     return rules_->enabled(feature);

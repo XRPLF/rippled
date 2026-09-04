@@ -26,40 +26,40 @@ class ConnectAttempt : public OverlayImpl::Child,
                        public std::enable_shared_from_this<ConnectAttempt>
 {
 private:
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
-    using response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
+    using ErrorCode = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using RequestType = boost::beast::http::request<boost::beast::http::empty_body>;
+    using ResponseType = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
-    using socket_type = boost::asio::ip::tcp::socket;
-    using middle_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<middle_type>;
-    using shared_context = std::shared_ptr<boost::asio::ssl::context>;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using MiddleType = boost::beast::tcp_stream;
+    using StreamType = boost::beast::ssl_stream<MiddleType>;
+    using SharedContext = std::shared_ptr<boost::asio::ssl::context>;
 
     Application& app_;
     std::uint32_t const id_;
     beast::WrappedSink sink_;
     beast::Journal const journal_;
-    endpoint_type remoteEndpoint_;
+    EndpointType remoteEndpoint_;
     resource::Consumer usage_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
-    std::unique_ptr<stream_type> streamPtr_;
-    socket_type& socket_;
-    stream_type& stream_;
+    std::unique_ptr<StreamType> streamPtr_;
+    SocketType& socket_;
+    StreamType& stream_;
     boost::beast::multi_buffer readBuf_;
-    response_type response_;
+    ResponseType response_;
     std::shared_ptr<peer_finder::Slot> slot_;
-    request_type req_;
+    RequestType req_;
 
 public:
     ConnectAttempt(
         Application& app,
         boost::asio::io_context& ioContext,
-        endpoint_type remoteEndpoint,
+        EndpointType remoteEndpoint,
         resource::Consumer usage,
-        shared_context const& context,
-        Peer::id_t id,
+        SharedContext const& context,
+        Peer::IdT id,
         std::shared_ptr<peer_finder::Slot> const& slot,
         beast::Journal journal,
         OverlayImpl& overlay);
@@ -78,23 +78,23 @@ private:
     void
     fail(std::string const& reason);
     void
-    fail(std::string const& name, error_code ec);
+    fail(std::string const& name, ErrorCode ec);
     void
     setTimer();
     void
     cancelTimer();
     void
-    onTimer(error_code ec);
+    onTimer(ErrorCode ec);
     void
-    onConnect(error_code ec);
+    onConnect(ErrorCode ec);
     void
-    onHandshake(error_code ec);
+    onHandshake(ErrorCode ec);
     void
-    onWrite(error_code ec);
+    onWrite(ErrorCode ec);
     void
-    onRead(error_code ec);
+    onRead(ErrorCode ec);
     void
-    onShutdown(error_code ec);
+    onShutdown(ErrorCode ec);
     void
     processResponse();
 

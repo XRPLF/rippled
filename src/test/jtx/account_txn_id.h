@@ -10,10 +10,10 @@ namespace xrpl::test::jtx {
 struct AccountTxnId
 {
 private:
-    uint256 hash_;
+    UInt256 hash_;
 
 public:
-    explicit AccountTxnId(uint256 const& hash) : hash_(hash)
+    explicit AccountTxnId(UInt256 const& hash) : hash_(hash)
     {
     }
 

@@ -56,7 +56,7 @@ private:
         test::jtx::Account borrower{"borrower"};
         std::optional<PrettyAsset> asset;
         std::optional<Keylet> vaultKeylet;
-        uint256 brokerID;
+        UInt256 brokerID;
         std::optional<Keylet> loanKeylet;
         MPTID shareAsset;
         std::uint64_t sharesLender = 0;

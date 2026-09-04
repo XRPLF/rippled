@@ -42,7 +42,7 @@ doTransactionEntry(rpc::JsonContext& context)
     }
     else
     {
-        uint256 uTransID;
+        UInt256 uTransID;
         // XXX Relying on trusted WSS client. Would be better to have a strict
         // routine, returning success or failure.
         if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))

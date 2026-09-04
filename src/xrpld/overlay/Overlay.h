@@ -37,8 +37,8 @@ namespace xrpl {
 class Overlay : public beast::PropertyStream::Source
 {
 protected:
-    using socket_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<socket_type>;
+    using SocketType = boost::beast::tcp_stream;
+    using StreamType = boost::beast::ssl_stream<SocketType>;
 
     // VFALCO NOTE The requirement of this constructor is an
     //             unfortunate problem with the API for
@@ -82,8 +82,8 @@ public:
      */
     virtual Handoff
     onHandoff(
-        std::unique_ptr<stream_type>&& bundle,
-        http_request_type&& request,
+        std::unique_ptr<StreamType>&& bundle,
+        HttpRequestType&& request,
         boost::asio::ip::tcp::endpoint remoteAddress) = 0;
 
     /**
@@ -133,7 +133,7 @@ public:
      * Returns the peer with the matching short id, or null.
      */
     [[nodiscard]] virtual std::shared_ptr<Peer>
-    findPeerByShortID(Peer::id_t const& id) const = 0;
+    findPeerByShortID(Peer::IdT const& id) const = 0;
 
     /**
      * Returns the peer with the matching public key, or null.
@@ -160,8 +160,8 @@ public:
      * @param validator The pubkey of the validator that issued this proposal
      * @return the set of peers which have already sent us this proposal
      */
-    virtual std::set<Peer::id_t>
-    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) = 0;
+    virtual std::set<Peer::IdT>
+    relay(protocol::TMProposeSet const& m, UInt256 const& uid, PublicKey const& validator) = 0;
 
     /**
      * Relay a validation.
@@ -170,8 +170,8 @@ public:
      * @param validator The pubkey of the validator that issued this validation
      * @return the set of peers which have already sent us this validation
      */
-    virtual std::set<Peer::id_t>
-    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) = 0;
+    virtual std::set<Peer::IdT>
+    relay(protocol::TMValidation const& m, UInt256 const& uid, PublicKey const& validator) = 0;
 
     /**
      * Relay a transaction. If the tx reduce-relay feature is enabled then
@@ -183,9 +183,9 @@ public:
      */
     virtual void
     relay(
-        uint256 const& hash,
+        UInt256 const& hash,
         std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
-        std::set<Peer::id_t> const& toSkip) = 0;
+        std::set<Peer::IdT> const& toSkip) = 0;
 
     /**
      * Visit every active peer.

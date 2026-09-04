@@ -48,33 +48,33 @@ public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string n, uint256 const& f, VoteBehavior v)
+        FeatureInfo(std::string n, UInt256 const& f, VoteBehavior v)
             : name(std::move(n)), feature(f), vote(v)
         {
         }
 
         std::string const name;
-        uint256 const feature;
+        UInt256 const feature;
         VoteBehavior const vote;
     };
 
     virtual ~AmendmentTable() = default;
 
-    [[nodiscard]] virtual uint256
+    [[nodiscard]] virtual UInt256
     find(std::string const& name) const = 0;
 
     virtual bool
-    veto(uint256 const& amendment) = 0;
+    veto(UInt256 const& amendment) = 0;
     virtual bool
-    unVeto(uint256 const& amendment) = 0;
+    unVeto(UInt256 const& amendment) = 0;
 
     virtual bool
-    enable(uint256 const& amendment) = 0;
+    enable(UInt256 const& amendment) = 0;
 
     [[nodiscard]] virtual bool
-    isEnabled(uint256 const& amendment) const = 0;
+    isEnabled(UInt256 const& amendment) const = 0;
     [[nodiscard]] virtual bool
-    isSupported(uint256 const& amendment) const = 0;
+    isSupported(UInt256 const& amendment) const = 0;
 
     /**
      * @brief returns true if one or more amendments on the network
@@ -95,7 +95,7 @@ public:
      * Returns a json::ValueType::Object.
      */
     [[nodiscard]] virtual json::Value
-    getJson(uint256 const& amendment, bool isAdmin) const = 0;
+    getJson(UInt256 const& amendment, bool isAdmin) const = 0;
 
     /**
      * Called when a new fully-validated ledger is accepted.
@@ -122,33 +122,33 @@ public:
     virtual void
     doValidatedLedger(
         LedgerIndex ledgerSeq,
-        std::set<uint256> const& enabled,
-        majorityAmendments_t const& majority) = 0;
+        std::set<UInt256> const& enabled,
+        MajorityAmendmentsT const& majority) = 0;
 
     // Called when the set of trusted validators changes.
     virtual void
-    trustChanged(hash_set<PublicKey> const& allTrusted) = 0;
+    trustChanged(HashSet<PublicKey> const& allTrusted) = 0;
 
     // Called by the consensus code when we need to
     // inject pseudo-transactions
-    virtual std::map<uint256, std::uint32_t>
+    virtual std::map<UInt256, std::uint32_t>
     doVoting(
         Rules const& rules,
         NetClock::time_point closeTime,
-        std::set<uint256> const& enabledAmendments,
-        majorityAmendments_t const& majorityAmendments,
+        std::set<UInt256> const& enabledAmendments,
+        MajorityAmendmentsT const& majorityAmendments,
         std::vector<std::shared_ptr<STValidation>> const& valSet) = 0;
 
     // Called by the consensus code when we need to
     // add feature entries to a validation
-    [[nodiscard]] virtual std::vector<uint256>
-    doValidation(std::set<uint256> const& enabled) const = 0;
+    [[nodiscard]] virtual std::vector<UInt256>
+    doValidation(std::set<UInt256> const& enabled) const = 0;
 
     // The set of amendments to enable in the genesis ledger
     // This will return all known, non-vetoed amendments.
     // If we ever have two amendments that should not both be
     // enabled at the same time, we should ensure one is vetoed.
-    [[nodiscard]] virtual std::vector<uint256>
+    [[nodiscard]] virtual std::vector<UInt256>
     getDesired() const = 0;
 
     // The function below adapts the API callers expect to the

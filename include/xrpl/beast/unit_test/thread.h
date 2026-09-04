@@ -24,7 +24,7 @@ private:
     std::thread t_;
 
 public:
-    using id = std::thread::id;
+    using Id = std::thread::id;
     using native_handle_type = std::thread::native_handle_type;
 
     Thread() = default;

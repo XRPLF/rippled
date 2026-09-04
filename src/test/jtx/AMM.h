@@ -140,7 +140,7 @@ class AMM
     Account const creatorAccount_;
     STAmount const asset1_;
     STAmount const asset2_;
-    uint256 const ammID_;
+    UInt256 const ammID_;
     bool log_;
     bool doClose_;
     // Predict next purchase price
@@ -426,7 +426,7 @@ public:
         doClose_ = close;
     }
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     ammID() const
     {
         return ammID_;
