@@ -16,6 +16,7 @@
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -863,11 +864,21 @@ Transactor::ticketDelete(
         // LCOV_EXCL_STOP
     }
 
+    std::uint32_t const ticketSeq = sleTicket->getFieldU32(sfTicketSequence);
+
     // Update the Ticket owner's reserve.
     decreaseOwnerCountForObject(view, sleAccount, sleTicket, 1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);
+
+    // Consuming a ticket also deletes a matching TransactionProposal, if
+    // any (On-Chain Cosigner spec §4.5).
+    if (view.rules().enabled(featureCosign))
+    {
+        if (auto sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
+            return proposal::deleteProposal(view, sleProposal, j);
+    }
     return tesSUCCESS;
 }
 
@@ -1263,6 +1274,23 @@ removeDeletedCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
 }
 
 static void
+removeExpiredProposals(ApplyView& view, std::vector<uint256> const& ids, beast::Journal viewJ)
+{
+    for (auto const& index : ids)
+    {
+        if (auto const sle = view.peek(keylet::txProposal(index)))
+        {
+            if (auto const ter = proposal::deleteProposal(view, sle, viewJ); !isTesSuccess(ter))
+            {
+                JLOG(viewJ.error())
+                    << "removeExpiredProposals: failed to delete expired proposal. Err: "
+                    << transToken(ter);
+            }
+        }
+    }
+}
+
+static void
 removeDeletedTrustLines(
     ApplyView& view,
     std::vector<uint256> const& trustLines,
@@ -1457,6 +1485,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
         {
             types.insert(ltNFTOKEN_OFFER);
             types.insert(ltCREDENTIAL);
+            types.insert(ltTRANSACTION_PROPOSAL);
         }
         return types;
     };
@@ -1530,6 +1559,9 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                     break;
                 case ltCREDENTIAL:
                     removeDeletedCredentials(view(), ids, viewJ);
+                    break;
+                case ltTRANSACTION_PROPOSAL:
+                    removeExpiredProposals(view(), ids, viewJ);
                     break;
                 // LCOV_EXCL_START
                 default:

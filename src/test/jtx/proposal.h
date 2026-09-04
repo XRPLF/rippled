@@ -4,6 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
@@ -100,10 +101,17 @@ create()
  * @param env The test environment providing ledger fee settings.
  * @param tx The transaction to propose.
  * @param ticketSeq A ticket sequence owned by @p tx's account.
+ * @param extraSigners How many multi-sign shares the payload's Fee must
+ *        cover when it is later submitted. Zero (the default) is a
+ *        single-signature fee. A Fee already set on @p tx is left alone.
  * @return The proposed transaction JSON object.
  */
 json::Value
-unsignedPayload(Env const& env, json::Value tx, std::uint32_t ticketSeq);
+unsignedPayload(
+    Env const& env,
+    json::Value tx,
+    std::uint32_t ticketSeq,
+    std::uint32_t extraSigners = 0);
 
 /**
  * @brief Put a transaction into the form an inner transaction of a proposed
@@ -172,6 +180,15 @@ std::uint32_t
 createTicket(Env& env, Account const& account, std::uint32_t count = 1);
 
 /**
+ * @brief The ProposalID of the proposal stored against a target account's
+ *        ticket.
+ */
+uint256
+id(AccountID const& target, std::uint32_t ticketSeq);
+uint256
+id(Account const& target, std::uint32_t ticketSeq);
+
+/**
  * @brief An absolute expiration @p delta past the environment's current time.
  *
  * @c expiration(env, 0s) is an expiration that has already passed.
@@ -187,5 +204,30 @@ expiration(Env& env, NetClock::duration delta);
 entry(Env const& env, AccountID const& target, std::uint32_t ticketSeq);
 [[nodiscard]] SLE::const_pointer
 entry(Env const& env, Account const& target, std::uint32_t ticketSeq);
+
+/**
+ * @brief Build a TransactionProposalSign that records @p signer's signature
+ *        for @p signingFor on the proposal stored against @p target's ticket.
+ *
+ * @p signer == @p signingFor is a single-signature; otherwise it is a
+ * multi-signature share. The cryptographic payload is taken from the stored
+ * ProposedTransaction, so this must be called against a live proposal.
+ *
+ * @param env The test environment providing the stored proposal.
+ * @param submitter The account submitting and paying for the Sign.
+ * @param target The proposal's target account.
+ * @param ticketSeq The proposed transaction's TicketSequence.
+ * @param signingFor The account this contribution authorizes.
+ * @param signer The account whose key produces ProposalSignature.
+ * @return The TransactionProposalSign JSON object.
+ */
+json::Value
+sign(
+    Env const& env,
+    Account const& submitter,
+    Account const& target,
+    std::uint32_t ticketSeq,
+    Account const& signingFor,
+    Account const& signer);
 
 }  // namespace xrpl::test::jtx::proposal

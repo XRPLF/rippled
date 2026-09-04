@@ -413,6 +413,7 @@ UNTYPED_SFIELD(sfBook,                   OBJECT,    36)
 UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    37, SField::kSmdDefault, SField::kNotSigning)
 UNTYPED_SFIELD(sfSponsorSignature,       OBJECT,    38, SField::kSmdDefault, SField::kNotSigning)
 UNTYPED_SFIELD(sfProposedTransaction,    OBJECT,    39)
+UNTYPED_SFIELD(sfProposalSignature,      OBJECT,    40)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

@@ -1,10 +1,19 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
+#include <optional>
 
 namespace xrpl::proposal {
 
@@ -33,14 +42,12 @@ proposalOwnerCount(STObject const& proposedTx)
 /**
  * Whether the proposed transaction is itself a proposal transaction, which
  * would nest one proposal inside another.
- *
- * TODO: cover ttTRANSACTION_PROPOSAL_SIGN and ttTRANSACTION_PROPOSAL_CANCEL
- * once those transactions exist.
  */
 inline bool
 isProposalTx(STObject const& proposedTx)
 {
-    return proposedTx.getFieldU16(sfTransactionType) == ttTRANSACTION_PROPOSAL_CREATE;
+    auto const type = proposedTx.getFieldU16(sfTransactionType);
+    return type == ttTRANSACTION_PROPOSAL_CREATE || type == ttTRANSACTION_PROPOSAL_SIGN;
 }
 
 /**
@@ -83,5 +90,68 @@ hasEmptySigningPubKey(STObject const& proposedTx)
     return proposedTx.isFieldPresent(sfSigningPubKey) &&
         proposedTx.getFieldVL(sfSigningPubKey).empty();
 }
+
+/**
+ * Whether the proposal is terminal. A terminal proposal can never complete:
+ * it stops accepting signatures and anyone may delete it.
+ *
+ * A proposal is terminal when either:
+ * - its Expiration has passed (the parent ledger closed at or after it), or
+ * - the proposed transaction carries a LastLedgerSequence that is strictly
+ *   below the current ledger sequence (matching tefMAX_LEDGER: a transaction
+ *   with LastLedgerSequence equal to the open ledger is still submittable).
+ */
+bool
+isTerminal(
+    ReadView const& view,
+    std::optional<std::uint32_t> expiration,
+    STObject const& proposedTx);
+
+/**
+ * Delete a TransactionProposal ledger entry.
+ *
+ * Removes the entry from its Owner's directory, releases the reserve the
+ * proposal holds against the Owner, and erases the entry.
+ */
+TER
+deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j);
+
+/**
+ * Whether SigningFor names an account the proposed transaction requires a
+ * signature from: its Account or Delegate, or — for a Batch — an inner
+ * participant other than the outer account.
+ */
+bool
+isRequiredSigningFor(STObject const& proposedTx, AccountID const& signingFor);
+
+/**
+ * The blob ProposalSignature.TxnSignature must be valid over for this
+ * SigningFor / signer pair. Ordinary (and Batch outer-account) contributions
+ * use the standard single- or multi-sign payload; Batch participant
+ * contributions use the XLS-56 batch signing payload.
+ *
+ * @return empty if the proposed transaction cannot be interpreted as signing
+ *         data (a malformed Batch).
+ */
+std::optional<Serializer>
+signingData(
+    STObject const& proposedTx,
+    AccountID const& signingFor,
+    AccountID const& signerAccount,
+    Slice const& signingPubKey);
+
+/**
+ * Record a validated ProposalSignature into the proposed transaction for
+ * SigningFor. Mutates proposedTx in place. Callers must have already
+ * verified the signature and the signer's authorization.
+ *
+ * @return tesSUCCESS, tecDUPLICATE, tecNO_PERMISSION (mode conflict), or
+ *         tecOVERSIZE.
+ */
+TER
+recordContribution(
+    STObject& proposedTx,
+    AccountID const& signingFor,
+    STObject const& proposalSignature);
 
 }  // namespace xrpl::proposal
