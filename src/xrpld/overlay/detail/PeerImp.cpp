@@ -1487,10 +1487,21 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Verify ledger node counts. Full parsing of the node IDs is deferred to the job, so the I/O
     // thread is not burdened with SHAMapNodeID deserialization for every TMGetLedger message.
-    if (itype != protocol::liBASE && m->nodeids_size() <= 0)
+    if (itype != protocol::liBASE)
     {
-        badData("Invalid ledger node IDs");
-        return;
+        if (m->nodeids_size() <= 0)
+        {
+            badData("Invalid ledger node IDs");
+            return;
+        }
+
+        if (m->nodeids_size() > tuning::kHardMaxReplyNodes)
+        {
+            badData(
+                "Requested number of ledger node IDs must be less than or equal to " +
+                std::to_string(tuning::kHardMaxReplyNodes));
+            return;
+        }
     }
 
     // Verify query type
