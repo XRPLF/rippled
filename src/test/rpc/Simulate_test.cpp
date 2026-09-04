@@ -15,6 +15,7 @@
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -23,6 +24,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -36,6 +38,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 
 #include <chrono>
@@ -1366,7 +1370,7 @@ class Simulate_test : public beast::unit_test::Suite
         tx[jss::Amount] = "1000000";
 
         json::Value params = json::ValueType::Object;
-        params[jss::command] = jss::simulate;
+        params[jss::command] = "simulate";
         params[jss::tx_json] = tx;
 
         // Invoke doSimulate via rpc::doCommand so we can inspect loadType
