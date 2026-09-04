@@ -172,11 +172,11 @@ hash); `tx.preflight` is stateless and omits both.
 
 ### Ledger Spans
 
-| Span Name         | Source File      | Attributes                                                              | Description                   |
-| ----------------- | ---------------- | ----------------------------------------------------------------------- | ----------------------------- |
-| `ledger.build`    | BuildLedger.cpp  | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus |
-| `ledger.validate` | LedgerMaster.cpp | `ledger_seq`, `validations`                                             | Ledger promoted to validated  |
-| `ledger.store`    | LedgerMaster.cpp | `ledger_seq`                                                            | Ledger stored in history      |
+| Span Name         | Source File      | Attributes                                                                             | Description                   |
+| ----------------- | ---------------- | -------------------------------------------------------------------------------------- | ----------------------------- |
+| `ledger.build`    | BuildLedger.cpp  | `ledger_seq`, `close_time_ripple_epoch_s`, `close_time_correct`, `close_resolution_ms` | Ledger build during consensus |
+| `ledger.validate` | LedgerMaster.cpp | `ledger_seq`, `validations`                                                            | Ledger promoted to validated  |
+| `ledger.store`    | LedgerMaster.cpp | `ledger_seq`                                                                           | Ledger stored in history      |
 
 ### Peer Spans
 
