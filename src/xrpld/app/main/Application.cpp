@@ -577,6 +577,12 @@ public:
         {
             JLOG(journal_.error()) << "Error stopping telemetry: " << e.what();
         }
+        catch (...)
+        {
+            // The callees reach third-party SDK code, which may throw something
+            // outside std::exception. Escaping here would terminate the process.
+            JLOG(journal_.error()) << "Error stopping telemetry: unknown exception";
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -1212,14 +1218,15 @@ public:
      * Return free heap pages to the OS at the end of a sweep, and record what
      * that cost.
      *
-     * Split out of doSweep() so the metric emit site is one small unit rather
-     * than a further three statements on an already-long function.
+     * Kept separate from doSweep() so the metric emit site is one small unit
+     * rather than a further three statements on an already-long function.
      *
      * Why this is instrumented: `malloc_trim` runs after EVERY cache sweep, and
      * its cost scales with the resident heap, so a node with a large existing
      * database pays a per-sweep penalty a fresh one does not -- the leading
      * explanation for "an existing database syncs slower than an empty one" on
-     * glibc. The report used to be discarded here, so none of it was visible.
+     * glibc. This is the only site that reads mallocTrim()'s report, so it is
+     * the only place that cost can be made visible.
      *
      *      doSweep()  ->  trimHeapAndRecord()  ->  mallocTrim()
      *                            |                      |
@@ -1799,28 +1806,56 @@ ApplicationImp::startTelemetry() const
     // Start tracing first so subsequent startup/early activity can be traced.
     telemetry_->start();
 
-    // Start the metrics pipeline after telemetry; the endpoint uses the
-    // same base URL but the /v1/metrics path.
+    // Start the metrics pipeline after telemetry. Everything below is read
+    // from [telemetry] here because Telemetry does not expose the Setup it
+    // parsed. Every value must match what makeTelemetrySetup() gave the trace
+    // pipeline above, or this node reports two identities.
     if (metricsRegistry_)
     {
         auto const& section = config_->section("telemetry");
-        std::string endpoint = "http://localhost:4318/v1/metrics";
-        set(endpoint, "metrics_endpoint", section);
 
-        // Pass the service_instance_id so the MeterProvider Resource
-        // carries it, giving Prometheus an service_instance_id label.
-        std::string instanceId;
-        set(instanceId, "service_instance_id", section);
-        if (instanceId.empty() && nodeIdentity_)
-            instanceId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
+        telemetry::MetricsRegistry::StartOptions options;
+
+        // metrics_endpoint is a full URL of its own, not a host to be joined.
+        options.endpoint = "http://localhost:4318/v1/metrics";
+        set(options.endpoint, "metrics_endpoint", section);
+
+        // Same default and same key as makeTelemetrySetup(), so traces and
+        // metrics carry one service.name. systemName() is "xrpld".
+        options.serviceName = systemName();
+        set(options.serviceName, "service_name", section);
+
+        // Not from config: the build's version, the same source the trace
+        // resource takes it from at construction.
+        options.serviceVersion = build_info::getVersionString();
+
+        // The MeterProvider Resource carries service_instance_id, which
+        // Prometheus turns into the label every dashboard filters $node on.
+        set(options.serviceInstanceId, "service_instance_id", section);
+        if (options.serviceInstanceId.empty() && nodeIdentity_)
+            options.serviceInstanceId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
 
         // The node public key also goes on its own resource attribute,
         // xrpl.node.id, which config cannot override.
-        std::string nodeId;
         if (nodeIdentity_)
-            nodeId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
+            options.nodeId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
 
-        metricsRegistry_->start(endpoint, instanceId, nodeId);
+        // xrpl.network.id, and the xrpl.network.type label the registry
+        // derives from it. Without this the collector's insert rule fills in
+        // its own default and a devnet node reports mainnet on this pipeline.
+        options.networkId = config_->networkId;
+
+        // The exporter connection reads the same four TLS keys the trace
+        // exporter does, so one [telemetry] block covers both signals. use_tls
+        // is an int compared to 0, matching makeTelemetrySetup().
+        int useTls = 0;
+        set(useTls, "use_tls", section);
+        options.useTls = useTls != 0;
+        set(options.tlsCaCertPath, "tls_ca_cert", section);
+        set(options.tlsClientCertPath, "tls_client_cert", section);
+        set(options.tlsClientKeyPath, "tls_client_key", section);
+
+        metricsRegistry_->start(options);
     }
 }
 

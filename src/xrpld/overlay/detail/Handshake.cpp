@@ -231,7 +231,7 @@ buildHandshake(
 namespace {
 
 /**
- * Count one handshake negotiation failure, then throw as before.
+ * Count one handshake negotiation failure, then throw.
  *
  * verifyHandshake() rejects a peer by throwing, from more than a dozen
  * distinct branches. Routing every one of them through this helper keeps a
@@ -242,16 +242,15 @@ namespace {
  *
  * Emits `handshake_negotiation_fail_total`, label `reason`.
  *
- * The thrown message is passed through unchanged so callers, which log
- * `e.what()`, see exactly the text they saw before. The reason label is a
- * separate, low-cardinality machine-readable value; it is never derived from
- * the message.
+ * The thrown message is passed through unchanged, so callers that log
+ * `e.what()` see the caller's own text and nothing this helper added. The
+ * reason label is a separate, low-cardinality machine-readable value; it is
+ * never derived from the message.
  *
  * @param app Provides the metrics registry.
  * @param reason Short snake_case cause, e.g. "wrong_network". A string
  *        literal from a fixed set, so cardinality stays bounded.
- * @param message The exact message to throw, byte-identical to the previous
- *        behaviour.
+ * @param message The exact message to throw, forwarded byte for byte.
  *
  * @note Per-connection handshake path -- one call per rejected peer, not a
  *       hot loop.

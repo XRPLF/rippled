@@ -59,7 +59,7 @@ PROFILES_FILE = SCRIPT_DIR / "workload-profiles.json"
 # trips) and then waits a fixed 10s for those funding transactions to
 # validate, and both generators drain in-flight requests while shutting down.
 # A generator that outruns this is killed and the phase records the timeout as
-# an error, so one wedged process can no longer stall the whole profile.
+# an error, so one wedged process cannot stall the whole profile.
 SUBPROCESS_GRACE_SEC = 90.0
 
 # How long to keep reading a killed process's output before giving up on it.

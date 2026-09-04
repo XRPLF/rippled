@@ -2041,10 +2041,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
     using namespace telemetry;
     // root: inbound peer message entry point (kConsumer); must not inherit
-    // any span left active on this peer thread.
-    auto span =
+    // any span left active on this peer thread. Named after the span it holds,
+    // peer.proposal.receive, to keep it distinct from `proposalSpan` below,
+    // which holds the consensus-level span handed to the job worker.
+    auto proposalReceiveSpan =
         ScopedSpanGuard::freshRoot(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
-    span.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
+    proposalReceiveSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     protocol::TMProposeSet const& set = *m;
 
@@ -2072,7 +2074,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
     auto const isTrusted = app_.getValidators().trusted(publicKey);
-    span.setAttribute(peer_span::attr::proposalTrusted, isTrusted);
+    proposalReceiveSpan.setAttribute(peer_span::attr::proposalTrusted, isTrusted);
 
     // If the operator has specified that untrusted proposals be dropped then
     // this happens here I.e. before further wasting CPU verifying the signature
@@ -2646,10 +2648,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
     using namespace telemetry;
     // root: inbound peer message entry point (kConsumer); must not inherit
-    // any span left active on this peer thread.
-    auto valSpan = ScopedSpanGuard::freshRoot(
+    // any span left active on this peer thread. Named after the span it holds,
+    // peer.validation.receive, to keep it distinct from the consensus-level
+    // span handed to the job worker below.
+    auto validationReceiveSpan = ScopedSpanGuard::freshRoot(
         TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
-    valSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
+    validationReceiveSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     if (m->validation().size() < 50)
     {
@@ -2690,11 +2694,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // false when telemetry is compiled out, switched off in the config, or
         // the Peer trace category is disabled; a span that exists but was
         // sampled out still pays.
-        if (valSpan)
+        if (validationReceiveSpan)
         {
-            valSpan.setAttribute(
+            validationReceiveSpan.setAttribute(
                 peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
-            valSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
+            validationReceiveSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
         }
 
         if (!isCurrent(
@@ -2712,7 +2716,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // suppression for 30 seconds to avoid doing a relatively expensive
         // lookup every time a spam packet is received
         auto const isTrusted = app_.getValidators().trusted(val->getSignerPublic());
-        valSpan.setAttribute(peer_span::attr::validationTrusted, isTrusted);
+        validationReceiveSpan.setAttribute(peer_span::attr::validationTrusted, isTrusted);
 
         // If the operator has specified that untrusted validations be
         // dropped then this happens here I.e. before further wasting CPU
@@ -2781,12 +2785,29 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
         }
 
+        // validation_receive_status is set once on each exit below, not as a default
+        // here, to avoid OTel SDK attribute duplication. It is what separates
+        // the microsecond drop paths from the queued path, which also covers
+        // job wait and checkValidation.
         if (!isTrusted && (tracking_.load() == Tracking::Diverged))
         {
+            if (span && *span)
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    telemetry::consensus::span::val::validationDroppedDiverged);
+            }
             JLOG(pJournal_.debug()) << "Dropping untrusted validation from diverged peer";
         }
         else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
         {
+            // Set before the handle is moved into the job below.
+            if (span && *span)
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    telemetry::consensus::span::val::validationQueued);
+            }
             std::string const name = isTrusted ? "ChkTrust" : "ChkUntrust";
 
             std::weak_ptr<PeerImp> const weak = shared_from_this();
@@ -2800,6 +2821,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         }
         else
         {
+            if (span && *span)
+            {
+                span->setAttribute(
+                    telemetry::consensus::span::attr::validationReceiveStatus,
+                    telemetry::consensus::span::val::validationDroppedLoad);
+            }
             JLOG(pJournal_.debug()) << "Dropping untrusted validation for load";
         }
     }

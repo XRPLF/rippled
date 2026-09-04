@@ -116,7 +116,7 @@ public:
     }
 
 #ifdef XRPL_ENABLE_TELEMETRY
-    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view) override
     {
         static auto noopTracer = opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>(
@@ -124,14 +124,14 @@ public:
         return noopTracer;
     }
 
-    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(std::string_view, opentelemetry::trace::SpanKind) override
     {
         return opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>(
             new opentelemetry::trace::NoopSpan(nullptr));
     }
 
-    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    [[nodiscard]] opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
     startSpan(
         std::string_view,
         opentelemetry::context::Context const&,

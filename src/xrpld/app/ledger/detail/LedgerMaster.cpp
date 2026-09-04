@@ -519,7 +519,8 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
     // Same ledger-hash join as ledger.validate: persisting a ledger is part of
     // that ledger's story, so a slow store shows up in the same trace as the
     // acquire that fetched it rather than as an unrelated one-span trace.
-    auto span = makeLedgerTraceSpan(kLedgerStoreSpan, ledger->header().hash, ledger->header().seq);
+    auto storeSpan =
+        makeLedgerTraceSpan(kLedgerStoreSpan, ledger->header().hash, ledger->header().seq);
 
     bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
@@ -1045,11 +1046,10 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     lastTrustedTally_.store(static_cast<std::int64_t>(tvc), std::memory_order_relaxed);
 
     // ValidatorList disables quorum by returning SIZE_MAX, which getNeededValidations
-    // passes straight through. Casting that to int64_t would wrap to -1 and make the
-    // tally look like it exceeds the target on a node that can never validate, so
-    // report the disabled state as int64 max instead: the target then reads far above
-    // any tally, which is the truthful signal. Mirrors the same fix in the unl_quorum
-    // gauge (MetricsRegistry::registerUnlQuorumGauge).
+    // passes straight through. That value must not be cast to int64_t: it would wrap
+    // to -1 and make the tally look like it exceeds the target on a node that can
+    // never validate. The disabled state is published as int64 max instead, so the
+    // target reads far above any tally.
     lastQuorumTarget_.store(
         minVal == std::numeric_limits<std::size_t>::max() ? std::numeric_limits<std::int64_t>::max()
                                                           : static_cast<std::int64_t>(minVal),
@@ -1060,9 +1060,11 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         JLOG(journal_.trace()) << "Only " << tvc << " validations for " << ledger->header().hash;
 
         // Trusted validations did not reach quorum, so this ledger will not be
-        // declared validated. Previously trace-only, which made a node that
-        // peers and receives validations yet never validates indistinguishable
-        // from an idle one. One macro call at the gate, never in a loop.
+        // declared validated. The trace line above is the only other record
+        // of this gate, and trace level is off on an ordinary node, which
+        // leaves a node that peers and receives validations yet never
+        // validates indistinguishable from an idle one. One macro call at the
+        // gate, never in a loop.
         //
         // Emitted while mutex_ is held. That is unavoidable here (the gate and
         // its early return are inside the locked section) and consistent with
@@ -1093,57 +1095,65 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     }
 
     using namespace telemetry;
-    // Keyed on the ledger hash so the acceptance decision joins the same trace
-    // as that ledger's acquire and store spans, even though all three run on
-    // different threads. ledger_seq and ledger_hash come from the helper.
-    auto valSpan =
-        makeLedgerTraceSpan(kLedgerValidateSpan, ledger->header().hash, ledger->header().seq);
-    valSpan.setAttribute(ledger_span::attr::validations, static_cast<int64_t>(tvc));
-
-    JLOG(journal_.info()) << "Advancing accepted ledger to " << ledger->header().seq
-                          << " with >= " << minVal << " validations";
-
-    ledger->setValidated();
-    ledger->setFull();
-    setValidLedger(ledger);
-    if (!pubLedger_)
+    // Scoped so ledger.validate measures only the promotion itself. The
+    // flag-ledger upgrade-warning check below runs on one ledger in 256 and
+    // reads every trusted validation of the parent, so leaving it inside would
+    // make every 256th span a duration outlier for work that is not part of
+    // promoting a ledger. tryAdvance() stays inside: it only sets a flag and
+    // posts a job, so it adds no measurable time.
     {
-        pendSaveValidated(app_, ledger, true, true);
-        setPubLedger(ledger);
-        app_.getOrderBookDB().setup(ledger);
-    }
+        // Keyed on the ledger hash so the acceptance decision joins the same trace
+        // as that ledger's acquire and store spans, even though all three run on
+        // different threads. ledger_seq and ledger_hash come from the helper.
+        auto validateSpan =
+            makeLedgerTraceSpan(kLedgerValidateSpan, ledger->header().hash, ledger->header().seq);
+        validateSpan.setAttribute(ledger_span::attr::validations, static_cast<int64_t>(tvc));
 
-    std::uint32_t const base = app_.getFeeTrack().getLoadBase();
-    auto fees = app_.getValidations().fees(ledger->header().hash, base);
-    {
-        auto fees2 = app_.getValidations().fees(ledger->header().parentHash, base);
-        fees.reserve(fees.size() + fees2.size());
-        std::ranges::copy(fees2, std::back_inserter(fees));
-    }
-    std::uint32_t fee = 0;
-    if (!fees.empty())
-    {
-        std::ranges::sort(fees);
-        if (auto stream = journal_.debug())
+        JLOG(journal_.info()) << "Advancing accepted ledger to " << ledger->header().seq
+                              << " with >= " << minVal << " validations";
+
+        ledger->setValidated();
+        ledger->setFull();
+        setValidLedger(ledger);
+        if (!pubLedger_)
         {
-            std::stringstream s;
-            s << "Received fees from validations: (" << fees.size() << ") ";
-            for (auto const fee1 : fees)
-            {
-                s << " " << fee1;
-            }
-            stream << s.str();
+            pendSaveValidated(app_, ledger, true, true);
+            setPubLedger(ledger);
+            app_.getOrderBookDB().setup(ledger);
         }
-        fee = fees[fees.size() / 2];  // median
-    }
-    else
-    {
-        fee = base;
-    }
 
-    app_.getFeeTrack().setRemoteFee(fee);
+        std::uint32_t const base = app_.getFeeTrack().getLoadBase();
+        auto fees = app_.getValidations().fees(ledger->header().hash, base);
+        {
+            auto fees2 = app_.getValidations().fees(ledger->header().parentHash, base);
+            fees.reserve(fees.size() + fees2.size());
+            std::ranges::copy(fees2, std::back_inserter(fees));
+        }
+        std::uint32_t fee = 0;
+        if (!fees.empty())
+        {
+            std::ranges::sort(fees);
+            if (auto stream = journal_.debug())
+            {
+                std::stringstream s;
+                s << "Received fees from validations: (" << fees.size() << ") ";
+                for (auto const fee1 : fees)
+                {
+                    s << " " << fee1;
+                }
+                stream << s.str();
+            }
+            fee = fees[fees.size() / 2];  // median
+        }
+        else
+        {
+            fee = base;
+        }
 
-    tryAdvance();
+        app_.getFeeTrack().setRemoteFee(fee);
+
+        tryAdvance();
+    }
 
     if (ledger->seq() % 256 == 0)
     {

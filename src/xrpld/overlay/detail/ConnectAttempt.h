@@ -84,7 +84,7 @@ private:
      * reportOutcome() on whichever terminal path the state machine takes, and
      * by the destructor for an attempt torn down without one.
      *
-     * The counters WP-A1 added answer "how many dials failed, and at which
+     * The dial-failure counters answer "how many dials failed, and at which
      * stage". This span answers what they cannot: which peer, and how the time
      * was spent inside one slow attempt. Both are needed because a dial that
      * hangs is invisible in a rate.

@@ -787,10 +787,10 @@ async def submit_transaction(
 
         if not success:
             # First occurrence of each distinct result at WARNING, the rest at
-            # DEBUG. A run where every transaction failed previously produced
-            # no diagnostics at all, because DEBUG is off in CI; logging every
-            # failure instead would bury the run in thousands of identical
-            # lines.
+            # DEBUG. DEBUG is off in CI, so a run where every transaction fails
+            # would otherwise produce no diagnostics at all; logging every
+            # failure at WARNING instead would bury the run in thousands of
+            # identical lines.
             _log_first_failure(
                 "result:%s" % engine_result,
                 "%s result: %s (%s)",

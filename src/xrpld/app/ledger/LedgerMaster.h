@@ -378,9 +378,9 @@ public:
      * whichever thread calls checkAccept (a peer thread via
      * handleNewValidation, the JtLedgerData "AcqDone" job, or the consensus
      * thread via switchLCL), and `ledger.store` from a fourth. No ambient
-     * context reaches across those boundaries, so before this each ledger's
-     * spans were separate one-span traces and a slow ledger could not be read
-     * as one unit.
+     * context reaches across those boundaries, so without an explicit join
+     * each ledger's spans would be separate one-span traces and a slow ledger
+     * could not be read as one unit.
      *
      * They are joined without propagating anything: `SpanGuard::hashSpan()`
      * derives the trace id from the first 16 bytes of a hash, so every span

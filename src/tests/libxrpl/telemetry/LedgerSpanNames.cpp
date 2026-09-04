@@ -1,7 +1,7 @@
 /**
  * @file LedgerSpanNames.cpp
  * Unit tests for the sync-diagnostic span contracts in LedgerSpanNames.h and
- * PeerSpanNames.h: `ledger.acquire` and, in the WP-B2 block at the end of this
+ * PeerSpanNames.h: `ledger.acquire` and, in the block at the end of this
  * file, `txset.acquire`, the three `ledger.acquire.{header,astree,txtree}`
  * phase children, `ledger.serve` and `peer.dial`.
  *
@@ -19,13 +19,14 @@
  *     shortcut, the "can never be acquired" exit, and the destructor when the
  *     sweeper drops a fetch -- and every one derives its value from this
  *     function. Asserting the function over its whole input domain therefore
- *     asserts the outcome of every exit path, including the destructor path,
- *     which is the case that previously produced a span with no outcome at all.
+ *     asserts the outcome of every exit path, including the destructor path --
+ *     the one exit with no explicit success or failure of its own, and so the
+ *     one most easily left without an outcome.
  *     The rule is a pure constexpr function with no dependency on
  *     InboundLedger, so it is asserted directly here: no Application, no peer
  *     set, and no test-only hook added to production code to reach it.
  *
- * The WP-B2 spans follow the same two rules, with three more pure functions
+ * The spans in that block follow the same two rules, with three more pure functions
  * standing in for their emitters' exits: `phaseOutcome()` for the acquire
  * phases and tx-set fetch, and `serveObjectType()` / `serveOutcome()` for the
  * eight exits of PeerImp::processLedgerRequest. Every one is asserted over its
@@ -237,7 +238,7 @@ TEST(LedgerSpanNames, inactive_guard_finalize_sequence_is_a_no_op)
 }
 
 // ===========================================================================
-// WP-B2 — the new sync-diagnostic spans
+// The sync-diagnostic spans
 //
 // Same contract as the ledger.acquire block above and asserted the same way:
 // the wire names and attribute keys are pinned literally because they are a
@@ -443,8 +444,8 @@ TEST(LedgerSpanNames, b2_attribute_keys_are_bare_underscore_never_dotted)
 
 TEST(LedgerSpanNames, timeout_outcome_value_is_distinct_from_the_other_three)
 {
-    // `timeout` is the value WP-B2 adds to the outcome set the collector
-    // aggregates. It must be distinct from all three existing values, because
+    // `timeout` is a fourth value in the outcome set the collector
+    // aggregates. It must be distinct from the other three, because
     // the whole point is separating "peers never supplied the data" from
     // "the data was bad" (failed) and "we stopped waiting" (abandoned).
     EXPECT_EQ(std::string_view(ledger_span::val::timeout), "timeout");

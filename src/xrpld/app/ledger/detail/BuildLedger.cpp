@@ -89,7 +89,8 @@ buildLedgerImpl(
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
     buildSpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(built->header().seq));
     buildSpan.setAttribute(
-        ledger_span::attr::closeTime, static_cast<int64_t>(closeTime.time_since_epoch().count()));
+        ledger_span::attr::closeTimeRippleEpochS,
+        static_cast<int64_t>(closeTime.time_since_epoch().count()));
     buildSpan.setAttribute(ledger_span::attr::closeTimeCorrect, closeTimeCorrect);
     buildSpan.setAttribute(
         ledger_span::attr::closeResolutionMs,
@@ -188,6 +189,12 @@ applyTransactions(
     // If there are any transactions left, we must have
     // tried them in at least one final pass
     XRPL_ASSERT(txns.empty() || !certainRetry, "xrpl::applyTransactions : retry transactions");
+    // Repeated from the parent ledger.build span on purpose: TraceQL cannot
+    // reach a parent's attributes from a child, so without it no query can
+    // select this span by ledger. `view` is the accumulator over the ledger
+    // being built and copies its header, so this is the same sequence number
+    // the parent reports.
+    applySpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(view.seq()));
     applySpan.setAttribute(ledger_span::attr::txCount, static_cast<int64_t>(count));
     applySpan.setAttribute(ledger_span::attr::txFailed, static_cast<int64_t>(failed.size()));
     return count;

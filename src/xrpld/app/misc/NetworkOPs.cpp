@@ -28,9 +28,8 @@
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/CTID.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 #include <xrpld/telemetry/MetricMacros.h>
 #ifdef XRPL_ENABLE_TELEMETRY
 // The metric-name constants are named only as macro arguments, which the
@@ -101,7 +100,6 @@
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/MultiApiJson.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -3694,9 +3692,7 @@ NetworkOPsImp::transJson(
     if (meta)
     {
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::Values::None);
-        rpc::insertDeliveredAmount(jvObj[jss::meta], *ledger, transaction, meta->get());
-        rpc::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
-        rpc::insertMPTokenIssuanceID(jvObj[jss::meta], transaction, meta->get());
+        rpc::insertAllSyntheticInJson(jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
     // add CTID where the needed data for it exists

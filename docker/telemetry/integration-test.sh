@@ -384,8 +384,8 @@ ${IPS_FIXED}
 [telemetry]
 enabled=1
 service_instance_id=Node-${i}
-endpoint=http://localhost:4318/v1/traces
-exporter=otlp_http
+traces_endpoint=http://localhost:4318/v1/traces
+metrics_endpoint=http://localhost:4318/v1/metrics
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
@@ -619,6 +619,9 @@ log "--- Spanmetrics ---"
 log "Waiting 20s for Prometheus scrape cycle..."
 sleep 20
 
+# Names come from the spanmetrics connector's `namespace: "span"` in
+# otel-collector-config.yaml. Without that namespace the connector emits
+# traces_span_metrics_*, so these queries must move whenever it changes.
 calls_count=$(curl -sf "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$calls_count" -gt 0 ]; then
@@ -662,6 +665,12 @@ check_otel_metric() {
     fi
 }
 
+# Names are what OTelCollector::formatName() produces: the beast::insight
+# name lowercased with '.' and ' ' mapped to '_', any group() segment kept, and
+# no prefix. The [insight] prefix knob is logged at startup and never applied on
+# this path, and the collector's prometheus exporter sets no namespace, so a
+# name carrying a product prefix or capitals cannot match any exported series.
+
 # Node health gauges (ObservableGauge — no _total suffix)
 check_otel_metric "ledgermaster_validated_ledger_age"
 check_otel_metric "ledgermaster_published_ledger_age"
@@ -677,7 +686,8 @@ check_otel_metric "peer_finder_active_outbound_peers"
 # RPC counters (Counter — Prometheus adds _total suffix automatically)
 check_otel_metric "rpc_requests_total"
 
-# Overlay traffic
+# Overlay traffic — one series per TrafficCount category; "total" is the
+# aggregate category.
 check_otel_metric "total_bytes_in"
 
 # Verify StatsD receiver is NOT required (no statsd receiver in pipeline)

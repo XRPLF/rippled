@@ -240,7 +240,7 @@ connectors:
       # swept or shut down before reaching a result.
       - name: outcome
       - name: acquire_reason
-      # Sync-diagnostic span dimensions (WP-B2). Must stay identical to the
+      # Sync-diagnostic span dimensions. Must stay identical to the
       # local otel-collector-config.yaml dimension set; see the cardinality
       # note there for why txset_hash / remote_endpoint / missing_nodes /
       # served_nodes / duration_ms are span-only (per-round, per-peer or
@@ -249,7 +249,7 @@ connectors:
       # txset.acquire, ledger.acquire.*, peer.dial and ledger.serve.
       - name: timed_out
       - name: object_type
-      # Trace-causality span dimensions (WP-B3), on
+      # Trace-causality span dimensions, on
       # consensus.validation.accept. Must stay identical to the local
       # otel-collector-config.yaml dimension set; see the reasoning there for
       # what each value set is and why the ledger_hash join key stays span-only

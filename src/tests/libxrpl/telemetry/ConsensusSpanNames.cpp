@@ -17,7 +17,7 @@
  *     onto the phase children: a child span does not inherit parent attributes,
  *     but copying `ledger_seq` down would store the same value twice per trace.
  *
- *  2. The `consensus.validation.accept` span (WP-B3) and
+ *  2. The `consensus.validation.accept` span and
  *     `validationStatusValue()`, the rule turning a `ValStatus` into the
  *     attribute value. The caller passes `static_cast<int>(status)`, so the
  *     ENUMERATOR ORDER is part of the contract: asserting the whole domain here

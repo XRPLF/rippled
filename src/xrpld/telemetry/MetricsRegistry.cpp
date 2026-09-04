@@ -30,11 +30,12 @@
 
 // The app and overlay includes below are why
 // .github/scripts/levelization/results/loops.txt records
-// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry`, where
-// ordering.txt previously had telemetry strictly below both. The observable
-// gauges are pull-model: their callbacks sample live state when the reader
-// thread fires, so they need the concrete types to call getJqTransOverflow(),
-// size(), getPeerDisconnectCharges(), foreach() and txMetrics().
+// `xrpld.app <-> xrpld.telemetry` and `xrpld.overlay <-> xrpld.telemetry` as
+// cycles, rather than an acyclic ordering.txt entry placing telemetry strictly
+// below both. The observable gauges are pull-model: their callbacks sample live
+// state when the reader thread fires, so they need the concrete types to call
+// getJqTransOverflow(), size(), getPeerDisconnectCharges(), foreach() and
+// txMetrics().
 //
 // The cycle is confined to this translation unit. No telemetry header includes
 // app or overlay (MetricsRegistry.h forward-declares what it needs and takes a
@@ -73,6 +74,10 @@
 #include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/HistogramBuckets.h>
 #include <xrpl/telemetry/SpanNames.h>
+// For networkTypeFromId(), the one xrpl.network.type mapping both export
+// paths use. Adds no levelization edge: xrpld.telemetry > xrpl.telemetry
+// already holds via SpanNames.h above.
+#include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -251,17 +256,20 @@ MetricsRegistry::~MetricsRegistry()
 }
 
 void
-MetricsRegistry::start(
-    std::string const& endpoint,
-    std::string const& instanceId,
-    std::string const& nodeId)
+MetricsRegistry::start([[maybe_unused]] StartOptions const& options)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_)
         return;
 
-    JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << endpoint
-                          << ", instanceId=" << instanceId << ", nodeId=" << nodeId;
+    // useTls is logged because a collector that requires TLS rejects a
+    // plaintext exporter with no local error. The paths are left out.
+    JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << options.endpoint
+                          << ", serviceName=" << options.serviceName
+                          << ", serviceVersion=" << options.serviceVersion
+                          << ", instanceId=" << options.serviceInstanceId
+                          << ", nodeId=" << options.nodeId << ", networkId=" << options.networkId
+                          << ", useTls=" << options.useTls;
 
     // Rule for anything added below: this phase may create only instruments
     // whose recording is PUSHED from app code -- counters and histograms. An
@@ -271,15 +279,10 @@ MetricsRegistry::start(
     // belongs in startAsyncGauges(), not here. That includes observable
     // COUNTERS, not just gauges: jq_trans_overflow_total was created here and
     // its callback read getOverlay(), which asserts overlay_ is non-null.
-    initExporterAndProvider(endpoint, instanceId, nodeId);
+    initExporterAndProvider(options);
     initSyncInstruments();
 
     JLOG(journal_.info()) << "MetricsRegistry: provider and instruments ready";
-#else
-    (void)endpoint;
-    (void)instanceId;
-    (void)nodeId;
-    (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
 
@@ -302,21 +305,25 @@ MetricsRegistry::startAsyncGauges()
     registerAsyncGauges();
 
     JLOG(journal_.info()) << "MetricsRegistry: started successfully";
-#else
-    (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
 
 #ifdef XRPL_ENABLE_TELEMETRY
 void
-MetricsRegistry::initExporterAndProvider(
-    std::string const& endpoint,
-    std::string const& instanceId,
-    std::string const& nodeId)
+MetricsRegistry::initExporterAndProvider(StartOptions const& options)
 {
-    // Configure OTLP/HTTP metric exporter.
+    // Configure OTLP/HTTP metric exporter. The TLS settings come from the one
+    // [telemetry] block that also drives the trace exporter in Telemetry.cpp,
+    // so both exporters reach the collector on the same terms.
     otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
-    exporterOpts.url = endpoint;
+    exporterOpts.url = options.endpoint;
+    if (options.useTls)
+    {
+        exporterOpts.ssl_ca_cert_path = options.tlsCaCertPath;
+        exporterOpts.ssl_client_cert_path = options.tlsClientCertPath;
+        exporterOpts.ssl_client_key_path = options.tlsClientKeyPath;
+    }
+
     auto exporter = otlp_http::OtlpHttpMetricExporterFactory::Create(exporterOpts);
 
     // Configure periodic reader with 10-second export interval.
@@ -326,21 +333,33 @@ MetricsRegistry::initExporterAndProvider(
     auto reader =
         metric_sdk::PeriodicExportingMetricReaderFactory::Create(std::move(exporter), readerOpts);
 
-    // Configure resource attributes so Prometheus service_instance_id labels
-    // distinguish metrics from different nodes (matches OTelCollector setup).
-    otel_resource::ResourceAttributes attrs;
-    // Use std::string, not a string literal: ResourceAttributes stores an
+    // Stamp the same resource Telemetry::makeMetricsResource() builds for the
+    // trace pipeline. Both must agree: a node whose service.name or
+    // xrpl.network.type differs between the two pipelines splits its own
+    // series, and a dashboard filtering on either label shows only half.
+    //
+    // Use std::string, never a string literal: ResourceAttributes stores an
     // OTel AttributeValue variant whose char-const* overload binds to bool,
-    // so "xrpld" would be recorded as the boolean true. std::string selects
-    // the string alternative and the value round-trips as service.name=xrpld.
-    attrs[opentelemetry::semconv::service::kServiceName] = std::string("xrpld");
-    if (!instanceId.empty())
-        attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
+    // so a literal would be recorded as the boolean true.
+    otel_resource::ResourceAttributes attrs;
+    attrs[opentelemetry::semconv::service::kServiceName] = options.serviceName;
+    // int64_t, matching the trace resource. The same key with two types would
+    // give the two pipelines incompatible attribute values.
+    attrs[std::string(attr::networkId)] = static_cast<int64_t>(options.networkId);
+    // Derived here rather than passed in, so the id and the type label cannot
+    // disagree. Same helper the trace path uses.
+    attrs[std::string(attr::networkType)] = networkTypeFromId(options.networkId);
+
+    // The three below are left off when empty rather than stamped blank. An
+    // absent label reads as "not reported"; an empty one looks like a value.
+    if (!options.serviceVersion.empty())
+        attrs[opentelemetry::semconv::service::kServiceVersion] = options.serviceVersion;
+    if (!options.serviceInstanceId.empty())
+        attrs[opentelemetry::semconv::service::kServiceInstanceId] = options.serviceInstanceId;
     // xrpl.node.id: the same per-node key the trace resource carries, so
-    // metrics and traces resolve to one node. std::string for the same
-    // variant reason as service.name above.
-    if (!nodeId.empty())
-        attrs[std::string(attr::nodeId)] = nodeId;
+    // metrics and traces resolve to one node.
+    if (!options.nodeId.empty())
+        attrs[std::string(attr::nodeId)] = options.nodeId;
     auto resourceAttrs = otel_resource::Resource::Create(attrs);
 
     // Build a view registry with explicit buckets for the duration
@@ -525,20 +544,19 @@ MetricsRegistry::stop()
 // -----------------------------------------------------------------
 
 void
-MetricsRegistry::recordRpcStarted(std::string_view method)
+MetricsRegistry::recordRpcStarted([[maybe_unused]] std::string_view method)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !rpcStartedCounter_)
         return;
     rpcStartedCounter_->Add(1, {{"method", std::string(method)}});
-#else
-    (void)method;
-    (void)enabled_;
 #endif
 }
 
 void
-MetricsRegistry::recordRpcFinished(std::string_view method, std::int64_t durationUs)
+MetricsRegistry::recordRpcFinished(
+    [[maybe_unused]] std::string_view method,
+    [[maybe_unused]] std::int64_t durationUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !rpcFinishedCounter_)
@@ -551,15 +569,13 @@ MetricsRegistry::recordRpcFinished(std::string_view method, std::int64_t duratio
             {{"method", std::string(method)}},
             opentelemetry::context::Context{});
     }
-#else
-    (void)method;
-    (void)durationUs;
-    (void)enabled_;
 #endif
 }
 
 void
-MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t durationUs)
+MetricsRegistry::recordRpcErrored(
+    [[maybe_unused]] std::string_view method,
+    [[maybe_unused]] std::int64_t durationUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !rpcErroredCounter_)
@@ -572,10 +588,6 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
             {{"method", std::string(method)}},
             opentelemetry::context::Context{});
     }
-#else
-    (void)method;
-    (void)durationUs;
-    (void)enabled_;
 #endif
 }
 
@@ -584,7 +596,9 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
 // -----------------------------------------------------------------
 
 void
-MetricsRegistry::recordJobQueued(std::string_view jobType, std::string_view jobName)
+MetricsRegistry::recordJobQueued(
+    [[maybe_unused]] std::string_view jobType,
+    [[maybe_unused]] std::string_view jobName)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobQueuedCounter_)
@@ -593,18 +607,14 @@ MetricsRegistry::recordJobQueued(std::string_view jobType, std::string_view jobN
         1,
         {{label::jobType, std::string(jobType)},
          {label::handler, std::string(sanitiseHandler(jobName))}});
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)enabled_;
 #endif
 }
 
 void
 MetricsRegistry::recordJobStarted(
-    std::string_view jobType,
-    std::string_view jobName,
-    std::int64_t queuedDurUs)
+    [[maybe_unused]] std::string_view jobType,
+    [[maybe_unused]] std::string_view jobName,
+    [[maybe_unused]] std::int64_t queuedDurUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobStartedCounter_)
@@ -624,19 +634,14 @@ MetricsRegistry::recordJobStarted(
             {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)queuedDurUs;
-    (void)enabled_;
 #endif
 }
 
 void
 MetricsRegistry::recordJobFinished(
-    std::string_view jobType,
-    std::string_view jobName,
-    std::int64_t runningDurUs)
+    [[maybe_unused]] std::string_view jobType,
+    [[maybe_unused]] std::string_view jobName,
+    [[maybe_unused]] std::int64_t runningDurUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobFinishedCounter_)
@@ -651,11 +656,6 @@ MetricsRegistry::recordJobFinished(
             {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
-#else
-    (void)jobType;
-    (void)jobName;
-    (void)runningDurUs;
-    (void)enabled_;
 #endif
 }
 
@@ -1288,32 +1288,30 @@ MetricsRegistry::registerCompleteLedgersGauge()
                     return;
 
                 // Parse comma-separated ranges like
-                // "32570-50000,50005-75891421".
+                // "32570-50000,50005-75891421". A range of one ledger arrives
+                // as a bare sequence number, so parseLedgerRange() decides what
+                // a segment is; only genuinely unreadable ones are skipped.
                 std::size_t rangeIndex = 0;
                 std::istringstream stream(rangeStr);
                 std::string segment;
                 while (std::getline(stream, segment, ','))
                 {
-                    auto const dashPos = segment.find('-');
-                    if (dashPos == std::string::npos || dashPos == 0 ||
-                        dashPos == segment.size() - 1)
+                    auto const range = MetricsRegistry::parseLedgerRange(segment);
+                    if (!range)
                         continue;
-
-                    auto const startStr = segment.substr(0, dashPos);
-                    auto const endStr = segment.substr(dashPos + 1);
 
                     auto const idxStr = std::to_string(rangeIndex);
 
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                         ->Observe(
-                            static_cast<int64_t>(std::stoll(startStr)),
+                            static_cast<int64_t>(range->first),
                             {{"bound", "start"}, {"index", idxStr}});
 
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                         ->Observe(
-                            static_cast<int64_t>(std::stoll(endStr)),
+                            static_cast<int64_t>(range->second),
                             {{"bound", "end"}, {"index", idxStr}});
 
                     ++rangeIndex;
@@ -1655,7 +1653,7 @@ MetricsRegistry::registerStateTrackingGauge()
 
                 // State value: 0-4 from OperatingMode, 5=validating, 6=proposing.
                 auto const mode = app.getOPs().getOperatingMode();
-                auto stateValue = static_cast<double>(mode);
+                auto stateValue = static_cast<double>(std::to_underlying(mode));
 
                 // If FULL, refine using consensus info for validating/proposing.
                 if (mode == OperatingMode::FULL)
@@ -1884,15 +1882,14 @@ MetricsRegistry::registerUnlQuorumGauge()
 
                 // Validations required for a ledger to be fully validated.
                 // ValidatorList disables quorum by returning SIZE_MAX when too
-                // many publishers are unavailable. Casting that straight to
-                // int64_t would wrap to -1 and make the headroom
+                // many publishers are unavailable, so the raw value must not be
+                // cast to int64_t: it would wrap to -1 and make the headroom
                 // (trusted_keys - quorum) read positive on a node that can
-                // never validate, so report the disabled state as int64 max
-                // instead: headroom then goes strongly negative, which is the
-                // truthful signal.
+                // never validate.
                 auto const quorum = validators.quorum();
-                // A disabled quorum omits the series rather than publishing a
-                // sentinel. Both consumers of this gauge are timeseries panels
+                // A disabled quorum therefore omits the series rather than
+                // publishing a sentinel. Both consumers of this gauge are
+                // timeseries panels
                 // sharing one axis with trusted_keys, so a huge value would
                 // flatten the key line to the baseline and hide the outage it
                 // was meant to signal. The boolean below carries the state, and
@@ -1952,7 +1949,7 @@ void
 MetricsRegistry::registerSyncStateGauge()
 {
     // --- Sync diagnostics: why a fresh node is not FULL yet ---
-    // Four values that previously lived only in a log line or in server_info
+    // Four values otherwise visible only in a log line or in server_info
     // JSON. All four are cheap reads pulled on the ~10 s reader tick.
     syncStateGauge_ =
         meter_->CreateInt64ObservableGauge(metric::syncState, "Sync-pipeline health signals");
@@ -2334,10 +2331,11 @@ void
 MetricsRegistry::registerLedgerQuorumPublishGauge()
 {
     // --- Sync diagnostics: the quorum gate and the publish pipeline ---
-    // The last two stages of a fresh sync, and the two whose failures were
-    // invisible: a node can hold every ledger it needs and still never declare
-    // one validated (quorum short), or validate correctly and never publish
-    // (pipeline behind). Both used to be trace-log-only or not derivable at all.
+    // The last two stages of a fresh sync, and the two whose failures are
+    // hardest to see: a node can hold every ledger it needs and still never
+    // declare one validated (quorum short), or validate correctly and never
+    // publish (pipeline behind). The quorum shortfall is otherwise only a
+    // trace log line; the publish lag is not derivable from any other signal.
     ledgerQuorumPublishGauge_ = meter_->CreateInt64ObservableGauge(
         metric::ledgerQuorumPublish,
         "Pre-accept quorum gate and publish lag (tally vs quorum, first-validated, lag)");
