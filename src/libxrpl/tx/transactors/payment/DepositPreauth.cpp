@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
@@ -72,8 +73,10 @@ DepositPreauth::preflight(PreflightContext const& ctx)
             return temINVALID_ACCOUNT_ID;
         }
 
-        // An account may not preauthorize itself.
-        if (optAuth && (target == ctx.tx[sfAccount]))
+        // An account may not preauthorize itself. The Unauthorize direction is
+        // amendment-gated because older ledgers rejected it later, in preclaim.
+        bool const selfTarget = (target == ctx.tx[sfAccount]);
+        if ((optAuth || (optUnauth && ctx.rules.enabled(fixDepositPreauthSelf))) && selfTarget)
         {
             JLOG(ctx.j.trace()) << "Malformed transaction: Attempting to DepositPreauth self.";
             return temCANNOT_PREAUTH_SELF;
@@ -133,9 +136,11 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
             auto const& issuer = o[sfIssuer];
             if (!ctx.view.exists(keylet::account(issuer)))
                 return tecNO_ISSUER;
+            // Duplicates are bad user input, not node corruption. Preflight
+            // already rejects them with the same code, so this stays unreachable.
             auto [it, ins] = sorted.emplace(issuer, o[sfCredentialType]);
             if (!ins)
-                return tefINTERNAL;  // LCOV_EXCL_LINE
+                return temMALFORMED;  // LCOV_EXCL_LINE
         }
 
         // Verify that the Preauth entry they asked to add is not already
@@ -145,11 +150,16 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     }
     else if (ctx.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
+        auto const sorted = credentials::makeSorted(ctx.tx.getFieldArray(sfUnauthorizeCredentials));
+
+        // makeSorted returns an empty set to report duplicates, and an empty set
+        // would otherwise build the keylet of the empty credential set. Preflight
+        // already rejects duplicates, so this stays unreachable.
+        if (sorted.empty())
+            return temMALFORMED;  // LCOV_EXCL_LINE
+
         // Verify that the Preauth entry is in the ledger.
-        if (!ctx.view.exists(
-                keylet::depositPreauth(
-                    account,
-                    credentials::makeSorted(ctx.tx.getFieldArray(sfUnauthorizeCredentials)))))
+        if (!ctx.view.exists(keylet::depositPreauth(account, sorted)))
             return tecNO_ENTRY;
     }
     return tesSUCCESS;
@@ -300,10 +310,48 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     return tesSUCCESS;
 }
 
-void
-DepositPreauth::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+namespace {
+
+// True when the array is strictly ascending by issuer then credential type,
+// which is what makeSorted produces and so also means duplicate-free.
+bool
+credentialsCanonical(STArray const& credentials)
 {
-    // No transaction-specific invariants yet (future work).
+    std::optional<std::pair<AccountID, Slice>> prev;
+    for (auto const& credential : credentials)
+    {
+        std::pair<AccountID, Slice> const current{
+            credential[sfIssuer], credential[sfCredentialType]};
+        if (prev && !(*prev < current))
+            return false;
+        prev = current;
+    }
+    return true;
+}
+
+}  // namespace
+
+void
+DepositPreauth::visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    // On deletion `after` holds the erased entry, so only isDelete is reliable.
+    auto const& sle = after ? after : before;
+    if (!sle || sle->getType() != ltDEPOSIT_PREAUTH)
+        return;
+
+    // An existing grant was modified rather than created or removed.
+    if (before && !isDelete)
+        return;
+
+    std::uint32_t& counter = isDelete ? grantsRemoved_ : grantsCreated_;
+    ++counter;
+
+    if (sle->getAccountID(sfAccount) != ctx_.tx[sfAccount])
+        grantOwnerMismatch_ = true;
+
+    if (!isDelete && sle->isFieldPresent(sfAuthorizeCredentials) &&
+        !credentialsCanonical(sle->getFieldArray(sfAuthorizeCredentials)))
+        grantCredsNotCanonical_ = true;
 }
 
 bool
@@ -311,10 +359,38 @@ DepositPreauth::finalizeInvariants(
     STTx const&,
     TER,
     XRPAmount,
-    ReadView const&,
-    beast::Journal const&)
+    ReadView const& view,
+    beast::Journal const& j)
 {
-    // No transaction-specific invariants yet (future work).
+    if (!view.rules().enabled(fixDepositPreauthSelf))
+        return true;
+
+    // LCOV_EXCL_START
+    // A violation means the transactor wrote a grant it should not have, so
+    // these branches are unreachable unless one of the paths above is broken.
+    if (grantOwnerMismatch_)
+    {
+        JLOG(j.fatal()) << "DepositPreauth invariant: grant owner is not the "
+                           "submitting account.";
+        return false;
+    }
+
+    // A failed transaction touches no grant, so only an excess is a violation.
+    if (grantsCreated_ + grantsRemoved_ > 1)
+    {
+        JLOG(j.fatal()) << "DepositPreauth invariant: " << grantsCreated_ + grantsRemoved_
+                        << " grants changed in one transaction.";
+        return false;
+    }
+
+    if (grantCredsNotCanonical_)
+    {
+        JLOG(j.fatal()) << "DepositPreauth invariant: credential array is not "
+                           "canonically sorted.";
+        return false;
+    }
+    // LCOV_EXCL_STOP
+
     return true;
 }
 

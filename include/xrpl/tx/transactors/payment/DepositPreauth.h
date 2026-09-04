@@ -11,6 +11,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 class DepositPreauth : public Transactor
@@ -48,6 +50,27 @@ public:
     // Interface used by AccountDelete
     static TER
     removeFromLedger(ApplyView& view, uint256 const& delIndex, beast::Journal j);
+
+private:
+    /**
+     * Number of DepositPreauth grants this transaction inserted.
+     */
+    std::uint32_t grantsCreated_{0};
+
+    /**
+     * Number of DepositPreauth grants this transaction erased.
+     */
+    std::uint32_t grantsRemoved_{0};
+
+    /**
+     * Set when a touched grant's owner is not the submitting account.
+     */
+    bool grantOwnerMismatch_{false};
+
+    /**
+     * Set when a created grant's credential array is not canonically sorted.
+     */
+    bool grantCredsNotCanonical_{false};
 };
 
 }  // namespace xrpl
