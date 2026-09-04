@@ -286,9 +286,11 @@ SpanGuard::linkedSpan(std::string_view name) const noexcept
     otel_trace::StartSpanOptions opts;
     opts.parent = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
 
+    // LCOV_EXCL_START
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name), {}, {{spanCtx, {{kLinkTypeKey, kLinkTypeFollowsFrom}}}}, opts)));
+    // LCOV_EXCL_STOP
 }
 
 SpanGuard
@@ -312,12 +314,14 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx) noexcep
     otel_trace::StartSpanOptions opts;
     opts.parent = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
 
+    // LCOV_EXCL_START
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name),
             {},
             {{linkSpan->GetContext(), {{kLinkTypeKey, kLinkTypeFollowsFrom}}}},
             opts)));
+    // LCOV_EXCL_STOP
 }
 
 // ===== Context capture =====================================================

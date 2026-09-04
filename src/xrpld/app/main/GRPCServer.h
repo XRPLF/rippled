@@ -20,6 +20,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -196,6 +197,11 @@ private:
 
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
+        /**
+         * Human-readable name for telemetry spans (e.g. "GetLedger").
+         */
+        std::string_view name_;
+
     public:
         ~CallData() override = default;
 
@@ -211,7 +217,8 @@ private:
             Forward<Request, Response> forward,
             rpc::Condition requiredCondition,
             resource::Charge loadType,
-            std::vector<boost::asio::ip::address> const& secureGatewayIPs);
+            std::vector<boost::asio::ip::address> const& secureGatewayIPs,
+            std::string_view name = "");
 
         CallData(CallData const&) = delete;
 

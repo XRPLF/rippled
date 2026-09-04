@@ -7,6 +7,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -17,14 +18,18 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <exception>
 #include <string>
+#include <string_view>
 
-namespace xrpl::rpc {
+namespace xrpl {
+using namespace telemetry;
+namespace rpc {
 
 namespace {
 
@@ -157,6 +162,17 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
+    // Scoped so this command nests under rpc.process and becomes the ambient
+    // parent of any command-internal spans (e.g. pathfind.request). Coro-aware
+    // storage keeps the scope correct across doRipplePathFind's yield.
+    auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name);
+    span.setAttribute(rpc_span::attr::command, name.c_str());
+    span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
+    span.setAttribute(
+        rpc_span::attr::rpcRole,
+        context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
+                                    : std::string_view(rpc_span::val::user));
+
     static std::atomic<std::uint64_t> kRequestId{0};
     auto& perfLog = context.app.getPerfLog();
     std::uint64_t const curId = ++kRequestId;
@@ -172,12 +188,31 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
+        // Status::operator bool() returns true when there IS an error
+        // (code_ != OK), so the ternary correctly maps error->error, ok->success.
+        span.setAttribute(
+            rpc_span::attr::rpcStatus,
+            ret ? std::string_view{rpc_span::val::error}
+                : std::string_view{rpc_span::val::success});
+        // Reflect the result in the OTel span status, not just the attribute,
+        // so non-exception RPC errors (rpcTOO_BUSY, rpcNO_PERMISSION, ...) are
+        // visible to {status.code=error} queries.
+        if (ret)
+        {
+            span.setError(rpc_span::val::error);
+        }
+        else
+        {
+            span.setOk();
+        }
         return ret;
     }
     catch (std::exception& e)
     {
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
+        span.recordException(e);
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
 
         if (context.loadType == resource::kFeeReferenceRpc)
             context.loadType = resource::kFeeExceptionRpc;
@@ -187,6 +222,49 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
     }
 }
 
+// Telemetry-only helper, so it is compiled out with telemetry off. Left
+// running it would cost several json lookups, up to two string copies and a
+// handler-table lookup on every failed request, for a name nobody records.
+// Its result IS the span name, so `if (span)` cannot guard it: at that point
+// no span exists to test. The single call site is gated the same way, which
+// also keeps this file-static function referenced in both configurations.
+#ifdef XRPL_ENABLE_TELEMETRY
+
+// Resolve the span suffix / command attribute for a request that failed in
+// fillHandler. Returns the canonical handler name for a recognized command
+// (a finite, bounded set) or the literal "unknown" for a request that omits
+// both fields or names an unregistered command. The raw request value is
+// deliberately NOT used: the command attribute is promoted to a Prometheus
+// label by the spanmetrics connector, so an attacker-controlled string would
+// let arbitrary request input drive unbounded span-name / label cardinality.
+// Resolving against the registry keeps per-command error attribution for real
+// commands (e.g. a submit rejected with rpcTOO_BUSY stays rpc.command.submit)
+// while collapsing garbage input to a single series.
+std::string_view
+resolveCommandSpanName(JsonContext const& context)
+{
+    if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
+        return rpc_span::val::unknownCommand;
+
+    // fillHandler() rejects a request that supplies both fields with differing
+    // values as rpcUNKNOWN_COMMAND. Mirror that here, or the span would be
+    // labelled with one of the two names and misattribute the error to a
+    // command that was never dispatched.
+    if (context.params.isMember(jss::command) && context.params.isMember(jss::method) &&
+        context.params[jss::command].asString() != context.params[jss::method].asString())
+        return rpc_span::val::unknownCommand;
+
+    std::string const cmd = context.params.isMember(jss::command)
+        ? context.params[jss::command].asString()
+        : context.params[jss::method].asString();
+
+    auto const* handler = getHandler(context.apiVersion, context.app.config().betaRpcApi, cmd);
+    return (handler != nullptr) ? std::string_view{handler->name}
+                                : std::string_view{rpc_span::val::unknownCommand};
+}
+
+#endif  // XRPL_ENABLE_TELEMETRY
+
 }  // namespace
 
 Status
@@ -195,6 +273,28 @@ doCommand(rpc::JsonContext& context, json::Value& result)
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
+        // Every statement below only feeds the error span, and the span name
+        // itself comes from resolveCommandSpanName(), so there is no span
+        // object to test with `if (span)`. With telemetry off the whole block
+        // is compiled out and a storm of malformed requests pays nothing.
+#ifdef XRPL_ENABLE_TELEMETRY
+        // Bound the span name and command attribute to the finite set of
+        // registered handler names (plus "unknown") — see the helper for why
+        // raw request input must not reach the telemetry pipeline.
+        auto const cmdName = resolveCommandSpanName(context);
+        auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
+        span.setAttribute(rpc_span::attr::command, cmdName);
+        // Mirror the attribute set callMethod() puts on a successful command
+        // span, so error spans stay filterable by API version and role.
+        span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
+        span.setAttribute(
+            rpc_span::attr::rpcRole,
+            context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
+                                        : std::string_view(rpc_span::val::user));
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError(getErrorInfo(error).token.cStr());
+#endif  // XRPL_ENABLE_TELEMETRY
+
         injectError(error, result);
         return error;
     }
@@ -234,4 +334,5 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
     return handler->role;
 }
 
-}  // namespace xrpl::rpc
+}  // namespace rpc
+}  // namespace xrpl

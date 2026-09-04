@@ -90,16 +90,16 @@
  *
  * 3. Cross-thread context propagation:
  * @code
- *     #include <xrpld/consensus/ConsensusSpanNames.h>
+ *     #include <xrpld/rpc/detail/RpcSpanNames.h>
  *     using namespace xrpl::telemetry;
  *
  *     // Thread A: create span and capture its own context as parent
  *     auto span = SpanGuard::span(
- *         TraceCategory::Consensus, seg::consensus, consensus::span::op::round);
+ *         TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
  *     auto ctx = span.spanContext();
  *
  *     // Thread B: create child with captured context
- *     auto child = SpanGuard::childSpan(consensus::span::accept, ctx);
+ *     auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
  * @endcode
  *
  * 4. Conditional check (rarely needed — methods are no-ops on null):
