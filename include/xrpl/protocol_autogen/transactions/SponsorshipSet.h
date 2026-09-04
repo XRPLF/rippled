@@ -21,7 +21,7 @@ class SponsorshipSetBuilder;
  * Type: ttSPONSORSHIP_SET (91)
  * Delegable: Delegation::Delegable
  * Amendment: featureSponsor
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SponsorshipSetBuilder to construct new transactions.
