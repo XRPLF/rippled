@@ -303,7 +303,7 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "checkKeylet"]
-        fn check_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn check_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "credentialKeylet"]
@@ -339,7 +339,7 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "escrowKeylet"]
-        fn escrow_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn escrow_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "trustLineKeylet"]
@@ -356,7 +356,7 @@ mod ffi {
         fn mptoken_issuance_keylet(
             self: &HostContext,
             issuer: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -369,17 +369,17 @@ mod ffi {
         fn nftoken_offer_keylet(
             self: &HostContext,
             account: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "offerKeylet"]
-        fn offer_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn offer_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "oracleKeylet"]
-        fn oracle_keylet(self: &HostContext, account: &[u8], doc_id: i32, out: &mut [u8]) -> i32;
+        fn oracle_keylet(self: &HostContext, account: &[u8], doc_id: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "paychannelKeylet"]
@@ -387,7 +387,7 @@ mod ffi {
             self: &HostContext,
             account: &[u8],
             destination: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -396,7 +396,7 @@ mod ffi {
         fn permissioned_domain_keylet(
             self: &HostContext,
             account: &[u8],
-            seq: i32,
+            seq: u32,
             out: &mut [u8],
         ) -> i32;
 
@@ -406,11 +406,11 @@ mod ffi {
 
         #[namespace = "xrpl"]
         #[cxx_name = "ticketKeylet"]
-        fn ticket_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn ticket_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "vaultKeylet"]
-        fn vault_keylet(self: &HostContext, account: &[u8], seq: i32, out: &mut [u8]) -> i32;
+        fn vault_keylet(self: &HostContext, account: &[u8], seq: u32, out: &mut [u8]) -> i32;
 
         #[namespace = "xrpl"]
         #[cxx_name = "sha512Half"]
@@ -671,11 +671,8 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.amm_keylet(asset1, asset2, out))
     }
 
-    // `cast_signed` on a keylet's `seq`/`doc_id`, here and in the nine below: the ABI
-    // declares the guest's `u32`, `HostContext` takes rippled's `std::int32_t`, and
-    // the bit pattern is what both sides mean.
     fn check_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
-        bytes_written(self.ctx.check_keylet(account, seq.cast_signed(), out))
+        bytes_written(self.ctx.check_keylet(account, seq, out))
     }
 
     fn credential_keylet(
@@ -714,7 +711,7 @@ impl HostFunctions for CxxHost<'_> {
     }
 
     fn escrow_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
-        bytes_written(self.ctx.escrow_keylet(account, seq.cast_signed(), out))
+        bytes_written(self.ctx.escrow_keylet(account, seq, out))
     }
 
     fn trust_line_keylet(
@@ -736,10 +733,7 @@ impl HostFunctions for CxxHost<'_> {
         seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
-        bytes_written(
-            self.ctx
-                .mptoken_issuance_keylet(issuer, seq.cast_signed(), out),
-        )
+        bytes_written(self.ctx.mptoken_issuance_keylet(issuer, seq, out))
     }
 
     fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize> {
@@ -747,18 +741,15 @@ impl HostFunctions for CxxHost<'_> {
     }
 
     fn nftoken_offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
-        bytes_written(
-            self.ctx
-                .nftoken_offer_keylet(account, seq.cast_signed(), out),
-        )
+        bytes_written(self.ctx.nftoken_offer_keylet(account, seq, out))
     }
 
     fn offer_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
-        bytes_written(self.ctx.offer_keylet(account, seq.cast_signed(), out))
+        bytes_written(self.ctx.offer_keylet(account, seq, out))
     }
 
     fn oracle_keylet(&self, account: &[u8], doc_id: u32, out: &mut [u8]) -> HostResult<usize> {
-        bytes_written(self.ctx.oracle_keylet(account, doc_id.cast_signed(), out))
+        bytes_written(self.ctx.oracle_keylet(account, doc_id, out))
     }
 
     fn paychannel_keylet(
@@ -768,10 +759,7 @@ impl HostFunctions for CxxHost<'_> {
         seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
-        bytes_written(
-            self.ctx
-                .paychannel_keylet(account, destination, seq.cast_signed(), out),
-        )
+        bytes_written(self.ctx.paychannel_keylet(account, destination, seq, out))
     }
 
     fn permissioned_domain_keylet(
@@ -780,10 +768,7 @@ impl HostFunctions for CxxHost<'_> {
         seq: u32,
         out: &mut [u8],
     ) -> HostResult<usize> {
-        bytes_written(
-            self.ctx
-                .permissioned_domain_keylet(account, seq.cast_signed(), out),
-        )
+        bytes_written(self.ctx.permissioned_domain_keylet(account, seq, out))
     }
 
     fn signer_list_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
@@ -791,11 +776,11 @@ impl HostFunctions for CxxHost<'_> {
     }
 
     fn ticket_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
-        bytes_written(self.ctx.ticket_keylet(account, seq.cast_signed(), out))
+        bytes_written(self.ctx.ticket_keylet(account, seq, out))
     }
 
     fn vault_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
-        bytes_written(self.ctx.vault_keylet(account, seq.cast_signed(), out))
+        bytes_written(self.ctx.vault_keylet(account, seq, out))
     }
 
     fn sha512_half(&self, data: &[u8], out: &mut [u8]) -> HostResult<usize> {

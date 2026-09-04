@@ -142,12 +142,11 @@ public:
         rust::Slice<std::uint8_t const> asset2,
         rust::Slice<std::uint8_t> out) const noexcept;
 
-    // The account id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
-    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     checkKeylet(
         rust::Slice<std::uint8_t const> account,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
     // Subject and issuer must each be 20 bytes, else `InvalidParams`. Writes the
@@ -178,12 +177,11 @@ public:
     didKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<std::uint8_t> out)
         const noexcept;
 
-    // The account id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
-    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     escrowKeylet(
         rust::Slice<std::uint8_t const> account,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
     // Both accounts and the currency must each be 20 bytes, else `InvalidParams`.
@@ -195,12 +193,11 @@ public:
         rust::Slice<std::uint8_t const> currency,
         rust::Slice<std::uint8_t> out) const noexcept;
 
-    // The issuer id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
-    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The issuer id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     mptokenIssuanceKeylet(
         rust::Slice<std::uint8_t const> issuer,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
     // The MPT id must be 24 bytes and the holder 20, else `InvalidParams`. Writes the
@@ -211,45 +208,40 @@ public:
         rust::Slice<std::uint8_t const> holder,
         rust::Slice<std::uint8_t> out) const noexcept;
 
-    // The account id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
-    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     nftokenOfferKeylet(
         rust::Slice<std::uint8_t const> account,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
-    // The account id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
-    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     offerKeylet(
         rust::Slice<std::uint8_t const> account,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
-    // The account id must be 20 bytes, else `InvalidParams`. `docId` carries the
-    // guest's u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     oracleKeylet(
         rust::Slice<std::uint8_t const> account,
-        std::int32_t docId,
+        std::uint32_t docId,
         rust::Slice<std::uint8_t> out) const noexcept;
 
-    // Both account ids must be 20 bytes, else `InvalidParams`. `seq` carries the
-    // guest's u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // Both account ids must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     paychannelKeylet(
         rust::Slice<std::uint8_t const> account,
         rust::Slice<std::uint8_t const> destination,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
-    // The account id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
-    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     permissionedDomainKeylet(
         rust::Slice<std::uint8_t const> account,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
     // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
@@ -257,20 +249,18 @@ public:
     signerListKeylet(rust::Slice<std::uint8_t const> account, rust::Slice<std::uint8_t> out)
         const noexcept;
 
-    // The account id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
-    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     ticketKeylet(
         rust::Slice<std::uint8_t const> account,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
-    // The account id must be 20 bytes, else `InvalidParams`. `seq` carries the guest's
-    // u32 as its i32 bit pattern. Writes the 32-byte keylet.
+    // The account id must be 20 bytes, else `InvalidParams`. Writes the 32-byte keylet.
     [[nodiscard]] std::int32_t
     vaultKeylet(
         rust::Slice<std::uint8_t const> account,
-        std::int32_t seq,
+        std::uint32_t seq,
         rust::Slice<std::uint8_t> out) const noexcept;
 
     [[nodiscard]] std::int32_t
