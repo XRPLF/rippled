@@ -41,6 +41,7 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 - `gateway_balances`: The `account` and `ident` fields now return an `invalidParams` error if the value is not a string, instead of an `internal` error. [#7655](https://github.com/XRPLF/rippled/pull/7655)
 - `account_lines`: The `peer` field now returns an error if the value is not a string. [#7728](https://github.com/XRPLF/rippled/pull/7728)
 - `ledger`: `delivered_amount` is now included in the metadata of successful `AccountDelete` transactions when transactions are expanded (`expand`, or admin-only `full`). Previously it was only added for `Payment` and `CheckCash`, which made `ledger` inconsistent with `tx` and `account_tx`. [#5706](https://github.com/XRPLF/rippled/pull/5706)
+- `noripple_check`: The `transactions` field is no longer included in error responses; it is still returned (possibly as an empty array) whenever `transactions` is `true` and the request succeeds. A malformed `account` is now rejected before the ledger is looked up, so that error response no longer carries the `ledger_hash`, `ledger_index`, and `validated` fields ([#6303](https://github.com/XRPLF/rippled/pull/6303)).
 
 ## XRP Ledger server version 3.3.0
 
