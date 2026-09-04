@@ -152,11 +152,10 @@ fn memory(caller: &Caller<'_, VmState<'_>>) -> CallResult<Memory> {
 }
 
 /// The guest's memory, for a call that reads its inputs and writes nothing back.
+/// An argument read out of the slice is borrowed rather than copied.
 ///
-/// The slice aliases guest memory, so an argument read out of it is borrowed
-/// rather than copied. [`write_buffered`] and [`write_mant_exp`] hand over the
-/// same slice themselves, since a call that also writes has to take both borrows
-/// at once.
+/// A call that also writes takes both borrows at once, so [`write_buffered`] and
+/// [`write_mant_exp`] hand over the same slice themselves.
 pub(crate) fn guest_memory<'a>(caller: &'a Caller<'_, VmState<'_>>) -> CallResult<&'a [u8]> {
     let mem = memory(caller)?;
     Ok(mem.data(caller))

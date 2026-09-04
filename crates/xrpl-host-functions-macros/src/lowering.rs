@@ -1,33 +1,22 @@
-//! The wire shape of a declaration: **everything a declared Rust type decides**,
-//! in one place — the wasm value types it lowers to, the names those wasm
-//! parameters take, the type a generated body is handed for it, and which of the
-//! ABI's two argument traits builds that type out of those parameters.
+//! The wire shape of a declaration: everything a declared Rust type decides — the
+//! wasm value types it lowers to, the names those wasm parameters take, the type a
+//! generated body is handed for it, and which of the ABI's two argument traits
+//! builds that type. Kept as one set of `match` arms because the four must agree.
 //!
-//! Those four are one screen and one set of `match` arms on purpose. They are
-//! separately consumed — the first by the ABI table, all four by `glue` — but
-//! they must agree, and a reader answering "what does a `&[u8]` parameter become"
-//! should not have to read two files to find out.
+//! The whole mapping, and the only place it is written down: a type no arm here
+//! names is a type the ABI does not have, not one that falls back to something.
 //!
-//! This is the only place that mapping is written down, and the whole of it —
-//! a type no arm here names is a type the ABI does not have, not a type that
-//! falls back to something. So recognising a declared type and validating it are
-//! one act, and the allowed set cannot drift from the lowering.
-//!
-//! Two of the mappings are worth knowing before reading a declaration:
+//! Two rows are worth knowing before reading a declaration:
 //!
 //! - **`u32` is not a scalar.** It is a `(ptr, len)` region holding four
 //!   little-endian bytes, which is how the guest SDK passes a sequence number.
-//!   Read as one `i32` it would get ten declarations' arity wrong.
 //! - **`usize` and `i32` results are the same on the wire and not
-//!   interchangeable.** Both lower to an `i32`, but the first is the length of
-//!   what was written to an output region and the second is the answer itself.
-//!   [`ResultType`] keeps them apart because the code that writes the value out
-//!   has to.
+//!   interchangeable**: the first is the length of what was written to an output
+//!   region, the second the answer itself.
 //!
-//! Matching is on types as they are spelled: a proc macro resolves nothing, so
-//! `type Bytes = u32; … x: Bytes` is unrecognisable and no rule here can help
-//! it. Paths are matched on their last segment — as the return type's
-//! `HostResult` is — so a declaration may spell any of these types qualified.
+//! Matching is on types as they are spelled — a proc macro resolves nothing, so
+//! `type Bytes = u32; … x: Bytes` is unrecognisable — but on a path's last
+//! segment, so any of these types may be spelled qualified.
 
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
@@ -35,9 +24,8 @@ use syn::{Ident, PathArguments, Type, TypePath, TypeReference};
 
 /// What a host function may be handed, and what each costs on the wire.
 ///
-/// The order of the wasm parameters a declaration lowers to is the order of the
-/// declaration's own, so a reader of a declaration is reading the import the
-/// guest links against.
+/// Declaration order is wasm parameter order, so a reader of a declaration is
+/// reading the import the guest links against.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ParamType {
     /// `i32`, passed through as itself. Also the spelling for a raw scalar
@@ -58,10 +46,8 @@ pub(crate) enum ParamType {
     OutBytes,
 }
 
-/// The success type of the `HostResult<T>` every declaration returns.
-///
-/// The three are what the ABI has; `T` is otherwise an error, since the wasm
-/// result and the way the value reaches the guest both come from here.
+/// The success type of the `HostResult<T>` every declaration returns. These three
+/// are what the ABI has; any other `T` is an error.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ResultType {
     /// `usize`: the true length of a value written to an output region, which
@@ -70,23 +56,18 @@ pub(crate) enum ResultType {
     BufferLength,
     /// `i32`: the answer, from a function that writes no region.
     Value,
-    /// `()`: nothing at all, not even a result — the call's whole effect is on
-    /// the host, and an `Err` reaches the guest in no form.
+    /// `()`: no wasm result at all — the call's whole effect is on the host, and
+    /// an `Err` reaches the guest in no form.
     Nothing,
 }
 
 /// The wasm value types this ABI uses, mirroring `xrpl_host_functions::WasmValType`.
 ///
-/// Mirrored rather than shared because the dependency runs the other way: the
-/// ABI crate depends on this one, so nothing here can name its types. The
-/// [`ToTokens`] impl below is the whole of the crossing, and it is per *value* —
-/// what the expansion carries is references to that enum's variants, never a
-/// definition of it.
-///
-/// Falling out of sync with the hand-written enum is a compile error rather than
-/// drift: the expansion would name a variant that does not exist. The error
-/// lands on the `host_functions!` call site rather than here, which is a poor
-/// message and nothing worse.
+/// Mirrored rather than shared because the dependency runs the other way: the ABI
+/// crate depends on this one, so nothing here can name its types. The [`ToTokens`]
+/// impl below is the whole of the crossing, and emits references to that enum's
+/// variants — so falling out of sync with it is a compile error at the
+/// `host_functions!` call site rather than drift.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WasmValType {
     I32,
@@ -100,8 +81,7 @@ impl ParamType {
                                `&[u8]`, `&mut [u8]`, `&str` or `TraceDataType`";
 
         let recognised = match ty {
-            // A lifetime on the reference, if one is written, changes nothing on
-            // the wire, so it is not examined.
+            // A lifetime on the reference changes nothing on the wire.
             Type::Reference(TypeReference {
                 mutability, elem, ..
             }) => match (mutability, &**elem) {
@@ -124,11 +104,9 @@ impl ParamType {
         recognised.ok_or_else(|| syn::Error::new_spanned(ty, ALLOWED))
     }
 
-    /// The wasm parameters this declared type lowers to, in order.
-    ///
-    /// A region is the pair `(ptr, len)`, and which way it runs is not visible
-    /// here: `InBytes` and `OutBytes` lower alike, so the direction survives
-    /// only in the variant.
+    /// The wasm parameters this declared type lowers to, in order. `InBytes` and
+    /// `OutBytes` lower alike, so a region's direction survives only in the
+    /// variant.
     pub(crate) fn as_wasm_params(self) -> &'static [WasmValType] {
         match self {
             Self::I32 | Self::TraceDataType => &[WasmValType::I32],
@@ -144,9 +122,9 @@ impl ParamType {
     /// to.
     ///
     /// **It must answer as many names as [`Self::as_wasm_params`] answers types**,
-    /// the generated closure declaring them one against the other. The two matches
-    /// are written with the same arms for that reason, and
-    /// `lowers_every_declared_parameter_type` pins the lengths row by row.
+    /// since the generated closure declares them one against the other — hence the
+    /// matching arms, and `lowers_every_declared_parameter_type`'s row-by-row
+    /// length check.
     pub(crate) fn wasm_names(self, name: &Ident) -> Vec<Ident> {
         match self {
             Self::I32 | Self::I64 | Self::TraceDataType => vec![name.clone()],
@@ -156,14 +134,14 @@ impl ParamType {
         }
     }
 
-    /// The type a generated body takes this parameter as: a wasm scalar spelled
-    /// as itself, and everything else the argument type carrying its shape and
-    /// its direction.
+    /// The type a generated body takes this parameter as: a wasm scalar spelled as
+    /// itself, everything else the argument type carrying its shape and direction —
+    /// which is what makes an input region used as an output one a compile error
+    /// naming both.
     ///
-    /// This is what makes an input region used as an output one a compile error
-    /// naming both. The argument types are the engine's, not this crate's, so
-    /// `vm` is the path they are reached under — and **which types take it is
-    /// decided here**, since a wasm scalar is `i32` under every engine.
+    /// The argument types are the engine's, so `vm` is the path they are reached
+    /// under; which types need it is decided here, a wasm scalar being `i32` under
+    /// every engine.
     pub(crate) fn argument_type(self, vm: &TokenStream) -> TokenStream {
         match self {
             Self::I32 => quote!(i32),
@@ -177,14 +155,11 @@ impl ParamType {
     }
 
     /// Which of the ABI's two argument traits builds this parameter's argument
-    /// type out of the wasm parameters it arrived as, or `None` for a wasm
-    /// scalar, which is marshalled by neither and reaches a body as itself.
+    /// type, or `None` for a wasm scalar, which reaches a body as itself.
     ///
-    /// The arity is the whole of the distinction — `FromWasmRegion` takes the
-    /// two of a `(ptr, len)` pair, `FromWasmScalar` the one of a code — so this
-    /// answers alongside [`Self::as_wasm_params`] rather than from a predicate
-    /// somewhere else. `u32` is the row worth knowing: it is a region, so a
-    /// declared sequence number is two wasm parameters and not one.
+    /// The arity is the whole of the distinction — `FromWasmRegion` takes the two
+    /// of a `(ptr, len)` pair, `FromWasmScalar` the one of a code — so this answers
+    /// alongside [`Self::as_wasm_params`] rather than from a predicate elsewhere.
     pub(crate) fn argument_trait(self) -> Option<TokenStream> {
         match self {
             Self::I32 | Self::I64 => None,
@@ -195,9 +170,8 @@ impl ParamType {
         }
     }
 
-    /// Whether this parameter is a region the host writes to.
-    ///
-    /// What [`ResultType::BufferLength`] is the length *of*.
+    /// Whether this parameter is a region the host writes to — what
+    /// [`ResultType::BufferLength`] is the length *of*.
     pub(crate) fn is_out_region(self) -> bool {
         matches!(self, Self::OutBytes)
     }
@@ -261,10 +235,9 @@ impl ToTokens for WasmValType {
     }
 }
 
-/// The last segment of a plain path type, when it carries no generic arguments.
-///
-/// `i32`, `core::primitive::i32` and `TraceDataType` all answer their own name;
-/// `Vec<u8>` and `[u8; 4]` answer nothing.
+/// The last segment of a plain path type, when it carries no generic arguments:
+/// `i32`, `core::primitive::i32` and `TraceDataType` all answer their own name,
+/// `Vec<u8>` and `[u8; 4]` nothing.
 fn last_path_segment(ty: &Type) -> Option<&Ident> {
     let Type::Path(TypePath {
         qself: None, path, ..
@@ -289,17 +262,11 @@ mod tests {
     use WasmValType::{I32, I64};
 
     /// Every declared parameter type and everything it decides: what it costs on
-    /// the wire, what a body is handed for it, and which trait builds that. The
-    /// whole mapping, so nothing reaches the wire through a row nobody wrote down.
+    /// the wire, what a body is handed for it, and which trait builds that.
     ///
-    /// The **names** are asserted here rather than in `glue`, and by length rather
-    /// than spelling: a type that answered fewer names than value types would have
-    /// the generated closure declare a parameter its arity does not have, and that
-    /// is the one way these answers can contradict each other.
-    ///
-    /// The trait column is the same agreement seen from the other side — a region
-    /// costs two wasm parameters and takes `FromWasmRegion`, a code one and
-    /// `FromWasmScalar`, and the two scalars neither.
+    /// The names are asserted by length rather than spelling, since a type
+    /// answering fewer names than value types is the one way these answers can
+    /// contradict each other.
     #[test]
     fn lowers_every_declared_parameter_type() {
         let mapping: [(Type, &[WasmValType], &str, Option<&str>); 7] = [
@@ -369,8 +336,7 @@ mod tests {
     }
 
     /// A region's two wasm parameters are named off the declaration, so the
-    /// generated closure reads as the declaration does; a scalar keeps its name
-    /// outright.
+    /// generated closure reads as the declaration does.
     #[test]
     fn names_a_region_s_pair_after_the_declared_parameter() {
         let seq = format_ident!("seq");
@@ -388,8 +354,8 @@ mod tests {
         assert_eq!(names(parse_quote!(i32)), ["seq"]);
     }
 
-    /// The two `(ptr, len)` pairs that lower alike are still told apart, since
-    /// only the direction says who may write to the region.
+    /// The two `(ptr, len)` pairs lower alike but are told apart, since only the
+    /// direction says who may write to the region.
     #[test]
     fn keeps_the_regions_apart() {
         let input: Type = parse_quote!(&[u8]);
@@ -400,8 +366,6 @@ mod tests {
     }
 
     /// A type outside the mapping is refused rather than lowered to a guess.
-    /// `Vec<u8>`, `u64` and `bool` are the plausible ones — each is a type a
-    /// declaration could be written with and none has a wire form.
     #[test]
     fn refuses_parameter_types_outside_the_mapping() {
         let outside: [Type; 11] = [
@@ -454,8 +418,8 @@ mod tests {
         }
     }
 
-    /// Which of the two `i32` results was declared decides how the value reaches
-    /// the guest, so the distinction the wasm result loses is kept here.
+    /// The distinction the wasm result loses: which of the two `i32` results was
+    /// declared decides how the value reaches the guest.
     #[test]
     fn tells_a_length_from_a_value() {
         assert!(ResultType::BufferLength.is_buffer_length());
@@ -503,8 +467,8 @@ mod tests {
     }
 
     /// The emitted tokens name the ABI crate's variants, which is the whole of
-    /// what crosses out of this crate. Pinned here so the mirror's break is a
-    /// failure with a span, not a rustc error at the `host_functions!` call site.
+    /// what crosses out of this crate. Pinned here so a break in the mirror is a
+    /// failure with a span rather than a rustc error at the call site.
     #[test]
     fn emits_references_to_the_hand_written_variants() {
         assert_eq!(I32.to_token_stream().to_string(), "WasmValType :: I32");

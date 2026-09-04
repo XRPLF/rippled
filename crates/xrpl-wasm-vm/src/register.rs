@@ -4,21 +4,14 @@
 //! `wasmi_glue!` expands to the [`HostFunctionBodies`] trait and
 //! [`register_host_functions`], both generated from the declarations in
 //! `xrpl-host-functions` — so the wasm signature every closure is registered at is
-//! the one [`crate::check`] screens an import by, rather than a second statement of
-//! it. What is left here is one body per declaration, and the compiler will not
-//! accept the `impl` without all of them.
-//!
-//! [`glue_env`] is this engine's side of that macro's contract, and the expansion
-//! reaches for nothing outside it. The `use` lines below are the bodies' own, so
-//! what they import and what the macro is handed are separate lists that happen to
-//! overlap.
+//! the one [`crate::check`] screens an import by. Hand-written here is one body per
+//! declaration, and the compiler will not accept the `impl` without all of them.
+//! [`glue_env`] is this engine's side of that macro's contract.
 //!
 //! **A body charges no gas and touches no wire encoding.** The generated closure
-//! does both, around the call: it charges before the body runs and turns the
-//! answer into the `i32` the guest reads, so a body says only what the call *is*.
+//! does both, around the call, so a body says only what the call *is*.
 //!
-//! Four shapes cover 59 of the 60, and which one a declaration takes is decided by
-//! its own types:
+//! Four shapes cover 59 of the 60, each decided by the declaration's own types:
 //!
 //! - a value the host answers directly — read the arguments, call the host;
 //! - [`write_into`], for a value written straight to the guest's output region:
@@ -28,9 +21,8 @@
 //!   the inputs stay borrowed rather than copied;
 //! - [`write_mant_exp`], for the one call that writes two regions.
 //!
-//! `trace` is the sixtieth: it answers nothing, so its body returns
-//! `CallResult<()>` and the glue charges it through `charged_unreported`. That
-//! comes from its declared `HostResult<()>` and not from a special case here.
+//! `trace` is the sixtieth: its declared `HostResult<()>` gives it a
+//! `CallResult<()>` body and the `charged_unreported` helper.
 
 use crate::abi::{CallResult, guest_memory, write_buffered, write_into, write_mant_exp};
 use crate::args::{InBytes, InStr, InU32, OutBytes, TraceCode};
@@ -38,17 +30,12 @@ use crate::vm::VmState;
 use wasmi::Caller;
 
 /// Everything `wasmi_glue!` names on this side, gathered where the macro can be
-/// handed it.
+/// handed it — so a rename in `abi.rs` or `args.rs` is an unresolved import here
+/// rather than a name resolved against whatever the call site has in scope.
 ///
-/// The macro is written in a crate that can name none of this, so it takes the
-/// module rather than resolving these names against whatever the call site
-/// happens to have in scope. A rename in `abi.rs` or `args.rs` is then an
-/// unresolved import on the line here that says the macro needs it.
-///
-/// What their *shapes* must be is not stated here and cannot be: the four region
-/// types implement `xrpl_host_functions::FromWasmRegion` and [`TraceCode`]
-/// implements `FromWasmScalar`, both in `args.rs`, and the expansion pins each
-/// charging helper's signature itself.
+/// The shapes are elsewhere and cannot be stated here: `args.rs` implements
+/// `FromWasmRegion`/`FromWasmScalar`, and the expansion pins each charging
+/// helper's signature itself.
 mod glue_env {
     pub(crate) use crate::abi::{CallResult, charged, charged_unreported};
     pub(crate) use crate::args::{InBytes, InStr, InU32, OutBytes, TraceCode};
@@ -58,9 +45,7 @@ mod glue_env {
 xrpl_host_functions::wasmi_glue!(glue_env);
 
 /// The bodies this engine registers, named as one type so
-/// [`register_host_functions`] can be given them.
-///
-/// Uninhabited: it carries no state and is never built, since every body is an
+/// [`register_host_functions`] can be given them. Never built: every body is an
 /// associated function and the host it calls comes from the store.
 pub(crate) struct Bodies {}
 
@@ -465,9 +450,9 @@ impl HostFunctionBodies for Bodies {
         })
     }
 
-    /// The one body with nothing to answer: every way its arguments can be
-    /// malformed leaves the guest none the wiser and the host uncalled, since the
-    /// wasm function has no result to carry a code.
+    /// The one body with nothing to answer: the wasm function has no result to
+    /// carry a code, so a malformed argument leaves the guest none the wiser and
+    /// the host uncalled.
     fn trace(
         caller: &mut Caller<'_, VmState<'_>>,
         msg: InStr,

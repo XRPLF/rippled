@@ -53,9 +53,8 @@ use parsed_host_function::ParsedHostFunction;
 /// generated from that same derivation, so the closure a guest links against and
 /// the signature it is screened by are one statement.
 ///
-/// Outside the glue's body, the expansion introduces no other name and reaches
-/// for two: `Self::Variant`, and `WasmValType`, which the ABI crate hand-writes
-/// beside its declarations. So the block compiles wherever the types it names —
+/// Outside the glue's body the expansion builds only `Self::Variant` and
+/// `WasmValType` paths, so the block compiles wherever the types it names —
 /// `HostResult` and `WasmValType` — resolve.
 ///
 /// ```
@@ -288,24 +287,20 @@ fn abi_items(functions: &[ParsedHostFunction]) -> TokenStream {
             }
 
             /// The wasm parameters this function is imported with, in wire
-            /// order.
+            /// order — the list a guest's import must match, which the
+            /// declaration's own parameter list is not: a declared parameter
+            /// marshalled through a `(ptr, len)` region is two of these.
             ///
-            /// Derived from the declared parameter types, not stated a second
-            /// time: a declared parameter is one of these, or two where it is
-            /// marshalled through a `(ptr, len)` region. So this is the list a
-            /// guest's import must match, and the declaration's own parameter
-            /// list is not. Usable in `const` context, so import lists can be
-            /// built at compile time.
+            /// Usable in `const` context, so import lists can be built at
+            /// compile time.
             pub const fn wasm_params(self) -> &'static [WasmValType] {
                 self.spec().wasm_params
             }
 
             /// The wasm result this function answers with, or `None` for the
-            /// one whose whole effect is on the host.
-            ///
-            /// A single `i32` where there is one, whether the host answered a
-            /// value or the length of what it wrote: the wire does not
-            /// distinguish those, and neither does this.
+            /// one whose whole effect is on the host. An `i32` where there is
+            /// one, whether the host answered a value or the length of what it
+            /// wrote — the wire does not distinguish those.
             pub const fn wasm_result(self) -> Option<WasmValType> {
                 self.spec().wasm_result
             }
@@ -367,9 +362,9 @@ mod tests {
         error.into_iter().map(|error| error.to_string()).collect()
     }
 
-    /// The ABI half of the expansion alone. What the glue emits is a `macro_rules!`
-    /// whose body is written against another crate entirely, so the tests below
-    /// about what the expansion may name have it as their subject and not that.
+    /// The ABI half of the expansion alone: the glue's body is written against
+    /// another crate entirely, so the tests below about what the expansion may
+    /// name are not about it.
     fn abi_expansion(input: TokenStream) -> String {
         abi_items(&parse_block(input).expect("the block should parse")).to_string()
     }
@@ -398,8 +393,8 @@ mod tests {
             "struct HostFnSpec { name : & 'static str , gas : u64 , \
              wasm_params : & 'static [WasmValType] , wasm_result : Option < WasmValType > , }",
             "const fn spec (self) -> HostFnSpec",
-            // The signature is derived: two wasm parameters for the one declared
-            // region, and a result for the length written to it.
+            // Two wasm parameters for the one declared region, and a result for
+            // the length written to it.
             "Self :: GetLedgerSqn => HostFnSpec { name : \"ldgr_index\" , gas : 60u64 , \
              wasm_params : & [WasmValType :: I32 , WasmValType :: I32] , \
              wasm_result : Some (WasmValType :: I32) , }",
@@ -410,21 +405,17 @@ mod tests {
             "pub const fn gas (self) -> u64",
             "pub const fn wasm_params (self) -> & 'static [WasmValType]",
             "pub const fn wasm_result (self) -> Option < WasmValType >",
-            // The fourth item, whose contents are `glue`'s own tests.
+            // The fourth item; its contents are `glue`'s own tests.
             "macro_rules ! wasmi_glue",
         ] {
             assert!(generated.contains(expected), "missing {expected:?}");
         }
     }
 
-    /// The ABI reaches for nothing outside the crate it lands in: every name in it
-    /// is generated here, spelled by a declaration, or `WasmValType`, which that
-    /// crate hand-writes. That is what lets the crate stay zero-dependency and
-    /// link into the guest.
-    ///
-    /// The glue is deliberately not held to this and is not covered here: its body
-    /// names one engine throughout, and `glue`'s own tests pin that instead. It
-    /// costs the crate nothing, being tokens nobody in it expands.
+    /// The ABI reaches for nothing outside the crate it lands in, which is what
+    /// lets that crate stay zero-dependency and link into the guest. The glue is
+    /// not held to this — its body names one engine throughout, and `glue`'s own
+    /// tests pin that instead.
     #[test]
     fn names_no_crate_of_its_own() {
         let generated = abi_expansion(quote! {
@@ -435,11 +426,9 @@ mod tests {
 
         assert!(!generated.contains("xrpl_host_functions"), "{generated}");
 
-        // Two roots, and no others: `Self::Variant`, generated here, and
-        // `WasmValType::I32`, which the ABI crate hand-writes beside its
-        // declarations. Anything else would reach out of the crate the block is
-        // written in. Doc comments spell paths without spaces (`Self::ALL`), so
-        // they do not match.
+        // Two roots and no others: `Self::Variant` and `WasmValType::I32`.
+        // Doc comments spell paths without spaces (`Self::ALL`), so they do not
+        // match.
         for (index, _) in generated.match_indices(" :: ") {
             let prefix = &generated[..index];
             assert!(

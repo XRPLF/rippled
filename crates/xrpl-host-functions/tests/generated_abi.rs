@@ -948,17 +948,15 @@ fn the_spec_table_matches_the_declarations() {
 }
 
 /// The wire shape of every function: the parameters a guest's import must declare
-/// and the result it must expect, which is what a module fails to instantiate over.
+/// and the result it must expect.
 ///
-/// A change-detector like the table above, and for the same reason — these are
-/// consensus input. It is also the one statement of the wasm signature that is *not*
-/// derived from the declarations: the literals were read off the `func_wrap` closures
-/// `xrpl-wasm-vm` registers, so the two sides of the ABI are compared here rather
-/// than one being checked against itself.
+/// A change-detector like the table above, and the one statement of the wasm
+/// signature that is *not* derived from the declarations: the literals are the wire
+/// as `xrpl-wasm-vm` registers it, so this compares the two sides of the ABI rather
+/// than one against itself.
 ///
-/// What it catches is arity and value types — the `u32` parameters that read like
-/// scalars and are `(ptr, len)` pairs, and `trace`'s missing result. Not order: every
-/// region lowers to `i32`, so swapping two parameters leaves the signature identical.
+/// It catches arity and value types, not order: every region lowers to `i32`, so
+/// swapping two parameters leaves the signature identical.
 #[test]
 fn the_wasm_signatures_match_the_declarations() {
     let table: Vec<String> = HostFunctionSpec::ALL
@@ -1033,8 +1031,8 @@ fn the_wasm_signatures_match_the_declarations() {
     );
 }
 
-/// `(i32, i32) -> i32`: one function type, spelled as wasm's text format spells the
-/// types and as wasmi's own errors report them.
+/// `(i32, i32) -> i32`: one function type, spelled as wasm's text format and
+/// wasmi's own errors spell it.
 fn signature(function: HostFunctionSpec) -> String {
     let params: Vec<&str> = function
         .wasm_params()

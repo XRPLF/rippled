@@ -96,14 +96,13 @@ fn a_disabled_feature_does_not_pass() {
 // Imports
 // ---------------------------------------------------------------------------
 
-/// Every host function the ABI declares, spelled as a guest imports it — full
-/// signatures, hand-written. The count is asserted against the ABI so a function
-/// added to it cannot be left out here.
+/// Every host function the ABI declares, spelled as a guest imports it, full
+/// signatures and hand-written. The count is asserted against the ABI so a
+/// function added to it cannot be left out here.
 ///
-/// Hand-written is the point now that screening compares signatures: these
-/// declarations are a statement of the wire that the ABI's derived table did not
-/// produce, so putting them through `check` compares the two rather than comparing
-/// the table with itself.
+/// Hand-written is the point: these are a statement of the wire the ABI's derived
+/// table did not produce, so putting them through `check` compares the two rather
+/// than comparing the table with itself.
 const ALL_IMPORTS: [&str; 60] = [
     import::LDGR_INDEX,
     import::PARENT_LDGR_TIME,
@@ -250,9 +249,8 @@ fn the_earlier_stage_is_the_one_reported() {
     assert_stage!(refusal, CheckError::Import(_));
 }
 
-/// An import naming a real host function with the wrong type is refused, and at a
-/// stage of its own: the ABI has the function the guest asked for, so the name is
-/// not what to tell them about.
+/// An import naming a real host function with the wrong type is refused, at a
+/// stage of its own since the ABI does have the function the guest asked for.
 ///
 /// The run half is what the refusal is worth: without it this module reaches the
 /// engine and parts from the linker at instantiation, which is a fault a node
@@ -455,19 +453,15 @@ fn screening_and_a_run_agree() {
     }
 }
 
-/// The signatures screening derives are the ones the linker registers, put to the
-/// linker itself: a module importing all 60 host functions at the type
-/// `HostFunctionSpec` derives must instantiate.
+/// The signatures screening derives are the ones the linker registers: a module
+/// importing all 60 host functions at the type `HostFunctionSpec` derives must
+/// instantiate.
 ///
-/// What this has that [`ALL_IMPORTS`] does not is that the other side of it is *live
-/// code*: it links against the registration as it is rather than against a
-/// description of it, so it is what a changed engine has to answer to.
-///
-/// **What it cannot see is the table and the linker being wrong the same way**,
-/// since the closures are generated from this very table. That is what
-/// [`ALL_IMPORTS`] and the 60 literals in `xrpl-host-functions`'s
-/// `generated_abi.rs` are for: frozen text, written by hand, and the only statement
-/// of the wire in the workspace that no derivation produced.
+/// Unlike [`ALL_IMPORTS`], the other side of this is live code — the registration
+/// as it is rather than a description of it — so it is what a changed engine has to
+/// answer to. **What it cannot see is the table and the linker being wrong the same
+/// way**, the closures being generated from this very table; that is what
+/// [`ALL_IMPORTS`] and `generated_abi.rs`'s 60 literals are for.
 #[test]
 fn the_derived_signatures_are_what_the_linker_registers() {
     let declarations: Vec<String> = HostFunctionSpec::ALL
@@ -487,8 +481,7 @@ fn the_derived_signatures_are_what_the_linker_registers() {
 }
 
 /// One `(import …)` declaration, spelled out of the ABI's derived signature rather
-/// than by hand — the opposite of [`ALL_IMPORTS`], and what puts the table itself in
-/// front of the linker.
+/// than by hand — the opposite of [`ALL_IMPORTS`].
 fn derived_import(function: HostFunctionSpec) -> String {
     let types: Vec<&str> = function
         .wasm_params()

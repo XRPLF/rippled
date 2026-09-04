@@ -1,21 +1,20 @@
-//! The last rule on an import: its type.
+//! The last rule on an import: an import that names a host function must also
+//! declare the type the engine registers it as.
 //!
-//! An import that names a host function must also declare the type the engine
-//! registers it as. This is the one import rule with machinery of its own — the ABI's
-//! derived signature, its map into wasmi's value types, and a rendering of a function
-//! type for the refusal — which is why it is a file rather than a fourth `if`.
+//! A file of its own because it is the one import rule with machinery to carry:
+//! the ABI's derived signature, its map into wasmi's value types, and a rendering
+//! of a function type for the refusal.
 //!
-//! **Arity and value types are the whole of it.** So this is where an `i64` in an
-//! `i32`'s place is caught, and where a `u32` parameter — two wasm parameters, not
-//! one — is held to its real arity. **Parameter order is invisible**: every region
-//! and every scalar but two lowers to `i32`, so two swapped parameters of the same
-//! type leave the function type identical and no comparison of types can see them.
+//! **Arity and value types are the whole of it** — an `i64` in an `i32`'s place, or
+//! a `u32` parameter read as one wasm parameter rather than two. **Parameter order
+//! is invisible**: nearly everything lowers to `i32`, so two swapped parameters of
+//! the same type leave the function type identical.
 
 use wasmi::{FuncType, ValType};
 use xrpl_host_functions::{HostFunctionSpec, WasmValType};
 
-/// Whether this import declares the type the engine registers, an import that does
-/// not being one the module parts from the linker over at instantiation.
+/// Whether this import declares the type the engine registers — one that does not
+/// is what a module parts from the linker over at instantiation.
 pub(super) fn check_signature(
     function: HostFunctionSpec,
     imported: &FuncType,
@@ -35,10 +34,9 @@ pub(super) fn check_signature(
 /// The type the engine registers `function` as: the wasm signature derived from its
 /// declaration, in wasmi's own vocabulary.
 ///
-/// Building it costs nothing to compare against: `FuncType` holds up to 21 value
+/// Building one to compare against costs nothing — `FuncType` holds up to 21 value
 /// types inline on a 64-bit target and the ABI's widest signature is nine, so this
-/// is a stack value and the comparison above is one `==` rather than a walk over the
-/// two positions written out by hand.
+/// is a stack value and the comparison above is one `==`.
 pub(super) fn registered_type(function: HostFunctionSpec) -> FuncType {
     FuncType::new(
         function.wasm_params().iter().copied().map(val_type),
@@ -76,8 +74,7 @@ fn to_string(types: &[ValType]) -> String {
 }
 
 /// A wasm value type as the text format spells it. Total over [`ValType`] because a
-/// refusal renders both sides of the comparison: the expected side is the ABI's two,
-/// the found side whatever the module declared.
+/// refusal renders the found side too, which is whatever the module declared.
 fn as_str(val_type: ValType) -> &'static str {
     match val_type {
         ValType::I32 => "i32",
@@ -91,8 +88,8 @@ fn as_str(val_type: ValType) -> &'static str {
 }
 
 /// The rule and the derivation under it, on function types built directly. Which
-/// `CheckError` a refusal becomes and where this rule sits among the other three are
-/// the parent's tests; `tests/preflight.rs` reaches both through real modules.
+/// `CheckError` a refusal becomes and where this rule sits among the other three
+/// are the parent's tests.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,9 +98,8 @@ mod tests {
     /// against a real declaration: a wrong value type, a wrong arity, and a result
     /// where the ABI answers nothing.
     ///
-    /// The arity case is the one that matters most in practice. `check_keylet`'s
-    /// `seq: u32` is two wasm parameters rather than one, so a guest that reads the
-    /// declaration as a scalar writes exactly this signature.
+    /// The arity case is the one that matters in practice — a guest that reads
+    /// `check_keylet`'s `seq: u32` as a scalar writes exactly that signature.
     #[test]
     fn an_import_of_the_wrong_type_is_refused() {
         let refusal = check_signature(
@@ -139,14 +135,10 @@ mod tests {
         );
     }
 
-    /// Both of the ABI's value types survive the map to the engine's vocabulary, in
-    /// the result position as well as the parameter position: an `i64` collapsed to
-    /// an `i32` would make the check accept what the linker refuses, and a result
-    /// invented for `trace` would make it refuse what the linker accepts.
-    ///
-    /// `float_from_int` carries one of the ABI's two `i64` parameters and `trace` is
-    /// its only function with no result, so between them they cover everything the
-    /// map can get wrong.
+    /// Both of the ABI's value types survive the map to the engine's vocabulary:
+    /// an `i64` collapsed to an `i32` would make the check accept what the linker
+    /// refuses, and a result invented for `trace` would make it refuse what the
+    /// linker accepts.
     #[test]
     fn the_derived_type_keeps_i64_and_the_absent_result() {
         assert_eq!(

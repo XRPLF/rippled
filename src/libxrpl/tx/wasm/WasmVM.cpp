@@ -96,10 +96,10 @@ verdict(CheckStatus status)
         case CheckStatus::Ok:
             return tesSUCCESS;
 
-        // The module will not compile, imports what no engine of this ABI serves,
-        // imports a host function at a signature no engine of this ABI registers, does
-        // not export the entry point as `() -> i32`, or asks for more linear memory or
-        // table than it may have.
+        // The module will not compile, imports what no engine of this ABI serves or
+        // a host function at a signature none of them registers, does not export the
+        // entry point as `() -> i32`, or asks for more linear memory or table than it
+        // may have.
         case CheckStatus::Compile:
         case CheckStatus::Import:
         case CheckStatus::Signature:

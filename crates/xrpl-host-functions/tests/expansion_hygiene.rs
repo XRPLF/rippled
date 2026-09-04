@@ -3,9 +3,8 @@
 //! themselves spell.
 //!
 //! That this crate compiles is also what shows the emitted `wasmi_glue!` costs
-//! nothing to carry. Its body names an engine throughout, and there is no engine
-//! here — a `macro_rules!` is inert tokens until someone expands it, and nobody
-//! here does.
+//! nothing to carry: its body names an engine throughout, there is no engine
+//! here, and nobody here expands it.
 
 use xrpl_host_functions::{HostResult, WasmValType};
 use xrpl_host_functions_macros::host_functions;

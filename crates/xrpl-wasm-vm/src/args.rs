@@ -1,27 +1,23 @@
 //! A host call's arguments as they arrive: one type per declared parameter the
 //! ABI marshals, built by `register.rs`'s generated closures and read by its
-//! bodies.
+//! bodies. A wasm scalar (`i32`, `i64`) is passed through as itself and has no
+//! type here.
 //!
-//! A wasm scalar (`i32`, `i64`) is passed through as itself and has no type here.
-//! Everything else does, and what the types buy is that **a body cannot mistake
-//! one argument for another**: an input region offered where an output one belongs
-//! is a compile error naming both, where two loose `i32`s would have been a
-//! rounding mode read as a buffer length. That is the half of the ABI a derived
-//! signature cannot check, since every one of these is `i32, i32` on the wire.
+//! What the types buy is that **a body cannot mistake one argument for another**:
+//! an input region offered where an output one belongs is a compile error naming
+//! both, where two loose `i32`s would let a rounding mode be read as a buffer
+//! length. A derived signature cannot catch that, every one of these being
+//! `i32, i32` on the wire.
 //!
-//! Reading is where each is judged, and every one of them can be refused —
-//! `InU32`'s region must hold exactly four bytes, `InStr`'s must be UTF-8, and a
-//! [`TraceCode`] must name a rendering. So the arguments arrive unchecked and are
-//! checked in the order the body reads them, which is the order the guest is
-//! answered in.
+//! The arguments arrive unchecked and are judged where they are read — `InU32`'s
+//! region must hold exactly four bytes, `InStr`'s must be UTF-8, a [`TraceCode`]
+//! must name a rendering — so they are refused in the order the body reads them.
 //!
-//! **The `from_wasm` impls below are half of `wasmi_glue!`'s contract**, and the
-//! only construction these types have: the generated closures in `register.rs`
-//! build every argument through [`FromWasmRegion`] or [`FromWasmScalar`], and
-//! `register.rs`'s `glue_env` is where the macro is told which type here marshals
-//! which declared one. Which of the two traits a type takes is the ABI's decision
-//! and not this file's — so `InU32` is a region, four little-endian bytes rather
-//! than the scalar its declared `u32` reads like.
+//! **The `from_wasm` impls below are half of `wasmi_glue!`'s contract** and the
+//! only construction these types have; `register.rs`'s `glue_env` is where the
+//! macro is told which type marshals which declared one. Which of the two traits
+//! a type takes is the ABI's decision, so `InU32` is a region rather than the
+//! scalar its declared `u32` reads like.
 
 use crate::vm::MAX_FIELD_BYTES;
 use core::ops::Range;
@@ -30,13 +26,11 @@ use xrpl_host_functions::{FromWasmRegion, FromWasmScalar, HostError, HostResult,
 /// A byte region as the guest declared it: the `(ptr, len)` pair off the wire, not
 /// yet checked.
 ///
-/// Private to this module, and the shared half of the four region types below:
-/// they differ in what reading one means, not in what one is. The fields being out
-/// of reach is what makes [`range`](Region::range) the only way to indices — the
-/// check cannot be skipped, only deferred. Construction is infallible for that
-/// reason: a call whose output region is malformed is then refused in the order
-/// its own helper chooses, rather than at the moment the pair happened to be
-/// formed.
+/// The shared half of the four region types below, which differ in what reading
+/// one means. The fields being out of reach makes [`range`](Region::range) the
+/// only way to indices, so the check can be deferred but not skipped — and
+/// construction is infallible so that a malformed region is refused in the order
+/// the call's own helper chooses.
 #[derive(Copy, Clone)]
 struct Region {
     ptr: i32,
@@ -48,9 +42,9 @@ impl Region {
         Region { ptr, len }
     }
 
-    /// `start..end` as indices. The conversion is the negativity check — it fails on
-    /// exactly the negative values — and the addition guards a 32-bit `usize`, where
-    /// two `i32`s can sum past the end.
+    /// `start..end` as indices. The conversion is the negativity check, and the
+    /// checked addition guards a 32-bit `usize`, where two `i32`s can sum past the
+    /// end.
     fn range(self) -> HostResult<Range<usize>> {
         let (Ok(start), Ok(len)) = (usize::try_from(self.ptr), usize::try_from(self.len)) else {
             return Err(HostError::InvalidParams);
@@ -61,8 +55,7 @@ impl Region {
         Ok(start..end)
     }
 
-    /// The region's bytes, refused past the field cap. No copy: the slice aliases
-    /// `data`.
+    /// The region's bytes, refused past the field cap. The slice aliases `data`.
     fn read(self, data: &[u8]) -> HostResult<&[u8]> {
         let range = self.range()?;
         if range.len() > MAX_FIELD_BYTES {
@@ -83,8 +76,7 @@ impl FromWasmRegion for InBytes {
 }
 
 impl InBytes {
-    /// The region's bytes, aliasing the guest's memory rather than copied out of
-    /// it.
+    /// The region's bytes, aliasing the guest's memory rather than copied out of it.
     pub(crate) fn read(self, data: &[u8]) -> HostResult<&[u8]> {
         self.0.read(data)
     }
@@ -102,8 +94,7 @@ impl FromWasmRegion for InStr {
 
 impl InStr {
     /// The region's bytes as text. The read is also the UTF-8 check, so a host is
-    /// never handed bytes claiming to be a `&str` and is not the one to validate
-    /// them.
+    /// never the one to validate them.
     pub(crate) fn read(self, data: &[u8]) -> HostResult<&str> {
         core::str::from_utf8(self.0.read(data)?).map_err(|_| HostError::InvalidParams)
     }
@@ -121,8 +112,8 @@ impl FromWasmRegion for InU32 {
 }
 
 impl InU32 {
-    /// The number the region holds. Exactly four bytes, since the width is the
-    /// ABI's rather than the guest's; `InvalidParams` for any other length.
+    /// The number the region holds. The width is the ABI's, so any length but four
+    /// is `InvalidParams`.
     pub(crate) fn read(self, data: &[u8]) -> HostResult<u32> {
         let bytes: [u8; 4] = self
             .0
@@ -135,9 +126,9 @@ impl InU32 {
 
 /// A declared `&mut [u8]`: the region the host's answer is written to.
 ///
-/// It has no `read`: what a call may put here is decided by the helper in
-/// `abi.rs` that serves it, against the value's length and the run's budget, and
-/// the host is never handed the guest's capacity.
+/// It has no `read`: what a call may put here is decided by the `abi.rs` helper
+/// serving it, against the value's length and the run's budget, and the host is
+/// never handed the guest's capacity.
 #[derive(Copy, Clone)]
 pub(crate) struct OutBytes(Region);
 
@@ -154,10 +145,8 @@ impl OutBytes {
 }
 
 /// A declared `TraceDataType`: the `i32` code naming how `trace` is to render its
-/// data.
-///
-/// The one marshalled argument that is not a region — it is a single wasm scalar,
-/// and reading it needs no guest memory.
+/// data. The one marshalled argument that is not a region, so reading it needs no
+/// guest memory.
 #[derive(Copy, Clone)]
 pub(crate) struct TraceCode(i32);
 
@@ -168,8 +157,8 @@ impl FromWasmScalar for TraceCode {
 }
 
 impl TraceCode {
-    /// The type the code names; `InvalidParams` if it names none, since a
-    /// rendering the guest did not ask for is not one to guess at.
+    /// The type the code names, or `InvalidParams`: a rendering the guest did not
+    /// ask for is not one to guess at.
     pub(crate) fn read(self) -> HostResult<TraceDataType> {
         TraceDataType::from_code(self.0).ok_or(HostError::InvalidParams)
     }
@@ -189,8 +178,7 @@ mod tests {
         assert_eq!(InU32::from_wasm(0, 4).read(&MEMORY), Ok(0x1234_5678));
     }
 
-    /// The width is the ABI's, so a region of any other length names no number —
-    /// including a longer one, whose first four bytes would otherwise be read as
+    /// A longer region is refused too, rather than its first four bytes read as
     /// the answer.
     #[test]
     fn a_u32_argument_of_any_other_width_is_refused() {
@@ -203,8 +191,8 @@ mod tests {
         }
     }
 
-    /// The read is the UTF-8 check: a host implementing `trace` is handed a `&str`
-    /// and has nothing left to validate.
+    /// The read is the UTF-8 check, so a host implementing `trace` has nothing
+    /// left to validate.
     #[test]
     fn a_str_argument_is_checked_where_it_is_read() {
         assert_eq!(InStr::from_wasm(4, 2).read(&MEMORY), Ok("hi"));
@@ -236,8 +224,8 @@ mod tests {
         );
     }
 
-    /// Every code the ABI has, and nothing else. The engine drops a call it cannot
-    /// read rather than rendering the data some other way.
+    /// Every code the ABI has, and nothing else: an unknown one is refused rather
+    /// than rendered some other way.
     #[test]
     fn a_trace_code_names_a_rendering_or_none() {
         for &data_type in TraceDataType::ALL {

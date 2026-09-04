@@ -22,8 +22,7 @@ const HOST_RESULT: &str = "HostResult";
 /// that decides its wire form.
 ///
 /// The name is carried because the generated glue spells it — as the body's
-/// parameter, and as `{name}_ptr`/`{name}_len` for a region — so a reader of the
-/// registration is reading the declaration's own words.
+/// parameter, and as `{name}_ptr`/`{name}_len` for a region.
 pub(crate) struct Param {
     pub(crate) name: Ident,
     pub(crate) ty: ParamType,
@@ -53,10 +52,10 @@ impl ParsedHostFunction {
         &self.params
     }
 
-    /// What this declaration answers with.
     pub(crate) fn result(&self) -> ResultType {
         self.result
     }
+
     /// `#[doc …] fn get_ledger_sqn(&self, out: &mut [u8]) -> HostResult<usize>;`
     pub(crate) fn trait_method(&self) -> TokenStream {
         let docs = &self.docs;
@@ -104,11 +103,8 @@ impl ParsedHostFunction {
         }
     }
 
-    /// The wasm parameters this declaration lowers to, in declaration order,
-    /// which is wire order.
-    ///
-    /// Flat: the pair a region lowers to is two parameters here, and nothing in
-    /// the sequence says which two came from one declared parameter.
+    /// The wasm parameters this declaration lowers to, in wire order and flat:
+    /// nothing in the sequence says which two came from one declared region.
     fn wasm_params(&self) -> impl Iterator<Item = WasmValType> {
         self.params
             .iter()
@@ -181,9 +177,8 @@ impl ParsedHostFunction {
         }
         errors.extend(reject_modifiers(&function.sig).err());
 
-        // The wasm signature, derived from the declared types. Each half is
-        // reported against its own span, and the two are held to each other
-        // only once both are known.
+        // The wasm signature, derived from the declared types. The two halves are
+        // held to each other only once both are known.
         let params = errors::record(parse_params(&function.sig), &mut errors);
         let result = errors::record(parse_result(&function.sig), &mut errors);
         if let (Some(params), Some(result)) = (&params, result) {
@@ -245,10 +240,9 @@ fn check_receiver(signature: &Signature) -> syn::Result<()> {
     Ok(())
 }
 
-/// The declared parameters, lowered, with the receiver skipped.
-///
-/// Every parameter is reported against its own span, so a declaration surfaces
-/// all of its parameter mistakes in one build rather than one per rebuild.
+/// The declared parameters, lowered, with the receiver skipped. Every parameter
+/// is reported against its own span, so a declaration surfaces all of its
+/// parameter mistakes in one build rather than one per rebuild.
 fn parse_params(signature: &Signature) -> syn::Result<Vec<Param>> {
     let mut params = Vec::new();
     let mut errors = Vec::new();
@@ -259,8 +253,8 @@ fn parse_params(signature: &Signature) -> syn::Result<Vec<Param>> {
         let FnArg::Typed(PatType { pat, ty, .. }) = input else {
             continue;
         };
-        // Both halves are recorded, so a parameter that is both badly named and
-        // badly typed answers for each rather than one standing in for the other.
+        // Both halves recorded, so a parameter that is both badly named and badly
+        // typed answers for each.
         let name = errors::record(parameter_name(pat), &mut errors);
         let ty = errors::record(ParamType::parse(ty), &mut errors);
         if let (Some(name), Some(ty)) = (name, ty) {
@@ -271,11 +265,9 @@ fn parse_params(signature: &Signature) -> syn::Result<Vec<Param>> {
     errors::into_result(params, errors)
 }
 
-/// The parameter's name, which must be a plain identifier.
-///
-/// The name is how the declaration states what the parameter is for — the wasm
-/// signature it lowers to is all `i32`s and says nothing — so `_`, `mut bytes`
-/// and destructuring patterns are refused rather than carried into the trait.
+/// The parameter's name, which must be a plain identifier: it is how the
+/// declaration states what the parameter is for, the wasm signature it lowers to
+/// being all `i32`s.
 fn parameter_name(pat: &Pat) -> syn::Result<Ident> {
     if let Pat::Ident(PatIdent {
         by_ref: None,
@@ -294,12 +286,9 @@ fn parameter_name(pat: &Pat) -> syn::Result<Ident> {
     ))
 }
 
-/// `HostResult<usize>` and an output region are one fact stated twice.
-///
-/// The length answered is the length of what was written *there*, so either
-/// alone is a declaration nothing can serve: a length with nowhere to write, or
-/// a region whose written length the guest is never told. The whole block holds
-/// to this, and how a value reaches the guest is chosen by it.
+/// `HostResult<usize>` and an output region are one fact stated twice: the length
+/// answered is the length of what was written *there*, so either alone is a
+/// declaration nothing can serve.
 fn check_result_matches_regions(
     signature: &Signature,
     params: &[Param],
@@ -330,8 +319,7 @@ fn check_result_matches_regions(
 /// into the wire's non-negative `i32` and `Err(e)` into a negative code or a trap.
 /// A function returning a bare `T` would need its own arm.
 ///
-/// The `HostResult` wrapper is checked here and its success type is lowered by
-/// [`ResultType`], which is what says which `T`s the ABI has.
+/// The wrapper is checked here; which `T`s the ABI has is [`ResultType`]'s.
 fn parse_result(signature: &Signature) -> syn::Result<ResultType> {
     const SHAPE: &str = "a host function must return `HostResult<T>` — \
                          `HostResult<()>` if it yields nothing";
@@ -739,11 +727,9 @@ mod tests {
         );
     }
 
-    /// The declared parameter list and the wasm signature are different lengths,
-    /// and this is the declaration that shows why: `account` and `out` are a
-    /// `(ptr, len)` pair each, and `seq` — which reads like a scalar — is a third
-    /// pair, holding four little-endian bytes. Three declared parameters, six
-    /// wasm ones, and nothing but the lowering says so.
+    /// Why the declared parameter list and the wasm signature are different
+    /// lengths: `account`, `seq` and `out` are a `(ptr, len)` pair each — `seq`
+    /// too, reading like a scalar but holding four little-endian bytes.
     #[test]
     fn derives_the_wasm_signature_from_the_declared_types() {
         let keylet = ParsedHostFunction::parse(parse_quote! {
@@ -787,8 +773,7 @@ mod tests {
     }
 
     /// `&self` is `inputs[0]` and is not a parameter. Read as one it would be a
-    /// declared type the ABI does not have, so every declaration in the block
-    /// would be refused.
+    /// declared type the ABI does not have, refusing every declaration.
     #[test]
     fn does_not_read_the_receiver_as_a_parameter() {
         let array_len = ParsedHostFunction::parse(parse_quote! {
@@ -802,8 +787,7 @@ mod tests {
         assert_eq!(array_len.result, ResultType::Value);
     }
 
-    /// The declared parameters as `name: Type`, which is what the glue spells:
-    /// the name reaches the generated body and the type decides its wire form.
+    /// The declared parameters as `name: Type`, which is what the glue spells.
     fn declared(function: &ParsedHostFunction) -> Vec<String> {
         function
             .params()
@@ -829,8 +813,6 @@ mod tests {
         );
     }
 
-    /// A parameter with no plain name has none to state what it is for, and the
-    /// wasm signature it lowers to is all `i32`s and states nothing either.
     #[test]
     fn rejects_parameters_that_are_not_plain_names() {
         for parameter in [
@@ -853,8 +835,8 @@ mod tests {
         }
     }
 
-    /// Two mistakes on one parameter are two diagnostics, and neither stands in
-    /// for the other: the name is refused on its own grounds and so is the type.
+    /// Two mistakes on one parameter are two diagnostics, neither standing in for
+    /// the other.
     #[test]
     fn reports_a_parameter_s_name_and_its_type_separately() {
         let messages = messages(parse_quote! {
@@ -868,9 +850,9 @@ mod tests {
         assert!(messages[1].contains("must be `i32`"), "{messages:?}");
     }
 
-    /// The success type is held to the three the ABI has, which is what makes it
-    /// a wasm result. `[u8; 4]` is the one worth pinning: it says what the value
-    /// *is*, which is the guest SDK's business and not the wire's.
+    /// The success type is held to the three the ABI has. `[u8; 4]` is the one
+    /// worth pinning: it says what the value *is*, which is the guest SDK's
+    /// business and not the wire's.
     #[test]
     fn rejects_success_types_the_abi_does_not_have() {
         let messages = messages(parse_quote! {
@@ -886,9 +868,8 @@ mod tests {
         );
     }
 
-    /// A length answered with nowhere to have written the value, and a written
-    /// region whose length the guest never learns: each half of the pairing,
-    /// refused on its own.
+    /// Each half of the pairing refused on its own: a length with nowhere to have
+    /// written the value, and a written region whose length the guest never learns.
     #[test]
     fn rejects_a_result_that_does_not_match_the_regions() {
         let no_region = messages(parse_quote! {

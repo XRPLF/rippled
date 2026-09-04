@@ -19,8 +19,7 @@
 //! why the table case leaves much more of it there.
 //!
 //! Every rule is here but one: [`signature`] holds the comparison of an import's
-//! type against the ABI's, which needs the ABI's value-type vocabulary and a
-//! rendering of a function type on top of what the rest of the stage reads.
+//! type against the ABI's, which needs machinery the rest of the stage does not.
 
 mod signature;
 
@@ -42,9 +41,8 @@ pub enum CheckError {
     /// function.
     Import(String),
     /// An import of a host function typed as something other than what the engine
-    /// registers it as. Apart from [`CheckError::Import`] because the ABI does have
-    /// the function the guest asked for: what is wrong is the signature, not the
-    /// name.
+    /// registers it as. Apart from [`CheckError::Import`] because the ABI does
+    /// have the function the guest asked for.
     Signature(String),
     /// No export named `function_name` with signature `() -> i32`.
     EntryPoint(String),
@@ -96,17 +94,14 @@ fn check_imports(module: &Module) -> Result<(), CheckError> {
 
 /// Whether the engine defines this one import, as the guest declares it.
 ///
-/// The names are [`HostFunctionSpec::ALL`] and the signatures are derived from the
-/// same declarations, which is also what
-/// [`crate::register::register_host_functions`] registers — so a check and a run
-/// cannot disagree about which imports exist or what they look like, and adding a
-/// host function extends both at once.
+/// Names and signatures both come from the declarations
+/// [`crate::register::register_host_functions`] registers from, so a check and a
+/// run cannot disagree about which imports exist or what they look like.
 ///
-/// The rules are ordered, and each presumes the ones before it held. A guest
-/// importing `env::malloc` is told about the namespace rather than that `malloc` is
-/// not a host function, because the namespace is the one that explains every other
-/// import it has too; and only an import that names a real host function as a
-/// function has a signature worth comparing, which is why that rule is last.
+/// The rules are ordered, each presuming the ones before it held: a guest
+/// importing `env::malloc` is told about the namespace, which explains every other
+/// import it has too, and only an import that names a real host function as a
+/// function has a signature worth comparing.
 fn check_import(module: &str, name: &str, ty: &ExternType) -> Result<(), CheckError> {
     let function = host_function(module, name).map_err(CheckError::Import)?;
     let imported = imported_function(name, ty).map_err(CheckError::Import)?;
@@ -126,8 +121,8 @@ fn host_function(module: &str, name: &str) -> Result<HostFunctionSpec, String> {
         .ok_or_else(|| format!("no host function '{name}'"))
 }
 
-/// The function type the guest declared. The engine defines these names as functions
-/// and as nothing else, so an import of any other kind does not link.
+/// The function type the guest declared. The engine defines these names as
+/// functions and as nothing else, so an import of any other kind does not link.
 fn imported_function<'ty>(name: &str, ty: &'ty ExternType) -> Result<&'ty FuncType, String> {
     match ty {
         ExternType::Func(ty) => Ok(ty),
@@ -223,8 +218,8 @@ pub(crate) fn entry_point_fault(found: Option<ExternType>, name: &str) -> String
 /// The rules, one by one, on inputs built directly rather than parsed out of a
 /// module. `tests/preflight.rs` runs real modules through [`check`]; what is here is
 /// what a module cannot state precisely — which rule fires, in which order, and in
-/// what words the caller logs it. The signature rule's own derivation is tested
-/// beside it, in [`signature`].
+/// what words the caller logs it. The signature rule's derivation is tested beside
+/// it, in [`signature`].
 ///
 /// `wat` is a dev-dependency, so the one test here that does need a module writes it
 /// as text like every other test in the crate. What the library must not gain is a
@@ -236,8 +231,7 @@ mod tests {
     use super::*;
     use wasmi::{GlobalType, MemoryType, Mutability};
 
-    /// The type an import of `function` must declare: what the engine registers it
-    /// as.
+    /// The type an import of `function` must declare.
     fn registered(function: HostFunctionSpec) -> ExternType {
         ExternType::Func(registered_type(function))
     }
@@ -256,13 +250,11 @@ mod tests {
     /// declaration. Derived from `ALL` rather than listed, so a host function added
     /// to the ABI is covered the day it lands.
     ///
-    /// Both sides of the comparison come from the table, so what this pins is that
-    /// no declaration is refused — not that the table is right. Comparing it against
-    /// an independent statement of the wire is
-    /// `tests/preflight.rs::every_declared_host_function_may_be_imported`, whose 60
-    /// import declarations are hand-written, and
-    /// `the_derived_signatures_are_what_the_linker_registers` beside it, which puts
-    /// the table through the real linker.
+    /// Both sides come from the table, so this pins that no declaration is refused,
+    /// not that the table is right. `tests/preflight.rs`'s
+    /// `every_declared_host_function_may_be_imported` and
+    /// `the_derived_signatures_are_what_the_linker_registers` are what compare it
+    /// against hand-written imports and against the real linker.
     #[test]
     fn every_declared_host_function_is_served() {
         for &function in HostFunctionSpec::ALL {
@@ -320,8 +312,8 @@ mod tests {
     }
 
     /// The signature is the last rule, so an import wrong about the namespace, the
-    /// name or the kind is not also told about a signature it was never going to
-    /// reach — and the two kinds of fault reach the caller as different stages.
+    /// name or the kind is not told about a signature instead, and the two kinds of
+    /// fault reach the caller as different stages.
     #[test]
     fn the_signature_is_the_last_rule() {
         let name = a_host_function_name();
@@ -453,8 +445,7 @@ mod tests {
             CheckError::Import("no host function 'x'".to_string()).to_string(),
             "import: no host function 'x'"
         );
-        // The stage is the prefix and nothing else, so the detail must not say
-        // "signature" a second time.
+        // The stage is the prefix, so the detail must not say "signature" again.
         assert_eq!(
             CheckError::Signature(
                 "'ldgr_index' expected '(i32, i32) -> i32', found '(i64, i64) -> i32'".to_string()

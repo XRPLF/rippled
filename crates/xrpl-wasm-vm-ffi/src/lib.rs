@@ -106,8 +106,7 @@ mod ffi {
         /// rather than one more way a contract can be malformed.
         Panic,
         /// An import of a host function typed as something other than what the
-        /// engine registers it as. One more malformed module, and last in the enum
-        /// rather than beside `Import` so that no earlier status is renumbered.
+        /// engine registers it as.
         Signature,
     }
 
@@ -673,9 +672,8 @@ impl HostFunctions for CxxHost<'_> {
     }
 
     // `cast_signed` on a keylet's `seq`/`doc_id`, here and in the nine below: the ABI
-    // declares the guest's `u32`, while `HostContext` takes rippled's `std::int32_t`.
-    // The bit pattern is what both sides mean, so the crossing is a reinterpretation
-    // rather than a conversion, and no value is out of range on either side.
+    // declares the guest's `u32`, `HostContext` takes rippled's `std::int32_t`, and
+    // the bit pattern is what both sides mean.
     fn check_keylet(&self, account: &[u8], seq: u32, out: &mut [u8]) -> HostResult<usize> {
         bytes_written(self.ctx.check_keylet(account, seq.cast_signed(), out))
     }

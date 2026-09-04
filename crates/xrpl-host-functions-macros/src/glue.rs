@@ -2,27 +2,19 @@
 //! generated from — so the closure a guest links against cannot disagree with the
 //! signature preflight screens it by.
 //!
-//! What is emitted here is a `macro_rules!` rather than the registration itself.
-//! The registration names `wasmi::Linker` and the VM's own store type, and the
-//! crate this expansion lands in is `no_std`, zero-dependency and links into the
-//! guest — but a `macro_rules!` body is inert tokens until someone expands it, so
-//! carrying the glue costs that crate no dependency and no feature flag.
+//! Emitted as a `macro_rules!` rather than as the registration itself, because the
+//! crate the expansion lands in is `no_std`, zero-dependency and links into the
+//! guest, and a `macro_rules!` body is inert tokens until someone expands it.
 //!
-//! **The body resolves in two crates at once**, which is what makes one macro
-//! enough, and **it names nothing free**: `$crate` is the ABI crate wherever the
-//! macro is expanded, and `$env` is the module the caller passes in, holding the
-//! engine's half of the contract. So every path emitted here carries one of those
-//! two prefixes, `::wasmi` or `::core` — a rename on either side is an unresolved
-//! path at a line that says so, rather than a name that happened to resolve
-//! against whatever was in scope at the call.
+//! The body therefore resolves in two crates at once and names nothing free:
+//! `$crate` is the ABI crate, `$env` the module the caller passes in, and every
+//! other path starts at `::wasmi` or `::core`. `$env` is matched as an `ident`
+//! because `$env:path` used as `$env::Foo` is `error: missing angle brackets in
+//! associated item path`.
 //!
-//! `$env` is matched as an `ident` and not a `path`, which is forced: `$env:path`
-//! used as `$env::Foo` is `error: missing angle brackets in associated item path`,
-//! rustc reading it as a qualified associated item.
-//!
-//! This is the one file that knows an engine's calling convention: how a region
-//! arrives as two wasm parameters, where the gas charge goes, and which helper a
-//! result-less function takes. A second engine would be a second file like it.
+//! The one file that knows an engine's calling convention: how a region arrives as
+//! two wasm parameters, where the gas charge goes, and which helper a result-less
+//! function takes. A second engine would be a second file like it.
 
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
@@ -40,20 +32,15 @@ pub(crate) fn wasmi_glue(functions: &[ParsedHostFunction]) -> TokenStream {
 
     quote! {
         /// Expands to the wasmi glue for this ABI: the `HostFunctionBodies` trait
-        /// and `register_host_functions`, at the scope it is called in.
-        ///
-        /// One call site, in `xrpl-wasm-vm`'s `register.rs`, which then implements
-        /// the trait once — the bodies are all that is left hand-written, and a
-        /// declaration added to the ABI is a missing trait item rather than a
+        /// and `register_host_functions`, at the scope it is called in. A
+        /// declaration added to the ABI is then a missing trait item rather than a
         /// forgotten registration.
         ///
-        /// # The module it is handed
-        ///
-        /// `$env` names a module holding **everything the expansion reaches for on
-        /// the engine's side**, since this crate can name none of it: the store
-        /// type `VmState`, the charging helpers `charged` and `charged_unreported`
-        /// with their `CallResult`, and the argument types `InBytes`, `InStr`,
-        /// `InU32`, `OutBytes` and `TraceCode`.
+        /// `$env` names a module holding everything the expansion reaches for on
+        /// the engine's side, since this crate can name none of it: the store type
+        /// `VmState`, the charging helpers `charged` and `charged_unreported` with
+        /// their `CallResult`, and the argument types `InBytes`, `InStr`, `InU32`,
+        /// `OutBytes` and `TraceCode`.
         ///
         /// ```ignore
         /// mod glue_env {
@@ -65,12 +52,11 @@ pub(crate) fn wasmi_glue(functions: &[ParsedHostFunction]) -> TokenStream {
         /// xrpl_host_functions::wasmi_glue!(glue_env);
         /// ```
         ///
-        /// The module supplies the **spellings**. Their **shapes** are stated where
-        /// a module cannot state them: each argument type implements
-        /// [`FromWasmRegion`] or [`FromWasmScalar`] — which one is the ABI's
-        /// decision and not the engine's, so a declared `u32` is a region — and the
-        /// expansion pins each charging helper's whole signature against a
-        /// `const _`.
+        /// The module supplies the spellings; the shapes are pinned by the
+        /// expansion. Each argument type implements [`FromWasmRegion`] or
+        /// [`FromWasmScalar`] — which one is the ABI's decision, so a declared
+        /// `u32` is a region — and each charging helper's signature is asserted
+        /// against a `const _`.
         #[cfg(feature = "wasmi_glue")]
         #[macro_export]
         macro_rules! wasmi_glue {
@@ -79,23 +65,17 @@ pub(crate) fn wasmi_glue(functions: &[ParsedHostFunction]) -> TokenStream {
                 /// gas is charged and its arguments are off the wire.
                 ///
                 /// The methods take no receiver, so a registered closure captures
-                /// nothing at all — which is what satisfies wasmi's
+                /// nothing — which is what satisfies wasmi's
                 /// `Fn + Send + Sync + 'static` bound, and why the implementor
-                /// itself need not be `'static`.
-                ///
-                /// A body is handed the caller and its arguments in their wire
-                /// form, and answers what the guest is told. It does **not** charge
-                /// gas: that belongs to the generated closure, so it cannot be
-                /// forgotten or charged twice.
+                /// itself need not be `'static`. A body does not charge gas; the
+                /// generated closure does, so it cannot be forgotten or charged
+                /// twice.
                 pub(crate) trait HostFunctionBodies {
                     #(#bodies)*
                 }
 
                 /// Register every host function on `linker`, one `func_wrap` per
-                /// declaration.
-                ///
-                /// The parameter list of each closure is the ABI's derived wasm
-                /// signature, so this is not a second statement of it: an import
+                /// declaration, at the ABI's derived wasm signature — so an import
                 /// that passes [`crate::check`] links here by construction.
                 pub(crate) fn register_host_functions<B: HostFunctionBodies>(
                     linker: &mut ::wasmi::Linker<#env::VmState<'_>>,
@@ -110,23 +90,18 @@ pub(crate) fn wasmi_glue(functions: &[ParsedHostFunction]) -> TokenStream {
     }
 }
 
-/// The macro argument every engine-side path is qualified by, as the emitted
-/// `macro_rules!` spells it.
+/// The macro argument every engine-side path is qualified by.
 fn env() -> TokenStream {
     quote!($env)
 }
 
 /// The signature of each charging helper, pinned as a `const _` the expansion
-/// carries.
+/// carries: the one part of the contract neither `$env` nor the argument traits
+/// state.
 ///
-/// The one part of the contract neither `$env` nor the two argument traits state:
-/// the module says `charged` exists and nothing says what it takes. Emitted
-/// rather than left to the call site, because an assertion someone has to
-/// remember to write is not a contract.
-///
-/// Its whole value is the diagnostic. A changed helper is already a type error at
-/// the call — but there it is failed inference inside a generated closure, and
-/// here it is one line stating the signature that was expected.
+/// Its value is the diagnostic. A changed helper is already a type error at the
+/// call, but there it is failed inference inside a generated closure and here it
+/// is one line stating the signature that was expected.
 fn charging_assertions() -> TokenStream {
     let env = env();
     let assertion = |helper: TokenStream, answer: TokenStream| {
@@ -197,7 +172,7 @@ fn registration(function: &ParsedHostFunction) -> TokenStream {
 }
 
 /// `$crate::HostFunctionSpec::CheckKeylet` — the one name the expansion reaches
-/// back into the ABI crate for, and the reason `$crate` is load-bearing here.
+/// back into the ABI crate for.
 fn spec_path(function: &ParsedHostFunction) -> TokenStream {
     let variant = &function.variant;
     quote! { $crate::HostFunctionSpec::#variant }
@@ -206,10 +181,8 @@ fn spec_path(function: &ParsedHostFunction) -> TokenStream {
 /// One declared parameter as the closure declares it: `account_ptr: i32,
 /// account_len: i32`, or `field: i32`.
 ///
-/// Both halves come from the lowering — the names from
-/// [`ParamType::wasm_names`], the types from [`ParamType::as_wasm_params`] — so
-/// the arity a closure is registered at *is* the derived arity rather than a
-/// second statement of it.
+/// Names and types both come from the lowering, so the arity a closure is
+/// registered at *is* the derived arity.
 fn closure_params(param: &Param) -> Vec<TokenStream> {
     param
         .ty
@@ -231,11 +204,6 @@ fn closure_params(param: &Param) -> Vec<TokenStream> {
 /// lowering chose: an argument type implementing the other one is an unsatisfied
 /// bound named at the type, where `Ty::from_wasm(a, b)` would be an unrelated
 /// arity error named here.
-///
-/// The one thing a declaration could do to break the region case is take both
-/// `x: &[u8]` and `x_ptr`, whose generated names would collide; rustc says so at
-/// the `wasmi_glue!` call site rather than at the declaration, which is a poor
-/// message and nothing worse.
 fn lift(param: &Param) -> TokenStream {
     let Some(argument_trait) = param.ty.argument_trait() else {
         return param.name.to_token_stream();
@@ -256,10 +224,8 @@ fn answer_type(result: ResultType) -> TokenStream {
     }
 }
 
-/// A wasm value type as a closure parameter is spelled.
-///
-/// Not [`WasmValType`]'s own `ToTokens`, which spells the ABI crate's *variant*
-/// for the table; here the same value is a Rust type.
+/// A wasm value type as a closure parameter spells it — a Rust type, not
+/// [`WasmValType`]'s own `ToTokens`, which spells the ABI crate's variant.
 fn rust_type(val_type: WasmValType) -> TokenStream {
     match val_type {
         WasmValType::I32 => quote!(i32),
@@ -278,9 +244,8 @@ mod tests {
     }
 
     /// The declaration whose declared and wasm parameter lists differ most:
-    /// `account` and `out` are a `(ptr, len)` pair each, and `seq` — which reads
-    /// like a scalar — is a third. Three arguments to the body, six on the wire,
-    /// and the glue is what keeps the two lists in step.
+    /// `account`, `out` and `seq` are a `(ptr, len)` pair each, so three arguments
+    /// to the body and six on the wire.
     #[test]
     fn lowers_a_declaration_to_a_body_and_a_registration() {
         let keylet = parsed(parse_quote! {
@@ -316,8 +281,7 @@ mod tests {
     }
 
     /// A wasm scalar is passed through as itself, in declaration order: no pair,
-    /// no argument type, no trait to build it through, and an `i64` that stays
-    /// one.
+    /// no argument type, and an `i64` that stays one.
     #[test]
     fn passes_the_wasm_scalars_through_untouched() {
         let from_int = parsed(parse_quote! {
@@ -351,12 +315,9 @@ mod tests {
         );
     }
 
-    /// The function that answers nothing: no wasm result, and the charging helper
-    /// that has nowhere to report a soft error. Derived from the declared
-    /// `HostResult<()>` rather than named as a special case.
-    ///
-    /// It is also the one declaration with a scalar-marshalled argument, so its
-    /// `TraceCode` is the only place `FromWasmScalar` is reached for.
+    /// The function that answers nothing takes the other charging helper, derived
+    /// from its declared `HostResult<()>` rather than named as a special case.
+    /// Its `TraceCode` is also the only place `FromWasmScalar` is reached for.
     #[test]
     fn a_declaration_that_answers_nothing_takes_the_other_charge() {
         let trace = parsed(trace_declaration());
@@ -389,9 +350,9 @@ mod tests {
         );
     }
 
-    /// The two worlds the macro body resolves in, pinned as tokens: the ABI crate
-    /// through `$crate`, and one engine by name. `names_no_crate_of_its_own` holds
-    /// the *other* half of the expansion to naming neither.
+    /// The two worlds the macro body resolves in: the ABI crate through `$crate`,
+    /// and one engine by name. `names_no_crate_of_its_own` holds the ABI half of
+    /// the expansion to naming neither.
     #[test]
     fn reaches_the_abi_crate_through_dollar_crate_and_the_engine_by_name() {
         let glue = code(wasmi_glue(&[parsed(parse_quote! {
@@ -409,10 +370,8 @@ mod tests {
         assert!(!glue.contains("xrpl_host_functions"), "{glue}");
     }
 
-    /// **The whole of what the `$env` argument bought.** Every item the expansion
-    /// reaches for on the engine's side is reached through the module it was
-    /// handed; a bare one would resolve against whatever the call site happened to
-    /// have in scope, which is the contract this argument replaced.
+    /// Every engine-side item is reached through the module the macro is handed: a
+    /// bare name would resolve against whatever the call site has in scope.
     ///
     /// `charged` covers `charged_unreported`, being its prefix.
     #[test]
@@ -447,8 +406,7 @@ mod tests {
     }
 
     /// The charging helpers' signatures, which nothing else in the contract
-    /// states. Emitted whole, so a helper that changed shape fails here and says
-    /// what was expected.
+    /// states.
     #[test]
     fn pins_both_charging_helpers_signatures() {
         assert_eq!(
@@ -467,8 +425,6 @@ mod tests {
         );
     }
 
-    /// The declaration used by more than one test above: the only one that answers
-    /// nothing, and the only one with a scalar-marshalled argument.
     fn trace_declaration() -> syn::TraitItemFn {
         parse_quote! {
             #[gas = 30]
@@ -478,9 +434,8 @@ mod tests {
     }
 
     /// The expansion's code alone. `to_string` renders a doc comment as a
-    /// `#[doc = "…"]` literal, and the contract those describe in prose is not the
-    /// one being asserted about — the macro's own names it, so every scan below
-    /// would match it.
+    /// `#[doc = "…"]` literal, and the macro's own documentation names the very
+    /// items the scans above look for.
     fn code(tokens: TokenStream) -> String {
         fn is_doc(tree: Option<&TokenTree>) -> bool {
             let Some(TokenTree::Group(group)) = tree else {
