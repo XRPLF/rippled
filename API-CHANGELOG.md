@@ -22,14 +22,46 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
-## Unreleased
+## XRP Ledger server version 3.4.0
 
-This section contains changes targeting a future version.
+Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.
 
-### Additions
+### Additions in 3.4.0
 
-- `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`.
-  When paginating delegate-filtered queries, a marker from a delegate-filtered query includes a `delegate` flag and is only valid for follow-up requests that also supply `delegate` (mixing marker conventions returns `invalidParams`). Because filtering is applied after the ledger scan, a page may contain fewer results than `limit` (possibly zero) while still returning a marker, so callers must continue until no marker is present.
+- `ledger`: `nftoken_id`, `nftoken_ids`, and `offer_id` are now included in transaction metadata when transactions are expanded (`expand`, or admin-only `full`), matching the `tx`, `account_tx`, and `subscribe` (`transactions` stream) responses. ([#5706](https://github.com/XRPLF/rippled/pull/5706))
+
+### Bugfixes in 3.4.0
+
+- `sign`, `sign_for`, `submit`: `signature_target` now returns `invalidParams` unless it names `CounterpartySignature` or `SponsorSignature`. It previously accepted any inner object field, such as `Book` or `NFToken`, and signed into it.
+- `sign`, `sign_for`, `submit`, `submit_multisigned`: With `fixCleanup3_4_0` enabled, a signature in `CounterpartySignature` or `SponsorSignature` covers a different prefix than the transaction's own signature, so a signature can no longer be moved from one of those roles into another. Clients that build these signatures themselves must use the new prefixes: `CPT` and `CPM` (single- and multi-signing) for `CounterpartySignature`, and `SPN` and `SPM` for `SponsorSignature`.
+- `get_aggregate_price`: Duplicate entries in the `oracles` request array are now ignored. [#6586](https://github.com/XRPLF/rippled/pull/6586)
+- `vault_info`: Errors now identify what the request got wrong instead of reporting every failure as the unregistered token `malformedRequest`, and the `error`, `error_code` and `error_message` fields now agree with each other. An invalid `vault_id` or `seq` returns `invalidParams`, an invalid `owner` returns `actMalformed`, and a request that mixes `vault_id` with `owner`/`seq` or supplies neither returns `invalidParams` with a message naming the accepted combinations. [#8015](https://github.com/XRPLF/rippled/pull/8015)
+- `vault_info`: A well-formed all-zero `vault_id` now returns `entryNotFound` instead of being rejected as malformed, and `entryNotFound` responses now include `error_code` and `error_message`. Clients that request `ripplerpc` 3.0 or above therefore receive HTTP 400 with that error rather than HTTP 200. [#8015](https://github.com/XRPLF/rippled/pull/8015)
+- `vault_info`: `vault_id` and `owner` must now be strings, matching how `ledger_entry` reads the same fields. An object or an array in either field previously produced an internal error, and a number was silently converted to its decimal text; `vault_id` now returns `invalidParams` and `owner` returns `actMalformed`. [#8015](https://github.com/XRPLF/rippled/pull/8015)
+- `gateway_balances`: The `account` and `ident` fields now return an `invalidParams` error if the value is not a string, instead of an `internal` error. [#7655](https://github.com/XRPLF/rippled/pull/7655)
+- `account_lines`: The `peer` field now returns an error if the value is not a string. [#7728](https://github.com/XRPLF/rippled/pull/7728)
+- `ledger`: `delivered_amount` is now included in the metadata of successful `AccountDelete` transactions when transactions are expanded (`expand`, or admin-only `full`). Previously it was only added for `Payment` and `CheckCash`, which made `ledger` inconsistent with `tx` and `account_tx`. [#5706](https://github.com/XRPLF/rippled/pull/5706)
+
+## XRP Ledger server version 3.3.0
+
+[Version 3.3.0](https://github.com/XRPLF/rippled/releases/tag/3.3.0) was released on Aug 6, 2026.
+
+### Additions in 3.3.0
+
+- `account_tx`: Added an optional `delegate` request object to filter delegated transactions. The object requires `delegate_filter`, which must be either `actor` for transactions owned by the requested account but signed by another account, or `authorizer` for transactions signed by the requested account on behalf of another account. The optional `counter_party` account narrows the results to a specific signer/delegate for `actor` or a specific owner/delegator for `authorizer`. Malformed `delegate`, `delegate_filter`, and `counter_party` values return standard invalid field errors, and invalid account IDs return `actMalformed`. When paginating delegate-filtered queries, a marker from a delegate-filtered query includes a `delegate` flag and is only valid for follow-up requests that also supply `delegate` (mixing marker conventions returns `invalidParams`). Because filtering is applied after the ledger scan, a page may contain fewer results than `limit` (possibly zero) while still returning a marker, so callers must continue until no marker is present. ([#6126](https://github.com/XRPLF/rippled/pull/6126))
+
+## XRP Ledger server version 3.2.1
+
+[Version 3.2.1](https://github.com/XRPLF/rippled/releases/tag/3.2.1) was released on Aug 1, 2026.
+
+This release contains bug fixes only and no API changes.
+
+## XRP Ledger server version 3.2.0
+
+[Version 3.2.0](https://github.com/XRPLF/rippled/releases/tag/3.2.0) was released on Jun 16, 2026.
+
+### Additions in 3.2.0
+
 - `ledger_entry`, `account_objects`: The `Delegate` ledger entry now includes an optional `DestinationNode` field, which stores the index into the authorized account's owner directory. This field is present on entries created after bidirectional directory tracking was introduced and may appear in RPC responses for those entries. ([#6681](https://github.com/XRPLF/rippled/pull/6681))
 - `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
   - `TRANSACTION_FORMATS`: Describes the fields and their optionality for each transaction type, including common fields shared across all transactions.
@@ -37,13 +69,9 @@ This section contains changes targeting a future version.
   - `TRANSACTION_FLAGS`: Maps transaction type names to their supported flags and flag values.
   - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
   - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
-- `ledger`: `nftoken_id`, `nftoken_ids`, and `offer_id` are now included in transaction metadata when transactions are expanded (`expand`, or admin-only `full`), matching the `tx`, `account_tx`, and `subscribe` (`transactions` stream) responses. ([#5706](https://github.com/XRPLF/rippled/pull/5706))
 
-### Bugfixes
+### Bugfixes in 3.2.0
 
-- `sign`, `sign_for`, `submit`: `signature_target` now returns `invalidParams` unless it names `CounterpartySignature` or `SponsorSignature`. It previously accepted any inner object field, such as `Book` or `NFToken`, and signed into it.
-- `sign`, `sign_for`, `submit`, `submit_multisigned`: With `fixCleanup3_4_0` enabled, a signature in `CounterpartySignature` or `SponsorSignature` covers a different prefix than the transaction's own signature, so a signature can no longer be moved from one of those roles into another. Clients that build these signatures themselves must use the new prefixes: `CPT` and `CPM` (single- and multi-signing) for `CounterpartySignature`, and `SPN` and `SPM` for `SponsorSignature`.
-- `get_aggregate_price`: Duplicate entries in the `oracles` request array are now ignored. [#6586](https://github.com/XRPLF/rippled/pull/6586)
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 - `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)
 - gRPC `GetLedgerDiff`: Fixed error message that incorrectly said "base ledger not validated" when the desired ledger was not validated. [#6730](https://github.com/XRPLF/rippled/pull/6730)
@@ -55,12 +83,24 @@ This section contains changes targeting a future version.
 - `submit`: The `fail_hard` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 - Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
-- `vault_info`: Errors now identify what the request got wrong instead of reporting every failure as the unregistered token `malformedRequest`, and the `error`, `error_code` and `error_message` fields now agree with each other. An invalid `vault_id` or `seq` returns `invalidParams`, an invalid `owner` returns `actMalformed`, and a request that mixes `vault_id` with `owner`/`seq` or supplies neither returns `invalidParams` with a message naming the accepted combinations. [#8015](https://github.com/XRPLF/rippled/pull/8015)
-- `vault_info`: A well-formed all-zero `vault_id` now returns `entryNotFound` instead of being rejected as malformed, and `entryNotFound` responses now include `error_code` and `error_message`. Clients that request `ripplerpc` 3.0 or above therefore receive HTTP 400 with that error rather than HTTP 200. [#8015](https://github.com/XRPLF/rippled/pull/8015)
-- `vault_info`: `vault_id` and `owner` must now be strings, matching how `ledger_entry` reads the same fields. An object or an array in either field previously produced an internal error, and a number was silently converted to its decimal text; `vault_id` now returns `invalidParams` and `owner` returns `actMalformed`. [#8015](https://github.com/XRPLF/rippled/pull/8015)
-- `gateway_balances`: The `account` and `ident` fields now return an `invalidParams` error if the value is not a string, instead of an `internal` error. [#7655](https://github.com/XRPLF/rippled/pull/7655)
-- `account_lines`: The `peer` field now returns an error if the value is not a string. [#7728](https://github.com/XRPLF/rippled/pull/7728)
-- `ledger`: `delivered_amount` is now included in the metadata of successful `AccountDelete` transactions when transactions are expanded (`expand`, or admin-only `full`). Previously it was only added for `Payment` and `CheckCash`, which made `ledger` inconsistent with `tx` and `account_tx`. [#5706](https://github.com/XRPLF/rippled/pull/5706)
+
+## XRP Ledger server version 3.1.3
+
+[Version 3.1.3](https://github.com/XRPLF/rippled/releases/tag/3.1.3) was released on May 8, 2026.
+
+This release contains bug fixes only and no API changes.
+
+## XRP Ledger server version 3.1.2
+
+[Version 3.1.2](https://github.com/XRPLF/rippled/releases/tag/3.1.2) was released on Mar 12, 2026.
+
+This release contains bug fixes only and no API changes.
+
+## XRP Ledger server version 3.1.1
+
+[Version 3.1.1](https://github.com/XRPLF/rippled/releases/tag/3.1.1) was released on Feb 23, 2026.
+
+This release contains bug fixes only and no API changes.
 
 ## XRP Ledger server version 3.1.0
 
