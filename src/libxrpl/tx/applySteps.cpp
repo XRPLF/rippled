@@ -375,6 +375,27 @@ preflight(
     }
 }
 
+NotTEC
+invokeCheckPermission(ReadView const& view, STTx const& tx)
+{
+    try
+    {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
+            return Transactor::invokeCheckPermission<T>(view, tx);
+        });
+    }
+    catch (UnknownTxnType const& e)
+    {
+        // Should never happen
+        // LCOV_EXCL_START
+        JLOG(debugLog().fatal()) << "Unknown transaction type in invokeCheckPermission: "
+                                 << e.txnType;
+        UNREACHABLE("xrpl::invokeCheckPermission : unknown transaction type");
+        return temUNKNOWN;
+        // LCOV_EXCL_STOP
+    }
+}
+
 PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view)
 {

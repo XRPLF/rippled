@@ -314,6 +314,7 @@ doAccountObjects(rpc::JsonContext& context)
             {.name = jss::permissioned_domain, .type = ltPERMISSIONED_DOMAIN},
             {.name = jss::vault, .type = ltVAULT},
             {.name = jss::sponsorship, .type = ltSPONSORSHIP},
+            {.name = jss::transaction_proposal, .type = ltTRANSACTION_PROPOSAL},
         };
 
         typeFilter.emplace();
