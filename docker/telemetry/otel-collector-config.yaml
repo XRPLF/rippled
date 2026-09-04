@@ -220,9 +220,10 @@ connectors:
       # Deliberately NOT promoted: ledger_hash and ledger_seq. Both are
       # per-ledger values, so a dimension on either would mint a new metric
       # series for every ledger acquired -- the same unbounded-cardinality rule
-      # already applied to close_time above. They stay span-only and are
-      # searchable in Tempo instead (see the parquet_dedicated_columns block in
-      # tempo.yaml), which gives per-ledger lookup with no metric series.
+      # already applied to close_time_ripple_epoch_s above. They stay span-only
+      # and are searchable in Tempo instead (see the parquet_dedicated_columns
+      # block in tempo.yaml), which gives per-ledger lookup with no metric
+      # series.
       - name: outcome
       - name: acquire_reason
       # Sync-diagnostic span dimensions. Each is a small, closed value
