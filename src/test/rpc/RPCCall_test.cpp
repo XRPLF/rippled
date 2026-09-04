@@ -5928,30 +5928,60 @@ public:
         }
     }
 
-    // Every name in the command-line table must also name a server method, so
-    // that a command accepted on the command line can actually be dispatched.
+    // The command-line table and the dispatch table must agree.
     //
-    // The reverse does not hold: a server method needs no command-line form.
-    // Three command-line names are also exempt because they are wrappers that
-    // forward a caller-supplied method rather than naming one themselves.
+    // Forwards: every name the command line accepts must reach a handler at the
+    // version the command-line client requests. Merely existing in the dispatch
+    // table is not enough, because a handler whose API range excludes
+    // kApiCommandLineVersion would parse the command and then answer
+    // RpcUnknownCommand.
+    //
+    // Backwards: a handler that claims a command-line form must have one, and
+    // one that denies it must not, so that Handler::hasCommandLineForm cannot go
+    // stale.
+    //
+    // Three command-line names are exempt from the forward check because they
+    // are wrappers that forward a caller-supplied method rather than naming one
+    // themselves, so they have no handler of their own.
     void
-    testCommandLineNamesAreDispatchable()
+    testCommandLineTableMatchesHandlers()
     {
-        testcase("Command-line methods are dispatchable");
+        testcase("Command-line and dispatch tables agree");
 
         static constexpr std::array kWrappers{
             rpc::method::kInternal, rpc::method::kJson, rpc::method::kJson2};
 
-        auto const dispatchable = rpc::getHandlerNames();
-        BEAST_EXPECT(!dispatchable.empty());
+        auto const commandLine = commandLineMethodNames();
+        auto const handlers = rpc::getHandlerNames();
+        BEAST_EXPECT(!commandLine.empty());
+        BEAST_EXPECT(!handlers.empty());
 
-        for (auto const& name : commandLineMethodNames())
+        // The command-line client always requests this version, so this is the
+        // only version at which its commands have to be dispatchable. Beta
+        // methods are off: a command must work against a stock server.
+        auto const handlerFor = [](std::string_view name) {
+            return rpc::getHandler(rpc::kApiCommandLineVersion, false, name);
+        };
+
+        for (auto const& name : commandLine)
         {
             if (std::ranges::find(kWrappers, name) != kWrappers.end())
                 continue;
 
+            auto const* handler = handlerFor(name);
+            if (BEAST_EXPECTS(handler != nullptr, std::string{name}))
+                BEAST_EXPECTS(handler->hasCommandLineForm, std::string{name});
+        }
+
+        for (auto const& name : handlers)
+        {
+            auto const* handler = handlerFor(name);
+            bool const claimsCommandLine = handler != nullptr && handler->hasCommandLineForm;
+
             // Both name lists are sorted, so a binary search suffices.
-            BEAST_EXPECTS(std::ranges::binary_search(dispatchable, name), std::string{name});
+            BEAST_EXPECTS(
+                claimsCommandLine == std::ranges::binary_search(commandLine, name),
+                std::string{name});
         }
     }
 
@@ -5959,7 +5989,7 @@ public:
     run() override
     {
         forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
-        testCommandLineNamesAreDispatchable();
+        testCommandLineTableMatchesHandlers();
     }
 };
 

@@ -40,6 +40,13 @@ struct Handler
 
     unsigned minApiVer = kApiMinimumSupportedVersion;
     unsigned maxApiVer = kApiMaximumValidVersion;
+
+    // Whether the command-line client accepts this method as a command. Most do;
+    // the exceptions are methods whose arguments have no sensible positional
+    // form. Recorded here, rather than left to a comment, so that RPCCall_test
+    // can hold this table and the command-line table to each other: a method
+    // claiming a command-line form must have one, and one denying it must not.
+    bool hasCommandLineForm = true;
 };
 
 Handler const*
