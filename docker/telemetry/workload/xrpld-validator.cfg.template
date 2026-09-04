@@ -1,0 +1,122 @@
+# xrpld validator node configuration template for workload harness.
+#
+# Not consumed by anything today: run-full-validation.sh writes each node's
+# cfg inline. Kept as the reference layout for a validator run as a container,
+# whose entrypoint would substitute the placeholders below.
+#
+# Because nothing reads this file, nothing catches it drifting from the cfg the
+# runner actually generates. Any change to the [telemetry], [insight] or
+# [rpc_startup] stanzas here must be mirrored in run-full-validation.sh, and
+# vice versa.
+#
+# Placeholders:
+#   {{NODE_INDEX}}        — Node number (1-based)
+#   {{RPC_PORT}}          — HTTP RPC port
+#   {{WS_PORT}}           — WebSocket port
+#   {{PEER_PORT}}         — Peer protocol port
+#   {{DATA_DIR}}          — Node data directory
+#   {{VALIDATION_SEED}}   — Validator seed from key generation
+#   {{VALIDATORS_FILE}}   — Path to shared validators.txt
+#   {{IPS_FIXED}}         — Peer addresses (one per line)
+#   {{OTEL_ENDPOINT}}     — OTel Collector OTLP/HTTP traces endpoint
+#   {{OTEL_METRICS_ENDPOINT}} — OTel Collector OTLP/HTTP metrics endpoint
+#   {{LOG_LEVEL}}         — Log level. Must be at least `info` for the
+#                           log-trace correlation checks to pass: they need a
+#                           log line emitted while a span is current on the
+#                           thread. The guaranteed such line is the consensus
+#                           accept pair in RCLConsensus.cpp, which is at info
+#                           and sits inside the activation doAccept makes over
+#                           its whole body. `warning` and above suppress it and
+#                           leave the checks with nothing to find. Do not use
+#                           `debug`: it adds log I/O inside the spans whose
+#                           latency regression-metrics.json gates.
+
+[server]
+port_rpc
+port_ws
+port_peer
+
+# RPC and WebSocket stay on loopback, matching the cfg that
+# run-full-validation.sh generates and the rest of the repo's node configs.
+# Only the peer port below needs to listen on all interfaces.
+[port_rpc]
+port = {{RPC_PORT}}
+ip = 127.0.0.1
+admin = 127.0.0.1
+protocol = http
+
+[port_ws]
+port = {{WS_PORT}}
+ip = 127.0.0.1
+admin = 127.0.0.1
+protocol = ws
+
+[port_peer]
+port = {{PEER_PORT}}
+ip = 0.0.0.0
+protocol = peer
+
+[node_db]
+type=NuDB
+path={{DATA_DIR}}/nudb
+online_delete=256
+
+[database_path]
+{{DATA_DIR}}/db
+
+[debug_logfile]
+{{DATA_DIR}}/debug.log
+
+[validation_seed]
+{{VALIDATION_SEED}}
+
+[validators_file]
+{{VALIDATORS_FILE}}
+
+[ips_fixed]
+{{IPS_FIXED}}
+
+[peer_private]
+1
+
+# --- OpenTelemetry tracing (all categories enabled) ---
+[telemetry]
+enabled=1
+service_instance_id=validator-{{NODE_INDEX}}
+endpoint={{OTEL_ENDPOINT}}
+exporter=otlp_http
+batch_size=512
+batch_delay_ms=2000
+max_queue_size=2048
+trace_rpc=1
+trace_transactions=1
+trace_consensus=1
+trace_peer=1
+trace_ledger=1
+
+# --- Native OTel metrics (beast::insight over OTLP/HTTP) ---
+# The collector has no StatsD receiver (its metrics pipeline is
+# [otlp, spanmetrics]), so beast::insight must export natively over OTLP for
+# system metrics to reach Prometheus at all. `server=otel` is the only
+# load-bearing key here -- it selects the OTel collector.
+#
+# No `prefix` is set on purpose. It would be inert: OTelCollector applies no
+# prefix to instrument names, so exported names are the lowercased raw names
+# (`jobq_job_count`, `rpc_requests_total`, `total_bytes_in`). The service is
+# identified by the OTel resource `service.name`, not by a name prefix.
+[insight]
+server=otel
+endpoint={{OTEL_METRICS_ENDPOINT}}
+
+[rpc_startup]
+{ "command": "log_level", "severity": "{{LOG_LEVEL}}" }
+
+[ssl_verify]
+0
+
+# --- Network tuning for local cluster ---
+[network_id]
+0
+
+[sntp_servers]
+time.google.com

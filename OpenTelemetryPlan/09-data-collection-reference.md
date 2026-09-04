@@ -696,21 +696,17 @@ prefix=xrpld
 | Prometheus Metric | Source File       | Unit | Description                    |
 | ----------------- | ----------------- | ---- | ------------------------------ |
 | `rpc_time`        | ServerHandler.cpp | ms   | RPC response time distribution |
-| `rpc_size`        | ServerHandler.cpp | ms\* | RPC response size (see note)   |
+| `rpc_size`        | ServerHandler.cpp | By\* | RPC response size (see note)   |
 | `ios_latency`     | Application.cpp   | ms   | I/O service loop latency       |
 | `pathfind_fast`   | PathRequests.h    | ms   | Fast pathfinding duration      |
 | `pathfind_full`   | PathRequests.h    | ms   | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
-\* **`rpc_size` now records bytes as bytes (fixed).** It used to go through the
-millisecond-scaled event histogram and export as `rpc_size_milliseconds_bucket`
-on a ladder topping out at 5000, so the 24.9% of responses larger than 5 kB all
-landed in the last bucket and every percentile read back as a flat 5000 — a
-plausible-looking constant rather than a byte size. `beast::insight::Event` now
+\* **`rpc_size` records bytes, not a duration.** `beast::insight::Event`
 declares a `Unit`, so this instrument is created with unit `By` and exports as
 **`rpc_size_bytes_bucket`** on `kByteBuckets` (512 B to 1 MiB, placed from the
-measured distribution). Queries and panels must use the new name.
+measured distribution). Queries and panels must use that name.
 
 **Grafana dashboards**: _Node Health_ (`ios_latency`), _RPC & Pathfinding_ (`rpc_time`, `rpc_size`, `pathfind_*`)
 
@@ -864,7 +860,9 @@ for how the tier attributes are set and reach metrics.
 1. Open Grafana at **http://localhost:3000**
 2. Navigate to **Dashboards → xrpld** folder
 3. All 15 dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
-   (the Phase-10 harness asserts 14 of them — `log-derived-insights` is unasserted)
+   (the workload harness checks that all 15 provision and load; 14 of them also have
+   metric-data assertions — `log-derived-insights` is Loki-backed, so only its
+   provisioning is checked)
 
 ---
 
@@ -1171,13 +1169,26 @@ Phase-7 parity set, see
 
 ---
 
-## 5c. Future: Synthetic Workload Generation & Telemetry Validation (Phase 10)
+## 5c. Synthetic Workload Generation & Telemetry Validation (Phase 10)
 
-> **Status**: Planned, not yet implemented.
 > **Plan details**: [06-implementation-phases.md §6.8.3](./06-implementation-phases.md) — motivation, architecture
 > **Task breakdown**: [Phase10_taskList.md](./Phase10_taskList.md) — per-task implementation details
+> **Tools**: [docker/telemetry/workload/](../docker/telemetry/workload/) — RPC load generator, transaction submitter, validation suite, benchmarks
 
 Phase 10 builds a 5-node validator docker-compose harness with RPC load generators, transaction submitters, and automated validation scripts that verify all spans, metrics, dashboards, and log-trace correlation work end-to-end. Includes a benchmark suite comparing telemetry-ON vs telemetry-OFF overhead.
+
+### Running the Validation Suite
+
+```bash
+# Full end-to-end validation (start cluster, generate load, validate):
+docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
+
+# Validation only (assumes stack and cluster are already running):
+python3 docker/telemetry/workload/validate_telemetry.py --report /tmp/report.json
+
+# Performance benchmark (baseline vs telemetry):
+docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
+```
 
 ### Validated Telemetry Inventory
 
@@ -1189,26 +1200,42 @@ Phase 10 builds a 5-node validator docker-compose harness with RPC load generato
 > below as **families currently emitting** (idle nodes under-report — workload-gated metrics such as
 > per-RPC/error counters appear only once exercised, which is Phase 10's purpose).
 
-| Category                  | Expected Count      | Validation Method                |
-| ------------------------- | ------------------- | -------------------------------- |
-| Trace spans               | 40 of 41 emitted    | Jaeger/Tempo API query           |
-| Span attributes           | 67 required         | Per-span attribute assertion     |
-| Legacy `*` families       | ~270 (≈224 traffic) | Prometheus `__name__` query      |
-| Native MetricsRegistry    | 35 instruments      | Prometheus query                 |
-| Call-site `XRPL_METRIC_*` | 7 instruments       | Prometheus query                 |
-| Per-job-type gauges       | 105 (35 types × 3)  | Prometheus `__name__` query      |
-| SpanMetrics RED           | 4 per span          | Prometheus query                 |
-| Grafana dashboards        | 14 of 15 on disk    | Dashboard API "no data" check    |
-| Log-trace links           | Present             | Loki query + Tempo reverse check |
+| Category                       | Expected Count      | Validation Method                           | Config File             |
+| ------------------------------ | ------------------- | ------------------------------------------- | ----------------------- |
+| Trace spans                    | 40 of 41 emitted    | Tempo API query                             | `expected_spans.json`   |
+| Span attributes                | 67 required         | Per-span attribute assertion                | `expected_spans.json`   |
+| Legacy beast::insight families | ~270 (≈224 traffic) | Named subset asserted; rest regex-accounted | `expected_metrics.json` |
+| Native MetricsRegistry         | 35 instruments      | Prometheus query                            | `expected_metrics.json` |
+| Call-site `XRPL_METRIC_*`      | 7 instruments       | Prometheus query                            | `expected_metrics.json` |
+| Per-job-type gauges            | 105 (35 types × 3)  | 6 by literal name; rest regex-accounted     | `expected_metrics.json` |
+| SpanMetrics RED                | 4 per span          | Prometheus query                            | `expected_metrics.json` |
+| Grafana dashboards             | all 15 on disk      | Dashboard API load + panel count            | `expected_metrics.json` |
+| Log-trace links                | Present             | Loki query + Tempo reverse check            | —                       |
 
-> **These are the harness's numbers, not the code's, and three of them differ.**
+> **These are the harness's numbers, not the code's, and two of them differ.**
 > `docker/telemetry/workload/expected_spans.json` carries 40 span entries against
 > the **41** families the code emits ([§1.1](#11-complete-span-inventory-41-spans)) —
 > `rpc.ws_upgrade` has no entry — and 67 distinct required attributes (the
 > manifest's own `total_unique_attributes: 58` field is stale).
-> `expected_metrics.json` asserts 36 metric entries and 14 dashboard uids against
-> the **15** dashboard JSONs in `docker/telemetry/grafana/dashboards/`;
-> `log-derived-insights` is the unasserted one. The 35 native instruments match
+> The **Validation Method** column for the two bulk beast rows used to read
+> "Prometheus `__name__` query", which never described anything real:
+> `expected_metrics.json` contains no `__name__` query and
+> `validate_telemetry.py` issues none. The single `__name__` string in that file
+> is prose quoting a `ledger-data-sync` dashboard query, not a check. What is
+> actually asserted in both rows is a subset named literally —
+> `overlay_traffic` asserts the four `total_*` families out of ~228, and
+> `job_queue_per_type_gauges` asserts 6 of the 105 per-job-type gauges. The
+> remainder is now **accounted for** rather than asserted: anchored regexes
+> under the top-level `accounted_patterns` list declare both cross products, so
+> the `metric.reverse_coverage` check does not report them, while any name
+> outside those shapes surfaces as unaccounted. That check warns and never
+> fails; see the reverse-coverage row in
+> [`docs/telemetry-runbook.md`](../docs/telemetry-runbook.md).
+>
+> `expected_metrics.json` lists all **15** dashboard uids in
+> `docker/telemetry/grafana/dashboards/`, so dashboard coverage does not differ;
+> `log-derived-insights` is listed for the provisioning check only, and its panel
+> data is asserted nowhere. The 35 native instruments match
 > the tables in
 > [§Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry)
 > and the Phase 7+ section exactly, counting each labeled gauge family
@@ -1230,6 +1257,16 @@ request, and the `getobject_*` family as a whole needs an inbound
 from [§2.5](#25-per-job-type-queue-gauges); all 105 should be present on any
 running node, but `_deferred` reads zero unless a capped type is actually
 saturated.
+
+### Performance Overhead Targets
+
+| Metric            | Target       | Measurement Method                  |
+| ----------------- | ------------ | ----------------------------------- |
+| CPU overhead      | < 3%         | ps avg CPU% baseline vs telemetry   |
+| Memory overhead   | < 5MB        | ps peak RSS baseline vs telemetry   |
+| RPC p99 latency   | < 2ms impact | server_info round-trip timing       |
+| Throughput impact | < 5%         | Ledger close rate comparison        |
+| Consensus impact  | < 1%         | Consensus round time p95 comparison |
 
 ---
 

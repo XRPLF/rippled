@@ -1,0 +1,89 @@
+{
+  "captured_at": "2026-08-26T11:54:41Z",
+  "git_sha": "8418d474a7a63aa981a4854aa94388a556517b0d",
+  "metrics": {
+    "job.acceptLedger.queued.p95": {
+      "unit": "us",
+      "value": 166.13636363636323
+    },
+    "job.acceptLedger.running.p95": {
+      "unit": "us",
+      "value": 6142.857142857149
+    },
+    "job.transaction.queued.p95": {
+      "unit": "us",
+      "value": 426.19047619047586
+    },
+    "job.transaction.running.p95": {
+      "unit": "us",
+      "value": 599.9999999999986
+    },
+    "span.consensus.accept.p50": {
+      "unit": "ms",
+      "value": 0.5287356321839081
+    },
+    "span.consensus.accept.p95": {
+      "unit": "ms",
+      "value": 8.969696969696969
+    },
+    "span.consensus.accept.p99": {
+      "unit": "ms",
+      "value": 20.800000000000026
+    },
+    "span.consensus.ledger_close.p95": {
+      "unit": "ms",
+      "value": 0.7829999999999997
+    },
+    "span.consensus.ledger_close.p99": {
+      "unit": "ms",
+      "value": 2.0299999999999896
+    },
+    "span.ledger.build.p95": {
+      "unit": "ms",
+      "value": 4.53333333333333
+    },
+    "span.ledger.build.p99": {
+      "unit": "ms",
+      "value": 9.109090909090913
+    },
+    "span.ledger.validate.p50": {
+      "unit": "ms",
+      "value": 0.06471894002114831
+    },
+    "span.rpc.ws_message.p50": {
+      "unit": "ms",
+      "value": 0.16003451676528602
+    },
+    "span.rpc.ws_message.p95": {
+      "unit": "ms",
+      "value": 0.6977397260273974
+    },
+    "span.rpc.ws_message.p99": {
+      "unit": "ms",
+      "value": 0.9757123287671235
+    },
+    "span.tx.apply.p95": {
+      "unit": "ms",
+      "value": 3.524999999999999
+    },
+    "span.tx.apply.p99": {
+      "unit": "ms",
+      "value": 5.066666666666704
+    },
+    "span.tx.process.p50": {
+      "unit": "ms",
+      "value": 0.20062219789579117
+    },
+    "span.tx.process.p95": {
+      "unit": "ms",
+      "value": 0.6100467289719625
+    },
+    "span.tx.process.p99": {
+      "unit": "ms",
+      "value": 2.758787878787877
+    }
+  },
+  "profile": "full-validation",
+  "schema_version": 1,
+  "window": "3m"
+}

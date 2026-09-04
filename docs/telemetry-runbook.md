@@ -40,6 +40,8 @@
 - [Troubleshooting](#troubleshooting)
 - [Performance Tuning](#performance-tuning)
 - [Disabling Telemetry](#disabling-telemetry)
+- [Validating Telemetry Stack](#validating-telemetry-stack)
+- [Performance Benchmarking](#performance-benchmarking)
 
 ## Overview
 
@@ -2760,6 +2762,53 @@ This enables bidirectional navigation between logs and traces in Grafana:
 - **Tempo -> Loki**: Click "Logs for this trace" on any trace in Grafana Tempo to see all log lines from that trace.
 - **Loki -> Tempo**: Click the `TraceID` derived field link on any log line containing `trace_id=` to jump to the full trace in Tempo.
 
+### Which Log Lines Carry Trace Context
+
+Correlation requires a log line emitted **while a span is current on the emitting thread**. `Log.cpp` injects `trace_id`/`span_id` by reading `RuntimeContext::GetCurrent()`, so what matters is whether anything has pushed a span onto that thread's context store.
+
+A span becomes current in **either** of two ways:
+
+- As a [`ScopedSpanGuard`](../include/xrpl/telemetry/SpanGuard.h), which activates on construction.
+- By activating a plain `SpanGuard` through `activate()` or the `activateIfLive()` wrapper. `activate()` returns a `ScopedActivation` whose `Impl` holds an `otel_trace::Scope` constructed from the span, and that `Scope` pushes onto the same `RuntimeContext` store `Log.cpp` reads.
+
+A plain `SpanGuard` that is **never activated** makes no span current — it "never pushes the span onto the thread-local context stack" ([SpanGuard.h](../include/xrpl/telemetry/SpanGuard.h#L274)) — so lines inside such a region carry no `trace_id` regardless of severity.
+
+Severity does not affect injection, but `JLOG` filters on severity **before** `format()` runs, so the configured log level decides whether a qualifying line is emitted at all.
+
+**The dependably correlated line at `info`** is the consensus accept pair at [RCLConsensus.cpp:736/740](../src/xrpld/app/consensus/RCLConsensus.cpp#L736) — an `if`/`else`, so exactly one of the two fires on every accepted round. `doAccept` activates the accept span as ambient over its whole body at [:565](../src/xrpld/app/consensus/RCLConsensus.cpp#L565) (`activateIfLive(acceptSpan)`, commented "Make the accept span ambient for the whole accept so doAccept's log lines ... correlate to it"), and the activation lives to the end of the function, so both branches are inside it. At roughly one round every 4 s this yields dozens of correlated lines per run.
+
+That is a dependable pair rather than an unconditional one: `info` severity is necessary but not sufficient. Four preconditions must all hold, and each has its own bail-out that silently yields an uncorrelated line rather than an error:
+
+| Precondition                                                                  | Where it is enforced                                                                                                                                                                                                                                                                        | What happens if it fails                                                                        |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Telemetry enabled — built with `telemetry=ON` **and** `[telemetry] enabled=1` | The `SpanGuard` factories return early on `tel == nullptr \|\| !tel->isEnabled()`, e.g. [SpanGuard.cpp:278-280](../src/libxrpl/telemetry/SpanGuard.cpp#L278)                                                                                                                                | Null guard, no span, no `trace_id`                                                              |
+| `trace_consensus=1`                                                           | The round span is built by `hashSpan(TraceCategory::Consensus, …)`, which checks `isCategoryEnabled()` ([SpanGuard.cpp:354](../src/libxrpl/telemetry/SpanGuard.cpp#L354))                                                                                                                   | No round span, so `roundSpanContext_` never becomes valid                                       |
+| A valid `roundSpanContext_` at accept time                                    | `makeAcceptSpan()` calls `SpanGuard::childSpan(cs::accept, roundSpanContext_)` ([RCLConsensus.cpp:512](../src/xrpld/app/consensus/RCLConsensus.cpp#L512)), and `childSpan` returns a null guard on an invalid parent ([SpanGuard.cpp:274-281](../src/libxrpl/telemetry/SpanGuard.cpp#L274)) | Null accept span, so `activateIfLive` activates nothing and the pair logs without trace context |
+| The current span context is valid **and sampled**                             | Injection is gated on `spanCtx.IsValid() && spanCtx.IsSampled()` ([Log.cpp:328](../src/libxrpl/basics/Log.cpp#L328))                                                                                                                                                                        | Ids are withheld deliberately, so the log never advertises a trace that was not exported        |
+
+The sampled check is normally satisfied on a self-rooted consensus round — head sampling is a fixed ratio of 1.0 wrapped in a `ParentBasedSampler` ([Telemetry.cpp:412-414](../src/libxrpl/telemetry/Telemetry.cpp#L412)) — but a span inheriting an unsampled **remote** parent is dropped while still carrying valid ids, which is exactly the case the gate exists for.
+
+With all four satisfied, `info` is the minimum level at which the `log.trace_id_present` and `log.trace_id_cross_reference` checks pass by construction, and it is what the correlation-checking harnesses generate: the cfgs written by [run-full-validation.sh](../docker/telemetry/workload/run-full-validation.sh) and [integration-test.sh](../docker/telemetry/integration-test.sh) each set `enabled=1`, `trace_consensus=1` and `log_level info` together. `benchmark.sh` deliberately does not — it stays at `warning` to keep log I/O out of the overhead measurement, and it runs no correlation check. At `warning` and above that pair is suppressed and correlation becomes incidental — dependent on a `warn`-or-worse line happening to fire inside some active span.
+
+> **CI exercises both checks.** `log.trace_id_present` and `log.trace_id_cross_reference` are gated on every CI run — see [CI workflow](#ci-workflow) for the invocation and the per-leg diagnostics printed alongside them. Run the same thing locally after any change to log formatting, span activation, the `filelog` receiver or the Loki exporter:
+>
+> ```bash
+> docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
+> ```
+
+#### Why not `debug`
+
+`debug` does correlate strictly more: it additionally brings in [`BuildLedger.cpp:81`](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L81) (inside the `ledger.build` `ScopedSpanGuard` at [:55](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L55), once per ledger close) and [`RPCHandler.cpp:188`](../src/xrpld/rpc/detail/RPCHandler.cpp#L188) (inside the `rpc.command.*` `ScopedSpanGuard` at [:168](../src/xrpld/rpc/detail/RPCHandler.cpp#L168), once per RPC command), giving broader multi-subsystem coverage.
+
+But raising the **base** level to `debug` puts synchronous log I/O inside `ledger.build`, `consensus.accept` (including [RCLConsensus.cpp:663](../src/xrpld/app/consensus/RCLConsensus.cpp#L663), which logs **per transaction**) and `tx.apply` — precisely the spans whose p50/p95/p99 latencies `regression-metrics.json` gates. A baseline captured at `debug` bakes that log I/O into the latency numbers permanently, turning the regression gate into a measurement of its own configuration.
+
+So if you need the broader coverage, enable it **per partition** rather than globally, and only **after** a baseline has been captured at the harness's normal level:
+
+```
+log_level LedgerConsensus debug
+log_level RPCHandler debug
+```
+
 ### Log Ingestion Pipeline
 
 Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
@@ -3429,7 +3478,7 @@ Two more pairs from the same family:
   cumulative object-payload bytes this process has written — the same value as
   `node_written_bytes`, from the same accessor — so it excludes keys, padding and
   the log, and it resets with the process. A ratio of the two is a constant 1.0 and
-  measures nothing. This label value was previously called `nudb_bytes`; it
+  measures nothing. This label value was called `nudb_bytes` in earlier revisions; it
   comes from `node_store::Database` rather than the NuDB backend, so it is not part
   of the `nudb_*` family above and reads the same on RocksDB.
 - These gauges are sampled on the `MetricsRegistry` reader's 10 s cadence, while
@@ -3505,6 +3554,8 @@ not a sign the cache is working.
 - Verify xrpld was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
 - Verify `enabled=1` in the `[telemetry]` config section
 - Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
+- Check `log_level` is at least `info`. The dependably correlated line is the consensus accept pair, which is at info severity, so at `warning` or above correlation becomes incidental. `info` is necessary but not sufficient: the accept pair also needs telemetry enabled, `trace_consensus=1`, a valid round span context and a sampled span context — see [Which Log Lines Carry Trace Context](#which-log-lines-carry-trace-context) for the full precondition table
+- A plain `SpanGuard` that is never activated does not make its span current, so lines inside one are never correlated regardless of severity. Activated guards (`activate()` / `activateIfLive()`) and `ScopedSpanGuard` both do make their span current
 - Check that the specific trace category is enabled (e.g., `trace_rpc=1`)
 
 ### No logs in Loki
@@ -3542,3 +3593,346 @@ compiled in and CMake only lists it under `Manually-specified variables were not
 the project`.
 
 When telemetry is compiled out, all trace macros expand to no-ops with zero overhead.
+
+## Validating Telemetry Stack
+
+After deploying telemetry, use the workload tools in `docker/telemetry/workload/` to validate the full stack end-to-end.
+
+### Quick Validation
+
+```bash
+# Run the full validation suite (starts cluster, generates load, validates):
+docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
+
+# Check the report:
+cat /tmp/xrpld-validation/reports/validation-report.json | jq '.summary'
+
+# Tear the stack and the node processes down:
+docker/telemetry/workload/run-full-validation.sh --cleanup
+```
+
+Harness options (`run-full-validation.sh`):
+
+| Flag                | Default           | Effect                                                                                                                                                            |
+| ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--xrpld PATH`      | `.build/xrpld`    | Binary to run. Also settable via the `XRPLD` env var.                                                                                                             |
+| `--nodes NUM`       | `5`               | Size of the local validator cluster.                                                                                                                              |
+| `--profile NAME`    | `full-validation` | Load profile from `workload-profiles.json` (`full-validation`, `quick-smoke`, `stress`). This is the **only** thing that sets load shape.                         |
+| `--skip-loki`       | off               | Skip the log-trace correlation checks and their per-leg diagnostics. Local exploration only; CI does not pass this.                                               |
+| `--skip-regression` | off               | Skip the baseline comparison. Timings are still captured, so the run still leaves a `timings.json` artifact to refresh the baseline from. Local exploration only. |
+| `--with-benchmark`  | off               | Also run `benchmark.sh` (telemetry-off vs telemetry-on overhead) after validation.                                                                                |
+| `--cleanup`         | —                 | Tear everything down and exit.                                                                                                                                    |
+
+`--rpc-rate`, `--rpc-duration`, `--tx-tps` and `--tx-duration` are accepted by the
+parser but **never read** — they predate profiles and have no effect. Use
+`--profile`, or add a profile to `workload-profiles.json`.
+
+Exit codes: `0` all checks and the regression gate passed; `1` a validation check
+failed or the gate detected a regression; `2` infrastructure error (stack or
+cluster did not come up, or timing capture failed while the regression gate was
+active). Every `die` in the script exits 2, including a bad command line, so read
+`die` rather than this summary if the two ever disagree.
+
+### What Gets Validated
+
+The counts are not hard-coded in the validator — it iterates the inventory files,
+so those files are authoritative. The figures below are the inventory as it
+stands today.
+
+| Category         | Checks                                                                                                                                                                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spans            | Every **required** entry in `expected_spans.json` — 41 span types at the time of writing: 25 required, 16 marked `"optional": true`                                                  | Span name found in Tempo carrying its `required_attributes`, plus the declared parent-child relationships. An `"optional": true` entry that does not fire is recorded as a skip, not a failure — it needs traffic the harness may not generate (HTTP/JSON-RPC client, gRPC client, missing-ledger fetch, mode transitions) or that it deliberately no longer generates (path-finding RPC — see "Pathfinding is not exercised" in [the workload README](../docker/telemetry/workload/README.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Metrics          | Every entry in every asserted category of `expected_metrics.json` — 84 checks across 25 asserting categories at the time of writing: 79 metric names plus 5 `required_labels` checks | SpanMetrics, `beast::insight` gauges/counters exported over OTLP, and the `MetricsRegistry` OTLP metrics. Each must have > 0 Prometheus series; none are optional. A category may also declare `required_labels`, and each label there becomes one additional check that at least one of that category's series carries it with a non-empty value (matched as `<label>!=""`, because Prometheus cannot distinguish an absent label from an empty one). Those labels were declared but never actually read until the check was generalised, so they were documented as required while going unverified; `spanmetrics` contributes 4 and `job_queue` 1. The separate `not_asserted` group lists metrics deliberately left out of the gate because they are workload-gated or defect-gated; it has neither a `metrics` nor a `required_labels` key, so the validator skips it entirely.                                                                                                                                                                                                                                                                  |
+| Logs             | 2 checks                                                                                                                                                                             | `trace_id`/`span_id` present in Loki, and a logged trace id resolves in Tempo. Gated in CI. `run-full-validation.sh` prints a four-leg diagnostic (node, mount, collector, Loki) after the suite whenever these run, so a failure names the leg that broke.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Parity           | 10 checks                                                                                                                                                                            | 6 span attributes the external-parity dashboard panels read, plus 4 metric value-sanity bounds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Dashboards       | Every uid in `expected_metrics.json` under `grafana_dashboards.uids` — currently all 15 provisioned dashboards                                                                       | Each listed dashboard loads and reports a panel count. This is a provisioning check only: it does **not** execute the panels' queries, so a dashboard can pass while individual panels render empty. `log-derived-insights` is Loki-backed, so only its provisioning is covered here; its data path is covered by the two log checks instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Reverse coverage | 2 checks — `metric.reverse_coverage` and `span.reverse_coverage`                                                                                                                     | The only checks that run in the opposite direction: they read the full emitted inventory (the Prometheus `__name__` label values, the Tempo `name` intrinsic's tag values) and name everything the contract never mentions, sorted and one per line in the log. **Warn only — `passed` is hardcoded `True` in `_reverse_coverage_result`, so these can never fail CI.** Downstream branches legitimately add telemetry an upstream contract has not seen, and a hard failure would redden all of them. A metric family is accounted for by a `metrics` entry, by a `not_asserted.metrics_excluded` key, or by an anchored regex under the top-level `accounted_patterns` list — which exists for families whose membership is derived mechanically from a table in the code (the per-job-type job-queue instruments, the overlay per-category traffic cross product) plus the Prometheus scrape plumbing that is not xrpld telemetry. Histogram `_bucket`/`_count`/`_sum` names fold onto their base family before matching. Spans need no pattern list: the check reuses the forward matcher, so `rpc.command.*` covers every command it expands to. |
+
+### Running Individual Tools
+
+```bash
+# RPC load only:
+python3 docker/telemetry/workload/rpc_load_generator.py \
+    --endpoints ws://localhost:6006 --rate 50 --duration 120
+
+# Transaction mix only:
+python3 docker/telemetry/workload/tx_submitter.py \
+    --endpoint ws://localhost:6006 --tps 5 --duration 120
+
+# Validation only (assumes load already ran):
+python3 docker/telemetry/workload/validate_telemetry.py \
+    --report /tmp/report.json
+```
+
+### Interpreting Failures
+
+- **Span failures**: Check that the relevant trace category is enabled in `[telemetry]` config (e.g., `trace_rpc=1`).
+- **Metric failures**: Verify the OTel Collector is running and Prometheus is scraping port 8889.
+- **Dashboard failures**: Ensure Grafana provisioning is mounted correctly.
+
+`run-full-validation.sh` brings the stack up with
+`docker compose -f docker/telemetry/docker-compose.workload.yaml`, so a bare
+`docker compose logs` from the repository root finds no project. Pass the same
+compose file:
+
+```bash
+docker compose -f docker/telemetry/docker-compose.workload.yaml logs otel-collector
+docker compose -f docker/telemetry/docker-compose.workload.yaml logs grafana
+docker compose -f docker/telemetry/docker-compose.workload.yaml ps
+```
+
+### Regression Gate and CI
+
+The validation checks answer "is the telemetry there?". A second, independent
+gate answers "did xrpld get slower?" — it is the part of this harness that can
+fail CI on a performance change, so it is worth understanding before you push.
+
+It runs as step 6 of `run-full-validation.sh`, after validation, and is skipped
+only with `--skip-regression`:
+
+```mermaid
+flowchart TB
+    classDef stage fill:#1d4ed8,stroke:#1e3a8a,color:#fff;
+    classDef data  fill:#047857,stroke:#064e3b,color:#fff;
+    classDef gate  fill:#b45309,stroke:#7c2d12,color:#fff;
+    classDef out   fill:#334155,stroke:#0f172a,color:#fff;
+
+    PROM[("Prometheus<br/>localhost:9090")]:::data
+    MET["regression-metrics.json<br/>(spans + job_queue groups)"]:::data
+    CAP["capture_timings.py<br/>--window REGRESSION_WINDOW"]:::stage
+    TIM["reports/timings.json<br/>(key to value + unit)"]:::data
+    BASE["baselines/baseline-timings.json<br/>(committed)"]:::data
+    THR["regression-thresholds.json<br/>(pct AND abs bounds)"]:::data
+    CMP["compare_to_baseline.py"]:::stage
+    PH{"baseline is a placeholder<br/>or has no metrics?"}:::gate
+    PASTE["Print paste-me JSON<br/>exit 0 — gate does NOT run"]:::out
+    DIFF["Diff per metric<br/>regression = over BOTH bounds"]:::gate
+    REP["reports/regression-report.json<br/>exit 1 on any regression"]:::out
+
+    MET --> CAP
+    PROM --> CAP --> TIM --> CMP
+    BASE --> CMP
+    THR --> CMP
+    CMP --> PH
+    PH -->|yes| PASTE
+    PH -->|no| DIFF --> REP
+```
+
+Key properties:
+
+- **A metric regresses only when it exceeds BOTH the percentage and the absolute
+  bound.** The `AND` is deliberate: SpanMetrics latency histograms use explicit
+  buckets, so a quantile sitting near a bucket boundary can jump a whole bucket
+  with no real change. Bounds live in `regression-thresholds.json` — `defaults`
+  per category and quantile, plus a per-metric `override` for every gated key.
+- **The absolute bound is derived per metric, as `hi_next − baseline`.** Locate
+  the baseline in the half-open bucket `(lo, hi]` of its ladder and take
+  `hi_next` as the next edge above `hi`; the trip point is then exactly
+  `hi_next`, so the gate fires only once the reading clears the bucket _above_
+  the baseline's own. That is what makes a single bucket crossing unable to turn
+  CI red: `histogram_quantile` interpolates inside whichever bucket the quantile
+  falls in, so any reading produced while the quantile is at most one bucket
+  above the baseline's is at most `hi_next`. A multiple of the _enclosing_
+  bucket width cannot deliver that, because after crossing `hi` the
+  interpolation happens across the next bucket, which here is up to 8x wider
+  (`(0.5, 1]` is 0.5 ms, `(1, 5]` is 4 ms). Derivation, both ladders and a
+  per-key table live in `regression-thresholds.json` under
+  `_absolute_bound_derivation` and `_derivation_table`. **Refreshing
+  `baseline-timings.json` obliges you to re-derive these bounds** — a value that
+  moves into a different bucket gets a different `hi_next` — and
+  `.github/scripts/telemetry/check_regression_bounds.py` fails CI if you do not.
+- **A single flat bound cannot work here.** The gated quantiles span 0.006 ms to
+  21 ms, so one figure is inert at the bottom of that range and trigger-happy at
+  the top. The flat 10/15 ms span bound it replaced sat 1.15x to 2000x above the
+  metric it guarded, and a 10x regression injected into each key in turn was
+  caught on only 5 of 28.
+- **The detection floor is `hi_next / baseline`, so some keys are only weakly
+  guarded.** It ranges 2.21x to 16.28x over the current baseline;
+  `job.acceptLedger.running.p95` is effectively not guarded at 16.3x, and is the
+  one gated key a 10x regression does not catch (it first fires at 16.28x; at 20x
+  the sweep catches 20 of 20). `baselines/README.md` lists all seven weak keys,
+  the limiting ladder step for each, and the edges that would fix them.
+- **A baseline refresh can silently move sensitivity in either direction.** The
+  trip point is derived from the baseline, so a refresh that lands at the low end
+  of a metric's range tightens the gate and one that lands high loosens it.
+  `job.acceptLedger.running.p95` has been measured with a 5.74x detection floor
+  on one baseline and 16.28x on another — it does not fire on any observed run,
+  so it stays gated, but the weak floor is recorded rather than left to surprise
+  someone. The same effect puts three `p50` keys below the spread they need, and
+  those are excluded (below). `baselines/README.md` carries the measurements.
+- **The bound covers quantization noise only, so a key whose run-to-run variance
+  exceeds it cannot be gated. Five keys are excluded for that reason**, leaving
+  20 gated. `span.ledger.validate.p95` and `.p99` came first — spreads of 5.9x
+  and 66.8x across four CI runs, both reaching past their trip points on healthy
+  runs, because the span's duration follows peer-validation arrival timing rather
+  than code speed. `span.tx.apply.p50`, `span.ledger.build.p50` and
+  `span.consensus.ledger_close.p50` join them on this baseline, with observed
+  maxima 46.76x, 4.77x and 2.38x above their trip points. That is the same rule
+  applied, not a new exception: the decisive evidence is that
+  `span.tx.apply.p50` has read 0.7917 ms and 0.00597 ms on the same workload
+  — 132x apart — so whether the gate worked was
+  decided by where in its own distribution the captured run fell, not by the
+  code. All five share one shape: the observed maximum exceeds
+  `baseline + bound`, four of them because a low-bucket baseline yields a tiny
+  bound. Widening gates nothing and re-baselining until a run lands high is the
+  trap; **a multi-run baseline, or a spread measurement captured alongside it, is
+  what would let them be gated again** — not implemented, and the reason these
+  exclusions stand. They are listed with their measurements in `excluded_keys` in
+  `regression-metrics.json`, and `check_regression_bounds.py` rule F keeps each
+  entry honest. Before gating any key, check its observed maximum across runs
+  against `baseline + bound`; see `baselines/README.md`.
+- **For every currently gated metric the absolute bound decides; the percentage
+  bound does not.** Measured, the bound is 121%-1528% of its own baseline, above
+  both configured percentage bounds. This is _not_ a general property: the span
+  ladder's top steps are only 1.25x-1.5x apart, so a baseline between about
+  2667-3000 ms or 3334-4000 ms gets an absolute bound worth under 50% of itself
+  and the percentage bound takes over — `consensus.round` at ~3.9 s lands
+  exactly there. `check_regression_bounds.py` rule D fails the build rather than
+  letting that happen silently. The percentage entries are still required (a
+  missing one turns the metric into "no threshold configured" and stops it
+  gating) and they are the operative bound on the `defaults` path.
+- **`span.ledger.store` is not gated**, because its quantiles are the ladder's
+  first edge times the quantile — every sample lands under 10 us, so no bound
+  can move. See `baselines/README.md`.
+- **A metric with no configured threshold is captured but never gates.** It is
+  reported with a note instead. Today only `span.*` and `job.*` keys have
+  thresholds; `rpc.*` is not produced and would not gate if it were (see
+  `docker/telemetry/workload/baselines/README.md`).
+- **A metric missing from the current run is not a regression.**
+  `summary.missing_in_current` in `regression-report.json` is a count; the
+  identities are the `metrics[]` entries whose `note` is
+  `"not captured in current run"`.
+- **`REGRESSION_WINDOW`** (env var, default `3m`) is the window handed to
+  Prometheus `rate()` during capture. Keep it close to the workload duration —
+  a longer window dilutes a short-lived regression. `BASELINE_FILE`,
+  `THRESHOLDS_FILE` and `METRICS_FILE` are also env-overridable.
+
+```bash
+# Validation without the gate (fast local loop):
+docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld \
+    --profile quick-smoke --skip-loki --skip-regression
+
+# Narrow the rate window to a short profile:
+REGRESSION_WINDOW=1m docker/telemetry/workload/run-full-validation.sh \
+    --xrpld .build/xrpld --profile quick-smoke
+
+# Inspect the gate's own output:
+jq '.summary' /tmp/xrpld-validation/reports/regression-report.json
+jq -r '.metrics[] | select(.regressed) | "\(.key) \(.baseline) -> \(.current) \(.unit)"' \
+    /tmp/xrpld-validation/reports/regression-report.json
+```
+
+#### Refreshing the baseline
+
+The baseline is a committed file, and moving it is a reviewed change — that PR
+review is the audit point for "who moved the performance bar". There is no
+automatic promotion from `develop`.
+
+1. Run the `Telemetry Validation` workflow on the branch. It always captures
+   timings, so `timings.json` is uploaded as an artifact and the regression
+   summary is written to the run's Step Summary.
+2. If the baseline in the checkout is a placeholder (`"placeholder": true` or an
+   empty `metrics` object), the Step Summary contains a fenced JSON block under
+   **"Paste into `baselines/baseline-timings.json`"**, already formatted the way
+   the file expects (sorted keys, 2-space indent, trailing newline).
+3. Open a PR replacing the file contents with that block, dropping the
+   `placeholder` key. For a refresh of an already-populated baseline, take the
+   `timings.json` artifact instead and justify the delta in the PR description.
+
+Never hand-edit `baseline-timings.json` — every entry should trace back to a real
+CI run so its variance characteristics are preserved. Details in
+`docker/telemetry/workload/baselines/README.md`.
+
+#### CI workflow
+
+`.github/workflows/telemetry-validation.yml` runs three jobs — `linux-image-tag`
+(reads the CI image tag from the build matrix so this workflow cannot drift onto
+a different compiler than the main CI), `build-xrpld` (self-hosted runner, same
+container as the main CI, so Conan and ccache hit the shared caches), and
+`validate-telemetry` (`ubuntu-latest`, which has Docker).
+
+- **Triggers**: `workflow_dispatch`, and `push` on `pratik/otel-phase*`,
+  `feature/otel-*`, `feature/telemetry-*` limited to a `paths` filter covering
+  the workflow file, `docker/telemetry/**`, and the telemetry sources under
+  `include/xrpl/telemetry/**`, `src/libxrpl/telemetry/**` and
+  `src/xrpld/telemetry/**`. There is no cron schedule.
+- **Invocation**: `run-full-validation.sh --xrpld <binary>`, so the default
+  `full-validation` profile is used and no category is skipped.
+- **Log-trace correlation is gated**: `--skip-loki` is not passed
+  ([telemetry-validation.yml:237](../.github/workflows/telemetry-validation.yml#L237)),
+  so `log.trace_id_present` and `log.trace_id_cross_reference` are constructed and
+  can fail the job. Correlation spans four independent legs — node, mount,
+  collector, Loki — and a failed check names none of them, so
+  `run-full-validation.sh` prints a per-leg diagnostic after the suite whenever
+  these checks are enabled: per-node counts of `debug.log` lines carrying the
+  injected `trace_id`/`span_id` shape plus the severity mix, the container-side
+  listing of `/var/log/xrpld` taken with the collector's own mounts and uid, the
+  `filelog` receiver's watched files, logs-pipeline warnings and internal
+  log-record counters, and Loki's entry counts for the stream selector with and
+  without the line filter. The diagnostics are non-fatal by construction: each
+  leg is isolated and a missing container or unreachable endpoint prints a note.
+  Those two Loki entry counts are `sum(count_over_time(...))`, and the `sum()` is
+  load-bearing: the `filelog` receiver leaves `message` and `timestamp` as
+  log-record attributes, Loki's OTLP path stores them as structured metadata, and
+  structured metadata joins a metric query's label set — so an unaggregated
+  `count_over_time` produces one series per log line and Loki answers `HTTP 400
+maximum number of series (500) reached`. Unaggregated, both legs printed
+  `unavailable` on runs `32877465763` and `32964262700` and the block
+  distinguished nothing. A rejected query now logs its HTTP status and Loki's own
+  plain-text explanation rather than a JSON-mimetype error.
+  `log.trace_id_cross_reference` polls Tempo for up to `METRIC_POLL_TIMEOUT_SEC`
+  before failing, so a logged id that Tempo has not yet indexed is retried rather
+  than reported absent. It also separates a failed Tempo query from a genuinely
+  absent trace: a 404 on `/api/traces/<id>` is absence and moves to the next
+  candidate, while any other non-200 raises `TempoQueryError` and is reported as
+  "could not verify" rather than "not exported". Both Tempo helpers previously
+  passed an error body straight to `resp.json()`, so a JSON 5xx read as zero
+  spans or zero traces.
+  `docker/telemetry/integration-test.sh` (which has its own
+  `check_log_correlation()`) is still run by no workflow.
+- **Inputs**: only `run_benchmark` changes behaviour. `rpc_rate`, `rpc_duration`,
+  `tx_tps` and `tx_duration` are inert, as noted in their descriptions.
+- **Results**: reports are uploaded as the `telemetry-validation-reports`
+  artifact and node logs as `xrpld-node-logs` when validation did not succeed.
+  Summaries go to the run's Step Summary; the workflow does not comment on PRs.
+
+## Performance Benchmarking
+
+Measure the overhead of the telemetry stack against a baseline:
+
+```bash
+docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
+```
+
+### Benchmark Thresholds
+
+| Metric            | Target | Description                            |
+| ----------------- | ------ | -------------------------------------- |
+| CPU overhead      | < 3%   | Average CPU increase across nodes      |
+| Memory overhead   | < 5MB  | Peak RSS increase per node             |
+| RPC p99 latency   | < 2ms  | Additional p99 latency for server_info |
+| Throughput impact | < 5%   | Reduction in ledger close rate         |
+| Consensus impact  | < 1%   | Increase in consensus round time       |
+
+### Tuning for Production
+
+If benchmarks exceed thresholds:
+
+1. **Reduce trace volume with collector-side tail sampling.** There is no
+   `sampling_ratio` config key — xrpld's head sampling is a compile-time
+   constant fixed at 1.0
+   ([Telemetry.h:234](../include/xrpl/telemetry/Telemetry.h#L234)
+   `static constexpr double samplingRatio = 1.0;`), and
+   [TelemetryConfig.cpp:139](../src/libxrpl/telemetry/TelemetryConfig.cpp#L139)
+   explicitly parses nothing for it. Volume reduction is a collector decision.
+   The only policy shipped is a single 0.5% probabilistic `tail_sampling`
+   processor in `otel-collector-config.grafanacloud.yaml`; the base
+   `otel-collector-config.yaml` has **no** tail sampling, so a stock local
+   stack keeps every trace. Where the Cloud policy is in force it sits on the
+   trace-storage branch only — spanmetrics runs on a separate branch and still
+   sees 100% of spans, so the derived RED metrics stay exact.
+2. **Disable peer tracing**: `trace_peer=0` (highest volume category)
+3. **Increase batch delay**: `batch_delay_ms=10000` (less frequent exports)
+4. **Reduce queue size**: `max_queue_size=1024` (back-pressure earlier)
+
+See `docker/telemetry/workload/README.md` for full documentation.

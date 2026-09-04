@@ -918,31 +918,44 @@ Alert Rules from External Dashboard**.
 
 ## 6.8.3 Phase 10: Synthetic Workload Generation & Telemetry Validation (Weeks 16-17)
 
-> **Status**: Implemented on `pratik/otel-phase10-workload-validation`; **not
-> merged into this branch**, so none of its files
-> (`docker/telemetry/workload/`, `.github/workflows/telemetry-validation.yml`)
-> are present here. The exit criteria below are tracked on that branch.
+> **Status**: Implemented on this branch — `docker/telemetry/workload/` (24
+> files) and `.github/workflows/telemetry-validation.yml` are present here.
+> Upstream branches do not carry them, so the exit criteria below only hold from
+> `pratik/otel-phase10-workload-validation` onward.
 
 ### Motivation
 
 Before the telemetry stack (Phases 1-9) can be considered production-ready, we need automated proof that all spans, attributes, metrics, Grafana dashboards, and log-trace correlation work correctly under realistic load. This phase establishes a reusable CI-integrated validation suite and performance benchmark baseline.
 
 > **Inventory note**: the "16 spans / 22 attributes / 10 dashboards" figures this
-> section used to quote are stale. As of this branch there are **15 dashboards on
-> disk** (`ls docker/telemetry/grafana/dashboards/*.json`), of which **14** are
-> asserted by the Phase 10 harness — `log-derived-insights` is provisioned but
-> unasserted. The span and attribute totals are computed dynamically by
-> `validate_telemetry.py` from `expected_spans.json`; see
+> section used to quote are stale. Do not re-quote fixed counts here — the
+> harness hard-codes none of them. `validate_telemetry.py` iterates
+> `expected_spans.json` and `expected_metrics.json`, so those two files are the
+> only authority, and `grafana_dashboards.uids` in `expected_metrics.json` is the
+> authority for dashboards. As of this branch all **15** dashboards on disk
+> (`ls docker/telemetry/grafana/dashboards/*.json`) are listed in `uids`,
+> `log-derived-insights` included. See
 > [Phase10_taskList.md](./Phase10_taskList.md) for the live figures.
 
 ### Architecture
 
+The validation uses a **5-node** validator cluster running as native `xrpld` processes (started by `run-full-validation.sh`, `NUM_NODES=5`) alongside a Docker Compose telemetry stack. Only the observability backend runs in containers: `docker-compose.workload.yaml` defines the collector, Tempo, Prometheus, Loki and Grafana, and no `xrpld` service. Five nodes give a real consensus quorum and peer-to-peer span traffic.
+
 ```mermaid
 flowchart LR
-    subgraph harness["Docker Compose Workload Harness"]
+    subgraph harness["5-Node Validator Cluster (native xrpld processes)"]
         direction TB
         V1["Validator 1"] ~~~ V2["Validator 2"] ~~~ V3["Validator 3"]
         V4["Validator 4"] ~~~ V5["Validator 5"]
+    end
+
+    subgraph telemetry["Docker Compose Telemetry Stack"]
+        direction TB
+        COL["OTel Collector<br/>(OTLP + filelog)"]
+        TEMPO["Tempo<br/>(trace search)"]
+        PROM["Prometheus<br/>(metrics)"]
+        LOKI["Loki<br/>(logs)"]
+        GRAF["Grafana<br/>(dashboards)"]
     end
 
     subgraph generators["Workload Generators"]
@@ -951,17 +964,19 @@ flowchart LR
     end
 
     subgraph validation["Validation Suite"]
-        SV["Span Validator<br/>(Jaeger/Tempo API)"]
-        MV["Metric Validator<br/>(Prometheus API)"]
+        SV["Span Validator<br/>(Tempo API)"]
+        MV["Metric Validator<br/>(Prometheus API,<br/>expected_metrics.json)"]
         LV["Log-Trace Validator<br/>(Loki API)"]
         DV["Dashboard Validator<br/>(Grafana API)"]
         BM["Benchmark Suite<br/>(CPU, memory, latency<br/>ON vs OFF comparison)"]
     end
 
     generators --> harness
-    harness --> validation
+    harness --> telemetry
+    telemetry --> validation
 
     style harness fill:#1a2633,color:#ccc,stroke:#4a90d9
+    style telemetry fill:#1a2633,color:#ccc,stroke:#4a90d9
     style generators fill:#1a3320,color:#ccc,stroke:#5cb85c
     style validation fill:#332a1a,color:#ccc,stroke:#f0ad4e
     style V1 fill:#4a90d9,color:#fff,stroke:#2a6db5
@@ -969,6 +984,11 @@ flowchart LR
     style V3 fill:#4a90d9,color:#fff,stroke:#2a6db5
     style V4 fill:#4a90d9,color:#fff,stroke:#2a6db5
     style V5 fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style COL fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style TEMPO fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style PROM fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style LOKI fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style GRAF fill:#4a90d9,color:#fff,stroke:#2a6db5
     style RPC fill:#5cb85c,color:#fff,stroke:#3d8b3d
     style TX fill:#5cb85c,color:#fff,stroke:#3d8b3d
     style SV fill:#f0ad4e,color:#000,stroke:#c78c2e
@@ -977,6 +997,15 @@ flowchart LR
     style DV fill:#f0ad4e,color:#000,stroke:#c78c2e
     style BM fill:#f0ad4e,color:#000,stroke:#c78c2e
 ```
+
+### Key Implementation Details
+
+- **Transaction submitter and RPC load generator** both use xrpld's native WebSocket command format (`{"command": ...}`) — not JSON-RPC format. Response data lives inside `"result"` with `"status"` at the top level.
+- **Node config** requires `[signing_support] true` for server-side signing, and `[ips]` (not `[ips_fixed]`) to ensure peer connections count in `peer_finder_active_*` metrics.
+- **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) to avoid false negatives from stale StatsD gauges. Every metric in `expected_metrics.json` must have > 0 series.
+- **Gauge visibility**: the harness sets `[insight] server=otel` (`run-full-validation.sh`), so `beast::insight` gauges become OTel observable gauges whose callback is invoked on every collection cycle. A gauge that sits at 0 and never changes (e.g. `jobq_job_count`) therefore still reports, and `/api/v1/series` sees it.
+- **I/O latency fix**: `io_latency_sampler` emits unconditionally on first sample, then applies the 10 ms threshold. This ensures `ios_latency` is registered in Prometheus even in low-load CI environments.
+- **tx.receive span**: attribute keys are bare, not dotted — `suppressed` and `tx_status` (`TxSpanNames.h:71,75`). `suppressed` is set on both outcomes (`false` on the accepted path, `true` when the HashRouter suppresses), but `tx_status` is set **only** on the reject/known-bad/dropped paths, so it is absent on a successful receive. Assert on the attribute, not on span status.
 
 ### Tasks
 
@@ -992,39 +1021,103 @@ flowchart LR
 
 See [Phase10_taskList.md](./Phase10_taskList.md) for detailed per-task breakdown.
 
+### Validation Check Inventory
+
+`validate_telemetry.py` derives its check count at run time from
+`expected_spans.json` (span types and their required attributes) and
+`expected_metrics.json` (metric names and dashboard uids). Per the inventory note
+above, no counts are quoted here — those two manifests are the only authority and
+any edit to them changes the total. The historical "71 checks" figure predates the
+later metric families. The categories are:
+
+- **Service registration** — `xrpld` exists in Tempo
+- **Span existence** — every required entry in `expected_spans.json`. Note that
+  `rpc.process` is emitted only on the HTTP path (`ServerHandler.cpp`), so under
+  the harness's WebSocket load it does not appear; it is marked optional.
+- **Span attributes** — each span's `required_attributes`
+- **Span hierarchies** — the parent/child edges in
+  `parent_child_relationships`, minus the ones marked `skip`
+- **Span duration bounds** — all spans > 0 and < 60 s
+- **Metric existence** — every entry in `expected_metrics.json`, queried through
+  the Prometheus `/api/v1/series` endpoint
+- **Dashboard loads** — every uid in `expected_metrics.json` under
+  `grafana_dashboards.uids` (currently all 15 provisioned dashboards). Note this
+  only asks Grafana for the dashboard and its panel count; it does not run the
+  panel queries.
+- **Log-trace correlation** — `trace_id` present in Loki plus a Tempo reverse
+  lookup (gated in CI; `run-full-validation.sh` prints a node/mount/collector/Loki
+  diagnostic alongside them so a failure names the leg that broke)
+
+See [Phase10_taskList.md](./Phase10_taskList.md) for the per-task breakdown.
+
+### Known Gaps in CI
+
+1. `rpc.process` -> `rpc.command.*` hierarchy — not assertable under the
+   harness's WebSocket-only load, because `rpc.process` is created only on the
+   HTTP path. This is a load-shape limitation, not a context-propagation bug.
+2. Log-trace correlation — the two `validate_telemetry.py` checks are now gated
+   in CI, but `integration-test.sh`'s own `check_log_correlation()` is still run
+   by no workflow.
+3. Legacy `beast::insight` coverage — `expected_metrics.json` asserts a
+   representative subset, not all ~270 families.
+4. Sustained load / backpressure — the `stress` profile exists in
+   `workload-profiles.json` but is not wired into CI.
+5. **Automated cross-CI baseline persistence** — the regression gate reads a
+   committed baseline; baseline updates flow through a manual PR refresh, not
+   an artifact promoted from `develop` (FU-2).
+
 ### CI Deliverable (Task 10.6)
 
 The Phase 10 CI entry point is `.github/workflows/telemetry-validation.yml`
-(348 lines, on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
+(367 lines, on the Phase 10 branch). It runs three jobs — `linux-image-tag`,
 `build-xrpld`, `validate-telemetry` — and is triggered by `workflow_dispatch`
 plus `push` on `pratik/otel-phase*`, `feature/otel-*` and
 `feature/telemetry-*`. **There is no cron schedule**, so nothing runs this
 workflow on a timer.
 
-> **Caveat — the `push` trigger's `paths` filter excludes the C++ telemetry
-> sources.** The branch filter is only half the trigger; `push` also carries:
+> **Fixed — the `push` trigger's `paths` filter now covers the C++ telemetry
+> sources.** The branch filter is only half the trigger; `push` also carries a
+> `paths` filter, and it previously read:
 >
 > ```yaml
 > paths:
 >   - ".github/workflows/telemetry-validation.yml"
 >   - "docker/telemetry/**"
->   - "include/xrpl/basics/Telemetry*.h"
->   - "src/xrpld/app/misc/Telemetry*"
+>   - "include/xrpl/basics/Telemetry*.h" # 0 tracked paths
+>   - "src/xrpld/app/misc/Telemetry*" # 0 tracked paths
 > ```
 >
-> The last two globs match **nothing** on the Phase 10 branch — neither
-> `include/xrpl/basics/Telemetry*.h` nor `src/xrpld/app/misc/Telemetry*` exists
-> (0 tracked paths). The telemetry code actually lives in
-> `src/xrpld/telemetry/**` (9 files, including `MetricsRegistry.cpp`) and
-> `src/libxrpl/telemetry/**` (7 files), and **neither is listed**. Consequence: a
-> pure C++ telemetry change — new instrument, renamed metric, changed span
-> attribute — never triggers this workflow on push. Only edits under
-> `docker/telemetry/**` or to the workflow file itself do. Fix: replace the two
-> dead globs with `src/xrpld/telemetry/**`, `src/libxrpl/telemetry/**` and
-> `include/xrpl/telemetry/**`.
+> The last two globs matched **nothing** — neither
+> `include/xrpl/basics/Telemetry*.h` nor `src/xrpld/app/misc/Telemetry*` exists.
+> The telemetry code lives in `src/xrpld/telemetry/**` (9 files, including
+> `MetricsRegistry.cpp`), `src/libxrpl/telemetry/**` (7 files) and
+> `include/xrpl/telemetry/**` (10 files), none of which were listed.
+> Consequence at the time: a pure C++ telemetry change — new instrument,
+> renamed metric, changed span attribute — never triggered this workflow on
+> push; only edits under `docker/telemetry/**` or to the workflow file itself
+> did.
+>
+> The two dead globs have been replaced with the three real module directories,
+> so the filter now reads:
+>
+> ```yaml
+> paths:
+>   - ".github/workflows/telemetry-validation.yml"
+>   - "docker/telemetry/**"
+>   - "include/xrpl/telemetry/**"
+>   - "src/libxrpl/telemetry/**"
+>   - "src/libxrpl/beast/insight/**"
+>   - "src/xrpld/telemetry/**"
+> ```
+>
+> `src/libxrpl/beast/insight/**` is included because it holds `OTelCollector.cpp`,
+> the `beast::insight` OTLP export path the harness depends on. Residual gap: the
+> instrumented call sites scattered through `src/xrpld/app/` are not listed, so a
+> change that only adds or moves a span at a call site does not trigger the
+> workflow on push. Those are reachable by manual dispatch.
 
-> **Caveat — four inert inputs.** The workflow declares five
-> `workflow_dispatch` inputs, but only `run_benchmark` changes behaviour.
+> **Caveat — four inert inputs (documented, not wired).** The workflow declares
+> five `workflow_dispatch` inputs, but only `run_benchmark` changes behaviour.
 > `rpc_rate`, `rpc_duration`, `tx_tps` and `tx_duration` are forwarded as
 > `--rpc-rate` / `--rpc-duration` / `--tx-tps` / `--tx-duration` to
 > `run-full-validation.sh`, which parses them into shell variables and then
@@ -1032,21 +1125,37 @@ workflow on a timer.
 > `--profile` / `workload-profiles.json` (the orchestrator is invoked with
 > `--profile` only). Changing those four inputs has no effect on the generated
 > workload.
+>
+> Resolution taken: each of the four now carries
+> `description: "UNUSED — has no effect. Load shape comes from the workload
+profile."`, and a comment above the `inputs:` block plus one at the
+> ARGS-building step record why they are kept. They were **labelled, not
+> wired**, because wiring them would be a behaviour change: the orchestrator is
+> profile-driven, so honouring them means either synthesising a temporary
+> profile or reintroducing the pre-profile single-phase load path. That belongs
+> in its own change, not in a docs-accuracy pass. The alternative — deleting the
+> inputs — would break saved dispatch input sets for no gain.
 
 ### Exit Criteria
 
-- [ ] 5-node validator cluster starts and reaches consensus — note that
+- [x] 5-node validator cluster starts and reaches consensus — note that
       `docker-compose.workload.yaml` contains only the observability backend
       (collector, Tempo, Prometheus, Loki, Grafana); the 5 validators are native
       `xrpld` processes started by `run-full-validation.sh` (`NUM_NODES=5`)
-- [ ] Validation suite confirms the full span / attribute / metric inventory
+- [x] Validation suite confirms the full span / attribute / metric inventory
       (counts computed dynamically from `expected_spans.json` and
       `expected_metrics.json`)
-- [ ] All 14 harness-asserted Grafana dashboards render data (15 on disk;
-      `log-derived-insights` is provisioned but unasserted)
-- [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead
-- [ ] CI workflow runs validation on telemetry branch changes
+- [x] All 15 provisioned Grafana dashboards are asserted to load — every uid on
+      disk is now listed in `grafana_dashboards.uids`. Caveat: the check is
+      load-and-panel-count only, so it does not prove every panel returns data
+- [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead — needs a
+      measured run
+- [x] CI workflow runs validation on telemetry branch changes
       (`.github/workflows/telemetry-validation.yml`)
+- [x] OTel-driven regression gate: captures per-span and per-job timings from
+      Prometheus and compares against a committed baseline. Per-RPC timings are
+      **not** gated — `regression-metrics.json` defines only `spans` and
+      `job_queue` groups (FU-4).
 
 ---
 
