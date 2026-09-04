@@ -262,12 +262,12 @@ struct Balance
 template <class T>
 struct BalanceTransfer
 {
-    using Balance = Balance<T>;
+    using BalanceType = Balance<T>;
 
-    Balance from;
-    Balance to;
-    Balance payer;                        // pays the rewards
-    std::vector<Balance> rewardAccounts;  // receives the reward
+    BalanceType from;
+    BalanceType to;
+    BalanceType payer;                        // pays the rewards
+    std::vector<BalanceType> rewardAccounts;  // receives the reward
     XRPAmount txFees;
 
     BalanceTransfer(
@@ -282,7 +282,7 @@ struct BalanceTransfer
         , to(env, toAcct)
         , payer(env, payer)
         , rewardAccounts([&]() {
-            std::vector<Balance> r;
+            std::vector<BalanceType> r;
             r.reserve(numPayees);
             for (size_t i = 0; i < numPayees; ++i)
                 r.emplace_back(env, payees[i]);
@@ -307,7 +307,7 @@ struct BalanceTransfer
     payeesReceived(STAmount const& reward) const
     {
         return std::ranges::all_of(
-            rewardAccounts, [&](Balance const& b) { return b.diff() == reward; });
+            rewardAccounts, [&](BalanceType const& b) { return b.diff() == reward; });
     }
 
     bool
