@@ -608,15 +608,20 @@ ServerHandler::processRequest(
     std::string_view user)
 {
     auto rpcJ = app_.getJournal("RPC");
-    Resource::Consumer parseFailureUsage =
-        resourceManager_.newInboundEndpoint(remoteIPAddress, false, forwardedFor);
     json::Value jsonOrig;
     {
         json::Reader reader;
         if ((request.size() > RPC::Tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
+            auto const role = requestRole(
+                Role::GUEST, port, json::Value(), remoteIPAddress, user);
+
+            auto parseFailureUsage = requestInboundEndpoint(
+                resourceManager_, remoteIPAddress, role, user, forwardedFor);
+
             parseFailureUsage.charge(Resource::kFeeMalformedRpc);
+
             httpReply(
                 400,
                 "Unable to parse request: " + reader.getFormattedErrorMessages(),
