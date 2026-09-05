@@ -36,14 +36,8 @@ namespace xrpl {
 bool
 AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
-    if (!ctx.rules.enabled(featureMPTokensV2) &&
-        (ctx.tx[sfAsset].holds<MPTIssue>() || ctx.tx[sfAsset2].holds<MPTIssue>()))
-        return false;
-
-    return true;
+    return ctx.rules.enabled(featureMPTokensV2) ||
+        (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
 
 NotTEC

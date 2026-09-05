@@ -20,7 +20,7 @@ class AMMVoteBuilder;
  *
  * Type: ttAMM_VOTE (38)
  * Delegable: Delegation::Delegable
- * Amendment: featureAMM
+ * Amendment: uint256{}
  * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

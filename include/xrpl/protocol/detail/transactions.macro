@@ -369,7 +369,6 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
 TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     ({
         .delegable = Delegation::Delegable,
-        .amendment = featureAMM,
         .privileges = Privilege::CreatePseudoAcct | Privilege::MayCreateMpt,
     }),
     ({
@@ -383,7 +382,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
 #   include <xrpl/tx/transactors/dex/AMMDeposit.h>
 #endif
 TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -401,7 +400,6 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
 TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     ({
         .delegable = Delegation::Delegable,
-        .amendment = featureAMM,
         .privileges = Privilege::MayDeleteAcct | Privilege::MayAuthorizeMpt,
     }),
     ({
@@ -418,7 +416,7 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
 #   include <xrpl/tx/transactors/dex/AMMVote.h>
 #endif
 TRANSACTION(ttAMM_VOTE, 38, AMMVote,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -430,7 +428,7 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
 #   include <xrpl/tx/transactors/dex/AMMBid.h>
 #endif
 TRANSACTION(ttAMM_BID, 39, AMMBid,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -446,7 +444,6 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
 TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     ({
         .delegable = Delegation::Delegable,
-        .amendment = featureAMM,
         .privileges = Privilege::MustDeleteAcct | Privilege::MayDeleteMpt,
     }),
     ({
