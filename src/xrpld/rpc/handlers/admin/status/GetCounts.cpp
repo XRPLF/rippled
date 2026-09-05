@@ -8,6 +8,8 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
@@ -116,7 +118,16 @@ doGetCounts(rpc::JsonContext& context)
     int minCount = 10;
 
     if (context.params.isMember(jss::min_count))
-        minCount = context.params[jss::min_count].asUInt();
+    {
+        // Guard the conversion: json::Value::asUInt() throws for negative,
+        // out-of-range, non-numeric or non-scalar values, which would surface as a
+        // generic internal error instead of invalid parameters.
+        auto const& jvMinCount = context.params[jss::min_count];
+        if (!jvMinCount.isUInt() && (!jvMinCount.isInt() || jvMinCount.asInt() < 0))
+            return rpcError(RpcInvalidParams);
+
+        minCount = jvMinCount.asUInt();
+    }
 
     return getCountsJson(context.app, minCount);
 }
