@@ -90,6 +90,12 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
             return ret;
 
+        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        {
+            if (auto const ret = checkDeepFrozen(ctx.view, account, vaultAsset))
+                return ret;
+        }
+
         if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
             return ret;
     }

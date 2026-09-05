@@ -843,6 +843,30 @@ private:
             std::nullopt,
             {features});
 
+        // Holder-side deep freeze: depositor froze their own USD line.
+        // Regular holder freeze does not block sending; any-side deep freeze does.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const fix340 = env.current()->rules().enabled(fixCleanup3_4_0);
+                env(trust(carol_, USD(30'000), tfSetFreeze));
+                env.close();
+                ammAlice.deposit(carol_, USD(100));
+                env(trust(carol_, USD(30'000), tfSetDeepFreeze));
+                env.close();
+                ammAlice.deposit(
+                    carol_,
+                    USD(100),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(fix340 ? TER(tecFROZEN) : TER(tesSUCCESS)));
+                env(trust(carol_, USD(30'000), tfClearFreeze | tfClearDeepFreeze));
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features, features - fixCleanup3_4_0});
+
         // Individually frozen (AMM) account with IOU/IOU AMM
         testAMM(
             [&](AMM& ammAlice, Env& env) {
@@ -1801,6 +1825,26 @@ private:
                 ammAlice.withdraw(alice_, XRP(100));
                 ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
                 ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            amendmentCombinations({fixCleanup3_3_0}));
+
+        // Holder-side deep freeze on the withdrawing account. Any-side deep freeze
+        // must block receiving; checkWithdrawFreeze (fixCleanup3_3_0) enforces this.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const fix330 = env.current()->rules().enabled(fixCleanup3_3_0);
+                env(trust(alice_, USD(30'000), tfSetFreeze | tfSetDeepFreeze));
+                env.close();
+                ammAlice.withdraw(
+                    alice_,
+                    USD(100),
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(fix330 ? TER(tecFROZEN) : TER(tesSUCCESS)));
+                env(trust(alice_, USD(30'000), tfClearFreeze | tfClearDeepFreeze));
             },
             std::nullopt,
             0,

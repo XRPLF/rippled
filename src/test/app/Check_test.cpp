@@ -1416,6 +1416,8 @@ class Check_test : public beast::unit_test::Suite
             env.require(Balance(alice, usd(20)));
             env.require(Balance(bob, usd(0)));
 
+            bool const fix340 = features[fixCleanup3_4_0];
+
             // Global freeze
             env(fset(gw, asfGlobalFreeze));
             env.close();
@@ -1425,11 +1427,17 @@ class Check_test : public beast::unit_test::Suite
             env(check::cash(bob, chkIdFroz1, check::DeliverMin(usd(0.5))), Ter(tecPATH_PARTIAL));
             env.close();
 
-            env(check::cash(gw, chkIdFroz4ToIssuer, usd(1)), Ter(tecPATH_PARTIAL));
+            // Post-fixCleanup3_4_0 the issuer can cash a check drawn on frozen
+            // source funds; pre-fix ZeroIfFrozen reported the source as empty.
+            env(check::cash(gw, chkIdFroz4ToIssuer, usd(1)),
+                Ter(fix340 ? TER(tesSUCCESS) : TER(tecPATH_PARTIAL)));
             env.close();
-            env(check::cash(gw, chkIdFroz4ToIssuer, check::DeliverMin(usd(0.5))),
-                Ter(tecPATH_PARTIAL));
-            env.close();
+            if (!fix340)
+            {
+                env(check::cash(gw, chkIdFroz4ToIssuer, check::DeliverMin(usd(0.5))),
+                    Ter(tecPATH_PARTIAL));
+                env.close();
+            }
 
             env(check::cash(alice, chkIdFroz4Issuer, usd(1)), Ter(tecFROZEN));
             env.close();
@@ -1442,11 +1450,16 @@ class Check_test : public beast::unit_test::Suite
             // No longer frozen.  Success.
             env(check::cash(bob, chkIdFroz1, usd(1)));
             env.close();
-            env.require(Balance(alice, usd(19)));
+            // If the issuer already cashed chkIdFroz4ToIssuer under
+            // fixCleanup3_4_0, alice is down an extra 1 USD.
+            env.require(Balance(alice, usd(fix340 ? 18 : 19)));
             env.require(Balance(bob, usd(1)));
 
-            env(check::cash(gw, chkIdFroz4ToIssuer, usd(1)));
-            env.close();
+            if (!fix340)
+            {
+                env(check::cash(gw, chkIdFroz4ToIssuer, usd(1)));
+                env.close();
+            }
 
             // Freeze individual trustlines.
             env(trust(gw, alice["USD"](0), tfSetFreeze));
@@ -1464,19 +1477,26 @@ class Check_test : public beast::unit_test::Suite
             env.require(Balance(alice, usd(16)));
             env.require(Balance(bob, usd(3)));
 
-            // Freeze bob's trustline.  bob can't cash the check.
+            // Freeze bob's trustline. Regular freeze must not block receiving.
             env(trust(gw, bob["USD"](0), tfSetFreeze));
             env.close();
-            env(check::cash(bob, chkIdFroz3, usd(3)), Ter(tecFROZEN));
+            env(check::cash(bob, chkIdFroz3, usd(3)),
+                Ter(fix340 ? TER(tesSUCCESS) : TER(tecFROZEN)));
             env.close();
-            env(check::cash(bob, chkIdFroz3, check::DeliverMin(usd(1))), Ter(tecFROZEN));
-            env.close();
+            if (!fix340)
+            {
+                env(check::cash(bob, chkIdFroz3, check::DeliverMin(usd(1))), Ter(tecFROZEN));
+                env.close();
+            }
 
             // Clear that freeze.  Now check cashing works again.
             env(trust(gw, bob["USD"](0), tfClearFreeze));
             env.close();
-            env(check::cash(bob, chkIdFroz3, check::DeliverMin(usd(1))));
-            verifyDeliveredAmount(env, usd(3));
+            if (!fix340)
+            {
+                env(check::cash(bob, chkIdFroz3, check::DeliverMin(usd(1))));
+                verifyDeliveredAmount(env, usd(3));
+            }
             env.require(Balance(alice, usd(13)));
             env.require(Balance(bob, usd(6)));
 
@@ -2513,6 +2533,7 @@ public:
         using namespace test::jtx;
         auto const sa = testableAmendments();
         testWithFeats(sa);
+        testCashInvalid(sa - fixCleanup3_4_0);
         testTrustLineCreation(sa);
     }
 };

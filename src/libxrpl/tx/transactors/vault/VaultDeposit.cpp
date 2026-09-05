@@ -102,6 +102,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+    auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
 
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
@@ -168,6 +169,12 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // Cannot deposit inside Vault an Asset frozen for the depositor
         if (isFrozen(ctx.view, account, vaultAsset))
             return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+
+        if (fix340Enabled)
+        {
+            if (auto const ret = checkDeepFrozen(ctx.view, account, vaultAsset))
+                return ret;
+        }
 
         // Cannot deposit if the shares of the vault are frozen
         if (isFrozen(ctx.view, account, vaultShare))

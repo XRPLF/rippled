@@ -302,6 +302,16 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
                 return ter;
             }
+            if (ctx.view.rules().enabled(fixCleanup3_4_0))
+            {
+                if (auto const ter = checkDeepFrozen(ctx.view, accountID, asset);
+                    !isTesSuccess(ter))
+                {
+                    JLOG(ctx.j.debug()) << "AMM Deposit: account is deep frozen or locked, "
+                                        << to_string(accountID) << " " << to_string(asset);
+                    return ter;
+                }
+            }
 
             return tesSUCCESS;
         };
@@ -346,6 +356,17 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                         << "AMM Deposit: account is frozen or locked, " << to_string(accountID)
                         << " " << to_string(amount->asset());
                     return ter;
+                }
+                if (ctx.view.rules().enabled(fixCleanup3_4_0))
+                {
+                    if (auto const ter = checkDeepFrozen(ctx.view, accountID, amount->asset());
+                        !isTesSuccess(ter))
+                    {
+                        JLOG(ctx.j.debug())
+                            << "AMM Deposit: account is deep frozen or locked, "
+                            << to_string(accountID) << " " << to_string(amount->asset());
+                        return ter;
+                    }
                 }
             }
             if (checkBalance)

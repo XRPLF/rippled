@@ -201,7 +201,10 @@ checkWithdrawFreeze(
  *   1. If the asset is globally frozen the remaining checks are redundant.
  *   2. The depositor must not be individually frozen for the asset. Skipped when srcAcct is the
  * asset issuer, since the issuer can always send its own asset.
- *   3. The pseudo-account must not be individually frozen for the asset.  Unlike regular accounts,
+ *   3. Post-fixCleanup3_4_0: the depositor must not be deep-frozen. isIndividualFrozen only
+ * inspects the issuer-side freeze bit, so a holder who set lsfLowDeepFreeze/lsfHighDeepFreeze
+ * on their own side would otherwise still be able to send. Skipped when srcAcct is the issuer.
+ *   4. The pseudo-account must not be individually frozen for the asset.  Unlike regular accounts,
  * pseudo-accounts cannot receive deposits under a regular freeze because the deposited funds
  * could not later be withdrawn.
  *

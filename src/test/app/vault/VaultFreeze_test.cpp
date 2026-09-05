@@ -89,6 +89,18 @@ private:
                 env(trust(issuer, asset(0), owner, tfClearFreeze | tfClearDeepFreeze));
             }
 
+            // Depositor holder-side deep freeze
+            {
+                testcase("VaultDeposit IOU depositor holder-side deep freeze");
+                env(trust(owner, asset(1'000'000), tfSetFreeze | tfSetDeepFreeze));
+                auto const fix340Enabled = env.current()->rules().enabled(fixCleanup3_4_0);
+                // Post-fixCleanup3_4_0: checkDeepFrozen catches any-side deep freeze.
+                // Pre-fix: ZeroIfFrozen still reports the holder as unfunded.
+                env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(1)}),
+                    Ter(fix340Enabled ? TER(tecFROZEN) : TER(tecINSUFFICIENT_FUNDS)));
+                env(trust(owner, asset(1'000'000), tfClearFreeze | tfClearDeepFreeze));
+            }
+
             // Vault-account freeze
             // Post-fix: checkDepositFreeze catches it → tecFROZEN
             // Pre-fix: not checked directly, but the transitive share
@@ -163,6 +175,9 @@ private:
         env.disableFeature(fixCleanup3_3_0);
         runTests();
         env.enableFeature(fixCleanup3_3_0);
+        env.disableFeature(fixCleanup3_4_0);
+        runTests();
+        env.enableFeature(fixCleanup3_4_0);
     }
 
     void
@@ -379,6 +394,22 @@ private:
                     Ter(tecFROZEN));
 
                 env(trust(issuer, asset(0), owner, tfClearFreeze | tfClearDeepFreeze));
+            }
+
+            // Holder-side deep freeze on dest → self-withdraw blocked
+            {
+                testcase("VaultWithdraw IOU holder-side deep freeze");
+                env(trust(owner, asset(1'000'000), tfSetFreeze | tfSetDeepFreeze));
+                // Post-fixCleanup3_3_0: checkWithdrawFreeze uses isDeepFrozen on dest.
+                // Pre-fix: checkFrozen misses holder-side deep freeze.
+                env(vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(1)}),
+                    Ter(fix330Enabled ? TER(tecFROZEN) : TER(tesSUCCESS)));
+                env(trust(owner, asset(1'000'000), tfClearFreeze | tfClearDeepFreeze));
+                if (!fix330Enabled)
+                {
+                    env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(1)}));
+                    env.close();
+                }
             }
 
             // Destination freeze → withdraw to 3rd party

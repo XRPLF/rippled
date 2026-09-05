@@ -1385,6 +1385,10 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
         }
 
+        auto const destIndivFreeze = features[fixCleanup3_4_0] ? Ter(tesSUCCESS) : Ter(tecFROZEN);
+        auto const issuerRedeem =
+            features[fixCleanup3_4_0] ? Ter(tesSUCCESS) : Ter(tecPATH_PARTIAL);
+
         // Testing creation and cashing of checks on a trustline frozen by
         // issuer
         {
@@ -1396,7 +1400,7 @@ class Freeze_test : public beast::unit_test::Suite
                 uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
                 env(check::create(g1, a1, usd(10)));
                 env.close();
-                env(check::cash(a1, checkId, usd(10)), Ter(tecFROZEN));
+                env(check::cash(a1, checkId, usd(10)), destIndivFreeze);
                 env.close();
             }
 
@@ -1405,8 +1409,7 @@ class Freeze_test : public beast::unit_test::Suite
                 uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
                 env(check::create(a2, a1, usd(10)));
                 env.close();
-                // Same as previous test
-                env(check::cash(a1, checkId, usd(10)), Ter(tecFROZEN));
+                env(check::cash(a1, checkId, usd(10)), destIndivFreeze);
                 env.close();
             }
 
@@ -1440,7 +1443,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: issuer tries to cash the check from A1
             {
-                env(check::cash(g1, checkId1, usd(10)), Ter(tecPATH_PARTIAL));
+                env(check::cash(g1, checkId1, usd(10)), issuerRedeem);
                 env.close();
             }
 
@@ -1511,7 +1514,7 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: issuer tries to cash the check from A1
             {
-                env(check::cash(g1, checkId1, usd(10)), Ter(tecPATH_PARTIAL));
+                env(check::cash(g1, checkId1, usd(10)), issuerRedeem);
                 env.close();
             }
 
@@ -1589,7 +1592,7 @@ class Freeze_test : public beast::unit_test::Suite
                 uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
                 env(check::create(a1, g1, usd(10)));
                 env.close();
-                env(check::cash(g1, checkId, usd(10)), Ter(tecPATH_PARTIAL));
+                env(check::cash(g1, checkId, usd(10)), issuerRedeem);
                 env.close();
             }
 
@@ -2000,6 +2003,7 @@ public:
         testAll(sa - fixEnforceNFTokenTrustlineV2);
         testAll(sa - featureDeepFreeze);
         testAll(sa);
+        testChecksWhenFrozen(sa - fixCleanup3_4_0);
     }
 };
 
