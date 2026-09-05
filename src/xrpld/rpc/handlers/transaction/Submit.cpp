@@ -123,6 +123,14 @@ doSubmit(rpc::JsonContext& context)
         return jvResult;
     }
 
+    // Enable debug logging if requested by the client and allowed by the
+    // server's configuration. When [rpc_debug_log] is not enabled, no capture
+    // happens at all, regardless of the request.
+    bool const debug = context.app.config().rpcDebugLog && context.params.isMember(jss::debug) &&
+        context.params[jss::debug].asBool();
+    if (debug)
+        transaction->enableDebugLog();
+
     try
     {
         auto const failType = getFailHard(context);
@@ -174,6 +182,10 @@ doSubmit(rpc::JsonContext& context)
                     safeCast<json::Value::UInt>(currentLedgerState->validatedLedger);
             }
         }
+
+        // Add debug log if enabled
+        if (debug)
+            jvResult[jss::debug_log] = transaction->getDebugLogJson();
 
         return jvResult;
     }

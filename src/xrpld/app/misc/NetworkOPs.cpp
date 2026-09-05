@@ -1699,8 +1699,18 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.failType == FailHard::Yes)
                         flags |= TapFailHard;
 
+                    // When debug logging is enabled for this transaction, use
+                    // a journal that captures preflight, preclaim, and apply
+                    // logs (while still forwarding to the normal journal).
+                    // Otherwise this is just `j` with no added overhead.
+                    beast::Journal const txJournal = e.transaction->getDebugJournal(j);
+
                     auto const result = registry_.get().getTxQ().apply(
-                        registry_.get().getApp(), view, e.transaction->getSTransaction(), flags, j);
+                        registry_.get().getApp(),
+                        view,
+                        e.transaction->getSTransaction(),
+                        flags,
+                        txJournal);
                     e.result = result.ter;
                     e.applied = result.applied;
                     changed = changed || result.applied;
