@@ -285,10 +285,13 @@ public:
     void
     setFull() const
     {
-        txMap_.setFull();
+        // Sequence before flag, per map: setLedgerSeq() stores relaxed and setFull() stores
+        // release, so only this order publishes the sequence to SHAMap::finishFetch(), which
+        // reads it after winning the exchange on the flag.
         txMap_.setLedgerSeq(header_.seq);
-        stateMap_.setFull();
+        txMap_.setFull();
         stateMap_.setLedgerSeq(header_.seq);
+        stateMap_.setFull();
     }
 
     void

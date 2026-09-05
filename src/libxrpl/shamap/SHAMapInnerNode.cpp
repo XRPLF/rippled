@@ -16,6 +16,7 @@
 #include <xrpl/shamap/detail/TaggedPointer.h>
 #include <xrpl/shamap/detail/TaggedPointer.ipp>
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
@@ -77,7 +78,10 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     auto p = intr_ptr::makeShared<SHAMapInnerNode>(cowid, branchCount);
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
-    p->fullBelowGen_ = fullBelowGen_;
+    // Relaxed, as everywhere: the generation is only ever compared for equality, and p is not
+    // reachable by another thread until this returns.
+    p->fullBelowGen_.store(
+        fullBelowGen_.load(std::memory_order_relaxed), std::memory_order_relaxed);
     SHAMapHash* cloneHashes = nullptr;
     SHAMapHash* thisHashes = nullptr;
     SHAMapTreeNodePtr* cloneChildren = nullptr;
