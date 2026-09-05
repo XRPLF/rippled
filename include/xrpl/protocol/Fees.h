@@ -62,8 +62,19 @@ struct Fees
     Fees&
     operator=(Fees const&) = default;
 
-    Fees(XRPAmount base, XRPAmount reserve, XRPAmount increment)
-        : base(base), reserve(reserve), increment(increment)
+    Fees(
+        XRPAmount base,
+        XRPAmount reserve,
+        XRPAmount increment,
+        std::uint32_t gasLimit,
+        std::uint32_t bytecodeSizeLimit,
+        std::uint32_t gasPrice)
+        : base(base)
+        , reserve(reserve)
+        , increment(increment)
+        , gasLimit(gasLimit)
+        , bytecodeSizeLimit(bytecodeSizeLimit)
+        , gasPrice(gasPrice)
     {
     }
 
