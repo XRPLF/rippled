@@ -7,6 +7,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/Manifest.h>
 
@@ -26,11 +27,11 @@ namespace xrpl {
 /**
  * Maximum number of subscriptions a single client connection may hold at once.
  *
- * Applies to the account, real-time account, and account-history subscriptions
- * tracked on one InfoSub (the sets counted by totalSubscriptionCount), bounding
- * the disconnect-time cleanup of those sets. Book subscriptions are tracked
- * separately (OrderBookDB) and are not counted here. Generous enough for
- * legitimate power users such as block explorers.
+ * Applies to the account, real-time account, account-history, and MPT issuance
+ * subscriptions tracked on one InfoSub (the sets counted by
+ * totalSubscriptionCount), bounding the disconnect-time cleanup of those sets.
+ * Book subscriptions are tracked separately (OrderBookDB) and are not counted
+ * here. Generous enough for legitimate power users such as block explorers.
  */
 constexpr std::size_t kMaxSubscriptionsPerConnection = 100'000;
 
@@ -151,6 +152,9 @@ public:
             AccountID const& account,
             bool historyOnly) = 0;
 
+        virtual void
+        unsubMPTInternal(std::uint64_t uListener, hash_set<MPTID> const& mptIDs) = 0;
+
         /**
          * Schedule the server-side teardown of a disconnecting connection's
          * account subscriptions off the destructor thread.
@@ -270,6 +274,11 @@ public:
         virtual bool
         unsubConsensus(std::uint64_t uListener) = 0;
 
+        virtual void
+        subMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) = 0;
+        virtual void
+        unsubMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) = 0;
+
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
         //             "pushes" subscription data to a particular URL.
@@ -309,9 +318,9 @@ public:
      * Return the number of subscriptions currently tracked on this
      * connection.
      *
-     * The combined size of the per-connection account, real-time account, and
-     * account-history subscription sets. `doSubscribe` reads this to enforce
-     * the per-connection subscription cap before admitting more.
+     * The combined size of the per-connection account, real-time account,
+     * account-history, and MPT issuance subscription sets. `doSubscribe` reads
+     * this to enforce the per-connection subscription cap before admitting more.
      *
      * @return The total tracked subscription count for this connection.
      *
@@ -341,6 +350,25 @@ public:
         hash_set<AccountID> const& proposedAccounts,
         hash_set<AccountID> const& normalAccounts,
         std::size_t cap);
+
+    /**
+     * Enforce the cap and reserve a request's net-new MPT issuances, atomically.
+     *
+     * The MPT analogue of tryReserveAccountSubscriptions: under one hold of
+     * `lock_`, count the net-new issuances, check the total against @p cap, and
+     * insert them only if it fits. All-or-nothing, so a rejected request records
+     * nothing. Doing check and insert together stops two concurrent requests
+     * sharing an InfoSub (the admin subscribe-by-url path) from both passing the
+     * check before either records its issuances. The server-side map is
+     * populated afterwards by subMPT, whose re-insert is a no-op.
+     *
+     * @param mptIDs The MPT issuance ids to reserve.
+     * @param cap    The effective per-connection cap.
+     * @return true if reserved; false if the request must be rejected.
+     * @note Thread-safe: takes `lock_`.
+     */
+    [[nodiscard]] bool
+    tryReserveMPTSubscriptions(hash_set<MPTID> const& mptIDs, std::size_t cap);
 
     /**
      * Whether this connection already tracks an account-history for @p account.
@@ -413,12 +441,29 @@ public:
     [[nodiscard]] unsigned int
     getApiVersion() const noexcept;
 
+    void
+    insertSubMPTInfo(MPTID const& mptID);
+
+    void
+    deleteSubMPTInfo(MPTID const& mptID);
+
 protected:
     // Mutable so the read-only totalSubscriptionCount() accessor can lock it
     // from a const method; locking semantics are otherwise unchanged.
     mutable std::mutex lock_;
 
 private:
+    // The lock type guarding this instance's subscription sets.
+    using scoped_lock = std::scoped_lock<decltype(lock_)>;
+
+    /**
+     * The combined tally the per-connection cap is enforced against.
+     *
+     * @param lock Proof that `lock_` is held; unused otherwise.
+     */
+    [[nodiscard]] std::size_t
+    subscriptionCount(scoped_lock const& lock) const;
+
     Consumer consumer_;
     Source& source_;
     hash_set<AccountID> realTimeSubscriptions_;
@@ -427,6 +472,7 @@ private:
     std::uint64_t seq_;
     hash_set<AccountID> accountHistorySubscriptions_;
     hash_set<Book> bookSubscriptions_;
+    hash_set<MPTID> mptSubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int

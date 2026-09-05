@@ -116,6 +116,25 @@ parseAccountIds(json::Value const& jvArray)
     return result;
 }
 
+hash_set<MPTID>
+parseMPTIssuanceIDs(json::Value const& jvArray)
+{
+    hash_set<MPTID> result;
+    for (auto const& jv : jvArray)
+    {
+        if (!jv.isString())
+            return hash_set<MPTID>();
+
+        auto const mptIssuanceIdStr = jv.asString();
+        MPTID mptIssuanceID;
+        if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
+            return hash_set<MPTID>();
+
+        result.insert(mptIssuanceID);
+    }
+    return result;
+}
+
 std::optional<json::Value>
 readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context)
 {

@@ -410,6 +410,7 @@ JSS(minimum_level);               // out: TxQ
 JSS(missingCommand);              // error
 JSS(mpt_amount);                  // out: mpt_holders
 JSS(mpt_issuance_id);             // in: Payment, mpt_holders
+JSS(mpt_issuances);               // in: Subscribe, Unsubscribe
 JSS(mptoken_index);               // out: mpt_holders
 JSS(mpt_issuance_id_a);           // out: BookChanges
 JSS(mpt_issuance_id_b);           // out: BookChanges
