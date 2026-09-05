@@ -12,15 +12,10 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -130,68 +125,6 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
 
-template <ValidIssueType T>
-static TER
-escrowFinishPreclaimHelper(
-    PreclaimContext const& ctx,
-    AccountID const& dest,
-    STAmount const& amount);
-
-template <>
-TER
-escrowFinishPreclaimHelper<Issue>(
-    PreclaimContext const& ctx,
-    AccountID const& dest,
-    STAmount const& amount)
-{
-    AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tesSUCCESS
-    if (issuer == dest)
-        return tesSUCCESS;
-
-    // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), dest); !isTesSuccess(ter))
-        return ter;
-
-    // If the issuer has deep frozen the destination, return tecFROZEN
-    if (isDeepFrozen(ctx.view, dest, amount.get<Issue>().currency, amount.getIssuer()))
-        return tecFROZEN;
-
-    return tesSUCCESS;
-}
-
-template <>
-TER
-escrowFinishPreclaimHelper<MPTIssue>(
-    PreclaimContext const& ctx,
-    AccountID const& dest,
-    STAmount const& amount)
-{
-    AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the dest, return tesSUCCESS
-    if (issuer == dest)
-        return tesSUCCESS;
-
-    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
-    if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
-
-    // If the issuer has requireAuth set, check if the destination is
-    // authorized
-    auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        !isTesSuccess(ter))
-        return ter;
-
-    // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, *sleIssuance))
-        return tecLOCKED;
-
-    return tesSUCCESS;
-}
-
 TER
 EscrowFinish::preclaim(PreclaimContext const& ctx)
 {
@@ -217,7 +150,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
         {
             if (auto const ret = std::visit(
                     [&]<typename T>(T const&) {
-                        return escrowFinishPreclaimHelper<T>(ctx, dest, amount);
+                        return escrowUnlockPreclaimHelper<T>(ctx.view, dest, amount);
                     },
                     amount.asset().value());
                 !isTesSuccess(ret))

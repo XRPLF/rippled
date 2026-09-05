@@ -9,6 +9,7 @@
 #include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
@@ -17,7 +18,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
-#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -35,13 +35,10 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -75,27 +72,6 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const k =
             keylet::payChannel(account, dst, SeqProxy::rawSequence((*sle)[sfSequence] - 1));
         return {k.key, view.read(k)};
-    }
-
-    static Buffer
-    signClaimAuth(
-        PublicKey const& pk,
-        SecretKey const& sk,
-        uint256 const& channel,
-        STAmount const& authAmt)
-    {
-        Serializer msg;
-        serializePayChanAuthorization(msg, channel, authAmt.xrp());
-        return sign(pk, sk, msg.slice());
-    }
-
-    static STAmount
-    channelAmount(ReadView const& view, uint256 const& chan)
-    {
-        auto const slep = view.read({ltPAYCHAN, chan});
-        if (!slep)
-            return XRPAmount{-1};
-        return (*slep)[sfAmount];
     }
 
     static std::optional<std::int64_t>
