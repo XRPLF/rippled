@@ -55,7 +55,6 @@ STValidation::validationFormat()
         {sfCookie,              SoeDefault},
         {sfValidatedHash,       SoeOptional},
         {sfServerVersion,       SoeOptional},
-        // featureXRPFees
         {sfBaseFeeDrops,          SoeOptional},
         {sfReserveBaseDrops,      SoeOptional},
         {sfReserveIncrementDrops, SoeOptional},

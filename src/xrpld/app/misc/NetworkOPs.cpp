@@ -3337,8 +3337,6 @@ NetworkOPsImp::publishLedgerStreams(
 
         jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
-        if (!lpAccepted->rules().enabled(featureXRPFees))
-            jvObj[jss::fee_ref] = kFeeUnitsDeprecated;
         jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
         jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
         jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
@@ -4534,8 +4532,6 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
         jvResult[jss::ledger_hash] = to_string(lpClosed->header().hash);
         jvResult[jss::ledger_time] =
             json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
-        if (!lpClosed->rules().enabled(featureXRPFees))
-            jvResult[jss::fee_ref] = kFeeUnitsDeprecated;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();

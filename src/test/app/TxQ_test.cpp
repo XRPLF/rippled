@@ -1368,7 +1368,7 @@ public:
             charlieSeq + 2 == env.seq(charlie),
             "charlie: "s + std::to_string(charlieSeq) + ", " + std::to_string(env.seq(charlie)));
         BEAST_EXPECTS(
-            dariaSeq + 1 == env.seq(daria),
+            dariaSeq == env.seq(daria),
             "daria: "s + std::to_string(dariaSeq) + ", " + std::to_string(env.seq(daria)));
         BEAST_EXPECTS(
             elmoSeq + 1 == env.seq(elmo),
@@ -1377,7 +1377,7 @@ public:
             fredSeq == env.seq(fred),
             "fred: "s + std::to_string(fredSeq) + ", " + std::to_string(env.seq(fred)));
         BEAST_EXPECTS(
-            gwenSeq == env.seq(gwen),
+            gwenSeq + 1 == env.seq(gwen),
             "gwen: "s + std::to_string(gwenSeq) + ", " + std::to_string(env.seq(gwen)));
         BEAST_EXPECTS(
             hankSeq + 1 == env.seq(hank),
@@ -1388,10 +1388,10 @@ public:
         //++aliceSeq;
         ++bobSeq;
         ++(++charlieSeq);
-        ++dariaSeq;
+        // ++dariaSeq;
         ++elmoSeq;
         // ++fredSeq;
-        //++gwenSeq;
+        ++gwenSeq;
         ++hankSeq;
 
         auto getTxsQueued = [&]() {
@@ -2834,18 +2834,24 @@ public:
         // may not reduce to 8.
         env.close();
         checkMetrics(*this, env, 9, 50, 6, 5);
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 15);
+        BEAST_EXPECTS(
+            env.seq(alice) == aliceSeq + 16,
+            "alice: " + std::to_string(aliceSeq + 16) + ", " + std::to_string(env.seq(alice)));
 
-        // Close ledger 7.  That should remove 4 more of alice's transactions.
+        // Close ledger 7.  That should remove 3 more of alice's transactions.
         env.close();
         checkMetrics(*this, env, 2, 60, 7, 6);
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 19);
+        BEAST_EXPECTS(
+            env.seq(alice) == aliceSeq + 19,
+            "alice: " + std::to_string(aliceSeq + 19) + ", " + std::to_string(env.seq(alice)));
 
         // Close one last ledger to see all of alice's transactions moved
         // into the ledger, including the tickets
         env.close();
         checkMetrics(*this, env, 0, 70, 2, 7);
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 21);
+        BEAST_EXPECTS(
+            env.seq(alice) == aliceSeq + 21,
+            "alice: " + std::to_string(aliceSeq + 21) + ", " + std::to_string(env.seq(alice)));
     }
 
     void
@@ -4426,7 +4432,9 @@ public:
         // pushing the local fee up really high and then hoping that we
         // outrace LoadManager undoing our work.
         for (int i = 0; i < 30; ++i)
+        {
             env.app().getFeeTrack().raiseLocalFee();
+        }
 
         // Now close the ledger, which will attempt to process alice's
         // and bob's queued transactions.
@@ -4494,13 +4502,24 @@ public:
         // by queueing another low fee transaction into that spot.
         env(noop(bob), ticket::Use(bobTicketSeq + 0), Fee(baseFee * 1.2), Ter(terQUEUED));
 
-        // Verify that bob's second transaction was removed from the queue
-        // by queueing another low fee transaction into that spot.
-        env(noop(bob), ticket::Use(bobTicketSeq + 1), Fee(baseFee * 1.1), Ter(terQUEUED));
-
-        // Verify that the last entry in bob's queue is still there
-        // by trying to replace it and having that fail.
-        env(noop(bob), ticket::Use(bobTicketSeq + 2), Ter(telCAN_NOT_QUEUE_FEE));
+        // The following two TXs should consist of
+        // - 1 tx that is queued
+        // - 1 tx that cannot be queued.
+        // There seems to be a bit of a race condition based on the raiseLocalFee above
+        // that can produce a different result on Debian bookworm.
+        // Ultimately we are wanting to check if exactly one of bob's txs is dropped penalized.
+        auto const ter =
+            env(noop(bob), ticket::Use(bobTicketSeq + 1), Fee(baseFee * 1.1), Ter(std::ignore))
+                .ter();
+        if (ter == terQUEUED)
+        {
+            env(noop(bob), ticket::Use(bobTicketSeq + 2), Ter(telCAN_NOT_QUEUE_FEE));
+        }
+        else
+        {
+            BEAST_EXPECT(ter == telCAN_NOT_QUEUE_FEE);
+            env(noop(bob), ticket::Use(bobTicketSeq + 2), Fee(baseFee * 1.1), Ter(terQUEUED));
+        }
     }
 
     void

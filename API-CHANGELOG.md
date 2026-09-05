@@ -42,6 +42,10 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 - `account_lines`: The `peer` field now returns an error if the value is not a string. [#7728](https://github.com/XRPLF/rippled/pull/7728)
 - `ledger`: `delivered_amount` is now included in the metadata of successful `AccountDelete` transactions when transactions are expanded (`expand`, or admin-only `full`). Previously it was only added for `Payment` and `CheckCash`, which made `ledger` inconsistent with `tx` and `account_tx`. [#5706](https://github.com/XRPLF/rippled/pull/5706)
 
+### Breaking changes in 3.4.0
+
+- `subscribe` (`ledger` stream): The deprecated `fee_ref` field has been removed unconditionally from both the `subscribe` response and the `ledgerClosed` stream messages. It was previously only omitted when the `XRPFees` amendment was enabled; that amendment has now been retired, so the field is never returned. This applies to all API versions.
+
 ## XRP Ledger server version 3.3.0
 
 [Version 3.3.0](https://github.com/XRPLF/rippled/releases/tag/3.3.0) was released on Aug 6, 2026.
