@@ -40,6 +40,20 @@ private:
     void
     normalize();
 
+    /**
+     * Constrains the exponent to IOUAmount's range, which is narrower than
+     * the one Number normalization enforces.
+     *
+     * The two ends are deliberately asymmetric, matching the class contract:
+     * an exponent above the range is unrepresentable and throws, while one
+     * below it is a silent underflow that truncates the amount to zero.
+     *
+     * @throws std::overflow_error if the exponent exceeds the largest
+     *         representable IOU exponent.
+     */
+    void
+    enforceExponentBounds();
+
     static IOUAmount
     fromNumber(Number const& number);
 
