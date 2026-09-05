@@ -592,6 +592,489 @@ doWithdraw(
         ctx.view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
+// Direct send w/o fees:
+// - Redeeming IOUs and/or sending sender's own IOUs.
+// - Create trust line if needed.
+// --> bCheckIssuer : normally require issuer to be involved.
+static TER
+rippleCreditIOU(
+    ApplyView& view,
+    AccountID const& uSenderID,
+    AccountID const& uReceiverID,
+    STAmount const& saAmount,
+    bool bCheckIssuer,
+    beast::Journal j)
+{
+    AccountID const& issuer = saAmount.getIssuer();
+    Currency const& currency = saAmount.getCurrency();
+
+    // Make sure issuer is involved.
+    XRPL_ASSERT(
+        !bCheckIssuer || uSenderID == issuer || uReceiverID == issuer,
+        "xrpl::rippleCreditIOU : matching issuer or don't care");
+    (void)issuer;
+
+    // Disallow sending to self.
+    XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::rippleCreditIOU : sender is not receiver");
+
+    bool const bSenderHigh = uSenderID > uReceiverID;
+    auto const index = keylet::line(uSenderID, uReceiverID, currency);
+
+    XRPL_ASSERT(
+        !isXRP(uSenderID) && uSenderID != noAccount(), "xrpl::rippleCreditIOU : sender is not XRP");
+    XRPL_ASSERT(
+        !isXRP(uReceiverID) && uReceiverID != noAccount(),
+        "xrpl::rippleCreditIOU : receiver is not XRP");
+
+    // If the line exists, modify it accordingly.
+    if (auto const sleRippleState = view.peek(index))
+    {
+        STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
+
+        if (bSenderHigh)
+            saBalance.negate();  // Put balance in sender terms.
+
+        view.creditHook(uSenderID, uReceiverID, saAmount, saBalance);
+
+        STAmount const saBefore = saBalance;
+
+        saBalance -= saAmount;
+
+        JLOG(j.trace()) << "rippleCreditIOU: " << to_string(uSenderID) << " -> "
+                        << to_string(uReceiverID) << " : before=" << saBefore.getFullText()
+                        << " amount=" << saAmount.getFullText()
+                        << " after=" << saBalance.getFullText();
+
+        std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
+        bool bDelete = false;
+
+        // FIXME This NEEDS to be cleaned up and simplified. It's impossible
+        //       for anyone to understand.
+        if (saBefore > beast::zero
+            // Sender balance was positive.
+            && saBalance <= beast::zero
+            // Sender is zero or negative.
+            && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
+            // Sender reserve is set.
+            && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+                static_cast<bool>(
+                    view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
+            !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
+            !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
+            // Sender trust limit is 0.
+            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+            // Sender quality in is 0.
+            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+        // Sender quality out is 0.
+        {
+            // Clear the reserve of the sender, possibly delete the line!
+            adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), -1, j);
+
+            // Clear reserve flag.
+            sleRippleState->setFieldU32(
+                sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+
+            // Balance is zero, receiver reserve is clear.
+            bDelete = !saBalance  // Balance is zero.
+                && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve));
+            // Receiver reserve is clear.
+        }
+
+        if (bSenderHigh)
+            saBalance.negate();
+
+        // Want to reflect balance to zero even if we are deleting line.
+        sleRippleState->setFieldAmount(sfBalance, saBalance);
+        // ONLY: Adjust ripple balance.
+
+        if (bDelete)
+        {
+            return trustDelete(
+                view,
+                sleRippleState,
+                bSenderHigh ? uReceiverID : uSenderID,
+                !bSenderHigh ? uReceiverID : uSenderID,
+                j);
+        }
+
+        view.update(sleRippleState);
+        return tesSUCCESS;
+    }
+
+    STAmount const saReceiverLimit(Issue{currency, uReceiverID});
+    STAmount saBalance{saAmount};
+
+    saBalance.setIssuer(noAccount());
+
+    JLOG(j.debug()) << "rippleCreditIOU: "
+                       "create line: "
+                    << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
+                    << saAmount.getFullText();
+
+    auto const sleAccount = view.peek(keylet::account(uReceiverID));
+    if (!sleAccount)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
+
+    return trustCreate(
+        view,
+        bSenderHigh,
+        uSenderID,
+        uReceiverID,
+        index.key,
+        sleAccount,
+        false,
+        noRipple,
+        false,
+        false,
+        saBalance,
+        saReceiverLimit,
+        0,
+        0,
+        j);
+}
+
+// Send regardless of limits.
+// --> saAmount: Amount/currency/issuer to deliver to receiver.
+// <-- saActual: Amount actually cost.  Sender pays fees.
+static TER
+rippleSendIOU(
+    ApplyView& view,
+    AccountID const& uSenderID,
+    AccountID const& uReceiverID,
+    STAmount const& saAmount,
+    STAmount& saActual,
+    beast::Journal j,
+    WaiveTransferFee waiveFee)
+{
+    auto const& issuer = saAmount.getIssuer();
+
+    XRPL_ASSERT(
+        !isXRP(uSenderID) && !isXRP(uReceiverID),
+        "xrpl::rippleSendIOU : neither sender nor receiver is XRP");
+    XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::rippleSendIOU : sender is not receiver");
+
+    if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
+    {
+        // Direct send: redeeming IOUs and/or sending own IOUs.
+        auto const ter = rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, j);
+        if (ter != tesSUCCESS)
+            return ter;
+        saActual = saAmount;
+        return tesSUCCESS;
+    }
+
+    // Sending 3rd party IOUs: transit.
+
+    // Calculate the amount to transfer accounting
+    // for any transfer fees if the fee is not waived:
+    saActual = (waiveFee == WaiveTransferFee::Yes) ? saAmount
+                                                   : multiply(saAmount, transferRate(view, issuer));
+
+    JLOG(j.debug()) << "rippleSendIOU> " << to_string(uSenderID) << " - > "
+                    << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
+                    << " cost=" << saActual.getFullText();
+
+    TER terResult = rippleCreditIOU(view, issuer, uReceiverID, saAmount, true, j);
+
+    if (tesSUCCESS == terResult)
+        terResult = rippleCreditIOU(view, uSenderID, issuer, saActual, true, j);
+
+    return terResult;
+}
+
+template <class TAsset>
+static TER
+doSendMulti(
+    std::string const& name,
+    ApplyView& view,
+    AccountID const& senderID,
+    TAsset const& issue,
+    MultiplePaymentDestinations const& receivers,
+    STAmount& actual,
+    beast::Journal j,
+    WaiveTransferFee waiveFee,
+    // Don't pass back parameters that the caller already has
+    std::function<
+        TER(AccountID const& senderID,
+            AccountID const& receiverID,
+            STAmount const& amount,
+            bool checkIssuer)> doCredit,
+    std::function<
+        TER(AccountID const& issuer, STAmount const& takeFromSender, STAmount const& amount)>
+        preMint = {})
+{
+    // Use the same pattern for all the SendMulti functions to help avoid
+    // divergence and copy/paste errors.
+    auto const& issuer = issue.getIssuer();
+
+    // These values may not stay in sync
+    STAmount takeFromSender{issue};
+    actual = takeFromSender;
+
+    // Failures return immediately.
+    for (auto const& r : receivers)
+    {
+        auto const& receiverID = r.first;
+        STAmount amount{issue, r.second};
+
+        if (amount < beast::zero)
+        {
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
+
+        /* If we aren't sending anything or if the sender is the same as the
+         * receiver then we don't need to do anything.
+         */
+        if (!amount || (senderID == receiverID))
+            continue;
+
+        using namespace std::string_literals;
+        XRPL_ASSERT(!isXRP(receiverID), ("xrpl::"s + name + " : receiver is not XRP").c_str());
+
+        if (senderID == issuer || receiverID == issuer || issuer == noAccount())
+        {
+            if (preMint)
+            {
+                if (auto const ter = preMint(issuer, takeFromSender, amount))
+                    return ter;
+            }
+            // Direct send: redeeming IOUs and/or sending own IOUs.
+            if (auto const ter = doCredit(senderID, receiverID, amount, false))
+                return ter;
+            actual += amount;
+            // Do not add amount to takeFromSender, because doCredit took
+            // it.
+
+            continue;
+        }
+
+        // Sending 3rd party: transit.
+
+        // Calculate the amount to transfer accounting
+        // for any transfer fees if the fee is not waived:
+        STAmount actualSend = (waiveFee == WaiveTransferFee::Yes || issue.native())
+            ? amount
+            : multiply(amount, transferRate(view, amount));
+        actual += actualSend;
+        takeFromSender += actualSend;
+
+        JLOG(j.debug()) << name << "> " << to_string(senderID) << " - > " << to_string(receiverID)
+                        << " : deliver=" << amount.getFullText()
+                        << " cost=" << actualSend.getFullText();
+
+        if (TER const terResult = doCredit(issuer, receiverID, amount, true))
+            return terResult;
+    }
+
+    if (senderID != issuer && takeFromSender)
+    {
+        if (TER const terResult = doCredit(senderID, issuer, takeFromSender, true))
+            return terResult;
+    }
+
+    return tesSUCCESS;
+}
+
+// Send regardless of limits.
+// --> receivers: Amount/currency/issuer to deliver to receivers.
+// <-- saActual: Amount actually cost to sender.  Sender pays fees.
+static TER
+rippleSendMultiIOU(
+    ApplyView& view,
+    AccountID const& senderID,
+    Issue const& issue,
+    MultiplePaymentDestinations const& receivers,
+    STAmount& actual,
+    beast::Journal j,
+    WaiveTransferFee waiveFee)
+{
+    XRPL_ASSERT(!isXRP(senderID), "xrpl::rippleSendMultiIOU : sender is not XRP");
+
+    auto doCredit = [&view, j](
+                        AccountID const& senderID,
+                        AccountID const& receiverID,
+                        STAmount const& amount,
+                        bool checkIssuer) {
+        return rippleCreditIOU(view, senderID, receiverID, amount, checkIssuer, j);
+    };
+
+    return doSendMulti(
+        "rippleSendMultiIOU", view, senderID, issue, receivers, actual, j, waiveFee, doCredit);
+}
+
+static TER
+rippleCreditMPT(
+    ApplyView& view,
+    AccountID const& uSenderID,
+    AccountID const& uReceiverID,
+    STAmount const& saAmount,
+    beast::Journal j)
+{
+    // Do not check MPT authorization here - it must have been checked earlier
+    auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
+    auto const& issuer = saAmount.getIssuer();
+    auto sleIssuance = view.peek(mptID);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+    if (uSenderID == issuer)
+    {
+        (*sleIssuance)[sfOutstandingAmount] += saAmount.mpt().value();
+        view.update(sleIssuance);
+    }
+    else
+    {
+        auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
+        if (auto sle = view.peek(mptokenID))
+        {
+            auto const amt = sle->getFieldU64(sfMPTAmount);
+            auto const pay = saAmount.mpt().value();
+            if (amt < pay)
+                return tecINSUFFICIENT_FUNDS;
+            (*sle)[sfMPTAmount] = amt - pay;
+            view.update(sle);
+        }
+        else
+            return tecNO_AUTH;
+    }
+
+    if (uReceiverID == issuer)
+    {
+        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
+        auto const redeem = saAmount.mpt().value();
+        if (outstanding >= redeem)
+        {
+            sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+            view.update(sleIssuance);
+        }
+        else
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
+    else
+    {
+        auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
+        if (auto sle = view.peek(mptokenID))
+        {
+            (*sle)[sfMPTAmount] += saAmount.mpt().value();
+            view.update(sle);
+        }
+        else
+            return tecNO_AUTH;
+    }
+
+    return tesSUCCESS;
+}
+
+static TER
+rippleSendMPT(
+    ApplyView& view,
+    AccountID const& uSenderID,
+    AccountID const& uReceiverID,
+    STAmount const& saAmount,
+    STAmount& saActual,
+    beast::Journal j,
+    WaiveTransferFee waiveFee)
+{
+    XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::rippleSendMPT : sender is not receiver");
+
+    // Safe to get MPT since rippleSendMPT is only called by accountSendMPT
+    auto const& issuer = saAmount.getIssuer();
+
+    auto const sle = view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID()));
+    if (!sle)
+        return tecOBJECT_NOT_FOUND;
+
+    if (uSenderID == issuer || uReceiverID == issuer)
+    {
+        // if sender is issuer, check that the new OutstandingAmount will not
+        // exceed MaximumAmount
+        if (uSenderID == issuer)
+        {
+            auto const sendAmount = saAmount.mpt().value();
+            auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+            if (sendAmount > maximumAmount ||
+                sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
+                return tecPATH_DRY;
+        }
+
+        // Direct send: redeeming MPTs and/or sending own MPTs.
+        auto const ter = rippleCreditMPT(view, uSenderID, uReceiverID, saAmount, j);
+        if (ter != tesSUCCESS)
+            return ter;
+        saActual = saAmount;
+        return tesSUCCESS;
+    }
+
+    // Sending 3rd party MPTs: transit.
+    saActual = (waiveFee == WaiveTransferFee::Yes)
+        ? saAmount
+        : multiply(saAmount, transferRate(view, saAmount.get<MPTIssue>().getMptID()));
+
+    JLOG(j.debug()) << "rippleSendMPT> " << to_string(uSenderID) << " - > "
+                    << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
+                    << " cost=" << saActual.getFullText();
+
+    if (auto const terResult = rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
+        terResult != tesSUCCESS)
+        return terResult;
+
+    return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
+}
+
+static TER
+rippleSendMultiMPT(
+    ApplyView& view,
+    AccountID const& senderID,
+    MPTIssue const& mptIssue,
+    MultiplePaymentDestinations const& receivers,
+    STAmount& actual,
+    beast::Journal j,
+    WaiveTransferFee waiveFee)
+{
+    auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID()));
+    if (!sle)
+        return tecOBJECT_NOT_FOUND;
+
+    auto preMint = [&](AccountID const& issuer,
+                       STAmount const& takeFromSender,
+                       STAmount const& amount) -> TER {
+        // if sender is issuer, check that the new OutstandingAmount will
+        // not exceed MaximumAmount
+        if (senderID == issuer)
+        {
+            XRPL_ASSERT_PARTS(
+                takeFromSender == beast::zero,
+                "rippler::rippleSendMultiMPT",
+                "sender == issuer, takeFromSender == zero");
+            auto const sendAmount = amount.mpt().value();
+            auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+            if (sendAmount > maximumAmount ||
+                sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
+                return tecPATH_DRY;
+        }
+
+        return tesSUCCESS;
+    };
+    auto doCredit =
+        [&view, j](
+            AccountID const& senderID, AccountID const& receiverID, STAmount const& amount, bool) {
+            return rippleCreditMPT(view, senderID, receiverID, amount, j);
+        };
+
+    return doSendMulti(
+        "rippleSendMultiMPT",
+        view,
+        senderID,
+        mptIssue,
+        receivers,
+        actual,
+        j,
+        waiveFee,
+        doCredit,
+        preMint);
+}
+
 TER
 cleanupOnAccountDelete(
     ApplyView& view,

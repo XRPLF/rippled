@@ -1120,6 +1120,85 @@ accountSendMultiIOU(
                << receivers.size() << " receivers.";
     }
 
+    auto doCredit = [&view, &sender, &receivers, j](
+                        AccountID const& senderID,
+                        AccountID const& receiverID,
+                        STAmount const& amount,
+                        bool /*checkIssuer*/) -> TER {
+        if (!senderID)
+        {
+            SLE::pointer receiver =
+                receiverID != beast::zero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
+
+            if (auto stream = j.trace())
+            {
+                std::string receiver_bal("-");
+
+                if (receiver)
+                    receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+
+                stream << "accountSendMultiIOU> " << to_string(senderID) << " -> "
+                       << to_string(receiverID) << " (" << receiver_bal
+                       << ") : " << amount.getFullText();
+            }
+
+            if (receiver)
+            {
+                // Increment XRP balance.
+                auto const rcvBal = receiver->getFieldAmount(sfBalance);
+                receiver->setFieldAmount(sfBalance, rcvBal + amount);
+                view.creditHook(xrpAccount(), receiverID, amount, -rcvBal);
+
+                view.update(receiver);
+            }
+
+            if (auto stream = j.trace())
+            {
+                std::string receiver_bal("-");
+
+                if (receiver)
+                    receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+
+                stream << "accountSendMultiIOU< " << to_string(senderID) << " -> "
+                       << to_string(receiverID) << " (" << receiver_bal
+                       << ") : " << amount.getFullText();
+            }
+            return tesSUCCESS;
+        }
+        // Sender
+        if (sender)
+        {
+            if (sender->getFieldAmount(sfBalance) < amount)
+            {
+                return TER{tecFAILED_PROCESSING};
+            }
+            else
+            {
+                auto const sndBal = sender->getFieldAmount(sfBalance);
+                view.creditHook(senderID, xrpAccount(), amount, sndBal);
+
+                // Decrement XRP balance.
+                sender->setFieldAmount(sfBalance, sndBal - amount);
+                view.update(sender);
+            }
+        }
+
+        if (auto stream = j.trace())
+        {
+            std::string sender_bal("-");
+
+            if (sender)
+                sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+
+            stream << "accountSendMultiIOU< " << to_string(senderID) << " (" << sender_bal
+                   << ") -> " << receivers.size() << " receivers.";
+        }
+
+        return tesSUCCESS;
+    };
+    return doSendMulti(
+        "accountSendMultiIOU", view, senderID, issue, receivers, actual, j, waiveFee, doCredit);
+
     // Failures return immediately.
     STAmount takeFromSender{issue};
     for (auto const& r : receivers)
