@@ -15,6 +15,11 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <xrpl.pb.h>
 
 #include <chrono>
 #include <memory>
@@ -88,6 +93,19 @@ struct TestableInboundLedger final : InboundLedger
     {
         ScopedLockType const sl(mtx_);
         progress_ = false;
+    }
+
+    /**
+     * Whether a packet has advanced the acquisition since the flag was last
+     * cleared.
+     *
+     * @return Whether progress has been recorded.
+     */
+    [[nodiscard]] bool
+    madeProgress() const
+    {
+        ScopedLockType const sl(mtx_);
+        return progress_;
     }
 
     /**
@@ -235,6 +253,46 @@ struct InboundLedger_test : public beast::unit_test::Suite
                 chain.nodeAt(depth)->getHash().asUInt256(),
                 header.seq);
         }
+    }
+
+    /**
+     * The header as a liBASE reply, which is how an acquisition learns what it
+     * is chasing.
+     *
+     * @param header The header to serialize.
+     * @return The reply packet.
+     */
+    static std::shared_ptr<protocol::TMLedgerData>
+    headerPacket(LedgerHeader const& header)
+    {
+        auto packet = std::make_shared<protocol::TMLedgerData>();
+        packet->set_ledgerhash(header.hash.data(), uint256::size());
+        packet->set_ledgerseq(header.seq);
+        packet->set_type(protocol::liBASE);
+
+        Serializer s;
+        addRaw(header, s);
+
+        auto* const node = packet->add_nodes();
+        node->set_nodedata(s.peekData().data(), s.peekData().size());
+        return packet;
+    }
+
+    /**
+     * The chain's state-map nodes as a liAS_NODE reply for the given header.
+     *
+     * @param header The header whose hash and sequence the reply names.
+     * @param chain The chain supplying the nodes.
+     * @param data The nodes to include, each with its claimed position.
+     * @return The reply packet.
+     */
+    static std::shared_ptr<protocol::TMLedgerData>
+    stateNodePacket(
+        LedgerHeader const& header,
+        DeepChain const& chain,
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> const& data)
+    {
+        return packetFor(chain, data, protocol::liAS_NODE, header.hash, header.seq);
     }
 
     /**
@@ -486,6 +544,127 @@ struct InboundLedger_test : public beast::unit_test::Suite
     }
 
     /**
+     * An acquisition whose state root names a shape no valid tree can have must
+     * fail, and must cost the sender the harsher tier.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testFabricatedChainFailsAcquire(jtx::Env& env)
+    {
+        testcase("A state-map chain reaching kLeafDepth fails the acquire");
+
+        DeepChain const chain{nextSeed()};
+        auto const header = makeHeader(chain);
+
+        auto acquire = std::make_shared<TestableInboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        // The header is accepted on its own terms, so the acquisition now chases this hash.
+        auto const headerPeer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(headerPeer, headerPacket(header)));
+        acquire->runData();
+        BEAST_EXPECT(headerPeer->charges().empty());
+        BEAST_EXPECT(!acquire->isFailed());
+
+        // The root, then the rest of the chain ending in the inner node at kLeafDepth.
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data;
+        data.emplace_back(SHAMapNodeID{}, chain.nodeAt(0));
+        for (auto const& node : chain.nodesBelowRoot())
+            data.push_back(node);
+
+        // The header counted as progress, so clear it to see what the packet below records.
+        acquire->clearProgress();
+
+        auto const chainPeer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(chainPeer, stateNodePacket(header, chain, data)));
+        acquire->runData();
+
+        // The acquisition is over, and stays over: no peer can satisfy this hash.
+        BEAST_EXPECT(acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+
+        // The nodes ahead of the bad one belong to a tree that cannot exist, so the packet counts
+        // nothing at all. Nothing else observes that tally, so without this the discarding could be
+        // dropped and the suite would stay green.
+        BEAST_EXPECT(!acquire->madeProgress());
+
+        // A failed acquisition must not hand back the partial ledger it built.
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
+
+        // Charged as data no honest peer sends by accident, not as merely-wrong data.
+        BEAST_EXPECT(chainPeer->charges() == std::vector{resource::kFeeMalformedData});
+
+        // getJson() walks the same maps to report what is still needed, and is reachable over RPC
+        // for as long as sweep() keeps the failed entry. It must report the failure and come back
+        // with nothing needed rather than descending the abandoned map.
+        auto const report = acquire->getJson(0);
+        BEAST_EXPECT(report[jss::failed].asBool());
+        BEAST_EXPECT(report[jss::have_header].asBool());
+        BEAST_EXPECT(!report[jss::have_state].asBool());
+        BEAST_EXPECT(report[jss::needed_state_hashes].size() == 0);
+    }
+
+    /**
+     * A merely-wrong state node must cost the recoverable tier and leave the
+     * acquisition alive.
+     *
+     * The counterpart to testFabricatedChainFailsAcquire() on this path:
+     * the fee split in receiveNode() turns on whether the map survived, so
+     * a node that cannot be hooked but leaves the map sound must be
+     * charged the lower tier.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testWrongStateNodeKeepsAcquireAlive(jtx::Env& env)
+    {
+        testcase("A merely-wrong state node leaves the acquire recoverable");
+
+        DeepChain const chain{nextSeed()};
+        auto const header = makeHeader(chain);
+
+        auto acquire = std::make_shared<InboundLedger>(
+            env.app(),
+            header.hash,
+            header.seq,
+            InboundLedger::Reason::GENERIC,
+            stopwatch(),
+            std::make_unique<RequestCountingPeerSet>());
+
+        auto const headerPeer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(headerPeer, headerPacket(header)));
+        acquire->runData();
+        BEAST_EXPECT(!acquire->isFailed());
+
+        auto const rootPeer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(
+            rootPeer, stateNodePacket(header, chain, {{SHAMapNodeID{}, chain.nodeAt(0)}})));
+        acquire->runData();
+        BEAST_EXPECT(rootPeer->charges().empty());
+
+        // nodeAt(1) is the node the root is missing and its hash matches, but we label it as
+        // living at depth 2, so it cannot be hooked anywhere.
+        auto const wrongPeer = std::make_shared<ChargeRecordingPeer>();
+        BEAST_EXPECT(acquire->gotData(
+            wrongPeer,
+            stateNodePacket(header, chain, {{SHAMapNodeID{2, uint256{}}, chain.nodeAt(1)}})));
+        acquire->runData();
+
+        BEAST_EXPECT(wrongPeer->charges() == std::vector{resource::kFeeInvalidData});
+
+        // The map is sound, so the acquisition is still going and still holds its ledger.
+        BEAST_EXPECT(!acquire->isFailed());
+        BEAST_EXPECT(!acquire->isComplete());
+        BEAST_EXPECT(acquire->getLedger() != nullptr);
+    }
+
+    /**
      * A ledger assembled from local data must be judged even when only
      * one map is settled.
      *
@@ -726,6 +905,8 @@ struct InboundLedger_test : public beast::unit_test::Suite
         testWalkSettlesBeforeReportingComplete(env);
         testInvalidatedLedgerFailsInDone(env);
         testLocalFailureSignalsDone(env);
+        testFabricatedChainFailsAcquire(env);
+        testWrongStateNodeKeepsAcquireAlive(env);
         testLocalChainFailsAcquire(env);
         testAggressiveRetryJudgesLocalMap(env);
 
