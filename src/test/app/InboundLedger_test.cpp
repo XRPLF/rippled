@@ -542,6 +542,9 @@ struct InboundLedger_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(acquire->isFailed());
         BEAST_EXPECT(!acquire->isComplete());
+
+        // A failed acquisition must not hand back the partial ledger it built.
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
     }
 
     /**
@@ -705,7 +708,8 @@ struct InboundLedger_test : public beast::unit_test::Suite
         BEAST_EXPECT(!acquire->isComplete());
         BEAST_EXPECT(peerSetPtr->requests() > requestsFromInit);
 
-        // done() remembered the hash, which is what stops the next round asking again.
+        // A failed acquisition holds no ledger to hand back, and done() remembered the hash.
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
         BEAST_EXPECT(
             waitFor([&] { return env.app().getInboundLedgers().isFailure(kUnknownLedger); }));
     }
