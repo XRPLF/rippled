@@ -1262,6 +1262,27 @@ public:
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'taker_gets', not object.");
         }
 
+        // null JSON values must be rejected immediately (issue #6788)
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker_pays] = json::ValueType::Null;
+            jvParams[jss::taker_gets] = json::ValueType::Object;
+            auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'taker_pays', not object.");
+        }
+
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker_pays] = json::ValueType::Object;
+            jvParams[jss::taker_gets] = json::ValueType::Null;
+            auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'taker_gets', not object.");
+        }
+
         {
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
