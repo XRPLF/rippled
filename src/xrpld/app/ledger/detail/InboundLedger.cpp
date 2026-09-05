@@ -235,6 +235,12 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
 }
 
+bool
+InboundLedger::hasInvalidMap() const
+{
+    return ledger_ && !ledger_->mapsValid();
+}
+
 // See how much of the ledger data is stored locally
 // Data found in a fetch pack will be stored
 void
@@ -339,13 +345,25 @@ InboundLedger::tryDB(node_store::Database& srcDB)
         }
     }
 
+    // Judged here rather than left to the setImmutable() call below, which runs only once both
+    // flags are set: the two walks above set them independently, so one map can be abandoned while
+    // the other is merely incomplete.
+    if (hasInvalidMap())
+    {
+        JLOG(journal_.warn()) << "Ledger " << hash_ << " found locally has an invalid map";
+        failed_ = true;
+        return;
+    }
+
     if (haveTransactions_ && haveState_)
     {
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
         // Settled before complete_ is published, so a caller that reads the flag never sees a
-        // ledger this function has not finished with.
+        // ledger this function has not finished with. Reachable despite the guard above only
+        // because trigger() walks the state map with mtx_ released, so that walk can reach the
+        // verdict in between.
         if (!ledger_->setImmutable())
         {
             JLOG(journal_.warn()) << "Ledger " << hash_ << " found locally is invalid";
@@ -447,11 +465,13 @@ InboundLedger::done()
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::done : valid ledger fees");
-        // Recovers rather than asserting: peer data produces this verdict, so a caller cannot know
-        // its map is still sound, and an abort here would be one a peer could ask for. Best-effort
-        // even so: setInvalid() outranks Immutable, so a walk that reaches the verdict after both
-        // maps have been settled leaves an immutable ledger with an invalid map. It narrows the
-        // window rather than closing it.
+        // Recovers rather than asserting: trigger() walks the state map with mtx_ released, so that
+        // walk can reach the verdict after the flags said there was nothing left to fetch. A race
+        // rather than a broken invariant, and one peer data produces, so an abort here would be one
+        // a peer could ask for. Best-effort even so: setInvalid() outranks Immutable, so a walk
+        // that reaches the verdict after both maps have been settled leaves an immutable ledger
+        // with an invalid map. It narrows the window rather than closing it.
+        SOMETIMES(hasInvalidMap(), "xrpl::InboundLedger::done : map invalidated by a race");
         if (!ledger_->setImmutable())
         {
             JLOG(journal_.warn()) << "Acquired ledger " << hash_ << " is invalid";
@@ -553,7 +573,20 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             auto need = getNeededHashes();
 
-            if (!need.empty())
+            // Asked first, since getNeededHashes() walks both maps and can reach the verdict
+            // itself, and the branch below would otherwise read an empty result as "nothing left
+            // to fetch". Without a header there is no map to judge, but then getNeededHashes() has
+            // asked for the header, so the non-empty branch is the right one.
+            // Read once, so the telemetry below and the branch it feeds cannot land on two
+            // different observations of a map another thread is invalidating right now.
+            bool const invalidMap = hasInvalidMap();
+            SOMETIMES(invalidMap, "xrpl::InboundLedger::trigger : map is invalid");
+            if (invalidMap)
+            {
+                JLOG(journal_.warn()) << "Acquire " << hash_ << " has an invalid map";
+                failed_ = true;
+            }
+            else if (!need.empty())
             {
                 protocol::TMGetObjectByHash tmBH;
                 bool typeSet = false;
@@ -662,22 +695,28 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             auto nodes = ledger_->stateMap().getMissingNodes(kMissingNodesFind, &filter);
             sl.lock();
 
+            // Asked ahead of the flags below and outside their guard, since the verdict is about
+            // the map rather than about this round: it holds even when another thread reported this
+            // ledger complete while the lock was released, and that guard would drop it in exactly
+            // that case, leaving a ledger reported complete whose map cannot be the one the header
+            // names. The claim is withdrawn alongside the failure for the same reason.
+            if (hasInvalidMap())
+            {
+                JLOG(journal_.warn()) << "Ledger " << hash_ << " has a map its walk abandoned";
+                failed_ = true;
+                complete_ = false;
+            }
             // Make sure nothing happened while we released the lock
-            if (!failed_ && !complete_ && !haveState_)
+            else if (!failed_ && !complete_ && !haveState_)
             {
                 if (nodes.empty())
                 {
-                    if (!ledger_->stateMap().isValid())
-                    {
-                        failed_ = true;
-                    }
-                    else
-                    {
-                        haveState_ = true;
+                    // Sound rather than merely finished: the walk above cannot have abandoned the
+                    // map without the test ahead of this one having caught it.
+                    haveState_ = true;
 
-                        if (haveTransactions_)
-                            complete_ = true;
-                    }
+                    if (haveTransactions_)
+                        complete_ = true;
                 }
                 else
                 {
