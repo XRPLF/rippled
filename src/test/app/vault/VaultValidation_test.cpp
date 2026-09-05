@@ -19,9 +19,13 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1070,6 +1074,86 @@ private:
         }
     }
 
+    // Covers the third obligation gate in VaultDelete::preclaim
+    // (sfAssetsReserved != 0). The first two guards (sfAssetsAvailable and
+    // sfAssetsTotal) short-circuit on any real-world path that inflates
+    // sfAssetsReserved — the only production writer is the two-step LoanSet
+    // pending-loan bookkeeping, which simultaneously moves the same amount
+    // out of sfAssetsAvailable, so the first check always fires first.
+    // Reproducing the (Available == 0, Total == 0, Reserved != 0)
+    // combination from real txs is not possible, so this test installs the
+    // residual directly on the vault SLE via OpenLedger::modify (the same
+    // lower-layer edit VaultShares_test uses to tamper with token fields)
+    // and confirms preclaim rejects the delete with tecHAS_OBLIGATIONS.
+    void
+    testVaultDeleteAssetsReservedBlocks()
+    {
+        testcase("VaultDelete rejected when only AssetsReserved is non-zero");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const owner{"owner"};
+        env.fund(XRP(1'000'000), owner);
+        env.close();
+
+        Vault const vault{env};
+        PrettyAsset const xrpAsset = xrpIssue();
+        auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+        env(tx, Ter(tesSUCCESS));
+        env.close();
+
+        // Baseline: a freshly-created empty vault has all three buckets at
+        // zero, so without the mutation below VaultDelete would succeed.
+        if (auto const v = env.le(keylet); BEAST_EXPECT(v))
+        {
+            BEAST_EXPECT(v->at(sfAssetsAvailable) == beast::kZero);
+            BEAST_EXPECT(v->at(sfAssetsTotal) == beast::kZero);
+            BEAST_EXPECT(v->at(sfAssetsReserved) == beast::kZero);
+        }
+
+        // Install a non-zero sfAssetsReserved directly on the vault SLE.
+        // ValidVault only inspects vault accounting when a tx mutates the
+        // vault; the raw edit happens outside the tx machinery so no
+        // invariant fires. VaultDelete below rejects at preclaim, so it
+        // never modifies the vault and invariants stay silent for the tx
+        // too.
+        Number const kReserved{1'000};
+        auto const mutated =
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                Sandbox sb(&view, TapNone);
+                auto v = sb.peek(keylet);
+                if (!v)
+                    return false;
+                v->at(sfAssetsReserved) = kReserved;
+                sb.update(v);
+                sb.apply(view);
+                return true;
+            });
+        if (!BEAST_EXPECT(mutated))
+            return;
+
+        // Sanity: the residual is visible and the two preceding guards
+        // (Available, Total) still resolve to zero, so preclaim's third
+        // check is the one that fires.
+        if (auto const v = env.le(keylet); BEAST_EXPECT(v))
+        {
+            BEAST_EXPECT(v->at(sfAssetsAvailable) == beast::kZero);
+            BEAST_EXPECT(v->at(sfAssetsTotal) == beast::kZero);
+            BEAST_EXPECT(v->at(sfAssetsReserved) == kReserved);
+        }
+
+        // Delete against the mutated open view. Not closing after: on
+        // close, OpenLedger::accept rebuilds the open view from the
+        // last-closed ledger and re-applies pending txs, discarding raw
+        // mutations, so the post-condition is read from the open view.
+        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tecHAS_OBLIGATIONS));
+
+        // Preclaim rejected the delete, so the fee was charged but the
+        // vault SLE is untouched.
+        BEAST_EXPECT(env.le(keylet) != nullptr);
+    }
+
     // A pseudo-account belongs to a ledger object, so it must never be the
     // destination of a withdrawal. The payout is refused either way, by the
     // deposit authorization every pseudo-account carries, so the only change
@@ -1186,6 +1270,7 @@ public:
         testCreateFailIOU();
         testCreateFailMPT();
         testVaultDeleteMemoData();
+        testVaultDeleteAssetsReservedBlocks();
         testVaultCreateLEVersion();
 
         testVaultWithdrawPseudoAccountDestination(all_ - fixCleanup3_4_0);

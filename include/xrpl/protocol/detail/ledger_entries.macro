@@ -511,6 +511,7 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfVaultKind,            SoeDefault},
     {sfSubscriptionDate,     SoeOptional},
     {sfRedemptionDate,       SoeOptional},
+    {sfAssetsReserved,       SoeDefault},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
@@ -548,7 +549,7 @@ LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
 LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
-    {sfOwnerNode,            SoeRequired},
+    {sfOwnerNode,            SoeOptional},
     {sfLoanBrokerNode,       SoeRequired},
     {sfLoanBrokerID,         SoeRequired},
     {sfLoanSequence,         SoeRequired},

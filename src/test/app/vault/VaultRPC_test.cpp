@@ -5,14 +5,19 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -21,6 +26,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
@@ -105,6 +111,7 @@ private:
             BEAST_EXPECT(kCheckString(vault, sfAssetsAvailable, "50"));
             BEAST_EXPECT(kCheckString(vault, sfAssetsMaximum, "1000"));
             BEAST_EXPECT(kCheckString(vault, sfAssetsTotal, "50"));
+            BEAST_EXPECT(!vault.isMember(sfAssetsReserved.getJsonName()));
             BEAST_EXPECT(!vault.isMember(sfLossUnrealized.getJsonName()));
 
             auto const strShareID = strHex(sle->at(sfShareMPTID));
@@ -519,6 +526,35 @@ private:
             testcase("RPC vault_info command line invalid ledger");
             json::Value jv = env.rpc("vault_info", strHex(keylet.key), "0");
             BEAST_EXPECT(jv[jss::result][jss::error].asString() == "lgrNotFound");
+        }
+
+        // vault_info reflects AssetsReserved when the vault holds reserved
+        // assets. The field is a SoeDefault Number that is elided from the JSON
+        // when zero (asserted in `check(...)` above); after mutating the SLE to
+        // a non-zero value the response must expose it as a string matching
+        // the ledger.
+        {
+            testcase("RPC vault_info reflects AssetsReserved when non-zero");
+            Number const reserved{25};
+
+            auto const changed =
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                    Sandbox sb(&view, TapNone);
+                    auto v = sb.peek(keylet);
+                    if (!v)
+                        return false;
+                    v->at(sfAssetsReserved) = reserved;
+                    sb.update(v);
+                    sb.apply(view);
+                    return true;
+                });
+            BEAST_EXPECT(changed);
+
+            json::Value jv = env.rpc("vault_info", strHex(keylet.key));
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            auto const& vaultJv = jv[jss::result][jss::vault];
+            BEAST_EXPECT(vaultJv.isMember(sfAssetsReserved.getJsonName()));
+            BEAST_EXPECT(vaultJv[sfAssetsReserved.getJsonName()].asString() == to_string(reserved));
         }
     }
 

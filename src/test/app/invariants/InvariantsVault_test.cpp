@@ -94,6 +94,7 @@ class InvariantsVault_test : public InvariantsBase
             std::optional<int> assetsAvailable = std::nullopt;
             std::optional<int> lossUnrealized = std::nullopt;
             std::optional<int> assetsMaximum = std::nullopt;
+            std::optional<int> assetsReserved = std::nullopt;
             std::optional<int> sharesTotal = std::nullopt;
             std::optional<int> vaultAssets = std::nullopt;
             std::optional<AccountAmount> accountAssets = std::nullopt;
@@ -126,6 +127,8 @@ class InvariantsVault_test : public InvariantsBase
                 (*sleVault)[sfLossUnrealized] = *args.lossUnrealized;
             if (args.assetsMaximum)
                 (*sleVault)[sfAssetsMaximum] = *args.assetsMaximum;
+            if (args.assetsReserved)
+                (*sleVault)[sfAssetsReserved] = *args.assetsReserved;
 
             // Remaining fields are adjusted in terms of difference
             if (args.assetsTotal)
@@ -907,6 +910,20 @@ class InvariantsVault_test : public InvariantsBase
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.assetsMaximum = -1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"assets reserved must be positive or zero"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.assetsReserved = -1;
                                }));
             },
             XRPAmount{},

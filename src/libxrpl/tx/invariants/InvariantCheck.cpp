@@ -1162,7 +1162,6 @@ NoModifiedUnmodifiableFields::finalize(
                 break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||
-                    kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
                     kFieldChanged(before, after, sfBorrower) ||
@@ -1196,6 +1195,7 @@ NoModifiedUnmodifiableFields::finalize(
                                         << tx.getTransactionID();
                     }
                     bad = bad || overpaymentChanged;
+
                     bool const defaultCleared =
                         (beforeFlags & lsfLoanDefault) != 0 && (afterFlags & lsfLoanDefault) == 0;
                     if (defaultCleared)
@@ -1205,6 +1205,32 @@ NoModifiedUnmodifiableFields::finalize(
                                         << tx.getTransactionID();
                     }
                     bad = bad || defaultCleared;
+
+                    // V1.1 introduces the two-step flow: a pending loan is created without
+                    // sfOwnerNode and LoanAccept adds it when the borrower accepts. Any other tx
+                    // modifying sfOwnerNode is a bug.
+                    if (tx.getTxnType() == ttLOAN_ACCEPT)
+                    {
+                        bool const ownerNodeCleared = before->isFieldPresent(sfOwnerNode) &&
+                            !after->isFieldPresent(sfOwnerNode);
+                        if (ownerNodeCleared)
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: sfOwnerNode cleared on immutable "
+                                               "ledger entry in "
+                                            << tx.getTransactionID();
+                        }
+                        bad = bad || ownerNodeCleared;
+                    }
+                    else
+                    {
+                        bad = bad || kFieldChanged(before, after, sfOwnerNode);
+                    }
+                }
+                // Pre-V1.1, sfOwnerNode is set at loan creation and immutable
+                // thereafter.
+                else
+                {
+                    bad = bad || kFieldChanged(before, after, sfOwnerNode);
                 }
                 break;
             case ltVAULT:

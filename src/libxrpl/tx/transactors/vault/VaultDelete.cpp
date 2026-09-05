@@ -65,6 +65,12 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
+    if (vault->at(sfAssetsReserved) != 0)
+    {
+        JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets reserved.";
+        return tecHAS_OBLIGATIONS;
+    }
+
     // Verify we can destroy MPTokenIssuance
     auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
