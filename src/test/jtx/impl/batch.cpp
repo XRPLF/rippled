@@ -5,7 +5,12 @@
 #include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/TxQ.h>
+
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
@@ -23,11 +28,14 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <ostream>
+#include <thread>
 #include <utility>
+#include <vector>
 
 namespace xrpl::test::jtx::batch {
 
@@ -60,6 +68,47 @@ outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint3
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
     return jv;
+}
+
+BatchResult
+closeEnv(jtx::Env& env, std::vector<uint256> const& txids, int maxRetries)
+{
+    using namespace std::chrono_literals;
+
+    auto const firstClosedSeq = env.closed()->header().seq + 1;
+
+    // Search every closed ledger from firstClosedSeq up to the last closed
+    // ledger for the given transaction hash.
+    auto txApplied = [&](uint256 const& txid) {
+        auto const lastClosedSeq = env.closed()->header().seq;
+        for (auto seq = firstClosedSeq; seq <= lastClosedSeq; ++seq)
+        {
+            auto const ledger = env.app().getLedgerMaster().getLedgerBySeq(seq);
+            if (ledger && ledger->txExists(txid))
+                return true;
+        }
+        return false;
+    };
+
+    BatchResult result;
+    for (; result.iterations < maxRetries; ++result.iterations)
+    {
+        env.close();
+        std::this_thread::sleep_for(50ms);
+
+        if (std::ranges::all_of(txids, txApplied))
+            break;
+    }
+
+    for (auto const& txid : txids)
+    {
+        if (!txApplied(txid))
+            result.notApplied.push_back(txid);
+    }
+
+    result.allApplied = result.notApplied.empty();
+    result.txCount = env.app().getTxQ().getMetrics(*env.current()).txCount;
+    return result;
 }
 
 void
