@@ -30,9 +30,9 @@
 namespace xrpl {
 
 // A ledger we are trying to acquire
-class InboundLedger final : public TimeoutCounter,
-                            public std::enable_shared_from_this<InboundLedger>,
-                            public CountedObject<InboundLedger>
+class InboundLedger : public TimeoutCounter,
+                      public std::enable_shared_from_this<InboundLedger>,
+                      public CountedObject<InboundLedger>
 {
 public:
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
@@ -44,13 +44,33 @@ public:
         CONSENSUS  // We believe the consensus round requires this ledger
     };
 
+    /**
+     * How long to wait between retries, and so how long each timeout counted
+     * against the acquisition takes. Long, since a ledger is worth chasing for
+     * far longer than a consensus round.
+     */
+    static constexpr std::chrono::milliseconds kRetryInterval{3000};
+
+    /**
+     * @param app The application to run in.
+     * @param hash The ledger to acquire.
+     * @param seq Its sequence, or zero if not known yet.
+     * @param reason Why it is being acquired.
+     * @param clock The clock touch() records against.
+     * @param peerSet Which peers to ask, and how to reach them.
+     * @param retryInterval How long to wait between retries. Defaulted in
+     *        production; InboundLedger_test passes a short one so a whole
+     *        timeout chain runs in a fraction of the time. TimeoutCounter
+     *        requires more than 10ms.
+     */
     InboundLedger(
         Application& app,
         uint256 const& hash,
         std::uint32_t seq,
         Reason reason,
-        clock_type&,
-        std::unique_ptr<PeerSet> peerSet);
+        clock_type& clock,
+        std::unique_ptr<PeerSet> peerSet,
+        std::chrono::milliseconds retryInterval = kRetryInterval);
 
     ~InboundLedger() override;
 
@@ -119,14 +139,34 @@ public:
         return lastAction_;
     }
 
-private:
+protected:
+    // Kept protected, with the two entry points naming it, so a test subclass (see
+    // InboundLedger_test) can drive an acquisition the way the timer chain does, without routing
+    // through the JobQueue. Production callers reach an acquisition through InboundLedgers.
+
+    // Why trigger() is being run, which decides how deep a request goes and whether the
+    // aggressive-retry branch is eligible.
     enum class TriggerReason { Added, Reply, Timeout };
 
+    /**
+     * Ask for more nodes, or judge what has been collected.
+     *
+     * @param peer The peer to ask, or nullptr to ask everyone being tracked.
+     * @param reason Why the acquisition is being triggered.
+     */
+    void
+    trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason);
+
+    /**
+     * Settle the acquisition and signal whatever is waiting on it. Runs at most
+     * once. Call under mtx_, which the flags written here require.
+     */
+    void
+    done();
+
+private:
     void
     filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
-
-    void
-    trigger(std::shared_ptr<Peer> const&, TriggerReason);
 
     std::vector<neededHash_t>
     getNeededHashes();
@@ -138,10 +178,7 @@ private:
     tryDB(node_store::Database& srcDB);
 
     void
-    done();
-
-    void
-    onTimer(bool progress, ScopedLockType& peerSetLock) override;
+    onTimer(bool progress, ScopedLockType& sl) override;
 
     std::size_t
     getPeerCount() const;
