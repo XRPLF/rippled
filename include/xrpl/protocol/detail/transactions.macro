@@ -179,7 +179,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
 #endif
 TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({.delegable = Delegation::Delegable}), ({
     {sfDestination, SoeRequired},
-    {sfAmount, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
     {sfSettleDelay, SoeRequired},
     {sfPublicKey, SoeRequired},
     {sfCancelAfter, SoeOptional},
@@ -192,7 +192,7 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({.delegable = Delegatio
 #endif
 TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, ({.delegable = Delegation::Delegable}), ({
     {sfChannel, SoeRequired},
-    {sfAmount, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
     {sfExpiration, SoeOptional},
 }))
 
@@ -202,8 +202,8 @@ TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, ({.delegable = Delegation::D
 #endif
 TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, ({.delegable = Delegation::Delegable}), ({
     {sfChannel, SoeRequired},
-    {sfAmount, SoeOptional},
-    {sfBalance, SoeOptional},
+    {sfAmount, SoeOptional, SoeMptSupported},
+    {sfBalance, SoeOptional, SoeMptSupported},
     {sfSignature, SoeOptional},
     {sfPublicKey, SoeOptional},
     {sfCredentialIDs, SoeOptional},

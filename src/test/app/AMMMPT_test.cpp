@@ -12,6 +12,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
@@ -4307,7 +4308,7 @@ private:
                         settleDelay,
                         pk,
                         cancelAfter),
-                    Ter(telENV_RPC_FAILED));
+                    Ter(tecNO_PERMISSION));
 
                 env(create(carol_, ammAlice.ammAccount(), XRP(1'000), settleDelay, pk, cancelAfter),
                     Ter(tecNO_PERMISSION));
