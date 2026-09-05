@@ -593,6 +593,10 @@ private:
     SHAMapLeafNode*
     belowHelper(NodePathStack& stack, BelowDirection direction) const;
 
+    // helper function for upperBound and lowerBound
+    ConstIterator
+    boundHelper(uint256 const& id, BelowDirection direction) const;
+
     // Simple descent
     // Get a child of the specified node
     SHAMapTreeNode*
