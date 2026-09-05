@@ -101,4 +101,11 @@ function(add_xrpl_crate name)
     add_dependencies(xrpl_crates ${name}_cxxbridge)
 endfunction()
 
-add_xrpl_crate(rs_hello_world CRATE rs_hello_world FILES lib.rs)
+add_xrpl_crate(xrpl_wasm_vm_ffi CRATE xrpl_wasm_vm_ffi FILES lib.rs)
+
+add_xrpl_crate(xrpl_wasm_testkit CRATE xrpl_wasm_testkit FILES lib.rs)
+
+target_include_directories(
+    xrpl_wasm_vm_ffi_cxxbridge
+    PRIVATE ${CMAKE_SOURCE_DIR}/include
+)
