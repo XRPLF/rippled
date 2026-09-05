@@ -11,6 +11,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl.pb.h>
 
@@ -394,6 +395,81 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     }
 
     /**
+     * A batch that ends on a bad node still counts the good nodes ahead of it,
+     * and a batch that achieved nothing records no progress.
+     *
+     * The recorded progress is what the verdict is for: it stops the
+     * next timer tick from counting a timeout, so reporting only the
+     * node the batch stopped on would push an acquisition that is
+     * genuinely advancing toward kMaxTimeouts, while recording progress
+     * for a batch we already had would hold a stalled one open. The flag
+     * is read rather than the returned tally, which only stands in for
+     * it, and cleared between batches so each reading is about the batch
+     * just fed.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testPartialBatchIsCounted(jtx::Env& env)
+    {
+        testcase("A batch ending on a bad node still counts the good nodes");
+
+        DeepChain const chain{nextSeed()};
+
+        auto const acquire = std::make_shared<TestableTransactionAcquire>(
+            env.app(), chain.rootHash.asUInt256(), std::make_unique<RequestCountingPeerSet>());
+        auto const peer = std::make_shared<ChargeRecordingPeer>();
+
+        // The root is useful, so it records progress.
+        acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer);
+        BEAST_EXPECT(acquire->madeProgress());
+        acquire->clearProgress();
+
+        // Good nodes at depths 1 and 2, then a further chain node mislabeled at a position it
+        // cannot occupy. The map stays sound, so only the last node is bad.
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> batch;
+        batch.emplace_back(SHAMapNodeID{1, uint256{}}, chain.nodeAt(1));
+        batch.emplace_back(SHAMapNodeID{2, uint256{}}, chain.nodeAt(2));
+        batch.emplace_back(SHAMapNodeID{9, uint256{}}, chain.nodeAt(3));
+
+        auto const san = acquire->takeNodes(batch, peer);
+
+        // The verdict names both halves rather than just the failure, and the two good nodes are
+        // what the next timer tick must not count as a timeout. The batch stops on the bad node,
+        // so exactly one is counted however many were left unexamined behind it.
+        BEAST_EXPECTS(tallyIs(san, 2, 1, 0), san.get());
+        BEAST_EXPECT(san.isUseful());
+        BEAST_EXPECT(acquire->madeProgress());
+        BEAST_EXPECT(acquire->isMapValid());
+
+        // A batch of nothing but the root we already have: counted as a duplicate rather than
+        // reaching the clean exit with nothing counted, so it is neither reported as useful nor
+        // allowed to postpone the timeout.
+        acquire->clearProgress();
+        auto const repeatedRoot = acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, peer);
+
+        BEAST_EXPECTS(tallyIs(repeatedRoot, 0, 0, 1), repeatedRoot.get());
+        BEAST_EXPECT(repeatedRoot.isGood());
+        BEAST_EXPECT(!repeatedRoot.isUseful());
+        BEAST_EXPECT(!acquire->madeProgress());
+
+        // The same root alongside a node we do need: the duplicate is reported as one, and the
+        // node that did hook in is what records the progress.
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> mixed;
+        mixed.emplace_back(SHAMapNodeID{}, chain.nodeAt(0));
+        mixed.emplace_back(SHAMapNodeID{3, uint256{}}, chain.nodeAt(3));
+
+        auto const withDuplicateRoot = acquire->takeNodes(mixed, peer);
+
+        BEAST_EXPECTS(tallyIs(withDuplicateRoot, 1, 0, 1), withDuplicateRoot.get());
+        BEAST_EXPECT(withDuplicateRoot.isUseful());
+        BEAST_EXPECT(acquire->madeProgress());
+
+        // takeNodes() charges nobody: InboundTransactions::gotData() reads the verdict and decides.
+        BEAST_EXPECT(peer->charges().empty());
+    }
+
+    /**
      * init() asks only the peers that claim to have the set.
      *
      * addPeers() passes hasTxSet(hash_) as its filter and trigger() as its
@@ -613,6 +689,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         testDuplicateRootReplyIsFree(env);
         testDuplicateNonRootReplyIsFree(env);
         testUndeserializableNodeIsCharged(env);
+        testPartialBatchIsCounted(env);
         testInitAsksOnlyPeersWithTheSet(env);
         testStillNeedLeavesARunningAcquireAlone(env);
 
