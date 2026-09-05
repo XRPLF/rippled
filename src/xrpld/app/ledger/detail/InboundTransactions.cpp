@@ -143,6 +143,11 @@ public:
             return;
         }
 
+        // Asked before the loop below, which costs a hash per node, since a settled acquisition
+        // discards the result. Charges the peer itself when the reply is outside its allowance.
+        if (!ta->wantsReplyFrom(peer))
+            return;
+
         std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data;
         data.reserve(packet.nodes().size());
 
