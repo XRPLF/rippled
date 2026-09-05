@@ -243,4 +243,65 @@ TEST(TaggedCacheTest, tagged_cache)
     }
 }
 
+TEST(TaggedCacheTest, fetch_and_modify)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    struct MutableValue
+    {
+        int counter = 0;
+        std::string name;
+    };
+
+    using Key = LedgerIndex;
+    using MutCache = TaggedCache<Key, MutableValue>;
+
+    MutCache mc("mutable_test", 2, 2s, clock, journal);
+
+    // A. Insert on miss: fetchAndModify creates entry and mutates it.
+    mc.fetchAndModify(5, [](MutableValue& v) {
+        v.counter = 42;
+        v.name = "initial";
+    });
+
+    EXPECT_EQ(mc.getCacheSize(), 1);
+    EXPECT_EQ(mc.getTrackSize(), 1);
+
+    // Verify the mutation persisted.
+    auto p1 = mc.fetch(5);
+    ASSERT_NE(p1, nullptr);
+    EXPECT_EQ(p1->counter, 42);
+    EXPECT_EQ(p1->name, "initial");
+
+    // Keep a second strong pointer to verify in-place modification.
+    auto p2 = mc.fetch(5);
+    ASSERT_NE(p2, nullptr);
+    EXPECT_EQ(p1.get(), p2.get());  // Same object
+
+    // B. Modify existing object on hit.
+    mc.fetchAndModify(5, [](MutableValue& v) {
+        v.counter += 10;
+        v.name = "modified";
+    });
+
+    // No new entry was created.
+    EXPECT_EQ(mc.getCacheSize(), 1);
+    EXPECT_EQ(mc.getTrackSize(), 1);
+
+    // The same object was mutated (both strong pointers see the change).
+    EXPECT_EQ(p1->counter, 52);
+    EXPECT_EQ(p1->name, "modified");
+    EXPECT_EQ(p2->counter, 52);
+
+    // Fresh fetch returns the same object identity.
+    auto p3 = mc.fetch(5);
+    ASSERT_NE(p3, nullptr);
+    EXPECT_EQ(p3.get(), p1.get());
+    EXPECT_EQ(p3->counter, 52);
+}
+
 }  // namespace xrpl
