@@ -349,6 +349,7 @@ ValidAMM::finalize(
 
     bool const enforce = view.rules().enabled(fixAMMv1_3);
     bool const enforceAMMDelete = view.rules().enabled(fixCleanup3_3_0);
+    bool const enforceUnexpectedAMMChange = view.rules().enabled(fixCleanup3_4_0);
 
     // AMM can only be deleted by AMMWithdraw, AMMClawback, and AMMDelete
     if (enforceAMMDelete && ammDeleted_)
@@ -388,6 +389,13 @@ ValidAMM::finalize(
         case ttPAYMENT:
             return finalizeDEX(enforce, j);
         default:
+            if (ammAccount_ || ammPoolChanged_)
+            {
+                JLOG(j.error()) << "Invariant failed: AMM failed, unexpected AMM state change by "
+                                << tx.getTxnType();
+                if (enforceUnexpectedAMMChange)
+                    return false;
+            }
             break;
     }
 
