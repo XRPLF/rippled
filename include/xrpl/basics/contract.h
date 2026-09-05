@@ -1,10 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/sanitizers.h>
-#include <xrpl/beast/type_name.h>
+
+#include <boost/core/demangle.hpp>
 
 #include <exception>
 #include <string>
+#include <typeinfo>
 #include <utility>
 
 namespace xrpl {
@@ -55,7 +57,8 @@ Throw(Args&&... args)
         std::is_convertible_v<E*, std::exception*>, "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
-    logThrow(std::string("Throwing exception of type " + beast::typeName<E>() + ": ") + e.what());
+    logThrow(
+        "Throwing exception of type " + boost::core::demangle(typeid(E).name()) + ": " + e.what());
     throw std::move(e);
 }
 
