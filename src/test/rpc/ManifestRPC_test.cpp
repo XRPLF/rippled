@@ -18,6 +18,38 @@ class ManifestRPC_test : public beast::unit_test::Suite
 {
 public:
     void
+    testBadInput()
+    {
+        testcase("Invalid request params");
+        using namespace test::jtx;
+        Env env(*this);
+
+        {
+            // no params
+            auto const result = env.client().invoke("manifest", {})[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::status] == "error");
+        }
+
+        {
+            Json::Value params{Json::objectValue};
+            params[jss::public_key] = 12345;
+            auto const result = env.client().invoke("manifest", params)[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'public_key', not string.");
+            BEAST_EXPECT(result[jss::status] == "error");
+        }
+
+        {
+            Json::Value params{Json::objectValue};
+            params[jss::public_key] = ";-;";
+            auto const result = env.client().invoke("manifest", params)[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::status] == "error");
+        }
+    }
+
+    void
     testErrors()
     {
         testcase("Errors");
@@ -66,6 +98,7 @@ public:
     void
     run() override
     {
+        testBadInput();
         testErrors();
         testLookup();
     }
