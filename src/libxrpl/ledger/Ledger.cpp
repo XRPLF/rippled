@@ -297,8 +297,12 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     }
 }
 
+// The maps start out Synching and are filled in afterwards, by an acquisition syncing against the
+// hashes the header carries or by a replay that only reads the header. So those hashes are input
+// rather than derived, and immutable_ stays false until setImmutable() finds both maps sound.
 Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
-    : immutable_(true)
+    : immutable_(false)
+    , mapHashesFromHeader_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_(std::move(rules))
@@ -339,8 +343,9 @@ Ledger::setImmutable(bool rehash)
     // Read here but written to the header below, once the maps are settled: getHash() can unshare a
     // dirty tree, so it has to run while the map is still mutable, while a write to the header must
     // wait until both maps have made it. Skipped once the ledger is immutable, since its maps can
-    // no longer change.
-    bool const deriveMapHashes = !immutable_ && rehash;
+    // no longer change, and skipped when the header supplied these hashes: deriving them from a map
+    // that fell short of its target would relabel the ledger instead of failing.
+    bool const deriveMapHashes = !immutable_ && !mapHashesFromHeader_ && rehash;
     uint256 const txHash = deriveMapHashes ? txMap_.getHash().asUInt256() : uint256{};
     uint256 const accountHash = deriveMapHashes ? stateMap_.getHash().asUInt256() : uint256{};
 
