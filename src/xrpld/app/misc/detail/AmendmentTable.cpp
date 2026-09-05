@@ -202,11 +202,11 @@ public:
                                            iter->second.upVotes |
                                                boost::adaptors::transformed(to_string<256, void>),
                                            ", ");
-                    // TODO: Maybe transform using to_short_string once #5126 is
+                    // TODO: Maybe transform using toShortString once #5126 is
                     // merged
                     //
                     // iter->second.upVotes |
-                    // boost::adaptors::transformed(to_short_string<256, void>)
+                    // boost::adaptors::transformed(toShortString<256, void>)
                 }
                 else
                 {
