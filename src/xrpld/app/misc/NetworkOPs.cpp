@@ -3420,11 +3420,23 @@ NetworkOPsImp::reportFeeChange()
         registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current()),
         registry_.get().getFeeTrack()};
 
-    // only schedule the job if something has changed
-    if (f != lastFeeSummary_)
+    // Guard lastFeeSummary_ under streamLock_ to prevent concurrent
+    // threads from simultaneously passing the check and queuing
+    // duplicate JtClientFeeChange jobs (data race fix).
+    // Also fixes the no-subscriber case where lastFeeSummary_ was
+    // never updated by pubServer(), causing endless job queuing.
+    // Lock is released before addJob to avoid holding streamLock_
+    // across the job queue mutex.
+    if (std::scoped_lock const sl(streamLock_); f != lastFeeSummary_)
     {
-        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
+        lastFeeSummary_ = f;
     }
+    else
+    {
+        return;
+    }
+
+    jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
 }
 
 void

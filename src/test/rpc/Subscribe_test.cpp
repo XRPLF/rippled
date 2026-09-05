@@ -44,6 +44,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -52,6 +53,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -1965,6 +1967,95 @@ public:
     }
 
     void
+    testReportFeeChangeRace()
+    {
+        // Prove that reportFeeChange() has a data race on lastFeeSummary_.
+        // Multiple threads can simultaneously pass the f != lastFeeSummary_
+        // guard and queue redundant PubFee jobs even when the fee has not
+        // changed. If the guard were thread-safe, exactly one serverStatus
+        // message would arrive. More than one proves the race.
+        testcase("reportFeeChange race condition on lastFeeSummary_");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+        auto wsc = makeWSClient(env.app().config());
+
+        // Subscribe to server stream
+        {
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("server");
+            auto jv = wsc->invoke("subscribe", stream);
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
+
+        // Stop LoadManager to prevent it interfering with fee state
+        env.app().getLoadManager().stop();
+
+        // Raise fee once so lastFeeSummary_ is initialised with a known state
+        {
+            auto& feeTrack = env.app().getFeeTrack();
+            feeTrack.raiseLocalFee();
+            env.app().getOPs().reportFeeChange();
+            // Drain the one legitimate message
+            BEAST_EXPECT(
+                wsc->findMsg(5s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }));
+        }
+
+        // Raise the fee once more before spawning threads so the fee
+        // summary IS genuinely different from lastFeeSummary_. Threads
+        // only call reportFeeChange() — no raiseLocalFee() per-thread,
+        // which would create genuine (non-racy) fee summary changes and
+        // make count==1 unreliable as a race detector.
+        {
+            auto& feeTrack2 = env.app().getFeeTrack();
+            feeTrack2.raiseLocalFee();
+        }
+        // Now call reportFeeChange() from many threads simultaneously.
+        // A thread-safe guard would produce exactly 1 message (first
+        // thread wins, rest see updated lastFeeSummary_ and bail).
+        // The race produces > 1 message because multiple threads read
+        // the old lastFeeSummary_ before any job executes to update it.
+        constexpr int kThreads = 16;
+        std::vector<std::thread> threads;
+        threads.reserve(kThreads);
+        std::atomic<int> ready{0};
+        for (int i = 0; i < kThreads; ++i)
+        {
+            threads.emplace_back([&]() {
+                ready.fetch_add(1, std::memory_order_relaxed);
+                while (ready.load(std::memory_order_relaxed) < kThreads)
+                    ;
+                env.app().getOPs().reportFeeChange();
+            });
+        }
+        for (auto& t : threads)
+            t.join();
+        // Wait for the first serverStatus message, then drain any remaining.
+        int count = 0;
+        if (wsc->findMsg(5s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }))
+            ++count;
+        while (auto jvo = wsc->getMsg(50ms))
+        {
+            if ((*jvo)[jss::type] == "serverStatus")
+                ++count;
+        }
+        // If thread-safe: exactly 1 message (one fee change).
+        // If race condition present: > 1 message (multiple threads
+        // queued PubFee jobs before lastFeeSummary_ was updated).
+        // This test FAILS on unfixed code, proving the race.
+        BEAST_EXPECT(count == 1);
+
+        // Unsubscribe
+        {
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("server");
+            wsc->invoke("unsubscribe", stream);
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1972,6 +2063,7 @@ public:
         FeatureBitset const xrpFees{featureXRPFees};
 
         testServer();
+        testReportFeeChangeRace();
         testLedger();
         testTransactionsAPIv1();
         testTransactionsAPIv2();
