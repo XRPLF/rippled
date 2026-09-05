@@ -22,6 +22,7 @@ Unit tests are a custom framework built into the `xrpld` binary itself (not Boos
 - `--unittest-arg` does nothing — don't use it.
 - Tests that run offline in under a minute should be automatic `--unittest` suites; anything else is a manual/integration test.
 - New tests should be written using `gtest` under `src/tests/` unless that isn't possible, in which case fall back to the legacy Beast framework under `src/test/`. `tests/` (top-level) holds integration tests exercised against `libxrpl`/`xrpld`.
+- Shared test setup/helper code used by more than one test file belongs in `jtx/` (`src/test/jtx/`), not copy-pasted across test files.
 
 ## Lint/Format
 
@@ -29,7 +30,11 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup
 
 ## Code Style
 
-New file placement and header levelization: see [CONTRIBUTING.md](./CONTRIBUTING.md#before-making-a-pull-request). Braces, whitespace, member order, and other conventions: see [docs/CodingStyle.md](./docs/CodingStyle.md). `XRPL_ASSERT`/`UNREACHABLE` contracts: see [CONTRIBUTING.md](./CONTRIBUTING.md#contracts-and-instrumentation). Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages).
+New file placement and header levelization: see [CONTRIBUTING.md](./CONTRIBUTING.md#before-making-a-pull-request). Braces, whitespace, member order, and other conventions: see [docs/CodingStyle.md](./docs/CodingStyle.md). `XRPL_ASSERT`/`UNREACHABLE` contracts: see [CONTRIBUTING.md](./CONTRIBUTING.md#contracts-and-instrumentation). Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages). New public functions/methods need a Doxygen-style comment.
+
+## API Changelog
+
+Any change to publicly-visible API behavior — RPC/WebSocket fields, parameters, or error conditions, or transaction/signing behavior surfaced through the API — needs an entry in [API-CHANGELOG.md](./API-CHANGELOG.md) under `## Unreleased`, regardless of which directory the change lives in.
 
 ## Architecture
 
