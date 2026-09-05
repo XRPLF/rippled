@@ -393,6 +393,11 @@ public:
      * @param filter Optional sync filter to track received nodes.
      * @return Status indicating whether the node was useful, duplicate, or invalid.
      *
+     * A node no valid tree could hold makes the map Invalid, which is
+     * terminal: the root hash committed to an impossible shape, so no peer
+     * can satisfy it. An acquisition reaching this verdict must give up
+     * rather than retry; nothing may promote the map back to a valid state.
+     *
      * @note This function expects the treeNode to be a valid, deserialized SHAMapTreeNode. The
      *       caller is responsible for deserialization and basic validation before calling this
      *       function. This also means that the nodeID must be consistent with the node's content.

@@ -31,6 +31,26 @@
 
 namespace xrpl {
 
+namespace {
+
+/**
+ * Whether a depth is one only a leaf may occupy.
+ *
+ * Nibbles run out at SHAMap::kLeafDepth, so an inner node there would need two
+ * keys agreeing in all 64 nibbles. Spelled once, since the sync path tests it
+ * for a node, for a node's child, and for a position a descent reached.
+ *
+ * @param depth The depth to judge.
+ * @return Whether an inner node at that depth would make the map impossible.
+ */
+[[nodiscard]] bool
+isLeafDepth(unsigned int depth)
+{
+    return depth >= SHAMap::kLeafDepth;
+}
+
+}  // namespace
+
 void
 SHAMap::visitLeaves(
     std::function<void(boost::intrusive_ptr<SHAMapItem const> const& item)> const& leafFunction)
@@ -598,7 +618,15 @@ SHAMap::addKnownNode(
         }
 
         auto childHash = inner->getChildHash(branch);
-        if (f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
+
+        // The depth test precedes the cache lookup deliberately: the cache is keyed by node hash
+        // and shared across every map of this family, and a hash covers a node's children but not
+        // its depth, so the same subtree hash can be cached as complete at one depth and reached at
+        // another. Taking the shortcut first would make the verdict below depend on what an
+        // unrelated map cached, and the acquisition paths rely on it being deterministic. Skipping
+        // the shortcut only forgoes an optimization.
+        if (!isLeafDepth(currNodeID.getDepth() + 1) &&
+            f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             return SHAMapAddNode::duplicate();
         }
@@ -616,25 +644,37 @@ SHAMap::addKnownNode(
             return SHAMapAddNode::invalid();
         }
 
-        // Inner nodes must be at a level strictly less than 64
-        // but leaf nodes (while notionally at level 64) can be
-        // at any depth up to and including 64:
-        if ((currNodeID.getDepth() > kLeafDepth) ||
-            (treeNode->isInner() && currNodeID.getDepth() == kLeafDepth))
+        // Only leaves may sit at kLeafDepth (see isLeafDepth), so an inner node there makes the map
+        // impossible. Nothing is hooked in, so this is bad data rather than progress.
+        //
+        // Every node from the root down hash-verified to get here, so it is the requested root hash
+        // itself that commits to a shape no valid tree can have. The verdict therefore belongs to
+        // that hash rather than to our copy of the tree: no peer can satisfy it, retrying is
+        // futile, and it cannot arise by accident. The acquisition paths rely on all three.
+        //
+        // A charge is a deterrent rather than a control: the same node can reach a map through a
+        // fetch pack or an unsolicited object reply, neither of which comes through here, so
+        // nothing may assume the sender of such a node was made to pay for it.
+        bool const badDepth = treeNode->isInner() && isLeafDepth(currNodeID.getDepth());
+        SOMETIMES(badDepth, "xrpl::SHAMap::addKnownNode : map is invalid");
+        if (badDepth)
         {
-            // Map is provably invalid
+            JLOG(journal_.warn()) << "Node " << nodeID << " makes the map invalid at "
+                                  << currNodeID;
             setInvalid();
-            return SHAMapAddNode::useful();
+            return SHAMapAddNode::invalid();
         }
 
-        if (currNodeID != nodeID)
+        // The data hashes to the child we need at currNodeID but is labeled as belonging at nodeID,
+        // so it cannot be hooked anywhere. Only the label is wrong, so the map stays sound and the
+        // node is still obtainable from another sender.
+        bool const badPosition = (currNodeID != nodeID);
+        SOMETIMES(badPosition, "xrpl::SHAMap::addKnownNode : node ID does not match its position");
+        if (badPosition)
         {
-            // Either this node is broken or we didn't request it (yet)
-            JLOG(journal_.warn()) << "unable to hook node " << nodeID;
-            JLOG(journal_.info()) << " stuck at " << currNodeID;
-            JLOG(journal_.info()) << "got depth=" << nodeID.getDepth()
-                                  << ", walked to= " << currNodeID.getDepth();
-            return SHAMapAddNode::useful();
+            JLOG(journal_.warn()) << "Unable to hook node " << nodeID << ", stuck at "
+                                  << currNodeID;
+            return SHAMapAddNode::invalid();
         }
 
         if (backed_)
@@ -766,7 +806,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
         // Same kLeafDepth hazard as in visitDifferences above. That guard bounds the caller's own
         // traversal, not the map queried here, and the loop below descends from this map's root
         // independently, so this check is what keeps a malformed map from reaching getChildNodeID.
-        if (nodeID.getDepth() >= kLeafDepth)
+        if (isLeafDepth(nodeID.getDepth()))
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::SHAMap::hasLeafNode : inner node at leaf depth");
