@@ -34,7 +34,14 @@ doCanDelete(rpc::JsonContext& context)
         {
             canDeleteSeq = canDelete.asUInt();
         }
-        else
+        else if (canDelete.isInt())
+        {
+            auto const seq = canDelete.asInt();
+            if (seq < 0)
+                return RPC::make_error(rpcINVALID_PARAMS);
+            canDeleteSeq = static_cast<std::uint32_t>(seq);
+        }
+        else if (canDelete.isString())
         {
             std::string canDeleteStr = canDelete.asString();
             canDeleteStr = toLower(canDeleteStr);
@@ -70,6 +77,10 @@ doCanDelete(rpc::JsonContext& context)
             {
                 return rpc::makeError(RpcInvalidParams);
             }
+        }
+        else
+        {
+            return RPC::make_error(rpcINVALID_PARAMS);
         }
 
         ret[jss::can_delete] = context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
