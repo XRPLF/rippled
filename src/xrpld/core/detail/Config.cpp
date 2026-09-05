@@ -847,6 +847,8 @@ Config::loadFromString(std::string const& fileContents)
          * //////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
          */
 
+        vpReduceRelayEnhancedSquelchEnable = sec.valueOr(Keys::kVpEnhancedSquelchEnable, false);
+
         txReduceRelayEnable = sec.valueOr(Keys::kTxEnable, false);
         txReduceRelayMetrics = sec.valueOr(Keys::kTxMetrics, false);
         txReduceRelayMinPeers = sec.valueOr(Keys::kTxMinPeers, 20);

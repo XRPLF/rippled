@@ -6,15 +6,15 @@
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
-#include <xrpld/overlay/Squelch.h>
+#include <xrpld/overlay/SquelchStore.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
@@ -131,7 +131,7 @@ private:
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
 
-    reduce_relay::Squelch<UptimeClock> squelch_;
+    reduce_relay::SquelchStore squelchStore_;
 
     // Notes on thread locking:
     //
@@ -489,6 +489,14 @@ public:
         return txReduceRelayEnabled_;
     }
 
+    /**
+     * Check if a given validator is squelched.
+     * @param validator Validator's public key
+     * @return true if squelch exists and it is not expired. False otherwise.
+     */
+    bool
+    isSquelched(PublicKey const& validator) const;
+
 private:
     void
     close();
@@ -803,7 +811,7 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
-    , squelch_(app_.getJournal("Squelch"))
+    , squelchStore_(app_.getJournal("SquelchStore"), stopwatch())
     , usage_(usage)
     , fee_{.fee = resource::kFeeTrivialPeer}
     , slot_(std::move(slot))

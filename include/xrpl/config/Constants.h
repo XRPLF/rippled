@@ -179,6 +179,7 @@ struct Keys
     static constexpr auto kVpBaseSquelchEnable = "vp_base_squelch_enable";
     static constexpr auto kVpBaseSquelchMaxSelectedPeers = "vp_base_squelch_max_selected_peers";
     static constexpr auto kVpEnable = "vp_enable";
+    static constexpr auto kVpEnhancedSquelchEnable = "vp_enhanced_squelch_enable";
 };
 
 }  // namespace xrpl

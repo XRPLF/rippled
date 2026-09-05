@@ -14,7 +14,6 @@
 
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Gauge.h>
@@ -130,7 +129,7 @@ private:
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
 
-    reduce_relay::Slots<UptimeClock> slots_;
+    reduce_relay::Slots slots_;
 
     // Transaction reduce-relay metrics
     metrics::TxMetrics txMetrics_;
@@ -395,37 +394,86 @@ public:
     }
 
     /**
-     * Updates message count for validator/peer. Sends TMSquelch if the number
-     * of messages for N peers reaches threshold T. A message is counted
-     * if a peer receives the message for the first time and if
-     * the message has been  relayed.
-     * @param key Unique message's key
-     * @param validator Validator's public key
-     * @param peers Peers' id to update the slots for
-     * @param type Received protocol message type
+     * @brief Processes a message from a validator received via multiple peers.
+     *
+     * @details This function serves as a thread-safe entry point to the
+     * squelching system.
+     *
+     * @param key The unique hash of the message.
+     * @param validator The public key of the validator.
+     * @param peers A set of peer IDs that relayed this message.
+     * @param isTrusted `true` if the message is from a trusted validator.
      */
     void
     updateSlotAndSquelch(
         uint256 const& key,
         PublicKey const& validator,
         std::set<Peer::id_t>&& peers,
-        protocol::MessageType type);
+        bool isTrusted);
 
     /**
-     * Overload to reduce allocation in case of single peer
+     * @brief Processes a message from a validator received via a single peer.
+     *
+     * @details This function is a thread-safe entry point for handling a
+     * message from a single peer. It ensures the squelching feature is ready
+     * and serializes the call onto the `strand_`. It then invokes the
+     * underlying `Slots::updateSlotAndSquelch` method to process the message.
+     *
+     * @param key The unique hash of the message.
+     * @param validator The public key of the validator.
+     * @param peer The ID of the peer that relayed this message.
+     * @param isTrusted `true` if the message is from a trusted validator.
      */
     void
     updateSlotAndSquelch(
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t peer,
-        protocol::MessageType type);
+        bool isTrusted);
 
     /**
-     * Called when the peer is deleted. If the peer was selected to be the
-     * source of messages from the validator then squelched peers have to be
-     * unsquelched.
-     * @param id Peer's id
+     * @brief Processes a message specifically for the untrusted validator slot
+     * logic.
+     *
+     * @details This function is the thread-safe entry point for the enhanced
+     * squelching feature, which manages a limited number of slots for
+     * untrusted validators. It ensures the feature is ready, posts the work to
+     * the `strand_`, and then calls the underlying
+     * `Slots::updateUntrustedValidatorSlot` to handle the slot admission and
+     * evaluation logic.
+     *
+     * @param key The unique hash of the message.
+     * @param validator The public key of the untrusted validator.
+     * @param peer The ID of the peer that relayed this message.
+     */
+    void
+    updateUntrustedValidatorSlot(uint256 const& key, PublicKey const& validator, Peer::id_t peer);
+
+    /**
+     * @brief Handles a squelch message for an untrusted validator.
+     *
+     * @details This function is called when this node receives a message
+     * indicating that a peer is squelching an untrusted validator. It
+     * tallies how many of its own connected peers have also squelched the
+     * validator. If a majority of peers agree, this node takes definitive local
+     * action by calling `Slots::squelchUntrustedValidator`, effectively joining
+     * the consensus to silence the validator.
+     *
+     * @param validator The public key of the untrusted validator being
+     * squelched.
+     */
+    void
+    handleUntrustedSquelch(PublicKey const& validator);
+
+    /**
+     * @brief Handles the deletion of a peer from the overlay network.
+     *
+     * @details This function provides a thread-safe entry point for removing a
+     * peer. It ensures the operation is executed on the correct strand and
+     * then delegates the logic to `Slots::deletePeer`, which notifies all
+     * active slots about the peer's removal.
+     *
+     * @param id The ID of the peer to be deleted.
      */
     void
     deletePeer(Peer::id_t id);
@@ -453,6 +501,12 @@ private:
     void
     squelch(PublicKey const& validator, Peer::id_t const id, std::uint32_t squelchDuration)
         const override;
+
+    void
+    squelchAll(
+        PublicKey const& validator,
+        std::uint32_t squelchDuration,
+        std::function<void(Peer::id_t)>) override;
 
     void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override;
