@@ -100,7 +100,7 @@ class RCLValidations_test : public beast::unit_test::Suite
             BEAST_EXPECT(next->read(keylet::feeSettings()));
             if (forceHash)
             {
-                next->setImmutable();
+                BEAST_EXPECT(next->setImmutable());
                 forceHash = false;
             }
 

@@ -115,8 +115,15 @@ loadLedgerHelper(
     return ledger;
 }
 
+/**
+ * Settle a ledger just loaded from local storage, or discard it.
+ *
+ * @param ledger The ledger to settle; cleared on failure so the caller
+ *        cannot hand out one that is still mutable.
+ * @param j Where to log a refusal.
+ */
 static void
-finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
+finishLoadByIndexOrHash(std::shared_ptr<Ledger>& ledger, beast::Journal j)
 {
     if (!ledger)
         return;
@@ -124,7 +131,19 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
     XRPL_ASSERT(
         ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
-    ledger->setImmutable();
+    // Loaded locally; see Ledger::setImmutable().
+    if (!ledger->setImmutable())
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invalid map for ledger " << ledger->header().seq
+                        << "; not marking it as loaded";
+        UNREACHABLE("xrpl::finishLoadByIndexOrHash : map is invalid");
+        // Discarded rather than left un-full: nothing gates usability on the full flag, and a
+        // caller that took this ledger would abort in LedgerHistory::insert() instead.
+        ledger.reset();
+        return;
+        // LCOV_EXCL_STOP
+    }
 
     JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->header().hash);
 

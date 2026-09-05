@@ -1700,7 +1700,14 @@ ApplicationImp::startGenesisLedger()
     XRPL_ASSERT(
         next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::feeSettings()),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
-    next->setImmutable();
+    // Built locally; see Ledger::setImmutable(). Failed here rather than at storeLedger() below,
+    // which would name the wrong site.
+    if (!next->setImmutable())
+    {
+        // LCOV_EXCL_START
+        logicError("startGenesisLedger: genesis ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
     ledgerMaster_->storeLedger(next);
     ledgerMaster_->switchLCL(next);
@@ -1722,7 +1729,16 @@ ApplicationImp::getLastFullLedger()
         XRPL_ASSERT(
             ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
-        ledger->setImmutable();
+        // Loaded locally; see Ledger::setImmutable().
+        if (!ledger->setImmutable())
+        {
+            // LCOV_EXCL_START
+            JLOG(j.error()) << "Last full ledger " << seq << " has an invalid map; ignoring it";
+            UNREACHABLE("xrpl::ApplicationImp::getLastFullLedger : map is invalid");
+            // Must not fall through: that would mark a damaged ledger validated.
+            return {};
+            // LCOV_EXCL_STOP
+        }
 
         if (getLedgerMaster().haveLedger(seq))
             ledger->setValidated();
@@ -1874,7 +1890,16 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             loadLedger->header().seq < kXrpLedgerEarliestFees ||
                 loadLedger->read(keylet::feeSettings()),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
-        loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated);
+        // Built locally; see Ledger::setImmutable(). Unlike the genesis sites the caller handles a
+        // failure return, so bail out rather than abort.
+        if (!loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated))
+        {
+            // LCOV_EXCL_START
+            JLOG(journal_.fatal()) << "Ledger from file has an invalid map";
+            UNREACHABLE("xrpl::ApplicationImp::loadLedgerFromFile : map is invalid");
+            return nullptr;
+            // LCOV_EXCL_STOP
+        }
 
         return loadLedger;
     }
