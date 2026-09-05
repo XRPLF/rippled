@@ -106,6 +106,9 @@ doAccountLines(rpc::JsonContext& context)
         return rpcError(RpcActNotFound);
 
     std::string strPeer;
+    if(params.isMember(jss::peer) && !params[jss::peer].isString())
+        return RPC::invalidFieldError(jss::peer);
+    
     if (params.isMember(jss::peer))
     {
         if (!params[jss::peer].isString())
