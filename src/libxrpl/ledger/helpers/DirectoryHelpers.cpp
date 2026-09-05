@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -67,6 +68,8 @@ forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::co
     if (root.type != ltDIR_NODE)
         return;
 
+    bool const fixNullDirectoryEntries = view.rules().enabled(fixCleanup3_4_0);
+
     auto pos = root;
 
     while (true)
@@ -75,7 +78,18 @@ forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::co
         if (!sle)
             return;
         for (auto const& key : sle->getFieldV256(sfIndexes))
-            f(view.read(keylet::child(key)));
+        {
+            auto const child = view.read(keylet::child(key));
+            if (!child)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::forEachItem : null child SLE");
+                // LCOV_EXCL_STOP
+                if (fixNullDirectoryEntries)
+                    continue;
+            }
+            f(child);
+        }
         auto const next = sle->getFieldU64(sfIndexNext);
         if (next == 0u)
             return;
@@ -96,6 +110,8 @@ forEachItemAfter(
 
     if (root.type != ltDIR_NODE)
         return false;
+
+    bool const fixNullDirectoryEntries = view.rules().enabled(fixCleanup3_4_0);
 
     auto currentIndex = root;
 
@@ -130,9 +146,19 @@ forEachItemAfter(
                     if (key == after)
                         found = true;
                 }
-                else if (f(view.read(keylet::child(key))) && limit-- <= 1)
+                else
                 {
-                    return found;
+                    auto const sle = view.read(keylet::child(key));
+                    if (!sle)
+                    {
+                        // LCOV_EXCL_START
+                        UNREACHABLE("xrpl::forEachItemAfter : null child SLE");
+                        // LCOV_EXCL_STOP
+                        if (fixNullDirectoryEntries)
+                            continue;
+                    }
+                    if (f(sle) && limit-- <= 1)
+                        return found;
                 }
             }
 
@@ -151,7 +177,16 @@ forEachItemAfter(
                 return true;
             for (auto const& key : ownerDir->getFieldV256(sfIndexes))
             {
-                if (f(view.read(keylet::child(key))) && limit-- <= 1)
+                auto const sle = view.read(keylet::child(key));
+                if (!sle)
+                {
+                    // LCOV_EXCL_START
+                    UNREACHABLE("xrpl::forEachItemAfter : null child SLE");
+                    // LCOV_EXCL_STOP
+                    if (fixNullDirectoryEntries)
+                        continue;
+                }
+                if (f(sle) && limit-- <= 1)
                     return true;
             }
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
