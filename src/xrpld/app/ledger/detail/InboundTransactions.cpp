@@ -197,7 +197,14 @@ public:
                 inboundSet.set = set;
             }
 
-            inboundSet.acquire.reset();
+            // Only reset when something other than the acquisition itself gave us the set:
+            // dropping it here cancels an acquisition still in flight, which is correct when a
+            // set arrived some other way, but not when this call IS that acquisition completing.
+            // Keeping it alive until newRound() sweeps the entry is what lets a late reply for
+            // this hash still reach getAcquire() above, and so takeNodesLocked()'s "one free per
+            // peer asked" allowance, rather than the ta == nullptr branch charging it outright.
+            if (!fromAcquire)
+                inboundSet.acquire.reset();
         }
 
         if (isNew)
