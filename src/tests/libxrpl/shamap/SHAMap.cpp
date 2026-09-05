@@ -420,6 +420,21 @@ TEST_F(SHAMapTraversal, bounds_agree_with_iteration_for_absent_keys)
     }
 }
 
+TEST_F(SHAMapTraversal, update_give_item_on_absent_key_returns_false)
+{
+    tests::TestNodeFamily f{j_};
+    auto keys = deepFanOutKeys();
+    SHAMap map{SHAMapType::FREE, f};
+    fillMap(map, keys);
+
+    // Absent key: walkTowardsKey stops on an inner node with an empty branch, not a leaf.
+    auto const absentKey = uint256{std::string_view{std::string(64, '0')}};
+    Buffer vuc{32};
+    std::fill_n(vuc.data(), vuc.size(), std::uint8_t{2});
+    EXPECT_FALSE(map.updateGiveItem(
+        SHAMapNodeType::TnAccountState, makeShamapitem(absentKey, std::move(vuc))));
+}
+
 TEST_F(SHAMapTraversal, bounds_on_empty_map_return_end)
 {
     tests::TestNodeFamily f{j_};
