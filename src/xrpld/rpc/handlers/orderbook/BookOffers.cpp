@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -224,6 +225,16 @@ doBookOffers(rpc::JsonContext& context)
         {
             return rpc::makeError(RpcDomainMalformed, "Unable to parse domain.");
         }
+
+        // A PermissionedDomain's DomainID is its ledger key, so the domain
+        // exists only if that entry is present. `read` is used rather than
+        // `exists` because the caller supplies the raw key: `exists` does not
+        // check the entry type, so the index of any unrelated object would
+        // pass. The all-zero key is well-formed hex but can never name a real
+        // object, and `Ledger::read` treats it as UNREACHABLE, so it must be
+        // rejected before reaching the view.
+        if (num.isZero() || !lpLedger->read(keylet::permissionedDomain(num)))
+            return RPC::makeError(RpcObjectNotFound, "Domain not found.");
 
         domain = num;
     }
