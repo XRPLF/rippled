@@ -1,5 +1,6 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 
+#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerNodeHelpers.h>
@@ -393,6 +394,10 @@ public:
                 else if ((la + std::chrono::minutes(1)) < start)
                 {
                     stuffToSweep.push_back(it->second);
+                    // An eviction here discards whatever the acquisition had
+                    // built, so the work restarts. Counted to tell that apart
+                    // from an acquisition that ended on its own.
+                    app_.getAcquireStats().recordSweepEviction();
                     // shouldn't cause the actual final delete
                     // since we are holding a reference in the vector.
                     it = ledgers_.erase(it);

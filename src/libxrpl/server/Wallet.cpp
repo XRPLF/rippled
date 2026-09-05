@@ -32,6 +32,7 @@
 #include <format>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -147,27 +148,34 @@ clearNodeIdentity(soci::session& session)
     session << "DELETE FROM NodeIdentity;";
 }
 
+std::optional<std::pair<PublicKey, SecretKey>>
+readNodeIdentity(soci::session& session)
+{
+    // SOCI requires boost::optional (not std::optional) as the parameter.
+    boost::optional<std::string> pubKO, priKO;
+    soci::statement st =
+        (session.prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
+         soci::into(pubKO),
+         soci::into(priKO));
+    st.execute();
+    while (st.fetch())
+    {
+        auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
+        auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
+
+        // Only use if the public and secret keys are a pair
+        if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
+            return std::pair{*pk, *sk};
+    }
+
+    return std::nullopt;
+}
+
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session)
 {
-    {
-        // SOCI requires boost::optional (not std::optional) as the parameter.
-        boost::optional<std::string> pubKO, priKO;
-        soci::statement st =
-            (session.prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
-             soci::into(pubKO),
-             soci::into(priKO));
-        st.execute();
-        while (st.fetch())
-        {
-            auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
-            auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
-
-            // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
-                return {*pk, *sk};
-        }
-    }
+    if (auto const stored = readNodeIdentity(session))
+        return *stored;
 
     // If a valid identity wasn't found, we randomly generate a new one:
     auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);

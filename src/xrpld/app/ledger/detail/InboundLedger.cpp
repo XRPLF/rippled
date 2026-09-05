@@ -1,10 +1,12 @@
 #include <xrpld/app/ledger/InboundLedger.h>
 
 #include <xrpld/app/ledger/AccountStateSF.h>
+#include <xrpld/app/ledger/AcquireStats.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
+#include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
@@ -31,6 +33,8 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
@@ -79,7 +83,9 @@ InboundLedger::InboundLedger(
           app,
           hash,
           kLedgerAcquireTimeout,
-          {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
+          {.jobType = JtLedgerData,
+           .jobName = TimeoutCounter::kLedgerAcquireJobName,
+           .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)
     , seq_(seq)
@@ -95,6 +101,36 @@ InboundLedger::init(ScopedLockType& collectionLock)
 {
     ScopedLockType sl(mtx_);
     collectionLock.unlock();
+
+    // Span the acquire lifecycle so back-fill / fork-recovery cost is
+    // observable. Finalized in done() with the outcome and timeout count.
+    {
+        using namespace telemetry;
+        // acquireSpan_ is emplaced here but reset() on a JtLedgerData worker
+        // thread. A SpanGuard is thread-free (owns no thread-local Scope), so it
+        // can be created here and destroyed on the worker with no scope to strip.
+        acquireSpan_.emplace(
+            SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::acquire));
+        if (*acquireSpan_)
+        {
+            acquireSpan_->setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
+            // Map the acquire reason to its span-attribute value. A switch
+            // keeps the mapping flat and exhaustive over the Reason enum.
+            std::string_view reasonVal = ledger_span::val::generic;
+            switch (reason_)
+            {
+                case Reason::HISTORY:
+                    reasonVal = ledger_span::val::history;
+                    break;
+                case Reason::CONSENSUS:
+                    reasonVal = ledger_span::val::consensus;
+                    break;
+                case Reason::GENERIC:
+                    break;
+            }
+            acquireSpan_->setAttribute(ledger_span::attr::acquireReason, reasonVal);
+        }
+    }
 
     tryDB(app_.getNodeFamily().db());
     if (failed_)
@@ -113,6 +149,14 @@ InboundLedger::init(ScopedLockType& collectionLock)
         ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
+
+    // The local store satisfied the whole acquisition, so this is a genuine
+    // completion. It is counted here rather than by calling done(), because
+    // done() drives the state machine (it stores the ledger, dispatches
+    // AcqDone, and would double-store on the paths below) and a counter must
+    // not change behaviour. recordCompletionOnce() is idempotent, so if
+    // done() is later reached for this same object the count stays at one.
+    recordCompletionOnce();
 
     if (reason_ == Reason::HISTORY)
         return;
@@ -179,6 +223,31 @@ InboundLedger::~InboundLedger()
     }
     if (!isDone())
     {
+        // Partial work means a map was partly built and is now discarded, so
+        // the whole acquisition has to start over. That is the expensive case,
+        // so it is counted apart from a cheap abort that had nothing yet.
+        app_.getAcquireStats().recordAbort(haveHeader_ || haveState_ || haveTransactions_);
+
+        // Mark the span so an abandoned acquisition is distinguishable from one
+        // that was still in flight when the trace was read. Without this the
+        // span still ends (the guard's destructor calls End()) but carries only
+        // the attributes set at construction, and the collector's spanmetrics
+        // `outcome` dimension has nothing to group these under.
+        //
+        // peer_count is deliberately NOT recorded here, unlike done(): reading
+        // it goes through getPeerCount() -> app_.getOverlay(), and a destructor
+        // must not depend on Overlay still existing. InboundLedgers::stop()
+        // normally clears the map while Overlay is alive, but a shared_ptr held
+        // past that point would destroy this object after Overlay is gone.
+        if (acquireSpan_ && *acquireSpan_)
+        {
+            using namespace telemetry;
+            acquireSpan_->setAttribute(
+                ledger_span::attr::outcome, std::string_view(ledger_span::val::aborted));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
+        }
+
         JLOG(journal_.debug()) << "Acquire " << hash_ << " abort "
                                << ((timeouts_ == 0) ? std::string()
                                                     : (std::string("timeouts:") +
@@ -353,6 +422,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
     if (timeouts_ > kLedgerTimeoutRetriesMax)
     {
+        app_.getAcquireStats().recordGiveUp();
         if (seq_ != 0)
         {
             JLOG(journal_.warn()) << timeouts_ << " timeouts for ledger " << seq_;
@@ -411,6 +481,25 @@ InboundLedger::pmDowncast()
 }
 
 void
+InboundLedger::recordCompletionOnce()
+{
+    // A failed or still-running acquisition is not a completion. Checked here
+    // rather than at each caller so both exits share one definition of
+    // success.
+    if (!complete_ || failed_)
+        return;
+
+    // The latch, not the counter, is what makes this idempotent: the two
+    // exits that finish an acquisition are independent, and either can run
+    // first.
+    if (completionCounted_)
+        return;
+
+    completionCounted_ = true;
+    app_.getAcquireStats().recordCompletion();
+}
+
+void
 InboundLedger::done()
 {
     if (signaled_)
@@ -419,11 +508,54 @@ InboundLedger::done()
     signaled_ = true;
     touch();
 
-    JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
-                           << ((timeouts_ == 0)
-                                   ? std::string()
-                                   : (std::string("timeouts:") + std::to_string(timeouts_) + " "))
-                           << stats_.get();
+    // done() is the funnel every peer-driven outcome passes through, but not
+    // every outcome: init() can satisfy an acquisition from the local store
+    // and return without reaching here. Both call the same idempotent helper
+    // so each completion is counted exactly once. failed_ outcomes are
+    // excluded; the give-up path counts those itself.
+    recordCompletionOnce();
+
+    // Finalize the acquire span with the outcome, timeout count, and peer
+    // count. Keep it active as the ambient context across the finalize and
+    // the outcome log below so that log line carries the span's trace_id.
+    // The activation is non-owning; acquireSpan_ still owns the span. The
+    // activation pops at the end of this block (restoring the prior context)
+    // while acquireSpan_ is still alive, then reset() ends the span.
+    {
+        auto acquireActivation = telemetry::activateIfLive(acquireSpan_);
+        if (acquireSpan_ && *acquireSpan_)
+        {
+            using namespace telemetry;
+            acquireSpan_->setAttribute(
+                ledger_span::attr::outcome,
+                failed_ ? std::string_view(ledger_span::val::failed)
+                        : std::string_view(ledger_span::val::complete));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
+
+            // Only the failure path gets an Error status. Success is left Unset
+            // rather than Ok: per the OpenTelemetry spec, Ok is reserved for an
+            // application deliberately asserting verified success, and
+            // instrumentation should not set it. The abort path in the
+            // destructor is also left Unset, because a clean shutdown clears
+            // every in-flight acquisition and would otherwise report an error
+            // on every stop.
+            if (failed_)
+                acquireSpan_->setError("ledger acquisition gave up");
+        }
+
+        JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
+                               << ((timeouts_ == 0) ? std::string()
+                                                    : (std::string("timeouts:") +
+                                                       std::to_string(timeouts_) + " "))
+                               << stats_.get();
+        // acquireActivation pops here, before the span is ended below.
+    }
+    // End the acquire span after its outcome log. Unconditional so the span
+    // never leaks even when it was inactive.
+    acquireSpan_.reset();
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 

@@ -1,17 +1,22 @@
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
+#include <xrpld/rpc/json_body.h>  // IWYU pragma: keep
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/insight/Unit.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
@@ -44,6 +49,7 @@
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
@@ -60,6 +66,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <exception>
 #include <map>
 #include <memory>
@@ -71,6 +78,7 @@
 #include <vector>
 
 namespace xrpl {
+using namespace telemetry;
 
 class Peer;
 class LedgerMaster;
@@ -100,6 +108,42 @@ statusRequestResponse(http_request_type const& request, boost::beast::http::stat
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
+}
+
+/**
+ * Resolve the command attribute for a WebSocket message to a bounded value.
+ *
+ * The command/method field is client-supplied and is promoted to a Prometheus
+ * label by the spanmetrics connector, so the raw string must never be emitted:
+ * arbitrary request input would drive unbounded label cardinality. Resolving
+ * against the handler registry keeps per-command attribution for real commands
+ * and collapses everything else to a single "unknown" series.
+ *
+ * A request naming both fields with different values is not a real command
+ * (processSession rejects it below), so it also resolves to "unknown".
+ *
+ * @param jv      The parsed WebSocket request object.
+ * @param config  Node config, for the beta-RPC-API flag used to look up the
+ *                handler for the request's API version.
+ * @return The canonical handler name, or "unknown" for an unrecognized,
+ *         missing, non-string, or self-contradictory command.
+ */
+static std::string_view
+resolveWsCommandSpanName(json::Value const& jv, Config const& config)
+{
+    bool const hasCommand = jv.isMember(jss::command) && jv[jss::command].isString();
+    bool const hasMethod = jv.isMember(jss::method) && jv[jss::method].isString();
+    if (!hasCommand && !hasMethod)
+        return rpc_span::val::unknownCommand;
+
+    std::string const cmd = hasCommand ? jv[jss::command].asString() : jv[jss::method].asString();
+    if (hasCommand && hasMethod && cmd != jv[jss::method].asString())
+        return rpc_span::val::unknownCommand;
+
+    auto const* handler =
+        rpc::getHandler(rpc::getAPIVersionNumber(jv, config.betaRpcApi), config.betaRpcApi, cmd);
+    return (handler != nullptr) ? std::string_view{handler->name}
+                                : std::string_view{rpc_span::val::unknownCommand};
 }
 
 // VFALCO TODO Rewrite to use boost::beast::http::fields
@@ -140,7 +184,11 @@ ServerHandler::ServerHandler(
 {
     auto const& group(cm.group("rpc"));
     rpcRequests_ = group->makeCounter("requests");
-    rpcSize_ = group->makeEvent("size");
+    // "size" measures the serialized response in bytes, not a duration. It
+    // has to say so: the unit picks both the exported name suffix and the
+    // histogram bucket ladder, and borrowing the millisecond ladder censored
+    // a quarter of these samples.
+    rpcSize_ = group->makeEvent("size", beast::insight::Unit::Bytes);
     rpcTime_ = group->makeEvent("time");
 }
 
@@ -224,13 +272,19 @@ ServerHandler::onHandoff(
         if (!isWs)
             return statusRequestResponse(request, http::status::unauthorized);
 
+        // Fresh root so each WS upgrade is its own trace, not nested under a
+        // leaked ambient span on a reused coro worker.
+        auto span = ScopedSpanGuard::freshRoot(
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsUpgrade);
         std::shared_ptr<WSSession> ws;
         try
         {
             ws = session.websocketUpgrade();
+            span.setOk();
         }
         catch (std::exception const& e)
         {
+            span.recordException(e);  // LCOV_EXCL_LINE
             JLOG(journal_.error()) << "Exception upgrading websocket: " << e.what() << "\n";
             return statusRequestResponse(request, http::status::internal_server_error);
         }
@@ -339,10 +393,15 @@ ServerHandler::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > rpc::tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
+        // Fresh root so each WS message is its own trace.
+        auto span = ScopedSpanGuard::freshRoot(
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
+        span.setError(rpc_span::val::invalidJson);
+
         json::Value jvResult(json::ValueType::Object);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
-        jvResult[jss::value] = buffersToString(buffers);
+        jvResult[jss::value] = ::xrpl::buffersToString(buffers);
         boost::beast::multi_buffer sb;
         json::stream(jvResult, [&sb](auto const p, auto const n) {
             sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(p, n)));
@@ -415,12 +474,33 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     json::Value const& jv)
 {
+    // Fresh root so each WS message is its own trace.
+    auto span = ScopedSpanGuard::freshRoot(
+        TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
+    // The command is client-supplied and becomes a Prometheus label via the
+    // spanmetrics connector, so it is resolved against the handler registry
+    // before emission: a recognized command keeps its canonical name, anything
+    // else collapses to "unknown". Emitting the raw string would let request
+    // input drive unbounded label cardinality. Mirrors the HTTP path's
+    // resolveCommandSpanName().
+    //
+    // The guard is required because the resolver is a call argument: it runs
+    // even when setAttribute itself is an empty no-op. Without it, every
+    // WebSocket message pays for the JSON member lookups, a string copy and a
+    // handler-registry lookup that nothing reads.
+    if (span)
+    {
+        span.setAttribute(rpc_span::attr::command, resolveWsCommandSpanName(jv, app_.config()));
+    }
+
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
     {
         session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
         // FIX: This rpcError is not delivered since the session
         // was just closed.
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError("resource threshold exceeded");
         return rpcError(RpcSlowDown);
     }
 
@@ -452,6 +532,8 @@ ServerHandler::processSession(
                 jr[jss::api_version] = jv[jss::api_version];
 
             is->getConsumer().charge(resource::kFeeMalformedRpc);
+            span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+            span.setError(jr[jss::error].asString());
             return jr;
         }
 
@@ -498,6 +580,8 @@ ServerHandler::processSession(
         jr[jss::result] = rpc::makeError(RpcInternal);
         JLOG(journal_.error()) << "Exception while processing WS: " << ex.what() << "\n"
                                << "Input JSON: " << json::Compact{json::Value{jv}};
+        span.recordException(ex);
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         // LCOV_EXCL_STOP
     }
 
@@ -530,12 +614,19 @@ ServerHandler::processSession(
         }
 
         jr[jss::request] = rq;
+        // Mark the span according to the final result. Doing it here (rather
+        // than an unconditional setOk later) ensures error responses — from
+        // doCommand, a FORBID role, or the catch block above — are not
+        // overwritten as OK.
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError(jr[jss::error].asString());
     }
     else
     {
         if (jr[jss::result].isMember("forwarded") && jr[jss::result]["forwarded"])
             jr = jr[jss::result];
         jr[jss::status] = jss::success;
+        span.setOk();
     }
 
     if (jv.isMember(jss::id))
@@ -557,9 +648,17 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
+    // Fresh root so each HTTP request is its own trace, not nested under a
+    // leaked ambient span on a reused coro worker.
+    auto span = ScopedSpanGuard::freshRoot(
+        TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
+
+    auto const requestBody = ::xrpl::buffersToString(session->request().body().data());
+    span.setAttribute(rpc_span::attr::requestPayloadSize, static_cast<int64_t>(requestBody.size()));
+
     processRequest(
         session->port(),
-        buffersToString(session->request().body().data()),
+        requestBody,
         session->remoteAddress().atPort(0),
         makeOutput(*session),
         coro,
@@ -579,6 +678,11 @@ ServerHandler::processSession(
     {
         session->close(true);
     }
+    // Status is left unset: the OTel spec says instrumentation should leave it
+    // unset unless the operation itself errored, and reserves Ok for an
+    // operator asserting success. This span only delimits the HTTP request and
+    // has no error of its own to report — the outcome is determined inside
+    // rpc.process, which sets its own status.
 }
 
 static json::Value
@@ -607,7 +711,29 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
+    // Scoped child of rpc.http_request. Safe to hold across the coroutine
+    // yield in doRipplePathFind: the coro-aware context storage moves this
+    // scope with the coroutine on resume (it is never stranded on a worker's
+    // thread-local stack), so nesting and log-trace correlation both hold.
+    auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
     auto rpcJ = app_.getJournal("RPC");
+
+    // Tracks whether any failure occurred. Set on every error path (early
+    // returns, the catch block, and per-request error replies) and used at the
+    // end to mark the span status. The HTTP status code alone is insufficient:
+    // it stays 200 for batch responses and for ripplerpc < 3.0, so relying on
+    // it would let payload-level errors end the span as successful.
+    bool spanHadError = false;
+
+    // Marks the span as failed before sending an error reply, so the
+    // early-return validation paths below are not later seen as successful
+    // (the span would otherwise end UNSET, invisible to {status.code=error}).
+    auto httpReplyError = [&](int status, std::string const& message) {
+        spanHadError = true;
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError(message);
+        httpReply(status, message, output, rpcJ);
+    };
 
     json::Value jsonOrig;
     {
@@ -615,11 +741,7 @@ ServerHandler::processRequest(
         if ((request.size() > rpc::tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
-            httpReply(
-                400,
-                "Unable to parse request: " + reader.getFormattedErrorMessages(),
-                output,
-                rpcJ);
+            httpReplyError(400, "Unable to parse request: " + reader.getFormattedErrorMessages());
             return;
         }
     }
@@ -631,13 +753,27 @@ ServerHandler::processRequest(
         batch = true;
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
         {
-            httpReply(400, "Malformed batch request", output, rpcJ);
+            httpReplyError(400, "Malformed batch request");
             return;
         }
         size = jsonOrig[jss::params].size();
     }
+    span.setAttribute(rpc_span::attr::isBatch, batch);
+    if (batch)
+        span.setAttribute(rpc_span::attr::batchSize, static_cast<int64_t>(size));
 
     json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
+
+    // Append a per-request error item and record that the request failed.
+    // Batch responses (and ripplerpc < 3.0) always carry HTTP 200, so the
+    // span status can only learn about these failures through spanHadError.
+    // Every per-item error path must go through here, or an entirely failed
+    // batch would end its span as successful.
+    auto appendItemError = [&](json::Value&& item) {
+        spanHadError = true;
+        reply.append(std::move(item));
+    };
+
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
@@ -648,7 +784,7 @@ ServerHandler::processRequest(
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "Method not found");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -670,13 +806,13 @@ ServerHandler::processRequest(
         {
             if (!batch)
             {
-                httpReply(400, jss::invalid_API_version.cStr(), output, rpcJ);
+                httpReplyError(400, jss::invalid_API_version.cStr());
                 return;
             }
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kWrongVersion, jss::invalid_API_version.cStr());
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -713,12 +849,12 @@ ServerHandler::processRequest(
             {
                 if (!batch)
                 {
-                    httpReply(503, "Server is overloaded", output, rpcJ);
+                    httpReplyError(503, "Server is overloaded");
                     return;
                 }
                 json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kServerOverloaded, "Server is overloaded");
-                reply.append(r);
+                appendItemError(std::move(r));
                 continue;
             }
         }
@@ -728,12 +864,12 @@ ServerHandler::processRequest(
             usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
-                httpReply(403, "Forbidden", output, rpcJ);
+                httpReplyError(403, "Forbidden");
                 return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kForbidden, "Forbidden");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -742,12 +878,12 @@ ServerHandler::processRequest(
             usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
-                httpReply(400, "Null method", output, rpcJ);
+                httpReplyError(400, "Null method");
                 return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "Null method");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -757,12 +893,12 @@ ServerHandler::processRequest(
             usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
-                httpReply(400, "method is not string", output, rpcJ);
+                httpReplyError(400, "method is not string");
                 return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "method is not string");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -772,12 +908,12 @@ ServerHandler::processRequest(
             usage.charge(resource::kFeeMalformedRpc);
             if (!batch)
             {
-                httpReply(400, "method is empty", output, rpcJ);
+                httpReplyError(400, "method is empty");
                 return;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "method is empty");
-            reply.append(r);
+            appendItemError(std::move(r));
             continue;
         }
 
@@ -798,7 +934,7 @@ ServerHandler::processRequest(
             else if (!params.isArray() || params.size() != 1)
             {
                 usage.charge(resource::kFeeMalformedRpc);
-                httpReply(400, "params unparsable", output, rpcJ);
+                httpReplyError(400, "params unparsable");
                 return;
             }
             else
@@ -807,7 +943,7 @@ ServerHandler::processRequest(
                 if (!params.isObjectOrNull())
                 {
                     usage.charge(resource::kFeeMalformedRpc);
-                    httpReply(400, "params unparsable", output, rpcJ);
+                    httpReplyError(400, "params unparsable");
                     return;
                 }
             }
@@ -825,13 +961,13 @@ ServerHandler::processRequest(
                 usage.charge(resource::kFeeMalformedRpc);
                 if (!batch)
                 {
-                    httpReply(400, "ripplerpc is not a string", output, rpcJ);
+                    httpReplyError(400, "ripplerpc is not a string");
                     return;
                 }
 
                 json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kMethodNotFound, "ripplerpc is not a string");
-                reply.append(r);
+                appendItemError(std::move(r));
                 continue;
             }
             ripplerpc = params[jss::ripplerpc].asString();
@@ -883,6 +1019,9 @@ ServerHandler::processRequest(
             JLOG(journal_.error())
                 << "Internal error : " << ex.what()
                 << " when processing request: " << json::Compact{json::Value{params}};
+            span.recordException(ex);
+            span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+            spanHadError = true;
             // LCOV_EXCL_STOP
         }
 
@@ -899,6 +1038,7 @@ ServerHandler::processRequest(
         {
             if (result.isMember(jss::error))
             {
+                spanHadError = true;
                 result[jss::status] = jss::error;
                 result["code"] = result[jss::error_code];
                 result["message"] = result[jss::error_message];
@@ -919,6 +1059,7 @@ ServerHandler::processRequest(
             // received.
             if (result.isMember(jss::error))
             {
+                spanHadError = true;
                 auto rq = params;
 
                 if (rq.isObject())
@@ -997,7 +1138,7 @@ ServerHandler::processRequest(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::high_resolution_clock::now() - start));
     ++rpcRequests_;
-    rpcSize_.notify(beast::insight::Event::value_type{response.size()});
+    rpcSize_.notify(static_cast<std::uint64_t>(response.size()));
 
     response += '\n';
 
@@ -1014,6 +1155,18 @@ ServerHandler::processRequest(
         }
     }
 
+    // Mark the span error if any request failed or the HTTP status is an error.
+    // spanHadError catches payload-level errors that httpStatus misses (batch
+    // responses and ripplerpc < 3.0 always return HTTP 200).
+    if (spanHadError || httpStatus >= 400)
+    {
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError(rpc_span::val::error);
+    }
+    else
+    {
+        span.setOk();
+    }
     httpReply(httpStatus, response, output, rpcJ);
 }
 

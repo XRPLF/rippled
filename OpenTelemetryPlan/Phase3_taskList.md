@@ -1,0 +1,568 @@
+# Phase 3: Transaction Tracing Task List
+
+> **Goal**: Trace the full transaction lifecycle from RPC submission through peer relay, including cross-node context propagation via Protocol Buffer extensions. This is the WALK phase that demonstrates true distributed tracing.
+>
+> **Scope**: Protocol Buffer `TraceContext` message, context serialization, PeerImp transaction instrumentation, NetworkOPs processing instrumentation, HashRouter visibility, and multi-node relay context propagation.
+>
+> **Branch**: `pratik/otel-phase3-tx-tracing` (from `pratik/otel-phase2-rpc-tracing`)
+
+### Related Plan Documents
+
+| Document                                                                                          | Relevance                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow) | Authoritative protocol span-flow reference — replaces the deleted `04-code-samples.md` (TraceContext protobuf §4.4.1, PeerImp instrumentation §4.5.1, context serialization §4.4.2), removed by `d6450631bf` |
+| [01-architecture-analysis.md](./01-architecture-analysis.md)                                      | Transaction flow (§1.3), key trace points (§1.6)                                                                                                                                                             |
+| [06-implementation-phases.md](./06-implementation-phases.md)                                      | Phase 3 tasks (§6.4), definition of done (§6.11.3)                                                                                                                                                           |
+| [02-design-decisions.md](./02-design-decisions.md)                                                | Context propagation design (§2.5), attribute schema (§2.4.3)                                                                                                                                                 |
+
+---
+
+## Task 3.1: Define TraceContext Protocol Buffer Message
+
+**Objective**: Add trace context fields to the P2P protocol messages so trace IDs can propagate across nodes.
+
+**What to do**:
+
+- Edit `include/xrpl/proto/xrpl.proto` (or `src/xrpld/proto/ripple.proto`, wherever the proto is):
+  - Add `TraceContext` message definition:
+    ```protobuf
+    message TraceContext {
+        bytes trace_id = 1;      // 16-byte trace identifier
+        bytes span_id = 2;       // 8-byte span identifier
+        uint32 trace_flags = 3;  // bit 0 = sampled
+        string trace_state = 4;  // W3C tracestate value
+    }
+    ```
+  - Add `optional TraceContext trace_context = 1001;` to:
+    - `TMTransaction`
+    - `TMProposeSet` (for Phase 4 use)
+    - `TMValidation` (for Phase 4 use)
+  - Use high field numbers (1001+) to avoid conflicts with existing fields
+
+- Regenerate protobuf C++ code
+
+**Key modified files**:
+
+- `include/xrpl/proto/xrpl.proto` (or equivalent)
+
+**Reference**:
+
+- `04-code-samples.md` §4.4.1 (TraceContext message definition) was deleted by
+  `d6450631bf`; the live definition is `include/xrpl/proto/xrpl.proto:101`
+  (`message TraceContext`), attached as field `1001` on the relevant messages
+- [02-design-decisions.md §2.5.2](./02-design-decisions.md) — Protocol buffer context propagation design
+
+---
+
+## Task 3.2: Implement Protobuf Context Serialization
+
+**Objective**: Create utilities to serialize/deserialize OTel trace context to/from protobuf `TraceContext` messages.
+
+**What to do**:
+
+- Create `include/xrpl/telemetry/TraceContextPropagator.h` (extend from Phase 2 if exists, or add protobuf methods):
+  - Add protobuf-specific methods:
+    - `static Context extractFromProtobuf(protocol::TraceContext const& proto)` — reconstruct OTel context from protobuf fields
+    - `static void injectToProtobuf(Context const& ctx, protocol::TraceContext& proto)` — serialize current span context into protobuf fields
+  - Both methods guard behind `#ifdef XRPL_ENABLE_TELEMETRY`
+
+- Create/extend `src/libxrpl/telemetry/TraceContextPropagator.cpp`:
+  - Implement extraction: read trace_id (16 bytes), span_id (8 bytes), trace_flags from protobuf, construct `SpanContext`, wrap in `Context`
+  - Implement injection: get current span from context, serialize its TraceId, SpanId, and TraceFlags into protobuf fields
+
+**Key new/modified files**:
+
+- `include/xrpl/telemetry/TraceContextPropagator.h`
+- `src/libxrpl/telemetry/TraceContextPropagator.cpp`
+
+**Reference**:
+
+- `04-code-samples.md` §4.4.2 (full extract/inject implementation) was deleted by
+  `d6450631bf`. As shipped there is **no**
+  `src/libxrpl/telemetry/TraceContextPropagator.cpp`; extract/inject live on
+  `SpanGuard` (`include/xrpl/telemetry/SpanGuard.h:467` extract, `:480-491`
+  `injectCurrentContextToProtobuf`, implemented in
+  `src/libxrpl/telemetry/SpanGuard.cpp`) with the protocol-layer wrappers in
+  `src/xrpld/telemetry/PropagationHelpers.h:52` (`injectSpanContext`)
+
+---
+
+## Task 3.3: Instrument PeerImp Transaction Handling
+
+**Objective**: Add trace spans to the peer-level transaction receive and relay path.
+
+**What to do**:
+
+- Edit `src/xrpld/overlay/detail/PeerImp.cpp`:
+  - In `onMessage(TMTransaction)` / `handleTransaction()`:
+    - Extract parent trace context from incoming `TMTransaction::trace_context` field (if present)
+    - Create `tx.receive` span as child of extracted context (or new root if none)
+    - Set attributes: `tx_hash`, `peer_id`, `tx_status`
+    - On HashRouter suppression (duplicate): set `suppressed=true`, add `tx.duplicate` event
+    - Wrap validation call with child span `tx.validate`
+    - Wrap relay with `tx.relay` span
+  - When relaying to peers:
+    - Inject current trace context into outgoing `TMTransaction::trace_context`
+    - Set `relay_count` attribute
+
+- Use `SpanGuard::span(TraceCategory::Transactions, "tx", "receive")` factory
+  (Phase 1c replaced macros with the SpanGuard factory pattern)
+
+> **Note**: The `tx.receive` guard is `.detached()` before being moved into the
+> `RcvCheckTx` job so its Scope is popped on the peer thread, not leaked to the
+> worker (else later peer messages would inherit this transaction's trace).
+
+**Key modified files**:
+
+- `src/xrpld/overlay/detail/PeerImp.cpp`
+
+**Reference**:
+
+- [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow)
+  — the authoritative `tx.receive` / relay span-flow reference; replaces
+  `04-code-samples.md` §4.5.1, deleted by `d6450631bf`
+- [01-architecture-analysis.md §1.3](./01-architecture-analysis.md) — Transaction flow diagram
+- [01-architecture-analysis.md §1.6](./01-architecture-analysis.md) — tx.receive trace point
+
+---
+
+## Task 3.4: Instrument NetworkOPs Transaction Processing
+
+**Objective**: Trace the transaction processing pipeline in NetworkOPs, covering both sync and async paths.
+
+**What to do**:
+
+- Edit `src/xrpld/app/misc/NetworkOPs.cpp`:
+  - In `processTransaction()`:
+    - Create `tx.process` span
+    - Set attributes: `tx_hash`, `tx_type`, `local` (whether from RPC or peer)
+    - Record whether sync or async path is taken
+    - `.detached()` the guard before storing it in `TransactionStatus::span`,
+      since it is applied on a batch worker thread — this pops the Scope on the
+      origin thread and stops later work inheriting this transaction's trace
+
+  - In `doTransactionAsync()`:
+    - Capture parent context before queuing
+    - Create `tx.queue` span with queue depth attribute
+    - Add event when transaction is dequeued for processing
+
+  - In `doTransactionSync()`:
+    - Create `tx.process_sync` span
+    - Record result (applied, queued, rejected)
+
+**Key modified files**:
+
+- `src/xrpld/app/misc/NetworkOPs.cpp`
+
+**Reference**:
+
+- [01-architecture-analysis.md §1.6](./01-architecture-analysis.md) — tx.validate and tx.process trace points
+- [02-design-decisions.md §2.4.3](./02-design-decisions.md) — Transaction attribute schema
+
+---
+
+## Task 3.5: Instrument HashRouter for Dedup Visibility
+
+**Objective**: Make transaction deduplication visible in traces by recording HashRouter decisions as span attributes/events.
+
+**What to do**:
+
+- Edit `src/xrpld/overlay/detail/PeerImp.cpp` (in handleTransaction):
+  - After calling `HashRouter::shouldProcess()` or `addSuppressionPeer()`:
+    - Record `suppressed` attribute (true/false)
+    - Record `tx_flags` showing current HashRouter state (SAVED, TRUSTED, etc.)
+    - Add `tx.first_seen` or `tx.duplicate` event
+
+- This is NOT a modification to HashRouter itself — just recording its decisions as span attributes in the existing PeerImp instrumentation from Task 3.3.
+
+**Key modified files**:
+
+- `src/xrpld/overlay/detail/PeerImp.cpp` (same changes as 3.3, logically grouped)
+
+---
+
+## Task 3.6: Context Propagation in Transaction Relay
+
+**Status**: COMPLETE (transaction relay). Consensus proposal/validation
+propagation is deferred to Phase 4 — see "Planned (Phase 4)" below.
+
+**Objective**: Ensure trace context flows correctly when transactions are relayed between peers, creating linked spans across nodes.
+
+**What was done**:
+
+- **TX send side**: `NetworkOPs::apply()` now injects the tx.process span's trace
+  context into the outgoing `TMTransaction` protobuf before relay, using
+  `telemetry::injectSpanContext()`. The receiving node's `txReceiveSpan()` (already
+  wired in PeerImp) extracts the parent span_id and creates the tx.receive span
+  as a child of the sender's tx.process span.
+
+- **Edge cases**: Missing trace context (older peers) degrades gracefully to
+  standalone spans. Invalid/corrupted context is treated as absent. Trace
+  flags are propagated and respected.
+
+**New infrastructure**:
+
+- `SpanGuard::getTraceBytes()` — extracts raw trace_id/span_id/trace_flags
+  from a span without exposing OTel types. Safe to call from any thread.
+- `PropagationHelpers.h` — `injectSpanContext(SpanGuard&, proto)` bridge
+  between SpanGuard and protobuf TraceContext.
+- `TraceContextPropagator.h` — `injectToProtobuf(ctx, proto)` for
+  same-thread injection via OTel RuntimeContext.
+
+**Key modified files**:
+
+- `src/xrpld/app/misc/NetworkOPs.cpp` — tx relay injection
+- `include/xrpl/telemetry/SpanGuard.h` — `TraceBytes` struct, `getTraceBytes()`
+- `src/libxrpl/telemetry/SpanGuard.cpp` — `getTraceBytes()` implementation
+- `src/xrpld/telemetry/PropagationHelpers.h` — inject helpers (new file)
+
+**Planned (Phase 4 — not in this PR)**:
+
+The consensus proposal/validation propagation below is Phase 4 scope and is
+not implemented on this branch. It is listed here only to record the intended
+design.
+
+- **Proposal send/receive**: `RCLConsensus::Adaptor::propose()` injects the
+  current thread's active span context into the `TMProposeSet` protobuf via
+  `telemetry::injectToProtobuf()`. PeerImp creates a
+  `consensus.proposal.receive` span that extracts the sender's trace context
+  as parent (via `ConsensusReceiveTracing.h`).
+
+- **Validation send/receive**: `RCLConsensus::Adaptor::validate()` injects
+  the current thread's active span context into the `TMValidation` protobuf.
+  PeerImp creates a `consensus.validation.receive` span that extracts the
+  sender's trace context as parent.
+
+- Planned files: `src/xrpld/app/consensus/RCLConsensus.cpp` (send injection),
+  `src/xrpld/overlay/detail/PeerImp.cpp` (receive spans),
+  `src/xrpld/telemetry/ConsensusReceiveTracing.h` (receive span helpers,
+  new file).
+
+**Reference**:
+
+- [02-design-decisions.md §2.5](./02-design-decisions.md) — Context propagation design
+- Relay context injection pattern: `04-code-samples.md` §4.5.1 was deleted by
+  `d6450631bf`; the live pattern is `injectSpanContext()` in
+  `src/xrpld/telemetry/PropagationHelpers.h:52`, with the flow documented in
+  [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow)
+
+---
+
+## Task 3.7: Build Verification and Testing
+
+**Objective**: Verify all Phase 3 changes compile and work correctly.
+
+**What to do**:
+
+1. Build with `telemetry=ON` — verify no compilation errors
+2. Build with `telemetry=OFF` — verify no regressions
+3. Run existing unit tests
+4. Verify protobuf regeneration produces correct C++ code
+5. Document any issues encountered
+
+**Verification Checklist**:
+
+- [ ] Protobuf changes generate valid C++
+- [ ] Build succeeds with telemetry ON
+- [ ] Build succeeds with telemetry OFF
+- [ ] Existing tests pass
+- [ ] No undefined symbols from new telemetry calls
+
+---
+
+## Task 3.8: Transaction Span Peer Version Attribute
+
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity) — adds peer version context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+>
+> **Upstream**: Phase 2 (RPC span infrastructure must exist).
+> **Downstream**: Phase 10 (validation checks for this attribute).
+
+**Objective**: Add the relaying peer's xrpld version to `tx.receive` spans so operators can correlate transaction issues with peer version mismatches during network upgrades.
+
+**What to do**:
+
+- Edit `src/xrpld/overlay/detail/PeerImp.cpp`:
+  - In the `tx.receive` span block (after existing `peer_id` setAttribute call):
+    - Add `peer_version` (string) — from `this->getVersion()`
+    - Only set if `getVersion()` returns a non-empty string (avoid empty-string attributes)
+
+**New span attribute**:
+
+| Attribute      | Type   | Source               | Example         |
+| -------------- | ------ | -------------------- | --------------- |
+| `peer_version` | string | `peer->getVersion()` | `"xrpld-2.4.0"` |
+
+**Rationale**: Transaction relay is where version mismatches cause subtle serialization or validation bugs. Tracing "this tx came from a v2.3.0 peer" helps diagnose compatibility issues. The community dashboard tracks peer versions externally; this brings version awareness into the trace itself.
+
+**Key modified files**:
+
+- `src/xrpld/overlay/detail/PeerImp.cpp`
+
+**Exit Criteria**:
+
+- [ ] `tx.receive` spans carry `peer_version` attribute with a non-empty version string
+- [ ] Attribute is omitted (not set to empty string) when `getVersion()` returns empty
+- [ ] Attribute visible in Tempo trace detail view
+
+---
+
+## Task 3.9: Deterministic Transaction Trace ID
+
+> **Upstream**: Task 3.2 (protobuf serialization), Task 3.3 (PeerImp span exists).
+> **Downstream**: Phase 10 (workload validation can query by tx hash directly).
+> **Pattern**: Mirrors the consensus deterministic trace ID in Phase 4a
+> (`createDeterministicContext` in `RCLConsensus.cpp`), adapted for transactions.
+
+**Objective**: Derive the trace_id for transaction spans deterministically from the
+transaction hash so that all nodes handling the same transaction independently produce
+spans under the same trace_id — regardless of whether protobuf context propagation
+succeeds.
+
+**Why**: The current approach creates spans with random trace_ids and relies entirely
+on protobuf `TraceContext` propagation to link them. If any hop in the relay chain
+drops the context (older peers, message corruption, mixed-version networks), the trace
+splits and downstream spans become impossible to find. With deterministic trace_ids,
+correlation is guaranteed because every node derives the same trace_id from the same
+`txID`.
+
+**Approach — deterministic trace_id + protobuf span_id propagation**:
+
+1. Derive `trace_id = txHash[0:16]` (first 16 bytes of the 32-byte transaction hash).
+2. Generate a random 8-byte `span_id` per node (each node's span is unique within
+   the shared trace).
+3. Create the span under this deterministic context as parent.
+4. **Additionally**, if protobuf `TraceContext` is present in the incoming
+   `TMTransaction` message, extract the sender's `span_id` and use it as the span's
+   parent — this preserves parent-child ordering in the trace tree.
+5. If protobuf context is absent (older peer, first hop), the span still has the
+   correct deterministic `trace_id` — it appears as a sibling root in the same trace
+   rather than being lost.
+
+This gives the best of both worlds: guaranteed cross-node correlation via deterministic
+`trace_id`, plus parent-child relay ordering via protobuf `span_id` when available.
+
+**What to do**:
+
+- Create `createDeterministicTxContext(uint256 const& txHash)` utility function:
+  - Location: shared header or file-local in `PeerImp.cpp` and `NetworkOPs.cpp`
+    (or a shared telemetry utility if both need it).
+  - Pattern: identical to `createDeterministicContext(uint256 const& ledgerId)` in
+    `RCLConsensus.cpp` — take `txHash[0:16]` as trace_id, random span_id via
+    `default_prng()`, sampled flag set, `remote=false`.
+  - Guard behind `#ifdef XRPL_ENABLE_TELEMETRY`.
+
+  ```cpp
+  opentelemetry::context::Context
+  createDeterministicTxContext(uint256 const& txHash)
+  {
+      namespace trace = opentelemetry::trace;
+
+      // First 16 bytes of the 32-byte tx hash as trace ID.
+      trace::TraceId traceId(
+          opentelemetry::nostd::span<uint8_t const, 16>(txHash.data(), 16));
+
+      // Random span_id so each node's span is unique within the trace.
+      uint8_t spanIdBytes[8];
+      auto const rval = default_prng()();
+      std::memcpy(spanIdBytes, &rval, sizeof(spanIdBytes));
+      trace::SpanId spanId(
+          opentelemetry::nostd::span<uint8_t const, 8>(spanIdBytes, 8));
+
+      trace::SpanContext syntheticCtx(
+          traceId, spanId, trace::TraceFlags(1), /* remote = */ false);
+
+      return opentelemetry::context::Context{}.SetValue(
+          trace::kSpanKey,
+          opentelemetry::nostd::shared_ptr<trace::Span>(
+              new trace::DefaultSpan(syntheticCtx)));
+  }
+  ```
+
+- Edit `src/xrpld/overlay/detail/PeerImp.cpp` — restructure `handleTransaction()`:
+  - **Move span creation after deserialization** (txID must be known first):
+    1. Deserialize `STTx` and get `txID` (existing code at line ~1382).
+    2. Create deterministic parent context: `auto detCtx = createDeterministicTxContext(txID)`.
+    3. If `m->has_trace_context()`: extract protobuf context via `extractFromProtobuf()`,
+       **combine** with deterministic trace_id — use the protobuf span_id as parent
+       to preserve relay ordering, but override trace_id with the deterministic one.
+    4. If no protobuf context: create span under `detCtx` directly.
+    5. Set all existing attributes (`hash`, `peerId`, `peerVersion`, `suppressed`, etc.).
+
+  - **Combining deterministic trace_id with protobuf parent span_id**:
+    When both are available, construct a synthetic `SpanContext` with:
+    - `trace_id` = `txHash[0:16]` (deterministic)
+    - `span_id` = extracted from protobuf (sender's span_id → becomes parent)
+    - `trace_flags` = from protobuf
+    - `remote` = true (came from another node)
+
+    ```cpp
+    // Pseudo-code for the combined context:
+    auto detTraceId = trace::TraceId(txHash.data(), 16);
+    auto remoteSpanId = /* from extractFromProtobuf */;
+    auto remoteFlags = /* from extractFromProtobuf */;
+
+    trace::SpanContext combinedCtx(
+        detTraceId, remoteSpanId, remoteFlags, /* remote = */ true);
+    // Use as parent context for the new span.
+    ```
+
+- Edit `src/xrpld/app/misc/NetworkOPs.cpp` — update `processTransaction()`:
+  - `transaction->getID()` is already available at the top of the function.
+  - Create deterministic parent context from `txID`.
+  - Create `tx.process` span under this context.
+  - No protobuf context to extract here (NetworkOPs is intra-node), so
+    deterministic context alone is sufficient.
+
+- Add `trace_strategy` attribute to spans:
+  - Add `inline constexpr auto traceStrategy = "trace_strategy";`
+    to `TxSpanNames.h`.
+  - Set on each tx span: `span.setAttribute(tx_span::attr::traceStrategy, "deterministic")`.
+
+**Key new/modified files**:
+
+- `src/xrpld/overlay/detail/PeerImp.cpp` — restructured span creation
+- `src/xrpld/app/misc/NetworkOPs.cpp` — deterministic context for tx.process
+- `src/xrpld/telemetry/TxSpanNames.h` — new `traceStrategy` attribute constant
+- New or shared utility for `createDeterministicTxContext()` (location TBD: could be
+  a shared header like `include/xrpl/telemetry/DeterministicContext.h`, or file-local
+  if only used in two places)
+
+**Interaction with existing tasks**:
+
+- **Task 3.3 (PeerImp instrumentation)**: The span creation in `handleTransaction()`
+  must be restructured — the span currently starts before `txID` is known. This task
+  moves it after deserialization.
+- **Task 3.6 (Relay context propagation)**: Protobuf injection at the relay site
+  remains the same — `injectToProtobuf()` serializes the current span's `span_id`.
+  The receiver extracts it and combines with the deterministic `trace_id`.
+- **Phase 4a (Consensus deterministic trace ID)**: This task follows the same pattern.
+  Consider extracting a shared utility (e.g., `createDeterministicContext(uint256)`)
+  that both consensus and transaction tracing use.
+
+**Exit Criteria**:
+
+- [ ] `tx.receive` and `tx.process` spans have deterministic trace_id = `txHash[0:16]`
+- [ ] All nodes handling the same transaction produce spans under the same trace_id
+- [x] Protobuf `span_id` propagation still works when available (parent-child ordering)
+- [ ] Missing protobuf context (old peer) degrades gracefully to sibling spans, not lost traces
+- [ ] `trace_strategy` attribute set to `"deterministic"` on all tx spans
+- [ ] Trace queryable by tx hash (truncate hash → trace_id → direct lookup in Tempo)
+
+**Deliverables implemented (not in original plan)**:
+
+- **`SpanGuard::txSpan()` factory method** (`include/xrpl/telemetry/SpanGuard.h`):
+  Two overloads for creating transaction spans with deterministic trace IDs:
+  - `txSpan(category, group, name, txHash)` — standalone span (deterministic
+    trace_id from `txHash[0:16]`, no parent span_id).
+  - `txSpan(category, group, name, txHash, parentCtx)` — child span (deterministic
+    trace_id combined with protobuf-extracted parent span_id for relay ordering).
+
+- **`TxTracing.h` helper functions** (`src/xrpld/telemetry/TxTracing.h`):
+  File-local helpers that wrap `SpanGuard::txSpan()` for the two main PeerImp call
+  sites:
+  - `txReceiveSpan(txHash, parentCtx)` — creates `tx.receive` span with
+    deterministic trace_id and optional protobuf parent context.
+  - `txProcessSpan(txHash)` — creates `tx.process` span with deterministic
+    trace_id only (no protobuf parent, used intra-node).
+  - **Note**: `TxTracing.h` includes `xrpl.pb.h` unconditionally (outside
+    `#ifdef XRPL_ENABLE_TELEMETRY`) because `protocol::TMTransaction` appears in
+    the function signatures regardless of telemetry build mode.
+
+---
+
+## Task 3.10: TxQ Instrumentation
+
+**Status**: COMPLETE
+
+**Objective**: Trace the transaction queue lifecycle — enqueue decisions, direct apply, batch clear, ledger-close accept loop, per-tx apply, and cleanup.
+
+**Spans added**:
+
+- `txq.enqueue` — wraps `TxQ::apply()` with tx_hash attribute
+- `txq.apply_direct` — wraps `TxQ::tryDirectApply()` fast-path
+- `txq.batch_clear` — wraps `TxQ::tryClearAccountQueueUpThruTx()`
+- `txq.accept` — wraps `TxQ::accept()` ledger-close dequeue with queue_size attr
+- `txq.accept_tx` — per-tx span inside accept loop with tx_hash, ter_code,
+  retries_remaining attributes
+- `txq.cleanup` — wraps `TxQ::processClosedLedger()` with ledger_seq attribute
+
+**New file**: `src/xrpld/app/misc/detail/TxQSpanNames.h`
+
+**Modified file**: `src/xrpld/app/misc/detail/TxQ.cpp`
+
+---
+
+## Task 3.11: TX and TxQ Span Attribute Gap Fill
+
+**Status**: COMPLETE
+
+**Objective**: Add workflow-identifying attributes to transaction spans so operators can filter by transaction type and see outcomes without off-chain correlation.
+
+**Attributes added**:
+
+| Span              | Attribute            | Type   | Source                                                              |
+| ----------------- | -------------------- | ------ | ------------------------------------------------------------------- |
+| `tx.process`      | `tx_type`            | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
+| `tx.process`      | `fee`                | int64  | `stx->getFieldAmount(sfFee).xrp().drops()`                          |
+| `tx.process`      | `sequence`           | int64  | `stx->getSeqProxy().value()`                                        |
+| `tx.process`      | `ter_result`         | string | `transToken(e.result)` (set after batch application)                |
+| `tx.process`      | `applied`            | bool   | `e.applied` (set after batch application)                           |
+| `tx.receive`      | `tx_type`            | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
+| `txq.enqueue`     | `tx_type`            | string | same pattern as above                                               |
+| `txq.enqueue`     | `txq_status`         | string | `queued` / `applied_direct` / `applied` / `rejected`                |
+| `txq.enqueue`     | `fee_level_paid`     | int64  | `getFeeLevelPaid(view, *tx).value()`                                |
+| `txq.enqueue`     | `required_fee_level` | int64  | `getRequiredFeeLevel(...).value()`                                  |
+| `txq.batch_clear` | `num_cleared`        | int64  | queued txs cleared ahead of the applying tx                         |
+| `txq.cleanup`     | `expired_count`      | int64  | entries dropped for passed `LastLedgerSequence`                     |
+| `txq.accept_tx`   | `txq_status`         | string | `applied` / `failed` / `retried`                                    |
+| `txq.accept`      | `ledger_changed`     | bool   | set at end of accept loop                                           |
+
+**New attr keys**: `TxSpanNames.h` (`txType`, `fee`, `sequence`, `terResult`, `applied`), `TxQSpanNames.h` (`txType`).
+
+**Modified files**:
+
+- `src/xrpld/telemetry/TxSpanNames.h`
+- `src/xrpld/app/misc/detail/TxQSpanNames.h`
+- `src/xrpld/app/misc/NetworkOPs.cpp`
+- `src/xrpld/overlay/detail/PeerImp.cpp`
+- `src/xrpld/app/misc/detail/TxQ.cpp`
+
+---
+
+## Summary
+
+| Task | Description                         | New Files | Modified Files | Depends On |
+| ---- | ----------------------------------- | --------- | -------------- | ---------- |
+| 3.1  | TraceContext protobuf message       | 0         | 1              | Phase 2    |
+| 3.2  | Protobuf context serialization      | 1-2       | 0              | 3.1        |
+| 3.3  | PeerImp transaction instrumentation | 0         | 1              | 3.2        |
+| 3.4  | NetworkOPs transaction processing   | 0         | 1              | Phase 2    |
+| 3.5  | HashRouter dedup visibility         | 0         | 1              | 3.3        |
+| 3.6  | Relay context propagation           | 0         | 1-2            | 3.3, 3.5   |
+| 3.7  | Build verification and testing      | 0         | 0              | 3.1-3.6    |
+| 3.8  | TX span peer version attribute      | 0         | 1              | 3.3        |
+| 3.9  | Deterministic transaction trace ID  | 0-1       | 3              | 3.2, 3.3   |
+| 3.10 | TxQ instrumentation (6 spans)       | 1         | 1              | 3.4        |
+| 3.11 | TX/TxQ span attribute gap fill      | 0         | 5              | 3.3, 3.10  |
+
+**Parallel work**: Tasks 3.1 and 3.4 can start in parallel. Task 3.2 depends on 3.1. Tasks 3.3 and 3.5 depend on 3.2. Task 3.6 depends on 3.3 and 3.5. Task 3.8 depends on 3.3 (span must exist). Task 3.9 depends on 3.2 and 3.3. Task 3.10 depends on 3.4 (tx.process span must exist).
+
+**Exit Criteria** (from [06-implementation-phases.md §6.11.3](./06-implementation-phases.md)):
+
+- [x] Transaction traces span across nodes
+- [x] Trace context in Protocol Buffer messages
+- [ ] HashRouter deduplication visible in traces
+- [ ] <5% overhead on transaction throughput
+- [x] Deterministic trace_id: same trace_id for same tx across all nodes
+- [x] Protobuf span_id propagation preserves parent-child ordering when available
+
+---
+
+## Known Issues / Future Work
+
+### Unused trace_state proto field
+
+The `TraceContext.trace_state` field (field 4) in `xrpl.proto` is reserved for
+W3C `tracestate` vendor-specific key-value pairs but is not read or written by
+`TraceContextPropagator`. Wire it when cross-vendor trace propagation is needed.
+No wire cost since proto `optional` fields are zero-cost when absent.

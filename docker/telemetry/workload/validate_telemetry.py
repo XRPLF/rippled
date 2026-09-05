@@ -1,0 +1,2562 @@
+#!/usr/bin/env python3
+"""Telemetry Validation Suite for xrpld.
+
+Validates that the full telemetry stack is emitting expected data after
+a workload run. Queries Tempo (spans), Prometheus (metrics), Loki (logs),
+and Grafana (dashboards) APIs to produce a pass/fail report.
+
+Validation categories:
+  1. Span validation     — Every required span type in expected_spans.json, each
+                           carrying its required attributes
+  2. Metric validation   — SpanMetrics, StatsD, and MetricsRegistry OTLP metrics
+                           are non-zero, and each group's required_labels reach
+                           Prometheus with non-empty values
+  3. Log-trace correlation — Loki logs contain trace_id/span_id fields
+  4. Dashboard validation — Every dashboard uid in expected_metrics.json
+                           provisions and loads (panel count only, not panel data)
+  5. External parity     — Span attrs, metric existence, and value sanity for
+                           external dashboard parity (validator-health,
+                           peer-quality, node-health)
+
+Usage:
+    python3 validate_telemetry.py --report /tmp/validation-report.json
+
+    # Custom API endpoints:
+    python3 validate_telemetry.py \\
+        --tempo http://localhost:3200 \\
+        --prometheus http://localhost:9090 \\
+        --loki http://localhost:3100 \\
+        --grafana http://localhost:3000
+"""
+
+import argparse
+import asyncio
+import fnmatch
+import json
+import logging
+import re
+import sys
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import aiohttp
+
+# Loki's default query window is the last hour. A validation run finishes in
+# minutes, but bounding the range explicitly keeps the query reproducible when
+# someone re-runs it later to investigate a result.
+LOG_QUERY_WINDOW_SECONDS = 4 * 60 * 60
+
+# Loki's OTLP ingestion promotes service.name to the stream label
+# `service_name`; a `job` attribute arrives as structured metadata, which a
+# stream selector cannot match (see otel-collector-config.yaml). Declared once
+# so both log checks and the diagnostic below report on the same query -- a
+# diagnostic that queried something else would describe a different failure
+# than the one being investigated.
+LOG_STREAM_SELECTOR = '{service_name="xrpld"}'
+LOG_TRACE_LINE_FILTER = '|= "trace_id="'
+LOG_CORRELATION_QUERY = f"{LOG_STREAM_SELECTOR} {LOG_TRACE_LINE_FILTER}"
+
+logger = logging.getLogger("validate_telemetry")
+
+# ---------------------------------------------------------------------------
+# Configuration defaults
+# ---------------------------------------------------------------------------
+
+DEFAULT_TEMPO = "http://localhost:3200"
+DEFAULT_PROMETHEUS = "http://localhost:9090"
+DEFAULT_LOKI = "http://localhost:3100"
+DEFAULT_GRAFANA = "http://localhost:3000"
+
+SCRIPT_DIR = Path(__file__).parent
+EXPECTED_SPANS_FILE = SCRIPT_DIR / "expected_spans.json"
+EXPECTED_METRICS_FILE = SCRIPT_DIR / "expected_metrics.json"
+
+# Some beast::insight gauges/counters (ledger-age, peer-finder, overlay
+# traffic) only populate after the node validates ledgers and sustains peer
+# traffic, then travel a 1s periodic OTLP export + a 15s Prometheus scrape
+# before they are queryable. On a slow CI runner the fixed post-workload wait
+# can end before that pipeline settles, so a single query races and reports 0
+# series. Poll each missing metric for up to this long (covering two scrape
+# cycles) before failing, so the check is robust to runner speed.
+METRIC_POLL_TIMEOUT_SEC = 45.0
+METRIC_POLL_INTERVAL_SEC = 5.0
+
+# All metrics are polled concurrently against ONE shared deadline, so the
+# metric phase costs a single poll window instead of one per metric. This caps
+# how many /api/v1/series requests are in flight at a time, so the fan-out does
+# not hammer the single-container Prometheus the harness runs.
+METRIC_POLL_CONCURRENCY = 8
+
+# Bound on ONE HTTP request to Tempo, Prometheus, Loki or Grafana. aiohttp's
+# own default is total=300s, which is longer than any poll window here: a
+# single wedged endpoint would blow the shared deadline above and then keep the
+# run alive until the CI job's own budget killed it, losing the report and the
+# artifacts with it. Failing one request fast and reporting it beats being
+# killed with nothing.
+#
+# Derived from the poll window rather than picked: no single request may outlast
+# the phase budget it sits inside, since a request that does can only ever blow
+# that deadline. Connecting is held to one poll interval, because an endpoint
+# that is absent or wedged should be named immediately, not waited on.
+REQUEST_TIMEOUT = aiohttp.ClientTimeout(
+    total=METRIC_POLL_TIMEOUT_SEC, sock_connect=METRIC_POLL_INTERVAL_SEC
+)
+
+# The Prometheus exporter splits one histogram instrument into three series
+# names. Reverse coverage folds them back onto the base family so a contract
+# entry (or an accounted_patterns regex) written for the family accounts for
+# all three, and so a triple is never reported as three separate gaps.
+HISTOGRAM_SUFFIXES = ("_bucket", "_count", "_sum")
+
+
+# ---------------------------------------------------------------------------
+# Data classes
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class CheckResult:
+    """Result of a single validation check.
+
+    Attributes:
+        name:     Check identifier (e.g., "span.rpc.ws_message").
+        category: Validation category (span, metric, log, dashboard).
+        passed:   Whether the check passed.
+        message:  Human-readable description of the result.
+        details:  Optional additional data (counts, values, etc.).
+    """
+
+    name: str
+    category: str
+    passed: bool
+    message: str
+    details: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
+        return {
+            "name": self.name,
+            "category": self.category,
+            "passed": self.passed,
+            "message": self.message,
+            "details": self.details,
+        }
+
+
+@dataclass
+class ValidationReport:
+    """Aggregated validation report.
+
+    Attributes:
+        checks:     List of all individual check results.
+        start_time: ISO timestamp when validation started.
+        end_time:   ISO timestamp when validation completed.
+    """
+
+    checks: list[CheckResult] = field(default_factory=list)
+    start_time: str = ""
+    end_time: str = ""
+
+    @property
+    def total_checks(self) -> int:
+        """Total number of checks executed."""
+        return len(self.checks)
+
+    @property
+    def passed(self) -> int:
+        """Number of checks that passed."""
+        return sum(1 for c in self.checks if c.passed)
+
+    @property
+    def failed(self) -> int:
+        """Number of checks that failed."""
+        return sum(1 for c in self.checks if not c.passed)
+
+    @property
+    def all_passed(self) -> bool:
+        """Whether all checks passed."""
+        return self.failed == 0
+
+    def add(self, check: CheckResult) -> None:
+        """Add a check result to the report."""
+        self.checks.append(check)
+        status = "PASS" if check.passed else "FAIL"
+        logger.info("[%s] %s: %s", status, check.name, check.message)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
+        return {
+            "summary": {
+                "total": self.total_checks,
+                "passed": self.passed,
+                "failed": self.failed,
+                "all_passed": self.all_passed,
+            },
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+            "checks": [c.to_dict() for c in self.checks],
+        }
+
+
+# ---------------------------------------------------------------------------
+# Reverse coverage: what is emitted but not accounted for
+# ---------------------------------------------------------------------------
+#
+# The forward checks read the contract and ask Prometheus/Tempo whether each
+# listed name exists. That direction cannot see a name the contract omits, and
+# omissions are how a 345-family metric gap and 7 unknown spans went unnoticed:
+# both emitted inventories were already being fetched, and neither was compared
+# back against the contract.
+#
+# These helpers close the loop. They are deliberately WARN-ONLY. Downstream
+# branches legitimately add telemetry that an upstream contract has not seen
+# (the sync-diagnostics branch emits 7 spans this contract does not list), so a
+# hard failure here would redden every one of them for doing the right thing.
+# The value is visibility: name the gaps, in a form a human can read in a CI
+# log and diff between runs, and let a person decide.
+
+
+def _log_name_list(header: str, names: list[str]) -> None:
+    """Log a name list one entry per line, sorted.
+
+    A single-line Python list repr of 422 metric families is ~15 kB on one CI
+    log line: unreadable, and impossible to diff between runs. One name per line
+    makes two runs' logs comparable. Emitted as a single log record so the
+    lines cannot be interleaved by another task's output.
+
+    Args:
+        header: Line printed above the list; the count is appended to it.
+        names:  Names to print. Sorted here, so callers need not be.
+    """
+    body = "\n".join(f"  {name}" for name in sorted(names)) or "  (none)"
+    logger.info("%s (%d total):\n%s", header, len(names), body)
+
+
+def _reverse_coverage_result(
+    check_name: str,
+    category: str,
+    noun: str,
+    emitted_count: int,
+    unaccounted: list[str],
+) -> CheckResult:
+    """Build the always-passing CheckResult for one reverse coverage check.
+
+    ``passed`` is hardcoded True. This is the single place that decides the
+    check cannot fail CI, so the guarantee is auditable in one line rather than
+    spread over two call sites. The finding travels in ``message`` and in
+    ``details["unaccounted"]``, and the names are also logged one per line by
+    the caller.
+
+    Args:
+        check_name:    Report check name (e.g. "metric.reverse_coverage").
+        category:      Report category ("metric" or "span").
+        noun:          Plural noun for the message ("metric families", "span names").
+        emitted_count: How many names the backend reported.
+        unaccounted:   Names the contract does not account for.
+
+    Returns:
+        A CheckResult that always passes.
+    """
+    if emitted_count == 0:
+        message = (
+            f"reverse coverage not evaluated: no {noun} were reported "
+            f"(backend unreachable or empty) — warning only, never fails"
+        )
+    elif unaccounted:
+        message = (
+            f"WARNING: {len(unaccounted)} of {emitted_count} emitted {noun} are "
+            f"not accounted for by the contract: {', '.join(sorted(unaccounted)[:5])}"
+            f"{' …' if len(unaccounted) > 5 else ''} "
+            f"(full list logged above; warning only, never fails)"
+        )
+    else:
+        message = f"all {emitted_count} emitted {noun} are accounted for"
+
+    return CheckResult(
+        name=check_name,
+        category=category,
+        passed=True,
+        message=message,
+        details={
+            "emitted": emitted_count,
+            "accounted": emitted_count - len(unaccounted),
+            "unaccounted_count": len(unaccounted),
+            "unaccounted": sorted(unaccounted),
+            "enforced": False,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tempo API helpers
+# ---------------------------------------------------------------------------
+
+
+def _log_query_window() -> dict[str, str]:
+    """Loki query_range bounds covering a validation run.
+
+    Returns:
+        start/end parameters in nanoseconds since the epoch.
+    """
+    now = time.time()
+    return {
+        "start": str(int((now - LOG_QUERY_WINDOW_SECONDS) * 1_000_000_000)),
+        "end": str(int(now * 1_000_000_000)),
+    }
+
+
+class TempoQueryError(RuntimeError):
+    """Tempo answered a query with a failure, as distinct from "nothing found".
+
+    The two must not be conflated. An empty search result and a 404 on a trace
+    id are legitimate answers meaning the data is not there; an HTTP 5xx, a 401
+    or a 400 mean the question was never answered, and reporting that as "0
+    traces" or "0 spans" turns a broken backend into a green-looking negative
+    result. Callers that loop over candidates catch absence and move on; this
+    exception is what they must NOT swallow.
+    """
+
+
+def _short_body(text: str, limit: int = 300) -> str:
+    """Collapse a response body to one bounded line, for a log or a message."""
+    return " ".join(text.split())[:limit] or "(empty body)"
+
+
+async def _tempo_search(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    query: str,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Search traces in Tempo using TraceQL.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for Tempo API (e.g., http://localhost:3200).
+        query:     TraceQL query string.
+        limit:     Maximum number of traces to return.
+
+    Returns:
+        List of trace summary dicts from Tempo search results.
+    """
+    params = {"q": query, "limit": str(limit)}
+    async with session.get(f"{tempo_url}/api/search", params=params) as resp:
+        # /api/search answers 200 with an empty (or absent) "traces" list when
+        # nothing matches, so there is no "legitimately absent" status to
+        # tolerate here: every non-200 is a real failure. Left unchecked,
+        # resp.json() on an error body yields a dict with no "traces" key and
+        # this returns [], which every caller reports as "no traces found" --
+        # indistinguishable from a healthy Tempo holding nothing. That is the
+        # same silent-failure shape as a span query that returned 200 with an
+        # empty list, and it must not be reproduced here.
+        if resp.status != 200:
+            raise TempoQueryError(
+                f"GET /api/search returned HTTP {resp.status}: "
+                f"{_short_body(await resp.text())}"
+            )
+        data = await resp.json()
+        return data.get("traces", [])
+
+
+async def _tempo_get_trace(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    trace_id: str,
+) -> list[dict[str, Any]]:
+    """Fetch a full trace from Tempo by trace ID.
+
+    Returns the list of spans extracted from the OTLP-format response.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Tempo API base URL.
+        trace_id:  Hex trace ID string.
+
+    A 404 means Tempo holds no such trace, which is returned as an empty list
+    rather than raised: see the note in the body. Any other non-200 raises
+    TempoQueryError.
+
+    Returns:
+        Flat list of span dicts as Tempo returned them, carrying at least
+        'name', 'attributes', 'spanId' and, for non-root spans, 'parentSpanId'.
+        Empty when Tempo has no trace with this id.
+
+    Raises:
+        TempoQueryError: Tempo answered with a status other than 200 or 404.
+    """
+    async with session.get(f"{tempo_url}/api/traces/{trace_id}") as resp:
+        # 404 is Tempo's answer for "no trace with that id", and for an id read
+        # out of a log line that is an ordinary outcome, not an error: the span
+        # may not have been exported yet, or its block may not be searchable.
+        # Every caller either loops over candidate ids or over several traces
+        # and relies on an empty list meaning "not this one", so a 404 must stay
+        # absent -- raising here would turn a normal miss into a check failure
+        # and abort the loop over the remaining candidates.
+        if resp.status == 404:
+            return []
+        # Anything else is a real failure. Unchecked, resp.json() on an error
+        # body yields a dict with no "batches" key, so this returned [] and the
+        # caller reported "0 spans" -- a backend fault laundered into a
+        # negative result.
+        if resp.status != 200:
+            raise TempoQueryError(
+                f"GET /api/traces/{trace_id} returned HTTP {resp.status}: "
+                f"{_short_body(await resp.text())}"
+            )
+        data = await resp.json()
+        spans: list[dict[str, Any]] = []
+        for batch in data.get("batches", []):
+            for scope_spans in batch.get("scopeSpans", []):
+                spans.extend(scope_spans.get("spans", []))
+        return spans
+
+
+def _otlp_span_attr_keys(span: dict[str, Any]) -> set[str]:
+    """Extract all attribute key names from an OTLP span.
+
+    Args:
+        span: OTLP span dict with an 'attributes' list.
+
+    Returns:
+        Set of attribute key strings.
+    """
+    return {a["key"] for a in span.get("attributes", []) if "key" in a}
+
+
+def _traceql_name_predicate(expected_name: str) -> str:
+    """Build the TraceQL `name` predicate that selects a contract span name.
+
+    A literal name becomes an equality test. A glob becomes a regex, since
+    TraceQL has no glob operator: `rpc.command.*` is sent as
+    `name=~"rpc[.]command[.].*"`.
+
+    Dots use the `[.]` character class, not `\\.`: TraceQL's string lexer
+    rejects an escape it does not recognise, so `\\.` returns HTTP 400. Bare
+    dots would parse but match any character there.
+
+    Args:
+        expected_name: Span name or glob from expected_spans.json.
+
+    Returns:
+        A TraceQL predicate on the bare `name` intrinsic, without braces.
+    """
+    if "*" not in expected_name:
+        return f'name="{expected_name}"'
+    # Span names are lower_snake_case segments joined by dots, so `.` and `*` are
+    # the only characters here that mean anything to a regex engine. Anything
+    # else appearing would need its own handling rather than silent passthrough.
+    unexpected = set(expected_name) - set("abcdefghijklmnopqrstuvwxyz0123456789_.*")
+    if unexpected:
+        raise ValueError(
+            f"span name {expected_name!r} contains {sorted(unexpected)}, which "
+            "this predicate builder does not know how to escape for TraceQL"
+        )
+    pattern = "".join(
+        ".*" if ch == "*" else "[.]" if ch == "." else ch for ch in expected_name
+    )
+    return f'name=~"{pattern}"'
+
+
+def _span_name_matches(emitted_name: str, expected_name: str) -> bool:
+    """Test an emitted span name against a name from expected_spans.json.
+
+    Contract names are either literals or globs containing "*" (for example
+    "rpc.command.*"). Literals are compared for exact equality so a longer
+    emitted name cannot satisfy a shorter contract: "consensus.accept.apply"
+    must not stand in for "consensus.accept".
+
+    Args:
+        emitted_name:  Span name as reported by Tempo.
+        expected_name: Span name or glob pattern from expected_spans.json.
+
+    Returns:
+        True when the emitted name satisfies the expected name.
+    """
+    if "*" in expected_name:
+        return fnmatch.fnmatchcase(emitted_name, expected_name)
+    return emitted_name == expected_name
+
+
+def _unaccounted_span_names(emitted: list[str], expected: dict[str, Any]) -> list[str]:
+    """Names Tempo reports that no expected_spans.json entry accounts for.
+
+    "Accounted for" is the same relation the forward check uses, so a contract
+    glob such as "rpc.command.*" covers every command it expands to, and an
+    entry marked ``optional`` still accounts for its name — being unasserted is
+    not the same as being unknown. No separate pattern list is needed for spans
+    because the contract already carries globs.
+
+    Args:
+        emitted:  Span names as reported by Tempo's span.name tag values.
+        expected: The parsed expected_spans.json contract.
+
+    Returns:
+        Sorted list of emitted names with no matching contract entry.
+    """
+    contract = [span_def["name"] for span_def in expected.get("spans", [])]
+    return sorted(
+        name
+        for name in emitted
+        if name
+        and not any(
+            _span_name_matches(name, expected_name) for expected_name in contract
+        )
+    )
+
+
+# ---------------------------------------------------------------------------
+# Span Validation (Tempo API)
+# ---------------------------------------------------------------------------
+
+
+async def validate_spans(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate that all expected spans appear in Tempo.
+
+    Queries the Tempo TraceQL API for each expected span name and checks
+    that traces exist. Also validates required attributes on spans and
+    parent-child relationships.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for Tempo API (e.g., http://localhost:3200).
+        report:    ValidationReport to accumulate results.
+    """
+    logger.info("--- Span Validation (Tempo) ---")
+
+    # Load expected spans.
+    with open(EXPECTED_SPANS_FILE) as f:
+        expected = json.load(f)
+
+    # Check service registration.
+    try:
+        async with session.get(
+            f"{tempo_url}/api/v2/search/tag/resource.service.name/values"
+        ) as resp:
+            data = await resp.json()
+            tag_values = data.get("tagValues", [])
+            services = [tv.get("value", "") for tv in tag_values]
+            has_xrpld = "xrpld" in services
+            report.add(
+                CheckResult(
+                    name="span.service_registration",
+                    category="span",
+                    passed=has_xrpld,
+                    message=(
+                        f"Service 'xrpld' registered (found: {services})"
+                        if has_xrpld
+                        else f"Service 'xrpld' NOT found (found: {services})"
+                    ),
+                )
+            )
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name="span.service_registration",
+                category="span",
+                passed=False,
+                message=f"Tempo API unreachable: {exc}",
+            )
+        )
+        return
+
+    # List every span name Tempo holds. This is both a diagnostic (it makes a
+    # missing-span failure debuggable without reproducing the stack locally)
+    # and the input to the reverse coverage check added at the end of this
+    # function. Note the tag-values API is not service-scoped, so in a stack
+    # where something other than xrpld also sent traces this list would be a
+    # superset; on the harness only xrpld exports spans.
+    #
+    # The tag is the bare intrinsic `name`, NOT `span.name`. A span's name is a
+    # TraceQL intrinsic, not a span-scoped attribute, so `span.name` resolves to
+    # an attribute nothing sets and Tempo answers 200 with an empty tagValues
+    # list -- indistinguishable from an empty backend, which is how the wrong
+    # tag went unnoticed. Verified against tempo 2.9.4 holding one span:
+    # `span.name` -> {"tagValues":[]}, `name` -> that span's name.
+    emitted_span_names: list[str] = []
+    try:
+        async with session.get(f"{tempo_url}/api/v2/search/tag/name/values") as resp:
+            ops_data = await resp.json()
+            tag_values = ops_data.get("tagValues", [])
+            emitted_span_names = [tv.get("value", "") for tv in tag_values]
+            _log_name_list("Tempo span names", emitted_span_names)
+    except Exception as exc:
+        logger.warning("Failed to fetch Tempo operations: %s", exc)
+
+    # Concrete probe names for wildcard span entries. Exact-match TraceQL can't
+    # match a literal "*", so a representative operation name is substituted.
+    # Wildcards without a known concrete example (e.g. grpc.<MethodName> when no
+    # gRPC client runs) are skipped when marked optional.
+    wildcard_probes = {"rpc.command.*": "rpc.command.server_info"}
+
+    # Check each expected span.
+    for span_def in expected["spans"]:
+        span_name = span_def["name"]
+        is_optional = span_def.get("optional", False)
+        check_name = f"span.{span_name}"
+
+        if "*" in span_name:
+            operation = wildcard_probes.get(span_name)
+            if operation is None:
+                # No concrete probe. Optional wildcards (e.g. grpc.*) are skipped;
+                # a required one would be a config error worth surfacing.
+                if is_optional:
+                    logger.info(
+                        "[SKIP] %s: optional wildcard span with no concrete "
+                        "probe (not exercised by the workload)",
+                        check_name,
+                    )
+                    continue
+                report.add(
+                    CheckResult(
+                        name=check_name,
+                        category="span",
+                        passed=False,
+                        message=f"{span_name}: required wildcard has no probe name",
+                    )
+                )
+                continue
+        else:
+            operation = span_name
+
+        try:
+            query = '{resource.service.name="xrpld" && name="' + operation + '"}'
+            traces = await _tempo_search(session, tempo_url, query, limit=5)
+            count = len(traces)
+            # Optional spans only fire under specific traffic (mode changes,
+            # missing-ledger fetch, fee escalation). Absence is not a failure —
+            # mirror the parent-child "skip" handling so CI stays green.
+            if count == 0 and is_optional:
+                logger.info(
+                    "[SKIP] %s: optional span not emitted under this workload",
+                    check_name,
+                )
+                report.add(
+                    CheckResult(
+                        name=check_name,
+                        category="span",
+                        passed=True,
+                        message=f"{span_name}: optional, not emitted (skipped)",
+                        details={"trace_count": 0, "optional": True},
+                    )
+                )
+                continue
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="span",
+                    passed=count > 0,
+                    message=(
+                        f"{span_name}: {count} traces found"
+                        if count > 0
+                        else f"{span_name}: 0 traces (expected > 0)"
+                    ),
+                    details={"trace_count": count},
+                )
+            )
+
+            # Validate required attributes on first trace.
+            if count > 0 and span_def.get("required_attributes"):
+                await _check_attributes_on_first_trace(
+                    session, tempo_url, traces, span_def, report
+                )
+        except Exception as exc:
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="span",
+                    passed=False,
+                    message=f"{span_name}: query failed ({exc})",
+                )
+            )
+
+    # Validate parent-child relationships.
+    for rel in expected.get("parent_child_relationships", []):
+        # Skip relationships marked with "skip: true" (e.g., cross-thread
+        # parent-child that requires a C++ fix to propagate span context).
+        if rel.get("skip", False):
+            reason = rel.get("skip_reason", "marked skip in expected_spans.json")
+            logger.info(
+                "[SKIP] span.hierarchy.%s->%s: %s",
+                rel["parent"],
+                rel["child"],
+                reason,
+            )
+            continue
+        await _validate_parent_child(session, tempo_url, rel, report)
+
+    # Reverse direction: span names Tempo holds that the contract never mentions.
+    # Added last so no existing check's position in the report moves.
+    unaccounted_spans = _unaccounted_span_names(emitted_span_names, expected)
+    if unaccounted_spans:
+        _log_name_list(
+            "Span names emitted but NOT accounted for by expected_spans.json "
+            "(warning only, does not fail CI)",
+            unaccounted_spans,
+        )
+    report.add(
+        _reverse_coverage_result(
+            check_name="span.reverse_coverage",
+            category="span",
+            noun="span names",
+            emitted_count=len(emitted_span_names),
+            unaccounted=unaccounted_spans,
+        )
+    )
+
+
+async def _check_attributes_on_first_trace(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    traces: list[dict[str, Any]],
+    span_def: dict[str, Any],
+    report: ValidationReport,
+) -> None:
+    """Fetch the first trace and check the span's required attributes.
+
+    Fetching the trace is a second network call, so it carries its own error
+    handling. Letting it fall through to the caller's handler would add a
+    second result under the span's own check name, which has already recorded
+    the trace as found -- one entry passing and one failing for the same name,
+    inflating the check total and blaming the trace-existence check for an
+    attribute-fetch failure.
+
+    Args:
+        session:    aiohttp client session.
+        tempo_url:  Base URL for the Tempo API.
+        traces:     Traces returned for this span, most recent first.
+        span_def:   The span's entry from expected_spans.json.
+        report:     ValidationReport to accumulate results.
+    """
+    span_name = span_def["name"]
+    try:
+        trace_id = traces[0].get("traceID", "")
+        if not trace_id:
+            # Recorded rather than returned on silently. Returning with no
+            # result would drop this span's attribute contract out of the
+            # report and shrink the check total, so the surface would look
+            # smaller with nothing saying why. Reported the same way as a
+            # fetched trace holding no matching span, below: being unable to
+            # verify is itself the finding. The caller only reaches here for a
+            # span that declares required_attributes, so this adds no check
+            # where none was expected.
+            report.add(
+                CheckResult(
+                    name=f"span.attrs.{span_name}",
+                    category="span",
+                    passed=False,
+                    message=(
+                        f"{span_name}: newest trace carried no traceID, cannot "
+                        "verify its attributes"
+                    ),
+                )
+            )
+            return
+        spans = await _tempo_get_trace(session, tempo_url, trace_id)
+        await _validate_span_attributes_otlp(spans, span_def, report)
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name=f"span.attrs.{span_name}",
+                category="span",
+                passed=False,
+                message=f"{span_name}: attribute check failed ({exc})",
+            )
+        )
+
+
+async def _validate_span_attributes_otlp(
+    spans: list[dict[str, Any]],
+    span_def: dict[str, Any],
+    report: ValidationReport,
+) -> None:
+    """Check that the contract's own span carries its required attributes.
+
+    Only spans whose name matches ``span_def["name"]`` are inspected.
+    Attributes are never borrowed from siblings: many span types share keys
+    such as ledger_seq or tx_hash, so a trace-wide scan would satisfy every
+    one of those contracts from a single carrier span and make the per-span
+    contract unenforceable.
+
+    A span type passes when at least one instance of it carries every required
+    attribute. When none does, the closest instance's missing keys are
+    reported.
+
+    Args:
+        spans:    Every OTLP span dict in the fetched trace.
+        span_def: Span definition from expected_spans.json.
+        report:   ValidationReport to accumulate results.
+    """
+    required_attrs = span_def.get("required_attributes", [])
+    if not required_attrs:
+        return
+
+    span_name = span_def["name"]
+    check_name = f"span.attrs.{span_name}"
+    matching = [s for s in spans if _span_name_matches(s.get("name", ""), span_name)]
+
+    if not matching:
+        report.add(
+            CheckResult(
+                name=check_name,
+                category="span",
+                passed=False,
+                message=(
+                    f"{span_name}: no span named '{span_name}' in the fetched "
+                    "trace, cannot verify its attributes"
+                ),
+                details={"required": required_attrs, "instances": 0},
+            )
+        )
+        return
+
+    # Keep the instance that is missing the fewest required attributes, so the
+    # failure message names the closest witness rather than an arbitrary one.
+    best_found: set[str] = set()
+    best_missing: list[str] = list(required_attrs)
+    for span in matching:
+        found = _otlp_span_attr_keys(span)
+        missing = [a for a in required_attrs if a not in found]
+        if len(missing) < len(best_missing):
+            best_found, best_missing = found, missing
+        if not best_missing:
+            break
+
+    report.add(
+        CheckResult(
+            name=check_name,
+            category="span",
+            passed=not best_missing,
+            message=(
+                f"{span_name}: all {len(required_attrs)} attributes present"
+                if not best_missing
+                else f"{span_name}: no '{span_name}' span carried all "
+                f"{len(required_attrs)} required attributes; closest of "
+                f"{len(matching)} instance(s) missing {best_missing}"
+            ),
+            details={
+                "required": required_attrs,
+                "found": sorted(best_found),
+                "missing": best_missing,
+                "instances": len(matching),
+            },
+        )
+    )
+
+
+# Verdicts _span_ancestry can return, most conclusive first. A single trace
+# proving "under" settles the relationship, so it wins outright. A definite
+# negative outranks an indefinite one: "not_under" means a chain was walked to a
+# root and the parent was not on it, while "broken_chain" only means ancestry
+# could not be established, which is a different thing to go and look at.
+# "no_child" ranks last because it is the starting value: a relationship with no
+# candidate trace at all reports it, and every other verdict must be able to
+# replace it.
+_ANCESTRY_PRIORITY = ("under", "not_under", "broken_chain", "no_parent", "no_child")
+
+
+def _span_ancestry(
+    spans: list[dict[str, Any]],
+    parent_name: str,
+    child_name: str,
+) -> tuple[str, str]:
+    """Decide whether a matching child hangs under a matching parent in one trace.
+
+    Walks each candidate child's parentSpanId chain upwards. Ancestry rather
+    than a direct edge, because every relationship in expected_spans.json is
+    worded as the parent "containing" the child: a scope appearing in between is
+    a refactor, not a broken relationship.
+
+    Span ids are compared as opaque strings and never decoded. Both fields come
+    from the same Tempo response and so share whatever encoding it uses, which
+    keeps this independent of whether that is hex or base64.
+
+    Args:
+        spans:       Every OTLP span dict in one fetched trace.
+        parent_name: Parent name from the contract; may be a glob.
+        child_name:  Child name from the contract; may be a glob.
+
+    Returns:
+        ``(verdict, detail)``. Verdict is one of ``_ANCESTRY_PRIORITY``. For
+        ``broken_chain`` the detail is the span id the chain ran into.
+    """
+    by_id = {s["spanId"]: s for s in spans if s.get("spanId")}
+    parent_ids = {
+        s["spanId"]
+        for s in spans
+        if s.get("spanId") and _span_name_matches(s.get("name", ""), parent_name)
+    }
+    children = [s for s in spans if _span_name_matches(s.get("name", ""), child_name)]
+    if not children:
+        return "no_child", ""
+    if not parent_ids:
+        return "no_parent", ""
+
+    broken = ""
+    walked_to_a_root = False
+    for child in children:
+        current = child.get("parentSpanId", "")
+        # Guards against a cycle in malformed data, which would otherwise spin
+        # here forever rather than failing the check.
+        seen: set[str] = set()
+        while current and current not in seen:
+            if current in parent_ids:
+                return "under", ""
+            seen.add(current)
+            if (next_span := by_id.get(current)) is None:
+                # This child proves nothing either way. Keep the first gap seen,
+                # in case no other child yields a definite answer.
+                broken = broken or current
+                break
+            current = next_span.get("parentSpanId", "")
+        else:
+            # Ran out of chain rather than hitting a gap, so this child really is
+            # not under the parent. One such child is a definite negative and
+            # outranks any other child's gap.
+            walked_to_a_root = True
+    if walked_to_a_root or not broken:
+        return "not_under", ""
+    return "broken_chain", broken
+
+
+def _hierarchy_message(
+    parent_name: str, child_name: str, verdict: str, detail: str
+) -> str:
+    """Phrase one ancestry verdict for the report.
+
+    Each verdict gets its own wording because they send the reader somewhere
+    different: a missing child is a workload or instrumentation gap, a child
+    that is present but not under the parent is a hierarchy bug, and a broken
+    chain is a span that never reached Tempo.
+    """
+    if verdict == "under":
+        return f"Found {child_name} under {parent_name}"
+    if verdict == "not_under":
+        return (
+            f"{child_name} shares a trace with {parent_name} but is not under "
+            f"it -- co-occurrence is not a hierarchy"
+        )
+    if verdict == "broken_chain":
+        return (
+            f"{child_name}'s parent chain runs into span {detail}, which the "
+            f"trace does not contain, so ancestry under {parent_name} cannot "
+            f"be verified"
+        )
+    if verdict == "no_parent":
+        return f"{parent_name} absent from traces selected for containing it"
+    return f"{child_name} not found in {parent_name} traces"
+
+
+async def _best_ancestry_verdict(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    traces: list[dict[str, Any]],
+    parent_name: str,
+    child_name: str,
+) -> tuple[str, str]:
+    """Fetch each candidate trace and keep the most conclusive verdict.
+
+    Every candidate is examined rather than stopping at the first negative,
+    because a conditional child may hang correctly in one trace while another
+    carries the parent alone. Stops early once one trace proves "under", which
+    nothing later can improve on.
+
+    Names are re-checked per trace rather than trusted from the query that
+    selected it: it keeps the glob handling in one place, so a wrongly built
+    query cannot pass silently.
+
+    Args:
+        session:     aiohttp client session.
+        tempo_url:   Base URL for the Tempo API.
+        traces:      Trace summaries that matched parent and child.
+        parent_name: Parent name from the contract; may be a glob.
+        child_name:  Child name from the contract; may be a glob.
+
+    Returns:
+        The winning ``(verdict, detail)`` from _span_ancestry.
+    """
+    verdict, detail = "no_child", ""
+    for trace_summary in traces:
+        trace_id = trace_summary.get("traceID", "")
+        if not trace_id:
+            continue
+        spans = await _tempo_get_trace(session, tempo_url, trace_id)
+        candidate, candidate_detail = _span_ancestry(spans, parent_name, child_name)
+        if _ANCESTRY_PRIORITY.index(candidate) < _ANCESTRY_PRIORITY.index(verdict):
+            verdict, detail = candidate, candidate_detail
+        if verdict == "under":
+            break
+    return verdict, detail
+
+
+async def _validate_parent_child(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    relationship: dict[str, Any],
+    report: ValidationReport,
+) -> None:
+    """Validate a parent-child span relationship in Tempo traces.
+
+    Co-occurrence in a trace is the search filter, not the assertion: the check
+    then walks the child's parentSpanId chain to confirm it really hangs under
+    the parent. See _span_ancestry.
+
+    Args:
+        session:      aiohttp client session.
+        tempo_url:    Base URL for Tempo API.
+        relationship: Dict with 'parent' and 'child' span names.
+        report:       ValidationReport to accumulate results.
+    """
+    parent_name = relationship["parent"]
+    child_name = relationship["child"]
+
+    try:
+        # Query traces for the parent span. Kept as its own query so that "the
+        # parent stopped being emitted" stays distinguishable from "the parent is
+        # there but the child never co-occurs" — they mean different things to
+        # whoever reads the report.
+        query = '{resource.service.name="xrpld" && name="' + parent_name + '"}'
+        traces = await _tempo_search(session, tempo_url, query, limit=3)
+
+        if not traces:
+            report.add(
+                CheckResult(
+                    name=f"span.hierarchy.{parent_name}->{child_name}",
+                    category="span",
+                    passed=False,
+                    message=f"No {parent_name} traces to check hierarchy",
+                )
+            )
+            return
+
+        # Ask for traces holding BOTH rather than the newest parent traces. A
+        # parent that fires on every close has newest traces least likely to
+        # carry a conditional child. `{A} && {B}` matches at trace level, so
+        # co-occurrence is found wherever it happened.
+        both_query = query + " && {" + _traceql_name_predicate(child_name) + "}"
+        traces = await _tempo_search(session, tempo_url, both_query, limit=3)
+
+        verdict, detail = await _best_ancestry_verdict(
+            session, tempo_url, traces, parent_name, child_name
+        )
+        report.add(
+            CheckResult(
+                name=f"span.hierarchy.{parent_name}->{child_name}",
+                category="span",
+                passed=verdict == "under",
+                message=_hierarchy_message(parent_name, child_name, verdict, detail),
+            )
+        )
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name=f"span.hierarchy.{parent_name}->{child_name}",
+                category="span",
+                passed=False,
+                message=f"Hierarchy check failed: {exc}",
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
+# Metric Validation (Prometheus API)
+# ---------------------------------------------------------------------------
+
+
+async def _log_prometheus_metric_names(
+    session: aiohttp.ClientSession, prometheus_url: str
+) -> list[str]:
+    """Log every metric family name Prometheus knows, and return the list.
+
+    Two jobs. It is the diagnostic that makes a name mismatch between
+    expected_metrics.json and actual emissions debuggable from a CI log, and it
+    is the emitted inventory the reverse coverage check compares the contract
+    against. Failures are warnings, never check failures; an empty return means
+    "could not determine", which the reverse check reports as not evaluated
+    rather than as a clean run.
+
+    Deliberately unfiltered. This used to keep only names matching 19
+    hard-coded prefixes, which made it useless for the job it exists to do: on
+    the last CI run it printed 147 of 422 families, and none of the prefixes
+    covered state_accounting_*, node_family_*, overlay_peer_disconnects or the
+    pathfind_* histograms, so a coverage gap in exactly those families could
+    not be seen here. An allow-list can only ever show names someone already
+    thought to look for, which is the opposite of what a discovery aid needs
+    to do. The whole list is a few kilobytes of CI log, so there is nothing to
+    save by truncating it.
+
+    Sorted and printed one name per line so two runs' output can be diffed
+    directly; the Prometheus API does not promise an order, and the whole list
+    on one log line was neither readable nor diffable.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus base URL.
+
+    Returns:
+        Sorted metric family names, or an empty list if the fetch failed.
+    """
+    try:
+        async with session.get(
+            f"{prometheus_url}/api/v1/label/__name__/values"
+        ) as resp:
+            label_data = await resp.json()
+            all_metrics = sorted(label_data.get("data", []))
+            _log_name_list("Prometheus metric families", all_metrics)
+            return all_metrics
+    except Exception as exc:
+        logger.warning("Failed to fetch Prometheus metric names: %s", exc)
+        return []
+
+
+def _selector_metric_name(selector: str) -> str:
+    """Strip any label matcher from a contract selector, leaving the name.
+
+    Contract entries are usually bare names but some carry a matcher, e.g.
+    ``ledger_economy{metric="base_fee_xrp"}``. Reverse coverage compares family
+    names, and Prometheus reports one ``__name__`` per family regardless of how
+    many label combinations it has, so the matcher must come off first.
+
+    Args:
+        selector: A metric name, optionally followed by a brace matcher group.
+
+    Returns:
+        The bare metric family name.
+    """
+    return selector.split("{", 1)[0].strip()
+
+
+def _metric_family_candidates(name: str) -> list[str]:
+    """The names a contract entry could use to account for an emitted series.
+
+    One histogram instrument reaches Prometheus as three names. Folding the
+    ``_bucket``/``_count``/``_sum`` suffix back off gives the base family, so a
+    contract entry or a regex written for the family covers all three.
+
+    The unfolded name is always kept as a candidate too, and a name is
+    accounted for if *any* candidate matches. That is what makes folding
+    ``_count`` safe even though a plain gauge can legitimately end in it
+    (``jobq_job_count`` does): the gauge matches on its own full name, and the
+    extra ``jobq_job`` candidate can only ever add coverage, never remove it.
+
+    Args:
+        name: Emitted Prometheus metric family name.
+
+    Returns:
+        ``[name]``, plus the base family if ``name`` carries a histogram suffix.
+    """
+    candidates = [name]
+    for suffix in HISTOGRAM_SUFFIXES:
+        if name.endswith(suffix) and len(name) > len(suffix):
+            candidates.append(name[: -len(suffix)])
+            break
+    return candidates
+
+
+def _accounted_metric_names(
+    expected: dict[str, Any],
+) -> tuple[set[str], list[re.Pattern[str]]]:
+    """Everything expected_metrics.json accounts for, in family-name form.
+
+    Three sources, all of which count as "the contract has considered this
+    name" — which is what reverse coverage asks, not "is this name asserted":
+
+    * every selector under a group's ``metrics`` (asserted),
+    * every key of ``not_asserted.metrics_excluded`` (deliberately unasserted
+      with a written reason),
+    * every regex under the top-level ``accounted_patterns`` (bulk families).
+
+    Literal histogram entries are expanded to the whole triple plus the base
+    family, so listing only ``foo_bucket`` still accounts for ``foo_count`` and
+    ``foo_sum``. The expansion is keyed off ``_bucket``/``_sum`` only, never off
+    ``_count`` alone, so a gauge named ``..._count`` does not silently claim a
+    shorter base family that nothing emits.
+
+    Args:
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        A (literal family names, compiled patterns) pair.
+    """
+    literals: set[str] = set()
+    for group in expected.values():
+        if not isinstance(group, dict):
+            continue
+        for selector in group.get("metrics", []):
+            literals.add(_selector_metric_name(selector))
+        # not_asserted records its entries under metrics_excluded, keyed by name.
+        literals.update(group.get("metrics_excluded", {}))
+
+    for name in list(literals):
+        for suffix in ("_bucket", "_sum"):
+            if name.endswith(suffix) and len(name) > len(suffix):
+                base = name[: -len(suffix)]
+                literals.add(base)
+                literals.update(base + s for s in HISTOGRAM_SUFFIXES)
+                break
+
+    patterns = [
+        re.compile(entry["pattern"])
+        for entry in expected.get("accounted_patterns", [])
+        if entry.get("pattern")
+    ]
+    return literals, patterns
+
+
+def _unaccounted_metric_names(
+    emitted: list[str], expected: dict[str, Any]
+) -> list[str]:
+    """Metric families Prometheus holds that the contract never mentions.
+
+    Args:
+        emitted:  Metric family names from the Prometheus __name__ label.
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        Sorted list of emitted family names nothing in the contract accounts for.
+    """
+    literals, patterns = _accounted_metric_names(expected)
+    unaccounted = []
+    for name in emitted:
+        candidates = _metric_family_candidates(name)
+        accounted = any(
+            candidate in literals
+            or any(pattern.fullmatch(candidate) for pattern in patterns)
+            for candidate in candidates
+        )
+        if not accounted:
+            unaccounted.append(name)
+    return sorted(unaccounted)
+
+
+def _metric_check_targets(
+    expected: dict[str, Any],
+) -> tuple[list[tuple[str, str]], list[tuple[str, str, list[str]]]]:
+    """Flatten expected_metrics.json into the two lists of check targets.
+
+    Args:
+        expected: The parsed expected_metrics.json contract.
+
+    Returns:
+        A (metric targets, label targets) pair. Metric targets are
+        (group, metric selector) for every name under a group's "metrics".
+        Label targets are (group, label, that group's metric selectors) for
+        every name under a group's "required_labels" — read for every group
+        that declares it, not just spanmetrics. Nothing read the key at all
+        until this was added, so the four labels the spanmetrics group
+        documented as required had never actually been checked.
+
+    Note:
+        A group is any top-level value that is an object. The contract also
+        carries a string ("description"), a list ("accounted_patterns") and an
+        object that declares no metrics ("grafana_dashboards"); the isinstance
+        test skips the first two structurally rather than by name, so adding
+        another non-group key cannot break this function, and the third
+        contributes nothing because it has no "metrics" key. This selects
+        exactly the same groups the previous name-based exclusion list did.
+    """
+    groups = [
+        (category_key, category_data)
+        for category_key, category_data in expected.items()
+        if isinstance(category_data, dict)
+    ]
+    targets = [
+        (category_key, metric_name)
+        for category_key, category_data in groups
+        for metric_name in category_data.get("metrics", [])
+    ]
+    label_targets = [
+        (category_key, label, category_data.get("metrics", []))
+        for category_key, category_data in groups
+        for label in category_data.get("required_labels", [])
+    ]
+    return targets, label_targets
+
+
+async def validate_metrics(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate that expected metrics appear in Prometheus with non-zero values.
+
+    Two kinds of check come out of expected_metrics.json: every name under a
+    group's "metrics" must have at least one series, and every label under a
+    group's "required_labels" must reach at least one of that group's series
+    with a non-empty value.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Base URL for Prometheus API (e.g., http://localhost:9090).
+        report:         ValidationReport to accumulate results.
+    """
+    logger.info("--- Metric Validation (Prometheus) ---")
+
+    emitted_metric_names = await _log_prometheus_metric_names(session, prometheus_url)
+
+    with open(EXPECTED_METRICS_FILE) as f:
+        expected = json.load(f)
+
+    # Flatten the contract, then poll every target concurrently against ONE
+    # shared deadline. Polling them serially made each metric own its own
+    # timeout, so the waits were additive: 58 metrics x 45 s = 43.5 min, which
+    # overran the CI job budget and lost the artifact-upload and summary
+    # diagnostics. Sharing the deadline bounds the whole phase to a single
+    # poll window.
+    targets, label_targets = _metric_check_targets(expected)
+
+    deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
+    sem = asyncio.Semaphore(METRIC_POLL_CONCURRENCY)
+    # Both kinds of check share the one deadline and the one concurrency bound,
+    # so the label checks cost no extra poll window and add no extra load.
+    metric_checks, label_checks = await asyncio.gather(
+        asyncio.gather(
+            *(
+                _check_prometheus_metric(
+                    session, prometheus_url, metric_name, category, deadline, sem
+                )
+                for category, metric_name in targets
+            )
+        ),
+        asyncio.gather(
+            *(
+                _check_metric_label(
+                    session,
+                    prometheus_url,
+                    category,
+                    label,
+                    metric_selectors,
+                    deadline,
+                    sem,
+                )
+                for category, label, metric_selectors in label_targets
+            )
+        ),
+    )
+
+    # Add in contract order, not completion order, so the report and its log
+    # lines stay deterministic across runs. Existence checks keep their place
+    # ahead of the label checks, so no existing check's position moves.
+    for check in [*metric_checks, *label_checks]:
+        report.add(check)
+
+    # Reverse direction: metric families Prometheus holds that the contract
+    # never mentions. Added last so no existing check's position moves.
+    unaccounted_metrics = _unaccounted_metric_names(emitted_metric_names, expected)
+    if unaccounted_metrics:
+        _log_name_list(
+            "Metric families emitted but NOT accounted for by expected_metrics.json "
+            "(warning only, does not fail CI)",
+            unaccounted_metrics,
+        )
+    report.add(
+        _reverse_coverage_result(
+            check_name="metric.reverse_coverage",
+            category="metric",
+            noun="metric families",
+            emitted_count=len(emitted_metric_names),
+            unaccounted=unaccounted_metrics,
+        )
+    )
+
+
+def _selector_with_label(metric_selector: str, label: str) -> str:
+    """Add a "label is present and non-empty" matcher to a metric selector.
+
+    ``<label>!=""`` is the only matcher that expresses the requirement. An
+    absent Prometheus label is indistinguishable from an empty-string one, so
+    ``<label>=~".*"`` matches series that never carried the label at all and a
+    check written that way would pass on a node that lost the attribute
+    entirely. ``!=""`` rejects both the absent and the blank case.
+
+    Selectors in expected_metrics.json are usually bare names, but some already
+    carry a matcher (``ledger_economy{metric="base_fee_xrp"}``), so the matcher
+    is merged into an existing brace group rather than appended after it.
+
+    Args:
+        metric_selector: A metric name, optionally with a brace matcher group.
+        label:           Prometheus label name that must be present, non-empty.
+
+    Returns:
+        The selector with the label matcher merged in.
+    """
+    matcher = label + '!=""'
+    if metric_selector.endswith("}"):
+        head = metric_selector[:-1].rstrip()
+        separator = "" if head.endswith("{") else ", "
+        return head + separator + matcher + "}"
+    return metric_selector + "{" + matcher + "}"
+
+
+async def _poll_series_count(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    selectors: list[str],
+    deadline: float,
+    sem: asyncio.Semaphore,
+) -> int:
+    """Poll Prometheus until a selector has series or the deadline passes.
+
+    Uses the /api/v1/series endpoint instead of an instant query.
+    Beast::insight StatsD gauges only mark dirty on value *changes*, so a gauge
+    that stabilizes (e.g. peer count stays at 1) may go stale in Prometheus and
+    disappear from instant queries.  The series endpoint returns any metric
+    that existed in the window, regardless of staleness.
+
+    Polls rather than querying once: late-populating gauges/counters may not
+    have completed the export+scrape pipeline when this runs, so a single query
+    races. A metric that never appears still fails once the deadline passes.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus base URL.
+        selectors:      One or more Prometheus selectors. /api/v1/series takes
+                        repeated match[] parameters and unions their results,
+                        so several selectors answer "does ANY of these have a
+                        series" in a single request.
+        deadline:       Monotonic deadline shared by every metric in the run.
+        sem:            Bounds how many requests reach Prometheus at once. It
+                        is held only across the request, never across the
+                        sleep, so one absent metric cannot starve the others.
+
+    Returns:
+        Number of series found, or 0 if nothing ever appeared.
+    """
+    params: list[tuple[str, str]] = [("match[]", s) for s in selectors]
+    while True:
+        async with sem:
+            async with session.get(
+                f"{prometheus_url}/api/v1/series", params=params
+            ) as resp:
+                data = await resp.json()
+                series_count = len(data.get("data", []))
+        if series_count > 0 or time.monotonic() >= deadline:
+            return series_count
+        # Never sleep past the shared deadline.
+        await asyncio.sleep(min(METRIC_POLL_INTERVAL_SEC, deadline - time.monotonic()))
+
+
+async def _check_prometheus_metric(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    metric_name: str,
+    category: str,
+    deadline: float,
+    sem: asyncio.Semaphore,
+) -> CheckResult:
+    """Query Prometheus for a specific metric and check it exists.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus base URL.
+        metric_name:    Prometheus metric name.
+        category:       Metric category for the report.
+        deadline:       Monotonic deadline shared by every metric in the run.
+        sem:            Bounds how many requests reach Prometheus at once.
+
+    Returns:
+        The CheckResult for this metric. The caller adds it to the report so
+        report order follows the contract file rather than completion order.
+    """
+    try:
+        series_count = await _poll_series_count(
+            session, prometheus_url, [metric_name], deadline, sem
+        )
+        return CheckResult(
+            name=f"metric.{category}.{metric_name}",
+            category="metric",
+            passed=series_count > 0,
+            message=(
+                f"{metric_name}: {series_count} series"
+                if series_count > 0
+                else f"{metric_name}: 0 series (expected > 0)"
+            ),
+            details={"series_count": series_count},
+        )
+    except Exception as exc:
+        return CheckResult(
+            name=f"metric.{category}.{metric_name}",
+            category="metric",
+            passed=False,
+            message=f"{metric_name}: query failed ({exc})",
+        )
+
+
+async def _check_metric_label(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    category: str,
+    label: str,
+    metric_selectors: list[str],
+    deadline: float,
+    sem: asyncio.Semaphore,
+) -> CheckResult:
+    """Check that a group's required label reaches Prometheus non-empty.
+
+    A "required_labels" entry names a label that at least one series of that
+    group must carry with a non-empty value. It is checked per group rather
+    than per metric because the requirement is about the label reaching
+    Prometheus at all, and one series carrying it proves the pipeline works.
+
+    The failure this guards against is a label going missing while every metric
+    in the group still exists, so the existence checks stay green. xrpl_node_id
+    is the case that motivated it: losing it makes Grafana Cloud trace ingest
+    fold distinct nodes into one.
+
+    Args:
+        session:          aiohttp client session.
+        prometheus_url:   Prometheus base URL.
+        category:         Group key from expected_metrics.json.
+        label:            Label name that must be present and non-empty.
+        metric_selectors: The group's asserted metric selectors.
+        deadline:         Monotonic deadline shared by every metric in the run.
+        sem:              Bounds how many requests reach Prometheus at once.
+
+    Returns:
+        The CheckResult for this (group, label) pair. The caller adds it to the
+        report so report order follows the contract file.
+    """
+    check_name = f"metric.{category}.label.{label}"
+
+    if not metric_selectors:
+        # required_labels on a group with no asserted metrics would be a check
+        # that silently never runs — the exact failure mode it exists to catch.
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=False,
+            message=(
+                f"{label}: group '{category}' declares required_labels but no "
+                "metrics, so there is nothing to check the label against"
+            ),
+        )
+
+    selectors = [_selector_with_label(m, label) for m in metric_selectors]
+    try:
+        series_count = await _poll_series_count(
+            session, prometheus_url, selectors, deadline, sem
+        )
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=series_count > 0,
+            message=(
+                f"{label}: present and non-empty on {series_count} "
+                f"{category} series"
+                if series_count > 0
+                else f"{label}: no {category} series carries it with a "
+                "non-empty value (an absent label and an empty one are the "
+                "same thing in Prometheus, so this covers both). If this "
+                "group's own metric checks also failed, the metrics are "
+                "missing rather than the label."
+            ),
+            details={"series_count": series_count, "selectors": selectors},
+        )
+    except Exception as exc:
+        return CheckResult(
+            name=check_name,
+            category="metric",
+            passed=False,
+            message=f"{label}: query failed ({exc})",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Log-Trace Correlation Validation (Loki API)
+# ---------------------------------------------------------------------------
+
+
+async def _loki_json(
+    session: aiohttp.ClientSession,
+    loki_url: str,
+    path: str,
+    params: dict[str, str] | None = None,
+) -> dict[str, Any] | None:
+    """GET one Loki API path and decode it, or None if that failed.
+
+    Diagnostic-only helper: every failure is a warning, so one unreachable
+    endpoint does not suppress the rest of the diagnostic.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+        path:     API path, including its leading slash.
+        params:   Optional query parameters.
+
+    Returns:
+        The decoded response body, or None when the request or decode failed.
+    """
+    try:
+        async with session.get(f"{loki_url}{path}", params=params or {}) as resp:
+            if resp.status != 200:
+                # Loki reports a rejected query as text/plain, so resp.json()
+                # would raise ContentTypeError and the log would carry a
+                # mimetype complaint instead of Loki's own explanation. Read
+                # the body and print it: a diagnostic that swallows the
+                # server's reason is worse than no diagnostic.
+                body = " ".join((await resp.text()).split())
+                logger.warning(
+                    "Loki diagnostic: GET %s returned HTTP %d: %s",
+                    path,
+                    resp.status,
+                    body[:500] or "(empty body)",
+                )
+                return None
+            return await resp.json()
+    except Exception as exc:  # noqa: BLE001 - diagnostic must never raise
+        logger.warning("Loki diagnostic: GET %s failed: %s", path, exc)
+        return None
+
+
+async def _loki_count(
+    session: aiohttp.ClientSession, loki_url: str, query: str
+) -> int | None:
+    """Sum an instant LogQL count over every stream it returns.
+
+    Returns None rather than 0 when Loki could not be queried. "Loki holds
+    none" and "Loki did not answer" are different findings, and printing the
+    same number for both is how a diagnostic misleads.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+        query:    An instant LogQL metric query.
+
+    Returns:
+        Total entry count, or None when the query could not be evaluated.
+    """
+    params = {"query": query, "time": str(int(time.time()))}
+    data = await _loki_json(session, loki_url, "/loki/api/v1/query", params)
+    if data is None:
+        return None
+    try:
+        results = data.get("data", {}).get("result", [])
+        return sum(int(float(entry["value"][1])) for entry in results)
+    except Exception as exc:  # noqa: BLE001 - diagnostic must never raise
+        logger.warning("Loki diagnostic: could not read count for %s: %s", query, exc)
+        return None
+
+
+async def _log_loki_diagnostics(session: aiohttp.ClientSession, loki_url: str) -> None:
+    """Log what Loki holds for the stream the correlation checks select.
+
+    Same role as _log_prometheus_metric_names on the metric side, and the same
+    contract: diagnostic only, every failure a warning, never a check result.
+    A failed correlation check says a log line was not found; these numbers say
+    which of the three Loki-side reasons applies — nothing was ingested at all,
+    entries exist but none carry a trace id, or entries arrived under a label
+    set this selector cannot match (which the label inventory exposes).
+
+    Counted over exactly LOG_QUERY_WINDOW_SECONDS, the window the checks use.
+    A wider window here would report entries the checks cannot see, including a
+    previous run's, and describe a failure that is not the one at hand.
+
+    Args:
+        session:  aiohttp client session.
+        loki_url: Loki API base URL.
+    """
+    window = f"[{LOG_QUERY_WINDOW_SECONDS}s]"
+    logger.info("Loki diagnostic: the checks below query %s", LOG_CORRELATION_QUERY)
+
+    labels = await _loki_json(session, loki_url, "/loki/api/v1/labels")
+    if labels is not None:
+        names = labels.get("data") or []
+        logger.info(
+            "Loki diagnostic: stream labels Loki knows: %s",
+            ", ".join(names) or "(none)",
+        )
+
+    values = await _loki_json(
+        session, loki_url, "/loki/api/v1/label/service_name/values"
+    )
+    if values is not None:
+        found = values.get("data") or []
+        logger.info(
+            "Loki diagnostic: service_name values: %s", ", ".join(found) or "(none)"
+        )
+
+    # sum() is load-bearing, not cosmetic. The filelog receiver's regex_parser
+    # leaves message, timestamp, trace_id and span_id as log-record attributes,
+    # and Loki's OTLP path stores those as structured metadata, which joins the
+    # label set of a metric query. Because `message` and `timestamp` are unique
+    # per line, an unaggregated count_over_time returns ONE SERIES PER LOG LINE
+    # and blows past limits_config.max_query_series (500) at a few hundred
+    # lines: Loki answers HTTP 400 "maximum number of series (500) reached for
+    # a single query", both legs report "unavailable", and the diagnostic loses
+    # the one distinction it exists to draw. Aggregating collapses the result to
+    # a single series regardless of line count. An empty result still decodes to
+    # 0, so the deliberate "0 entries" versus "could not answer" split above is
+    # preserved.
+    for label, query in (
+        ("selector only", f"sum(count_over_time({LOG_STREAM_SELECTOR}{window}))"),
+        (
+            "selector + line filter",
+            f"sum(count_over_time({LOG_CORRELATION_QUERY} {window}))",
+        ),
+    ):
+        total = await _loki_count(session, loki_url, query)
+        logger.info(
+            "Loki diagnostic: %s = %s entries in the last %ds  [%s]",
+            label,
+            "unavailable" if total is None else total,
+            LOG_QUERY_WINDOW_SECONDS,
+            query,
+        )
+
+
+async def _poll_tempo_for_logged_ids(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    unique_ids: list[str],
+) -> tuple[str | None, int, int, str | None]:
+    """Resolve one of ``unique_ids`` in Tempo, retrying until a deadline.
+
+    Every id is tried on each pass, not just the first: one unexported trace
+    must not fail the check while correlation demonstrably works for another.
+
+    The pass is then repeated until the shared poll window closes, because a
+    trace id reaches a log line the instant its span is created but only becomes
+    queryable after the exporter batches it, Tempo ingests it and its block is
+    searchable. A single pass therefore races that pipeline exactly the way the
+    metric checks used to race the export-plus-scrape pipeline, and it is fixed
+    the same way -- with METRIC_POLL_TIMEOUT_SEC and METRIC_POLL_INTERVAL_SEC,
+    the constants that already bound every other poll in this file, rather than
+    a second timeout of its own.
+
+    Retrying does not weaken the assertion. The check still passes only on a
+    logged id that Tempo really returns spans for; what changes is that a
+    failure now means the id was absent for the whole window, which is a
+    confirmed absence rather than a snapshot taken at one moment.
+
+    A Tempo request that FAILS is not the same as a trace that is absent, and
+    the two are reported differently. A 404 is absence and returns no spans, so
+    the next candidate is tried. Any other failure is remembered and polling
+    continues -- a transient blip mid-window should not fail a check that would
+    otherwise pass -- but if the window closes with nothing resolved, the last
+    failure is returned so the caller can say the query broke instead of
+    claiming the spans were never exported. Swallowing it would reproduce the
+    silent failure this change exists to remove.
+
+    Args:
+        session:    aiohttp client session.
+        tempo_url:  Base URL for the Tempo API.
+        unique_ids: Candidate trace ids read from Loki, already deduplicated.
+
+    Returns:
+        ``(trace_id, span_count, attempts, error)``. ``error`` is None unless a
+        Tempo request failed and nothing resolved; ``(None, 0, n, None)`` means
+        every id was genuinely absent for the whole window.
+    """
+    deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
+    attempts = 0
+    last_error: str | None = None
+    while True:
+        attempts += 1
+        for candidate in unique_ids:
+            try:
+                spans = await _tempo_get_trace(session, tempo_url, candidate)
+            except Exception as exc:  # noqa: BLE001 - a poll must not abort here
+                last_error = f"{type(exc).__name__}: {exc}"
+                continue
+            if spans:
+                # Resolved, so whatever failed earlier in the window did not
+                # matter -- do not report a stale error alongside a pass.
+                return candidate, len(spans), attempts, None
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return None, 0, attempts, last_error
+        # Never sleep past the deadline, matching _poll_series_count.
+        await asyncio.sleep(min(METRIC_POLL_INTERVAL_SEC, remaining))
+
+
+async def validate_log_trace_correlation(
+    session: aiohttp.ClientSession,
+    loki_url: str,
+    tempo_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate that Loki logs contain trace_id/span_id for correlation.
+
+    Checks:
+      1. Logs with trace_id= field exist in Loki.
+      2. A random trace_id from Tempo can be found in Loki logs.
+
+    Args:
+        session:   aiohttp client session.
+        loki_url:  Base URL for Loki API (e.g., http://localhost:3100).
+        tempo_url: Base URL for Tempo API.
+        report:    ValidationReport to accumulate results.
+    """
+    logger.info("--- Log-Trace Correlation Validation (Loki) ---")
+
+    # Numbers first, so a failure below is read next to the state that caused
+    # it. Never raises and never adds a check (see _log_loki_diagnostics).
+    await _log_loki_diagnostics(session, loki_url)
+
+    # Check 1: Any logs with trace_id exist.
+    try:
+        params = {
+            "query": LOG_CORRELATION_QUERY,
+            "limit": 5,
+            "direction": "backward",
+            **_log_query_window(),
+        }
+        async with session.get(
+            f"{loki_url}/loki/api/v1/query_range", params=params
+        ) as resp:
+            data = await resp.json()
+            streams = data.get("data", {}).get("result", [])
+            total_entries = sum(len(s.get("values", [])) for s in streams)
+            report.add(
+                CheckResult(
+                    name="log.trace_id_present",
+                    category="log",
+                    passed=total_entries > 0,
+                    message=(
+                        f"Found {total_entries} log entries with trace_id"
+                        if total_entries > 0
+                        else "No log entries with trace_id found"
+                    ),
+                    details={"log_count": total_entries},
+                )
+            )
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name="log.trace_id_present",
+                category="log",
+                passed=False,
+                message=f"Loki query failed: {exc}",
+            )
+        )
+
+    # Check 2: Cross-reference a trace_id from a log line back to Tempo.
+    #
+    # Driven from the log side on purpose. A trace_id only reaches a log line
+    # when that line is emitted inside a sampled span, and at `warning` level
+    # most spans produce no log output at all — so picking an arbitrary trace
+    # from Tempo and expecting it in Loki fails even when correlation works.
+    # Starting from a logged trace_id tests the invariant that matters: an id
+    # written to a log must resolve to a trace that was actually exported.
+    try:
+        loki_params = {
+            "query": LOG_CORRELATION_QUERY,
+            "limit": 5,
+            "direction": "backward",
+            **_log_query_window(),
+        }
+        async with session.get(
+            f"{loki_url}/loki/api/v1/query_range", params=loki_params
+        ) as resp:
+            data = await resp.json()
+            streams = data.get("data", {}).get("result", [])
+
+        logged_ids = [
+            match.group(1)
+            for stream in streams
+            for _, line in stream.get("values", [])
+            if (match := re.search(r"trace_id=([0-9a-f]{32})", line))
+        ]
+
+        if not logged_ids:
+            report.add(
+                CheckResult(
+                    name="log.trace_id_cross_reference",
+                    category="log",
+                    passed=False,
+                    message=(
+                        "No logged trace_id to cross-reference. Log lines carry one only "
+                        "when emitted inside a sampled span; raise the log level or widen "
+                        "the workload if this persists."
+                    ),
+                )
+            )
+        else:
+            unique_ids = list(dict.fromkeys(logged_ids))
+            resolved, span_count, attempts, poll_error = (
+                await _poll_tempo_for_logged_ids(session, tempo_url, unique_ids)
+            )
+            if resolved:
+                message = (
+                    f"logged trace_id {resolved[:16]}... resolves to "
+                    f"{span_count} spans in Tempo"
+                )
+            elif poll_error:
+                # Distinct from the absence message below on purpose: "Tempo
+                # never answered" and "the spans were not exported" call for
+                # different investigations, and printing the second for the
+                # first sends the reader to the wrong subsystem.
+                message = (
+                    f"could not verify {len(unique_ids)} logged trace_id(s): "
+                    f"Tempo queries failed over {METRIC_POLL_TIMEOUT_SEC:g}s "
+                    f"({attempts} attempt(s)); last error was {poll_error}"
+                )
+            else:
+                message = (
+                    f"none of {len(unique_ids)} logged trace_id(s) resolve in "
+                    f"Tempo after {attempts} attempt(s) over "
+                    f"{METRIC_POLL_TIMEOUT_SEC:g}s; the spans they name were "
+                    "not exported"
+                )
+            report.add(
+                CheckResult(
+                    name="log.trace_id_cross_reference",
+                    category="log",
+                    passed=resolved is not None,
+                    message=message,
+                    details={
+                        "trace_id": resolved,
+                        "span_count": span_count,
+                        "candidates": len(unique_ids),
+                        "poll_attempts": attempts,
+                        "poll_timeout_sec": METRIC_POLL_TIMEOUT_SEC,
+                        "poll_error": poll_error,
+                    },
+                )
+            )
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name="log.trace_id_cross_reference",
+                category="log",
+                passed=False,
+                message=f"Cross-reference check failed: {exc}",
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
+# Dashboard Validation (Grafana API)
+# ---------------------------------------------------------------------------
+
+
+def _leaf_panel_count(dashboard: dict[str, Any]) -> int:
+    """Count the panels a dashboard actually renders.
+
+    Grafana models a row as an entry of ``type: "row"`` in the top-level
+    ``panels`` list, and a collapsed row carries its children in its own
+    nested ``panels`` list. So ``len(dashboard["panels"])`` counts rows as
+    though they were panels and misses everything inside a collapsed one --
+    on ``node-health`` that reads 55 where the true figure is 51, and a
+    dashboard consisting only of collapsed rows would report a positive
+    count while rendering nothing.
+
+    Args:
+        dashboard: The ``dashboard`` object from the Grafana API response.
+
+    Returns:
+        The number of non-row panels, including those nested inside rows.
+    """
+    total = 0
+    for panel in dashboard.get("panels", []):
+        if panel.get("type") == "row":
+            total += len(panel.get("panels", []))
+        else:
+            total += 1
+    return total
+
+
+async def validate_dashboards(
+    session: aiohttp.ClientSession,
+    grafana_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate that all Grafana dashboards are accessible and return data.
+
+    For each expected dashboard UID, queries the Grafana API to verify
+    the dashboard exists and is loadable.
+
+    Args:
+        session:     aiohttp client session.
+        grafana_url: Base URL for Grafana API (e.g., http://localhost:3000).
+        report:      ValidationReport to accumulate results.
+    """
+    logger.info("--- Dashboard Validation (Grafana) ---")
+
+    with open(EXPECTED_METRICS_FILE) as f:
+        expected = json.load(f)
+
+    dashboard_uids = expected.get("grafana_dashboards", {}).get("uids", [])
+
+    for uid in dashboard_uids:
+        try:
+            async with session.get(f"{grafana_url}/api/dashboards/uid/{uid}") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    dashboard = data.get("dashboard", {})
+                    panel_count = _leaf_panel_count(dashboard)
+                    report.add(
+                        CheckResult(
+                            name=f"dashboard.{uid}",
+                            category="dashboard",
+                            passed=panel_count > 0,
+                            message=(
+                                f"{uid}: loaded ({panel_count} panels)"
+                                if panel_count
+                                else f"{uid}: loaded but renders no panels"
+                            ),
+                            details={"panel_count": panel_count},
+                        )
+                    )
+                else:
+                    report.add(
+                        CheckResult(
+                            name=f"dashboard.{uid}",
+                            category="dashboard",
+                            passed=False,
+                            message=f"{uid}: HTTP {resp.status}",
+                        )
+                    )
+        except Exception as exc:
+            report.add(
+                CheckResult(
+                    name=f"dashboard.{uid}",
+                    category="dashboard",
+                    passed=False,
+                    message=f"{uid}: query failed ({exc})",
+                )
+            )
+
+
+# ---------------------------------------------------------------------------
+# Span duration validation
+# ---------------------------------------------------------------------------
+
+
+async def validate_span_durations(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate that span durations are within reasonable bounds.
+
+    Checks that spans have duration > 0 and < 60s, flagging any anomalies.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for Tempo API.
+        report:    ValidationReport to accumulate results.
+    """
+    logger.info("--- Span Duration Validation ---")
+
+    try:
+        traces = await _tempo_search(
+            session,
+            tempo_url,
+            '{resource.service.name="xrpld"}',
+            limit=5,
+        )
+
+        if not traces:
+            report.add(
+                CheckResult(
+                    name="span.duration_bounds",
+                    category="span",
+                    passed=False,
+                    message="No traces available for duration check",
+                )
+            )
+            return
+
+        total_spans = 0
+        invalid_spans = 0
+        max_duration_ns = 0
+
+        for trace_summary in traces:
+            trace_id = trace_summary.get("traceID", "")
+            if not trace_id:
+                continue
+            spans = await _tempo_get_trace(session, tempo_url, trace_id)
+            for span in spans:
+                start_ns = int(span.get("startTimeUnixNano", "0"))
+                end_ns = int(span.get("endTimeUnixNano", "0"))
+                duration_ns = end_ns - start_ns
+                total_spans += 1
+                max_duration_ns = max(max_duration_ns, duration_ns)
+                # Invalid if negative or > 60 seconds.
+                if duration_ns < 0 or duration_ns > 60_000_000_000:
+                    invalid_spans += 1
+
+        max_duration_ms = max_duration_ns / 1_000_000
+
+        report.add(
+            CheckResult(
+                name="span.duration_bounds",
+                category="span",
+                passed=invalid_spans == 0,
+                message=(
+                    f"All {total_spans} spans have valid durations "
+                    f"(max: {max_duration_ms:.1f}ms)"
+                    if invalid_spans == 0
+                    else f"{invalid_spans}/{total_spans} spans have invalid "
+                    "durations (<0 or >60s)"
+                ),
+                details={
+                    "total_spans": total_spans,
+                    "invalid_spans": invalid_spans,
+                    "max_duration_ms": round(max_duration_ms, 2),
+                },
+            )
+        )
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name="span.duration_bounds",
+                category="span",
+                passed=False,
+                message=f"Duration check failed: {exc}",
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
+# External Dashboard Parity Validation
+# ---------------------------------------------------------------------------
+
+# Span attributes that external dashboards (validator-health, peer-quality,
+# node-health) depend on.  Each entry maps a span name to the
+# attributes that must be present for external dashboard panels to render.
+# Keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form;
+# dotted xrpl.* reserved for resource attributes). The amendment_blocked,
+# server_state, and proposers_validated values that earlier external-dashboard
+# work tracked are NOT span attributes — they exist only as MetricsRegistry
+# metrics (validator_health{metric="amendment_blocked"},
+# state_tracking{metric="state_value"}, etc.), so they are validated by
+# PARITY_VALUE_SANITY below rather than as span attributes here.
+PARITY_SPAN_ATTRS: list[dict[str, str]] = [
+    {"span": "tx.receive", "attr": "peer_version"},
+    {"span": "consensus.validation.send", "attr": "ledger_hash"},
+    {"span": "consensus.validation.send", "attr": "full_validation"},
+    # peer.validation.receive shares the ledger_hash / full_validation keys with
+    # consensus.validation.send (same keys, told apart by span name).
+    {"span": "peer.validation.receive", "attr": "ledger_hash"},
+    {"span": "peer.validation.receive", "attr": "full_validation"},
+    {"span": "consensus.accept", "attr": "quorum"},
+]
+
+# Value sanity bounds for external-parity metrics.  Each entry specifies a
+# Prometheus query and the acceptable range [lo, hi] for the returned value.
+PARITY_VALUE_SANITY: list[dict[str, Any]] = [
+    {
+        "name": "validation_agreement_pct_1h",
+        "query": 'validation_agreement{metric="agreement_pct_1h"}',
+        "lo": 0,
+        "hi": 100,
+    },
+    {
+        "name": "unl_expiry_days",
+        "query": 'validator_health{metric="unl_expiry_days"}',
+        "lo": 0,
+        "hi": None,
+        "exclusive_lo": True,
+    },
+    {
+        "name": "peer_latency_p90_ms",
+        "query": 'peer_quality{metric="peer_latency_p90_ms"}',
+        "lo": 0,
+        "hi": None,
+    },
+    {
+        "name": "state_value",
+        "query": 'state_tracking{metric="state_value"}',
+        "lo": 0,
+        "hi": 7,
+    },
+]
+
+
+async def validate_parity_span_attrs(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate span attributes required by external dashboard panels.
+
+    For each (span, attribute) pair in PARITY_SPAN_ATTRS, queries Tempo
+    for the span and checks that the attribute key exists on at least one
+    span in the returned traces.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for Tempo API.
+        report:    ValidationReport to accumulate results.
+    """
+    logger.info("--- External Parity: Span Attribute Checks ---")
+
+    for entry in PARITY_SPAN_ATTRS:
+        span_name = entry["span"]
+        attr_name = entry["attr"]
+        check_name = f"parity.span_attr.{span_name}.{attr_name}"
+
+        try:
+            query = '{resource.service.name="xrpld" && name="' + span_name + '"}'
+            traces = await _tempo_search(session, tempo_url, query, limit=5)
+
+            if not traces:
+                report.add(
+                    CheckResult(
+                        name=check_name,
+                        category="parity",
+                        passed=False,
+                        message=(
+                            f"{span_name}: no traces found, "
+                            f"cannot verify attr {attr_name}"
+                        ),
+                    )
+                )
+                continue
+
+            # Fetch full trace and search spans for the attribute.
+            found = False
+            for trace_summary in traces:
+                trace_id = trace_summary.get("traceID", "")
+                if not trace_id:
+                    continue
+                spans = await _tempo_get_trace(session, tempo_url, trace_id)
+                for span in spans:
+                    if attr_name in _otlp_span_attr_keys(span):
+                        found = True
+                        break
+                if found:
+                    break
+
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="parity",
+                    passed=found,
+                    message=(
+                        f"{span_name}: attribute '{attr_name}' present"
+                        if found
+                        else f"{span_name}: attribute '{attr_name}' missing"
+                    ),
+                )
+            )
+        except Exception as exc:
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="parity",
+                    passed=False,
+                    message=f"{span_name}: attr check failed ({exc})",
+                )
+            )
+
+
+def _series_label(series: dict[str, Any]) -> str:
+    """Name a Prometheus series for use in a failure message.
+
+    Args:
+        series: One entry from a Prometheus query result.
+
+    Returns:
+        The series' service_instance_id when it carries one (the label that
+        tells harness cluster nodes apart), else its full label set.
+    """
+    metric = series.get("metric", {})
+    instance = metric.get("service_instance_id")
+    if instance:
+        return f"service_instance_id={instance}"
+    return str(metric) if metric else "<unlabelled series>"
+
+
+def _value_in_bounds(
+    value: float, lo: float, hi: float | None, exclusive_lo: bool
+) -> bool:
+    """Test one sample against a sanity range.
+
+    Args:
+        value:        Sample value.
+        lo:           Lower bound.
+        hi:           Upper bound, or None when unbounded above.
+        exclusive_lo: True when the lower bound is exclusive.
+
+    Returns:
+        True when the value is inside the range.
+    """
+    lo_ok = value > lo if exclusive_lo else value >= lo
+    return lo_ok and (hi is None or value <= hi)
+
+
+def _bounds_description(lo: float, hi: float | None, exclusive_lo: bool) -> str:
+    """Build the human-readable bound text used in check messages.
+
+    Args:
+        lo:           Lower bound.
+        hi:           Upper bound, or None when unbounded above.
+        exclusive_lo: True when the lower bound is exclusive.
+
+    Returns:
+        A phrase such as "> 0 and <= 100".
+    """
+    desc = f"{'>' if exclusive_lo else '>='} {lo}"
+    if hi is not None:
+        desc += f" and <= {hi}"
+    return desc
+
+
+async def _check_parity_value(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    entry: dict[str, Any],
+) -> CheckResult:
+    """Bounds-check every series returned by one parity sanity query.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus API base URL.
+        entry:          One PARITY_VALUE_SANITY entry.
+
+    Returns:
+        A CheckResult that fails if any series is out of bounds, naming each
+        offending series.
+    """
+    name = entry["name"]
+    lo = entry["lo"]
+    hi = entry["hi"]
+    exclusive_lo = entry.get("exclusive_lo", False)
+    check_name = f"parity.value_sanity.{name}"
+
+    try:
+        async with session.get(
+            f"{prometheus_url}/api/v1/query", params={"query": entry["query"]}
+        ) as resp:
+            data = await resp.json()
+            results = data.get("data", {}).get("result", [])
+
+        if not results:
+            return CheckResult(
+                name=check_name,
+                category="parity",
+                passed=False,
+                message=f"{name}: no data returned from Prometheus",
+            )
+
+        values: list[float] = []
+        offenders: list[str] = []
+        for series in results:
+            value = float(series["value"][1])
+            values.append(value)
+            if not _value_in_bounds(value, lo, hi, exclusive_lo):
+                offenders.append(f"{_series_label(series)} value {value}")
+
+        bound_desc = _bounds_description(lo, hi, exclusive_lo)
+        return CheckResult(
+            name=check_name,
+            category="parity",
+            passed=not offenders,
+            message=(
+                f"{name}: all {len(values)} series within bounds ({bound_desc})"
+                if not offenders
+                else f"{name}: {len(offenders)} of {len(values)} series out of "
+                f"bounds (expected {bound_desc}): " + "; ".join(offenders)
+            ),
+            details={
+                "values": values,
+                "series_count": len(values),
+                "out_of_bounds": offenders,
+                "lo": lo,
+                "hi": hi,
+            },
+        )
+    except Exception as exc:
+        return CheckResult(
+            name=check_name,
+            category="parity",
+            passed=False,
+            message=f"{name}: sanity check failed ({exc})",
+        )
+
+
+async def validate_parity_value_sanity(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate that external-parity metric values fall within sane bounds.
+
+    For each entry in PARITY_VALUE_SANITY, queries Prometheus and checks
+    *every* returned series against the specified [lo, hi] range. These
+    queries are bare selectors with no aggregation, so a multi-node harness
+    cluster returns one series per service_instance_id; checking only the
+    first would let an out-of-range node pass silently.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus API base URL.
+        report:         ValidationReport to accumulate results.
+    """
+    logger.info("--- External Parity: Value Sanity Checks ---")
+
+    for entry in PARITY_VALUE_SANITY:
+        report.add(await _check_parity_value(session, prometheus_url, entry))
+
+
+# ---------------------------------------------------------------------------
+# Main validation orchestrator
+# ---------------------------------------------------------------------------
+
+
+async def run_validation(
+    tempo_url: str,
+    prometheus_url: str,
+    loki_url: str,
+    grafana_url: str,
+    skip_loki: bool = False,
+) -> ValidationReport:
+    """Run all validation checks and return a report.
+
+    Args:
+        tempo_url:      Tempo API base URL.
+        prometheus_url: Prometheus API base URL.
+        loki_url:       Loki API base URL.
+        grafana_url:    Grafana API base URL.
+        skip_loki:      If True, skip log-trace correlation checks.
+
+    Returns:
+        ValidationReport with all check results.
+    """
+    report = ValidationReport()
+    report.start_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT) as session:
+        await validate_spans(session, tempo_url, report)
+        await validate_span_durations(session, tempo_url, report)
+        await validate_metrics(session, prometheus_url, report)
+        if not skip_loki:
+            await validate_log_trace_correlation(session, loki_url, tempo_url, report)
+        await validate_dashboards(session, grafana_url, report)
+        await validate_parity_span_attrs(session, tempo_url, report)
+        await validate_parity_value_sanity(session, prometheus_url, report)
+
+    report.end_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return report
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Telemetry Validation Suite for xrpld",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Run all validations with defaults:
+  python3 validate_telemetry.py
+
+  # Write report to file:
+  python3 validate_telemetry.py --report /tmp/validation-report.json
+
+  # Custom endpoints:
+  python3 validate_telemetry.py \\
+      --tempo http://tempo:3200 --prometheus http://prom:9090
+
+  # Skip Loki checks (if log-trace correlation is not set up):
+  python3 validate_telemetry.py --skip-loki
+        """,
+    )
+    parser.add_argument(
+        "--tempo",
+        type=str,
+        default=DEFAULT_TEMPO,
+        help=f"Tempo API URL (default: {DEFAULT_TEMPO})",
+    )
+    parser.add_argument(
+        "--prometheus",
+        type=str,
+        default=DEFAULT_PROMETHEUS,
+        help=f"Prometheus API URL (default: {DEFAULT_PROMETHEUS})",
+    )
+    parser.add_argument(
+        "--loki",
+        type=str,
+        default=DEFAULT_LOKI,
+        help=f"Loki API URL (default: {DEFAULT_LOKI})",
+    )
+    parser.add_argument(
+        "--grafana",
+        type=str,
+        default=DEFAULT_GRAFANA,
+        help=f"Grafana API URL (default: {DEFAULT_GRAFANA})",
+    )
+    parser.add_argument(
+        "--skip-loki",
+        action="store_true",
+        help="Skip log-trace correlation validation",
+    )
+    parser.add_argument(
+        "--report",
+        type=str,
+        default=None,
+        help="Write JSON report to this file path",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable debug logging",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Main entry point for the telemetry validation suite."""
+    args = parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
+    )
+
+    report = asyncio.run(
+        run_validation(
+            tempo_url=args.tempo,
+            prometheus_url=args.prometheus,
+            loki_url=args.loki,
+            grafana_url=args.grafana,
+            skip_loki=args.skip_loki,
+        )
+    )
+
+    # Print summary.
+    print("")
+    print("=" * 60)
+    print("  TELEMETRY VALIDATION REPORT")
+    print("=" * 60)
+    print(f"  Total checks: {report.total_checks}")
+    print(f"  Passed:       {report.passed}")
+    print(f"  Failed:       {report.failed}")
+    print("=" * 60)
+    print("")
+
+    # Print failures.
+    if report.failed > 0:
+        print("FAILED CHECKS:")
+        for check in report.checks:
+            if not check.passed:
+                print(f"  [{check.category}] {check.name}: {check.message}")
+        print("")
+
+    # Write report file.
+    report_dict = report.to_dict()
+    if args.report:
+        with open(args.report, "w") as f:
+            json.dump(report_dict, f, indent=2)
+        logger.info("Report written to %s", args.report)
+    else:
+        print(json.dumps(report_dict, indent=2))
+
+    # Exit with appropriate code for CI.
+    sys.exit(0 if report.all_passed else 1)
+
+
+if __name__ == "__main__":
+    main()

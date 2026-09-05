@@ -1,0 +1,256 @@
+# OpenTelemetry Collector configuration for xrpld development.
+#
+# Pipelines:
+#   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
+#   metrics: OTLP receiver + spanmetrics connector -> Prometheus exporter
+#   logs:   filelog receiver -> batch processor -> otlphttp/Loki
+#
+# xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
+# them, forwards to Tempo, and derives RED metrics via the spanmetrics
+# connector, which Prometheus scrapes on port 8889.
+#
+# xrpld sends beast::insight metrics natively via OTLP/HTTP to port 4318
+# (same endpoint as traces). The OTLP receiver feeds both the traces and
+# metrics pipelines. Metrics are exported to Prometheus alongside
+# span-derived metrics.
+#
+# The filelog receiver tails xrpld's debug.log files under
+# /var/log/xrpld/ (mounted from the host). A regex_parser operator
+# extracts timestamp, partition, severity, and optional trace_id/span_id
+# fields injected by Logs::format(). Parsed logs are exported to Grafana
+# Loki for log-trace correlation.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  # Filelog receiver tails xrpld debug.log files for log-trace
+  # correlation. Extracts structured fields (timestamp, partition, severity,
+  # trace_id, span_id, message) via regex. The trace_id and span_id are
+  # optional — only present when the log was emitted within an active span.
+  filelog:
+    include: [/var/log/xrpld/*/debug.log]
+    # Read each file from the start. The upstream default is `end`, which
+    # skips everything written before the receiver's first poll — so any log
+    # line a node emitted before the collector got to it would be lost, and
+    # nothing is read at all from a file that has stopped being written to.
+    #
+    # Offsets are kept in memory here, so a restarted collector re-reads the
+    # file. Stacks that keep their logs across restarts layer
+    # otel-collector-filestorage.yaml on top to persist them; ephemeral
+    # stacks get a fresh log directory each run and need nothing.
+    start_at: beginning
+    operators:
+      # Log format emitted by Logs::format() is:
+      #   YYYY-Mmm-DD HH:MM:SS.ffffff UTC <partition>:<severity> [trace_id=... span_id=...] <message>
+      # The `partition:` prefix is omitted when partition is empty, so the
+      # capture group is non-capturing optional. Fractional seconds up to 6
+      # digits are parsed via the `%f` strptime directive.
+      - type: regex_parser
+        regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?:(?P<partition>\S+):)?(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: "%Y-%b-%d %H:%M:%S.%f"
+          location: UTC
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 100
+  resource/logs:
+    attributes:
+      # Loki 3.x OTLP ingestion promotes only its own allow-list of resource
+      # attributes to stream (index) labels; `service.name` is on that list
+      # and arrives as the label `service_name`, which is what the LogQL
+      # examples in the runbook and TESTING.md select on.
+      #
+      # A custom `job` attribute is NOT on that list. Verified against
+      # grafana/loki:3.4.2 with the default config: after ingesting through
+      # this pipeline, /loki/api/v1/labels returned only `service_name` and
+      # `deployment_environment`, `{job="xrpld"}` matched 0 streams, and
+      # `job` appeared as structured metadata instead — which a `{...}`
+      # stream selector cannot match. Promoting it would mean mounting a Loki
+      # config and adding it to limits_config.otlp_config.resource_attributes
+      # (additive to Loki's defaults unless ignore_defaults is set), which is
+      # not worth a constant value — especially as Loki caps index labels at
+      # 15 and already promotes ~17 by default. Select on `service_name`.
+      - key: service.name
+        value: xrpld
+        action: upsert
+  # Deployment-tier tagging. Each collector serves ONE environment and ONE
+  # network, so it stamps both onto every signal it forwards. This lets a
+  # single Grafana stack hold data from many collectors and filter by tier.
+  #   - deployment.environment: the collector IS the environment (local, ci,
+  #     test, prod), so it is authoritative -> upsert (overwrite).
+  #   - xrpl.network.type: the xrpld node knows its own chain and already
+  #     stamps this, so the collector only fills it when absent -> insert.
+  #     This keeps a node's real network (e.g. a local node on mainnet)
+  #     from being overwritten by a collector's default.
+  # Replace the placeholder values per collector; see docker/telemetry
+  # tier examples.
+  resource/tier:
+    attributes:
+      - key: deployment.environment
+        value: local
+        action: upsert
+      - key: xrpl.network.type
+        value: mainnet
+        action: insert
+  # Strip SDK-injected resource attributes (telemetry.sdk.language/name/version).
+  # The OpenTelemetry SDK auto-adds these to every Resource; they carry no
+  # operational value and clutter the attribute set on every backend, so drop
+  # them here for all signals.
+  resource/stripsdk:
+    attributes:
+      - key: telemetry.sdk.language
+        action: delete
+      - key: telemetry.sdk.name
+        action: delete
+      - key: telemetry.sdk.version
+        action: delete
+  # Defense-in-depth: hash path-finding account attributes. The xrpld SDK
+  # already hashes these before export, but a node that emitted raw values
+  # is caught here so raw addresses never reach the backend.
+  attributes/hash:
+    actions:
+      - key: pathfind_source_account
+        action: hash
+      - key: pathfind_dest_account
+        action: hash
+
+connectors:
+  spanmetrics:
+    namespace: "span"
+    # Resource attributes that define the resource-metrics grouping key.
+    # All resource attributes are propagated onto the output metrics
+    # regardless; promotion to Prometheus labels is handled by the
+    # prometheus exporter's resource_to_telemetry_conversion. Listing the
+    # per-node id and the deployment-tier keys keeps series from distinct
+    # nodes/tiers grouped separately.
+    resource_metrics_key_attributes:
+      - service.instance.id
+      - xrpl.node.id
+      - deployment.environment
+      - xrpl.network.type
+    histogram:
+      # Pin unit=ms so the metric stays span_duration_milliseconds_* and le
+      # labels stay in ms even if a future collector flips the default to
+      # seconds (connector.spanmetrics.useSecondAsDefaultMetricsUnit gate).
+      unit: ms
+      explicit:
+        # Buckets MUST stay strictly ascending (the connector binary-searches
+        # them and silently misbuckets otherwise). Sub-MILLISECOND boundaries
+        # (0.01-0.5ms) exist because most xrpld spans are far below 1ms --
+        # tx.preflight means ~0.012ms, tx.preclaim ~0.15ms -- so a 1ms floor
+        # put >99.99% of samples in the first bucket and pinned every p95/p99
+        # at a constant 0.95ms. Sub-second boundaries cover
+        # RPC/tx/ledger spans; the 2s-4s boundaries resolve second-scale
+        # consensus spans (consensus.round ~3.9s, consensus.establish ~1.9s)
+        # that used to pile into a single 1s-5s bucket; 10s/30s give the
+        # ledger.acquire tail (~17% exceeds 5s during catch-up) a measurable
+        # home so its p95/p99 stop reading as +Inf.
+        buckets:
+          [
+            0.01ms,
+            0.05ms,
+            0.1ms,
+            0.25ms,
+            0.5ms,
+            1ms,
+            5ms,
+            10ms,
+            25ms,
+            50ms,
+            100ms,
+            250ms,
+            500ms,
+            1s,
+            2s,
+            3s,
+            4s,
+            5s,
+            10s,
+            30s,
+          ]
+    dimensions:
+      - name: command
+      - name: rpc_status
+      - name: consensus_mode
+      # Only the boolean close_time_correct is promoted, never the close_time
+      # value itself: close_time is a monotonic NetClock timestamp, so a
+      # dimension on it would mint a new metric series every ledger (unbounded
+      # cardinality). The close-time value is exposed as the server_info
+      # last_close_time gauge instead (for last-close age); the close interval
+      # comes from the ledgers_closed_total counter.
+      - name: close_time_correct
+      - name: consensus_state
+      - name: local
+      - name: suppressed
+      - name: proposal_trusted
+      - name: validation_trusted
+      - name: tx_type
+      - name: ter_result
+      # Apply-pipeline stage (preflight|preclaim|apply) — splits the
+      # tx.preflight/tx.preclaim/tx.transactor span RED metrics per stage.
+      - name: stage
+      - name: txq_status
+      - name: load_type
+      - name: is_batch
+      # Consensus lifecycle dimensions (low cardinality, bounded value sets).
+      - name: mode_new
+      - name: consensus_stalled
+      - name: consensus_phase
+      - name: consensus_result
+      # gRPC surface dimensions (bounded: method names, role, status).
+      - name: method
+      - name: grpc_role
+      - name: grpc_status
+      # ledger.acquire dimensions (bounded: outcome, acquire reason).
+      - name: outcome
+      - name: acquire_reason
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  # Export logs to Grafana Loki via OTLP/HTTP. Loki 3.x supports
+  # native OTLP ingestion on its /otlp endpoint, replacing the removed
+  # loki exporter (dropped in otel-collector-contrib v0.147.0).
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    # Promote resource attributes (deployment.environment, xrpl.network.type,
+    # service.name, service.instance.id) to Prometheus labels. Without this
+    # the tier attributes stamped by resource/tier stay on the resource and
+    # never reach the metric series, so dashboards could not filter by them.
+    resource_to_telemetry_conversion:
+      enabled: true
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource/tier, resource/stripsdk, attributes/hash, batch]
+      exporters: [debug, otlp/tempo, spanmetrics]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      processors: [resource/tier, resource/stripsdk, batch]
+      exporters: [prometheus]
+    # Log pipeline ingests xrpld debug.log via filelog receiver,
+    # batches entries, and exports to Loki for log-trace correlation.
+    logs:
+      receivers: [filelog]
+      processors: [resource/logs, resource/tier, resource/stripsdk, batch]
+      exporters: [otlphttp/loki]

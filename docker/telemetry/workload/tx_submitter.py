@@ -1,0 +1,1106 @@
+#!/usr/bin/env python3
+"""Transaction Submitter for rippled telemetry validation.
+
+Generates diverse transaction types against a rippled cluster to exercise
+the full span and metric surface: tx.process, tx.apply, ledger.build,
+consensus.*, and all associated attributes.
+
+Pre-funds test accounts from the genesis account, then submits a
+configurable mix of transaction types at a target TPS.
+
+Supported transaction types (the 10 in TX_BUILDERS):
+  - Payment (XRP transfers)
+  - OfferCreate / OfferCancel (DEX activity)
+  - TrustSet (trust line creation)
+  - NFTokenMint / NFTokenCreateOffer (NFT activity)
+  - EscrowCreate / EscrowFinish (escrow lifecycle)
+  - AMMCreate / AMMDeposit (AMM pool operations, if amendment enabled)
+
+Usage:
+    python3 tx_submitter.py --endpoint ws://localhost:6006 --tps 5 --duration 120
+
+    # Custom transaction mix:
+    python3 tx_submitter.py --endpoint ws://localhost:6006 \\
+        --weights '{"Payment":50,"OfferCreate":20,"TrustSet":10,"NFTokenMint":10,"EscrowCreate":10}'
+"""
+
+import argparse
+import asyncio
+import itertools
+import json
+import logging
+import random
+import sys
+import time
+from dataclasses import dataclass, field
+from typing import Any
+
+import websockets
+
+logger = logging.getLogger("tx_submitter")
+
+# Failure kinds already reported at WARNING, so a repeated failure is not
+# logged again at that level.
+_reported_failures: set[str] = set()
+
+
+def _log_first_failure(key: str, fmt: str, *args: object) -> None:
+    """Log a submission failure loudly the first time its kind is seen.
+
+    A run in which every transaction fails for one reason -- a refused
+    connection, an unfunded account -- used to leave no trace, because these
+    messages were DEBUG and CI does not enable DEBUG. Logging every failure
+    instead would bury the run in thousands of identical lines, so the first
+    of each distinct kind is a WARNING and the rest stay at DEBUG.
+
+    :param key: Identifies the failure kind, e.g. the engine result code.
+    :param fmt: Logging format string.
+    :param args: Format arguments.
+    """
+    if key in _reported_failures:
+        logger.debug(fmt, *args)
+        return
+    _reported_failures.add(key)
+    logger.warning(fmt, *args)
+
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+GENESIS_ACCOUNT = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
+GENESIS_SEED = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb"
+
+# Amount to fund each test account (100,000 XRP in drops).
+FUND_AMOUNT = "100000000000"
+
+# Default transaction mix weights (relative).
+DEFAULT_TX_WEIGHTS: dict[str, int] = {
+    "Payment": 40,
+    "OfferCreate": 15,
+    "OfferCancel": 5,
+    "TrustSet": 10,
+    "NFTokenMint": 10,
+    "NFTokenCreateOffer": 5,
+    "EscrowCreate": 5,
+    "EscrowFinish": 5,
+    "AMMCreate": 3,
+    "AMMDeposit": 2,
+}
+
+# Number of test accounts to create.
+NUM_TEST_ACCOUNTS = 8
+
+# Minimum number of funded accounts the transaction builders need: TX_BUILDERS
+# indexes positions 0..5 of the account list.
+MIN_FUNDED_ACCOUNTS = 6
+
+# Engine results that tie up the submitted sequence number, other than the
+# tec* family which is matched by prefix. See consumes_sequence().
+SEQ_CONSUMING_RESULTS = frozenset({"tesSUCCESS", "terQUEUED"})
+
+# Consecutive non-consuming submit results from one account before its
+# sequence is re-read from the ledger. The periodic refresh only ever raises
+# the counter, so a counter that leads the ledger -- a queued transaction that
+# was later dropped, say -- would otherwise make every further submit from
+# that account fail forever. Five is above the two or three rejections a
+# single bad transaction type can produce in a row, and at the default 5 TPS
+# it triggers within a few seconds, well before the periodic refresh below.
+SEQ_REFETCH_AFTER_FAILURES = 5
+
+# How often the submission loop re-reads every account's sequence from the
+# ledger, to stay close to sequences other submitters have advanced.
+SEQ_REFRESH_INTERVAL_S = 10.0
+
+# How long one request waits for the reply that belongs to it.
+RECV_TIMEOUT_S = 30.0
+
+# Source of the ``id`` sent with every request. xrpld echoes a request's id at
+# the top level of the reply, which is what lets ws_request tell its own reply
+# from one that an earlier, timed-out request left in the receive buffer.
+_request_ids = itertools.count(1)
+
+
+def consumes_sequence(engine_result: str | None) -> bool:
+    """Report whether an engine result tied up the submitted sequence number.
+
+    Two outcomes do. ``tesSUCCESS`` is applied (TER.h:243) and every ``tec*``
+    claims the fee "to use the sequence number" (TER.h:265-266), so both
+    advance the account root. ``terQUEUED`` is the one ``ter*`` code rippled
+    forwards (TER.h:205); the transaction waits in the queue still holding
+    that sequence, so the next submit needs the following one.
+
+    Everything else leaves the sequence free. ``tem*``, ``tef*`` and ``tel*``
+    are neither applied nor forwarded, and neither are the remaining ``ter*``
+    codes (TER.h:202-206) -- including ``terPRE_SEQ``, which reports that the
+    submitted sequence is already past the account root (TER.h:217).
+    Advancing the local counter on those widens the gap TER.h:209 calls a
+    "hole in sequence which jams transactions", and it is what
+    SEQ_REFETCH_AFTER_FAILURES exists to recover from.
+
+    Args:
+        engine_result: The ``engine_result`` field of a submit response. A
+                       missing or JSON-null field reads as non-consuming
+                       rather than raising, so the caller records the
+                       transaction exactly once.
+
+    Returns:
+        True if the submitted sequence number is spoken for.
+    """
+    result = str(engine_result or "")
+    return result in SEQ_CONSUMING_RESULTS or result.startswith("tec")
+
+
+# ---------------------------------------------------------------------------
+# Data classes
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Account:
+    """Represents an XRPL test account, funded or not.
+
+    Attributes:
+        name:      Human-readable name (e.g., "alice").
+        account:   Classic address (rXXX...).
+        seed:      Secret seed for signing.
+        sequence:  Next available sequence number.
+        funded:    True once the account root exists on the ledger. False
+                   accounts cannot submit, so they are excluded from the
+                   submission loop rather than silently counted.
+        stalled:   Consecutive submit results from this account that consumed
+                   no sequence. Reset by any consuming result; at
+                   SEQ_REFETCH_AFTER_FAILURES the sequence is re-read from
+                   the ledger.
+    """
+
+    name: str
+    account: str
+    seed: str
+    sequence: int = 0
+    funded: bool = False
+    stalled: int = 0
+
+
+@dataclass
+class TxStats:
+    """Tracks transaction submission results.
+
+    Attributes:
+        total_submitted: Total transactions sent to the network.
+        total_success:   Transactions that returned tesSUCCESS or terQUEUED.
+        total_errors:    Transactions that returned an error engine_result.
+        by_type:         Per-transaction-type count of submissions.
+        errors_by_type:  Per-transaction-type count of errors.
+    """
+
+    total_submitted: int = 0
+    total_success: int = 0
+    total_errors: int = 0
+    by_type: dict[str, int] = field(default_factory=dict)
+    errors_by_type: dict[str, int] = field(default_factory=dict)
+
+    def record(self, tx_type: str, success: bool) -> None:
+        """Record the result of a transaction submission."""
+        self.total_submitted += 1
+        self.by_type[tx_type] = self.by_type.get(tx_type, 0) + 1
+        if success:
+            self.total_success += 1
+        else:
+            self.total_errors += 1
+            self.errors_by_type[tx_type] = self.errors_by_type.get(tx_type, 0) + 1
+
+    def summary(self) -> dict[str, Any]:
+        """Return a summary dict suitable for JSON serialization."""
+        return {
+            "total_submitted": self.total_submitted,
+            "total_success": self.total_success,
+            "total_errors": self.total_errors,
+            "success_rate_pct": (
+                round(self.total_success / self.total_submitted * 100, 2)
+                if self.total_submitted
+                else 0
+            ),
+            "by_type": self.by_type,
+            "errors_by_type": self.errors_by_type,
+        }
+
+
+# ---------------------------------------------------------------------------
+# WebSocket RPC helpers
+# ---------------------------------------------------------------------------
+
+
+async def ws_request(
+    ws: websockets.ClientConnection,
+    command: str,
+    params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Send a native WebSocket command and return the result payload.
+
+    Uses rippled's native WebSocket format (``command`` key with flat
+    parameters).  The response has ``status`` at the top level and the
+    actual data payload inside ``result``.  This helper unwraps the
+    ``result`` dict so callers can read fields directly.
+
+    Args:
+        ws:      Open WebSocket connection.
+        command: RPC command name (e.g., ``account_info``, ``submit``).
+        params:  Optional flat parameter dict merged into the request.
+
+    Returns:
+        The inner ``result`` dict from the response.
+
+    Raises:
+        TimeoutError: If no reply carrying this request's ``id`` arrived within
+                      RECV_TIMEOUT_S.
+    """
+    request_id = next(_request_ids)
+    request: dict[str, Any] = {"command": command}
+    if params:
+        request.update(params)
+    # Set after the merge so a caller's parameter can never shadow the id.
+    request["id"] = request_id
+    await ws.send(json.dumps(request))
+
+    # Read until the reply carrying this request's id turns up. Cancelling a
+    # recv() does not discard the reply it was waiting for: the library queues
+    # incoming messages independently of any reader, so a request that timed
+    # out leaves its reply in the buffer and the NEXT request used to read it
+    # instead of its own. That mis-attribution is permanent, because every
+    # later request on the connection stays one reply behind: a submit would
+    # read an account_info reply, see no engine result, and stop advancing the
+    # account's sequence, failing every remaining transaction for a reason
+    # nothing logged. Discarding by id puts the stream back in step.
+    #
+    # The deadline is for the whole exchange rather than per message, so a run
+    # of buffered replies cannot extend the wait without bound. A reply with no
+    # id is accepted as this request's: a few xrpld error paths answer before
+    # the id is parsed, and treating those as stale would hide a real error.
+    deadline = time.monotonic() + RECV_TIMEOUT_S
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(f"{command} (id {request_id}) got no reply")
+        raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
+        resp = json.loads(raw)
+        reply_id = resp.get("id")
+        if reply_id is None or reply_id == request_id:
+            break
+        _log_first_failure(
+            "stale-reply",
+            "Discarded a reply for id %s while awaiting id %s (%s); an earlier "
+            "request timed out and left it buffered",
+            reply_id,
+            request_id,
+            command,
+        )
+
+    # WS command format: {"status": "success", "result": {...}, "type": "response"}
+    # On error: {"status": "error", "error": "...", "error_message": "..."}
+    if resp.get("status") == "error":
+        logger.warning(
+            "%s error: %s — %s",
+            command,
+            resp.get("error", "unknown"),
+            resp.get("error_message", ""),
+        )
+    return resp.get("result", resp)
+
+
+async def create_account(ws: websockets.ClientConnection, name: str) -> Account:
+    """Create a new account via wallet_propose RPC.
+
+    Args:
+        ws:   Open WebSocket connection.
+        name: Human-readable name for the account.
+
+    Returns:
+        An Account instance with the generated keypair.
+    """
+    result = await ws_request(ws, "wallet_propose")
+    if "account_id" not in result:
+        raise RuntimeError(
+            f"wallet_propose failed: {json.dumps(result, indent=None)[:300]}"
+        )
+    return Account(
+        name=name,
+        account=result["account_id"],
+        seed=result["master_seed"],
+    )
+
+
+async def fund_account(
+    ws: websockets.ClientConnection,
+    dest: Account,
+    genesis_seq: int,
+) -> tuple[bool, int]:
+    """Fund a test account from genesis.
+
+    Args:
+        ws:          Open WebSocket connection.
+        dest:        Destination account to fund.
+        genesis_seq: Current genesis account sequence number.
+
+    Returns:
+        Tuple of (funded: bool, next_genesis_sequence: int). The sequence is
+        unchanged when the ledger did not consume it.
+    """
+    resp = await ws_request(
+        ws,
+        "submit",
+        {
+            "secret": GENESIS_SEED,
+            "tx_json": {
+                "TransactionType": "Payment",
+                "Account": GENESIS_ACCOUNT,
+                "Destination": dest.account,
+                "Amount": FUND_AMOUNT,
+                "Sequence": genesis_seq,
+            },
+        },
+    )
+    engine_result = resp.get("engine_result", "unknown")
+    success = engine_result in ("tesSUCCESS", "terQUEUED")
+    if not success:
+        # Log the full response to help diagnose submit failures in CI.
+        logger.warning(
+            "Fund %s failed: engine_result=%s, full response: %s",
+            dest.name,
+            engine_result,
+            json.dumps(resp, indent=None)[:500],
+        )
+    # Advance the genesis sequence only when the ledger consumed it. The
+    # caller reads it once and threads it through every funding submit, so
+    # advancing past a tem*/tef*/tel* rejection would put every remaining
+    # submit on a future sequence and fund nothing.
+    if consumes_sequence(engine_result):
+        genesis_seq += 1
+    return success, genesis_seq
+
+
+async def get_account_sequence(ws: websockets.ClientConnection, account: str) -> int:
+    """Get the current sequence number for an account.
+
+    Args:
+        ws:      Open WebSocket connection.
+        account: Classic address.
+
+    Returns:
+        Current sequence number.
+    """
+    resp = await ws_request(ws, "account_info", {"account": account})
+    if "account_data" not in resp:
+        # Log full response to diagnose WS API format issues.
+        logger.warning(
+            "account_info for %s: no account_data, full response: %s",
+            account[:12],
+            json.dumps(resp, indent=None)[:500],
+        )
+        return 0
+    return resp["account_data"].get("Sequence", 0)
+
+
+# ---------------------------------------------------------------------------
+# Transaction builders
+# ---------------------------------------------------------------------------
+
+
+def build_payment(sender: Account, receiver: Account) -> dict[str, Any]:
+    """Build an XRP Payment transaction.
+
+    Args:
+        sender:   Source account.
+        receiver: Destination account.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    amount = str(random.randint(1000, 1000000))  # 0.001 - 1 XRP
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "Payment",
+            "Account": sender.account,
+            "Destination": receiver.account,
+            "Amount": amount,
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_offer_create(sender: Account) -> dict[str, Any]:
+    """Build an OfferCreate transaction (XRP/USD pair).
+
+    Args:
+        sender: Account placing the offer.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "OfferCreate",
+            "Account": sender.account,
+            "TakerPays": str(random.randint(100000, 10000000)),
+            "TakerGets": {
+                "currency": "USD",
+                "issuer": GENESIS_ACCOUNT,
+                "value": str(round(random.uniform(0.1, 100.0), 2)),
+            },
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_offer_cancel(sender: Account) -> dict[str, Any]:
+    """Build an OfferCancel transaction.
+
+    Uses a non-existent offer sequence — will fail gracefully but still
+    exercises the tx.process span pipeline.
+
+    Args:
+        sender: Account cancelling the offer.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "OfferCancel",
+            "Account": sender.account,
+            "OfferSequence": max(1, sender.sequence - 1),
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_trust_set(sender: Account) -> dict[str, Any]:
+    """Build a TrustSet transaction for a USD trust line.
+
+    Args:
+        sender: Account setting the trust line.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "TrustSet",
+            "Account": sender.account,
+            "LimitAmount": {
+                "currency": "USD",
+                "issuer": GENESIS_ACCOUNT,
+                "value": "1000000",
+            },
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_nftoken_mint(sender: Account) -> dict[str, Any]:
+    """Build an NFTokenMint transaction.
+
+    Args:
+        sender: Account minting the NFT.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "NFTokenMint",
+            "Account": sender.account,
+            "NFTokenTaxon": random.randint(0, 100),
+            "Flags": 8,  # tfTransferable
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_nftoken_create_offer(sender: Account) -> dict[str, Any]:
+    """Build an NFTokenCreateOffer transaction.
+
+    Uses a dummy NFTokenID — will fail but exercises the span pipeline.
+
+    Args:
+        sender: Account creating the NFT offer.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "NFTokenCreateOffer",
+            "Account": sender.account,
+            "NFTokenID": "0" * 64,
+            "Amount": str(random.randint(100000, 1000000)),
+            "Flags": 1,  # tfSellNFToken
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_escrow_create(sender: Account, receiver: Account) -> dict[str, Any]:
+    """Build an EscrowCreate transaction.
+
+    Creates a time-based escrow that finishes 10 seconds from now.
+
+    Args:
+        sender:   Account creating the escrow.
+        receiver: Destination account for escrow funds.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    # Ripple epoch offset: 946684800 seconds from Unix epoch
+    ripple_time = int(time.time()) - 946684800
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "EscrowCreate",
+            "Account": sender.account,
+            "Destination": receiver.account,
+            "Amount": str(random.randint(100000, 1000000)),
+            "FinishAfter": ripple_time + 10,
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_escrow_finish(sender: Account, owner: Account) -> dict[str, Any]:
+    """Build an EscrowFinish transaction.
+
+    Uses a dummy offer sequence — will likely fail but exercises spans.
+
+    Args:
+        sender: Account finishing the escrow.
+        owner:  Account that created the escrow.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "EscrowFinish",
+            "Account": sender.account,
+            "Owner": owner.account,
+            "OfferSequence": max(1, owner.sequence - 2),
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_amm_create(sender: Account) -> dict[str, Any]:
+    """Build an AMMCreate transaction (XRP/USD pool).
+
+    Requires the AMM amendment to be enabled on the network.
+
+    Args:
+        sender: Account creating the AMM pool.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "AMMCreate",
+            "Account": sender.account,
+            "Amount": str(random.randint(10000000, 100000000)),
+            "Amount2": {
+                "currency": "USD",
+                "issuer": GENESIS_ACCOUNT,
+                "value": str(round(random.uniform(10.0, 1000.0), 2)),
+            },
+            "TradingFee": 500,  # 0.5%
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+def build_amm_deposit(sender: Account) -> dict[str, Any]:
+    """Build an AMMDeposit transaction.
+
+    Args:
+        sender: Account depositing into the AMM pool.
+
+    Returns:
+        Transaction JSON and signing secret.
+    """
+    return {
+        "secret": sender.seed,
+        "tx_json": {
+            "TransactionType": "AMMDeposit",
+            "Account": sender.account,
+            "Asset": {"currency": "XRP"},
+            "Asset2": {
+                "currency": "USD",
+                "issuer": GENESIS_ACCOUNT,
+            },
+            "Amount": str(random.randint(1000000, 10000000)),
+            "Flags": 0x00080000,  # tfSingleAsset
+            "Sequence": sender.sequence,
+        },
+    }
+
+
+# Transaction type -> builder function mapping.
+# Each builder takes (accounts: list[Account]) and returns submit params.
+TX_BUILDERS: dict[str, Any] = {
+    "Payment": lambda accts: build_payment(accts[0], accts[1]),
+    "OfferCreate": lambda accts: build_offer_create(accts[0]),
+    "OfferCancel": lambda accts: build_offer_cancel(accts[0]),
+    "TrustSet": lambda accts: build_trust_set(accts[2]),
+    "NFTokenMint": lambda accts: build_nftoken_mint(accts[3]),
+    "NFTokenCreateOffer": lambda accts: build_nftoken_create_offer(accts[3]),
+    "EscrowCreate": lambda accts: build_escrow_create(accts[4], accts[1]),
+    "EscrowFinish": lambda accts: build_escrow_finish(accts[4], accts[4]),
+    "AMMCreate": lambda accts: build_amm_create(accts[5]),
+    "AMMDeposit": lambda accts: build_amm_deposit(accts[5]),
+}
+
+
+# ---------------------------------------------------------------------------
+# Main submission loop
+# ---------------------------------------------------------------------------
+
+
+async def setup_accounts(
+    ws: websockets.ClientConnection,
+) -> list[Account]:
+    """Create and fund test accounts from genesis.
+
+    Generates NUM_TEST_ACCOUNTS accounts via wallet_propose, then funds
+    each with FUND_AMOUNT XRP from genesis.
+
+    Args:
+        ws: Open WebSocket connection to a rippled node.
+
+    Returns:
+        Every created Account. ``funded`` marks the ones the ledger accepted,
+        so the caller must filter on it rather than on the list length.
+    """
+    account_names = ["alice", "bob", "carol", "dave", "eve", "frank", "grace", "heidi"]
+
+    logger.info("Creating %d test accounts...", NUM_TEST_ACCOUNTS)
+    accounts: list[Account] = []
+    for name in account_names[:NUM_TEST_ACCOUNTS]:
+        acct = await create_account(ws, name)
+        accounts.append(acct)
+        logger.info("  Created %s: %s", name, acct.account)
+
+    # Get genesis sequence.
+    genesis_seq = await get_account_sequence(ws, GENESIS_ACCOUNT)
+    logger.info("Genesis sequence: %d", genesis_seq)
+
+    # Fund all accounts.
+    logger.info("Funding test accounts...")
+    for acct in accounts:
+        acct.funded, genesis_seq = await fund_account(ws, acct, genesis_seq)
+        if acct.funded:
+            logger.info("  Funded %s", acct.name)
+        else:
+            logger.warning("  Failed to fund %s", acct.name)
+
+    # Wait for funding transactions to be validated.
+    logger.info("Waiting 10s for funding transactions to validate...")
+    await asyncio.sleep(10)
+
+    # Refresh sequence numbers, and confirm funding against the ledger rather
+    # than trusting the submit result. get_account_sequence returns 0 when
+    # account_info reports no account_data, which means the account root was
+    # never created; a sequence we cannot read also makes the account
+    # unusable, so either way it must not be submitted from.
+    for acct in accounts:
+        try:
+            acct.sequence = await get_account_sequence(ws, acct.account)
+        except Exception as exc:
+            logger.warning("  Failed to get sequence for %s: %s", acct.name, exc)
+        if acct.sequence > 0:
+            logger.info("  %s sequence: %d", acct.name, acct.sequence)
+        else:
+            acct.funded = False
+            logger.warning(
+                "  %s has no ledger sequence — treating as unfunded", acct.name
+            )
+
+    logger.info(
+        "Funded %d of %d created accounts",
+        sum(1 for a in accounts if a.funded),
+        len(accounts),
+    )
+    return accounts
+
+
+async def submit_transaction(
+    ws: websockets.ClientConnection,
+    tx_type: str,
+    accounts: list[Account],
+    stats: TxStats,
+) -> None:
+    """Submit a single transaction of the given type.
+
+    Selects the appropriate builder, constructs the transaction, submits
+    it via the submit RPC, and records the result.
+
+    Args:
+        ws:       Open WebSocket connection.
+        tx_type:  Transaction type name (e.g., "Payment").
+        accounts: List of funded test accounts.
+        stats:    TxStats instance to record results.
+    """
+    builder = TX_BUILDERS.get(tx_type)
+    if not builder:
+        logger.warning("Unknown transaction type: %s", tx_type)
+        return
+
+    try:
+        params = builder(accounts)
+        # Identify which account is the sender to bump its sequence.
+        sender_addr = params["tx_json"]["Account"]
+        sender = next((a for a in accounts if a.account == sender_addr), None)
+
+        resp = await ws_request(ws, "submit", params)
+        engine_result = resp.get("engine_result", "unknown")
+        success = engine_result in (
+            "tesSUCCESS",
+            "terQUEUED",
+            "tecUNFUNDED_OFFER",
+            "tecNO_DST_INSUF_XRP",
+        )
+        stats.record(tx_type, success)
+
+        # The sequence gate is deliberately not `success`: that tuple is
+        # narrower (every tec* consumes a sequence, only two are listed) and
+        # wider (a tem*/tef*/tel*/ter* rejection consumes none) than the set
+        # of results that actually consume one. _track_sequence also owns the
+        # recovery path for a counter that has drifted ahead of the ledger.
+        if sender:
+            await _track_sequence(ws, sender, engine_result)
+
+        if not success:
+            # First occurrence of each distinct result at WARNING, the rest at
+            # DEBUG. DEBUG is off in CI, so a run where every transaction fails
+            # would otherwise produce no diagnostics at all; logging every
+            # failure at WARNING instead would bury the run in thousands of
+            # identical lines.
+            _log_first_failure(
+                "result:%s" % engine_result,
+                "%s result: %s (%s)",
+                tx_type,
+                engine_result,
+                resp.get("engine_result_message", ""),
+            )
+    except Exception as exc:
+        stats.record(tx_type, False)
+        # Same reasoning, keyed on the exception type: a connection that is
+        # refused for the whole run says it once rather than per transaction.
+        _log_first_failure("exc:%s" % type(exc).__name__, "%s error: %s", tx_type, exc)
+
+
+async def _track_sequence(
+    ws: websockets.ClientConnection,
+    sender: Account,
+    engine_result: str | None,
+) -> None:
+    """Advance, or re-read from the ledger, one sender's sequence number.
+
+    A consuming result moves the counter on by one and clears the stall
+    streak. A non-consuming one leaves the counter where it is, so the same
+    sequence is offered again -- correct when the rejection was about the
+    transaction, but a livelock when the counter itself is the problem, since
+    _refresh_sequences never lowers it. After SEQ_REFETCH_AFTER_FAILURES
+    consecutive non-consuming results the ledger's own value is taken
+    instead, in either direction.
+
+    A zero from get_account_sequence means account_info returned no
+    account_data, so it is ignored rather than written over a usable counter.
+
+    Args:
+        ws:            Open WebSocket connection.
+        sender:        The account the transaction was submitted from.
+        engine_result: The ``engine_result`` of that submit.
+    """
+    if consumes_sequence(engine_result):
+        sender.sequence += 1
+        sender.stalled = 0
+        return
+
+    sender.stalled += 1
+    if sender.stalled < SEQ_REFETCH_AFTER_FAILURES:
+        return
+
+    sender.stalled = 0
+    try:
+        seq = await get_account_sequence(ws, sender.account)
+    except Exception as exc:
+        logger.warning("Sequence re-fetch for %s failed: %s", sender.name, exc)
+        return
+    if seq > 0 and seq != sender.sequence:
+        logger.warning(
+            "Re-syncing %s sequence %d -> %d after %d non-consuming results",
+            sender.name,
+            sender.sequence,
+            seq,
+            SEQ_REFETCH_AFTER_FAILURES,
+        )
+        sender.sequence = seq
+
+
+async def _refresh_sequences(
+    ws: websockets.ClientConnection,
+    accounts: list[Account],
+) -> None:
+    """Re-sync account sequences from the validated ledger.
+
+    In a consensus network, other nodes' transactions advance sequences
+    beyond the submitter's local tracking. Refreshing every
+    SEQ_REFRESH_INTERVAL_S keeps the local counter close to the ledger and
+    prevents tefPAST_SEQ storms.
+
+    The counter is only ever raised here, never lowered, because it may
+    legitimately lead the ledger: a queued transaction holds its sequence
+    without having applied yet, and lowering the counter would reuse it.
+    Raising it fixes the opposite case, where the ledger has moved on -- a
+    submit response that was lost while the transaction applied, or another
+    submitter using the same account.
+
+    That leaves one case this cannot fix: a counter that leads the ledger and
+    never catches up, because the transaction it was advanced for was dropped
+    rather than applied. _track_sequence handles that one by re-reading the
+    ledger value in either direction.
+    """
+    for acct in accounts:
+        try:
+            seq = await get_account_sequence(ws, acct.account)
+            if seq > acct.sequence:
+                acct.sequence = seq
+        except Exception:
+            pass
+
+
+async def _submission_loop(
+    ws: websockets.ClientConnection,
+    accounts: list[Account],
+    weights: dict[str, int],
+    duration: float,
+    interval: float,
+    stats: TxStats,
+) -> float:
+    """Submit a weighted transaction mix until ``duration`` elapses.
+
+    Args:
+        ws:       Open WebSocket connection.
+        accounts: Funded accounts to submit from.
+        weights:  Transaction type distribution weights.
+        duration: Run time in seconds.
+        interval: Delay between submissions, i.e. 1 / target TPS.
+        stats:    TxStats instance to record results in.
+
+    Returns:
+        Seconds actually spent in the loop.
+    """
+    tx_types = list(weights.keys())
+    tx_weights = [weights[t] for t in tx_types]
+
+    start = time.monotonic()
+    last_seq_refresh = start
+    while (time.monotonic() - start) < duration:
+        # Periodically re-sync account sequences from the ledger so
+        # locally-tracked sequences don't drift behind consensus.
+        if (time.monotonic() - last_seq_refresh) >= SEQ_REFRESH_INTERVAL_S:
+            await _refresh_sequences(ws, accounts)
+            last_seq_refresh = time.monotonic()
+
+        tx_type = random.choices(tx_types, weights=tx_weights, k=1)[0]
+        await submit_transaction(ws, tx_type, accounts, stats)
+        await asyncio.sleep(interval)
+
+        # Progress logging every 50 transactions.
+        if stats.total_submitted % 50 == 0 and stats.total_submitted > 0:
+            elapsed = time.monotonic() - start
+            logger.info(
+                "Progress: %d submitted, %d success, %d errors, "
+                "%.1f TPS (%.0fs elapsed)",
+                stats.total_submitted,
+                stats.total_success,
+                stats.total_errors,
+                stats.total_submitted / elapsed if elapsed > 0 else 0,
+                elapsed,
+            )
+
+    return time.monotonic() - start
+
+
+async def run_submitter(
+    endpoint: str,
+    tps: float,
+    duration: float,
+    weights: dict[str, int],
+) -> TxStats:
+    """Run the transaction submitter against a single endpoint.
+
+    Args:
+        endpoint: WebSocket URL (ws://host:port).
+        tps:      Target transactions per second.
+        duration: Total run time in seconds.
+        weights:  Transaction type distribution weights.
+
+    Returns:
+        TxStats with aggregated results.
+    """
+    stats = TxStats()
+    interval = 1.0 / tps if tps > 0 else 0.5
+    elapsed = 0.0
+
+    ws = await websockets.connect(endpoint, ping_interval=20, ping_timeout=10)
+    logger.info("Connected to %s", endpoint)
+
+    try:
+        # Setup test accounts. Every created account is returned whether or
+        # not funding worked, so submit only from the funded ones — the
+        # builders address accounts by position and an unfunded account there
+        # would fail every transaction it is picked for.
+        created = await setup_accounts(ws)
+        accounts = [acct for acct in created if acct.funded]
+        if len(accounts) < MIN_FUNDED_ACCOUNTS:
+            logger.error(
+                "Need at least %d funded accounts, only %d of %d created "
+                "accounts were funded",
+                MIN_FUNDED_ACCOUNTS,
+                len(accounts),
+                len(created),
+            )
+            return stats
+
+        logger.info(
+            "Starting TX submission: tps=%s, duration=%ss, types=%d",
+            tps,
+            duration,
+            len(weights),
+        )
+        elapsed = await _submission_loop(
+            ws, accounts, weights, duration, interval, stats
+        )
+    finally:
+        await ws.close()
+
+    logger.info(
+        "Submission complete: %d submitted, %d success, %d errors "
+        "in %.1fs (%.1f TPS)",
+        stats.total_submitted,
+        stats.total_success,
+        stats.total_errors,
+        elapsed,
+        stats.total_submitted / elapsed if elapsed > 0 else 0,
+    )
+
+    return stats
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Transaction Submitter for rippled telemetry validation",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Basic usage (5 TPS for 2 minutes):
+  python3 tx_submitter.py --endpoint ws://localhost:6006 --tps 5 --duration 120
+
+  # Custom transaction mix:
+  python3 tx_submitter.py --endpoint ws://localhost:6006 \\
+      --weights '{"Payment": 60, "OfferCreate": 20, "TrustSet": 20}'
+        """,
+    )
+    parser.add_argument(
+        "--endpoint",
+        type=str,
+        default="ws://localhost:6006",
+        help="WebSocket endpoint (default: ws://localhost:6006)",
+    )
+    parser.add_argument(
+        "--tps",
+        type=float,
+        default=5.0,
+        help="Target transactions per second (default: 5)",
+    )
+    parser.add_argument(
+        "--duration",
+        type=float,
+        default=120.0,
+        help="Run duration in seconds (default: 120)",
+    )
+    parser.add_argument(
+        "--weights",
+        type=str,
+        default=None,
+        help="JSON string of transaction type weights (overrides defaults)",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Write JSON summary to this file path",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable debug logging",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Main entry point for the transaction submitter."""
+    args = parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
+    )
+
+    # Parse custom weights if provided.
+    weights = DEFAULT_TX_WEIGHTS.copy()
+    if args.weights:
+        try:
+            custom = json.loads(args.weights)
+            weights = {k: int(v) for k, v in custom.items()}
+            logger.info("Using custom weights: %s", weights)
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.error("Invalid --weights JSON: %s", exc)
+            sys.exit(1)
+
+    # Run the submitter.
+    stats = asyncio.run(
+        run_submitter(
+            endpoint=args.endpoint,
+            tps=args.tps,
+            duration=args.duration,
+            weights=weights,
+        )
+    )
+
+    summary = stats.summary()
+    print(json.dumps(summary, indent=2))
+
+    if args.output:
+        with open(args.output, "w") as f:
+            json.dump(summary, f, indent=2)
+        logger.info("Summary written to %s", args.output)
+
+
+if __name__ == "__main__":
+    main()
