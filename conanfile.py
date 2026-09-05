@@ -159,9 +159,10 @@ class Xrpl(ConanFile):
 
     def layout(self):
         cmake_layout(self)
-        # Fix this setting to follow the default introduced in Conan 1.48
-        # to align with our build instructions.
-        self.folders.generators = "build/generators"
+        # Place the generated files (toolchain, CMakeDeps configs) directly
+        # under the output folder, so the build directory passed to Conan via
+        # --output-folder is the single source of truth for their location.
+        self.folders.generators = "generators"
 
     generators = "CMakeDeps"
 
