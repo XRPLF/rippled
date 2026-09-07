@@ -99,7 +99,7 @@
  *     auto ctx = span.spanContext();
  *
  *     // Thread B: create child with captured context
- *     auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
+ *     auto child = SpanGuard::childSpan(rpc_span::prefix::command, ctx);
  * @endcode
  *
  * 4. Conditional check (rarely needed — methods are no-ops on null):
