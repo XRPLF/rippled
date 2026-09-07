@@ -75,7 +75,7 @@ The parser `setup_Telemetry()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` re
 > available on both. Components that hold a `ServiceRegistry&` (e.g.
 > `NetworkOPsImp`) call `registry_.get().getTelemetry()`. Components that
 > still hold an `Application&` (e.g. `ServerHandler`, `PeerImp`,
-> `RCLConsensusAdaptor`) call `app_.getTelemetry()` directly.
+> `RCLConsensus::Adaptor`) call `app_.getTelemetry()` directly.
 
 ---
 
@@ -196,7 +196,7 @@ An example `xrpld RPC Performance` dashboard (uid `xrpld-rpc-performance`) sourc
 
 ### 5.8.4 Example Dashboard: Transaction Tracing
 
-An example `xrpld Transaction Tracing` dashboard (uid `xrpld-tx-tracing`) over Tempo provides three panels: transaction throughput (`tx.receive` rate, stat), cross-node relay count (average `span.relay_count` on `tx.relay`, timeseries), and a table of transaction validation errors (`tx.validate` with `status.code=error`).
+An example `xrpld Transaction Tracing` dashboard (uid `xrpld-tx-tracing`) over Tempo provides three panels: transaction throughput (`tx.receive` rate, stat), cross-node relay count (average `span.relay_count` on `tx.relay`, timeseries), and a table of transaction validation errors (`tx.validate` with `status = error`).
 
 ### 5.8.5 TraceQL Query Examples
 
@@ -207,19 +207,19 @@ Common queries for xrpld traces:
 {resource.service.name="xrpld" && span.tx_hash="ABC123..."}
 
 # Find slow RPC commands (>100ms)
-{resource.service.name="xrpld" && name=~"rpc.command.*"} | duration > 100ms
+{resource.service.name="xrpld" && name=~"rpc.command.*"} | { duration > 100ms }
 
 # Find consensus rounds taking >5 seconds
-{resource.service.name="xrpld" && name="consensus.round"} | duration > 5s
+{resource.service.name="xrpld" && name="consensus.round"} | { duration > 5s }
 
 # Find failed transactions with error details
-{resource.service.name="xrpld" && name="tx.validate" && status.code=error}
+{resource.service.name="xrpld" && name="tx.validate" && status = error}
 
 # Find transactions relayed to many peers
-{resource.service.name="xrpld" && name="tx.relay"} | span.relay_count > 10
+{resource.service.name="xrpld" && name="tx.relay"} | { span.relay_count > 10 }
 
 # Compare latency across nodes
-{resource.service.name="xrpld" && name="rpc.command.account_info"} | avg(duration) by (resource.service.instance.id)
+{resource.service.name="xrpld" && name="rpc.command.account_info"} | avg_over_time(duration) by (resource.service.instance.id)
 ```
 
 ### 5.8.6 Correlation with PerfLog
