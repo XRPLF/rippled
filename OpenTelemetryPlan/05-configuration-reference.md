@@ -164,7 +164,7 @@ Setting `traces_endpoint` therefore moves traces only; both metric pipelines fol
 > available on both. Components that hold a `ServiceRegistry&` (e.g.
 > `NetworkOPsImp`) call `registry_.get().getTelemetry()`. Components that
 > still hold an `Application&` (e.g. `ServerHandler`, `PeerImp`,
-> `RCLConsensusAdaptor`) call `app_.getTelemetry()` directly.
+> `RCLConsensus::Adaptor`) call `app_.getTelemetry()` directly.
 
 ---
 
@@ -528,10 +528,10 @@ before adding more.
 {resource.service.name="xrpld" && span.tx_hash="ABC123..."}
 
 # Find slow RPC commands (>100ms)
-{resource.service.name="xrpld" && name=~"rpc.command.*"} | duration > 100ms
+{resource.service.name="xrpld" && name=~"rpc.command.*"} | { duration > 100ms }
 
 # Find consensus rounds taking >5 seconds
-{resource.service.name="xrpld" && name="consensus.round"} | duration > 5s
+{resource.service.name="xrpld" && name="consensus.round"} | { duration > 5s }
 
 # Find failed transaction processing
 {resource.service.name="xrpld" && name="tx.process" && span.ter_result!="tesSUCCESS"}
@@ -545,7 +545,7 @@ before adding more.
 {resource.service.name="xrpld" && name="tx.process" && span.local=false}
 
 # Compare latency across nodes
-{resource.service.name="xrpld" && name="rpc.command.account_info"} | avg(duration) by (resource.service.instance.id)
+{resource.service.name="xrpld" && name="rpc.command.account_info"} | avg_over_time(duration) by (resource.service.instance.id)
 ```
 
 > Queries in earlier drafts used `tx.validate`, `tx.relay` and

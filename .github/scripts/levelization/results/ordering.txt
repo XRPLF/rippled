@@ -194,6 +194,7 @@ tests.libxrpl > xrpl.consensus
 tests.libxrpl > xrpl.core
 tests.libxrpl > xrpld.app
 tests.libxrpl > xrpld.overlay
+tests.libxrpl > xrpld.rpc
 tests.libxrpl > xrpld.telemetry
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.ledger
@@ -314,6 +315,7 @@ xrpld.rpc > xrpl.basics
 xrpld.rpc > xrpl.config
 xrpld.rpc > xrpl.core
 xrpld.rpc > xrpld.core
+xrpld.rpc > xrpld.telemetry
 xrpld.rpc > xrpl.json
 xrpld.rpc > xrpl.ledger
 xrpld.rpc > xrpl.net

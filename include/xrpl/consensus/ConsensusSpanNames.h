@@ -15,8 +15,9 @@
  *
  *    consensus.round                             [main thread, root]
  *    |  Created: Adaptor::startRoundTracing()
- *    |  Attrs:   consensus_ledger_id, ledger_seq, consensus_mode,
- *    |           trace_strategy, consensus_round_id
+ *    |  Attrs:   consensus_ledger_id, ledger_seq, trace_strategy,
+ *    |           consensus_round_id; consensus_mode from
+ *    |           Adaptor::onModeChange()
  *    |
  *    +-- consensus.phase.open                    [main thread, child]
  *    |     Created: Consensus::startRoundInternal()
@@ -180,6 +181,11 @@ using ::xrpl::telemetry::attr::ledgerSeq;
  * Use `<domain>_<field>` underscore form for TraceQL ergonomics.
  */
 inline constexpr auto ledgerId = makeStr("consensus_ledger_id");
+/**
+ * Consensus mode. On consensus.round it is written by onModeChange, the point
+ * at which the engine applies the mode; on consensus.ledger_close the engine
+ * passes the mode in.
+ */
 inline constexpr auto mode = makeStr("consensus_mode");
 inline constexpr auto round = makeStr("consensus_round");
 inline constexpr auto roundId = makeStr("consensus_round_id");
