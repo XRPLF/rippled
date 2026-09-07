@@ -77,7 +77,10 @@ SpanContext::SpanContext(std::shared_ptr<Impl> impl) : impl_(std::move(impl))
 bool
 SpanContext::isValid() const noexcept
 {
-    return impl_ != nullptr;
+    // Holding a Context is not proof of holding a span. GetCurrent() hands back
+    // an empty Context on a thread with no active span, and threadLocalContext()
+    // wraps that too. Ask the Context for its span instead of trusting impl_.
+    return impl_ != nullptr && otel_trace::GetSpan(impl_->ctx)->GetContext().IsValid();
 }
 
 // ===== SpanGuard::Impl ====================================================
@@ -165,11 +168,13 @@ namespace {
 constexpr char const* kLinkTypeKey = "link_type";
 constexpr char const* kLinkTypeFollowsFrom = "follows_from";
 
-// Map a TraceCategory to an OTel SpanKind so Tempo's service-graph /
-// RED metrics see the correct direction. RPC spans are emitted at the
-// server entry point (handler dispatch), Peer spans at inbound-message
-// receipt. Transactions / Consensus / Ledger are internal processing
-// and keep the default kInternal.
+// Per-category default OTel SpanKind, used when a call site passes no
+// SpanRole. A category cannot tell an inbound entry point from the
+// internal work under it, so RPC and Peer default to the entry-point
+// kind and any call site below the entry point passes SpanRole::Internal
+// instead. Transactions / Consensus / Ledger are internal throughout.
+// The kind drives direction in Tempo's service-graph / RED metrics,
+// which pair kServer with kClient and kConsumer with kProducer.
 otel_trace::SpanKind
 categoryToSpanKind(TraceCategory cat)
 {
@@ -185,6 +190,38 @@ categoryToSpanKind(TraceCategory cat)
             return otel_trace::SpanKind::kInternal;
     }
     return otel_trace::SpanKind::kInternal;  // unreachable
+}
+
+/**
+ * Resolve the span kind to start a span with.
+ *
+ * An explicit SpanRole wins; SpanRole::FromCategory falls back to the
+ * category default above. Role and category are separate axes, so a single
+ * category can emit both an inbound handler and the internal work under it.
+ *
+ * @param cat  Trace subsystem category. Read only for SpanRole::FromCategory.
+ * @param role Role the caller asked for.
+ * @return The OTel span kind for this span.
+ */
+[[nodiscard]] otel_trace::SpanKind
+resolveSpanKind(TraceCategory cat, SpanRole role)
+{
+    switch (role)
+    {
+        case SpanRole::FromCategory:
+            return categoryToSpanKind(cat);
+        case SpanRole::Internal:
+            return otel_trace::SpanKind::kInternal;
+        case SpanRole::Server:
+            return otel_trace::SpanKind::kServer;
+        case SpanRole::Client:
+            return otel_trace::SpanKind::kClient;
+        case SpanRole::Producer:
+            return otel_trace::SpanKind::kProducer;
+        case SpanRole::Consumer:
+            return otel_trace::SpanKind::kConsumer;
+    }
+    return categoryToSpanKind(cat);  // unreachable
 }
 
 /**
@@ -218,7 +255,11 @@ joinSpanName(std::string_view prefix, std::string_view name) noexcept
 }  // namespace
 
 SpanGuard
-SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept
+SpanGuard::span(
+    TraceCategory cat,
+    std::string_view prefix,
+    std::string_view name,
+    SpanRole role) noexcept
 {
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
@@ -226,11 +267,15 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
     auto const fullName = joinSpanName(prefix, name);
     if (!fullName)
         return {};
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(*fullName, categoryToSpanKind(cat))));
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(*fullName, resolveSpanKind(cat, role))));
 }
 
 SpanGuard
-SpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept
+SpanGuard::freshRoot(
+    TraceCategory cat,
+    std::string_view prefix,
+    std::string_view name,
+    SpanRole role) noexcept
 {
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
@@ -241,7 +286,7 @@ SpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_vie
     // Force a fresh trace root: do NOT inherit this thread's active span.
     auto rootCtx = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
     return SpanGuard(
-        std::make_unique<Impl>(tel->startSpan(*fullName, rootCtx, categoryToSpanKind(cat))));
+        std::make_unique<Impl>(tel->startSpan(*fullName, rootCtx, resolveSpanKind(cat, role))));
 }
 
 // ===== Child / linked span creation ========================================
@@ -533,8 +578,9 @@ ScopedSpanGuard::~ScopedSpanGuard()
 ScopedSpanGuard::ScopedSpanGuard(
     TraceCategory cat,
     std::string_view prefix,
-    std::string_view name) noexcept
-    : ScopedSpanGuard(SpanGuard::span(cat, prefix, name))
+    std::string_view name,
+    SpanRole role) noexcept
+    : ScopedSpanGuard(SpanGuard::span(cat, prefix, name, role))
 {
 }
 
@@ -542,9 +588,10 @@ ScopedSpanGuard
 ScopedSpanGuard::freshRoot(
     TraceCategory cat,
     std::string_view prefix,
-    std::string_view name) noexcept
+    std::string_view name,
+    SpanRole role) noexcept
 {
-    return ScopedSpanGuard(SpanGuard::freshRoot(cat, prefix, name));
+    return ScopedSpanGuard(SpanGuard::freshRoot(cat, prefix, name, role));
 }
 
 ScopedSpanGuard
