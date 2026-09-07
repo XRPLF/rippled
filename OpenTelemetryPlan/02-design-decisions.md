@@ -236,17 +236,19 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 
 #### Transaction Attributes
 
-| Key            | Type   | Description                           |
-| -------------- | ------ | ------------------------------------- |
-| `tx_hash`      | string | Transaction hash (hex)                |
-| `tx_type`      | string | `"Payment"`, `"OfferCreate"`, etc.    |
-| `tx_account`   | string | Source account (redacted in prod)     |
-| `tx_sequence`  | int64  | Account sequence number               |
-| `tx_fee`       | int64  | Fee in drops                          |
-| `tx_result`    | string | `"tesSUCCESS"`, `"tecPATH_DRY"`, etc. |
-| `ledger_index` | int64  | Ledger containing transaction         |
-| `relay_count`  | int64  | Peers the transaction was relayed to  |
-| `suppressed`   | bool   | `true` when HashRouter dropped a dup  |
+| Key                  | Type   | Description                           |
+| -------------------- | ------ | ------------------------------------- |
+| `tx_hash`            | string | Transaction hash (hex)                |
+| `tx_type`            | string | `"Payment"`, `"OfferCreate"`, etc.    |
+| `tx_account`         | string | Source account (redacted in prod)     |
+| `tx_sequence`        | int64  | Account sequence number               |
+| `tx_fee`             | int64  | Fee in drops                          |
+| `tx_result`          | string | `"tesSUCCESS"`, `"tecPATH_DRY"`, etc. |
+| `current_ledger_seq` | int64  | Open ledger the transaction targeted  |
+| `relay_count`        | int64  | Peers the transaction was relayed to  |
+| `suppressed`         | bool   | `true` when HashRouter dropped a dup  |
+
+> **Note:** `current_ledger_seq` and `ledger_seq` are the same concept — a ledger's sequence number — but they name different ledgers, so the design keeps two keys rather than one. `current_ledger_seq` is the open or in-flight ledger a transaction's work was applied into; it is named after the RPC field `ledger_current_index`. `ledger_seq` (see [Ledger & Job Attributes](#ledger--job-attributes)) is a closed or validated ledger, set by the ledger and consensus spans. Neither is spelled `ledger_index`: per rule 2 of [Telemetry span attribute naming](../CONTRIBUTING.md#telemetry-span-attribute-naming), one concept gets one key reused verbatim, and a different referent is disambiguated with a prefix rather than a synonym.
 
 #### Consensus Attributes
 
@@ -289,7 +291,7 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 | Key                         | Type    | Description                       |
 | --------------------------- | ------- | --------------------------------- |
 | `ledger_hash`               | string  | Ledger hash                       |
-| `ledger_index`              | int64   | Ledger sequence/index             |
+| `ledger_seq`                | int64   | Closed/validated ledger sequence  |
 | `close_time_ripple_epoch_s` | int64   | Close time (Ripple epoch seconds) |
 | `ledger_tx_count`           | int64   | Transaction count                 |
 | `job_type`                  | string  | Job type name                     |
@@ -348,11 +350,11 @@ The following table summarizes what data is collected by category:
 
 | Category        | Attributes Collected                                                                                             | Purpose                      |
 | --------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| **Transaction** | `tx_hash`, `tx_type`, `tx_result`, `tx_fee`, `ledger_index`                                                      | Trace transaction lifecycle  |
+| **Transaction** | `tx_hash`, `tx_type`, `tx_result`, `tx_fee`, `current_ledger_seq`                                                | Trace transaction lifecycle  |
 | **Consensus**   | `consensus_round`, `consensus_phase`, `consensus_mode`, `proposers`, `round_time_ms`                             | Analyze consensus timing     |
 | **RPC**         | `command`, `version`, `rpc_status`, `duration_ms`                                                                | Monitor RPC performance      |
 | **Peer**        | `peer_id` (public key), `peer_latency_ms`, `message_type`, `message_size_bytes`                                  | Network topology analysis    |
-| **Ledger**      | `ledger_hash`, `ledger_index`, `close_time`, `ledger_tx_count`                                                   | Ledger progression tracking  |
+| **Ledger**      | `ledger_hash`, `ledger_seq`, `close_time`, `ledger_tx_count`                                                     | Ledger progression tracking  |
 | **Job**         | `job_type`, `job_queue_ms`, `job_worker`                                                                         | JobQueue performance         |
 | **PathFinding** | `pathfind_fast`, `pathfind_search_level`, `pathfind_num_paths`, `pathfind_ledger_index`, `pathfind_num_requests` | Payment path analysis        |
 | **TxQ**         | `txq_queue_depth`, `txq_fee_level`, `txq_eviction_reason`                                                        | Queue depth and fee tracking |
@@ -508,9 +510,12 @@ A PerfLog entry is a JSON object with fields such as `time`, `method`,
   - No request-level detail
   - No causal relationships
   - Single-node perspective
+  - Aggregation happens on the StatsD server, not in the process
 
 In xrpld, Beast Insight is used through `increment` (counters), `gauge`
-(point-in-time values), and `timing` (durations) calls.
+(point-in-time values), and `timing` (durations) calls. A `timing` call sends
+each measured value as its own raw `|ms` sample, so the histogram a dashboard
+reads is built by the StatsD server from that stream of values.
 
 #### OpenTelemetry (NEW)
 
@@ -519,6 +524,7 @@ In xrpld, Beast Insight is used through `increment` (counters), `gauge`
   - **Cross-node correlation** via `trace_id`
   - Parent-child span relationships
   - Rich attributes per span
+  - A `Histogram` instrument that aggregates **at the point of measure**
   - Industry standard (CNCF)
 - **Limitations**:
   - Requires collector infrastructure
@@ -527,6 +533,13 @@ In xrpld, Beast Insight is used through `increment` (counters), `gauge`
 A span is created via `startSpan` (e.g. `"tx.relay"`), annotated with
 attributes such as `tx_hash` and `peer_id`, and is automatically linked to its
 parent through the active context.
+
+OpenTelemetry is not only spans. The same SDK offers a `Histogram` instrument,
+and a `Record()` call folds the value straight into bucket counts inside the
+process — no per-event record is shipped and no server-side aggregation step is
+needed. That is what makes it affordable in a hot loop where one span per event
+would not be, and it is the one thing Beast Insight cannot do, because its
+`timing` path ships raw values and aggregates them on the StatsD server.
 
 ### 2.6.3 When to Use Each
 
@@ -538,6 +551,15 @@ parent through the active context.
 | "Which node delayed consensus?"         | ❌         | ❌     | ✅            |
 | "What happened on node X at time T?"    | ✅         | ❌     | ✅            |
 | "Show me the TX journey across 5 nodes" | ❌         | ❌     | ✅            |
+| "p99 NodeStore fetch latency?"          | ❌         | ❌     | ✅            |
+
+The last row is the case a span cannot answer. One `TMGetObjectByHash` message
+requests up to `tuning::kHardMaxReplyNodes` objects, so a span per NodeStore
+fetch is not affordable in that loop. Instead the fetch loop's wall time is
+recorded once per message into an OpenTelemetry `Histogram`
+(`getobject_lookup_us`), and the quantile is read off its buckets. StatsD is
+marked ❌ because that instrument is recorded on the native OpenTelemetry metrics
+path, not through Beast Insight.
 
 ### 2.6.4 Coexistence Strategy
 

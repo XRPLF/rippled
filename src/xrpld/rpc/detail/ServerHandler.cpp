@@ -710,7 +710,9 @@ ServerHandler::processRequest(
     // yield in doRipplePathFind: the coro-aware context storage moves this
     // scope with the coroutine on resume (it is never stranded on a worker's
     // thread-local stack), so nesting and log-trace correlation both hold.
-    auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
+    // Internal, not Server: the inbound boundary is rpc.http_request above.
+    auto span = ScopedSpanGuard(
+        TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process, SpanRole::Internal);
     auto rpcJ = app_.getJournal("RPC");
 
     // Tracks whether any failure occurred. Set on every error path (early
