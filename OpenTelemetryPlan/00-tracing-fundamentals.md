@@ -297,9 +297,9 @@ XRPL has a unique advantage: its core workflows produce **globally unique 256-bi
 Transaction:     STTx::getTransactionID()     → uint256 tid_
                  TMTransaction::rawTransaction → recompute hash from bytes
 
-Consensus:       ConsensusProposal::prevLedger_ → uint256 (previous ledger hash)
-                 ConsensusProposal::position_   → uint256 (TxSet hash)
-                 LedgerHeader::seq              → uint32_t (ledger sequence)
+Consensus:       ConsensusProposal::previousLedger_ → uint256 (previous ledger hash)
+                 ConsensusProposal::position_       → uint256 (TxSet hash)
+                 LedgerHeader::seq                  → uint32_t (ledger sequence)
 
 Validation:      STValidation::getLedgerHash()  → uint256
                  STValidation::getNodeID()      → NodeID (160-bit)

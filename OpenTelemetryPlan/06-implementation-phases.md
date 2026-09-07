@@ -104,7 +104,7 @@ gantt
 | ---- | -------------------------------------------------------------------------- |
 | 2.1  | Implement W3C Trace Context HTTP header extraction                         |
 | 2.2  | Instrument `ServerHandler::onRequest()`                                    |
-| 2.3  | Instrument `RPCHandler::doCommand()`                                       |
+| 2.3  | Instrument `xrpl::rpc::doCommand()`                                        |
 | 2.4  | Add RPC-specific attributes                                                |
 | 2.5  | Instrument WebSocket handler                                               |
 | 2.6  | PathFinding instrumentation (`pathfind.request`, `pathfind.compute` spans) |
@@ -169,16 +169,16 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 
 ### Tasks
 
-| Task | Description                                    | Status             |
-| ---- | ---------------------------------------------- | ------------------ |
-| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` | ✅ Done (via 4a.2) |
-| 4.2  | Instrument phase transitions                   | ✅ Done            |
-| 4.3  | Instrument proposal handling                   | ✅ Done            |
-| 4.4  | Instrument validation handling                 | ✅ Done            |
-| 4.5  | Add consensus-specific attributes              | ✅ Done            |
-| 4.6  | Correlate with transaction traces              | ✅ Done            |
-| 4.7  | Build verification and testing                 | ✅ Done            |
-| 4.8  | Validation span enrichment (ext. dashboard)    | ❌ Not done        |
+| Task | Description                                 | Status             |
+| ---- | ------------------------------------------- | ------------------ |
+| 4.1  | Instrument `RCLConsensus::startRound()`     | ✅ Done (via 4a.2) |
+| 4.2  | Instrument phase transitions                | ✅ Done            |
+| 4.3  | Instrument proposal handling                | ✅ Done            |
+| 4.4  | Instrument validation handling              | ✅ Done            |
+| 4.5  | Add consensus-specific attributes           | ✅ Done            |
+| 4.6  | Correlate with transaction traces           | ✅ Done            |
+| 4.7  | Build verification and testing              | ✅ Done            |
+| 4.8  | Validation span enrichment (ext. dashboard) | ❌ Not done        |
 
 **Note**: The original plan doc listed tasks 4.7-4.11 as "Validator list tracing",
 "Amendment voting tracing", "SHAMap sync tracing", "Multi-validator integration tests",

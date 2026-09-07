@@ -17,35 +17,58 @@
 
 namespace xrpl::telemetry {
 
+ValidationTracker::LedgerEvent*
+ValidationTracker::pendingEvent(uint256 const& ledgerHash, LedgerIndex seq)
+{
+    if (auto const it = pending_.find(ledgerHash); it != pending_.end())
+        return &it->second;
+
+    // A hash in tallied_ already reached the totals and left pending_.
+    // Building a fresh record for it would count the same ledger twice.
+    if (tallied_.contains(ledgerHash))
+        return nullptr;
+
+    auto& evt = pending_[ledgerHash];
+    evt.ledgerHash = ledgerHash;
+    evt.seq = seq;
+    evt.recordTime = Clock::now();
+    return &evt;
+}
+
+void
+ValidationTracker::noteTallied(uint256 const& ledgerHash)
+{
+    if (!tallied_.insert(ledgerHash).second)
+        return;
+
+    talliedOrder_.push_back(ledgerHash);
+    while (talliedOrder_.size() > kMaxTalliedEvents)
+    {
+        tallied_.erase(talliedOrder_.front());
+        talliedOrder_.pop_front();
+    }
+}
+
 void
 ValidationTracker::recordOurValidation(uint256 const& ledgerHash, LedgerIndex seq)
 {
     std::scoped_lock const lock(mutex_);
-    auto& evt = pending_[ledgerHash];
-    if (evt.recordTime == TimePoint{})
-    {
-        // First time seeing this ledger hash -- initialize.
-        evt.ledgerHash = ledgerHash;
-        evt.seq = seq;
-        evt.recordTime = Clock::now();
-    }
-    evt.weValidated = true;
     totalValidationsSent_.fetch_add(1, std::memory_order_relaxed);
+
+    // The counter above counts messages, so it also counts a ledger that is
+    // already tallied. Only the per-ledger record is skipped.
+    if (auto* const evt = pendingEvent(ledgerHash, seq))
+        evt->weValidated = true;
 }
 
 void
 ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerIndex seq)
 {
     std::scoped_lock const lock(mutex_);
-    auto& evt = pending_[ledgerHash];
-    if (evt.recordTime == TimePoint{})
-    {
-        evt.ledgerHash = ledgerHash;
-        evt.seq = seq;
-        evt.recordTime = Clock::now();
-    }
-    evt.networkValidated = true;
     totalValidationsChecked_.fetch_add(1, std::memory_order_relaxed);
+
+    if (auto* const evt = pendingEvent(ledgerHash, seq))
+        evt->networkValidated = true;
 }
 
 void
@@ -61,6 +84,7 @@ ValidationTracker::reconcile()
             // Initial reconciliation after grace period.
             evt.reconciled = true;
             evt.agreed = evt.weValidated && evt.networkValidated;
+            noteTallied(hash);
 
             if (evt.agreed)
             {
