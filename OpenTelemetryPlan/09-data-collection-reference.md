@@ -1146,6 +1146,10 @@ repeated here:
   [Per-Job-Type Metrics](#per-job-type-metrics-synchronous-countershistogram).
 - Five `getobject_*` instruments covering the `TMGetObjectByHash` request path —
   see [GetObject Request Path](#getobject-request-path-synchronous-countershistograms).
+- Two request-count histograms, `rpc_batch_size` and `pathfind_discovered_paths`,
+  which give the aggregate distribution of two values that until now existed only
+  as span attributes on a sampled trace — see
+  [RPC Request-Count Histograms](#rpc-request-count-histograms).
 - Three per-job-type queue gauge families (`jobq_<jobtype>_waiting` /
   `_running` / `_deferred`). These travel the `beast::insight` pipeline, not the
   OTel SDK one, so they are documented in
@@ -1555,6 +1559,55 @@ macro (see `src/xrpld/telemetry/MetricMacros.h` and `PerfLogImp.cpp`), not throu
 `MetricsRegistry` member. As an UpDownCounter it carries no `_total` suffix (that is
 reserved for monotonic counters).
 
+#### RPC Request-Count Histograms
+
+Two histograms describing how much work one request asks for. Names and
+descriptions are the `constexpr` constants in
+`include/xrpl/telemetry/RpcMetricNames.h`; both are recorded at their call sites
+via `XRPL_METRIC_*`, and both have an explicit-bucket view registered in
+`src/xrpld/telemetry/MetricsRegistry.cpp`.
+
+| Prometheus Metric           | Type      | Labels | Description                                             |
+| --------------------------- | --------- | ------ | ------------------------------------------------------- |
+| `rpc_batch_size`            | Histogram | (none) | Sub-requests per batch JSON-RPC call                    |
+| `pathfind_discovered_paths` | Histogram | (none) | Payment paths produced per pathfinding pass, all assets |
+
+| Metric                      | Recorded at                                     | Beside the span attribute |
+| --------------------------- | ----------------------------------------------- | ------------------------- |
+| `rpc_batch_size`            | `ServerHandler::processRequest`, `method=batch` | `batch_size`              |
+| `pathfind_discovered_paths` | `PathRequest::findPaths`, after the asset loop  | `pathfind_num_paths`      |
+
+**Why both a span attribute and a histogram for the same value.** The attribute
+answers "how big was this one request" on a trace someone is already looking at.
+It cannot give a distribution, because an unsampled trace is never read. The
+histogram answers "how big are these requests" across every call. Neither
+replaces the other, so both stay.
+
+`rpc_batch_size` is recorded only when `method == "batch"`, matching the
+attribute. Recording a plain single request would add the value 1 on every RPC
+and bury the batch distribution.
+
+`pathfind_discovered_paths` records inside the existing
+`#ifdef XRPL_ENABLE_TELEMETRY` block, because the running total it reports is
+only maintained in a telemetry build. Zero is a normal and interesting value: a
+pass that found no path at all records it.
+
+**Both use `buckets::kObjectCountBuckets`, and the reason is the floor.** The SDK
+default boundaries begin `0, 5, 10, 25`, so every batch of one to five
+sub-requests — the ordinary case — lands in a single bucket and
+`histogram_quantile` returns that edge scaled by the quantile rather than a
+count. The object-count ladder's `1, 2, 4, 8, 16` edges sit where both
+distributions have their mass.
+
+- **Path counts cannot saturate.** `PathRequest::kMaxPaths` (4) per source asset
+  times `tuning::kMaxAutoSrcCur` (88) bounds a pass at 352 paths, well under the
+  ladder's 12288 top edge.
+- **Batch sizes can.** Nothing caps the sub-request count; the only bound is
+  `tuning::kMaxRequestSize` (1 MB) over the smallest sub-request an array can
+  hold, about 333,000. The ladder is not extended into a range no measured
+  workload occupies, so an over-ceiling batch lands in `+Inf` and is read as
+  `rpc_batch_size_count - rpc_batch_size_bucket{le="12288"}` instead.
+
 #### Per-Job-Type Metrics (Synchronous Counters/Histogram)
 
 | Prometheus Metric    | Type      | Labels                                  | Description                       |
@@ -1632,8 +1685,8 @@ information the batch totals do not already carry.
 
 **All three histograms need an explicit bucket view.** The SDK's default
 histogram boundaries top out at 10000. Every one of these three exceeds that, so
-without a view their top quantiles would all read as a flat 10000. Six views are
-registered in `src/xrpld/telemetry/MetricsRegistry.cpp`, and three of the six are
+without a view their top quantiles would all read as a flat 10000. Eight views are
+registered in `src/xrpld/telemetry/MetricsRegistry.cpp`, and three of the eight are
 for this family:
 
 | Instrument                  | View helper                     | Boundaries                                             |
@@ -1642,9 +1695,11 @@ for this family:
 | `getobject_request_objects` | `addHistogramView()`, own set   | `1, 2, 4, 8, 16, 64, 256, 1024, 4096, 12288`           |
 | `getobject_charge`          | `addHistogramView()`, own set   | `0, 100, 500, 1000, 5000, 10000, 25000, 50000, 100000` |
 
-The other three views are `addMicrosecondHistogramView()` on `job_queued_us`,
-`job_running_us`, and `rpc_method_us` — four µs-ladder views plus these two
-custom sets.
+The other five views are `addMicrosecondHistogramView()` on `job_queued_us`,
+`job_running_us` and `rpc_method_us`, plus `rpc_batch_size` and
+`pathfind_discovered_paths` on the object-count ladder — four µs-ladder views and
+four custom-boundary ones. See
+[RPC Request-Count Histograms](#rpc-request-count-histograms) for the latter two.
 
 **Why the latter two do not use the µs ladder.** They are not durations. The µs
 ladder's buckets are chosen for time (sub-millisecond jobs through multi-second

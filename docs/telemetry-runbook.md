@@ -1932,6 +1932,45 @@ Aggregation choices worth knowing when reading these:
 > peer sends an oversized request. Verify its panel with a synthetic oversized
 > request; do not assume it works because the query parses.
 
+#### RPC Request-Count Metrics
+
+Two histograms describing how much work one RPC asks for. Names and descriptions
+are the `constexpr` constants in `include/xrpl/telemetry/RpcMetricNames.h`; both
+are recorded at their call sites and both get an explicit-bucket view in
+`MetricsRegistry.cpp`.
+
+| Prometheus Metric           | Kind      | Labels | Recorded at                                     | Description                                               |
+| --------------------------- | --------- | ------ | ----------------------------------------------- | --------------------------------------------------------- |
+| `rpc_batch_size`            | Histogram | none   | `ServerHandler::processRequest`, `method=batch` | Sub-requests per batch JSON-RPC call                      |
+| `pathfind_discovered_paths` | Histogram | none   | `PathRequest::findPaths`, after the asset loop  | Payment paths produced per pass, across all source assets |
+
+Reading them:
+
+- Each one sits beside a span attribute carrying the same value —
+  `batch_size` and `pathfind_num_paths`. Use the attribute to ask what one slow
+  request did; use the histogram to ask what requests do in general. An attribute
+  cannot answer the second question, because an unsampled trace is never read.
+- `rpc_batch_size` records **only for `method == "batch"`**. A non-batch request
+  is not a batch of one, and recording it would put the value 1 on every RPC and
+  bury the distribution.
+- `pathfind_discovered_paths` counts zero when a pass found no path, and that is
+  the most interesting reading on this instrument. It shares the lowest bucket
+  with "found exactly one path"; everything above is separated.
+- Both use the object-count bucket ladder, not the µs one. They are counts, and
+  the SDK's default boundaries start `0, 5, 10, 25` — which puts every ordinary
+  batch in one bucket and makes each quantile an interpolation on the edge.
+- **`rpc_batch_size` can saturate.** Nothing caps the sub-request count except
+  the 1 MB request-size limit, so a batch above the ladder's 12288 top edge lands
+  in `+Inf`. Read the overflow directly rather than trusting p99 there:
+
+```promql
+rpc_batch_size_count - rpc_batch_size_bucket{le="12288"}
+```
+
+> On a healthy local network `rpc_batch_size` has **no series at all** — nothing
+> issues batch RPCs. An empty panel is the expected reading, not a wiring fault.
+> Verify it by sending one batch request, not by looking for a series.
+
 #### Adding a New Metric
 
 <!-- cspell:ignore ISTOGRAM -->

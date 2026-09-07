@@ -18,20 +18,49 @@
 
 namespace xrpl::telemetry {
 
+ValidationTracker::LedgerEvent*
+ValidationTracker::pendingEvent(uint256 const& ledgerHash, LedgerIndex seq)
+{
+    if (auto const it = pending_.find(ledgerHash); it != pending_.end())
+        return &it->second;
+
+    // A hash in tallied_ already reached the totals and left pending_.
+    // Building a fresh record for it would count the same ledger twice.
+    if (tallied_.contains(ledgerHash))
+        return nullptr;
+
+    auto& evt = pending_[ledgerHash];
+    evt.ledgerHash = ledgerHash;
+    evt.seq = seq;
+    evt.recordTime = Clock::now();
+    return &evt;
+}
+
+void
+ValidationTracker::noteTallied(uint256 const& ledgerHash)
+{
+    if (!tallied_.insert(ledgerHash).second)
+        return;
+
+    talliedOrder_.push_back(ledgerHash);
+    while (talliedOrder_.size() > kMaxTalliedEvents)
+    {
+        tallied_.erase(talliedOrder_.front());
+        talliedOrder_.pop_front();
+    }
+}
+
 void
 ValidationTracker::recordOurValidation(uint256 const& ledgerHash, LedgerIndex seq)
 {
     std::scoped_lock const lock(mutex_);
-    auto& evt = pending_[ledgerHash];
-    if (evt.recordTime == TimePoint{})
-    {
-        // First time seeing this ledger hash -- initialize.
-        evt.ledgerHash = ledgerHash;
-        evt.seq = seq;
-        evt.recordTime = Clock::now();
-    }
-    evt.weValidated = true;
     totalValidationsSent_.fetch_add(1, std::memory_order_relaxed);
+
+    // The counter above counts messages, so it also counts a ledger that is
+    // already tallied. Only the per-ledger record is skipped.
+    if (auto* const evt = pendingEvent(ledgerHash, seq))
+        evt->weValidated = true;
+
     boundPending(ledgerHash);
 }
 
@@ -39,15 +68,11 @@ void
 ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerIndex seq)
 {
     std::scoped_lock const lock(mutex_);
-    auto& evt = pending_[ledgerHash];
-    if (evt.recordTime == TimePoint{})
-    {
-        evt.ledgerHash = ledgerHash;
-        evt.seq = seq;
-        evt.recordTime = Clock::now();
-    }
-    evt.networkValidated = true;
     totalValidationsChecked_.fetch_add(1, std::memory_order_relaxed);
+
+    if (auto* const evt = pendingEvent(ledgerHash, seq))
+        evt->networkValidated = true;
+
     boundPending(ledgerHash);
 }
 
@@ -106,6 +131,12 @@ ValidationTracker::boundPending(uint256 const& justRecorded)
     if (!oldest->second.reconciled)
         classifyPending(oldest->second, Clock::now());
 
+    // The entry has now reached the totals and is about to leave pending_, so
+    // remember it as counted. Without this a later validation for the same
+    // ledger would build a fresh record that reconcile() would count a second
+    // time.
+    noteTallied(oldest->first);
+
     pending_.erase(oldest);
 }
 
@@ -130,6 +161,7 @@ ValidationTracker::reconcile()
             // moved once, here, at first classification -- see the
             // counting-decision note in the repair branch below.
             classifyPending(evt, now);
+            noteTallied(hash);
         }
         else if (
             evt.reconciled && !evt.agreed && evt.weValidated && evt.networkValidated &&

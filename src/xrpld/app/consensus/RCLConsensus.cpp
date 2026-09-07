@@ -1168,6 +1168,14 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
         censorshipDetector_.reset();
 
     mode_ = after;
+
+    // consensus.round is created before the engine applies the mode, so this is
+    // the first point where the round's mode is known. Every mode transition,
+    // including the one at round start, reaches here.
+    if (roundSpan_ && *roundSpan_)
+    {
+        roundSpan_->setAttribute(cs::attr::mode, toDisplayString(after).c_str());
+    }
 }
 
 json::Value
@@ -1397,7 +1405,6 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 
     roundSpan_->setAttribute(cs::attr::ledgerId, to_string(prevLgr.id()).c_str());
     roundSpan_->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq()) + 1);
-    roundSpan_->setAttribute(cs::attr::mode, toDisplayString(mode_.load()).c_str());
     roundSpan_->setAttribute(cs::attr::traceStrategy, strategy.c_str());
     roundSpan_->setAttribute(cs::attr::roundId, static_cast<int64_t>(prevLgr.seq()) + 1);
     roundSpan_->setAttribute(cs::attr::previousLedgerSeq, static_cast<int64_t>(prevLgr.seq()));
@@ -1405,6 +1412,10 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     roundSpan_->setAttribute(
         cs::attr::previousRoundTimeMs, static_cast<int64_t>(prevRoundTime_.load().count()));
     roundSpan_->setAttribute(cs::attr::consensusPhase, cs::val::phaseOpen);
+
+    // consensus_mode is stamped by onModeChange, which the engine calls just
+    // after this with the mode it is applying. Setting it here would record the
+    // previous round's mode.
 
     roundSpan_->addEvent(cs::event::phaseOpen);
 
