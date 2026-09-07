@@ -77,7 +77,10 @@ SpanContext::SpanContext(std::shared_ptr<Impl> impl) : impl_(std::move(impl))
 bool
 SpanContext::isValid() const noexcept
 {
-    return impl_ != nullptr;
+    // Holding a Context is not proof of holding a span. GetCurrent() hands back
+    // an empty Context on a thread with no active span, and threadLocalContext()
+    // wraps that too. Ask the Context for its span instead of trusting impl_.
+    return impl_ != nullptr && otel_trace::GetSpan(impl_->ctx)->GetContext().IsValid();
 }
 
 // ===== SpanGuard::Impl ====================================================
