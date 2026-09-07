@@ -16,67 +16,7 @@ let
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
 
-  # rust-overlay's toolchain propagates the *default* stdenv.cc onto the PATH (so
-  # cargo has a linker). That default may be different from the clang we pin here,
-  # so it shadows our clang and the build can silently use a different compiler
-  # version. Drop that cc from every propagation channel instead of pinning a
-  # replacement: the toolchain then carries no compiler and cargo just uses the
-  # active shell's stdenv cc. Must cover all channels — rust-overlay uses both
-  # propagatedBuildInputs and depsHostHostPropagated.
-  dropDefaultCc =
-    toolchain:
-    let
-      defaultCc = pkgs.stdenv.cc; # default compiler from nixpkgs stdenv
-      withoutDefaultCc = builtins.filter (dep: (dep.outPath or "") != defaultCc.outPath);
-    in
-    toolchain.overrideAttrs (old: {
-      propagatedBuildInputs = withoutDefaultCc (old.propagatedBuildInputs or [ ]);
-      depsHostHostPropagated = withoutDefaultCc (old.depsHostHostPropagated or [ ]);
-    });
-
-  rustToolchain = dropDefaultCc (pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml);
-
-  # cargo-llvm-cov honours the #[coverage(off)] that keeps unit tests out of the
-  # coverage report only under a nightly rustc, and looks for llvm-profdata and
-  # llvm-cov in that same toolchain's sysroot — hence llvm-tools-preview.
-  #
-  # Not every nightly ships every component, so `nightly.latest` breaks on the
-  # days llvm-tools-preview is absent; selectLatestNightlyWith walks back to the
-  # newest one that has it. The result is the newest such nightly *known to the
-  # locked rust-overlay*, which means updating flake.lock moves the compiler that
-  # produces the coverage numbers — and with it the rustc version recorded in
-  # nix/check-tools/*.txt, so those snapshots need regenerating alongside.
-  rustNightly = dropDefaultCc (
-    pkgs.rust-bin.selectLatestNightlyWith (
-      toolchain: toolchain.minimal.override { extensions = [ "llvm-tools-preview" ]; }
-    )
-  );
-
-  # A second toolchain cannot go on PATH: its cargo and rustc would collide with
-  # the pinned stable's in the ci-env buildEnv, which resolves collisions by
-  # picking one silently. Reaching the nightly only through this wrapper keeps it
-  # in the image closure (the Docker build copies the whole closure, not just
-  # what is linked into /bin) while leaving it inactive everywhere that does not
-  # ask for it.
-  #
-  # `path` exists for scopes wider than one command — a CI job appending to
-  # $GITHUB_PATH, so that the cargo cache action's own `rustc -vV` probe, which
-  # runs in a step of its own, agrees with the toolchain the build will use.
-  rustNightlyScript = pkgs.writeShellScriptBin "rust-nightly" ''
-    set -euo pipefail
-    case "''${1-}" in
-        path) printf '%s\n' "${rustNightly}/bin" ;;
-        run)
-            shift
-            export PATH="${rustNightly}/bin:$PATH"
-            exec "$@"
-            ;;
-        *)
-            echo "usage: rust-nightly (path | run <command>...)" >&2
-            exit 2
-            ;;
-    esac
-  '';
+  rust = import ./rust.nix { inherit pkgs; };
 
   # Nix wraps its toolchain so that binaries are exposed only under unsuffixed
   # names (gcc, g++, clang-tidy, ...). Several tools probe for a
@@ -152,42 +92,38 @@ in
     mkGcov
     ;
 
-  commonPackages = with pkgs; [
-    clangToolLinks
-    runClangTidyLink
-    ccache
-    clangbuildanalyzer
-    clangTools
-    cmake
-    conan
-    curlMinimal # needed for codecov/codecov-action
-    doxygen
-    file # needed for cpack in Clio
-    gcovr
-    gh
-    git
-    git-cliff
-    git-lfs
-    gnumake
-    gnupg # needed for signing commits & codecov/codecov-action
-    graphviz
-    less # needed for git diff
-    mold
-    nettools # provides netstat, used to debug failures in CI
-    ninja
-    patchelf
-    perl # needed for openssl
-    pkg-config
-    pre-commit
-    python3
-    runClangTidy
-    vim
-    zip
-    # Rust packages
-    cargo-audit
-    cargo-llvm-cov
-    cargo-nextest
-    rustNightlyScript
-    rustToolchain
-  ];
+  commonPackages =
+    (with pkgs; [
+      clangToolLinks
+      runClangTidyLink
+      ccache
+      clangbuildanalyzer
+      clangTools
+      cmake
+      conan
+      curlMinimal # needed for codecov/codecov-action
+      doxygen
+      file # needed for cpack in Clio
+      gcovr
+      gh
+      git
+      git-cliff
+      git-lfs
+      gnumake
+      gnupg # needed for signing commits & codecov/codecov-action
+      graphviz
+      less # needed for git diff
+      mold
+      nettools # provides netstat, used to debug failures in CI
+      ninja
+      patchelf
+      perl # needed for openssl
+      pkg-config
+      pre-commit
+      python3
+      runClangTidy
+      vim
+      zip
+    ])
+    ++ rust.packages;
 }
