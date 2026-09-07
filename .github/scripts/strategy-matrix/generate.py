@@ -66,6 +66,9 @@ class PackageConfig:
     # The packaging container image: a vanilla distro image, not the nix image
     # the config itself builds in.
     image: str
+    # A flavour of the package, named xrpld-<variant>, for a config whose
+    # binaries are not the plain release build.
+    variant: str = ""
 
 
 @dataclasses.dataclass
@@ -178,6 +181,8 @@ class PackagingEntry:
     validator_keys_artifact_name: str
     image: str
     package_type: str  # "deb" or "rpm"; drives the format-specific steps
+    package_variant: str  # passed to build_pkg.py --variant; empty for xrpld
+    package_name: str  # the name it builds under, which the artifact globs use
 
 
 # ---------------------------------------------------------------------------
@@ -267,8 +272,25 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
                         validator_keys_artifact_name=f"validator-keys-{name}",
                         image=cfg.package.image,
                         package_type=cfg.package.type,
+                        package_variant=cfg.package.variant,
+                        package_name=(
+                            f"xrpld-{cfg.package.variant}"
+                            if cfg.package.variant
+                            else "xrpld"
+                        ),
                     )
                 )
+
+    # test-install crosses the package names with the distros of both formats,
+    # so a name built for only one of them would be looked for in the other.
+    formats = {entry.package_type for entry in entries}
+    for name in sorted({entry.package_name for entry in entries}):
+        built = {e.package_type for e in entries if e.package_name == name}
+        assert built == formats, (
+            f"{name} is not packaged as {', '.join(sorted(formats - built))}: "
+            "either add the missing config, or pair the names with their format "
+            "in the test-install matrix of reusable-package.yml."
+        )
 
     return entries
 
@@ -341,6 +363,10 @@ if __name__ == "__main__":
 
     if args.packaging:
         matrix = expand_linux_packaging(LinuxFile.load(THIS_DIR / "linux.json"))
+        # So the workflow installs every name that is built without listing
+        # them a second time.
+        names = sorted({entry.package_name for entry in matrix})
+        print(f"package_names={json.dumps(names)}")
     else:
         if args.config in ("linux", None):
             matrix += expand_linux_matrix(

@@ -15,7 +15,8 @@ package/
     publish_pkg.py      Uploads built packages to the XRPLF Nexus repositories (called by CI, and shipped in that image)
   rpm/
     xrpld.spec      RPM spec
-  debian/           Debian control files (control, rules, copyright, xrpld.docs, xrpld.links, xrpld.lintian-overrides, source/format)
+  debian/           Debian control files (control.in, lintian-overrides.in, rules, copyright, docs, links, source/format).
+                    The `.in` files are templates rendered by `build_pkg.py`; `docs` and `links` are staged under the package name
   shared/
     xrpld.service       systemd unit file (used by both RPM and DEB)
     xrpld.sysusers      sysusers.d config (used by both RPM and DEB)
@@ -32,19 +33,61 @@ packaging job cannot drift apart. Today only `linux/amd64` is emitted. The map
 pins the full container image in `image` — edit that field to move to a new
 image and both CI and local builds pick it up — and names the format that image
 builds in `type`, which CI passes to `build_pkg.py` as `--package-type`; the two
-have to stay in step.
+have to stay in step. An optional `variant` names a flavour of the package (see
+[Package variants](#package-variants)), and CI passes it as `--variant`.
 
 | Package type | Image (`configs.<distro>[].package.image` in `linux.json`) | Tools required                                                 |
 | ------------ | ---------------------------------------------------------- | -------------------------------------------------------------- |
 | RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`, `rpmsign`                                          |
 | DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, debhelper with compat level 13, `lintian` |
 
-To print the full packaging matrix (artifact names and images) for the current
-`linux.json`:
+To print the full packaging matrix (artifact names, images and package names)
+for the current `linux.json`:
 
 ```bash
 ./.github/scripts/strategy-matrix/generate.py --packaging
 ```
+
+## Package variants
+
+A config whose binaries are not the plain release build cannot be packaged as
+`xrpld`: both would carry the same name and version, so whichever published last
+would win. It is packaged as a **variant** instead — `variant: "assert"` in its
+`package` map, which CI passes to `build_pkg.py` as `--variant assert`,
+producing `xrpld-assert`. What the build option itself does is a build concern,
+not a packaging one; see the options table in [`BUILD.md`](../BUILD.md).
+
+A variant ships the same paths as `xrpld` — `/usr/bin/xrpld`, `/etc/xrpld`,
+`xrpld.service`, `/etc/logrotate.d/xrpld` — differing only in the per-package
+documentation directory, so it declares itself a stand-in for the plain package
+rather than something installable next to it: `Conflicts`, `Replaces` and a
+versioned `Provides: xrpld` on Debian, `Conflicts` and `Provides` on RPM.
+Neither format declares `Obsoletes`, so `apt upgrade` and `dnf upgrade` keep an
+installed flavour on its own flavour, and switching is always explicit:
+
+```bash
+apt-get install xrpld-assert # apt removes the plain package itself
+dnf swap xrpld xrpld-assert  # 'dnf install' alone stops at the conflict
+```
+
+A switch is a removal plus an installation rather than an upgrade, so unlike a
+version upgrade it stops the service: Debian's scriptlets start it again, while
+on RPM the operator runs `systemctl start xrpld`. Configuration survives either
+way, being conffiles on Debian and `%config(noreplace)` on RPM.
+
+`dnf` installs the replacement before erasing the old flavour, whose `%preun`
+would leave `xrpld.service` disabled, so `%postun` re-applies the preset when
+the unit file outlives the erase — at the cost of not carrying a deliberate
+`systemctl disable` across an RPM switch.
+
+Adding a variant is the flavour in `VARIANTS` in `build_pkg.py`, which is the
+list `--variant` accepts, plus a config in `linux.json` with the CMake arguments
+and a `package` map naming it, one per format: `generate.py --packaging` emits
+the package names for `test-install` to install on every distro of both formats,
+and fails if a name is not packaged as both.
+
+Operators switch between the flavours as described in
+[`docs/install.md`](../docs/install.md#optional-the-assert-enabled-build).
 
 ## Building packages
 
@@ -56,9 +99,9 @@ Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
 1. `package` fans out one job per config carrying a `package` map, building and
    signing in that config's container, and uploading `<config>-pkg` alongside
    `<config>-pkg-debug` for the much larger debug symbols.
-2. `test-install` installs `<config>-pkg` in the container of every distro the
-   packages target and runs the binaries there, so one that cannot be installed
-   never reaches Nexus.
+2. `test-install` installs each package name in the container of every distro of
+   its format and runs the binaries there, so one that cannot be installed never
+   reaches Nexus.
 3. `publish` uploads both artifacts, or lists what it would upload.
 
 The packaging script derives the package version from the downloaded binary's
@@ -104,6 +147,9 @@ docker run --rm \
 #   build/rpmbuild/RPMS/x86_64/*.rpm
 ```
 
+Add `--variant assert` to package binaries built with `-Dassert=ON`; the package
+is then named `xrpld-assert`.
+
 ### Via CMake (host-side target)
 
 If you run CMake configure on a host that has `rpmbuild` or `dpkg-buildpackage`
@@ -133,6 +179,9 @@ The package version is not a CMake input on this path: `build_pkg.py` derives it
 from the just-built `xrpld` binary's `xrpld --version` output. The package
 release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
+`-Dassert=ON` passes `--variant assert`, so such a build packages as
+`xrpld-assert` without anything else being asked for.
+
 ## Publishing packages
 
 Packages are published to the XRPLF repositories on Sonatype Nexus at
@@ -146,6 +195,9 @@ the event, and `publish_pkg.py` maps that channel to its repositories:
 | tag                      | `X.Y.Z-bN`        | `beta`    | `deb-beta`     | `rpm-beta-hosted`     |
 | push to `develop`        | `xrpld --version` | `develop` | `deb-develop`  | `rpm-develop-hosted`  |
 | tag, non-public codebase | _any_             | `private` | `deb-private`  | `rpm-private-hosted`  |
+
+A variant is published to the same channel under its own name, so
+`xrpld-assert` never overwrites `xrpld`.
 
 Only a tag names a channel — do not extend that to `develop`, where
 `BuildInfo.cpp`'s `versionString` moves through `-bN`, `-rcN` and even the final
@@ -175,7 +227,7 @@ Nexus owns the repository metadata; nothing here indexes anything. Worth knowing
 - Each apt-hosted repository needs a distribution (ours use `any`) and a PGP
   signing keypair configured in Nexus, which rejects one created without a
   keypair. Nexus signs the apt metadata with it, never the packages.
-- Hosted yum repositories cannot be signed by Nexus, so each `rpm-<channel>-hosted`
+- yum-hosted repositories cannot be signed by Nexus, so each `rpm-<channel>-hosted`
   repository sits behind a `rpm-<channel>` yum group repository whose metadata
   Nexus signs. Uploads go to the hosted repository; clients point at the group
   and verify the metadata with `repo_gpgcheck=1`. Nexus never signs the RPMs
@@ -244,6 +296,19 @@ pre-release ordering convention, so RPM filenames/NVRs begin with forms like
 `xrpld-3.2.0~b1-...` and `xrpld-3.2.0~rc1-...` instead of encoding
 pre-releases with an older `0.<release>.<suffix>` RPM `Release` value.
 
+`--variant` is the flavour of the package, empty by default and accepting only
+the flavours in `VARIANTS`; see [Package variants](#package-variants). The RPM
+path passes it to the spec as the `pkg_variant` macro, which suffixes `Name` and
+adds the `Conflicts`/`Provides` pair. Debian control files have no conditionals, so the DEB path renders
+`debian/control.in` and `debian/lintian-overrides.in` instead, substituting
+`@PKG@` with the package name and `@VARIANT_FIELDS@` with the
+`Conflicts`/`Replaces`/`Provides` block, empty for the plain package; a token
+with no value fails the build rather than reaching dpkg. The files debhelper
+keys by package name (`docs`, `links`, and the units) are staged under that same
+name. The paths inside the package are unchanged either way, so `debian/rules`
+reads its package name from `dh_listpackages` and names the unit, sysusers,
+tmpfiles and logrotate files with `--name xrpld`.
+
 The package format is `--package-type`, either `deb` or `rpm`. It is required,
 so a job never silently builds the wrong format for the image it runs in; the
 matching build tool still has to be on PATH.
@@ -286,8 +351,13 @@ service restart.
 1. Creates a staging source tree at `debbuild/source/` inside the build directory.
 2. Stages the binaries, configs, `README.md`, `LICENSE.md`, and
    `validator-keys-LICENSE`.
-3. Copies `package/debian/` control files into `debbuild/source/debian/`.
-4. Copies shared service/sysusers/tmpfiles/logrotate into `debian/` where `dh_installsystemd`, `dh_installsysusers`, `dh_installtmpfiles` and `dh_installlogrotate` pick them up automatically.
+3. Stages `package/debian/` into `debbuild/source/debian/`: the `.in` templates
+   are rendered, and the files debhelper keys by package name (`docs`, `links`,
+   `lintian-overrides`) are staged under the name being built.
+4. Copies shared service/sysusers/tmpfiles/logrotate into `debian/` as
+   `<package>.xrpld.*`, which `dh_installsystemd`, `dh_installsysusers`,
+   `dh_installtmpfiles` and `dh_installlogrotate` read because `debian/rules`
+   passes them `--name xrpld`.
 5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`,
    where `pkg_version` is derived from the binary-reported `xrpld` version.
 6. Runs `dpkg-buildpackage -b --no-sign -d` (`-d` skips the build-dependency check, since the binary is already built). `debian/rules` uses manual `install` commands.

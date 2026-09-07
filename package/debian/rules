@@ -8,27 +8,40 @@ export DH_VERBOSE = 1
 # the binaries actually run on.
 LIBC_MIN = 2.31
 
+# The binary package's name, which a variant build changes to e.g. xrpld-assert.
+PKG := $(firstword $(shell dh_listpackages))
+
 %:
 	dh $@
 
 override_dh_auto_configure override_dh_auto_build override_dh_auto_test:
 	@:
 
+# The unit, sysusers, tmpfiles and logrotate files are named after the daemon
+# rather than after the package, so a variant still ships xrpld.service and
+# /etc/logrotate.d/xrpld. debhelper only reads debian/$(PKG).xrpld.* when told
+# the name.
 override_dh_installsystemd:
-	dh_installsystemd --no-stop-on-upgrade xrpld.service
+	dh_installsystemd --no-stop-on-upgrade --name xrpld
 
 # The tmpfiles snippet sets ownership to the xrpld user, so the sysusers snippet
 # has to be emitted first: run it early and make its own sequence slot a no-op.
 execute_before_dh_installtmpfiles:
-	dh_installsysusers
+	dh_installsysusers --name xrpld
 
 override_dh_installsysusers:
 
+override_dh_installtmpfiles:
+	dh_installtmpfiles --name xrpld
+
+override_dh_installlogrotate:
+	dh_installlogrotate --name xrpld
+
 override_dh_install:
-	install -D -m 0755 xrpld            debian/xrpld/usr/bin/xrpld
-	install -D -m 0755 validator-keys   debian/xrpld/usr/bin/validator-keys
-	install -D -m 0644 xrpld.cfg        debian/xrpld/etc/xrpld/xrpld.cfg
-	install -D -m 0644 validators.txt   debian/xrpld/etc/xrpld/validators.txt
+	install -D -m 0755 xrpld            debian/$(PKG)/usr/bin/xrpld
+	install -D -m 0755 validator-keys   debian/$(PKG)/usr/bin/validator-keys
+	install -D -m 0644 xrpld.cfg        debian/$(PKG)/etc/xrpld/xrpld.cfg
+	install -D -m 0644 validators.txt   debian/$(PKG)/etc/xrpld/validators.txt
 
 override_dh_shlibdeps:
 	dh_shlibdeps
@@ -46,7 +59,7 @@ override_dh_shlibdeps:
 			exit 1; \
 		fi; \
 	done
-	sed -i 's/libc6 (>= [0-9.]*)/libc6 (>= $(LIBC_MIN))/' debian/xrpld.substvars
+	sed -i 's/libc6 (>= [0-9.]*)/libc6 (>= $(LIBC_MIN))/' debian/$(PKG).substvars
 
 override_dh_dwz:
 	@:

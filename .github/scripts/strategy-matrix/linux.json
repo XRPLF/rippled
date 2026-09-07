@@ -76,6 +76,19 @@
           "type": "deb",
           "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-49cdc10"
         }
+      },
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "minimal": false,
+        "suffix": "assert",
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-49cdc10",
+          "variant": "assert"
+        }
       }
     ],
 
@@ -89,6 +102,19 @@
         "package": {
           "type": "rpm",
           "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-49cdc10"
+        }
+      },
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "minimal": false,
+        "suffix": "assert",
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "rpm",
+          "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-49cdc10",
+          "variant": "assert"
         }
       }
     ]
